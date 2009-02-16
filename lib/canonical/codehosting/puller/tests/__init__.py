@@ -11,7 +11,7 @@ from StringIO import StringIO
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib import urlutils
 
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     BadUrl, BranchMirrorer, BranchPolicy, PullerWorker, PullerWorkerProtocol)
 from canonical.codehosting.tests.helpers import LoomTestMixin

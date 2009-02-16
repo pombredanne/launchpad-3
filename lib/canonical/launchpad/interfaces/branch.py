@@ -522,7 +522,6 @@ class BranchURIField(URIField):
         # This also means we could get rid of the imports above.
 
         uri = URI(self.normalize(value))
-        supermirror_root = URI(config.codehosting.supermirror_root)
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
@@ -1181,6 +1180,18 @@ class IBranchSet(Interface):
         """Find a branch by its ~owner/product/name unique name.
 
         Return None if no match was found.
+        """
+
+    def URIToUniqueName(uri):
+        """Return the unique name for the URL, if the URL is on codehosting.
+
+        This does not ensure that the unique name is valid.  It recognizes the
+        codehosting URLs of remote branches and mirrors, but not their
+        remote URLs.
+
+        :param uri: An instance of webapp.uri.URI
+        :return: The unique name if possible, None if the URI is not a valid
+            codehosting URI.
         """
 
     def getByUrl(url, default=None):

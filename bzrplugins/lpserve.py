@@ -99,7 +99,7 @@ class cmd_launchpad_server(Command):
         mirror_url = urlutils.local_path_to_url(mirror_directory)
         branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
 
-        from canonical.codehosting.branchfs import get_lp_server
+        from canonical.codehosting.vfs import get_lp_server
         lp_server = get_lp_server(
             branchfs_client, int(user_id), upload_url, mirror_url)
         lp_server.setUp()
