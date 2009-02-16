@@ -698,7 +698,9 @@ class BranchMergeProposalGetter:
         store = Store.of(proposals[0])
         result = dict([(proposal, []) for proposal in proposals])
         # Make sure that the Person and the review comment are loaded in the
-        # storm cache.
+        # storm cache as the reviewer is displayed in a title attribute on the
+        # merge proposal listings page, and the message is needed to get to
+        # the actual vote for that person.
         tables = [
             CodeReviewVoteReference,
             Join(Person, CodeReviewVoteReference.reviewerID == Person.id),
