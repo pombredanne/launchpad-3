@@ -31,10 +31,6 @@ class TestBugTracker(TestCaseWithFactory):
             bugtracker = self.factory.makeBugTracker(bugtrackertype=type)
 
             bugtracker_urls = bugtracker.getBugFilingAndSearchLinks(None)
-
-            if bugtracker_urls is None:
-                continue
-
             bug_filing_url = bugtracker_urls['bug_filing_url']
             bug_search_url = bugtracker_urls['bug_search_url']
 
