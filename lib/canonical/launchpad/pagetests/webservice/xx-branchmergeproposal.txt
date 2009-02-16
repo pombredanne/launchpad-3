@@ -222,3 +222,34 @@ Or I can look for anything that is approved.
     ...     print_proposal(proposal)
     http://.../~source/fooix/fix-it/+merge/1 - Approved
 
+
+== Getting a Person's Pending Merge Proposals ==
+
+It is possible to view all of a person's merge proposals of filter their
+proposals by their status.
+
+    >>> proposals = webservice.named_get(
+    ...     '/~source', 'getMergeProposals').jsonBody()
+    >>> for proposal in proposals['entries']:
+    ...     print_proposal(proposal)
+    http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1 - Approved
+
+The person's proposals can also be filtered by status.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.branchmergeproposal import (
+    ...     BranchMergeProposalStatus)
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'foo.bar@canonical.com')
+    >>> fixit_proposal.rejectBranch(sample_person, '1')
+    >>> logout()
+
+    >>> proposals = webservice.named_get(
+    ...     '/fooix', 'getMergeProposals',
+    ...     status=[BranchMergeProposalStatus.REJECTED.title]).jsonBody()
+    >>> for proposal in proposals['entries']:
+    ...     print_proposal(proposal)
+    http://.../~source/fooix/fix-it/+merge/1 - Rejected
+
