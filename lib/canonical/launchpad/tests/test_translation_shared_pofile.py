@@ -130,5 +130,38 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
             self.devel_sr_pofile.findPOTMsgSetsContaining(u"THIRD"))
         self.assertEquals(found_potmsgsets, [plural_potmsgset])
 
+    def test_getTranslationsFilteredBy(self):
+        """Test that filtering by submitters works."""
+        pass
+
+    def test_getPOTMsgSetTranslated(self):
+        """Test listing of translated POTMsgSets."
+        pass
+
+    def test_getPOTMsgSetUntranslated(self):
+        """Test listing of untranslated POTMsgSets."
+        pass
+
+    def test_getPOTMsgSetWithNewSuggestions(self):
+        """Test listing of POTMsgSets with unreviewed suggestions."
+        pass
+
+    def test_getPOTMsgSetChangedInLaunchpad(self):
+        """Test listing of POTMsgSets which contain changes from imports."
+        pass
+
+    def test_getPOTMsgSetWithErrors(self):
+        """Test listing of POTMsgSets with errors in translations."
+        pass
+
+    def test_hasMessageID(self):
+        """Test that finding messages by English string works."""
+        pass
+
+    def test_updateStatistics(self):
+        """Test that updating statistics keeps working."""
+        pass
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
