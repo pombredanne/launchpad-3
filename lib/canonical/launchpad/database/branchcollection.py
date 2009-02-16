@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 from storm.expr import And, LeftJoin, Join, Or, Select
+from storm.info import ClassAlias
 
 from zope.interface import implements
 
@@ -15,6 +16,7 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.branch import (
@@ -35,7 +37,9 @@ class GenericBranchCollection:
             branch_filter_expressions = []
         self._branch_filter_expressions = branch_filter_expressions
         if tables is None:
-            tables = [Branch, LeftJoin(Product, Branch.product == Product.id)]
+            Owner = ClassAlias(Person, 'Owner')
+            tables = [Branch, LeftJoin(Product, Branch.product == Product.id),
+                      Join(Owner, Branch.owner == Owner.id)]
         self._tables = tables
         self.name = name
         self.displayname = displayname
