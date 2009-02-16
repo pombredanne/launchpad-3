@@ -233,6 +233,21 @@ A Person may be linked to an Account.
     >>> person.account.openid_identifier
     u'no-priv_oid'
 
+And when the person is linked to an account, it's possible to adapt that
+account into an IPerson.
+
+    >>> IPerson(person.account) == person
+    True
+
+We can't adapt an account which has no person associated with, though.
+
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     AccountCreationRationale, IAccountSet)
+    >>> personless_account = getUtility(IAccountSet).new(
+    ...     AccountCreationRationale.UNKNOWN, 'Display name')
+    >>> IPerson(personless_account)
+    None
+
 
 === Personal standing ===
 

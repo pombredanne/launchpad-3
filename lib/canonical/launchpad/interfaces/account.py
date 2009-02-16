@@ -21,6 +21,7 @@ from zope.schema import Choice, Datetime, Int, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference
 
 
 class AccountStatus(DBEnumeratedType):
@@ -181,44 +182,51 @@ class IAccountPublic(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
 
     displayname = StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-                description=_("Your name as you would like it displayed."))
+        title=_('Display Name'), required=True, readonly=False,
+        description=_("Your name as you would like it displayed."))
 
     status = Choice(
         title=_("The status of this account"), required=True,
         readonly=False, vocabulary=AccountStatus)
 
+    # We should use schema=IEmailAddress here, but we can't because that would
+    # cause circular dependencies.
+    preferredemail = Reference(
+        title=_("Preferred email address"),
+        description=_("The preferred email address for this person. "
+                      "The one we'll use to communicate with them."),
+        readonly=True, required=False, schema=Interface)
+
 
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
     date_created = Datetime(
-            title=_('Date Created'), required=True, readonly=True)
+        title=_('Date Created'), required=True, readonly=True)
 
     creation_rationale = Choice(
-            title=_("Rationale for this account's creation."), required=True,
-            readonly=True, values=AccountCreationRationale.items)
-
+        title=_("Rationale for this account's creation."), required=True,
+        readonly=True, values=AccountCreationRationale.items)
 
     date_status_set = Datetime(
-            title=_('Date status last modified.'),
-            required=True, readonly=False)
+        title=_('Date status last modified.'),
+        required=True, readonly=False)
 
     status_comment = Text(
         title=_("Why are you deactivating your account?"),
         required=False, readonly=False)
 
     openid_identifier = TextLine(
-            title=_("Key used to generate opaque OpenID identities."),
-            readonly=True, required=True)
+        title=_("Key used to generate opaque OpenID identities."),
+        readonly=True, required=True)
 
     # XXX sinzui 2008-09-04 bug=264783:
     # Remove this attribute.
     new_openid_identifier = TextLine(
-            title=_("Key used to generate New opaque OpenID identities."),
-            readonly=True, required=True)
+        title=_("Key used to generate New opaque OpenID identities."),
+        readonly=True, required=True)
 
     password = PasswordField(
-            title=_("Password."), readonly=False, required=True)
+        title=_("Password."), readonly=False, required=True)
 
 
 class IAccount(IAccountPublic, IAccountPrivate):

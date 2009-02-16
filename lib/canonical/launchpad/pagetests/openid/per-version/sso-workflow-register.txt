@@ -38,7 +38,7 @@ configuration that uses the UBUNTU_SHOP creation rationale:
     ...     trust_root='http://launchpad.dev/',
     ...     displayname='The Ubuntu Store from Canonical',
     ...     description="For the Ubuntu Store, you need a Launchpad account "
-    ...                 "so  we can remember your order details and keep in "
+    ...                 "so we can remember your order details and keep in "
     ...                 "touch with you about your orders.",
     ...     creation_rationale=PersonCreationRationale.OWNER_CREATED_UBUNTU_SHOP)
     >>> logout()
