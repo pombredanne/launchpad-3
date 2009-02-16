@@ -37,7 +37,7 @@ from canonical.launchpad import _
 from canonical.launchpad.components.openidserver import (
     OpenIDPersistentIdentity, CurrentOpenIDEndPoint)
 from canonical.launchpad.interfaces.person import (
-    IPersonSet, PersonVisibility)
+    IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.openidserver import (
