@@ -245,6 +245,12 @@
       template="../templates/branchmergeproposal-listing.pt"
       permission="zope.Public" />
 
+  <browser:page
+      for="*"
+      name="+bmp-macros"
+      permission="zope.Public"
+      template="../templates/branchmergeproposal-macros.pt" />
+
   <securedutility
       class="canonical.launchpad.database.BranchMergeProposalGetter"
       provides="canonical.launchpad.interfaces.IBranchMergeProposalGetter" >

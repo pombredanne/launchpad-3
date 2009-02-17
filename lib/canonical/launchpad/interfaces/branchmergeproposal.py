@@ -579,6 +579,12 @@ class IBranchMergeProposalGetter(Interface):
             understood.
         """
 
+    def getVotesForProposals(proposals):
+        """Return a dict containing a mapping of proposals to vote references.
+
+        The values of the dict are lists of CodeReviewVoteReference objects.
+        """
+
     def getVoteSummariesForProposals(proposals):
         """Return the vote summaries for the proposals.
 

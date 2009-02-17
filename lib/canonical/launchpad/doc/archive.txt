@@ -24,8 +24,12 @@ records to disk, including configuration and indexes.
     True
     >>> cprov_archive.authorized_size
     1024
-    >>> cprov_archive.whiteboard
-    u'It is not my fault.'
+    >>> print cprov_archive.whiteboard
+    It is not my fault.
+    >>> print cprov_archive.signing_key
+    None
+    >>> print cprov_archive.signing_key_fingerprint
+    None
     >>> cprov_archive.private
     False
     >>> cprov_archive.require_virtualized
@@ -2154,7 +2158,7 @@ As with syncSources() you need to have edit permission on the archive.
     Traceback (most recent call last):
     ...
     Unauthorized...
-    
+
 Login as sabdfl to continue.
 
     >>> login("mark@hbd.com")
