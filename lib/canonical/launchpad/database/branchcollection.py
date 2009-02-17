@@ -47,7 +47,7 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self.getBranches().count()
 
-    def filterBy(self, tables, *expressions):
+    def _filterBy(self, tables, *expressions):
         """Return a subset of this collection, filtered by 'expressions'."""
         # XXX: JonathanLange 2009-02-17: We might be able to avoid the need
         # for explicit 'tables' by harnessing Storm's table inference system.
@@ -67,30 +67,30 @@ class GenericBranchCollection:
 
     def inProduct(self, product):
         """See `IBranchCollection`."""
-        return self.filterBy([], Branch.product == product)
+        return self._filterBy([], Branch.product == product)
 
     def inProject(self, project):
         """See `IBranchCollection`."""
-        return self.filterBy(
+        return self._filterBy(
             [], Product.project == project.id)
 
     def inSourcePackage(self, source_package):
         """See `IBranchCollection`."""
-        return self.filterBy(
+        return self._filterBy(
             [], Branch.distroseries == source_package.distroseries,
             Branch.sourcepackagename == source_package.sourcepackagename)
 
     def ownedBy(self, person):
         """See `IBranchCollection`."""
-        return self.filterBy([], Branch.owner == person)
+        return self._filterBy([], Branch.owner == person)
 
     def registeredBy(self, person):
         """See `IBranchCollection`."""
-        return self.filterBy([], Branch.registrant == person)
+        return self._filterBy([], Branch.registrant == person)
 
     def relatedTo(self, person):
         """See `IBranchCollection`."""
-        return self.filterBy(
+        return self._filterBy(
             [LeftJoin(
                 BranchSubscription,
                 BranchSubscription.branch == Branch.id)],
@@ -100,7 +100,7 @@ class GenericBranchCollection:
 
     def subscribedBy(self, person):
         """See `IBranchCollection`."""
-        return self.filterBy(
+        return self._filterBy(
             [Join(BranchSubscription,
                   BranchSubscription.branch == Branch.id)],
             BranchSubscription.person == person)
@@ -121,8 +121,8 @@ class GenericBranchCollection:
                    BranchSubscription.person == TeamParticipation.teamID,
                    TeamParticipation.person == person)),
             distinct=True)
-        return self.filterBy([], Branch.id.is_in(visible_branches))
+        return self._filterBy([], Branch.id.is_in(visible_branches))
 
     def withLifecycleStatus(self, *statuses):
         """See `IBranchCollection`."""
-        return self.filterBy([], Branch.lifecycle_status.is_in(statuses))
+        return self._filterBy([], Branch.lifecycle_status.is_in(statuses))
