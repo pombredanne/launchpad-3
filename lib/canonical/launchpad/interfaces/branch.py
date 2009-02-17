@@ -78,7 +78,8 @@ from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported)
+    export_as_webservice_entry, export_write_operation, exported,
+    operation_parameters, operation_returns_entry)
 
 from canonical.config import config
 
@@ -88,6 +89,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
     ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
@@ -1012,6 +1014,21 @@ class IBranch(IHasOwner):
         """
 
     # subscription-related methods
+    @operation_parameters(
+        person=Reference(
+            title=_("The person to subscribe."),
+            schema=IPerson),
+        notification_level=Choice(
+            title=_("The level of notification to subscribe to."),
+            vocabulary='BranchSubscriptionNotificationLevel'),
+        max_diff_lines=Choice(
+            title=_("The max number of lines for diff email."),
+            vocabulary='BranchSubscriptionDiffSize'),
+        code_review_level=Choice(
+            title=_("The level of code review notification emails."),
+            vocabulary='CodeReviewNotificationLevel'))
+    @operation_returns_entry(Interface) # Really IBranchSubscription
+    @export_write_operation()
     def subscribe(person, notification_level, max_diff_lines,
                   code_review_level):
         """Subscribe this person to the branch.
