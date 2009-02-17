@@ -62,6 +62,11 @@ class GenericBranchCollection:
 
     def getBranches(self):
         """See `IBranchCollection`."""
+        # XXX: JonathanLange 2009-02-17: Although you might think we could set
+        # the default value for store in the constructor, we can't. The
+        # IStoreSelector utility is not available at the time that the
+        # branchcollection.zcml is parsed, which means we get an error if this
+        # code is in the constructor.
         if self._store is None:
             store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         else:
