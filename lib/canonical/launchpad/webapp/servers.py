@@ -1420,16 +1420,25 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
             body_instream=body_instream, environ=test_environ, **kw)
 
 
-# ---- openid
-
 class IdPublication(LaunchpadBrowserPublication):
     """The publication used for OpenID requests."""
 
     root_object_interface = IOpenIDApplication
 
-    # TODO: Need a getPrincipal() here that returns an IOpenIDPrincipal, which
-    # has an account instead of person.  May also need to try adapting it into
-    # an IPerson if the teams extension is used.
+    def getPrincipal(self, request):
+        """Return the authenticated principal for this request.
+
+        This is only necessary because, unlike in LaunchpadBrowserPublication,
+        here we want OpenIDPrincipals to be returned, so that personless
+        accounts can use our OpenID server.
+        """
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = auth_utility.authenticate(request)
+        if principal is None:
+            principal = auth_utility.unauthenticatedPrincipal()
+            assert principal is not None, "Missing unauthenticated principal."
+        return principal
+
 
 class IdBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.IdLayer)

@@ -74,7 +74,6 @@ class PlacelessAuthUtility:
                         return principal
 
     def _authenticateUsingCookieAuth(self, request):
-        import pdb; pdb.set_trace()
         session = ISession(request)
         authdata = session['launchpad.authenticateduser']
         id = authdata.get('accountid')
@@ -90,6 +89,7 @@ class PlacelessAuthUtility:
         login_src = getUtility(IPlacelessLoginSource)
         principal = login_src.getPrincipal(
             id, id_is_from_person=id_is_from_person)
+        person_set = getUtility(IPersonSet)
         # Note, not notifying a LoggedInEvent here as for session-based
         # auth the login occurs when the login form is submitted, not
         # on each request.
@@ -99,26 +99,13 @@ class PlacelessAuthUtility:
             # available in login source. This happens when account has
             # become invalid for some reason, such as being merged.
             return None
-        # elif IOpenIDPrincipal.providedBy(principal):
-            # XXX: What do I do here?  
-            # - I need to return None to make
-            #   LaunchpadBrowserPublication.getPrincipal() return the
-            #   unauthenticated principal (so that personless accounts
-            #   navigate through LP anonymously), but 
-            # - I also need to return an IOpenIDPrincipal that will be
-            #   returned by IdPublication.getPrincipal() to tell the
-            #   OpenID views that a user is actually logged in.
-            # 
-            # When a personless account is authenticated, we return None
-            # because the call to login_src.getPrincipal() above returns
-            # None, as there's no Person with the given ID -- the ID
-            # stored in the session is actually the account's ID.
-            # The OpenID tests are not failing because they use
-            # full-fledged accounts, where the id in the Person table is
-            # the same as the id in the Account table. If the account had
-            # no associated Person or their IDs were different, the tests
-            # would fail.
-        elif getUtility(IPersonSet).get(principal.person.id).is_valid_person:
+        elif (IOpenIDPrincipal.providedBy(principal)
+              or person_set.get(principal.person.id).is_valid_person):
+            # XXX: Dear reviewer. Is it ok to set the principal in the request
+            # here when it's an OpenIDPrincipal that will be swallowed by
+            # LaunchpadBrowserPublication.getPrincipal() or do we need to
+            # swallow it here instead?  If we need to swallow it here, we'll
+            # need a way of not swallowing it when we're in login.lp.net.
             request.setPrincipal(principal)
             login = authdata['login']
             assert login, 'login is %s!' % repr(login)
@@ -255,10 +242,17 @@ class LaunchpadLoginSource:
             account = getUtility(IAccountSet).get(id)
             if account is not None:
                 person = IPerson(account)
-        if person is not None:
+            else:
+                return None
+
+        # XXX: Dear reviewer. I can't use "person is None" here because zope
+        # wraps the return of IPerson(account) above into a security proxy.
+        if person:
             return self._principalForPerson(person, access_level, scope)
         else:
-            return None
+            # Our acount has no person, so we return an OpenIDPrincipal.
+            return self._OpenIDprincipalForPerson(
+                account, access_level, scope)
 
     def getPrincipals(self, name):
         raise NotImplementedError

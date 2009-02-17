@@ -5,7 +5,7 @@ import unittest
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestPersonlessAccountPermissions(TestCaseWithFactory):
@@ -17,7 +17,7 @@ class TestPersonlessAccountPermissions(TestCaseWithFactory):
     Here we login() with one of these person-less accounts and show that they
     can see their details, including email addresses.
     """
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, 'no-priv@canonical.com')
