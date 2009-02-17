@@ -42,15 +42,6 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         self.assertProvides(
             GenericBranchCollection(self.store), IBranchCollection)
 
-    def test_name(self):
-        collection = GenericBranchCollection(self.store, name="foo")
-        self.assertEqual('foo', collection.name)
-
-    def test_displayname(self):
-        collection = GenericBranchCollection(
-            self.store, displayname='Foo Bar')
-        self.assertEqual('Foo Bar', collection.displayname)
-
     def test_getBranches_no_filter_no_branches(self):
         # If no filter is specified, then the collection is of all branches in
         # Launchpad. By default, there are no branches.

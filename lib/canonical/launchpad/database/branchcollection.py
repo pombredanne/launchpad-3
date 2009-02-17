@@ -30,8 +30,7 @@ class GenericBranchCollection:
 
     implements(IBranchCollection)
 
-    def __init__(self, store, branch_filter_expressions=None, tables=None,
-                 name=None, displayname=None):
+    def __init__(self, store, branch_filter_expressions=None, tables=None):
         self._store = store
         if branch_filter_expressions is None:
             branch_filter_expressions = []
@@ -43,8 +42,6 @@ class GenericBranchCollection:
             tables = [Branch, LeftJoin(Product, Branch.product == Product.id),
                       Join(Owner, Branch.owner == Owner.id)]
         self._tables = tables
-        self.name = name
-        self.displayname = displayname
 
     def count(self):
         """See `IBranchCollection`."""
@@ -57,8 +54,7 @@ class GenericBranchCollection:
         # See http://paste.ubuntu.com/118711/ for one way to do that.
         return self.__class__(
             self._store, self._branch_filter_expressions + list(expressions),
-            self._tables + tables, name=self.name,
-            displayname=self.displayname)
+            self._tables + tables)
 
     def getBranches(self):
         """See `IBranchCollection`."""
