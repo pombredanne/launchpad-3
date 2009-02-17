@@ -314,9 +314,6 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             set([self.public_branch, private_branch]),
             set(branches.getBranches()))
 
-    # XXX: Unclear what will happen with multiple user visiblity filters
-    # applied.
-
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
