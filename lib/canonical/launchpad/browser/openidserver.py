@@ -791,7 +791,7 @@ class ProtocolErrorView(LaunchpadView):
         return self.context.encodeToKVForm()
 
 
-class PreAuthorizeRPView(LaunchpadView):
+class PreAuthorizeRPView(OpenIDMixin, LaunchpadView):
     """Pre-authorize an OpenID consumer.
 
     This page expects to find a 'trust_root' and a 'callback' query parameters
