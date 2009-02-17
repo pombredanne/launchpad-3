@@ -217,10 +217,8 @@ proposals by their status.
 Or I can look for anything that is approved.
 
     >>> login('admin@canonical.com')
-    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.branchmergeproposal import (
     ...     BranchMergeProposalStatus)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> fixit_proposal.approveBranch(fixit_proposal.target_branch.owner, '1')
     >>> logout()
 
@@ -260,29 +258,16 @@ the proposal if they have allowed the API to access private bits.
 It is possible to view all of a person's merge proposals of filter their
 proposals by their status.
 
-    >>> proposals = webservice.named_get(
-    ...     '/~source', 'getMergeProposals').jsonBody()
-    >>> for proposal in proposals['entries']:
-    ...     print_proposal(proposal)
+    >>> print_fooix_proposals(service)
     http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/1 - Approved
 
 The person's proposals can also be filtered by status.
 
     >>> login('foo.bar@canonical.com')
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.branchmergeproposal import (
-    ...     BranchMergeProposalStatus)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'foo.bar@canonical.com')
-    >>> fixit_proposal.rejectBranch(sample_person, '1')
+    >>> fixit_proposal.rejectBranch(fixit_proposal.target_branch.owner, '1')
     >>> logout()
 
-    >>> proposals = webservice.named_get(
-    ...     '/fooix', 'getMergeProposals',
-    ...     status=[BranchMergeProposalStatus.REJECTED.title]).jsonBody()
-    >>> for proposal in proposals['entries']:
-    ...     print_proposal(proposal)
+    >>> print_fooix_proposals(service,
+    ...     status=[BranchMergeProposalStatus.REJECTED.title])
     http://.../~source/fooix/fix-it/+merge/1 - Rejected
-
 
