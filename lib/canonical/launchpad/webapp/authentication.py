@@ -73,36 +73,37 @@ class PlacelessAuthUtility:
     def _authenticateUsingCookieAuth(self, request):
         session = ISession(request)
         authdata = session['launchpad.authenticateduser']
-        account_id = authdata.get('accountid')
-        if account_id is None:
-            # This is for backwards compatibility, when we used to store the
-            # person's ID in the session.
-            account_id = authdata.get('personid')
+        id = authdata.get('accountid')
+        id_is_from_person = False
+        if id is None:
+            # XXX: salgado, 2009-02-17: This is for backwards compatibility,
+            # when we used to store the person's ID in the session.
+            id = authdata.get('personid')
+            if id is None:
+                return None
+            id_is_from_person = True
 
-        if account_id is None:
+        login_src = getUtility(IPlacelessLoginSource)
+        principal = login_src.getPrincipal(
+            id, id_is_from_person=id_is_from_person)
+        # Note, not notifying a LoggedInEvent here as for session-based
+        # auth the login occurs when the login form is submitted, not
+        # on each request.
+        if principal is None:
+            # XXX Stuart Bishop 2006-05-26 bug=33427:
+            # User is authenticated in session, but principal is not"
+            # available in login source. This happens when account has
+            # become invalid for some reason, such as being merged.
             return None
+        elif getUtility(IPersonSet).get(principal.person.id).is_valid_person:
+            request.setPrincipal(principal)
+            login = authdata['login']
+            assert login, 'login is %s!' % repr(login)
+            notify(CookieAuthPrincipalIdentifiedEvent(
+                principal, request, login))
+            return principal
         else:
-            login_src = getUtility(IPlacelessLoginSource)
-            # Note, not notifying a LoggedInEvent here as for session-based
-            # auth the login occurs when the login form is submitted, not
-            # on each request.
-            principal = login_src.getPrincipal(account_id)
-            if principal is None:
-                # XXX Stuart Bishop 2006-05-26 bug=33427:
-                # User is authenticated in session, but principal is not"
-                # available in login source. This happens when account has
-                # become invalid for some reason, such as being merged.
-                return None
-            elif getUtility(IPersonSet).get(
-                    principal.person.id).is_valid_person:
-                request.setPrincipal(principal)
-                login = authdata['login']
-                assert login, 'login is %s!' % repr(login)
-                notify(CookieAuthPrincipalIdentifiedEvent(
-                    principal, request, login))
-                return principal
-            else:
-                return None
+            return None
 
     def authenticate(self, request):
         """See IAuthenticationUtility."""
@@ -136,10 +137,13 @@ class PlacelessAuthUtility:
         # TODO maybe configure the realm from zconfigure.
         a.needLogin(realm="launchpad")
 
-    def getPrincipal(self, id):
+    # XXX: salgado, 2009-02-17: The id_is_from_person argument here is for
+    # backwards compatibility, when we used to store the person's ID in the
+    # session.
+    def getPrincipal(self, id, id_is_from_person=False):
         """See IAuthenticationUtility."""
         utility = getUtility(IPlacelessLoginSource)
-        return utility.getPrincipal(id)
+        return utility.getPrincipal(id, id_is_from_person=id_is_from_person)
 
     def getPrincipals(self, name):
         """See IAuthenticationUtility."""
@@ -200,8 +204,11 @@ class LaunchpadLoginSource:
     """
     implements(IPlacelessLoginSource)
 
-    def getPrincipal(self, id, access_level=AccessLevel.WRITE_PRIVATE,
-                     scope=None):
+    # XXX: salgado, 2009-02-17: The id_is_from_person argument here is for
+    # backwards compatibility, when we used to store the person's ID in the
+    # session.
+    def getPrincipal(self, id, id_is_from_person=False,
+                     access_level=AccessLevel.WRITE_PRIVATE, scope=None):
         """Return an `ILaunchpadPrincipal` for the account with the given id.
 
         Return None if there is no account with the given id.
@@ -218,9 +225,14 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        account = getUtility(IAccountSet).get(id)
-        if account is not None:
-            person = IPerson(account)
+        person = None
+        if id_is_from_person:
+            person = getUtility(IPersonSet).get(id)
+        else:
+            account = getUtility(IAccountSet).get(id)
+            if account is not None:
+                person = IPerson(account)
+        if person is not None:
             return self._principalForPerson(person, access_level, scope)
         else:
             return None
