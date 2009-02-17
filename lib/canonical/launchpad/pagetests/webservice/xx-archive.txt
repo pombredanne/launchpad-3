@@ -45,7 +45,7 @@ We can quickly assign a random OpenPGP key to Celso's PPA.
 
     >>> logout()
 
-And then the new attribute value is exported as string.
+And then the new attribute value is exported as a string.
 
     >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
     >>> print cprov_archive['signing_key_fingerprint']
