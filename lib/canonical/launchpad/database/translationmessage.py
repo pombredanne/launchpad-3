@@ -89,6 +89,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         # Check whether we already have a suitable TranslationMessage, in
         # which case, the dummy one must not be used.
         assert potmsgset.getCurrentTranslationMessage(
+            pofile.potemplate,
             pofile.language) is None, (
                 'This translation message already exists in the database.')
 
@@ -148,6 +149,7 @@ def validate_is_current(self, attr, value):
         # change current one to non current before.
         current_translation_message = (
             self.potmsgset.getCurrentTranslationMessage(
+                self.pofile.potemplate,
                 self.pofile.language, self.pofile.variant))
         if current_translation_message is not None:
             current_translation_message.is_current = False
@@ -174,6 +176,7 @@ def validate_is_imported(self, attr, value):
         # change current one to non current before.
         imported_translation_message = (
             self.potmsgset.getImportedTranslationMessage(
+                self.pofile.potemplate,
                 self.pofile.language, self.pofile.variant))
         if imported_translation_message is not None:
             imported_translation_message.is_imported = False
@@ -308,6 +311,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # it is hidden.
         # If it has not been reviewed yet, it's not hidden.
         current = self.potmsgset.getCurrentTranslationMessage(
+            self.pofile.potemplate,
             self.pofile.language, self.pofile.variant)
         # If there is no current translation, none of the
         # suggestions have been reviewed, so they are all shown.
