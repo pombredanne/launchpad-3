@@ -1076,11 +1076,13 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return subset.new(name, translation_domain, 'messages.pot', owner)
 
-    def makePOFile(self, language_code, potemplate=None, owner=None):
+    def makePOFile(self, language_code, potemplate=None, owner=None,
+                   variant=None):
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        return potemplate.newPOFile(language_code, requester=potemplate.owner)
+        return potemplate.newPOFile(language_code, variant,
+                                    requester=potemplate.owner)
 
     def makePOMsgID(self, text=None):
         """Make a new POMsgID or return an existing one if it's there."""
@@ -1117,10 +1119,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             translator = self.makePerson()
         if translations is None:
             translations = [self.getUniqueString()]
-
-        return potmsgset.updateTranslation(pofile, translator, translations,
-                                           is_imported=False,
-                                           lock_timestamp=None)
+        translation_message = potmsgset.updateTranslation(
+            pofile, translator, translations, is_imported=False,
+            lock_timestamp=None)
+        return translation_message
 
     def makeTeamAndMailingList(self, team_name, owner_name):
         """Make a new active mailing list for the named team.

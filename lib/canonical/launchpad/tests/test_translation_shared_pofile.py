@@ -132,26 +132,83 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
 
     def test_getTranslationsFilteredBy(self):
         """Test that filtering by submitters works."""
-        pass
+        # We start with fresh shared PO templates.
+        self.devel_potemplate.expireAllMessages()
+        self.stable_potemplate.expireAllMessages()
+
+        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
+                                               u"Cheesy text")
+        potmsgset.setSequence(self.devel_potemplate, 1)
+
+        # A person to be submitting all translations.
+        submitter = self.factory.makePerson()
+
+        # When there are no translations, empty list is returned.
+        found_translations = list(
+            self.devel_sr_pofile.getTranslationsFilteredBy(submitter))
+        self.assertEquals(found_translations, [])
+
+        # If 'submitter' provides a translation, it's returned in a list.
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=potmsgset,
+            translations=[u"Translation message"],
+            translator=submitter)
+        found_translations = list(
+            self.devel_sr_pofile.getTranslationsFilteredBy(submitter))
+        self.assertEquals(found_translations, [translation])
+
+        # If somebody else provides a translation, it's not added to the
+        # list of submitter's translations.
+        someone_else = self.factory.makePerson()
+        other_translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=potmsgset,
+            translations=[u"Another translation"],
+            translator=someone_else)
+        found_translations = list(
+            self.devel_sr_pofile.getTranslationsFilteredBy(submitter))
+        self.assertEquals(found_translations, [translation])
+
+        # Adding a translation for same POTMsgSet, but to a different
+        # POFile (i.e. language or variant) will not add the translation
+        # to the list of submitter's translations for *former* POFile.
+        self.devel_sr_latin_pofile = self.factory.makePOFile(
+            'sr', variant=u'latin', potemplate=self.devel_potemplate)
+        latin_translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_latin_pofile, potmsgset=potmsgset,
+            translations=[u"Yet another translation"],
+            translator=submitter)
+        found_translations = list(
+            self.devel_sr_pofile.getTranslationsFilteredBy(submitter))
+        self.assertEquals(found_translations, [translation])
+
+        # If a POTMsgSet is shared between two templates, a
+        # translation is listed on both.
+        potmsgset.setSequence(self.stable_potemplate, 1)
+        found_translations = list(
+            self.stable_sr_pofile.getTranslationsFilteredBy(submitter))
+        self.assertEquals(found_translations, [translation])
+        found_translations = list(
+            self.devel_sr_pofile.getTranslationsFilteredBy(submitter))
+        self.assertEquals(found_translations, [translation])
 
     def test_getPOTMsgSetTranslated(self):
-        """Test listing of translated POTMsgSets."
+        """Test listing of translated POTMsgSets."""
         pass
 
     def test_getPOTMsgSetUntranslated(self):
-        """Test listing of untranslated POTMsgSets."
+        """Test listing of untranslated POTMsgSets."""
         pass
 
     def test_getPOTMsgSetWithNewSuggestions(self):
-        """Test listing of POTMsgSets with unreviewed suggestions."
+        """Test listing of POTMsgSets with unreviewed suggestions."""
         pass
 
     def test_getPOTMsgSetChangedInLaunchpad(self):
-        """Test listing of POTMsgSets which contain changes from imports."
+        """Test listing of POTMsgSets which contain changes from imports."""
         pass
 
     def test_getPOTMsgSetWithErrors(self):
-        """Test listing of POTMsgSets with errors in translations."
+        """Test listing of POTMsgSets with errors in translations."""
         pass
 
     def test_hasMessageID(self):

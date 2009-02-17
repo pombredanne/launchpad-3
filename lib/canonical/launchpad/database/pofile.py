@@ -500,17 +500,25 @@ class POFile(SQLBase, POFileMixIn):
 
     def getTranslationsFilteredBy(self, person):
         """See `IPOFile`."""
-        # We are displaying translations grouped by POTMsgSets,
-        # but since the most common case will be having a single
-        # TranslationMessage per POTMsgSet, we are issuing a slightly
-        # faster SQL query by avoiding a join with POTMsgSet.
         assert person is not None, "You must provide a person to filter by."
+        clauses = [
+            'TranslationTemplateItem.potemplate = %s' % sqlvalues(
+                self.potemplate),
+            'TranslationTemplateItem.potmsgset = TranslationMessage.potmsgset',
+            'TranslationMessage.language = %s' % sqlvalues(self.language),
+            'TranslationMessage.submitter = %s' % sqlvalues(person)
+            ]
+        if self.variant is None:
+            clauses.append(
+                'TranslationMessage.variant IS NULL')
+        else:
+            clauses.append(
+                'TranslationMessage.variant = %s' % sqlvalues(self.variant))
+
         return TranslationMessage.select(
-            """
-            TranslationMessage.pofile = %s AND
-            TranslationMessage.submitter = %s
-            """ % sqlvalues(self, person),
-            orderBy=['potmsgset', '-date_created'])
+            " AND ".join(clauses),
+            clauseTables=['TranslationTemplateItem'],
+            orderBy=['sequence', '-date_created'])
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
