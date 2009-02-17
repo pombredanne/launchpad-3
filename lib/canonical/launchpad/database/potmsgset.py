@@ -151,7 +151,8 @@ class POTMsgSet(SQLBase):
 
         # Singular text is stored as an "English translation."
         translation_message = self.getCurrentTranslationMessage(
-            getUtility(ILaunchpadCelebrities).english)
+            potemplate=None,
+            language=getUtility(ILaunchpadCelebrities).english)
         if translation_message is not None:
             msgstr0 = translation_message.msgstr0
             if msgstr0 is not None:
@@ -344,14 +345,17 @@ class POTMsgSet(SQLBase):
                     for flag in self.flagscomment.replace(' ', '').split(',')
                     if flag != '']
 
-    def hasTranslationChangedInLaunchpad(self, language):
+    def hasTranslationChangedInLaunchpad(self, potemplate, language):
         """See `IPOTMsgSet`."""
-        imported_translation = self.getImportedTranslationMessage(language)
+        imported_translation = self.getImportedTranslationMessage(
+            potemplate, language)
         return (imported_translation is not None and
                 not imported_translation.is_current)
 
     def isTranslationNewerThan(self, pofile, timestamp):
         """See `IPOTMsgSet`."""
+        if timestamp is None:
+            return False
         current = self.getCurrentTranslationMessage(
             pofile.potemplate, pofile.language)
         if current is None:
@@ -602,7 +606,7 @@ class POTMsgSet(SQLBase):
 
         if is_imported:
             imported_message = self.getImportedTranslationMessage(
-                pofile.language, pofile.variant)
+                pofile.potemplate, pofile.language, pofile.variant)
 
         if matching_message is None:
             # Creating a new message.
