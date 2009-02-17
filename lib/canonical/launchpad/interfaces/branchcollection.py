@@ -49,12 +49,6 @@ class IBranchCollection(Interface):
 # - Add person_owner_count
 # - others?
 
-# XXX: find existing tests for all of this crap and migrate / delete it.
-# - database.tests.test_branch
-#   - TestGetBranchForContextVisibleUser
-#   - BranchSorting
-# - others?
-
 # XXX: adapters / easy access methods for common views / concepts
 # - source package
 # - project
@@ -62,4 +56,3 @@ class IBranchCollection(Interface):
 
 # XXX: Possibly add a group-by-namespaces feature
 # XXX: make sure we can get canonical_url of container if it exists.
-# XXX: somehow deal with sort
