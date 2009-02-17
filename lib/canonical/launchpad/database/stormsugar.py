@@ -4,6 +4,10 @@
 
 __metaclass__ = type
 
+
+__all__ = ['ObjectNotFound', 'UnknownProperty', 'ForeignKey', 'Sugar']
+
+
 from storm.locals import Int, Reference, Store, Storm
 from zope.component import getUtility
 
@@ -97,7 +101,7 @@ class Sugar(Storm):
         store = klass.getDefaultStore()
         return store.find(klass, **kwargs)
 
-    def sync(self):
+    def flush(self):
         """Bi-directionally update this object with the database."""
         store = Store.of(self)
         store.flush()

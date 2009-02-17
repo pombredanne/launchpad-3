@@ -8,7 +8,7 @@ from unittest import TestLoader
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from psycopg2 import IntegrityError
-from storm.locals import Int
+from storm.locals import Int, Store
 
 from canonical.launchpad.database.stormsugar import (
     ForeignKey, ObjectNotFound, Sugar, UnknownProperty)
@@ -23,10 +23,17 @@ class SugarDerived(Sugar):
 
     status = Int()
 
+    progress = Int()
+
 
 class TestSugar(TestCase):
 
     layer = DatabaseFunctionalLayer
+
+    def test_init_adds(self):
+        """Default constructor adds to store."""
+        created = SugarDerived(id=500, status=0)
+        self.assertIs(created.master_store, Store.of(created))
 
     def test_init_handles_kwargs(self):
         """Default constructor handles kwargs."""
@@ -57,10 +64,12 @@ class TestSugar(TestCase):
         created.destroySelf()
         self.assertRaises(ObjectNotFound, SugarDerived.get, 500)
 
-    def test_sync_exercises_constraints(self):
-        """Sugar.sync causes constraints to be tested."""
+    def test_flush_exercises_constraints(self):
+        """Sugar.flush causes constraints to be tested."""
         created = SugarDerived(id=500)
-        self.assertRaises(IntegrityError, created.sync)
+        # The IntegrityError is raised because status is not set, and it
+        # has the NOT NULL constraint.
+        self.assertRaises(IntegrityError, created.flush)
 
     def test_selectBy(self):
         """Sugar selectBy works."""
@@ -69,6 +78,18 @@ class TestSugar(TestCase):
         self.assertEqual([obj1], list(SugarDerived.selectBy(status=5)))
         self.assertEqual([], list(SugarDerived.selectBy(status=4)))
         self.assertRaises(AssertionError, SugarDerived.selectBy)
+
+    def test_selectBy_with_multiple_clauses(self):
+        """Multiple kwargs are ANDed."""
+        obj1 = SugarDerived(status=5, progress=1)
+        obj2 = SugarDerived(status=5, progress=2)
+        obj3 = SugarDerived(status=6, progress=2)
+        self.assertEqual(
+            [obj1], list(SugarDerived.selectBy(status=5, progress=1)))
+        self.assertEqual(
+            [obj2], list(SugarDerived.selectBy(status=5, progress=2)))
+        self.assertEqual(
+            [obj3], list(SugarDerived.selectBy(status=6, progress=2)))
 
     def test_ForeignKey(self):
         """ForeignKey works, and defaults to property name."""
