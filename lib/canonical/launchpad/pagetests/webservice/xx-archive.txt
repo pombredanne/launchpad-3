@@ -1,7 +1,7 @@
 = Archives =
 
-PPAs are publisher after its owner and distribution archives after
-their distribution.
+Representations for IArchive can be fetch via the API for PPAs and
+distribution archives.
 
     >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
     >>> print cprov_archive['self_link']
