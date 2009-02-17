@@ -11,7 +11,23 @@ from zope.interface import Interface
 
 
 class IBranchCollection(Interface):
-    """A collection of branches."""
+    """A collection of branches.
+
+    An `IBranchCollection` is an immutable collection of branches. It has two
+    kinds of methods: filter methods and query methods.
+
+    Query methods get information about the contents of collection. See
+    `IBranchCollection.count` and `IBranchCollection.getBranches`.
+
+    Filter methods return new IBranchCollection instances that have some sort
+    of restriction. Examples include `ownedBy`, `visibleByUser` and
+    `inProduct`.
+    """
+
+    # Note to developers: This interface should be extended with more query
+    # methods. It would be great to have methods like getRecentRevisions on
+    # arbitrary branch collections. Other statistical methods would be good
+    # too, e.g. number of different branch owners in this collection.
 
     # XXX: Write tests to guarantee that adapted objects are being secured via
     # this interface.
@@ -53,18 +69,7 @@ class IBranchCollection(Interface):
     def withLifecycleStatus(*statuses):
         """Restrict the collection to branches with the given statuses."""
 
-
-# XXX: revision support
-
-# XXX: counts
-# - Add team_owner_count
-# - Add person_owner_count
-# - others?
-
 # XXX: adapters / easy access methods for common views / concepts
 # - source package
 # - project
 # - global set (i.e. IBranchSet)
-
-# XXX: Possibly add a group-by-namespaces feature
-# XXX: make sure we can get canonical_url of container if it exists.
