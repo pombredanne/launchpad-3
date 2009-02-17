@@ -161,7 +161,12 @@ It's all possible to access the actual subscriptions for the branch.
     >>> print len(subscriptions['entries'])
     1
     >>> pprint_entry(subscriptions['entries'][0])
+    branch_link: u'http://.../~eric/fooix/trunk'
+    max_diff_lines: u"Don't send diffs"
+    notification_level: u'No email'
+    person_link: u'http://.../~eric'
     resource_type_link: u'http://.../#branch_subscription'
+    review_level: u'Email about all changes'
     self_link: u'http://.../~eric/fooix/trunk/+subscription/eric'
 
 
