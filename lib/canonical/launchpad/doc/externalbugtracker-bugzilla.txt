@@ -451,4 +451,12 @@ information to be fetched from the external Bugzilla instance.
     >>> external_bugzilla.getRemoteProduct('84')
     u'product-84'
 
+Sometimes we might not get the product in the bug listing. In these
+cases getRemoteProduct() returns None.
 
+    >>> external_bugzilla = TestBugzilla()
+    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.bug_item_file = 'gnome_bug_li_item_noproduct.xml'
+    >>> external_bugzilla.initializeRemoteBugDB(['84'])
+    >>> print external_bugzilla.getRemoteProduct('84')
+    None

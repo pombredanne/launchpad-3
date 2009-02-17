@@ -245,6 +245,7 @@ class Bugzilla(ExternalBugTracker):
             buglist_page = 'buglist.cgi'
             data = {'form_name'   : 'buglist.cgi',
                     'bug_id_type' : 'include',
+                    'columnlist'  : 'id,product,bug_status,resolution',
                     'bug_id'      : ','.join(bug_ids),
                     }
             if self.version < (2, 17, 1):
@@ -314,10 +315,14 @@ class Bugzilla(ExternalBugTracker):
             self.remote_bug_status[bug_id] = status
 
             product_nodes = bug_node.getElementsByTagName('bz:product')
-            assert len(product_nodes) == 1, (
-                "Should be only one product node for bug %s." % bug_id)
-            product_node = product_nodes[0]
-            self.remote_bug_product[bug_id] = product_node.childNodes[0].data
+            assert len(product_nodes) <= 1, (
+                "Should be at most one product node for bug %s." % bug_id)
+            if len(product_nodes) == 0:
+                self.remote_bug_product[bug_id] = None
+            else:
+                product_node = product_nodes[0]
+                self.remote_bug_product[bug_id] = (
+                    product_node.childNodes[0].data)
 
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`.
