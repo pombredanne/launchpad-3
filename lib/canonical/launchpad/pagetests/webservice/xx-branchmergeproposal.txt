@@ -27,7 +27,7 @@ Branch merge proposals can be fetched through the API.
     >>> target_owner = fixit_proposal.target_branch.owner
     >>> logout()
 
-Don't use Salgado for this test as he is a freaking admin.
+We use the webservice as an unrelated, unprivileged user.
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
@@ -105,8 +105,7 @@ A review can be performed through the API.
     >>> print is_valid
     True
 
-
-A review can be requested of the salgado, since he's a valid reviewer.
+A review can be requested of the person 'target', since he's a valid reviewer.
 
     >>> reviewer_webservice = webservice_for_person(
     ...     target_owner, permission=OAuthPermission.WRITE_PUBLIC)
@@ -215,7 +214,7 @@ proposals by their status.
     http://.../~source/fooix/fix-it/+merge/1 - Work in progress
 
 
-Or I can look for anything that is approved
+Or I can look for anything that is approved.
 
     >>> login('admin@canonical.com')
     >>> from zope.component import getUtility
@@ -236,7 +235,7 @@ Or I can look for anything that is approved
     ...     webservice, status=[BranchMergeProposalStatus.CODE_APPROVED.title])
     http://.../~source/fooix/fix-it/+merge/1 - Approved
 
-If the branch is private it is not visible.
+If the branch is private it is not visible to an unpriveleged user.
 
     >>> login('admin@canonical.com')
     >>> fixit_proposal.source_branch.private = True
