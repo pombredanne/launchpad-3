@@ -52,7 +52,7 @@ class GenericBranchCollection:
 
     def filterBy(self, tables, *expressions):
         """Return a subset of this collection, filtered by 'expressions'."""
-        # No need for explicit 'tables': http://paste.ubuntu.com/118711/
+        # XXX: No need for explicit 'tables': http://paste.ubuntu.com/118711/
         return self.__class__(
             self._store, self._branch_filter_expressions + list(expressions),
             self._tables + tables, name=self.name,
@@ -67,12 +67,6 @@ class GenericBranchCollection:
         # Decorate the result set to work around bug 217644.
         return DecoratedResultSet(results, identity)
 
-    def inSourcePackage(self, source_package):
-        """See `IBranchCollection`."""
-        return self.filterBy(
-            [], Branch.distroseries == source_package.distroseries,
-            Branch.sourcepackagename == source_package.sourcepackagename)
-
     def inProduct(self, product):
         """See `IBranchCollection`."""
         return self.filterBy([], Branch.product == product)
@@ -81,6 +75,12 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self.filterBy(
             [], Product.project == project.id)
+
+    def inSourcePackage(self, source_package):
+        """See `IBranchCollection`."""
+        return self.filterBy(
+            [], Branch.distroseries == source_package.distroseries,
+            Branch.sourcepackagename == source_package.sourcepackagename)
 
     def ownedBy(self, person):
         """See `IBranchCollection`."""

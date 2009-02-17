@@ -25,11 +25,23 @@ class IBranchCollection(Interface):
     def inProduct(product):
         """Restrict the collection to branches in 'product'."""
 
+    def inProject(project):
+        """Restrict the collection to branches in 'project'."""
+
+    def inSourcePackage(package):
+        """Restrict the collection to branches in 'package'."""
+
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
 
     def registeredBy(person):
         """Restrict the collection to branches registered by 'person'."""
+
+    def relatedTo(person):
+        """Restrict the collection to branches related to 'person'.
+
+        That is, branches that 'person' owns, registered or is subscribed to.
+        """
 
     def subscribedBy(person):
         """Restrict the collection to branches subscribed to by 'person'."""
