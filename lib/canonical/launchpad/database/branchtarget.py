@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Branch containers."""
+"""Branch targets."""
 
 __metaclass__ = type
 __all__ = [
@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.branchcontainer import IBranchContainer
+from canonical.launchpad.interfaces.branchtarget import IBranchContainer
 
 
 class PackageContainer:

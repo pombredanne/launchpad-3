@@ -6,7 +6,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.database.branchcontainer import (
+from canonical.launchpad.database.branchtarget import (
     PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer

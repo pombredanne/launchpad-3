@@ -35,7 +35,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
-from canonical.launchpad.database.branchcontainer import (
+from canonical.launchpad.database.branchtarget import (
     PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.database.branchmergeproposal import (
      BranchMergeProposal)

@@ -1,7 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0213
 
-"""Interface for branch containers."""
+"""Interface for branch targets."""
 
 __metaclass__ = type
 __all__ = [
