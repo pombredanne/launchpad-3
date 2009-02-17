@@ -25,7 +25,7 @@ from zope.interface import classProvides, implements
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
-from storm.expr import And, Asc, Count, Desc, Join, LeftJoin, Max, Or, Select
+from storm.expr import And, Asc, Count, Desc, Join, Max, Or, Select
 from storm.info import ClassAlias
 from storm.store import Store
 from sqlobject import (
