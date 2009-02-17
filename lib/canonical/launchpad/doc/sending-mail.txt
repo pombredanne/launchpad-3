@@ -220,6 +220,41 @@ non-ASCII str object is passed, it will throw a UnicodeDecodeError.
     ordinal not in range(128)
 
 
+no_precedence_sendmail
+======================
+
+The no_precedence_sendmail function is like the simple_sendmail function
+except that it does not add the bulk precedence header to the email's headers.
+
+    >>> from canonical.launchpad.mail import no_precedence_sendmail
+
+    >>> msgid = no_precedence_sendmail(
+    ...     from_addr='feedback@launchpad.net',
+    ...     to_addrs='test@canonical.com',
+    ...     subject=u'Forgot password',
+    ...     body=u'Content')
+    >>> transaction.commit()
+
+The message is the same as the one from the simple_sendmail test except
+that the precedence header was not added.
+
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'test@canonical.com'
+    >>> msg['From']
+    'feedback@launchpad.net'
+    >>> msg['Subject']
+    'Forgot password'
+    >>> msg.get_payload(decode=True)
+    'Content'
+    >>> print msg['Precedence']
+    None
+
+
+sendmail
+========
+
 simple_sendmail creates a Message instance, and sends it via another
 function, sendmail. sendmail() can also be used directly if you want to
 send more complicated emails, like emails with attachments.
