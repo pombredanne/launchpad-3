@@ -64,6 +64,7 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, NoSuchBranch,
     user_has_special_branch_access)
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -1457,10 +1458,7 @@ class BranchSet:
     def getBranchesForContext(self, context=None, lifecycle_statuses=None,
                               visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
-        from canonical.launchpad.database.branchcollection import (
-            GenericBranchCollection)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        all_branches = GenericBranchCollection(store)
+        all_branches = getUtility(IAllBranches)
         branches = self._filter_by_context(context, all_branches)
         if lifecycle_statuses:
             branches = branches.withLifecycleStatus(*lifecycle_statuses)
