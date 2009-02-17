@@ -847,3 +847,29 @@ to make that assumption.
   Traceback (most recent call last):
   ...
   TypeError: Result is not a member of BugTaskStatus: 'Not a BugTaskStatus'
+
+
+== Getting the remote product from a remote bug ==
+
+Some ExternalBugTrackers offer a method by which can be used to get the
+remote product for a given remote bug.
+
+IExternalBugTracker defines a method, getRemoteProduct(), which can be
+used to get the remote product from a given bug.
+
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     IExternalBugTracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> external_bugtracker = TestExternalBugTracker(
+    ...     'http://example.com')
+    >>> verifyObject(IExternalBugTracker, external_bugtracker)
+    True
+
+The basic implementation of getRemoteProduct() provided by the basic
+ExternalBugTracker class will only ever return None.
+
+    >>> basic_external_bugtracker = ExternalBugTracker(
+    ...     'http://example.com')
+    >>> basic_external_bugtracker.getRemoteProduct(1)
+    None
