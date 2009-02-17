@@ -8,10 +8,15 @@
     <allow interface="canonical.launchpad.interfaces.branchcollection.IBranchCollection" />
   </class>
 
-
   <adapter for="storm.store.Store"
            provides="canonical.launchpad.interfaces.branchcollection.IBranchCollection"
            factory="canonical.launchpad.database.branchcollection.GenericBranchCollection"
            />
+
+  <securedutility
+     class="canonical.launchpad.database.branchcollection.GenericBranchCollection"
+     provides="canonical.launchpad.interfaces.branchcollection.IAllBranches">
+    <allow interface="canonical.launchpad.interfaces.branchcollection.IAllBranches" />
+  </securedutility>
 
 </configure>

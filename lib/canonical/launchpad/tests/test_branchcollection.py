@@ -16,7 +16,7 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
 from canonical.launchpad.interfaces.branchcollection import (
-    all_branches, IBranchCollection)
+    IAllBranches, IBranchCollection)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
@@ -92,7 +92,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         remove_all_sample_data_branches()
-        self.all_branches = all_branches()
+        self.all_branches = getUtility(IAllBranches)
 
     def test_order_by_product_name(self):
         aardvark = self.factory.makeProduct(name='aardvark')
@@ -228,7 +228,7 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         self.public_branch = self.factory.makeAnyBranch()
         self.private_branch1 = self.factory.makeAnyBranch(private=True)
         self.private_branch2 = self.factory.makeAnyBranch(private=True)
-        self.all_branches = all_branches()
+        self.all_branches = getUtility(IAllBranches)
 
     def test_all_branches(self):
         # Without the visibleByUser filter, all branches are in the

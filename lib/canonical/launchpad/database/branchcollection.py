@@ -10,6 +10,7 @@ __all__ = [
 from storm.expr import And, LeftJoin, Join, Or, Select
 from storm.info import ClassAlias
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.components.decoratedresultset import (
@@ -23,6 +24,8 @@ from canonical.launchpad.interfaces.branch import (
     user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchcollection import IBranchCollection
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class GenericBranchCollection:
@@ -30,7 +33,8 @@ class GenericBranchCollection:
 
     implements(IBranchCollection)
 
-    def __init__(self, store, branch_filter_expressions=None, tables=None):
+    def __init__(self, store=None, branch_filter_expressions=None,
+                 tables=None):
         self._store = store
         if branch_filter_expressions is None:
             branch_filter_expressions = []
@@ -58,7 +62,11 @@ class GenericBranchCollection:
 
     def getBranches(self):
         """See `IBranchCollection`."""
-        results = self._store.using(*(self._tables)).find(
+        if self._store is None:
+            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        else:
+            store = self._store
+        results = store.using(*(self._tables)).find(
             Branch, *(self._branch_filter_expressions))
         def identity(x):
             return x

@@ -5,15 +5,11 @@
 
 __metaclass__ = type
 __all__ = [
-    'all_branches',
+    'IAllBranches',
     'IBranchCollection',
     ]
 
-from zope.component import getUtility
 from zope.interface import Interface
-
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class IBranchCollection(Interface):
@@ -34,11 +30,6 @@ class IBranchCollection(Interface):
     # methods. It would be great to have methods like getRecentRevisions on
     # arbitrary branch collections. Other statistical methods would be good
     # too, e.g. number of different branch owners in this collection.
-
-    # XXX JonathanLange 2009-02-17: At the moment, there is no direct Zope
-    # security for IBranchCollection providers. That is, you can call any
-    # method you want on such a provider. The IBranches they return are
-    # security proxied though.
 
     def count():
         """The number of branches in this collection."""
@@ -78,8 +69,5 @@ class IBranchCollection(Interface):
         """Restrict the collection to branches with the given statuses."""
 
 
-def all_branches(store=None):
-    """Return a collection that represents all branches in Launchpad."""
-    if store is None:
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    return IBranchCollection(store)
+class IAllBranches(IBranchCollection):
+    """An `IBranchCollection` representing all branches in Launchpad."""
