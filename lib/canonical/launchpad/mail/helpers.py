@@ -29,12 +29,12 @@ class IncomingEmailError(Exception):
 
 def get_main_body(signed_msg):
     """Returns the first text part of the email."""
-    msg = signed_msg.signedMessage
+    msg = getattr(signed_msg, 'signedMessage', None)
     if msg is None:
         # The email wasn't signed.
         msg = signed_msg
     if msg.is_multipart():
-        for part in msg.get_payload():
+        for part in msg.walk():
             if part.get_content_type() == 'text/plain':
                 return part.get_payload(decode=True)
     else:
