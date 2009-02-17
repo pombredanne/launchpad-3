@@ -8,12 +8,27 @@
     <allow interface="canonical.launchpad.interfaces.branchtarget.IBranchTarget" />
   </class>
 
+  <adapter for="canonical.launchpad.interfaces.sourcepackage.ISourcePackage"
+           provides="canonical.launchpad.interfaces.branchtarget.IBranchTarget"
+           factory="canonical.launchpad.database.branchtarget.PackageBranchTarget"
+           />
+
   <class class="canonical.launchpad.database.branchtarget.PersonBranchTarget">
     <allow interface="canonical.launchpad.interfaces.branchtarget.IBranchTarget" />
   </class>
 
+  <adapter for="canonical.launchpad.interfaces.person.IPerson"
+           provides="canonical.launchpad.interfaces.branchtarget.IBranchTarget"
+           factory="canonical.launchpad.database.branchtarget.PersonBranchTarget"
+           />
+
   <class class="canonical.launchpad.database.branchtarget.ProductBranchTarget">
     <allow interface="canonical.launchpad.interfaces.branchtarget.IBranchTarget" />
   </class>
+
+  <adapter for="canonical.launchpad.interfaces.product.IProduct"
+           provides="canonical.launchpad.interfaces.branchtarget.IBranchTarget"
+           factory="canonical.launchpad.database.branchtarget.ProductBranchTarget"
+           />
 
 </configure>

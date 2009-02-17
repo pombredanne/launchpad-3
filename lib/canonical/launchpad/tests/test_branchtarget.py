@@ -8,6 +8,7 @@ import unittest
 
 from canonical.launchpad.database.branchtarget import (
     PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -31,6 +32,11 @@ class TestPackageBranchTarget(TestCaseWithFactory):
         self.assertEqual(person, namespace.owner)
         self.assertEqual(sourcepackage, namespace.sourcepackage)
 
+    def test_adapter(self):
+        package = self.factory.makeSourcePackage()
+        target = IBranchTarget(package)
+        self.assertIsInstance(target, PackageBranchTarget)
+
 
 class TestPersonBranchTarget(TestCaseWithFactory):
 
@@ -50,6 +56,11 @@ class TestPersonBranchTarget(TestCaseWithFactory):
         self.assertRaises(AttributeError, lambda: namespace.product)
         self.assertRaises(AttributeError, lambda: namespace.sourcepackage)
 
+    def test_adapter(self):
+        person = self.factory.makePerson()
+        target = IBranchTarget(person)
+        self.assertIsInstance(target, PersonBranchTarget)
+
 
 class TestProductBranchTarget(TestCaseWithFactory):
 
@@ -68,6 +79,11 @@ class TestProductBranchTarget(TestCaseWithFactory):
         namespace = context.getNamespace(person)
         self.assertEqual(namespace.product, product)
         self.assertEqual(namespace.owner, person)
+
+    def test_adapter(self):
+        product = self.factory.makeProduct()
+        target = IBranchTarget(product)
+        self.assertIsInstance(target, ProductBranchTarget)
 
 
 def test_suite():
