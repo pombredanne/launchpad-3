@@ -536,7 +536,8 @@ class TestCodeHandler(TestCaseWithFactory):
         transaction.commit()
 
     def test_processMergeProposalDefaultReviewer(self):
-        # The commands in the merge proposal are parsed.
+        # If no reviewer was requested in the comment body, then the default
+        # reviewer of the target branch is used.
         message, file_alias, source_branch, target_branch = (
             self.factory.makeMergeDirectiveEmail(body=dedent("""\
                 This is the comment.

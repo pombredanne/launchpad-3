@@ -249,7 +249,6 @@ class CodeHandler:
             ensure_not_weakly_authenticated(
                 mail, email_addr, 'not-signed-md.txt',
                 'key-not-registered-md.txt')
-            job = getUtility(ICreateMergeProposalJobSource).create(file_alias)
         except IncomingEmailError, error:
             user = getUtility(ILaunchBag).user
             send_process_error_notification(
@@ -257,6 +256,8 @@ class CodeHandler:
                 'Submit Request Failure',
                 error.message, mail, error.failing_command)
             transaction.abort()
+        else:
+            getUtility(ICreateMergeProposalJobSource).create(file_alias)
         return True
 
     def processCommands(self, context, email_body_text):

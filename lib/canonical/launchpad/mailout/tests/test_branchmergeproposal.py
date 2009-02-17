@@ -248,9 +248,6 @@ new commit message
         self.assertEqual(
             'Requester <requester@example.com>', mailer.from_address)
         self.assertEqual(
-            request.merge_proposal.registrant,
-            request.merge_proposal.root_comment.message.owner)
-        self.assertEqual(
             request.merge_proposal.root_comment,
             mailer.comment)
         self.assertEqual(
