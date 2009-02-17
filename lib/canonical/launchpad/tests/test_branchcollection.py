@@ -15,7 +15,8 @@ from canonical.launchpad.database.branchcollection import (
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
-from canonical.launchpad.interfaces.branchcollection import IBranchCollection
+from canonical.launchpad.interfaces.branchcollection import (
+    all_branches, IBranchCollection)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
@@ -64,17 +65,6 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             self.store, [Branch.product == branch.product])
         self.assertEqual([branch], list(collection.getBranches()))
 
-    def test_order_by_product_name(self):
-        aardvark = self.factory.makeProduct(name='aardvark')
-        badger = self.factory.makeProduct(name='badger')
-        branch_a = self.factory.makeProductBranch(product=aardvark)
-        branch_b = self.factory.makeProductBranch(product=badger)
-        branch_c = self.factory.makePersonalBranch()
-        all_branches = GenericBranchCollection(self.store)
-        self.assertEqual(
-            [branch_a, branch_b, branch_c],
-            list(all_branches.getBranches().order_by(Product.name)))
-
     def test_count(self):
         # The 'count' property of a collection is the number of elements in
         # the collection.
@@ -94,11 +84,30 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             self.store, [Branch.product == branch.product])
         self.assertEqual(1, collection.count())
 
+
+class TestBranchCollectionFilters(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        remove_all_sample_data_branches()
+        self.all_branches = all_branches()
+
+    def test_order_by_product_name(self):
+        aardvark = self.factory.makeProduct(name='aardvark')
+        badger = self.factory.makeProduct(name='badger')
+        branch_a = self.factory.makeProductBranch(product=aardvark)
+        branch_b = self.factory.makeProductBranch(product=badger)
+        branch_c = self.factory.makePersonalBranch()
+        self.assertEqual(
+            [branch_a, branch_b, branch_c],
+            list(self.all_branches.getBranches().order_by(Product.name)))
+
     def test_count_respects_visibleByUser_filter(self):
         branch = self.factory.makeAnyBranch()
         branch2 = self.factory.makeAnyBranch(private=True)
-        all_branches = GenericBranchCollection(self.store)
-        collection = all_branches.visibleByUser(branch.owner)
+        collection = self.all_branches.visibleByUser(branch.owner)
         self.assertEqual(1, collection.getBranches().count())
         self.assertEqual(1, collection.count())
 
@@ -107,7 +116,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         # the given person.
         branch = self.factory.makeAnyBranch()
         branch2 = self.factory.makeAnyBranch()
-        collection = GenericBranchCollection(self.store).ownedBy(branch.owner)
+        collection = self.all_branches.ownedBy(branch.owner)
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_in_product(self):
@@ -120,8 +129,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         branch2 = self.factory.makeProductBranch()
         branch3 = self.factory.makeAnyBranch()
-        all_branches = GenericBranchCollection(self.store)
-        collection = all_branches.inProduct(branch.product)
+        collection = self.all_branches.inProduct(branch.product)
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_inProject(self):
@@ -132,8 +140,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         branch3 = self.factory.makeAnyBranch()
         project = self.factory.makeProject()
         removeSecurityProxy(branch.product).project = project
-        all_branches = GenericBranchCollection(self.store)
-        collection = all_branches.inProject(project)
+        collection = self.all_branches.inProject(project)
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_ownedBy_and_inProduct(self):
@@ -145,18 +152,16 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         branch = self.factory.makeProductBranch(product=product, owner=person)
         branch2 = self.factory.makeAnyBranch(owner=person)
         branch3 = self.factory.makeProductBranch(product=product)
-        all_branches = GenericBranchCollection(self.store)
-        collection = all_branches.inProduct(product).ownedBy(person)
+        collection = self.all_branches.inProduct(product).ownedBy(person)
         self.assertEqual([branch], list(collection.getBranches()))
-        collection = all_branches.ownedBy(person).inProduct(product)
+        collection = self.all_branches.ownedBy(person).inProduct(product)
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_in_source_package(self):
         branch = self.factory.makePackageBranch()
         branch2 = self.factory.makePackageBranch()
         branch3 = self.factory.makeAnyBranch()
-        all_branches = GenericBranchCollection(self.store)
-        collection = all_branches.inSourcePackage(branch.sourcepackage)
+        collection = self.all_branches.inSourcePackage(branch.sourcepackage)
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_withLifecycleStatus(self):
@@ -168,8 +173,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             lifecycle_status=BranchLifecycleStatus.MATURE)
         branch4 = self.factory.makeAnyBranch(
             lifecycle_status=BranchLifecycleStatus.DEVELOPMENT)
-        all_branches = GenericBranchCollection(self.store)
-        collection = all_branches.withLifecycleStatus(
+        collection = self.all_branches.withLifecycleStatus(
             BranchLifecycleStatus.DEVELOPMENT,
             BranchLifecycleStatus.MATURE)
         self.assertEqual(
@@ -181,8 +185,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             owner=registrant, registrant=registrant)
         removeSecurityProxy(branch).owner = self.factory.makePerson()
         self.factory.makeAnyBranch()
-        all_branches = GenericBranchCollection(self.store)
-        collection = all_branches.registeredBy(registrant)
+        collection = self.all_branches.registeredBy(registrant)
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_subscribedBy(self):
@@ -192,8 +195,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.NOEMAIL)
-        all_branches = GenericBranchCollection(self.store)
-        collection = all_branches.subscribedBy(subscriber)
+        collection = self.all_branches.subscribedBy(subscriber)
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_relatedTo(self):
@@ -210,8 +212,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             person, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.NOEMAIL)
-        all_branches = GenericBranchCollection(self.store)
-        related_branches = all_branches.relatedTo(person)
+        related_branches = self.all_branches.relatedTo(person)
         self.assertEqual(
             set([owned_branch, registered_branch, subscribed_branch]),
             set(related_branches.getBranches()))
@@ -224,12 +225,10 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         remove_all_sample_data_branches()
-        store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
         self.public_branch = self.factory.makeAnyBranch()
         self.private_branch1 = self.factory.makeAnyBranch(private=True)
         self.private_branch2 = self.factory.makeAnyBranch(private=True)
-        self.all_branches = GenericBranchCollection(store)
+        self.all_branches = all_branches()
 
     def test_all_branches(self):
         # Without the visibleByUser filter, all branches are in the
