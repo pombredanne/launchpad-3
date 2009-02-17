@@ -12,7 +12,7 @@ from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     CodeReviewNotificationLevel,)
-from canonical.launchpad.database import RevisionMailJob
+from canonical.launchpad.database.branchjob import RevisionMailJob
 
 
 class TestSendbranchmail(TestCaseWithFactory):

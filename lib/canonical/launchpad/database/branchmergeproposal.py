@@ -38,6 +38,7 @@ from canonical.launchpad.database.diff import Diff, PreviewDiff
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageJob, MessageJobAction)
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -209,11 +210,22 @@ class BranchMergeProposal(SQLBase):
         return CodeReviewComment.selectBy(branch_merge_proposal=self.id)
 
     def getComment(self, id):
-        """See `IBranchMergeProposal`."""
+        """See `IBranchMergeProposal`.
+
+        This function can raise WrongBranchMergeProposal."""
         comment = CodeReviewComment.get(id)
         if comment.branch_merge_proposal != self:
             raise WrongBranchMergeProposal
         return comment
+
+    def getVoteReference(self, id):
+        """See `IBranchMergeProposal`.
+
+        This function can raise WrongBranchMergeProposal."""
+        vote = CodeReviewVoteReference.get(id)
+        if vote.branch_merge_proposal != self:
+            raise WrongBranchMergeProposal
+        return vote
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -687,6 +699,31 @@ class BranchMergeProposalGetter:
         return ('%sBranchMergeProposal.source_branch in (%s) '
                 ' AND BranchMergeProposal.target_branch in (%s)'
                 % (query, private_subquery, private_subquery))
+
+    @staticmethod
+    def getVotesForProposals(proposals):
+        """See `IBranchMergeProposalGetter`."""
+        if len(proposals) == 0:
+            return {}
+        ids = [proposal.id for proposal in proposals]
+        store = Store.of(proposals[0])
+        result = dict([(proposal, []) for proposal in proposals])
+        # Make sure that the Person and the review comment are loaded in the
+        # storm cache as the reviewer is displayed in a title attribute on the
+        # merge proposal listings page, and the message is needed to get to
+        # the actual vote for that person.
+        tables = [
+            CodeReviewVoteReference,
+            Join(Person, CodeReviewVoteReference.reviewerID == Person.id),
+            LeftJoin(
+                CodeReviewComment,
+                CodeReviewVoteReference.commentID == CodeReviewComment.id)]
+        results = store.using(*tables).find(
+            (CodeReviewVoteReference, Person, CodeReviewComment),
+            CodeReviewVoteReference.branch_merge_proposalID.is_in(ids))
+        for reference, person, comment in results:
+            result[reference.branch_merge_proposal].append(reference)
+        return result
 
     @staticmethod
     def getVoteSummariesForProposals(proposals):

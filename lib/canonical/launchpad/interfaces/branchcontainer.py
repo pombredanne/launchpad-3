@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0213
 
 """Interface for branch containers."""
 
@@ -18,3 +19,6 @@ class IBranchContainer(Interface):
     """
 
     name = Attribute("The name of the container.")
+
+    def getNamespace(owner):
+        """Return a namespace for this container and the specified owner."""

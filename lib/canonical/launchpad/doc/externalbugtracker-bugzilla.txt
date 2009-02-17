@@ -7,11 +7,21 @@ ExternalBugTracker works.
 
 == Basics ==
 
-The class that implements EBT is called Bugzilla. It works differently
-depending on which version of Bugzilla it is talking to. If it's a
-version we can't parse, UnparseableBugTrackerVersion is raised:
+The class that implements ExternalBugTracker is called Bugzilla.
 
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     IExternalBugTracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> external_bugzilla = Bugzilla('http://example.com')
+    >>> verifyObject(IExternalBugTracker, external_bugzilla)
+    True
+
+The Bugzilla ExternalBugTracker works differently depending on which
+version of Bugzilla it is talking to. If it's a version we can't parse,
+UnparseableBugTrackerVersion is raised:
+
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B4')
