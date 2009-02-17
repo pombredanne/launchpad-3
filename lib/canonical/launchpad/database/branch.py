@@ -1427,20 +1427,42 @@ class BranchSet:
                 [sort for sort in order_by if sort[1] is not column])
         return [direction(column) for direction, column in order_by]
 
-    def getBranchesForContext(self,  context=None, lifecycle_statuses=None,
+    def _filter_by_context(self, context, branches):
+        if context is None:
+            return branches
+        elif IProduct.providedBy(context):
+            return branches.inProduct(context)
+        elif IProject.providedBy(context):
+            return branches.inProject(context)
+        elif IPerson.providedBy(context):
+            return branches.relatedTo(context)
+        elif IBranchPersonSearchContext.providedBy(context):
+            restriction = context.restriction
+            person = context.person
+            if restriction == BranchPersonSearchRestriction.ALL:
+                return branches.relatedTo(person)
+            elif restriction == BranchPersonSearchRestriction.REGISTERED:
+                return branches.registeredBy(person)
+            elif restriction == BranchPersonSearchRestriction.OWNED:
+                return branches.ownedBy(person)
+            elif restriction == BranchPersonSearchRestriction.SUBSCRIBED:
+                return branches.subscribedBy(person)
+            else:
+                raise BadBranchSearchContext(context)
+
+    def getBranchesForContext(self, context=None, lifecycle_statuses=None,
                               visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
-        builder = BranchQueryBuilder(context, lifecycle_statuses)
-        clause = self._generateBranchClause(builder.query, visible_by_user)
-        # Local import to avoid cycles
-        from canonical.launchpad.database import Person, Product
-        Owner = ClassAlias(Person, "owner")
-        clauseTables = [
-            LeftJoin(
-                Join(Branch, Owner, Branch.owner == Owner.id),
-                Product, Branch.product == Product.id)]
-        return Branch.select(clause, clauseTables=clauseTables,
-                             orderBy=self._listingSortToOrderBy(sort_by))
+        from canonical.launchpad.database.branchcollection import (
+            GenericBranchCollection)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        all_branches = GenericBranchCollection(store)
+        branches = self._filter_by_context(context, all_branches)
+        if lifecycle_statuses:
+            branches = branches.withLifecycleStatus(*lifecycle_statuses)
+        branches = branches.visibleByUser(visible_by_user)
+        return branches.getBranches().order_by(
+            self._listingSortToOrderBy(sort_by))
 
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):
