@@ -25,7 +25,7 @@ And subscribe some people to the Firefox source package in Ubuntu.
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox')
     >>> browser.getLink('Subscribe to bug mail').click()
     >>> subscribe_myself = browser.getControl(
-    ...    'I want to subscribe to notifications')
+    ...    'I want to receive these notifications by e-mail')
     >>> subscribe_myself.selected
     False
     >>> subscribe_myself.selected = True
@@ -51,7 +51,7 @@ Sample Person and the Landscape team are now subscribed.
 Sample Person can also unsubscribe himself and the Landscape team.
 
     >>> subscribe_myself = browser.getControl(
-    ...    'I want to subscribe to notifications')
+    ...    'I want to receive these notifications by e-mail')
     >>> subscribe_myself.selected = False
     >>> subscribe_team = browser.getControl('Landscape')
     >>> subscribe_team.selected = False
