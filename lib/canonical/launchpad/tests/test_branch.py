@@ -10,8 +10,7 @@ from storm.locals import Asc, ClassAlias, Desc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.branch import (
-    Branch, BranchSet, DEFAULT_BRANCH_LISTING_SORT)
+from canonical.launchpad.database.branch import Branch, BranchSet
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.interfaces import (

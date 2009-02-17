@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
-    'DEFAULT_BRANCH_LISTING_SORT',
     'RevisionMailJob',
     ]
 
@@ -787,14 +786,6 @@ class Branch(SQLBase):
                 "Cannot delete branch: %s" % self.unique_name)
 
 
-DEFAULT_BRANCH_LISTING_SORT = [
-    BranchListingSort.PRODUCT,
-    BranchListingSort.LIFECYCLE,
-    BranchListingSort.REGISTRANT,
-    BranchListingSort.NAME,
-    ]
-
-
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
 
@@ -1405,6 +1396,13 @@ class BranchSet:
         from canonical.launchpad.database.person import Person
         from canonical.launchpad.database.product import Product
         Owner = ClassAlias(Person, "Owner")
+
+        DEFAULT_BRANCH_LISTING_SORT = [
+            BranchListingSort.PRODUCT,
+            BranchListingSort.LIFECYCLE,
+            BranchListingSort.REGISTRANT,
+            BranchListingSort.NAME,
+            ]
 
         LISTING_SORT_TO_COLUMN = {
             BranchListingSort.PRODUCT: (Asc, Product.name),
