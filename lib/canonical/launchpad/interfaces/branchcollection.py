@@ -73,6 +73,3 @@ class IBranchCollection(Interface):
 # - source package
 # - project
 # - global set (i.e. IBranchSet)
-
-
-# XXX: Merge in trunk and resolve conflicts
