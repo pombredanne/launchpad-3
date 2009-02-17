@@ -87,6 +87,19 @@ class BazaarApplicationView(LaunchpadView):
             num_products=config.launchpad.code_homepage_product_cloud_size)
 
 
+def range_get(range_map, x, default=None):
+    """Get a value for 'x' from 'range_map', defaulting to 'default'.
+
+    A 'range map' is a map where the keys are ordinals. 'range_get' returns
+    the value for the smallest key defined in the map that is larger than 'x'.
+    If no such key exists, 'range_get' returns the default.
+    """
+    bigger_keys = sorted(key for key in range_map.iterkeys() if key > x)
+    if bigger_keys == []:
+        return default
+    return range_map[min(bigger_keys)]
+
+
 class ProductInfo:
 
     delegates(IProduct, 'product')
@@ -137,6 +150,11 @@ class ProductInfo:
 class BazaarProductView:
     """Browser class for products gettable with Bazaar."""
 
+    def _getBranchSize(self, small_count, large_count, num_branches):
+        return range_get(
+            {small_count: 'small',
+             large_count: 'medium'}, num_branches, 'large')
+
     def products(self, num_products=None):
         product_info = sorted(
             list(getUtility(IBranchCloud).getProductsWithInfo(num_products)),
@@ -151,12 +169,8 @@ class BazaarProductView:
             # Projects with no branches are not interesting.
             if num_branches == 0:
                 continue
-            if num_branches > large_count:
-                branch_size = 'large'
-            elif num_branches < small_count:
-                branch_size = 'small'
-            else:
-                branch_size = 'medium'
+            branch_size = self._getBranchSize(
+                small_count, large_count, num_branches)
             elapsed = now - last_revision_date
             yield ProductInfo(
                 product, num_branches, branch_size, elapsed)
