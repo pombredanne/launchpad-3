@@ -240,7 +240,7 @@ class IAccountSet(Interface):
             password=None, password_is_encrypted=False):
         """Create a new `IAccount`.
 
-        :param rationale: An `AccountStatus` value.
+        :param rationale: An `AccountCreationRationale` value.
         :param displayname: The user's display name.
         :param openid_mnemonic: The human-readable component in the account's
             openid_identifier.

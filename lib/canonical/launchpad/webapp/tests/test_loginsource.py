@@ -34,7 +34,7 @@ class LaunchpadLoginSourceTest(unittest.TestCase):
         getPrincipal(), the returned principal will use that.
         """
         principal = self.login_source.getPrincipal(
-            self.sabdfl.id, AccessLevel.WRITE_PUBLIC)
+            self.sabdfl.id, access_level=AccessLevel.WRITE_PUBLIC)
         self.assertEqual(principal.access_level, AccessLevel.WRITE_PUBLIC)
         principal = self.login_source.getPrincipalByLogin(
             self.sabdfl.preferredemail.email, AccessLevel.READ_PUBLIC)

@@ -10,22 +10,31 @@ from zope.session.interfaces import ISession
 from canonical.config import config
 
 from canonical.launchpad.ftests import login
+from canonical.launchpad.interfaces import (
+    AccountCreationRationale, IAccountSet)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, IPlacelessAuthUtility)
 from canonical.launchpad.webapp.login import logInPerson, logoutPerson
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestLoginAndLogout(TestCaseWithFactory):
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.request = LaunchpadTestRequest()
+        # We create an account without a Person here just to make sure the
+        # person and account created later don't end up with the same IDs,
+        # which could happen since they're both sequential.
+        # We need them to be different for one of our tests here.
+        dummy_account = getUtility(IAccountSet).new(
+            AccountCreationRationale.UNKNOWN, 'Dummy name')
         person = self.factory.makePerson('foo.bar@example.com')
+        self.failIfEqual(person.id, person.account.id)
         self.principal = LaunchpadPrincipal(
             person.account.id, person.browsername,
             person.displayname, person)
@@ -74,7 +83,7 @@ class TestLoginAndLogout(TestCaseWithFactory):
         session = ISession(self.request)
         authdata = session['launchpad.authenticateduser']
         self.request.setPrincipal(self.principal)
-        authdata['personid'] = self.principal.id
+        authdata['personid'] = self.principal.person.id
         authdata['logintime'] = datetime.utcnow()
         authdata['login'] = 'foo.bar@example.com'
         notify(CookieAuthLoggedInEvent(self.request, 'foo.bar@example.com'))
@@ -86,6 +95,7 @@ class TestLoginAndLogout(TestCaseWithFactory):
         principal = getUtility(IPlacelessAuthUtility).authenticate(
             self.request)
         self.failUnlessEqual(self.principal.id, principal.id)
+        self.failUnlessEqual(self.principal.person, principal.person)
 
         logoutPerson(self.request)
 
