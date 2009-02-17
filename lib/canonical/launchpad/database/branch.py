@@ -36,7 +36,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
 from canonical.launchpad.database.branchtarget import (
-    PackageContainer, PersonContainer, ProductContainer)
+    PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
 from canonical.launchpad.database.branchmergeproposal import (
      BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -152,11 +152,11 @@ class Branch(SQLBase):
         """See `IBranch`."""
         if self.product is None:
             if self.distroseries is None:
-                return PersonContainer(self.owner)
+                return PersonBranchTarget(self.owner)
             else:
-                return PackageContainer(self.sourcepackage)
+                return PackageBranchTarget(self.sourcepackage)
         else:
-            return ProductContainer(self.product)
+            return ProductBranchTarget(self.product)
 
     @property
     def distribution(self):

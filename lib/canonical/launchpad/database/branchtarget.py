@@ -1,12 +1,12 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 
 """Branch targets."""
 
 __metaclass__ = type
 __all__ = [
-    'PackageContainer',
-    'PersonContainer',
-    'ProductContainer',
+    'PackageBranchTarget',
+    'PersonBranchTarget',
+    'ProductBranchTarget',
     ]
 
 from zope.interface import implements
@@ -14,7 +14,7 @@ from zope.interface import implements
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 
 
-class PackageContainer:
+class PackageBranchTarget:
     implements(IBranchTarget)
 
     def __init__(self, sourcepackage):
@@ -32,7 +32,7 @@ class PackageContainer:
         return PackageNamespace(owner, self.sourcepackage)
 
 
-class PersonContainer:
+class PersonBranchTarget:
     implements(IBranchTarget)
 
     name = '+junk'
@@ -47,7 +47,7 @@ class PersonContainer:
         return PersonalNamespace(owner)
 
 
-class ProductContainer:
+class ProductBranchTarget:
     implements(IBranchTarget)
 
     def __init__(self, product):
