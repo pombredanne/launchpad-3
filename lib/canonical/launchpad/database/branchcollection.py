@@ -132,8 +132,7 @@ class GenericBranchCollection:
                    TeamParticipation.person == person),
                And(BranchSubscription.branch == Branch.id,
                    BranchSubscription.person == TeamParticipation.teamID,
-                   TeamParticipation.person == person)),
-            distinct=True)
+                   TeamParticipation.person == person)))
         return self._filterBy([], Branch.id.is_in(visible_branches))
 
     def withLifecycleStatus(self, *statuses):
