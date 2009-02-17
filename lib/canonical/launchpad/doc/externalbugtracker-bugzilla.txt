@@ -434,3 +434,21 @@ it can be displayed to the user.
     >>> bug_watch2 = getUtility(IBugWatchSet).get(bug_watch2_id)
     >>> bug_watch2.last_error_type.title
     'Unparsable Bug'
+
+
+== Getting Remote Product ==
+
+getRemoteProduct() returns the product a remote bug is associated with
+in Bugzilla. getRemoteProduct() has to be called after
+initializeRemoteBugDB() has been called, in order for the bug
+information to be fetched from the external Bugzilla instance.
+
+    >>> external_bugzilla = TestBugzilla()
+    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.initializeRemoteBugDB(['84'])
+    >>> external_bugzilla.remote_bug_product['84']
+    u'product-84'
+    >>> external_bugzilla.getRemoteProduct('84')
+    u'product-84'
+
+

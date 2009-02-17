@@ -49,6 +49,7 @@ class Bugzilla(ExternalBugTracker):
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
+        self.remote_bug_product = {}
 
     def getExternalBugTrackerToUse(self):
         """Return the correct `Bugzilla` subclass for the current bugtracker.
@@ -312,6 +313,12 @@ class Bugzilla(ExternalBugTracker):
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
 
+            product_nodes = bug_node.getElementsByTagName('bz:product')
+            assert len(product_nodes) == 1, (
+                "Should be only one product node for bug %s." % bug_id)
+            product_node = product_nodes[0]
+            self.remote_bug_product[bug_id] = product_node.childNodes[0].data
+
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`.
 
@@ -331,6 +338,10 @@ class Bugzilla(ExternalBugTracker):
             return self.remote_bug_status[bug_id]
         except KeyError:
             raise BugNotFound(bug_id)
+
+    def getRemoteProduct(self, remote_bug):
+        """See `IExternalBugTracker`."""
+        return self.remote_bug_product[remote_bug]
 
 
 def needs_authentication(func):
