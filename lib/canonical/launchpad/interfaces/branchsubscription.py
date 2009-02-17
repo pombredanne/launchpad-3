@@ -17,6 +17,8 @@ from zope.schema import Choice, Int
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 
 class BranchSubscriptionDiffSize(DBEnumeratedType):
@@ -126,6 +128,7 @@ class CodeReviewNotificationLevel(DBEnumeratedType):
 
 class IBranchSubscription(Interface):
     """The relationship between a person and a branch."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = PublicPersonChoice(
