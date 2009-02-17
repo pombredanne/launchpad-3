@@ -52,7 +52,9 @@ class GenericBranchCollection:
 
     def filterBy(self, tables, *expressions):
         """Return a subset of this collection, filtered by 'expressions'."""
-        # XXX: No need for explicit 'tables': http://paste.ubuntu.com/118711/
+        # XXX: JonathanLange 2009-02-17: We might be able to avoid the need
+        # for explicit 'tables' by harnessing Storm's table inference system.
+        # See http://paste.ubuntu.com/118711/ for one way to do that.
         return self.__class__(
             self._store, self._branch_filter_expressions + list(expressions),
             self._tables + tables, name=self.name,
