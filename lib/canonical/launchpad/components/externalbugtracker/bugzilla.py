@@ -570,6 +570,11 @@ class BugzillaLPPlugin(Bugzilla):
         else:
             return status
 
+    def getRemoteProduct(self, remote_bug):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(remote_bug)
+        return self._bugs[actual_bug_id]['product']
+
     def getCommentIds(self, bug_watch):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(bug_watch.remotebug)
