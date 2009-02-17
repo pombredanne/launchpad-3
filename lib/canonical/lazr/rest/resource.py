@@ -778,15 +778,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             if media_type is None:
                 # The conditional GET succeeded. Serve nothing.
                 return ""
-            elif media_type == self.WADL_TYPE:
-                result = self.toWADL().encode("utf-8")
-            elif media_type == self.JSON_TYPE:
-                result = simplejson.dumps(self, cls=ResourceJSONEncoder)
-            elif media_type == self.XHTML_TYPE:
-                result = self.toXHTML().encode("utf-8")
-
-        self.request.response.setHeader('Content-Type', media_type)
-        return result
+            else:
+                self.request.response.setHeader('Content-Type', media_type)
+                return self._representation(media_type)
 
     def do_PUT(self, media_type, representation):
         """Modify the entry's state to match the given representation.
@@ -855,6 +849,15 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         if field.readonly:
             return not is_external_client
         return True
+
+    def _representation(self, media_type):
+        """Return a representation of this entry, of the given media type."""
+        if media_type == self.WADL_TYPE:
+            return self.toWADL().encode("utf-8")
+        elif media_type == self.JSON_TYPE:
+            return simplejson.dumps(self, cls=ResourceJSONEncoder)
+        elif media_type == self.XHTML_TYPE:
+            return self.toXHTML().encode("utf-8")
 
     def _unmarshallField(self, field_name, field):
         """See what a field would look like in a representation.
@@ -1103,8 +1106,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # If the object didn't move, serve up its representation.
         self.request.response.setStatus(209)
-        self.request.response.setHeader('Content-type', self.JSON_TYPE)
-        return simplejson.dumps(self, cls=ResourceJSONEncoder)
+
+        media_type = self.getPreferredSupportedContentType()
+        self.request.response.setHeader('Content-type', media_type)
+        return self._representation(media_type)
 
 
 class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
