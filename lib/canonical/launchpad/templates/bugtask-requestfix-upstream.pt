@@ -48,7 +48,7 @@
         </div>
       </div>
 
-      <div tal:condition="not: product/official_malone"
+      <div id="upstream-text" tal:condition="not: product/official_malone"
           tal:define="widgets view/bugwatch_widgets;
                       bugtracker product/getExternalBugTracker">
         <p tal:condition="bugtracker">
@@ -60,7 +60,33 @@
           for you.
         </p>
 
-        <p tal:condition="not: bugtracker">
+        <tal:bugtracker-links
+            condition="product/upstream_bugtracker_links"
+            define="links product/upstream_bugtracker_links">
+          <p tal:condition="links/bug_filing_url">
+            If you want to report this bug on
+            <tal:bug-tracker content="bugtracker/title" /> before
+            adding the link to Launchpad you can use the
+            <tal:bug-tracker content="bugtracker/title" />
+            <a id="bug-filing-form-url"
+                tal:attributes="href links/bug_filing_url;
+                                title string:${bugtracker/title}'s bug filing form"
+            >bug filing form</a>.
+          </p>
+
+          <p tal:condition="links/bug_search_url">
+            If you want to search for this bug on
+            <tal:bug-tracker content="bugtracker/title" /> before adding
+            the link to Launchpad you can use the
+            <tal:bug-tracker content="bugtracker/title" />
+            <a id="search-form-url"
+                tal:attributes="href links/bug_search_url;
+                                title string:${bugtracker/title}'s search form"
+            >search form</a>.
+          </p>
+        </tal:bugtracker-links>
+
+        <p tal:condition="not: bugtracker" id="upstream-text">
           <tal:product tal:replace="product/displayname">Evolution</tal:product>
           doesn't use Launchpad to track its bugs. If you know this bug
           has been reported in another bug tracker, you can link to it;

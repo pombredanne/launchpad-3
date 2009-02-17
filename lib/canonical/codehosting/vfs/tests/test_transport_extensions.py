@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Tests for extensions in codehosting.transport."""
+"""Tests for extensions in codehosting.vfs.transport."""
 
 __metaclass__ = type
 
@@ -8,7 +8,7 @@ import unittest
 
 from bzrlib.transport.memory import MemoryTransport
 
-from canonical.codehosting.transport import get_readonly_transport
+from canonical.codehosting.vfs.transport import get_readonly_transport
 from canonical.launchpad.testing import TestCase
 
 

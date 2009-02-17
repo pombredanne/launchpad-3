@@ -346,3 +346,39 @@ proxy redirects to the public http url.
     ...
     Location: http://localhost:58000/95/test-pkg_1.0.dsc
     ...
+
+== Compatibility URL Redirection ==
+
+If a script or otherwise is trying to access +archive/+files, we make
+sure that '+files' isn't understood as the PPA name, but instead
+redirect to the files for the default named PPA.
+
+    >>> file_lp_url_without_ppa_name = file_lp_url.replace('/ppa', '')
+    >>> print file_lp_url_without_ppa_name
+    http://launchpad.dev/~no-priv/+archive/+files/test-pkg_1.0.dsc
+
+    >>> print http(r"""
+    ... GET %s HTTP/1.1
+    ... """ % file_lp_url_without_ppa_name.replace(
+    ...     'http://launchpad.dev', ''))
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://localhost/~no-priv/+archive/ppa/+files/test-pkg_1.0.dsc
+    ...
+
+The same redirection happens for +archive/+build/blah urls:
+
+    >>> buildlog_lp_url_without_ppa_name = buildlog_lp_url.replace(
+    ...     '/ppa', '')
+    >>> print buildlog_lp_url_without_ppa_name
+    http://.../~no-priv/+archive/+build/31/+files/...
+
+    >>> print http(r"""
+    ... GET %s HTTP/1.1
+    ... """ % buildlog_lp_url_without_ppa_name.replace(
+    ...     'http://launchpad.dev', ''))
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://.../~no-priv/+archive/ppa/+build/31/+files/...
+    ...
+
