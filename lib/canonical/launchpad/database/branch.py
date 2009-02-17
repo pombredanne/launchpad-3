@@ -26,7 +26,7 @@ from zope.interface import classProvides, implements
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
-from storm.expr import And, Count, Desc, Join, LeftJoin, Max, Or, Select
+from storm.expr import And, Asc, Count, Desc, Join, LeftJoin, Max, Or, Select
 from storm.info import ClassAlias
 from storm.store import Store
 from sqlobject import (
@@ -787,20 +787,12 @@ class Branch(SQLBase):
                 "Cannot delete branch: %s" % self.unique_name)
 
 
-LISTING_SORT_TO_COLUMN = {
-    BranchListingSort.PRODUCT: 'product.name',
-    BranchListingSort.LIFECYCLE: '-lifecycle_status',
-    BranchListingSort.NAME: 'branch.name',
-    BranchListingSort.REGISTRANT: 'owner.name',
-    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-date_last_modified',
-    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: 'date_last_modified',
-    BranchListingSort.NEWEST_FIRST: '-date_created',
-    BranchListingSort.OLDEST_FIRST: 'date_created',
-    }
-
-
 DEFAULT_BRANCH_LISTING_SORT = [
-    'product.name', '-lifecycle_status', 'owner.name', 'branch.name']
+    BranchListingSort.PRODUCT,
+    BranchListingSort.LIFECYCLE,
+    BranchListingSort.REGISTRANT,
+    BranchListingSort.NAME,
+    ]
 
 
 class DeletionOperation:
@@ -1410,21 +1402,32 @@ class BranchSet:
 
         :param sort_by: an item from the BranchListingSort enumeration.
         """
-        order_by = DEFAULT_BRANCH_LISTING_SORT[:]
-        if sort_by is None:
-            return order_by
-        else:
-            column = LISTING_SORT_TO_COLUMN[sort_by]
-            if column.startswith('-'):
-                variant_column = column[1:]
-            else:
-                variant_column = '-' + column
-            if column in order_by:
-                order_by.remove(column)
-            if variant_column in order_by:
-                order_by.remove(variant_column)
-            order_by.insert(0, column)
-            return order_by
+        from canonical.launchpad.database.person import Person
+        from canonical.launchpad.database.product import Product
+        Owner = ClassAlias(Person, "Owner")
+
+        LISTING_SORT_TO_COLUMN = {
+            BranchListingSort.PRODUCT: (Asc, Product.name),
+            BranchListingSort.LIFECYCLE: (Desc, Branch.lifecycle_status),
+            BranchListingSort.NAME: (Asc, Branch.name),
+            BranchListingSort.REGISTRANT: (Asc, Owner.name),
+            BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: (
+                Desc, Branch.date_last_modified),
+            BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: (
+                Asc, Branch.date_last_modified),
+            BranchListingSort.NEWEST_FIRST: (Desc, Branch.date_created),
+            BranchListingSort.OLDEST_FIRST: (Asc, Branch.date_created),
+            }
+
+        order_by = map(
+            LISTING_SORT_TO_COLUMN.get, DEFAULT_BRANCH_LISTING_SORT)
+
+        if sort_by is not None:
+            direction, column = LISTING_SORT_TO_COLUMN[sort_by]
+            order_by = (
+                [(direction, column)] +
+                [sort for sort in order_by if sort[1] is not column])
+        return [direction(column) for direction, column in order_by]
 
     def getBranchesForContext(self,  context=None, lifecycle_statuses=None,
                               visible_by_user=None, sort_by=None):
