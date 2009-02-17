@@ -208,17 +208,21 @@ class TestGenericBranchCollection(TestCaseWithFactory):
     def test_relatedTo(self):
         person = self.factory.makePerson()
         team = self.factory.makeTeam(person)
-        branch = self.factory.makeAnyBranch(owner=person)
-        branch2 = self.factory.makeAnyBranch(owner=team, registrant=person)
-        branch3 = self.factory.makeAnyBranch()
-        branch3.subscribe(
+        owned_branch = self.factory.makeAnyBranch(owner=person)
+        # Unsubscribe the owner, to demonstrate that we show owned branches
+        # even if they aren't subscribed.
+        owned_branch.unsubscribe(person)
+        registered_branch = self.factory.makeAnyBranch(
+            owner=team, registrant=person)
+        subscribed_branch = self.factory.makeAnyBranch()
+        subscribed_branch.subscribe(
             person, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.NOEMAIL)
         all_branches = GenericBranchCollection(self.store)
         related_branches = all_branches.relatedTo(person)
         self.assertEqual(
-            set([branch, branch2, branch3]),
+            set([owned_branch, registered_branch, subscribed_branch]),
             set(related_branches.getBranches()))
 
 
