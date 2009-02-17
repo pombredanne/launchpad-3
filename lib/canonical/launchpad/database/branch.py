@@ -148,7 +148,7 @@ class Branch(SQLBase):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
 
     @property
-    def container(self):
+    def target(self):
         """See `IBranch`."""
         if self.product is None:
             if self.distroseries is None:
@@ -381,7 +381,7 @@ class Branch(SQLBase):
     def unique_name(self):
         """See `IBranch`."""
         return u'~%s/%s/%s' % (
-            self.owner.name, self.container.name, self.name)
+            self.owner.name, self.target.name, self.name)
 
     @property
     def displayname(self):

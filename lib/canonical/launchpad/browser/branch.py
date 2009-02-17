@@ -110,7 +110,7 @@ class BranchURL:
 
     @property
     def path(self):
-        return '%s/%s' % (self.branch.container.name, self.branch.name)
+        return '%s/%s' % (self.branch.target.name, self.branch.name)
 
 
 class BranchPrimaryContext:
