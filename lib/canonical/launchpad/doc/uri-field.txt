@@ -158,7 +158,7 @@ URIs with an authority but a blank path get canonicalised to a path of
   u'http://launchpad.net/'
 
 
-== Whitespace ==
+== Whitespace and null values ==
 
 Whitespace is stripped from the value:
 
@@ -169,6 +169,11 @@ Whitespace is stripped from the value:
 
   >>> field.normalize('  http://www.ubuntu.com/   ')
   u'http://www.ubuntu.com/'
+
+None is an acceptable value for a URI field.
+
+  >>> print field.normalize(None)
+  None
 
 
 == URIWidget ==

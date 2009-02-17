@@ -456,7 +456,18 @@ cases getRemoteProduct() returns None.
 
     >>> external_bugzilla = TestBugzilla()
     >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> # Make the buglist XML not include the product tag.
     >>> external_bugzilla.bug_item_file = 'gnome_bug_li_item_noproduct.xml'
     >>> external_bugzilla.initializeRemoteBugDB(['84'])
     >>> print external_bugzilla.getRemoteProduct('84')
     None
+
+Requesting the product for a bug that doesn't exist raises BugNotFound.
+
+    >>> external_bugzilla = TestBugzilla()
+    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.initializeRemoteBugDB(['84'])
+    >>> external_bugzilla.getRemoteProduct('42')
+    Traceback (most recent call last):
+    ...
+    BugNotFound: 42

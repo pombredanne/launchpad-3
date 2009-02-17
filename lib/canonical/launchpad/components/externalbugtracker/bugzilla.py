@@ -346,6 +346,8 @@ class Bugzilla(ExternalBugTracker):
 
     def getRemoteProduct(self, remote_bug):
         """See `IExternalBugTracker`."""
+        if remote_bug not in self.remote_bug_product:
+            raise BugNotFound(remote_bug)
         return self.remote_bug_product[remote_bug]
 
 
