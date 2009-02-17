@@ -92,12 +92,11 @@ class ProductInfo:
     delegates(IProduct, 'product')
 
     def __init__(
-        self, product, num_branches, branch_size, elapsed, important):
+        self, product, num_branches, branch_size, elapsed):
         self.product = product
         self.num_branches = num_branches
         self.branch_size = branch_size
         self.elapsed_since_commit = elapsed
-        self.important = important
 
     @property
     def branch_class(self):
@@ -114,17 +113,8 @@ class ProductInfo:
         return "light"
 
     @property
-    def branch_highlight(self):
-        """Return 'highlight' or 'shade'."""
-        if self.important:
-            return 'highlight'
-        else:
-            return 'shade'
-
-    @property
     def html_class(self):
-        return "%s cloud-%s-%s" % (
-            self.branch_class, self.branch_highlight, self.time_darkness)
+        return "%s cloud-%s" % (self.branch_class, self.time_darkness)
 
     @property
     def html_title(self):
@@ -168,7 +158,5 @@ class BazaarProductView:
             else:
                 branch_size = 'medium'
             elapsed = now - last_revision_date
-            # We want to highlight products that actually _use_ Launchpad.
-            important = product.official_codehosting
             yield ProductInfo(
-                product, num_branches, branch_size, elapsed, important)
+                product, num_branches, branch_size, elapsed)

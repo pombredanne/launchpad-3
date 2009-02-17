@@ -1816,23 +1816,14 @@ li {
 .cloud-size-large {
   font-size: 1.7em;
 }
-.cloud-shade-dark {
+.cloud-dark {
   color: #00f;
 }
-.cloud-shade-medium {
+.cloud-medium {
   color: #7878ff;
 }
-.cloud-shade-light {
+.cloud-light {
   color: #b8b8ff;
-}
-.cloud-highlight-dark {
-  color: #00c500;
-}
-.cloud-highlight-medium {
-  color: #90e090;
-}
-.cloud-highlight-light {
-  color: #b8ffb8;
 }
 
 .lowerCaseText {
