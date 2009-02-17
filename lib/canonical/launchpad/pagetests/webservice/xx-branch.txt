@@ -84,9 +84,9 @@ time goes on.
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> service = webservice_for_person(eric)
-    >>> details = webservice.get(branch_url).jsonBody()
+    >>> fooix_trunk = webservice.get(branch_url).jsonBody()
     >>> from canonical.lazr.testing.webservice import pprint_entry
-    >>> pprint_entry(details)
+    >>> pprint_entry(fooix_trunk)
     branch_format: None
     branch_type: u'Hosted'
     bzr_identity: u'lp://dev/~eric/fooix/trunk'
@@ -120,7 +120,7 @@ There is a branch merge proposal with Fooix trunk as the target branch, so it
 should have a branch at the endpoint of landing_candidates.
 
     >>> landing_candidates = webservice.get(
-    ...     details['landing_candidates_collection_link']).jsonBody()
+    ...     fooix_trunk['landing_candidates_collection_link']).jsonBody()
     >>> for candidate in landing_candidates['entries']:
     ...     print candidate['source_branch_link']
     http://.../~person-name23/fooix/branch25
@@ -141,6 +141,28 @@ in its landing_targets.
     ...     print target['target_branch_link']
     http://.../~eric/fooix/trunk
 
+
+== Branch subscriptions ==
+
+It's possible to see all the subscribers to a given branch.
+
+    >>> subscribers = webservice.get(
+    ...     fooix_trunk['subscribers_collection_link']).jsonBody()
+    >>> print len(subscribers['entries'])
+    1
+    >>> for subscriber in subscribers['entries']:
+    ...     print subscriber['display_name']
+    Eric
+
+It's all possible to access the actual subscriptions for the branch.
+
+    >>> subscriptions = webservice.get(
+    ...     fooix_trunk['subscriptions_collection_link']).jsonBody()
+    >>> print len(subscriptions['entries'])
+    1
+    >>> pprint_entry(subscriptions['entries'][0])
+    resource_type_link: u'http://.../#branch_subscription'
+    self_link: u'http://.../~eric/fooix/trunk/+subscription/eric'
 
 
 == Project branches ==
