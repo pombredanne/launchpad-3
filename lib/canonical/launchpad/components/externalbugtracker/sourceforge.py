@@ -97,8 +97,12 @@ class SourceForge(ExternalBugTracker):
                     key, value = urllib.splitvalue(bit)
                     query_dict[key] = value
 
-                atid = int(query_dict['atid'])
-                group_id = int(query_dict['group_id'])
+                try:
+                    atid = int(query_dict.get('atid', None))
+                    group_id = int(query_dict.get('group_id', None))
+                except ValueError:
+                    atid = None
+                    group_id = None
             else:
                 group_id = None
                 atid = None
@@ -248,7 +252,7 @@ class SourceForge(ExternalBugTracker):
         group_id = remote_bug['group_id']
         atid = remote_bug['atid']
 
-        if group_id is None and atid is None:
+        if group_id is None or atid is None:
             return None
         else:
             return (group_id, atid)
