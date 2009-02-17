@@ -955,7 +955,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
 
-    def getMergeProposals(self, status=None):
+    def getMergeProposals(self, status=None, visible_by_user=None):
         """See `IProduct`."""
         if not status:
             status = (
@@ -964,7 +964,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
         return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self, status)
+            self, status, visible_by_user=visible_by_user)
 
 
     def userCanEdit(self, user):

@@ -7,11 +7,16 @@ __metaclass__ = type
 __all__ = [
     'PublishingTunableLoop',
     'process_in_batches',
+    'RepositoryIndexFile',
     ]
 
 
 import gc
+import gzip
 from operator import itemgetter
+import os
+import stat
+import tempfile
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -130,3 +135,84 @@ def process_in_batches(input, task, logger, goal_seconds=60,
     loop_tuner = LoopTuner(loop, goal_seconds=goal_seconds,
                            minimum_chunk_size=minimum_chunk_size)
     loop_tuner.run()
+
+
+class RepositoryIndexFile:
+    """Facilitates the publication of repository index files.
+
+    It allows callsites to publish index files in different medias
+    (plain and gzip) transparently and atomically.
+    """
+
+    def __init__(self, root, temp_root, filename):
+        """Store repositories destinations and filename.
+
+        The given 'temp_root' needs to exist, on the other hand, 'root'
+        will be created on `close` if it doesn't exist.
+
+        Additionally creates the needs temporary files in the given
+        'temp_root'.
+        """
+        self.root = root
+        self.temp_root = temp_root
+        self.filename = filename
+
+        self.temp_plain_path = None
+        self.temp_gz_path = None
+
+        assert os.path.exists(self.temp_root), (
+            'Temporary root does not exist.')
+
+        fd_gz, self.temp_gz_path = tempfile.mkstemp(
+            dir=self.temp_root, prefix='%s-gz_' % filename)
+        self.gz_fd = gzip.GzipFile(fileobj=os.fdopen(fd_gz, "wb"))
+
+        fd, self.temp_plain_path = tempfile.mkstemp(
+            dir=self.temp_root, prefix='%s_' % filename)
+        self.plain_fd = os.fdopen(fd, "wb")
+
+    def __del__(self):
+        """Remove temporary files if they were left behind. """
+        file_paths = (self.temp_plain_path, self.temp_gz_path)
+        for file_path in file_paths:
+            if file_path is not None and os.path.exists(file_path):
+                os.remove(file_path)
+
+    def write(self, content):
+        """Write contents to both target temporary media (plain and gzip)."""
+        self.plain_fd.write(content)
+        self.gz_fd.write(content)
+
+    def close(self):
+        """Close both temporary medias and atomically publish them.
+
+        It also fixes the final files permissions making them readable and
+        writable by their group and readable by others.
+
+        If necessary the given 'root' destination is created at this point.
+        """
+        self.plain_fd.close()
+        self.gz_fd.close()
+
+        if os.path.exists(self.root):
+            assert os.access(
+                self.root, os.W_OK), "%s not writeable!" % self.root
+        else:
+            os.makedirs(self.root)
+
+        # XXX julian 2007-10-03
+        # This is kinda papering over a problem somewhere that causes the
+        # files to get created with permissions that don't allow group/world
+        # read access.  See https://bugs.launchpad.net/soyuz/+bug/148471
+        def makeFileGroupWriteableAndWorldReadable(file_path):
+            mode = stat.S_IMODE(os.stat(file_path).st_mode)
+            os.chmod(
+                file_path, mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IROTH)
+
+        root_plain_path = os.path.join(self.root, self.filename)
+        os.rename(self.temp_plain_path, root_plain_path)
+        makeFileGroupWriteableAndWorldReadable(root_plain_path)
+
+        root_gz_path = os.path.join(self.root, "%s.gz" % self.filename)
+        os.rename(self.temp_gz_path, root_gz_path)
+        makeFileGroupWriteableAndWorldReadable(root_gz_path)

@@ -677,6 +677,13 @@ class HWDriver(SQLBase):
     name = StringCol(notNull=True)
     license = EnumCol(enum=License, notNull=False)
 
+    def getSubmissions(self, distribution=None, distroseries=None,
+                       architecture=None, owner=None):
+        """See `IHWDriver.`"""
+        return HWSubmissionSet().search(
+            driver=self, distribution=distribution,
+            distroseries=distroseries, architecture=architecture, owner=owner)
+
 
 class HWDriverSet:
     """See `IHWDriver`."""
