@@ -881,5 +881,5 @@ capable of dealing with multiple remote products.
 
     >>> basic_external_bugtracker = ExternalBugTracker(
     ...     'http://example.com')
-    >>> basic_external_bugtracker.getRemoteProduct(1)
+    >>> print basic_external_bugtracker.getRemoteProduct(1)
     None
