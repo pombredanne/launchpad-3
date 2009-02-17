@@ -87,16 +87,16 @@ class BazaarApplicationView(LaunchpadView):
             num_products=config.launchpad.code_homepage_product_cloud_size)
 
 
-def range_get(range_map, x, default=None):
+def range_get(range_map, x):
     """Get a value for 'x' from 'range_map', defaulting to 'default'.
 
     A 'range map' is a map where the keys are ordinals. 'range_get' returns
     the value for the smallest key defined in the map that is larger than 'x'.
-    If no such key exists, 'range_get' returns the default.
+    If no such key exists, 'range_get' raises KeyError.
     """
     bigger_keys = sorted(key for key in range_map.iterkeys() if key > x)
     if bigger_keys == []:
-        return default
+        raise KeyError(x)
     return range_map[min(bigger_keys)]
 
 
@@ -150,10 +150,44 @@ class ProductInfo:
 class BazaarProductView:
     """Browser class for products gettable with Bazaar."""
 
-    def _getBranchSize(self, small_count, large_count, num_branches):
-        return range_get(
-            {small_count: 'small',
-             large_count: 'medium'}, num_branches, 'large')
+    def _distribute(self, values, percentiles):
+        """Return a mapping from values to percentiles.
+
+        :param values: A list of ordinal values.
+        :param percentiles: A list of percentage values, represented as
+            floats in the range [0, 1).
+        :return: A dict mapping the value at percentile to the percentile.
+        """
+        assert max(percentiles) < 1.0
+        assert min(percentiles) >= 0.0
+        values.sort()
+        num_values = len(values)
+        distribution = {}
+        last_index = None
+        for cutoff in percentiles:
+            index = int(num_values * cutoff)
+            if last_index != index:
+                distribution[values[index]] = cutoff
+                last_index = index
+        return distribution
+
+    def _make_distribution_map(self, values, percentile_map):
+        """Given some values and a map of percentiles to other values, return
+        a function that will take a value in the same domain as 'values' and
+        map it to a value in the 'percentile_map' dict.
+
+        If the 'percentile_map' dict has an entry for 1.0, that will be used
+        as the default value.
+        """
+        default = percentile_map.pop(1.0, None)
+        distribution = self._distribute(values, percentile_map.keys())
+        def getter(x):
+            try:
+                percentile = range_get(distribution, x)
+                return percentile_map[percentile_map]
+            except KeyError:
+                return default
+        return getter
 
     def products(self, num_products=None):
         product_info = sorted(
@@ -161,16 +195,21 @@ class BazaarProductView:
             key=lambda data: data[0].name)
         now = datetime.today()
         counts = sorted(zip(*product_info)[1])
-        # Lowest half are small.
-        small_count = counts[len(counts)/2]
-        # Top 20% are big.
-        large_count = counts[-(len(counts)/5)]
+        size_mapping = {
+            0.2: 'smallest',
+            0.4: 'small',
+            0.6: 'medium',
+            0.8: 'large',
+            1.0: 'largest',
+            }
+        num_branches_to_size = self._make_distribution_map(
+            counts, size_mapping)
+
         for product, num_branches, last_revision_date in product_info:
             # Projects with no branches are not interesting.
             if num_branches == 0:
                 continue
-            branch_size = self._getBranchSize(
-                small_count, large_count, num_branches)
+            branch_size = num_branches_to_size(num_branches)
             elapsed = now - last_revision_date
             yield ProductInfo(
                 product, num_branches, branch_size, elapsed)
