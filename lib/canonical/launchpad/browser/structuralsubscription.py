@@ -105,7 +105,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         """Create a field for a new subscription."""
         new_subscription_field = Choice(
             __name__='new_subscription',
-            title=u'Subscribe someone else.',
+            title=u'Subscribe someone else',
             vocabulary='ValidPersonOrTeam',
             required=False)
         return form.FormField(new_subscription_field)
