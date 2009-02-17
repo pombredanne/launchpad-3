@@ -1427,6 +1427,9 @@ class IdPublication(LaunchpadBrowserPublication):
 
     root_object_interface = IOpenIDApplication
 
+    # TODO: Need a getPrincipal() here that returns an IOpenIDPrincipal, which
+    # has an account instead of person.  May also need to try adapting it into
+    # an IPerson if the teams extension is used.
 
 class IdBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.IdLayer)

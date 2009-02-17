@@ -7,6 +7,7 @@ __all__ = [
     'get_oauth_authorization',
     'LaunchpadLoginSource',
     'LaunchpadPrincipal',
+    'OpenIDPrincipal',
     'PlacelessAuthUtility',
     'SSHADigestEncryptor',
     ]
@@ -30,12 +31,14 @@ from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccountSet
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.oauth import OAUTH_CHALLENGE
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, BasicAuthLoggedInEvent, CookieAuthPrincipalIdentifiedEvent,
-    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
+    ILaunchpadPrincipal, IOpenIDPrincipal, IPlacelessAuthUtility,
+    IPlacelessLoginSource)
 
 
 class PlacelessAuthUtility:
@@ -71,6 +74,7 @@ class PlacelessAuthUtility:
                         return principal
 
     def _authenticateUsingCookieAuth(self, request):
+        import pdb; pdb.set_trace()
         session = ISession(request)
         authdata = session['launchpad.authenticateduser']
         account_id = authdata.get('accountid')
@@ -93,6 +97,25 @@ class PlacelessAuthUtility:
                 # available in login source. This happens when account has
                 # become invalid for some reason, such as being merged.
                 return None
+            # elif IOpenIDPrincipal.providedBy(principal):
+                # XXX: What do I do here?  
+                # - I need to return None to make
+                #   LaunchpadBrowserPublication.getPrincipal() return the
+                #   unauthenticated principal (so that personless accounts
+                #   navigate through LP anonymously), but 
+                # - I also need to return an IOpenIDPrincipal that will be
+                #   returned by IdPublication.getPrincipal() to tell the
+                #   OpenID views that a user is actually logged in.
+                # 
+                # When a personless account is authenticated, we return None
+                # because the call to login_src.getPrincipal() above returns
+                # None, as there's no Person with the given ID -- the ID
+                # stored in the session is actually the account's ID.
+                # The OpenID tests are not failing because they use
+                # full-fledged accounts, where the id in the Person table is
+                # the same as the id in the Account table. If the account had
+                # no associated Person or their IDs were different, the tests
+                # would fail.
             elif getUtility(IPersonSet).get(
                     principal.person.id).is_valid_person:
                 request.setPrincipal(principal)
@@ -255,12 +278,30 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        person = getUtility(IPersonSet).getByEmail(login)
-        if person is not None:
-            return self._principalForPerson(
-                    person, access_level, scope, want_password)
-        else:
+        email = getUtility(IEmailAddressSet).getByEmail(login)
+        if email is None:
             return None
+        elif email.person is not None:
+            return self._principalForPerson(
+                email.person, access_level, scope, want_password)
+        else:
+            assert email.account is not None
+            return self._OpenIDprincipalForPerson(
+                email.account, access_level, scope, want_password)
+
+    def _OpenIDprincipalForPerson(self, account, access_level, scope,
+                                  want_password=True):
+        naked_account = removeSecurityProxy(account)
+        if want_password:
+            password = naked_account.password
+        else:
+            password = None
+        principal = OpenIDPrincipal(
+            naked_account.id, naked_account.displayname,
+            naked_account.displayname, account, password,
+            access_level=access_level, scope=scope)
+        principal.__parent__ = self
+        return principal
 
     def _principalForPerson(self, person, access_level, scope,
                             want_password=True):
@@ -270,7 +311,7 @@ class LaunchpadLoginSource:
         else:
             password = None
         principal = LaunchpadPrincipal(
-            naked_person.account.id, naked_person.browsername,
+            naked_person.account.id, naked_person.displayname,
             naked_person.displayname, person, password,
             access_level=access_level, scope=scope)
         principal.__parent__ = self
@@ -295,6 +336,32 @@ class LaunchpadPrincipal:
         self.access_level = access_level
         self.scope = scope
         self.person = person
+        self.__pwd = pwd
+
+    def getLogin(self):
+        return self.title
+
+    def validate(self, pw):
+        encryptor = getUtility(IPasswordEncryptor)
+        pw1 = (pw or '').strip()
+        pw2 = (self.__pwd or '').strip()
+        return encryptor.validate(pw1, pw2)
+
+
+# XXX: There's some opportunity for refactoring here, so that these two
+# classes share some code.
+class OpenIDPrincipal:
+
+    implements(IOpenIDPrincipal)
+
+    def __init__(self, id, title, description, account, pwd=None,
+                 access_level=AccessLevel.WRITE_PRIVATE, scope=None):
+        self.id = id
+        self.title = title
+        self.description = description
+        self.access_level = access_level
+        self.scope = scope
+        self.account = account
         self.__pwd = pwd
 
     def getLogin(self):

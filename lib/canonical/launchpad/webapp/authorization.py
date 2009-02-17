@@ -25,7 +25,8 @@ from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.webapp.interfaces import (
-    AccessLevel, IAuthorization, ILaunchpadContainer, ILaunchpadPrincipal)
+    AccessLevel, IAuthorization, ILaunchpadContainer, ILaunchpadPrincipal,
+    IOpenIDPrincipal)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 
 
@@ -189,7 +190,16 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             else:
                 user = IPerson(principal, None)
                 if user is None:
-                    result = authorization.checkUnauthenticated()
+                    if IOpenIDPrincipal.providedBy(principal):
+                        # XXX: salgado, 2009-02-11: This is a hack to make it
+                        # possible for OpenID users to have access to their
+                        # email addresses and their accounts.  This ought to
+                        # be removed when we move OpenID out of our tree into
+                        # a standalone lazr module.
+                        result = authorization.checkAuthenticated(
+                            principal.account)
+                    else:
+                        result = authorization.checkUnauthenticated()
                 else:
                     result = authorization.checkAuthenticated(user)
                 if type(result) is not bool:

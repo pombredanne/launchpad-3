@@ -632,6 +632,12 @@ class ILaunchpadPrincipal(IPrincipal):
     person = Attribute("The IPerson the principal represents.")
 
 
+class IOpenIDPrincipal(IPrincipal):
+    """Marker interface for OpenID principals."""
+
+    account = Attribute("The Account the principal represents.")
+
+
 #
 # Browser notifications
 #

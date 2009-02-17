@@ -185,8 +185,15 @@ class EditAccount(AuthorizationBase):
     # This is wrong as we need to give an Account rather than a
     # Person ability to edit an account.
     def checkAuthenticated(self, user):
-        return ((user.account is not None and user.account.id == self.obj.id)
-                or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+        # XXX: salgado, 2009-02-13: Thanks to our hack in
+        # webapp/authorization.py, this method may be called with user
+        # being either a Person or an Account, so we have to do this here.
+        if IAccount.providedBy(user):
+            return user.id == self.obj.id
+        else:
+            account = user.account
+            return ((account is not None and account.id == self.obj.id)
+                    or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
 
 class ViewAccount(EditAccount):
@@ -1985,6 +1992,10 @@ class ViewEmailAddress(AuthorizationBase):
 
     def checkUnauthenticated(self):
         """See `AuthorizationBase`."""
+        # Email addresses without an associated Person cannot be seen by
+        # anonymous users.
+        if self.obj.person is None:
+            return False
         return not self.obj.person.hide_email_addresses
 
     def checkAuthenticated(self, user):
@@ -1994,6 +2005,17 @@ class ViewEmailAddress(AuthorizationBase):
         hidden, anyone can see them.  Otherwise only the owner himself or
         admins can see them.
         """
+        # XXX: salgado, 2009-02-13: Thanks to our hack in
+        # webapp/authorization.py, this method may be called with user
+        # being either a Person or an Account, so we have to do this here.
+        if IAccount.providedBy(user):
+            return user.id == self.obj.account.id
+
+        # Email addresses without an associated Person cannot be seen by
+        # others.
+        if self.obj.person is None:
+            return False
+
         if not self.obj.person.hide_email_addresses:
             return True
         celebrities = getUtility(ILaunchpadCelebrities)

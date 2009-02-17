@@ -179,6 +179,9 @@ class LaunchpadBrowserPublication(
         self.maybeRestrictToTeam(request)
         self.maybeBlockOffsiteFormPost(request)
 
+    # XXX: Return auth_utility.unauthenticatedPrincipal() here if the account
+    # has no Person associated with.  This is to make LP think that users with
+    # personless-accounts are anonymous.
     def getPrincipal(self, request):
         """Return the authenticated principal for this request."""
         auth_utility = getUtility(IPlacelessAuthUtility)
