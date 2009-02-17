@@ -41,7 +41,9 @@ IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
 IPersonPublic['getMergeProposals'].queryTaggedValue(
-    'lazr.webservice.exported')['return_type'].schema = IBranchMergeProposal
-IPersonPublic['getMergeProposals'].queryTaggedValue('lazr.webservice.exported'
-    )['params']['status'].value_type.vocabulary = BranchMergeProposalStatus
+    'lazr.webservice.exported')['return_type'].value_type.schema = \
+        IBranchMergeProposal
+IPersonPublic['getMergeProposals'].queryTaggedValue(
+    'lazr.webservice.exported')['params']['status'].value_type.vocabulary = \
+        BranchMergeProposalStatus
 
