@@ -117,7 +117,7 @@ class BranchPrimaryContext:
     """The primary context is the product if there is one."""
 
     # XXX: JonathanLange 2008-12-08 spec=package-branches: Not sure what
-    # should happen to this class, given that IBranchContainer does something
+    # should happen to this class, given that IBranchTarget does something
     # fairly similar.
 
     implements(IPrimaryContext)
