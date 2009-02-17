@@ -47,7 +47,6 @@ from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize,)
-from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
@@ -1428,71 +1427,6 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual(
             (branch, None, product.development_focus),
             branch_set.getByLPPath('bb'))
-
-
-class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
-    """Tests the visible_by_user checks for getBranchesForContext."""
-    layer = DatabaseFunctionalLayer
-
-    # XXX: JonathanLange 2009-01-20 spec=package-branches: These tests should
-    # be removed as part of the migration to IBranchCollection.
-
-    def setUp(self):
-        # Use an admin user to set branch privacy easily.
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
-        self.product = self.factory.makeProduct()
-        self.public_branch = self.factory.makeProductBranch(
-            product=self.product)
-        self.private_branch_1 = self.factory.makeProductBranch(
-            product=self.product, private=True)
-        # Need a second private branch by another owner.
-        self.private_branch_2 = self.factory.makeProductBranch(
-            product=self.product, private=True)
-        self.public_only = set([self.public_branch])
-        self.all_branches = set(
-            [self.public_branch, self.private_branch_1,
-             self.private_branch_2])
-
-    def _getBranches(self, visible_by_user=None):
-        branches = getUtility(IBranchSet).getBranchesForContext(
-            context=self.product, visible_by_user=visible_by_user)
-        return set(branches)
-
-    def test_anonymous_only_sees_public(self):
-        # An anonymous user will only see public branches.
-        self.assertEqual(self.public_only, self._getBranches())
-
-    def test_normal_user_only_sees_public(self):
-        # A user who is not the owner nor special only sees public branches.
-        self.assertEqual(self.public_only, self._getBranches())
-
-    def test_private_owner_sees_public_and_own(self):
-        # A private branch owner can see their private branches and the public
-        # branches.
-        self.assertEqual(set([self.public_branch, self.private_branch_1]),
-                         self._getBranches(self.private_branch_1.owner))
-
-    def test_launchpad_services_sees_all(self):
-        # The special launchpad services identity can see all branches.
-        self.assertEqual(self.all_branches,
-                         self._getBranches(LAUNCHPAD_SERVICES))
-
-    def test_admins_see_all(self):
-        # Launchpad admins see all.
-        admin_user = self.factory.makePerson()
-        celebs = getUtility(ILaunchpadCelebrities)
-        celebs.admin.addMember(admin_user, celebs.admin.teamowner)
-
-        self.assertEqual(self.all_branches, self._getBranches(admin_user))
-
-    def test_bazaar_experts_see_all(self):
-        # Bazaar experts see all.
-        expert = self.factory.makePerson()
-        celebs = getUtility(ILaunchpadCelebrities)
-        celebs.bazaar_experts.addMember(
-            expert, celebs.bazaar_experts.teamowner)
-
-        self.assertEqual(self.all_branches, self._getBranches(expert))
 
 
 class TestBranchJob(TestCaseWithFactory):
