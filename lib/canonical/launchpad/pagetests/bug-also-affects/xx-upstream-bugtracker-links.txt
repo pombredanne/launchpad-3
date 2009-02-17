@@ -68,3 +68,28 @@ will be displayed.
     form. If you want to search for this bug on GnomeGBug GTracker
     before adding the link to Launchpad you can use the GnomeGBug
     GTracker search form...
+
+If the remote bug tracker is one for which Launchpad doesn't offer a bug
+filing link, such as Debbugs, only a search link will be displayed.
+
+    >>> admin_browser.open('http://launchpad.dev/gnome-terminal/+edit')
+    >>> admin_browser.getControl(
+    ...     'In a registered bug tracker:').selected = True
+    >>> admin_browser.getControl(
+    ...     name='field.bugtracker.bugtracker').displayValue = [
+    ...         'Debian Bug tracker']
+    >>> admin_browser.getControl('Change').click()
+
+    >>> user_browser.open('http://launchpad.dev/bugs/13/')
+    >>> user_browser.getLink(url='+choose-affected-product').click()
+    >>> user_browser.getControl('Project').value = 'gnome-terminal'
+    >>> user_browser.getControl('Continue').click()
+
+    >>> text = find_tag_by_id(user_browser.contents, 'upstream-text')
+    >>> print extract_text(text)
+    GNOME Terminal uses Debian Bug tracker to track its bugs.
+    If you know this bug has been reported there, you can link to it;
+    Launchpad will keep track of its status for you.
+    If you want to search for this bug on Debian Bug tracker
+    before adding the link to Launchpad you can use the Debian Bug
+    tracker search form...
