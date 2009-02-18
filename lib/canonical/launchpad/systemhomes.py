@@ -260,6 +260,11 @@ class HWDBApplication:
         """See `IHWDBApplication`."""
         return getUtility(IHWVendorIDSet).idsForBus(bus)
 
+    @property
+    def package_names(self):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWDriverSet).package_names
+
 
 class WebServiceApplication(ServiceRootResource):
     """See `IWebServiceApplication`.
