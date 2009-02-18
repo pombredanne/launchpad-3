@@ -17,7 +17,6 @@ __all__ = [
     'format_address',
     'get_msgid',
     'MailController',
-    'no_precedence_sendmail',
     'sendmail',
     'simple_sendmail',
     'simple_sendmail_from_person',
@@ -98,38 +97,22 @@ def format_address(name, address):
     return str(formataddr((name, address)))
 
 
-def simple_sendmail(from_addr, to_addrs, subject, body, headers=None):
+def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,
+                    bulk=True):
     """Send an email from from_addr to to_addrs with the subject and body
     provided. to_addrs can be a list, tuple, or ASCII string.
 
     Arbitrary headers can be set using the headers parameter. If the value for
     a given key in the headers dict is a list or tuple, the header will be
-    added to the message once for each value in the list.  Note however that
-    the `Precedence` header will always be set to `bulk`, overriding any
-    `Precedence` header in `headers`.
+    added to the message once for each value in the list.
+
+    Note however that the `Precedence` header will be set to `bulk` by
+    default, overriding any `Precedence` header in `headers`.
 
     Returns the `Message-Id`.
     """
     ctrl = MailController(from_addr, to_addrs, subject, body, headers)
-    return ctrl.send()
-
-
-def no_precedence_sendmail(from_addr, to_addrs, subject, body, headers=None):
-    """Construct and send an email without the precedence header.
-
-    Arbitrary headers can be set using the headers parameter. If the value for
-    a given key in the headers dict is a list or tuple, the header will be
-    added to the message once for each value in the list.
-
-    :param from_addrs: The ASCII email address of the sender
-    :param to_addrs: A list, tuple, or ASCII string.
-    :param subject: The Subject header.
-    :param body: The message body.
-    :param headers: A dict of headers to include in the email.
-    :return: the `Message-Id`.
-    """
-    ctrl = MailController(from_addr, to_addrs, subject, body, headers)
-    return ctrl.send(bulk=False)
+    return ctrl.send(bulk=bulk)
 
 
 class MailController(object):

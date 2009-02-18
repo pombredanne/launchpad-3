@@ -219,20 +219,17 @@ non-ASCII str object is passed, it will throw a UnicodeDecodeError.
     UnicodeDecodeError: 'ascii' codec can't decode byte 0xc4 in position 1:
     ordinal not in range(128)
 
+    >>> transaction.abort()
 
-no_precedence_sendmail
-======================
+Passing `bulk=False` to simple_sendmail disables the adding of the bulk
+precedence header to the email's headers.
 
-The no_precedence_sendmail function is like the simple_sendmail function
-except that it does not add the bulk precedence header to the email's headers.
-
-    >>> from canonical.launchpad.mail import no_precedence_sendmail
-
-    >>> msgid = no_precedence_sendmail(
+    >>> msgid = simple_sendmail(
     ...     from_addr='feedback@launchpad.net',
     ...     to_addrs='test@canonical.com',
     ...     subject=u'Forgot password',
-    ...     body=u'Content')
+    ...     body=u'Content',
+    ...     bulk=False)
     >>> transaction.commit()
 
 The message is the same as the one from the simple_sendmail test except

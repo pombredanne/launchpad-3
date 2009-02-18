@@ -21,7 +21,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import no_precedence_sendmail, format_address
+from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
     LoginTokenType)
@@ -72,7 +72,8 @@ class LoginToken(SQLBase):
         from_address = format_address(
             from_name, config.canonical.noreply_from_address)
         to_address = str(self.email)
-        no_precedence_sendmail(from_address, to_address, subject, message)
+        simple_sendmail(
+            from_address, to_address, subject, message, bulk=False)
 
     def sendEmailValidationRequest(self, appurl):
         """See ILoginToken."""
@@ -132,7 +133,7 @@ class LoginToken(SQLBase):
         text = salutation + instructions + token_text + closing
         from_name = 'Launchpad OpenPGP Key Confirmation'
         subject = 'Launchpad: Confirm your OpenPGP Key'
-        self._send_email(from_name, subject , text)
+        self._send_email(from_name, subject, text)
 
     def sendPasswordResetNeutralEmail(self):
         """See ILoginToken."""
