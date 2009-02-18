@@ -17,7 +17,7 @@ from email.Utils import make_msgid
 
 from lazr.delegates import delegates
 import simplejson
-from storm.expr import And, Or, Not
+from storm.expr import And, Or
 from storm.store import Store
 from storm.base import Storm
 import transaction
@@ -931,7 +931,7 @@ class BranchMergeProposalJobDerived(object):
                 Job.id.is_in(Job.ready_jobs),
                 BranchMergeProposal.source_branch == Branch.id,
                 Or(Branch.next_mirror_time == None,
-                   Not(Branch.branch_type == BranchType.HOSTED))
+                   Branch.branch_type != BranchType.HOSTED)
                 ))
         return (klass(job) for job in jobs)
 
