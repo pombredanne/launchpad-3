@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.publishing import (
-    getPublisher, Publisher)
+    Publisher, getPublisher, sha256)
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
@@ -741,10 +741,10 @@ class TestPublisher(TestPublisherBase):
         """
         # Skip this test if it's not being run on Ubuntu/hardy.
         lsb_info = get_lsb_information()
-        if lsb_info['ID'] == 'Ubuntu' and lsb_info['CODENAME'] != 'hardy':
+        if (lsb_info.get('ID') != 'Ubuntu' or
+            lsb_info.get('CODENAME') != 'hardy'):
             return
 
-        from canonical.archivepublisher.publishing import sha256
         def _getSHA256(content):
             """Return checksums for the given content.
 

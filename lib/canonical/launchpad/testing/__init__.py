@@ -433,7 +433,7 @@ def capture_events(callable_obj, *args, **kwargs):
 def get_lsb_information():
     """Returns a dictionary with the LSB host information.
 
-    Code stollen form /usr/bin/lsb-release
+    Code stolen form /usr/bin/lsb-release
     """
     distinfo = {}
     if os.path.exists('/etc/lsb-release'):
