@@ -35,8 +35,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
-from canonical.launchpad.database.branchcontainer import (
-    PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.database.branchmergeproposal import (
      BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -73,6 +71,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -148,15 +147,16 @@ class Branch(SQLBase):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
 
     @property
-    def container(self):
+    def target(self):
         """See `IBranch`."""
         if self.product is None:
             if self.distroseries is None:
-                return PersonContainer(self.owner)
+                target = self.owner
             else:
-                return PackageContainer(self.sourcepackage)
+                target = self.sourcepackage
         else:
-            return ProductContainer(self.product)
+            target = self.product
+        return IBranchTarget(target)
 
     @property
     def distribution(self):
@@ -381,7 +381,7 @@ class Branch(SQLBase):
     def unique_name(self):
         """See `IBranch`."""
         return u'~%s/%s/%s' % (
-            self.owner.name, self.container.name, self.name)
+            self.owner.name, self.target.name, self.name)
 
     @property
     def displayname(self):
