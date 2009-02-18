@@ -368,7 +368,7 @@ class OpenIDPrincipal(BaseLaunchpadPrincipal):
 
     def __init__(self, id, title, description, account, pwd=None,
                  access_level=AccessLevel.WRITE_PRIVATE, scope=None):
-        super(LaunchpadPrincipal, self).__init__(
+        super(OpenIDPrincipal, self).__init__(
             id, title, description, pwd=pwd, access_level=access_level,
             scope=scope)
         self.account = account
