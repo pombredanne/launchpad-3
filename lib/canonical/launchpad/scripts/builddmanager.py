@@ -126,12 +126,7 @@ class BuilddManager(service.Service):
             slave = RecordingSlave(
                 builder.name, builder.url, builder.vm_host,
                 builder.virtualized)
-
-
-            from zope.security.proxy import removeSecurityProxy
-            naked_builder = removeSecurityProxy(builder)
-            naked_builder.resumeSlaveHost = localResume
-            builder.setSlaveForTesting(slave)
+            builder.setSlaveProxy(slave)
 
             builder.dispatchBuildCandidate(candidate)
             recording_slaves.append(slave)

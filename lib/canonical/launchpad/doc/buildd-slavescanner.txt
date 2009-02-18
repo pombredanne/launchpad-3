@@ -227,7 +227,7 @@ automatically is not yet factored into the content class.
 
 Create a mock slave so the builder can operate - one with a failed package.
 
-    >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.PACKAGEFAIL'))
+    >>> a_builder.setSlaveProxy(WaitingSlave('BuildStatus.PACKAGEFAIL'))
 
     >>> bqItem3 = a_build.createBuildQueueEntry()
     >>> setupBuildQueue(bqItem3, a_builder)
@@ -262,7 +262,7 @@ from builder, but Build.buildstate has the right state:
 
 Create a mock slave so the builder can operate - one with a dependency error.
 
-    >>> bqItem4.builder.setSlaveForTesting(
+    >>> bqItem4.builder.setSlaveProxy(
     ...                        WaitingSlave('BuildStatus.DEPFAIL',
     ...                                     'baz (>= 1.0.1)'))
 
@@ -298,7 +298,7 @@ builder, but right state stored in Build entry:
 
   Create a mock slave so the builder can operate - one with a failed chroot.
 
-    >>> bqItem5.builder.setSlaveForTesting(
+    >>> bqItem5.builder.setSlaveProxy(
     ...     WaitingSlave('BuildStatus.CHROOTFAIL'))
     >>> buildergroup.updateBuild(bqItem5)
     CRITICAL:root:***** bob is CHROOTWAIT *****
@@ -328,7 +328,7 @@ available for next build round:
 
 Create a mock slave so the builder can operate - one with a builder error.
 
-    >>> bqItem6.builder.setSlaveForTesting(
+    >>> bqItem6.builder.setSlaveProxy(
     ...     WaitingSlave('BuildStatus.BUILDERFAIL'))
 
     >>> buildergroup.updateBuild(bqItem6)
@@ -360,7 +360,7 @@ BUILDING -> builder still processing the job, simply collect the logtail:
 
 Create a mock slave so the builder can operate - one which is building.
 
-    >>> bqItem7.builder.setSlaveForTesting(BuildingSlave())
+    >>> bqItem7.builder.setSlaveProxy(BuildingSlave())
     >>> builder_id = bqItem7.builder.id
     >>> buildergroup.updateBuild(bqItem7)
 
@@ -384,7 +384,7 @@ next build round:
     >>> setupBuildQueue(bqItem8, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
-    >>> bqItem8.builder.setSlaveForTesting(AbortedSlave())
+    >>> bqItem8.builder.setSlaveProxy(AbortedSlave())
     >>> bqItem8.builder.name
     u'bob'
     >>> buildergroup.updateBuild(bqItem8)
@@ -403,7 +403,7 @@ gets ABORTED.
     >>> setupBuildQueue(bqItem9, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
-    >>> bqItem9.builder.setSlaveForTesting(AbortingSlave())
+    >>> bqItem9.builder.setSlaveProxy(AbortingSlave())
     >>> bqItem9.builder.name
     u'bob'
     >>> buildergroup.updateBuild(bqItem9)
@@ -437,7 +437,7 @@ The build record in question can end up in the following states:
 
 Create a mock slave so the builder gets the right responses for this test.
 
-    >>> bqItem10.builder.setSlaveForTesting(
+    >>> bqItem10.builder.setSlaveProxy(
     ...     WaitingSlave('BuildStatus.OK'))
 
 If the build record wasn't updated before/during the updateBuild
@@ -530,7 +530,7 @@ to it.
 
 Create a mock slave so the builder gets the right responses for this test.
 
-    >>> bqItem10.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+    >>> bqItem10.builder.setSlaveProxy(WaitingSlave('BuildStatus.OK'))
 
 Now in order to emulate a successfully binary upload we will update
 the build record to FULLYBUILT, as the process-upload would do:
@@ -574,7 +574,7 @@ WAITING -> GIVENBACK - slave requested build record to be rescheduled.
 
 Create a mock slave so the builder gets the right responses for this test.
 
-    >>> bqItem11.builder.setSlaveForTesting(
+    >>> bqItem11.builder.setSlaveProxy(
     ...     WaitingSlave('BuildStatus.GIVENBACK'))
     >>> buildergroup.updateBuild(bqItem11)
     WARNING:root:***** 1-1 is GIVENBACK by bob *****
@@ -611,7 +611,7 @@ cases, and even so should be refused when we try to upload it.)
 
 Create a mock slave so the builder gets the right responses for this test.
 
-    >>> bqItem12.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+    >>> bqItem12.builder.setSlaveProxy(WaitingSlave('BuildStatus.OK'))
     >>> buildergroup.updateBuild(bqItem12)
     Traceback (most recent call last):
     ...
@@ -621,7 +621,7 @@ Create a mock slave so the builder gets the right responses for this test.
 The buildlog is collected and compressed locally using gzip algorithm,
 let's see how this method works:
 
-    >>> bqItem10.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+    >>> bqItem10.builder.setSlaveProxy(WaitingSlave('BuildStatus.OK'))
 
 Before collecting and processing the buildlog we will store the files
 already created in /tmp so we can verify later that this mechanism is
@@ -944,7 +944,7 @@ or not (like pkgstriptranslations and pkgmaintainermangler).
 Please note also that the 'archive_private' flag is passed to the slave
 builder.  It is True for private archives and False otherwise.
 
-    >>> a_builder.setSlaveForTesting(OkSlave())
+    >>> a_builder.setSlaveProxy(OkSlave())
     >>> a_builder.is_available
     True
     >>> candidate = a_build.createBuildQueueEntry()
@@ -971,7 +971,7 @@ API/UI method to request the dispatch in advance.
 
     >>> a_builder.manual = True
     >>> commit()
-    >>> a_builder.setSlaveForTesting(OkSlave())
+    >>> a_builder.setSlaveProxy(OkSlave())
     >>> a_builder.is_available
     True
     >>> candidate = a_build.createBuildQueueEntry()
@@ -996,7 +996,7 @@ addition to a reference to the release pocket in the partner archive itself.
     >>> partner_archive = ubuntu.getArchiveByComponent('partner')
     >>> removeSecurityProxy(a_build).archive = partner_archive
     >>> commit()
-    >>> a_builder.setSlaveForTesting(OkSlave())
+    >>> a_builder.setSlaveProxy(OkSlave())
     >>> a_builder.is_available
     True
 
@@ -1042,7 +1042,7 @@ hoary/i386. It's not passed to the builder.
 Let's try it again.
 
     >>> candidate.destroySelf()
-    >>> a_builder.setSlaveForTesting(OkSlave())
+    >>> a_builder.setSlaveProxy(OkSlave())
     >>> a_builder.is_available
     True
 
@@ -1101,7 +1101,7 @@ Similarly, PPA builds pass the 'archives' arguments:
     >>> a_builder.virtualized = True
     >>> a_builder.vm_host = 'localhost.ppa'
     >>> commit()
-    >>> a_builder.setSlaveForTesting(OkSlave())
+    >>> a_builder.setSlaveProxy(OkSlave())
     >>> a_builder.is_available
     True
 
@@ -1188,7 +1188,7 @@ the restricted librarian.
     >>> candidate = a_build.createBuildQueueEntry()
     >>> setupBuildQueue(candidate, a_builder)
     >>> candidate.build.upload_log = None
-    >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+    >>> candidate.builder.setSlaveProxy(WaitingSlave('BuildStatus.OK'))
     >>> buildergroup.updateBuild(candidate)
 
     >>> candidate.build.archive.private
@@ -1245,7 +1245,7 @@ Now we can see that a build from Celso's PPA will be able to install
 dependencies from Mark's PPA, if Mark's PPA has at least one binary
 published in hoary/i386, which is not the case.
 
-    >>> a_builder.setSlaveForTesting(OkSlave())
+    >>> a_builder.setSlaveProxy(OkSlave())
     >>> a_builder.is_available
     True
 
@@ -1270,7 +1270,7 @@ published in hoary/i386, which is not the case.
 We will create the required publication in Mark's PPA and try again.
 
     >>> candidate.destroySelf()
-    >>> a_builder.setSlaveForTesting(OkSlave())
+    >>> a_builder.setSlaveProxy(OkSlave())
     >>> a_builder.is_available
     True
 
@@ -1444,23 +1444,23 @@ the current slave state. This tuple should contain, in this order:
  * dependencies string: 'bar baz zaz' or None
 
 
-    >>> a_builder.setSlaveForTesting(OkSlave())
+    >>> a_builder.setSlaveProxy(OkSlave())
     >>> a_builder.slaveStatus()
     ('BuilderStatus.IDLE', '', None, None, None, None)
 
-    >>> a_builder.setSlaveForTesting(BuildingSlave())
+    >>> a_builder.setSlaveProxy(BuildingSlave())
     >>> a_builder.slaveStatus()
     ('BuilderStatus.BUILDING', '1-1', None, <xmlrpclib.Binary ...>, None, None)
 
-    >>> a_builder.setSlaveForTesting(WaitingSlave(state='BuildStatus.OK'))
+    >>> a_builder.setSlaveProxy(WaitingSlave(state='BuildStatus.OK'))
     >>> a_builder.slaveStatus()
     ('BuilderStatus.WAITING', '1-1', 'BuildStatus.OK', None, {}, None)
 
-    >>> a_builder.setSlaveForTesting(AbortingSlave())
+    >>> a_builder.setSlaveProxy(AbortingSlave())
     >>> a_builder.slaveStatus()
     ('BuilderStatus.ABORTING', '1-1', None, None, None, None)
 
-    >>> a_builder.setSlaveForTesting(AbortedSlave())
+    >>> a_builder.setSlaveProxy(AbortedSlave())
     >>> a_builder.slaveStatus()
     ('BuilderStatus.ABORTED', '1-1', None, None, None, None)
 

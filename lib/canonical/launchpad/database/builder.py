@@ -240,9 +240,9 @@ class Builder(SQLBase):
         # slave in various states - which can be hard to create.
         return BuilderSlave(self.url)
 
-    def setSlaveForTesting(self, new_slave):
+    def setSlaveProxy(self, proxy):
         """See IBuilder."""
-        self.slave = new_slave
+        self.slave = proxy
 
     def _verifyBuildRequest(self, build_queue_item, logger):
         """Assert some pre-build checks.
