@@ -45,18 +45,11 @@ We can quickly assign a random OpenPGP key to Celso's PPA.
 
     >>> logout()
 
-And then check the new attribute value is exported as string.
+And then the new attribute value is exported as a string.
 
     >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
-    >>> pprint_entry(cprov_archive)
-    description: u'packages to help my friends.'
-    distribution_link: u'http://.../ubuntu'
-    name: u'ppa'
-    owner_link: u'http://.../~cprov'
-    resource_type_link: u'http://.../#archive'
-    self_link: u'http://.../~cprov/+archive/ppa'
-    signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
-    title: u'PPA for Celso Providelo'
+    >>> print cprov_archive['signing_key_fingerprint']
+    ABCDEF0123456789ABCDDCBA0000111112345678
 
 Distributions can provide information about their archives.  Looking
 at "ubuntutest":
