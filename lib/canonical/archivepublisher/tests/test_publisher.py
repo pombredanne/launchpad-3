@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.interfaces.archivesigningkey import (
     IArchiveSigningKey)
+from canonical.launchpad.testing import get_lsb_information
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.zeca.ftests.harness import ZecaTestSetup
 
@@ -717,6 +718,8 @@ class TestPublisher(TestPublisherBase):
     def testAptSHA256(self):
         """Test issues with python-apt in Ubuntu/hardy.
 
+        This test only runs on Ubuntu/hardy systems.
+
         The version of python-apt in Ubuntu/hardy has problems with
         contents containing '\0' character.
 
@@ -736,8 +739,12 @@ class TestPublisher(TestPublisherBase):
         See https://bugs.edge.launchpad.net/soyuz/+bug/243630 and
         https://bugs.edge.launchpad.net/soyuz/+bug/269014.
         """
-        from canonical.archivepublisher.publishing import sha256
+        # Skip this test if it's not being run on Ubuntu/hardy.
+        lsb_info = get_lsb_information()
+        if lsb_info['ID'] == 'Ubuntu' and lsb_info['CODENAME'] != 'hardy':
+            return
 
+        from canonical.archivepublisher.publishing import sha256
         def _getSHA256(content):
             """Return checksums for the given content.
 
