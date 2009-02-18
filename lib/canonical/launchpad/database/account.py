@@ -21,7 +21,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
 from canonical.launchpad.webapp.interfaces import (
@@ -124,6 +125,23 @@ class AccountSet:
         """See `IAccountSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(Account, Account.id == id).one()
+
+    def createAccountAndEmail(self, email, rationale, displayname, password,
+                              password_is_encrypted=False):
+        """See `IAccountSet`."""
+        from canonical.launchpad.database.person import generate_nick
+        openid_mnemonic = generate_nick(email)
+        # Convert the PersonCreationRationale to an AccountCreationRationale.
+        account_rationale = getattr(AccountCreationRationale, rationale.name)
+        account = self.new(
+            account_rationale, displayname, openid_mnemonic,
+            password=password, password_is_encrypted=password_is_encrypted)
+        # XXX: Should the account really be in the ACTIVE state?
+        account.status = AccountStatus.ACTIVE
+        # XXX: Should the email really be in the PREFERRED state?
+        email = getUtility(IEmailAddressSet).new(
+            email, status=EmailAddressStatus.PREFERRED, account=account)
+        return account, email
 
     def getByEmail(self, email):
         """See `IAccountSet`."""

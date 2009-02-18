@@ -258,6 +258,11 @@ class IAccountSet(Interface):
         Return None if it doesn't exist.
         """
 
+    def createAccountAndEmail(email, rationale, displayname, password,
+                              password_is_encrypted=False):
+        """
+        """
+
     def getByEmail(email):
         """Return the `IAccount` linked to the given email address.
 

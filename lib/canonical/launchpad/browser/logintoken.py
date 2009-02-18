@@ -46,7 +46,7 @@ from canonical.launchpad.interfaces import (
     IGPGKeyValidationForm, ILoginToken, ILoginTokenSet, INewPersonForm,
     IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, LoginTokenType,
     PersonCreationRationale, ShipItConstants, UnexpectedFormData)
-from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 
 
 UTC = pytz.timezone('UTC')
@@ -128,6 +128,15 @@ class BaseLoginTokenView(OpenIDMixin):
         principal = loginsource.getPrincipalByLogin(email)
         logInPerson(self.request, principal, email)
 
+    @property
+    def has_openid_request(self):
+        """Return True if there's an OpenID request in the user's session."""
+        try:
+            self.restoreRequestFromSession('token' + self.context.token)
+        except UnexpectedFormData:
+            return False
+        return True
+
     def maybeCompleteOpenIDRequest(self):
         """Respond to a pending OpenID request if one is found.
 
@@ -137,10 +146,7 @@ class BaseLoginTokenView(OpenIDMixin):
 
         If no OpenID request is found, None is returned.
         """
-        try:
-            self.restoreRequestFromSession('token' + self.context.token)
-        except UnexpectedFormData:
-            # There is no OpenIDRequest in the session
+        if not self.has_openid_request:
             return None
         self.next_url = None
         return self.renderOpenIDResponse(self.createPositiveResponse())
@@ -777,15 +783,13 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             naked_person.creation_rationale = self._getCreationRationale()
             naked_person.creation_comment = None
         else:
-            person, email = self._createPersonAndEmail(
+            account, person, email = self._createAccountPersonAndEmail(
                 data['displayname'], data['hide_email_addresses'],
                 data['password'])
-            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
-            person.validateAndEnsurePreferredEmail(email)
 
-        self.created_person = person
         self.context.consume()
         self.logInPersonByEmail(removeSecurityProxy(email).email)
+        self.created_person = person
         self.request.response.addInfoNotification(_(
             "Registration completed successfully"))
         self.setNextUrl()
@@ -801,16 +805,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         then use that, otherwise uses
         PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
         """
-        try:
-            self.restoreRequestFromSession('token' + self.context.token)
-        except UnexpectedFormData:
-            # There is no OpenIDRequest in the session, so we'll try to infer
-            # the creation rationale from the token's redirection_url.
-            rationale = self.urls_and_rationales.get(
-                self.context.redirection_url)
-            if rationale is None:
-                rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
-        else:
+        if self.has_openid_request:
             rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
                 self.openid_request.trust_root)
             if rpconfig is not None:
@@ -818,11 +813,23 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             else:
                 rationale = (
                     PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
+        else:
+            # There is no OpenIDRequest in the session, so we'll try to infer
+            # the creation rationale from the token's redirection_url.
+            rationale = self.urls_and_rationales.get(
+                self.context.redirection_url)
+            if rationale is None:
+                rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
         return rationale
 
-    def _createPersonAndEmail(
+    def _createAccountPersonAndEmail(
             self, displayname, hide_email_addresses, password):
-        """Create and return a new Person and EmailAddress.
+        """Create and return a new Account, Person and EmailAddress.
+
+        This method will always create an Account (in the ACTIVE state) and
+        an EmailAddress as the account's preferred one.  However, if the
+        registration process was not started through OpenID, we'll create also
+        a Person.
 
         Use the given arguments and the email address stored in the
         LoginToken (our context).
@@ -830,15 +837,26 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         Also fire ObjectCreatedEvents for both the newly created Person
         and EmailAddress.
         """
+        from zope.security.proxy import removeSecurityProxy
         rationale = self._getCreationRationale()
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-            self.context.email, rationale, displayname=displayname,
-            password=password, passwordEncrypted=True,
-            hide_email_addresses=hide_email_addresses)
+        if self.has_openid_request:
+            person = None
+            account, email = getUtility(IAccountSet).createAccountAndEmail(
+                self.context.email, rationale, displayname,
+                password, password_is_encrypted=True)
+        else:
+            person, email = getUtility(IPersonSet).createPersonAndEmail(
+                self.context.email, rationale, displayname=displayname,
+                password=password, passwordEncrypted=True,
+                hide_email_addresses=hide_email_addresses)
+            notify(ObjectCreatedEvent(person))
+            account = person.account
+            person.validateAndEnsurePreferredEmail(email)
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
 
-        notify(ObjectCreatedEvent(person))
+        notify(ObjectCreatedEvent(account))
         notify(ObjectCreatedEvent(email))
-        return person, email
+        return account, person, email
 
 
 class MergePeopleView(BaseLoginTokenView, LaunchpadView):
