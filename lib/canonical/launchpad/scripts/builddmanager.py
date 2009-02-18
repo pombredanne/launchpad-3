@@ -19,24 +19,20 @@ from canonical.librarian.db import read_transaction, write_transaction
 
 
 class FakeZTM:
-
     def commit(self):
         pass
-
     def abort(self):
         pass
 
 
 class RecordingSlave:
-
     def __init__(self, name, url, vm_host, virtualized):
         self.name = name
         self.url = url
         self.vm_host = vm_host
         self.virtualized = virtualized
-
         self.resume = False
-
+        self.resume_argv = None
         self.calls = []
 
     def __repr__(self):
@@ -76,7 +72,8 @@ class RecordingSlave:
 
         :return: a deferred
         """
-        d = utils.getProcessOutputAndValue(resume_argv[0], resume_argv[1:])
+        d = utils.getProcessOutputAndValue(
+            self.resume_argv[0], self.resume_argv[1:])
         return d
 
 
@@ -151,7 +148,7 @@ class BuilddManager(service.Service):
         for slave in recording_slaves:
             if slave.resume:
                 self.rounds += 1
-                d = slave.resumeHost()
+                d = slave.resumeSlaveHost()
                 d.addCallback(self.checkResume, slave.name)
                 d.addBoth(check_rounds)
 
@@ -205,3 +202,4 @@ class BuilddManager(service.Service):
                 d.addCallback(self.checkDispatch, slave.name)
                 d.addErrback(self.dispatchFail, slave.name)
                 d.addBoth(check_rounds)
+
