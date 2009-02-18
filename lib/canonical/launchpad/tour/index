@@ -68,7 +68,11 @@
                         <p class="screen-holder">
                             <img src="images/home/screens/bugs.jpg" alt="Bug tracking" />
                         </p>
-                        <p>In the free software world, the same code is used by many different communities. Launchpad helps you work with different groups affected by the same bug. By sharing bug reports, statuses, patches and comments you can have a conversation across project boundaries to develop a fix. Even where the bug is tracked in different places with different tools - such as in Bugzilla or Trac - Launchpad can import comments and status information directly into your bug report.
+                        <p>Free software communities often share code, meaning the same bugs can crop up in different contexts.<br /><br />
+                        
+                         With Launchpad, you can share bug reports, statuses, patches and comments across project boundaries. You can even share bug data with other trackers, such as Bugzilla and Trac.<br /><br />
+                         
+                         There's also everything else you need in a bug tracker: web, email and API interfaces, links between bugs and fixes, team-based delegation and more.
                         </p>
                         <ul class="further-links">
                             <li><a href="bugs" accesskey="e" tabindex="3">More about bug tracking</a></li>
