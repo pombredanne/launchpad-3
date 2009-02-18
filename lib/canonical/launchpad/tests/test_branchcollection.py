@@ -40,6 +40,8 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             MAIN_STORE, DEFAULT_FLAVOR)
 
     def test_provides_branchcollection(self):
+        # `GenericBranchCollection` provides the `IBranchCollection`
+        # interface.
         self.assertProvides(
             GenericBranchCollection(self.store), IBranchCollection)
 
@@ -95,6 +97,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.all_branches = getUtility(IAllBranches)
 
     def test_order_by_product_name(self):
+        # The result of getBranches() can be ordered by `Product.name`, no
+        # matter what filters are applied.
         aardvark = self.factory.makeProduct(name='aardvark')
         badger = self.factory.makeProduct(name='badger')
         branch_a = self.factory.makeProductBranch(product=aardvark)
@@ -105,10 +109,13 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             list(self.all_branches.getBranches().order_by(Product.name)))
 
     def test_count_respects_visibleByUser_filter(self):
+        # IBranchCollection.count() returns the number of branches that
+        # getBranches() yields, even when the visibleByUser filter is applied.
         branch = self.factory.makeAnyBranch()
         branch2 = self.factory.makeAnyBranch(private=True)
         collection = self.all_branches.visibleByUser(branch.owner)
         self.assertEqual(1, collection.getBranches().count())
+        self.assertEqual(1, len(list(collection.getBranches())))
         self.assertEqual(1, collection.count())
 
     def test_ownedBy(self):
@@ -158,6 +165,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_in_source_package(self):
+        # 'inSourcePackage' returns a new collection that only has branches in
+        # the given source package.
         branch = self.factory.makePackageBranch()
         branch2 = self.factory.makePackageBranch()
         branch3 = self.factory.makeAnyBranch()
@@ -165,6 +174,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_withLifecycleStatus(self):
+        # 'withLifecycleStatus' returns a new collection that only has
+        # branches with the given lifecycle statuses.
         branch1 = self.factory.makeAnyBranch(
             lifecycle_status=BranchLifecycleStatus.DEVELOPMENT)
         branch2 = self.factory.makeAnyBranch(
@@ -180,6 +191,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             set([branch1, branch3, branch4]), set(collection.getBranches()))
 
     def test_registeredBy(self):
+        # 'registeredBy' returns a new collection that only has branches that
+        # were registered by the given user.
         registrant = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(
             owner=registrant, registrant=registrant)
@@ -189,6 +202,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_subscribedBy(self):
+        # 'subscribedBy' returns a new collection that only has branches that
+        # the given user is subscribed to.
         branch = self.factory.makeAnyBranch()
         subscriber = self.factory.makePerson()
         branch.subscribe(
@@ -199,6 +214,9 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_relatedTo(self):
+        # 'relatedTo' returns a collection that has all branches that a user
+        # owns, is subscribed to or registered. No other branches are in this
+        # collection.
         person = self.factory.makePerson()
         team = self.factory.makeTeam(person)
         owned_branch = self.factory.makeAnyBranch(owner=person)
@@ -239,15 +257,20 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             set(self.all_branches.getBranches()))
 
     def test_anonymous_sees_only_public(self):
+        # Anonymous users can see only public branches.
         branches = self.all_branches.visibleByUser(None)
         self.assertEqual([self.public_branch], list(branches.getBranches()))
 
     def test_random_person_sees_only_public(self):
+        # Logged in users with no special permissions can see only public
+        # branches.
         person = self.factory.makePerson()
         branches = self.all_branches.visibleByUser(person)
         self.assertEqual([self.public_branch], list(branches.getBranches()))
 
     def test_owner_sees_own_branches(self):
+        # Users can always see the branches that they own, as well as public
+        # branches.
         owner = removeSecurityProxy(self.private_branch1).owner
         branches = self.all_branches.visibleByUser(owner)
         self.assertEqual(
@@ -255,6 +278,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             set(branches.getBranches()))
 
     def test_owner_member_sees_own_branches(self):
+        # Members of teams that own branches can see branches owned by those
+        # teams, as well as public branches.
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(team_owner)
         private_branch = self.factory.makeAnyBranch(owner=team, private=True)
@@ -264,11 +289,13 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             set(branches.getBranches()))
 
     def test_launchpad_services_sees_all(self):
+        # The LAUNCHPAD_SERVICES special user sees *everything*.
         branches = self.all_branches.visibleByUser(LAUNCHPAD_SERVICES)
         self.assertEqual(
             set(self.all_branches.getBranches()), set(branches.getBranches()))
 
     def test_admins_see_all(self):
+        # Launchpad administrators see *everything*.
         admin = self.factory.makePerson()
         admin_team = removeSecurityProxy(
             getUtility(ILaunchpadCelebrities).admin)
@@ -278,6 +305,7 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             set(self.all_branches.getBranches()), set(branches.getBranches()))
 
     def test_bazaar_experts_see_all(self):
+        # Members of the bazaar_experts team see *everything*.
         bzr_experts = removeSecurityProxy(
             getUtility(ILaunchpadCelebrities).bazaar_experts)
         expert = self.factory.makePerson()
@@ -287,6 +315,7 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             set(self.all_branches.getBranches()), set(branches.getBranches()))
 
     def test_subscribers_can_see_branches(self):
+        # A person subscribed to a branch can see it, even if it's private.
         subscriber = self.factory.makePerson()
         removeSecurityProxy(self.private_branch1).subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
@@ -298,6 +327,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             set(branches.getBranches()))
 
     def test_subscribed_team_members_can_see_branches(self):
+        # A person in a team that is subscribed to a branch can see that
+        # branch, even if it's private.
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(team_owner)
         private_branch = self.factory.makeAnyBranch(private=True)
