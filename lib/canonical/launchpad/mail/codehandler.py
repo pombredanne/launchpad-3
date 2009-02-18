@@ -343,7 +343,7 @@ class CodeHandler:
         return mp_source, mp_target
 
     @staticmethod
-    def _getNewBranchInfo(url, target, submitter):
+    def _getNewBranchInfo(url, target_branch, submitter):
         """Return the namespace and basename for a branch.
 
         If an LP URL is provided, the namespace and basename will match the
@@ -357,7 +357,7 @@ class CodeHandler:
         If no URL is supplied, 'merge' is used as the base.
 
         :param url: The public URL of the source branch, if any.
-        :param target: The target branch.
+        :param target_branch: The target branch.
         :param submitter: The person submitting the merge proposal.
         """
         if url is not None:
@@ -370,7 +370,7 @@ class CodeHandler:
             basename = 'merge'
         else:
             basename = urlparse(url)[2].split('/')[-1]
-        namespace = target.container.getNamespace(submitter)
+        namespace = target_branch.target.getNamespace(submitter)
         return namespace, basename
 
     def _getNewBranch(self, branch_type, url, target, submitter):

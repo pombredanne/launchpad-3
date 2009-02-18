@@ -18,7 +18,6 @@
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="branch.zcml" />
-    <include file="branchcontainer.zcml" />
     <include file="branchjob.zcml" />
     <include file="branchmergeproposal.zcml" />
     <include file="branchmergequeue.zcml" />
@@ -26,6 +25,7 @@
     <include file="branchref.zcml" />
     <include file="branchrevision.zcml" />
     <include file="branchsubscription.zcml" />
+    <include file="branchtarget.zcml" />
     <include file="bugactivity.zcml" />
     <include file="bugattachment.zcml" />
     <include file="bugbranch.zcml" />
