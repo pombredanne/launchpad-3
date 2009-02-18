@@ -1,7 +1,10 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211, E0213
 
-"""A collection of branches."""
+"""A collection of branches.
+
+See `IBranchCollection` for more details.
+"""
 
 __metaclass__ = type
 __all__ = [
@@ -24,6 +27,12 @@ class IBranchCollection(Interface):
     Filter methods return new IBranchCollection instances that have some sort
     of restriction. Examples include `ownedBy`, `visibleByUser` and
     `inProduct`.
+
+    Implementations of this interface are not 'content classes'. That is, they
+    do not correspond to a particular row in the database.
+
+    This interface is intended for use within Launchpad, not to be exported as
+    a public API.
     """
 
     # Note to developers: This interface should be extended with more query
