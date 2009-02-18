@@ -20,8 +20,10 @@ from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
 
 # The config to use can be specified in one of these files.
-CONFIG_LOOKUP_FILES = [
-    os.path.join(os.environ['HOME'], '.lpconfig'), '/etc/launchpad/config']
+CONFIG_LOOKUP_FILES = ['/etc/launchpad/config']
+if os.environ.get('HOME'):
+    CONFIG_LOOKUP_FILES.insert(
+        0, os.path.join(os.environ['HOME'], '.lpconfig'))
 
 # LPCONFIG specifies the config to use, which corresponds to a subdirectory
 # of configs. It overrides any setting in the CONFIG_LOOKUP_FILES.
