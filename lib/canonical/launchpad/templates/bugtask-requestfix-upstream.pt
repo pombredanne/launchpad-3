@@ -63,7 +63,7 @@
         <tal:bugtracker-links
             condition="product/upstream_bugtracker_links"
             define="links product/upstream_bugtracker_links">
-          <p condition="links/bug_filing_url">
+          <p tal:condition="links/bug_filing_url">
             If you want to report this bug on
             <tal:bug-tracker content="bugtracker/title" /> before
             adding the link to Launchpad you can use the
@@ -74,7 +74,7 @@
             >bug filing form</a>.
           </p>
 
-          <p condition="links/bug_search_url">
+          <p tal:condition="links/bug_search_url">
             If you want to search for this bug on
             <tal:bug-tracker content="bugtracker/title" /> before adding
             the link to Launchpad you can use the

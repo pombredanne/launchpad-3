@@ -847,3 +847,39 @@ to make that assumption.
   Traceback (most recent call last):
   ...
   TypeError: Result is not a member of BugTaskStatus: 'Not a BugTaskStatus'
+
+
+== Getting the remote product from a remote bug ==
+
+Some ExternalBugTrackers offer a method by which can be used to get the
+remote product for a given remote bug.
+
+IExternalBugTracker defines a method, getRemoteProduct(), which can be
+used to get the remote product from a given bug. The "remote product" in
+this case is the identifier that the remote bug tracker gives to a given
+project or package. Launchpad can use this to offer users links to the
+relevant bug filing and search forms on upstream bug trackers. For those
+bug trackers that track more than one project, the remote product value
+is used to pre-fill the upstream bug filing and search forms with the
+correct project, reducing the need for the users to have to think about
+where to file the bug upstream.
+
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     IExternalBugTracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> external_bugtracker = TestExternalBugTracker(
+    ...     'http://example.com')
+    >>> verifyObject(IExternalBugTracker, external_bugtracker)
+    True
+
+The basic implementation of getRemoteProduct() provided by the basic
+ExternalBugTracker class will only ever return None. Since most bug
+trackers only track one product it makes more sense to implement this
+here and override it in cases where an ExternalBugTracker subclass is
+capable of dealing with multiple remote products.
+
+    >>> basic_external_bugtracker = ExternalBugTracker(
+    ...     'http://example.com')
+    >>> print basic_external_bugtracker.getRemoteProduct(1)
+    None

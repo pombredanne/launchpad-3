@@ -185,6 +185,8 @@ class BugTracker(SQLBase):
     _search_url_patterns = {
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/query.cgi?product=%(remote_product)s"),
+        BugTrackerType.DEBBUGS: (
+            "%(base_url)s/cgi-bin/pkgreport.cgi?package=%(remote_product)s"),
         BugTrackerType.MANTIS: "%(base_url)s/view_all_bug_page.php",
         BugTrackerType.PHPPROJECT: "%(base_url)s/search.php",
         BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=search",
@@ -219,7 +221,7 @@ class BugTracker(SQLBase):
         if remote_product is None and self.multi_product:
             # Don't try to return anything if remote_product is required
             # for this BugTrackerType and one hasn't been passed.
-            return None
+            return bugtracker_urls
 
         if remote_product is None:
             # Turn the remote product into an empty string so that
@@ -237,8 +239,9 @@ class BugTracker(SQLBase):
         if self.bugtrackertype == BugTrackerType.SOURCEFORGE:
             # SourceForge bug trackers use a group ID and an ATID to
             # file a bug, rather than a product name. remote_product
-            # should be a tuple for SOURCEFORGE bug trackers.
-            group_id, at_id = remote_product
+            # should be an ampersand-separated string in the form
+            # 'group_id&atid'
+            group_id, at_id = remote_product.split('&')
 
             # If this bug tracker is the SourceForge celebrity the link
             # is to the new bug tracker rather than the old one.

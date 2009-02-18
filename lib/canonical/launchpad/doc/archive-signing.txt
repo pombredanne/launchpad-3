@@ -88,6 +88,9 @@ Indeed, Marks's PPA does not have a defined 'sigining_key'.
     >>> print sabdfl.archive.signing_key
     None
 
+    >>> print sabdfl.archive.signing_key_fingerprint
+    None
+
 We will select the only available IGPGKey from the sampledata.
 
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
@@ -98,6 +101,9 @@ We will select the only available IGPGKey from the sampledata.
 And use it as the Mark's PPA sigining key.
 
     >>> sabdfl.archive.signing_key = a_key
+
+    >>> print sabdfl.archive.signing_key_fingerprint
+    ABCDEF0123456789ABCDDCBA0000111112345678
 
 It will exclude Mark's PPA from the 'PendingSigningKey' pool as well.
 

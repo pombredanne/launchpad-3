@@ -29,6 +29,15 @@ will use the config value:
     >>> external_debbugs.db_location == config.malone.debbugs_db_location
     True
 
+DebBugs, of course, implements IExternalBugTracker.
+
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     IExternalBugTracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> verifyObject(IExternalBugTracker, external_debbugs)
+    True
+
 
 == Retrieving bug status from the debbugs database ==
 
