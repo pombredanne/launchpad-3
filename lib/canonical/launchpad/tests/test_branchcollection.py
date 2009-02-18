@@ -130,7 +130,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # 'inProduct' returns a new collection restricted to branches in the
         # given product.
         #
-        # XXX: JonathanLange 2009-02-11: Maybe this should be a more generic
+        # NOTE: JonathanLange 2009-02-11: Maybe this should be a more generic
         # method called 'onTarget' that takes a person (for junk), package or
         # product.
         branch = self.factory.makeProductBranch()

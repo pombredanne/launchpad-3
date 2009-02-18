@@ -53,7 +53,7 @@ class GenericBranchCollection:
 
     def _filterBy(self, tables, *expressions):
         """Return a subset of this collection, filtered by 'expressions'."""
-        # XXX: JonathanLange 2009-02-17: We might be able to avoid the need
+        # NOTE: JonathanLange 2009-02-17: We might be able to avoid the need
         # for explicit 'tables' by harnessing Storm's table inference system.
         # See http://paste.ubuntu.com/118711/ for one way to do that.
         return self.__class__(
@@ -62,11 +62,11 @@ class GenericBranchCollection:
 
     def getBranches(self):
         """See `IBranchCollection`."""
-        # XXX: JonathanLange 2009-02-17: Although you might think we could set
-        # the default value for store in the constructor, we can't. The
-        # IStoreSelector utility is not available at the time that the
-        # branchcollection.zcml is parsed, which means we get an error if this
-        # code is in the constructor.
+        # Although you might think we could set the default value for store in
+        # the constructor, we can't. The IStoreSelector utility is not
+        # available at the time that the branchcollection.zcml is parsed,
+        # which means we get an error if this code is in the constructor.
+        # -- JonathanLange 2009-02-17.
         if self._store is None:
             store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         else:
