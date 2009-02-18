@@ -538,7 +538,7 @@ class Build(SQLBase):
     @property
     def build_log_url(self):
         """See `IBuild`."""
-        if self.buildstate in (
+        if self.buildlog is None or self.buildstate in (
             BuildStatus.NEEDSBUILD, BuildStatus.SUPERSEDED,
             BuildStatus.BUILDING):
             # In a state with no log file.
