@@ -1,0 +1,76 @@
+= Updating Product.remote_product =
+
+The remote_product attribute of a Product is used to present links for
+filing and searching bugs in the Product's bug tracker, in case it's not
+using Launchpad to track its bugs. We don't expect users to set the
+remote_product themselves, so we have a script that tries to set this
+automatically.
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    >>> store.execute("UPDATE Product SET remote_product = 'not-None'")
+    <storm...>
+
+    >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+    >>> from canonical.launchpad.scripts.updateremoteproduct import (
+    ...     RemoteProductUpdater)
+    >>> updater = RemoteProductUpdater()
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> bugzilla_product = factory.makeProduct(
+    ...     name=u'bugzilla-product', official_malone=False)
+    >>> bugzilla = factory.makeBugTracker(
+    ...     bugtrackertype=BugTrackerType.BUGZILLA)
+    >>> bugzilla_product.bugtracker = bugzilla
+    >>> rt_product = factory.makeProduct(
+    ...     name=u'rt-product', official_malone=False)
+    >>> rt = factory.makeBugTracker(
+    ...     bugtrackertype=BugTrackerType.RT,
+    ...     base_url=u'http://rt.example.com/')
+    >>> rt_product.bugtracker = rt
+
+    >>> updater.updateRemoteProduct(BugTrackerType.RT)
+    >>> print bugzilla_product.remote_product
+    None
+    >>> print rt_product.remote_product
+    None
+
+getting external bug tracker.
+
+    >>> rt_external = updater._getExternalBugTracker(rt)
+    >>> rt_external.__class__.__name__
+    'RequestTracker'
+    >>> rt_external.baseurl
+    u'http://rt.example.com'
+
+
+    >>> class FakeExternalBugTracker:
+    ...     def getRemoteProduct(self, remote_bug):
+    ...         return 'product-for-bug-%s' % remote_bug
+
+
+    >>> class TestRemoteProductUpdater(RemoteProductUpdater):
+    ...     def _getExternalBugTracker(self, bug_tracker):
+    ...         return FakeExternalBugTracker()
+
+Create bug tasks...
+
+    >>> updater = TestRemoteProductUpdater()
+    >>> bugzilla_bugtask = factory.makeBugTask(target=bugzilla_product)
+    >>> bugzilla_bugwatch = factory.makeBugWatch(
+    ...     '42', bugtracker=bugzilla, bug=bugzilla_bugtask.bug)
+    >>> bugzilla_bugtask.bugwatch = bugzilla_bugwatch
+    >>> rt_bugtask = factory.makeBugTask(target=rt_product)
+    >>> rt_bugwatch = factory.makeBugWatch(
+    ...     '84', bugtracker=rt, bug=rt_bugtask.bug)
+    >>> rt_bugtask.bugwatch = rt_bugwatch
+
+    >>> updater.updateRemoteProduct(BugTrackerType.RT)
+    >>> print rt_product.remote_product
+    product-for-bug-84
+
+    >>> print bugzilla_product.remote_product
+    None
