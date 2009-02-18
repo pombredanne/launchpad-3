@@ -4,12 +4,12 @@
 
 import unittest
 
-from storm.locals import Asc, ClassAlias, Desc
+from storm.locals import Asc, Desc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branch import Branch, BranchSet
-from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.person import Owner
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.interfaces import (
     BranchListingSort, BranchSubscriptionNotificationLevel,
@@ -18,9 +18,6 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.security import AccessBranch
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
-
-
-Owner = ClassAlias(Person, 'Owner')
 
 
 class TestListingToSortOrder(unittest.TestCase):

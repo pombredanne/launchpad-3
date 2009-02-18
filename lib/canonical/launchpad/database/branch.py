@@ -19,7 +19,6 @@ from zope.event import notify
 from zope.interface import implements
 
 from storm.expr import And, Asc, Count, Desc, Join, Max, Or, Select
-from storm.info import ClassAlias
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
@@ -1398,9 +1397,8 @@ class BranchSet:
 
         :param sort_by: an item from the BranchListingSort enumeration.
         """
-        from canonical.launchpad.database.person import Person
+        from canonical.launchpad.database.person import Owner
         from canonical.launchpad.database.product import Product
-        Owner = ClassAlias(Person, "Owner")
 
         DEFAULT_BRANCH_LISTING_SORT = [
             BranchListingSort.PRODUCT,

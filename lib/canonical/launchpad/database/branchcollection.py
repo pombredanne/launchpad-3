@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 from storm.expr import And, LeftJoin, Join, Or, Select
-from storm.info import ClassAlias
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -17,7 +16,7 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.person import Owner
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.branch import (
@@ -42,7 +41,6 @@ class GenericBranchCollection:
         if tables is None:
             # Join in Product and the Person table as 'Owner' so that we can
             # sort the results by product name and owner name.
-            Owner = ClassAlias(Person, 'Owner')
             tables = [Branch, LeftJoin(Product, Branch.product == Product.id),
                       Join(Owner, Branch.owner == Owner.id)]
         self._tables = tables
