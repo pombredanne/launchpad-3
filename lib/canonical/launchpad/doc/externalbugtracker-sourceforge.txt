@@ -249,13 +249,15 @@ statuses:
 
 It's possible to get the remote product for a bug by calling
 SourceForge.getRemoteProduct(). In SourceForge's case, what we refer to
-in Launchpad as a 'remote product' is a tuple of (group_id, atid), where
-'group_id' is the ID of the 'artifact group' on SourceForge to which a
-bug belongs and 'atid' is the 'artifact tracker ID'. This allows us to
-pinpoint the specific SourceForge tracker to which the bug belongs.
+in Launchpad as a 'remote product' is a combination of (group_id, atid),
+where 'group_id' is the ID of the 'artifact group' on SourceForge to
+which a bug belongs and 'atid' is the 'artifact tracker ID'. This allows
+us to pinpoint the specific SourceForge tracker to which the bug
+belongs. The remote product is returned by getRemoteProduct() as an
+ampersand-separated string.
 
     >>> print sourceforge.getRemoteProduct('1722250')
-    (155120, 794532)
+    155120&794532
 
 If you try to get the remote product of a bug that doesn't exist you'll
 get a BugNotFound error.
