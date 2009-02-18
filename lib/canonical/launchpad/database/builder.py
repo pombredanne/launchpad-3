@@ -81,6 +81,25 @@ class BuilderSlave(xmlrpclib.Server):
         fileurl = urlappend(self.urlbase, filelocation)
         return urllib2.urlopen(fileurl)
 
+    def resumeHost(self, logger, resume_argv):
+        """Initialize a virtual builder to a known state.
+
+        The supplied resume command is run in a subprocess in order to reset a
+        slave to a known state. This method will only be invoked for virtual
+        slaves.
+
+        :param logger: the logger to use
+        :param resume_argv: the resume command to run (sequence of strings)
+
+        :return: a (stdout, stderr, subprocess exitcode) triple
+        """
+        logger.debug("Resuming %s", self.urlbase)
+        logger.debug('Running: %s', resume_argv)
+        resume_process = subprocess.Popen(
+            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = resume_process.communicate()
+
+        return (stdout, stderr, resume_process.returncode)
 
 class Builder(SQLBase):
 
@@ -201,17 +220,13 @@ class Builder(SQLBase):
         if not self.vm_host:
             raise CannotResumeHost('Undefined vm_host.')
 
-        logger.debug("Resuming %s", self.url)
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self.vm_host}
         resume_argv = resume_command.split()
+        stdout, stderr, returncode = self.slave.resumeHost(
+            logger, resume_argv)
 
-        logger.debug('Running: %s', resume_argv)
-        resume_process = subprocess.Popen(
-            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = resume_process.communicate()
-
-        if resume_process.returncode != 0:
+        if returncode != 0:
             raise CannotResumeHost(
                 "Resuming failed:\nOUT:\n%s\nERR:\n%s\n" % (stdout, stderr))
         return stdout, stderr
