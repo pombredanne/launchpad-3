@@ -261,6 +261,13 @@ class Archive(SQLBase):
             config.archivepublisher.base_url,
             self.distribution.name + postfix)
 
+    @property
+    def signing_key_fingerprint(self):
+        if self.signing_key is not None:
+            return self.signing_key.fingerprint
+
+        return None
+
     def getPubConfig(self):
         """See `IArchive`."""
         pubconf = PubConfig(self.distribution)
@@ -381,7 +388,8 @@ class Archive(SQLBase):
 
         return sources
 
-    def getSourcesForDeletion(self, name=None, status=None):
+    def getSourcesForDeletion(self, name=None, status=None,
+            distroseries=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -420,6 +428,11 @@ class Archive(SQLBase):
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
+
+        if distroseries is not None:
+            clauses.append("""
+                SourcePackagePublishingHistory.distroseries = %s
+            """ % sqlvalues(distroseries))
 
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 

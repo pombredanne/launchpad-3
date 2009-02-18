@@ -9,9 +9,9 @@ from zope.publisher.base import DefaultPublication
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 
 from canonical.launchpad.webapp.servers import (
-    ApplicationServerSettingRequestFactory, BugsBrowserRequest,
-    BugsPublication, LaunchpadBrowserRequest,
-    VHostWebServiceRequestPublicationFactory,
+    AnswersBrowserRequest, ApplicationServerSettingRequestFactory,
+    BugsBrowserRequest, BugsPublication, LaunchpadBrowserRequest,
+    TranslationsBrowserRequest, VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
     WEBSERVICE_PATH_OVERRIDE, WebServiceClientRequest, WebServicePublication,
     WebServiceTestRequest)
@@ -290,6 +290,98 @@ class TestWebServiceRequest(unittest.TestCase):
         request = WebServiceTestRequest(environ=env)
         self.assertEqual(request.getApplicationURL(), server_url)
 
+    def test_response_should_vary_based_on_content_type(self):
+        request = WebServiceClientRequest(StringIO.StringIO(''), {})
+        self.assertEquals(
+            request.response.getHeader('Vary'),
+            'Cookie, Authorization, Accept')
+
+
+class TestBasicLaunchpadRequest(unittest.TestCase):
+    """Tests for the base request class"""
+
+    def test_baserequest_response_should_vary(self):
+        """Test that our base response has a proper vary header."""
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
+        self.assertEquals(
+            request.response.getHeader('Vary'), 'Cookie, Authorization')
+
+    def test_baserequest_response_should_vary_after_retry(self):
+        """Test that our base response has a proper vary header."""
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
+        retried_request = request.retry()
+        self.assertEquals(
+            retried_request.response.getHeader('Vary'),
+            'Cookie, Authorization')
+
+
+class TestAnswersBrowserRequest(unittest.TestCase):
+    """Tests for the Answers request class."""
+
+    def test_response_should_vary_based_on_language(self):
+        request = AnswersBrowserRequest(StringIO.StringIO(''), {})
+        self.assertEquals(
+            request.response.getHeader('Vary'),
+            'Cookie, Authorization, Accept-Language')
+
+
+class TestTranslationsBrowserRequest(unittest.TestCase):
+    """Tests for the Translations request class."""
+
+    def test_response_should_vary_based_on_language(self):
+        request = TranslationsBrowserRequest(StringIO.StringIO(''), {})
+        self.assertEquals(
+            request.response.getHeader('Vary'),
+            'Cookie, Authorization, Accept-Language')
+
+
+class TestLaunchpadBrowserRequest(unittest.TestCase):
+
+    def test_query_string_params_on_get(self):
+        """query_string_params is populated from the QUERY_STRING during
+        GET requests."""
+        request = LaunchpadBrowserRequest('', {
+            'QUERY_STRING': "a=1&b=2&c=3"})
+        self.assertEqual(
+            request.query_string_params,
+            {'a': ['1'], 'b': ['2'], 'c': ['3']},
+            "The query_string_params dict is populated from the "
+            "QUERY_STRING during GET requests.")
+
+    def test_query_string_params_on_post(self):
+        """query_string_params is populated from the QUERY_STRING during
+        POST requests."""
+        request = LaunchpadBrowserRequest('',
+            {'QUERY_STRING': "a=1&b=2&c=3", 'REQUEST_METHOD': 'POST'})
+
+        self.assertEqual(request.method, 'POST')
+        self.assertEqual(
+            request.query_string_params, 
+            {'a':['1'], 'b': ['2'], 'c': ['3']},
+            "The query_string_params dict is populated from the "
+            "QUERY_STRING during POST requests.")
+
+    def test_query_string_params_empty(self):
+        """The query_string_params dict is always empty when QUERY_STRING
+        is empty, None or undefined.
+        """
+        request = LaunchpadBrowserRequest('', {'QUERY_STRING': ''})
+        self.assertEqual(request.query_string_params, {})
+        request = LaunchpadBrowserRequest('', {'QUERY_STRING': None})
+        self.assertEqual(request.query_string_params, {})
+        request = LaunchpadBrowserRequest('', {})
+        self.assertEqual(request.query_string_params, {})
+
+    def test_query_string_params_multi_value(self):
+        """The query_string_params dict can include multiple values
+        for a parameter."""
+        request = LaunchpadBrowserRequest('', {
+            'QUERY_STRING': "a=1&a=2&b=3"})
+        self.assertEqual(
+            request.query_string_params,
+            {'a': ['1', '2'], 'b': ['3']},
+            "The query_string_params dict correctly interprets multiple "
+            "values for the same key in a query string.")
 
 def test_suite():
     suite = unittest.TestSuite()

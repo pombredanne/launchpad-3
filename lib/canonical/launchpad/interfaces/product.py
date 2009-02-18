@@ -21,7 +21,7 @@ import sets
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Date, Datetime, Int, Object, Set, Text, TextLine)
+    Bool, Choice, Date, Datetime, Int, List, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
 
 
@@ -31,6 +31,8 @@ from canonical.launchpad.fields import (
     ProductBugTracker, ProductNameField, PublicPersonChoice,
     Summary, Title, URIField)
 from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    IBranchMergeProposal, BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -482,8 +484,9 @@ class IProductPublic(
             description=_(
                 "The ID of this project on its remote bug tracker.")))
 
-    upstream_bug_filing_url = Attribute(
-        "The URL of bug filing form on this project's upstream bug tracker")
+    upstream_bugtracker_links = Attribute(
+        "The URLs of bug filing and search forms on this project's upstream "
+        "bug tracker")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -528,6 +531,22 @@ class IProductPublic(
         Products may override language code definitions for translation
         import purposes.
         """
+
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary=BranchMergeProposalStatus)))
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_returns_collection_of(IBranchMergeProposal)
+    @export_read_operation()
+    def getMergeProposals(status=None, visible_by_user=None):
+        """Returns all merge proposals of a given status.
+
+        :param status: A list of statuses to filter with.
+        :param visible_by_user: Normally the user who is asking.
+        :returns: A list of `IBranchMergeProposal`.
+        """
+
 
     def userCanEdit(user):
         """Can the user edit this product?"""
@@ -586,14 +605,6 @@ class IProductSet(Interface):
 
         If num_products is not None, then the first `num_products` are
         returned.
-        """
-
-    def getProductsWithUserDevelopmentBranches():
-        """Return products that have a user branch for the development series.
-
-        Only active products are returned.
-
-        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
         """
 
     @call_with(owner=REQUEST_USER)
@@ -740,6 +751,13 @@ class IProductSet(Interface):
     def count_codified():
         """Return the number of projects that have branches associated with
         them.
+        """
+
+    def getProductsWithNoneRemoteProduct(bugtracker_type=None):
+        """Get all the IProducts having a `remote_product` of None
+
+        The result can be filtered to only return Products associated
+        with a given bugtracker type.
         """
 
 

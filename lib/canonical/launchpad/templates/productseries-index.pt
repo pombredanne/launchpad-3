@@ -38,15 +38,6 @@
     Status: <strong tal:content="context/status/title" />
   </div>
 
-    <p>
-      <img src="/@@/info" />
-      A "release series" is major release that would typically have a number
-      of "point releases" associated with it. For example, Mozilla Firefox
-      series "1.5" has releases such as "1.5a1", "1.5b1", "1.5.0" and
-      "1.5.2". In revision control terms, the best practice is to
-      create a Bazaar branch for this specific series of releases.
-    </p>
-
     <tal:has_releases condition="context/releases">
 
       <h2>Releases</h2>

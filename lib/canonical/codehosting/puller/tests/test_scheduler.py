@@ -666,8 +666,8 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
     def setUp(self):
         TrialTestCase.setUp(self)
         PullerBranchTestCase.setUp(self)
-        self.makeCleanDirectory(config.codehosting.branches_root)
-        self.makeCleanDirectory(config.supermirror.branchesdest)
+        self.makeCleanDirectory(config.codehosting.hosted_branches_root)
+        self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
         branch_id = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED).id
         self.layer.txn.commit()

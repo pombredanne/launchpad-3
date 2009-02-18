@@ -5,8 +5,10 @@
 
 __metaclass__ = type
 
+import cgi
 import pytz
 import threading
+import urllib
 import xmlrpclib
 from datetime import datetime
 
@@ -467,6 +469,23 @@ class NotFoundRequestPublicationFactory:
         return (ProtocolErrorRequest, ProtocolErrorPublicationFactory(404))
 
 
+def get_query_string_params(request):
+    """Return a dict of the query string params for a request.
+
+    Defined here so that it can be used in both BasicLaunchpadRequest and
+    the LaunchpadTestRequest (which doesn't inherit from
+    BasicLaunchpadRequest).
+    """
+    query_string = request.get('QUERY_STRING', '')
+
+    # Just in case QUERY_STRING is in the environment explicitly as
+    # None (Some tests seem to do this, but not sure if it can ever
+    # happen outside of tests.)
+    if query_string is None:
+        query_string = ''
+
+    return cgi.parse_qs(query_string, keep_blank_values=True)
+
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo."""
 
@@ -482,6 +501,9 @@ class BasicLaunchpadRequest:
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
+        # Our response always vary based on authentication.
+        self.response.setHeader('Vary', 'Cookie, Authorization')
+
     @property
     def stepstogo(self):
         return StepsToGo(self)
@@ -489,7 +511,7 @@ class BasicLaunchpadRequest:
     def retry(self):
         """See IPublisherRequest."""
         new_request = super(BasicLaunchpadRequest, self).retry()
-        # propagate the list of keys we have set in the WSGI environment
+        # Propagate the list of keys we have set in the WSGI environment.
         new_request._wsgi_keys = self._wsgi_keys
         return new_request
 
@@ -513,6 +535,11 @@ class BasicLaunchpadRequest:
             raise KeyError("'%s' already present in wsgi environment." % key)
         self._orig_env[key] = value
         self._wsgi_keys.add(key)
+
+    @cachedproperty
+    def query_string_params(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return get_query_string_params(self)
 
 
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
@@ -725,6 +752,14 @@ class LaunchpadTestRequest(TestRequest):
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
 
+    It also provides the query_string_params dict that is available from
+    LaunchpadBrowserRequest.
+
+    >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar',
+    ...     QUERY_STRING='a=1&b=2&c=3')
+    >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
+    True
+
     It also provides the  hooks for popup calendar iframes:
 
     >>> request.needs_datetimepicker_iframe
@@ -787,6 +822,11 @@ class LaunchpadTestRequest(TestRequest):
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
+
+    @property
+    def query_string_params(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return get_query_string_params(self)
 
     def setPrincipal(self, principal):
         """See `IPublicationRequest`."""
@@ -957,6 +997,13 @@ class TranslationsPublication(LaunchpadBrowserPublication):
 class TranslationsBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.TranslationsLayer)
 
+    def __init__(self, body_instream, environ, response=None):
+        super(TranslationsBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Some of the responses from translations vary based on language.
+        self.response.setHeader(
+            'Vary', 'Cookie, Authorization, Accept-Language')
+
 # ---- bugs
 
 class BugsPublication(LaunchpadBrowserPublication):
@@ -972,6 +1019,14 @@ class AnswersPublication(LaunchpadBrowserPublication):
 
 class AnswersBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.AnswersLayer)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(AnswersBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Many of the responses from Answers vary based on language.
+        self.response.setHeader(
+            'Vary', 'Cookie, Authorization, Accept-Language')
+
 
 # ---- shipit
 
@@ -1174,6 +1229,41 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # revisited.
         txn.commit()
 
+    def callObject(self, request, object):
+        """Help web browsers handle redirects correctly."""
+        value = super(WebServicePublication, self).callObject(
+            request, object)
+        if request.response.getStatus() / 100 == 3:
+            vhost = URI(request.getApplicationURL()).host
+            api = allvhosts.configs['api']
+            if vhost != api.hostname and vhost not in api.althostnames:
+                # This request came in on a vhost other than the
+                # dedicated web service vhost. That means it was
+                # probably sent by a web browser. Because web
+                # browsers, content negotiation, and redirects are a
+                # deadly combination, we're going to help the browser
+                # out a little.
+                #
+                # We're going to take the current request's "Accept"
+                # header and put it into the URL specified in the
+                # Location header. When the web browser makes its
+                # request, it will munge the original 'Accept' header,
+                # but because the URL it's accessing will include the
+                # old header in the "ws.accept" header, we'll still be
+                # able to serve the right document.
+                location = request.response.getHeader("Location", None)
+                if location is not None:
+                    accept = request.response.getHeader(
+                        "Accept", "application/json")
+                    qs_append = "ws.accept=" + urllib.quote(accept)
+                    uri = URI(location)
+                    if uri.query is None:
+                        uri.query = qs_append
+                    else:
+                        uri.query += '&' + qs_append
+                    request.response.setHeader("Location", str(uri))
+        return value
+
     def getPrincipal(self, request):
         """See `LaunchpadBrowserPublication`.
 
@@ -1286,6 +1376,12 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
                               LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
     implements(canonical.launchpad.layers.WebServiceLayer)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(WebServiceClientRequest, self).__init__(
+            body_instream, environ, response)
+        # Web service requests use content negotiation.
+        self.response.setHeader('Vary', 'Cookie, Authorization, Accept')
 
 
 def website_request_to_web_service_request(website_request):

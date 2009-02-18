@@ -10,7 +10,6 @@ __all__ = [
     'POFileSet',
     'POFileToChangedFromPackagedAdapter',
     'POFileToTranslationFileDataAdapter',
-    'POFileTranslator',
     ]
 
 import datetime
@@ -34,8 +33,7 @@ from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import TranslationMessage
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.pofile import (
-    IPOFile, IPOFileSet, IPOFileTranslator)
+from canonical.launchpad.interfaces.pofile import IPOFile, IPOFileSet
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
 from canonical.launchpad.interfaces.translationexporter import (
@@ -1208,20 +1206,6 @@ class POFileSet:
         """See `IPOFileSet`."""
         return POFile.select(
             "id >= %s" % quote(starting_id), orderBy="id", limit=batch_size)
-
-
-class POFileTranslator(SQLBase):
-    """See `IPOFileTranslator`."""
-
-    implements(IPOFileTranslator)
-    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
-    person = ForeignKey(
-        dbName='person', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
-    latest_message = ForeignKey(foreignKey='TranslationMessage',
-        dbName='latest_message', notNull=True)
-    date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
-        notNull=False, default=None)
 
 
 class POFileToTranslationFileDataAdapter:

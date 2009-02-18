@@ -20,16 +20,19 @@ from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
+import os.path
 
 import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.processor import ProcessorFamilySet
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.archive import (
@@ -63,6 +66,8 @@ from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.hwdb import (
+    HWSubmissionFormat, IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.mailinglist import (
@@ -1104,6 +1109,23 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
 
+    def makeDistroArchSeries(self, distroseries=None,
+                             architecturetag='powerpc', processorfamily=None,
+                             official=True, owner=None,
+                             supports_virtualized=False):
+        """Create a new distroarchseries"""
+
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        if processorfamily is None:
+            processorfamily = ProcessorFamilySet().getByName('powerpc')
+        if owner is None:
+            owner = self.makePerson()
+
+        return distroseries.newArch(
+            architecturetag, processorfamily, official, owner,
+            supports_virtualized)
+
     def _makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
@@ -1296,3 +1318,98 @@ class LaunchpadObjectFactory(ObjectFactory):
                     'attachment; filename="%s"' % filename)
                 msg.attach(attachment)
         return msg
+
+    def makeBundleMergeDirectiveEmail(self, source_branch, target_branch):
+        """Create a merge directive email from two bzr branches."""
+        from bzrlib.merge_directive import MergeDirective2
+        md = MergeDirective2.from_objects(
+            source_branch.repository, source_branch.last_revision(),
+            public_branch=source_branch.get_public_branch(),
+            target_branch=target_branch.warehouse_url,
+            local_target_branch=target_branch.warehouse_url, time=0,
+            timezone=0)
+        return self.makeSignedMessage(
+            body='My body', subject='My subject',
+            attachment_contents=''.join(md.to_lines()))
+
+    def makeMergeDirective(self, source_branch=None, target_branch=None,
+        source_branch_url=None, target_branch_url=None):
+        """Return a bzr merge directive object.
+
+        :param source_branch: The source database branch in the merge
+            directive.
+        :param target_branch: The target database branch in the merge
+            directive.
+        :param source_branch_url: The URL of the source for the merge
+            directive.  Overrides source_branch.
+        :param target_branch_url: The URL of the target for the merge
+            directive.  Overrides target_branch.
+        """
+        from bzrlib.merge_directive import MergeDirective2
+        if source_branch_url is not None:
+            assert source_branch is None
+        else:
+            if source_branch is None:
+                source_branch = self.makeAnyBranch()
+            source_branch_url = (
+                config.codehosting.supermirror_root +
+                source_branch.unique_name)
+        if target_branch_url is not None:
+            assert target_branch is None
+        else:
+            if target_branch is None:
+                target_branch = self.makeAnyBranch()
+            target_branch_url = (
+                config.codehosting.supermirror_root +
+                target_branch.unique_name)
+        return MergeDirective2(
+            'revid', 'sha', 0, 0, target_branch_url,
+            source_branch=source_branch_url, base_revision_id='base-revid',
+            patch='booga')
+
+    def makeMergeDirectiveEmail(self, body='Hi!\n'):
+        """Create an email with a merge directive attached.
+
+        :param body: The message body to use for the email.
+        :return: message, file_alias, source_branch, target_branch
+        """
+        target_branch = self.makeProductBranch()
+        source_branch = self.makeProductBranch(
+            product=target_branch.product)
+        md = self.makeMergeDirective(source_branch, target_branch)
+        message = self.makeSignedMessage(body=body,
+            subject='My subject', attachment_contents=''.join(md.to_lines()))
+        message_string = message.as_string()
+        file_alias = getUtility(ILibraryFileAliasSet).create(
+            '*', len(message_string), StringIO(message_string), '*')
+        return message, file_alias, source_branch, target_branch
+
+    def makeHWSubmission(self, date_created=None, submission_key=None,
+                         emailaddress=u'test@canonical.com',
+                         distroarchseries=None, private=False,
+                         contactable=False, system=None,
+                         submission_data=None):
+        """Create a new HWSubmission."""
+        if date_created is None:
+            date_created = datetime.now(pytz.UTC)
+        if submission_key is None:
+            submission_key = self.getUniqueString('submission-key')
+        if distroarchseries is None:
+            distroarchseries = self.makeDistroArchSeries()
+        if system is None:
+            system = self.getUniqueString('system-fingerprint')
+        if submission_data is None:
+            sample_data_path = os.path.join(
+                config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+                'tests', 'simple_valid_hwdb_submission.xml')
+            submission_data = open(sample_data_path).read()
+        filename = self.getUniqueString('submission-file')
+        filesize = len(submission_data)
+        raw_submission = StringIO(submission_data)
+        format = HWSubmissionFormat.VERSION_1
+        submission_set = getUtility(IHWSubmissionSet)
+
+        return submission_set.createSubmission(
+            date_created, format, private, contactable,
+            submission_key, emailaddress, distroarchseries,
+            raw_submission, filename, filesize, system)

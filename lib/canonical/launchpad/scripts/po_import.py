@@ -13,7 +13,7 @@ from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    ITranslationImportQueue, RosettaImportStatus)
+    ILaunchpadCelebrities, ITranslationImportQueue, RosettaImportStatus)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 
@@ -103,9 +103,14 @@ class ImportProcess:
                         entry_to_import.import_into.importFromQueue(
                             entry_to_import, self.logger))
 
-                    from_email = config.rosettaadmin.email
-                    to_email = helpers.get_contact_email_addresses(
-                        entry_to_import.importer)
+                    from_email = config.rosetta.admin_email
+                    katie = getUtility(ILaunchpadCelebrities).katie
+                    if entry_to_import.importer == katie:
+                        # Email import state to Debian imports email.
+                        to_email = config.rosetta.debian_import_email
+                    else:
+                        to_email = helpers.get_contact_email_addresses(
+                            entry_to_import.importer)
                     text = MailWrapper().format(mail_body)
 
                     # XXX: JeroenVermeulen 2007-11-29 bug=29744: email isn't
