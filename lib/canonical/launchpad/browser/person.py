@@ -1782,6 +1782,8 @@ class PersonAdministerView(LaunchpadEditFormView):
         'name', 'displayname', 'password',
         'personal_standing',  'personal_standing_reason']
     custom_widget('password', PasswordChangeWidget)
+    custom_widget(
+        'personal_standing_reason', TextAreaWidget, height=5, width=60)
 
     @property
     def next_url(self):
