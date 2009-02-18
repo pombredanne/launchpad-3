@@ -697,6 +697,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 values.append(unicode(value))
         hash_object.update("\0".join(values).encode("utf-8"))
 
+        # Append the media type, so that web browsers won't treat
+        # different representations of a resource interchangeably.
+        hash_object.update("\0" + media_type)
+
         # Append the revision number, because the algorithm for
         # generating the representation might itself change across
         # versions.
