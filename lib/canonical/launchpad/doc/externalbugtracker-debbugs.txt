@@ -643,8 +643,8 @@ the script gets notified about it.
 
 We can get the remote product for a bug by calling getRemoteProduct() on
 a DebBugs instance. In actual fact this is a wrapper around
-getBugTargetName(), since what in Launchpad we call a "remote product"
-is actually a package in DebBugs.
+getBugTargetName(), since the package in DebBugs is a "remote product"
+in Launchpad.
 
     >>> external_debbugs = DebBugs(
     ...     'http://example.com/', db_location=test_db_location)
