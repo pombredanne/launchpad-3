@@ -11,6 +11,7 @@ __all__ = [
     'FOAFSearchView',
     'EmailToPersonView',
     'PersonActiveReviewsView',
+    'PersonAdministerView',
     'PersonAddView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
@@ -1771,6 +1772,31 @@ class PersonRdfContentsView:
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class PersonAdministerView(LaunchpadEditFormView):
+    """Administer an `IPerson`."""
+    schema = IPerson
+    label = "Review person"
+    field_names = [
+        'name', 'displayname', 'password',
+        'personal_standing',  'personal_standing_reason']
+    custom_widget('password', PasswordChangeWidget)
+
+    @property
+    def next_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.context)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Update the IPerson."""
+        self.updateContextFromData(data)
 
 
 def userIsActiveTeamMember(team):
