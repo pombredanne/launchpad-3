@@ -2,11 +2,9 @@
 
 """Unit tests for methods of Branch and BranchSet."""
 
-from operator import attrgetter
 import unittest
 
 from storm.locals import Asc, ClassAlias, Desc
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
