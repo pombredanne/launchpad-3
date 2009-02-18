@@ -248,11 +248,10 @@ class LaunchpadLoginSource:
         # XXX: Dear reviewer. I can't use "person is None" here because zope
         # wraps the return of IPerson(account) above into a security proxy.
         if person:
-            return self._principalForPerson(person, access_level, scope)
+            return self._getLaunchpadPrincipal(person, access_level, scope)
         else:
-            # Our acount has no person, so we return an OpenIDPrincipal.
-            return self._OpenIDprincipalForPerson(
-                account, access_level, scope)
+            # Our account has no person, so we return an OpenIDPrincipal.
+            return self._getOpenIDPrincipal(account, access_level, scope)
 
     def getPrincipals(self, name):
         raise NotImplementedError
@@ -288,15 +287,15 @@ class LaunchpadLoginSource:
         if email is None:
             return None
         elif email.person is not None:
-            return self._principalForPerson(
+            return self._getLaunchpadPrincipal(
                 email.person, access_level, scope, want_password)
         else:
             assert email.account is not None
-            return self._OpenIDprincipalForPerson(
+            return self._getOpenIDPrincipal(
                 email.account, access_level, scope, want_password)
 
-    def _OpenIDprincipalForPerson(self, account, access_level, scope,
-                                  want_password=True):
+    def _getOpenIDPrincipal(self, account, access_level, scope,
+                            want_password=True):
         naked_account = removeSecurityProxy(account)
         if want_password:
             password = naked_account.password
@@ -309,8 +308,8 @@ class LaunchpadLoginSource:
         principal.__parent__ = self
         return principal
 
-    def _principalForPerson(self, person, access_level, scope,
-                            want_password=True):
+    def _getLaunchpadPrincipal(self, person, access_level, scope,
+                               want_password=True):
         naked_person = removeSecurityProxy(person)
         if want_password:
             password = naked_person.password
@@ -330,54 +329,49 @@ loginSource = LaunchpadLoginSource()
 loginSource.__parent__ = authService
 
 
-class LaunchpadPrincipal:
+class BaseLaunchpadPrincipal:
+
+    def __init__(self, id, title, description, pwd=None,
+                 access_level=AccessLevel.WRITE_PRIVATE, scope=None):
+        self.id = id
+        self.title = title
+        self.description = description
+        self.access_level = access_level
+        self.scope = scope
+        self.__pwd = pwd
+
+    def getLogin(self):
+        return self.title
+
+    def validate(self, pw):
+        encryptor = getUtility(IPasswordEncryptor)
+        pw1 = (pw or '').strip()
+        pw2 = (self.__pwd or '').strip()
+        return encryptor.validate(pw1, pw2)
+
+
+class LaunchpadPrincipal(BaseLaunchpadPrincipal):
 
     implements(ILaunchpadPrincipal)
 
     def __init__(self, id, title, description, person, pwd=None,
                  access_level=AccessLevel.WRITE_PRIVATE, scope=None):
-        self.id = id
-        self.title = title
-        self.description = description
-        self.access_level = access_level
-        self.scope = scope
+        super(LaunchpadPrincipal, self).__init__(
+            id, title, description, pwd=pwd, access_level=access_level,
+            scope=scope)
         self.person = person
-        self.__pwd = pwd
-
-    def getLogin(self):
-        return self.title
-
-    def validate(self, pw):
-        encryptor = getUtility(IPasswordEncryptor)
-        pw1 = (pw or '').strip()
-        pw2 = (self.__pwd or '').strip()
-        return encryptor.validate(pw1, pw2)
 
 
-# XXX: There's some opportunity for refactoring here, so that these two
-# classes share some code.
-class OpenIDPrincipal:
+class OpenIDPrincipal(BaseLaunchpadPrincipal):
 
     implements(IOpenIDPrincipal)
 
     def __init__(self, id, title, description, account, pwd=None,
                  access_level=AccessLevel.WRITE_PRIVATE, scope=None):
-        self.id = id
-        self.title = title
-        self.description = description
-        self.access_level = access_level
-        self.scope = scope
+        super(LaunchpadPrincipal, self).__init__(
+            id, title, description, pwd=pwd, access_level=access_level,
+            scope=scope)
         self.account = account
-        self.__pwd = pwd
-
-    def getLogin(self):
-        return self.title
-
-    def validate(self, pw):
-        encryptor = getUtility(IPasswordEncryptor)
-        pw1 = (pw or '').strip()
-        pw2 = (self.__pwd or '').strip()
-        return encryptor.validate(pw1, pw2)
 
 
 def get_oauth_authorization(request):

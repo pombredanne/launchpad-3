@@ -636,6 +636,7 @@ class IOpenIDPrincipal(IPrincipal):
     """Marker interface for OpenID principals."""
 
     account = Attribute("The Account the principal represents.")
+    access_level = ILaunchpadPrincipal['access_level']
 
 
 #
