@@ -262,7 +262,7 @@ the proposal if they have allowed the API to access private bits.
 
 == Getting a Person's Pending Merge Proposals ==
 
-It is possible to view all of a person's merge proposals of filter their
+It is possible to view all of a person's merge proposals or filter their
 proposals by their status.
 
     >>> proposals = webservice.named_get('/~source', 'getMergeProposals',
