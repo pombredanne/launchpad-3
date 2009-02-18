@@ -30,7 +30,8 @@ from canonical.launchpad.event.branchmergeproposal import (
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
+    BranchSubscriptionNotificationLevel, BranchType,
+    CodeReviewNotificationLevel,
     IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, WrongBranchMergeProposal)
@@ -985,6 +986,23 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         job.job.complete()
         self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
 
+    def test_iterReady_excludes_hosted_needing_mirror(self):
+        """Skip Jobs with a hosted source branch that needs mirroring."""
+        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
+        bmp.source_branch.requestMirror()
+        job = MergeProposalCreatedJob.create(bmp)
+        self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
+
+    def test_iterReady_includes_mirrored_needing_mirror(self):
+        """Skip Jobs with a hosted source branch that needs mirroring."""
+        source_branch = self.factory.makeProductBranch(
+            branch_type=BranchType.MIRRORED)
+        bmp = capture_events(
+            self.factory.makeBranchMergeProposal,
+            source_branch=source_branch)[0]
+        bmp.source_branch.requestMirror()
+        job = MergeProposalCreatedJob.create(bmp)
+        self.assertEqual([job], list(MergeProposalCreatedJob.iterReady()))
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""

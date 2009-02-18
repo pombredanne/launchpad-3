@@ -17,7 +17,7 @@ from email.Utils import make_msgid
 
 from lazr.delegates import delegates
 import simplejson
-from storm.expr import And
+from storm.expr import And, Or, Not
 from storm.store import Store
 from storm.base import Storm
 import transaction
@@ -921,12 +921,18 @@ class BranchMergeProposalJobDerived(object):
     @classmethod
     def iterReady(klass):
         """Iterate through all ready BranchMergeProposalJobs."""
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.interfaces.branch import BranchType
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.find(
             (BranchMergeProposalJob),
             And(BranchMergeProposalJob.job_type == klass.class_job_type,
                 BranchMergeProposalJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs)))
+                Job.id.is_in(Job.ready_jobs),
+                BranchMergeProposal.source_branch == Branch.id,
+                Or(Branch.next_mirror_time == None,
+                   Not(Branch.branch_type == BranchType.HOSTED))
+                ))
         return (klass(job) for job in jobs)
 
 
