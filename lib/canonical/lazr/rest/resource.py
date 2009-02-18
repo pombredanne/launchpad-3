@@ -862,6 +862,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             return simplejson.dumps(self, cls=ResourceJSONEncoder)
         elif media_type == self.XHTML_TYPE:
             return self.toXHTML().encode("utf-8")
+        else:
+            raise AssertionError((
+                    "No representation implementation for media type %s"
+                    % media_type))
 
     def _unmarshallField(self, field_name, field):
         """See what a field would look like in a representation.
