@@ -484,8 +484,9 @@ class IProductPublic(
             description=_(
                 "The ID of this project on its remote bug tracker.")))
 
-    upstream_bug_filing_url = Attribute(
-        "The URL of bug filing form on this project's upstream bug tracker")
+    upstream_bugtracker_links = Attribute(
+        "The URLs of bug filing and search forms on this project's upstream "
+        "bug tracker")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -535,12 +536,14 @@ class IProductPublic(
         status=List(
             title=_("A list of merge proposal statuses to filter by."),
             value_type=Choice(vocabulary=BranchMergeProposalStatus)))
+    @call_with(visible_by_user=REQUEST_USER)
     @operation_returns_collection_of(IBranchMergeProposal)
     @export_read_operation()
-    def getMergeProposals(status=None):
+    def getMergeProposals(status=None, visible_by_user=None):
         """Returns all merge proposals of a given status.
 
         :param status: A list of statuses to filter with.
+        :param visible_by_user: Normally the user who is asking.
         :returns: A list of `IBranchMergeProposal`.
         """
 
@@ -748,6 +751,13 @@ class IProductSet(Interface):
     def count_codified():
         """Return the number of projects that have branches associated with
         them.
+        """
+
+    def getProductsWithNoneRemoteProduct(bugtracker_type=None):
+        """Get all the IProducts having a `remote_product` of None
+
+        The result can be filtered to only return Products associated
+        with a given bugtracker type.
         """
 
 

@@ -67,10 +67,10 @@ from twisted.python import failure
 
 from zope.interface import implements, Interface
 
-from canonical.codehosting.branchfsclient import (
+from canonical.codehosting.vfs.branchfsclient import (
     BlockingProxy, BranchFileSystemClient, trap_fault)
 from canonical.codehosting.bzrutils import ensure_base
-from canonical.codehosting.transport import (
+from canonical.codehosting.vfs.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config

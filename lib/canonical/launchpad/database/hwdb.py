@@ -267,7 +267,7 @@ class HWSubmissionSet:
         return result_set
 
     def search(self, user=None, device=None, driver=None, distribution=None,
-               distroseries=None, architecture=None):
+               distroseries=None, architecture=None, owner=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         args = []
@@ -301,6 +301,8 @@ class HWSubmissionSet:
                 args.append(Distribution.id == distribution.id)
             if distroseries is not None:
                 args.append(DistroArchSeries.distroseries == distroseries.id)
+        if owner is not None:
+            args.append(HWSubmission.owner == owner.id)
 
         result_set = store.find(
             HWSubmission,
@@ -550,11 +552,11 @@ class HWDevice(SQLBase):
         SQLBase._create(self, id, **kw)
 
     def getSubmissions(self, driver=None, distribution=None,
-                       distroseries=None, architecture=None):
+                       distroseries=None, architecture=None, owner=None):
         """See `IHWDevice.`"""
         return HWSubmissionSet().search(
             device=self, driver=driver, distribution=distribution,
-            distroseries=distroseries, architecture=architecture)
+            distroseries=distroseries, architecture=architecture, owner=owner)
 
     @property
     def drivers(self):
@@ -675,6 +677,13 @@ class HWDriver(SQLBase):
     package_name = StringCol(notNull=False)
     name = StringCol(notNull=True)
     license = EnumCol(enum=License, notNull=False)
+
+    def getSubmissions(self, distribution=None, distroseries=None,
+                       architecture=None, owner=None):
+        """See `IHWDriver.`"""
+        return HWSubmissionSet().search(
+            driver=self, distribution=distribution,
+            distroseries=distroseries, architecture=architecture, owner=owner)
 
 
 class HWDriverSet:

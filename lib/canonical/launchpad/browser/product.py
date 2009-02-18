@@ -81,7 +81,7 @@ from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchmergeproposallisting import (
-    BranchMergeProposalListingView)
+    BranchMergeProposalListingItem, BranchMergeProposalListingView)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
@@ -108,6 +108,7 @@ from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget)
+from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -920,6 +921,10 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def initialize(self):
         self.status_message = None
+        self.title_edit_widget = TextLineEditorWidget(
+            self.context, 'title',
+            canonical_url(self.context, view_name='+edit'),
+            id="product-title", title="Edit this title")
 
     @property
     def show_license_status(self):
@@ -1905,8 +1910,79 @@ class ProductBranchesView(ProductBranchListingView):
 class ProductActiveReviewsView(BranchMergeProposalListingView):
     """Branch merge proposals for the product that are needing review."""
 
-    extra_columns = ['date_review_requested', 'vote_summary']
-    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+    show_diffs = False
+
+    # The grouping classifications.
+    TO_DO = 'to_do'
+    ARE_DOING = 'are_doing'
+    CAN_DO = 'can_do'
+    OTHER = 'other'
+
+    def _getReviewGroup(self, proposal, votes):
+        """Return one of TO_DO, CAN_DO, ARE_DOING, or OTHER.
+
+        These groupings define the different tables that the user is able to
+        see.
+
+        If there is a pending vote reference for the logged in user, then the
+        group is TO_DO as the user is expected to review.  If there is a vote
+        reference where it is not pending, this means that the user has
+        reviewed, so the group is ARE_DOING.  If there is a pending review
+        requested of a team that the user is in, then the review becomes a
+        CAN_DO.  All others are OTHER.
+        """
+        result = self.OTHER
+        for vote in votes:
+            if self.user is not None:
+                if vote.reviewer == self.user:
+                    if vote.comment is None:
+                        return self.TO_DO
+                    else:
+                        return self.ARE_DOING
+                # Since team reviews are always pending, and we've eliminated
+                # the case where the reviewer is ther person, then if the user
+                # is in the reviewer team, it is a can do.
+                if self.user.inTeam(vote.reviewer):
+                    result = self.CAN_DO
+        return result
+
+    def initialize(self):
+        # Work out the review groups
+        self.review_groups = {}
+        getter = getUtility(IBranchMergeProposalGetter)
+        proposals = list(getter.getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW],
+            self.user))
+        all_votes = getter.getVotesForProposals(proposals)
+        vote_summaries = getter.getVoteSummariesForProposals(proposals)
+        for proposal in proposals:
+            proposal_votes = all_votes[proposal]
+            review_group = self._getReviewGroup(
+                proposal, proposal_votes)
+            self.review_groups.setdefault(review_group, []).append(
+                BranchMergeProposalListingItem(
+                    proposal, vote_summaries[proposal], None, proposal_votes))
+            if proposal.preview_diff is not None:
+                self.show_diffs = True
+        self.proposal_count = len(proposals)
+
+    @property
+    def other_heading(self):
+        """Return the heading to be used for the OTHER group.
+
+        If there is no user, or there are no reviews in any user specific
+        group, then don't show a heading for the OTHER group.
+        """
+        if self.user is None:
+            return None
+        personal_review_count = (
+            len(self.review_groups.get(self.TO_DO, [])) +
+            len(self.review_groups.get(self.CAN_DO, [])) +
+            len(self.review_groups.get(self.ARE_DOING, [])))
+        if personal_review_count > 0:
+            return _('Other reviews')
+        else:
+            return None
 
     @property
     def heading(self):

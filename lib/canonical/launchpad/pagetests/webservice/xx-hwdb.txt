@@ -335,6 +335,69 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
+Once we've got a driver, we can search for submissions associated with it.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions').jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+We can filter the list of drivers by distribution.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     distribution=webservice.getAbsoluteUrl('/ubuntu')).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     distribution=webservice.getAbsoluteUrl('/debian')).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+We can filter the list of drivers by distribution series.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary')).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/warty')).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+We can filter the list of drivers by processor architecture.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     architecture='i386').jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     architecture='powerpc').jsonBody()
+    >>> print submissions['total_size']
+    0
+
+We can filter by distribution series and processor architecture.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary'),
+    ...     architecture='i386').jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
 
 === HWDB submissions and submission queries ===
 
@@ -503,11 +566,26 @@ But we can't supply both distribution and distroseries.
     ...     '/+hwdb/+device/2', 'getSubmissions',
     ...     distribution=webservice.getAbsoluteUrl('/ubuntu'),
     ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary'))
-    HTTP/1.1 500 Internal Server Error
+    HTTP/1.1 400 Bad Request
     ...
     Only one of `distribution` or `distroseries` can be present.
     ...
     <BLANKLINE>
+
+We can query for submissions from a particular user.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     owner=webservice.getAbsoluteUrl('/~name12')).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     owner=webservice.getAbsoluteUrl('/~name20')).jsonBody()
+    >>> print submissions['total_size']
+    0
 
 
 === Submission Devices ===

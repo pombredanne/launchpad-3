@@ -88,7 +88,7 @@ series.
 
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     tag.renderContents()
-    'An error occurred.'
+    'There is 1 error.'
     '1.0.0 is already in use by another version in this release series.'
 
 
@@ -98,10 +98,14 @@ The release owner can edit the release via its +edit form:
 
     >>> browser.open('http://launchpad.dev/firefox/trunk/1.0.0')
     >>> browser.getLink('Change details').click()
-
+    >>> print browser.title
+    Edit details of Mozilla Firefox 1.0.0 in Launchpad
     >>> browser.getControl('Summary').value = 'This is not a joke.'
     >>> browser.getControl('Code name').value = 'Portland Oregon part 2'
     >>> browser.getControl('Change').click()
+    >>> print browser.title
+    Mozilla Firefox 1.0.0 in Launchpad
+
 
 == Editing permissions extend to product and series owners ==
 
@@ -130,9 +134,12 @@ Celso is a member of ubuntu-team, so he can edit this release too:
     >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
     >>> browser.getLink('Change details').click()
-
+    >>> print browser.title
+    Edit details of Tomcat 0.6.6.6 in Launchpad
     >>> browser.getControl('Summary').value = 'Fixes 3 bugs.'
     >>> browser.getControl('Change').click()
+    >>> print browser.title
+    Tomcat 0.6.6.6 in Launchpad
 
 And if no-priv owns the series...
 
@@ -147,7 +154,9 @@ others:
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
     >>> browser.getLink('Change details').click()
-
+    >>> print browser.title
+    Edit details of Tomcat 0.6.6.6 in Launchpad
     >>> browser.getControl('Summary').value = 'Fixes 4 bugs.'
     >>> browser.getControl('Change').click()
-
+    >>> print browser.title
+    Tomcat 0.6.6.6 in Launchpad

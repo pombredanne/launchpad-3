@@ -6,27 +6,26 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-releases" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
-
-  <div metal:use-macro="context/@@launchpad_addform/addform">
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_info" tal:condition="context/releases">
+      The following releases have been made in this series:
+      <ul>
+        <li tal:repeat="release context/releases">
+          <tal:version content="release/version">0.9</tal:version>
+          <tal:codename content="release/codename">seamonkey</tal:codename>
+        </li>
+      </ul>
+    </div>
   </div>
-
 </div>
-    
+
 </body>
 </html>
 

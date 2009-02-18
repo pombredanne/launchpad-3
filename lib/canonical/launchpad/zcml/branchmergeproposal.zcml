@@ -16,9 +16,9 @@
                        date_created date_review_requested date_reviewed
                        review_diff preview_diff votes root_comment all_comments
                        isPersonValidReviewer isMergable getComment
-                       getNotificationRecipients isValidTransition
-                       getUnlandedSourceBranchRevisions root_message_id
-                       getUsersVoteReference"/>
+                       getNotificationRecipients getVoteReference
+                       isValidTransition getUnlandedSourceBranchRevisions
+                       root_message_id getUsersVoteReference"/>
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message
@@ -244,6 +244,12 @@
       name="+listing"
       template="../templates/branchmergeproposal-listing.pt"
       permission="zope.Public" />
+
+  <browser:page
+      for="*"
+      name="+bmp-macros"
+      permission="zope.Public"
+      template="../templates/branchmergeproposal-macros.pt" />
 
   <securedutility
       class="canonical.launchpad.database.BranchMergeProposalGetter"

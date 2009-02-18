@@ -10,7 +10,7 @@ import unittest
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
-from canonical.codehosting.branchfsclient import (
+from canonical.codehosting.vfs.branchfsclient import (
     BranchFileSystemClient, NotInCache, trap_fault)
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
