@@ -964,7 +964,7 @@ class Person(
         """Deprecated. Use is_team instead."""
         return self.teamowner is not None
 
-    def getMergeProposals(self, status=None):
+    def getMergeProposals(self, status=None, visible_by_user=None):
         """See `IPerson`."""
         if not status:
             status = (
@@ -973,7 +973,7 @@ class Person(
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
         return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self, status)
+            self, status, visible_by_user=None)
 
     @property
     def mailing_list(self):
