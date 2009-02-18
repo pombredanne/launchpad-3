@@ -38,8 +38,8 @@ Let's check the complex properties of a build object.
     True
 
     >>> firefox_build.buildlog = 34
-    >>> firefox_build.buildlog.http_url
-    'http://localhost:58000/34/evolution-2.2-test.pot'
+    >>> print firefox_build.build_log_url
+    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/18/+files/evolution-2.2-test.pot
 
     >>> firefox_build.changesfile
     <LibraryFileAlias ...>
@@ -150,9 +150,15 @@ build-failedtoupload-workflow.txt for further information.
     >>> print active_build.upload_log
     None
 
+    >>> print active_build.upload_log_url
+    None
+
     >>> active_build.storeUploadLog('sample upload log.')
     >>> print active_build.upload_log.filename
     upload_9_log.txt
+
+    >>> print active_build.upload_log_url
+    http://localhost:58000/93/upload_9_log.txt
 
 Once the transaction is committed, the file is available in the
 librarian, and we can retrieve its contents.

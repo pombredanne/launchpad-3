@@ -191,11 +191,23 @@ class IBuild(Interface):
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the entire buildlog."))
 
+    build_log_url = exported(
+        TextLine(
+            title=_("Build Log URL"), required=False,
+            description=_("A URL for the build log. None if there is no "
+                          "log available.")))
+
     upload_log = Object(
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the upload log for "
                 "build resulting in binaries that could not be processed "
                 "successfully. Otherwise it will be None."))
+
+    upload_log_url = exported(
+    TextLine(
+        title=_("Upload Log URL"), required=False,
+        description=_("A URL for failed upload logs."
+                      "Will be None if there was no failure.")))
 
     # Properties
     current_component = Attribute(

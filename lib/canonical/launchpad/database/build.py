@@ -83,6 +83,14 @@ class Build(SQLBase):
         dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
 
     @property
+    def upload_log_url(self):
+        """See `IBuild`."""
+        if self.upload_log is None:
+            return None
+
+        return self.upload_log.getURL()
+
+    @property
     def current_component(self):
         """See `IBuild`."""
         pub = self.getCurrentPublication()
@@ -527,6 +535,17 @@ class Build(SQLBase):
         """See `IBuild`"""
         return BuildQueue(build=self)
 
+    @property
+    def build_log_url(self):
+        """See `IBuild`."""
+        if self.buildstate in (
+            BuildStatus.NEEDSBUILD, BuildStatus.SUPERSEDED,
+            BuildStatus.BUILDING):
+            # In a state with no log file.
+            return None
+        else:
+            return canonical_url(self) + "/+files/" + self.buildlog.filename
+
     def notify(self, extra_info=None):
         """See `IBuild`"""
         if not config.builddmaster.send_build_notification:
@@ -621,8 +640,7 @@ class Build(SQLBase):
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
                 self.buildduration).approximateduration()
-            buildlog_url = (
-                canonical_url(self) + "/+files/" + self.buildlog.filename)
+            buildlog_url = self.build_log_url
             builder_url = canonical_url(self.builder)
 
         if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
