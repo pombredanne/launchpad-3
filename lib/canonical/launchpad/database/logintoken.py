@@ -67,13 +67,14 @@ class LoginToken(SQLBase):
         for token in tokens:
             token.date_consumed = UTC_NOW
 
-    def _send_email(self, from_name, subject, message):
+    def _send_email(self, from_name, subject, message, headers=None):
         """Send an email to this token's email address."""
         from_address = format_address(
             from_name, config.canonical.noreply_from_address)
         to_address = str(self.email)
         simple_sendmail(
-            from_address, to_address, subject, message, bulk=False)
+            from_address, to_address, subject, message,
+            headers=headers, bulk=False)
 
     def sendEmailValidationRequest(self, appurl):
         """See ILoginToken."""
