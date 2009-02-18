@@ -27,6 +27,7 @@
  * Use absolute units (e.g. px, pt) only when image sizes or CSS limitations
    demand it. Otherwise, use relative units (%, em).
 */
+.yui-ieditor {padding-right: 288px};
 
 .demo {background-color: #fee;}
 
