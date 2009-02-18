@@ -79,19 +79,22 @@
                         </ul>
                     </div>
                     <div class="block odd">
-                        <h3>Code hosting and tracking</h3>
-                        <h4>Democratise your code.</h4>
+                        <h3>Code hosting and review</h3>
+                        <h4>Democratise your code using Bazaar with Launchpad.</h4>
                         <p class="screen-holder">
                             <img src="images/home/screens/tracking.jpg" alt="Code hosting and tracking" />
                         </p>
                         <p>
-                            Bazaar is a distributed version control system that empowers anyone to contribute code to your project. Launchpad provides free hosting of Bazaar branches and an import process that lets people work in Bazaar even if your primary version control system is an older tool such as Subversion or CVS. Launchpad and Bazaar dramatically reduce the barriers to participation in any free software project. 
-</p><p>
-Launchpad also supports an efficient flow of new code into your project. You can publicly review code and reach consensus with core developers on which new branches are ready to merge into your trunk.
+                            
+                         Launchpad and Bazaar strip away the barriers to contributing to your project. In just a few key strokes anyone can create their own local branch of your trunk with full version control.<br /><br />
+                         
+                         When they're ready, they can upload their branch to Launchpad and propose it for merging back into your trunk. Code review &mdash; by web and email &mdash; gives you a public forum to discuss and approve or reject the merge.<br /><br />
+                         
+                         You can even use Launchpad to import CVS and Subversion repositories into Bazaar branches.
                         </p>
                         <ul class="further-links">
                             <li><a href="branch-hosting-tracking" accesskey="f" tabindex="4">More about code hosting and tracking</a></li>
-                            <li><a href="code-review" accesskey="g" tabindex="5">More about code reviews</a></li>
+                            <li><a href="code-review" accesskey="g" tabindex="5">More about code review</a></li>
                         </ul>
                     </div>
                     <div class="clear"></div>
@@ -108,20 +111,27 @@ Launchpad also supports an efficient flow of new code into your project. You can
                             <img src="images/home/screens/translations.jpg" alt="Translations" />
                         </p>
                         <p>
-                            Launchpad&rsquo;s intuitive web interface allows anyone who speaks English and another language as their mother tongue to help translate your project into their language, ready for export in standard GNU GetText files. Putting your project into Launchpad gives you access to 30,000 translators working in 257 languages, with automatic suggestions from a library of more than sixteen million strings.
+                            See your software translated by a community of over 40,000 working in 272 languages.<br /><br />
+                            
+                            Launchpad makes translation easy for everyone. Translators get a simple web interface, with automatic suggestions from a library of more than 16 million strings.<br /><br />
+                            You, as project owner, decide the balance between openness and quality. And you get standard GNU GetText files for integration with your software.<br /><br />
+                            
+
                         </p>
                         <ul class="further-links">
                             <li><a href="translation" accesskey="h" tabindex="6">More about translations</a></li>
                         </ul>
                     </div>
                     <div class="block odd">
-                        <h3>Package building and hosting</h3>
-                        <h4>Build and host Ubuntu packages in your own apt repository.</h4>
+                        <h3>Ubuntu package building and hosting</h3>
+                        <h4>Distribute software to Ubuntu users.</h4>
                         <p class="screen-holder">
                             <img src="images/home/screens/hosting.jpg" alt="Package building and hosting" />
                         </p>
                         <p>
-                            Build and host Ubuntu packages in your own APT repository. Use Launchpad to distribute experimental builds and betas of your software, with automatic updates pushed to your users whenever you modify a package.
+                            Build and distribute Ubuntu packages using your own personal APT repository, hosted by Launchpad.<br /><br />
+                            
+                            Whether you're publishing experimental builds, backports or betas, your Personal Package Archive lets end-users install your packages using the tools they already know and with automatic updates.
                         </p>
                         <ul class="further-links">
                             <li><a href="ppa" accesskey="i" tabindex="7">More about package hosting</a></li>
@@ -141,7 +151,9 @@ Launchpad also supports an efficient flow of new code into your project. You can
                             <img src="images/home/screens/blueprints.jpg" alt="Blueprint - specification tracking" />
                         </p>
                         <p>
-                            Target chunks of work to forthcoming releases, see who&rsquo;s working on them and track their progress. Open up your planning: anyone can use Launchpad to register a specification for your project and communicate their progress.
+                            Community planning for your project's road map. Anyone can use Launchpad to register a blueprint for your project, while you decide the priority and time-scales.<br /><br />
+                            
+                            Target chunks of work to forthcoming releases, see who&rsquo;s working on them and track their progress.
                         </p>
                         <ul class="further-links">
                             <li><a href="feature-tracking" accesskey="j" tabindex="8">More about specification tracking</a></li>
@@ -154,7 +166,9 @@ Launchpad also supports an efficient flow of new code into your project. You can
                             <img src="images/home/screens/answers.jpg" alt="Answers - community support" />
                         </p>
                         <p>
-                            Track help requests just like bug reports. Create FAQs and build a searchable knowledge base of previous answers. When requests for help turn out to be symptoms of an underlying bug, you can easily change the request into a bug report.
+                            Track help requests just like bug reports, with community support contacts, statuses and email notifications.<br /><br />
+                            
+                            When you come across common questions add them to your FAQ library and you get a searchable knowledge base for free. If a support request is actually a bug, no problem: one click and it becomes a bug report.
                         </p>
                         <ul class="further-links">
                             <li><a href="community-support" accesskey="k" tabindex="9">More about community support</a></li>
