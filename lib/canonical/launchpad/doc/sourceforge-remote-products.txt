@@ -33,3 +33,24 @@ getSFLinkedProductsWithNoneRemoteProduct() will return it.
     >>> for product in products:
     ...     print product.name, product.sourceforgeproject
     my-first-product fronobulator
+
+We'll create a test version of SourceForgeRemoteProductFinder that won't
+try to access the interwubs.
+
+    >>> import re
+    >>> from canonical.launchpad.scripts.sfremoteproductfinder import (
+    ...     SourceForgeRemoteProductFinder)
+
+    >>> class TestSFRemoteProductFinder(SourceForgeRemoteProductFinder):
+    ...
+    ...     def _getPage(self, page):
+    ...         print "Getting page: %s" % page
+    ...         project_re = re.compile('projects/([a-z]+)')
+    ...         project = project_re.match(page).groups()[0]
+    ...
+    ...         file_path = os.path.join(
+    ...             os.path.dirname(__file__), 'testfiles',
+    ...             'sourceforge-project-%s.html' % project)
+    ...         return open(file_path, 'r').read()
+
+
