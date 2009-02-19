@@ -215,10 +215,10 @@ class IBuild(Interface):
                 "successfully. Otherwise it will be None."))
 
     upload_log_url = exported(
-    TextLine(
-        title=_("Upload Log URL"), required=False,
-        description=_("A URL for failed upload logs."
-                      "Will be None if there was no failure.")))
+        TextLine(
+            title=_("Upload Log URL"), required=False,
+            description=_("A URL for failed upload logs."
+                          "Will be None if there was no failure.")))
 
     # Properties
     current_component = Attribute(
