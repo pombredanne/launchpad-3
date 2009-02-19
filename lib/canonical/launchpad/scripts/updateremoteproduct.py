@@ -28,8 +28,15 @@ class RemoteProductUpdater:
         products_needing_updating = (
             product_set.getProductsWithNoneRemoteProduct(bugtracker_type))
         for product in products_needing_updating:
-            continue
-            # bug_watch = get_first_bugwatch()
+            # Pick an arbitrary bug watch for the product. They all
+            # should point to the same product in the external bug
+            # tracker. We could do some sampling to make it more
+            # reliable, but it's not worth the trouble.
+            bug_watch = product.getLinkedBugWatches().any()
+            if bug_watch is None:
+                # No bug watches have been created for this product, so
+                # we can't figure out what remote_product should be.
+                continue
             external_bugtracker = self._getExternalBugTracker(
                 bug_watch.bugtracker)
             remote_product = external_bugtracker.getRemoteProduct(

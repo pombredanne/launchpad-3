@@ -17,35 +17,23 @@ automatically.
     ...     RemoteProductUpdater)
     >>> updater = RemoteProductUpdater()
 
-    >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
-    >>> bugzilla_product = factory.makeProduct(
-    ...     name=u'bugzilla-product', official_malone=False)
-    >>> bugzilla = factory.makeBugTracker(
-    ...     bugtrackertype=BugTrackerType.BUGZILLA)
-    >>> bugzilla_product.bugtracker = bugzilla
-    >>> rt_product = factory.makeProduct(
-    ...     name=u'rt-product', official_malone=False)
+
+== Testing ==
+
+To help testing, there is a method, _getExternalBugTracker(), that
+creates the ExternalBugTracker for the given BugTracker.
+
     >>> rt = factory.makeBugTracker(
     ...     bugtrackertype=BugTrackerType.RT,
     ...     base_url=u'http://rt.example.com/')
-    >>> rt_product.bugtracker = rt
-
-    >>> updater.updateRemoteProduct(BugTrackerType.RT)
-    >>> print bugzilla_product.remote_product
-    None
-    >>> print rt_product.remote_product
-    None
-
-getting external bug tracker.
-
     >>> rt_external = updater._getExternalBugTracker(rt)
     >>> rt_external.__class__.__name__
     'RequestTracker'
     >>> rt_external.baseurl
     u'http://rt.example.com'
 
+For testing, _getExternalBugTracker() can be overridden to return an
+ExternalBugTracker that doesn't require network access.
 
     >>> class FakeExternalBugTracker:
     ...     def getRemoteProduct(self, remote_bug):
@@ -56,7 +44,47 @@ getting external bug tracker.
     ...     def _getExternalBugTracker(self, bug_tracker):
     ...         return FakeExternalBugTracker()
 
-Create bug tasks...
+
+== updateRemoteProduct() ==
+
+The updateRemoteProduct() method looks at the bug watches that are
+linked to the product, to decide what remote_product should be set to.
+It accepts a single parameter, the type of the bug tracker that should
+be updated.
+
+
+=== No bug watches ===
+
+If there are no bug watches, nothing will be done.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> bugzilla_product = factory.makeProduct(
+    ...     name=u'bugzilla-product', official_malone=False)
+    >>> bugzilla = factory.makeBugTracker(
+    ...     bugtrackertype=BugTrackerType.BUGZILLA)
+    >>> bugzilla_product.bugtracker = bugzilla
+    >>> rt_product = factory.makeProduct(
+    ...     name=u'rt-product', official_malone=False)
+    >>> rt = factory.makeBugTracker(
+    ...     bugtrackertype=BugTrackerType.RT)
+    >>> rt_product.bugtracker = rt
+
+    >>> list(bugzilla_product.getLinkedBugWatches())
+    []
+    >>> updater.updateRemoteProduct(BugTrackerType.RT)
+    >>> print bugzilla_product.remote_product
+    None
+    >>> print rt_product.remote_product
+    None
+
+
+=== Linked bug watches ===
+
+If there are bug watches for a product having a None remote_product, an
+arbitrary bug watch will be retrieved, and queried for its remote
+product. Products having a bug tracker of a different type than the
+given one are ignored.
 
     >>> updater = TestRemoteProductUpdater()
     >>> bugzilla_bugtask = factory.makeBugTask(target=bugzilla_product)
