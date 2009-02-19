@@ -46,10 +46,12 @@ class RecordingSlave:
         return '<%s:%s>' % (self.name, self.url)
 
     def ensurepresent(self, *args):
+        print('RS: ensurepresent()')
         self.calls.append(('ensurepresent', args))
         return (True, 'Download')
 
     def build(self, *args):
+        print('RS: build()')
         self.calls.append(('build', args))
         return ('BuilderStatus.BUILDING', args[0])
 
@@ -65,6 +67,7 @@ class RecordingSlave:
 
         :return: a (stdout, stderr, subprocess exitcode) triple
         """
+        print('RS: resumeHost()')
         self.resume = True
         logger.debug("Recording slave reset request for %s", self.url)
         self.resume_argv = resume_argv
@@ -79,6 +82,7 @@ class RecordingSlave:
 
         :return: a deferred
         """
+        print('RS: resumeSlaveHost()')
         d = utils.getProcessOutputAndValue(
             self.resume_argv[0], self.resume_argv[1:])
         return d
@@ -158,7 +162,7 @@ class BuilddManager(service.Service):
 
     def startService(self):
         deferred = deferToThread(self.scan)
-        deferred.addCallback(self.resume)
+        deferred.addCallback(self.resumeAndDispatch)
 
     def scan(self):
         return self.buildd_proxy.scanAllBuilders()
@@ -169,23 +173,44 @@ class BuilddManager(service.Service):
             print 'RESUME FAIL', name, response
             self.buildd_proxy.resetBuilder(name)
 
-    def resume(self, recording_slaves):
-        print 'RESUMING:', recording_slaves
-
-        self.rounds = 0
-        def check_rounds(r):
-            self.rounds -= 1
-            if self.rounds == 0:
-                self.dispatch(recording_slaves)
+    def resumeAndDispatch(self, recording_slaves):
+        print('BM: resumeAndDispatch()')
+        print('RESUME/DISPATCH: %s' % recording_slaves)
 
         for slave in recording_slaves:
+            self.runningJobs += 1
             if slave.resume:
-                self.rounds += 1
+                print('RESUME: yes')
+                # The buildd slave needs to be reset before we can dispatch
+                # builds to it.
                 d = slave.resumeSlaveHost()
                 d.addCallback(self.checkResume, slave.name)
-                d.addBoth(check_rounds)
+            else:
+                print('RESUME: no')
+                # Buildd slave is clean, we can dispatch a build to it
+                # straightaway.
+                d = defer.maybeDeferred(lambda: True)
+            d.addCallback(self.dispatchBuild, slave)
+            d.addBoth(self.stopWhenDone)
 
-        if self.rounds == 0:
+    def dispatchBuild(self, resume_ok, slave):
+        print('BM: dispatchBuild()')
+        print('DISPATCH: %s/%s' % (resume_ok, slave))
+        # Stop right here if the buildd slave could not be reset.
+        if not resume_ok:
+            return
+
+        proxy = Proxy(str(urlappend(slave.url, 'rpc')))
+        for method, args in slave.calls:
+            self.runningJobs += 1
+            d = proxy.callRemote(method, *args)
+            d.addCallback(self.checkDispatch, slave.name)
+            d.addErrback(self.dispatchFail, slave.name)
+
+    def stopWhenDone(self, result):
+        print('STOP: %s' % self.runningJobs)
+        self.runningJobs -= 1
+        if self.runningJobs <= 0:
             reactor.stop()
 
     def checkDispatch(self, response, name):
@@ -194,22 +219,3 @@ class BuilddManager(service.Service):
             print 'DISPATCH FAIL', name, response
             self.buildd_proxy.resetBuilder(name)
 
-    def dispatch(self, recording_slaves):
-        print 'DISPATCHING:', recording_slaves
-
-        self.rounds = 0
-        def check_rounds(r):
-            self.rounds -= 1
-            if self.rounds == 0:
-                reactor.stop()
-
-        for slave in recording_slaves:
-            # Configurable socket timeouts!
-            proxy = Proxy(
-                str(urlappend(slave.url, 'rpc')))
-            for method, args in slave.calls:
-                self.rounds += 1
-                d = proxy.callRemote(method, *args)
-                d.addCallback(self.checkDispatch, slave.name)
-                d.addErrback(self.buildd_proxy.dispatchFail, slave.name)
-                d.addBoth(check_rounds)
