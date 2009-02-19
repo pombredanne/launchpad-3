@@ -23,7 +23,6 @@ from StringIO import StringIO
 import os.path
 
 import pytz
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
