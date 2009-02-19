@@ -118,8 +118,8 @@ it's sanitised.
 The field attribute used by the view provides a javascript encoded
 representation of the field parameter.
 
-    # XXX AaronBentley 09-02-16 bug=330243: This fails on Intrepid, apparently
-    # due to differences in the JS compressor.
+    # XXX AaronBentley 2009-02-16 bug=330243: This fails on Intrepid,
+    # apparently due to differences in the JS compressor.
     #>>> print view.field
     "field.product'\/alert(\"xss rules\")\/alert(document.cookie)\/"
 

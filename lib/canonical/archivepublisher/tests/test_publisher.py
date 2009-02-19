@@ -715,7 +715,7 @@ class TestPublisher(TestPublisherBase):
                     publisher, 'breezy-autotest', component, dist)
 
     def disabled_testAptSHA256(self):
-        # XXX AaronBentley 09-02-16 bug=330224 This test is (apparently
+        # XXX AaronBentley 2009-02-16 bug=330224 This test is (apparently
         # legitimately) failing on Intrepid, but not on Hardy.
         """Test issues with python-apt in Ubuntu/hardy.
 
