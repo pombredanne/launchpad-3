@@ -51,6 +51,30 @@ ExternalBugTracker that doesn't require network access.
     ...         return FakeExternalBugTracker()
 
 
+== update() ==
+
+The update method simply loops over all the bug tracker types that can
+track more than one product, and calls updateByBugTrackerType().
+
+    >>> class TrackerTypeCollectingUpdater(RemoteProductUpdater):
+    ...     def __init__(self):
+    ...         self.looped_over_bug_tracker_types = set()
+    ...     def updateByBugTrackerType(self, bugtracker_type):
+    ...         self.looped_over_bug_tracker_types.add(bugtracker_type)
+
+    >>> from canonical.launchpad.interfaces.bugtracker import (
+    ...     SINGLE_PRODUCT_BUGTRACKERTYPES)
+    >>> multi_product_trackers = set(
+    ...     bugtracker_type for bugtracker_type in BugTrackerType.items
+    ...     if bugtracker_type not in SINGLE_PRODUCT_BUGTRACKERTYPES)
+
+    >>> updater = TrackerTypeCollectingUpdater()
+    >>> updater.update()
+    >>> multi_product_trackers.difference(
+    ...     updater.looped_over_bug_tracker_types)
+    set([])
+
+
 == updateByBugTrackerType() ==
 
 The updateByBugTrackerType() method looks at the bug watches that are
@@ -149,3 +173,4 @@ after each product's remote_product has been updated.
     COMMIT
     COMMIT
     COMMIT
+

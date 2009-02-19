@@ -9,6 +9,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.components.externalbugtracker import (
     get_external_bugtracker)
+from canonical.launchpad.interfaces.bugtracker import (
+    BugTrackerType, SINGLE_PRODUCT_BUGTRACKERTYPES)
 from canonical.launchpad.interfaces.product import IProductSet
 
 
@@ -21,6 +23,14 @@ class RemoteProductUpdater:
     def _getExternalBugTracker(self, bug_tracker):
         """Get the IExternalBugTracker for the given bug tracker."""
         return get_external_bugtracker(bug_tracker)
+
+    def update(self):
+        """Update `remote_product` for all Products it can be set for."""
+        multi_product_trackers = [
+            bugtracker_type for bugtracker_type in BugTrackerType.items
+            if bugtracker_type not in SINGLE_PRODUCT_BUGTRACKERTYPES]
+        for bugtracker_type in multi_product_trackers:
+            self.updateByBugTrackerType(bugtracker_type)
 
     def updateByBugTrackerType(self, bugtracker_type):
         """Update `remote_product` for Products using the bug tracker type.
