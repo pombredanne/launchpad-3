@@ -761,8 +761,7 @@ class IProductSet(Interface):
         """
 
     def getSFLinkedProductsWithNoneRemoteProduct(self):
-        """Get all IProducts with a sourceforge project and no remote_product
-        """
+        """Get IProducts with a sourceforge project and no remote_product."""
 
 
 emptiness_vocabulary = SimpleVocabulary.fromItems(
