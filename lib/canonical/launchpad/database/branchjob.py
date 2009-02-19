@@ -214,3 +214,102 @@ class RevisionMailJob(BranchDiffJob):
     def run(self):
         """See `IRevisionMailJob`."""
         self.getMailer().sendAll()
+
+
+class RevisionsAddedJob(BranchJob):
+
+    @classmethod
+    def create(klass, branch, last_scanned_id, last_revision_id):
+        metadata = {'last_scanned_id': last_revision_id}
+
+    @staticmethod
+    def iter_revision_revno(bzr_branch, branch_revisions):
+        for branch_revisions_chunk in iter_list_chunks(
+            list(branch_revisions), 1000):
+            revision_ids = [branch_revision.revision.revision_id
+                for branch_revision in branch_revisions_chunk]
+            revisions = bzr_branch.repository.get_revisions(revision_ids)
+            for revision, branch_revision in zip(
+                revisions, branch_revisions_chunk):
+                yield revision, branch_revision.sequence
+
+    def run()
+        diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
+                       BranchSubscriptionNotificationLevel.FULL)
+        subscriptions = self.db_branch.getSubscriptionsByLevel(diff_levels)
+        if len(subscriptions) == 0:
+            return
+        for subscription in subscriptions:
+            if (subscription.max_diff_lines !=
+                BranchSubscriptionDiffSize.NODIFF):
+                generate_diffs = True
+                break
+        else:
+            generate_diffs = False
+
+        bzr_branch = self.branch.getBzrBranch()
+        bzr_branch.lock_read()
+        try:
+            graph = bzr_branch.repository.get_graph()
+            added_revisions = graph.find_difference
+                (last_scanned_id, last_revision_id)[1]
+            branch_revisions = self.branch.getMainlineBranchRevisions(
+                added_revisions)
+            for revision, revno in self.iter_revision_revno(branch_revisions):
+                assert revno is not None
+                mailer = self.getMailerForRevision(
+                    bzr_branch, revision, revno, generate_diffs)
+                mailer.sendAll()
+        finally:
+            bzr_branch.unlock()
+
+    def getMailerForRevision(self, bzr_branch, revision, revno,
+                             generate_diffs):
+        message = get_revision_message(bzr_branch, revision, revno)
+        # Use the first (non blank) line of the commit message
+        # as part of the subject, limiting it to 100 characters
+        # if it is longer.
+        message_lines = [
+            line.strip() for line in bzr_revision.message.split('\n')
+            if len(line.strip()) > 0]
+        if len(message_lines) == 0:
+            first_line = 'no commit message given'
+        else:
+            first_line = message_lines[0]
+            if len(first_line) > SUBJECT_COMMIT_MESSAGE_LENGTH:
+                offset = SUBJECT_COMMIT_MESSAGE_LENGTH - 3
+                first_line = first_line[:offset] + '...'
+        subject = '[Branch %s] Rev %s: %s' % (
+            self.db_branch.unique_name, revno, first_line)
+        if generate_diffs:
+            if revision.parent_ids > 0:
+                parent_id = revision.parents_ids[0]
+            else:
+                parent_id = NULL_REVISION
+            diff = StaticDiff.acquire(parent_id, revision.revision_id,
+                                      bzr_branch.repository)
+            transaction.commit()
+            diff_text = diff.diff.text
+        else:
+            diff_text = None
+        return BranchMailer.forRevision(
+            self.branch, revno, self.from_address, message, diff_text,
+            subject)
+
+
+def get_revision_message(bzr_branch, bzr_revision, revno):
+    """Return the log message for `bzr_revision` on `bzr_branch`.
+
+    :param bzr_branch: A `bzrlib.branch.Branch` object.
+    :param bzr_revision: A Bazaar `Revision` object.
+    :return: The commit message entered for `bzr_revision`.
+    """
+    outf = StringIO()
+    lf = log_formatter('long', to_file=outf)
+    rev_id = bzr_revision.revision_id
+    show_log(bzr_branch,
+             lf,
+             start_revision=revno,
+             end_revision=revno,
+             verbose=True)
+    return outf.getvalue()

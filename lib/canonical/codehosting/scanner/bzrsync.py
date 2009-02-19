@@ -75,27 +75,6 @@ def set_bug_branch_status(bug, branch, status):
     return bug_branch
 
 
-def get_revision_message(bzr_branch, bzr_revision):
-    """Return the log message for `bzr_revision` on `bzr_branch`.
-
-    :param bzr_branch: A `bzrlib.branch.Branch` object.
-    :param bzr_revision: A Bazaar `Revision` object.
-    :return: The commit message entered for `bzr_revision`.
-    """
-    outf = StringIO()
-    lf = log_formatter('long', to_file=outf)
-    rev_id = bzr_revision.revision_id
-    rev1 = rev2 = bzr_branch.revision_id_to_revno(rev_id)
-    if rev1 == 0:
-        rev1 = None
-        rev2 = None
-
-    show_log(bzr_branch,
-             lf,
-             start_revision=rev1,
-             end_revision=rev2,
-             verbose=True)
-    return outf.getvalue()
 
 
 class BugBranchLinker:
@@ -194,7 +173,6 @@ class BranchMailer:
         self.db_branch = db_branch
         self.pending_emails = []
         self.subscribers_want_notification = False
-        self.generate_diffs = False
         self.initial_scan = None
         self.email_from = config.canonical.noreply_from_address
 
@@ -217,10 +195,6 @@ class BranchMailer:
         subscriptions = self.db_branch.getSubscriptionsByLevel(diff_levels)
         for subscription in subscriptions:
             self.subscribers_want_notification = True
-            if (subscription.max_diff_lines !=
-                BranchSubscriptionDiffSize.NODIFF):
-                self.generate_diffs = True
-                break
 
         # If db_history is empty, then this is the initial scan of the
         # branch.  We only want to send one email for the initial scan
@@ -260,27 +234,6 @@ class BranchMailer:
         """
         if (not self.initial_scan
             and self.subscribers_want_notification):
-            message = get_revision_message(bzr_branch, bzr_revision)
-            # Use the first (non blank) line of the commit message
-            # as part of the subject, limiting it to 100 characters
-            # if it is longer.
-            message_lines = [
-                line.strip() for line in bzr_revision.message.split('\n')
-                if len(line.strip()) > 0]
-            if len(message_lines) == 0:
-                first_line = 'no commit message given'
-            else:
-                first_line = message_lines[0]
-                if len(first_line) > SUBJECT_COMMIT_MESSAGE_LENGTH:
-                    offset = SUBJECT_COMMIT_MESSAGE_LENGTH - 3
-                    first_line = first_line[:offset] + '...'
-            subject = '[Branch %s] Rev %s: %s' % (
-                self.db_branch.unique_name, sequence, first_line)
-            job = getUtility(IRevisionMailJobSource).create(
-                self.db_branch, revno=sequence, from_address=self.email_from,
-                    body=message, perform_diff=self.generate_diffs,
-                    subject=subject)
-            self.pending_emails.append(job)
 
     def sendRevisionNotificationEmails(self, bzr_history):
         """Send out the pending emails.
@@ -734,14 +687,8 @@ class BzrSync:
             revid for (revid, sequence)
             in branchrevisions_to_insert.iteritems() if sequence is not None]
 
-        for revid_chunk in iter_list_chunks(mainline_revids, 1000):
-            present_mainline_revisions = self.getBazaarRevisions(
-                bzr_branch, revid_chunk)
-            for revision in present_mainline_revisions:
-                sequence = branchrevisions_to_insert[revision.revision_id]
-                assert sequence is not None
-                self._branch_mailer.generateEmailForRevision(
-                    bzr_branch, revision, sequence)
+        RevisionsAddedJob.create(db_branch, revid_seq_pairs)
+
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
