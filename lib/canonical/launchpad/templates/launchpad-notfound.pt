@@ -42,7 +42,7 @@
         accept-charset="UTF-8"
         style="margin: 1em 0 1em 0"
       >
-        <img src="/@@/search.png"> <input id="text" type="text" name="field.text" size="50" />
+        <img src="/@@/search.png" /> <input id="text" type="text" name="field.text" size="50" />
         <input type="submit" value="Search Launchpad" />
       </form>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />

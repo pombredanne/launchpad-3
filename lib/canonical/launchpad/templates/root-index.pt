@@ -139,7 +139,7 @@
               </div>
               <div class="home-banners">
                 <a href="/+tour"><img src="/@@/tour-icon" alt=""
-                /></a> <a href="/+tour">Take the tour</a><br>
+                /></a> <a href="/+tour">Take the tour</a><br/>
                 <a href="https://help.launchpad.net/"><img src="/@@/maybe" alt=""
                 /></a> <a href="https://help.launchpad.net/">Read the guide</a>
               </div>
