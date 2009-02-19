@@ -41,9 +41,12 @@
     permission="zope.Public"
     />
 
+  <!-- XXX: salgado, 2009-02-19: Using permission="Public" here causes some
+  tests to fail (https://pastebin.canonical.com/13975/).  Although I'm not
+  entirely sure why, using trusted=yes fixes that. -->
   <adapter
     factory="canonical.launchpad.database.person.person_from_account"
-    permission="zope.Public"
+    trusted="yes"
     />
 
   <class class="canonical.launchpad.database.Person">
