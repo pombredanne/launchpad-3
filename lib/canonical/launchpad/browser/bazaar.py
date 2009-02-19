@@ -94,7 +94,7 @@ def range_get(range_map, x):
     the value for the smallest key defined in the map that is larger than 'x'.
     If no such key exists, 'range_get' raises KeyError.
     """
-    bigger_keys = sorted(key for key in range_map.iterkeys() if key > x)
+    bigger_keys = sorted(key for key in range_map.iterkeys() if key >= x)
     if bigger_keys == []:
         raise KeyError(x)
     return range_map[min(bigger_keys)]
@@ -155,17 +155,20 @@ class BazaarProductView:
 
         :param values: A list of ordinal values.
         :param percentiles: A list of percentage values, represented as
-            floats in the range [0, 1).
+            floats in the range [0, 1].
         :return: A dict mapping the value at percentile to the percentile.
         """
-        assert max(percentiles) < 1.0
+        assert max(percentiles) <= 1.0
         assert min(percentiles) >= 0.0
         values.sort()
         num_values = len(values)
         distribution = {}
         last_index = None
         for cutoff in percentiles:
-            index = int(num_values * cutoff)
+            if cutoff == 1.0:
+                index = -1
+            else:
+                index = int(num_values * cutoff)
             if last_index != index:
                 distribution[values[index]] = cutoff
                 last_index = index
@@ -179,14 +182,10 @@ class BazaarProductView:
         If the 'percentile_map' dict has an entry for 1.0, that will be used
         as the default value.
         """
-        default = percentile_map.pop(1.0, None)
         distribution = self._distribute(values, percentile_map.keys())
         def getter(x):
-            try:
-                percentile = range_get(distribution, x)
-                return percentile_map[percentile_map]
-            except KeyError:
-                return default
+            percentile = range_get(distribution, x)
+            return percentile_map[percentile]
         return getter
 
     def products(self, num_products=None):
