@@ -611,21 +611,23 @@ class URIField(TextLine):
 
     def normalize(self, input):
         """See `IURIField`."""
+        if input is None:
+            return input
+
         input = input.strip()
-        if input:
-            try:
-                uri = URI(input)
-            except InvalidURIError, exc:
-                raise LaunchpadValidationError(str(exc))
-            # If there is a policy for whether trailing slashes are
-            # allowed at the end of the path segment, ensure that the
-            # URI conforms.
-            if self.trailing_slash is not None:
-                if self.trailing_slash:
-                    uri = uri.ensureSlash()
-                else:
-                    uri = uri.ensureNoSlash()
-            input = unicode(uri)
+        try:
+            uri = URI(input)
+        except InvalidURIError, exc:
+            raise LaunchpadValidationError(str(exc))
+        # If there is a policy for whether trailing slashes are
+        # allowed at the end of the path segment, ensure that the
+        # URI conforms.
+        if self.trailing_slash is not None:
+            if self.trailing_slash:
+                uri = uri.ensureSlash()
+            else:
+                uri = uri.ensureNoSlash()
+        input = unicode(uri)
         return input
 
     def _validate(self, value):
