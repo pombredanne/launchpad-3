@@ -51,7 +51,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchpadPrincipal, IOpenIDPrincipal, IPlacelessLoginSource,
     UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
-    logInPerson, logoutPerson, allowUnauthenticatedSession)
+    logInPrincipal, logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -738,8 +738,9 @@ class LoginServiceLoginView(LoginServiceBaseView):
         if action == 'login':
             loginsource = getUtility(IPlacelessLoginSource)
             principal = loginsource.getPrincipalByLogin(email)
-            # XXX: This call to logInPerson() must not create a Person entry.
-            logInPerson(self.request, principal, email)
+            # XXX: This call to logInPrincipal() must not create a Person
+            # entry.
+            logInPrincipal(self.request, principal, email)
             # Update the attribute holding the cached user.
             self._user = principal.person
             return self.renderOpenIDResponse(self.createPositiveResponse())

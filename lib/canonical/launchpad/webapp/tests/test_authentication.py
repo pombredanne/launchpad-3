@@ -15,7 +15,7 @@ from canonical.testing import (
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import OpenIDPrincipal
-from canonical.launchpad.webapp.login import logInPerson
+from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import IdPublication
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -40,7 +40,7 @@ class TestAuthenticationOfPersonLessAccounts(TestCaseWithFactory):
     def test_navigate_anonymously_on_launchpad_dot_net(self):
         # A user with the credentials of a personless account will browse
         # launchpad.net anonymously.
-        logInPerson(self.request, self.principal, 'baz@example.com')
+        logInPrincipal(self.request, self.principal, 'baz@example.com')
         self.request.response.setCookie(
             config.launchpad_session.cookie, 'xxx')
 
@@ -51,7 +51,7 @@ class TestAuthenticationOfPersonLessAccounts(TestCaseWithFactory):
     def test_navigate_logged_in_on_login_dot_launchpad_dot_net(self):
         # A user with the credentials of a personless account will browse
         # login.launchpad.net logged in as that account.
-        logInPerson(self.request, self.principal, 'baz@example.com')
+        logInPrincipal(self.request, self.principal, 'baz@example.com')
         self.request.response.setCookie(
             config.launchpad_session.cookie, 'xxx')
 
@@ -67,4 +67,3 @@ def test_suite():
         'test_launchpad_login_source.txt',
         layer=LaunchpadFunctionalLayer, setUp=setUp, tearDown=tearDown))
     return suite
-

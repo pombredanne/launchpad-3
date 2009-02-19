@@ -258,7 +258,7 @@ class LoginOrRegister:
                 token.sendEmailValidationRequest(appurl)
                 return
             if person.is_valid_person:
-                logInPerson(self.request, principal, email)
+                logInPrincipal(self.request, principal, email)
                 self.redirectMinusLogin()
             else:
                 # Normally invalid accounts will have a NULL password
@@ -371,8 +371,8 @@ class LoginOrRegister:
         return '\n'.join(L)
 
 
-def logInPerson(request, principal, email):
-    """Log the person in. Password validation must be done in callsites."""
+def logInPrincipal(request, principal, email):
+    """Log the principal in. Password validation must be done in callsites."""
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
@@ -414,6 +414,9 @@ def allowUnauthenticatedSession(request, duration=timedelta(minutes=10)):
         expireSessionCookie(request, client_id_manager, duration)
 
 
+# XXX: salgado, 2009-02-19: Rename this to logOutPrincipal(), to be consistent
+# with logInPrincipal().  Or maybe logUserOut(), in case we don't care about
+# consistency.
 def logoutPerson(request):
     """Log the user out."""
     session = ISession(request)

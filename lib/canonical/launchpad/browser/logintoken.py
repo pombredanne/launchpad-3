@@ -31,7 +31,7 @@ from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
-from canonical.launchpad.webapp.login import logInPerson
+from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
@@ -122,11 +122,11 @@ class BaseLoginTokenView(OpenIDMixin):
         self.successfullyProcessed = True
         self.request.response.addInfoNotification(message)
 
-    def logInPersonByEmail(self, email):
-        """Login the person with the given email address."""
+    def logInPrincipalByEmail(self, email):
+        """Login the principal with the given email address."""
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        logInPerson(self.request, principal, email)
+        logInPrincipal(self.request, principal, email)
 
     @property
     def has_openid_request(self):
@@ -224,7 +224,7 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
             password=data['password'],
             preferred_email=email)
         self.context.consume()
-        self.logInPersonByEmail(removeSecurityProxy(email).email)
+        self.logInPrincipalByEmail(removeSecurityProxy(email).email)
         self.request.response.addInfoNotification(_(
             "Profile claimed successfully"))
 
@@ -357,7 +357,7 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
 
         self.context.consume()
 
-        self.logInPersonByEmail(self.context.email)
+        self.logInPrincipalByEmail(self.context.email)
 
         self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
@@ -790,7 +790,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
                 data['password'])
 
         self.context.consume()
-        self.logInPersonByEmail(removeSecurityProxy(email).email)
+        self.logInPrincipalByEmail(removeSecurityProxy(email).email)
         self.created_person = person
         self.request.response.addInfoNotification(_(
             "Registration completed successfully"))

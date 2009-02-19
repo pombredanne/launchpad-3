@@ -16,7 +16,7 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, IPlacelessAuthUtility)
-from canonical.launchpad.webapp.login import logInPerson, logoutPerson
+from canonical.launchpad.webapp.login import logInPrincipal, logoutPerson
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -41,16 +41,16 @@ class TestLoginAndLogout(TestCaseWithFactory):
 
     def test_logging_in_and_logging_out(self):
         # A test showing that we can authenticate the request after
-        # logInPerson() is called, and after logoutPerson() we can no longer
+        # logInPrincipal() is called, and after logoutPerson() we can no longer
         # authenticate it.
 
-        # This is to setup an interaction so that we can call logInPerson
+        # This is to setup an interaction so that we can call logInPrincipal
         # below.
         login('foo.bar@example.com')
 
-        logInPerson(self.request, self.principal, 'foo.bar@example.com')
+        logInPrincipal(self.request, self.principal, 'foo.bar@example.com')
         session = ISession(self.request)
-        # logInPerson() stores the account ID in a variable named 'accountid'.
+        # logInPrincipal() stores the account ID in a variable named 'accountid'.
         self.failUnlessEqual(
             session['launchpad.authenticateduser']['accountid'],
             self.principal.id)
@@ -72,12 +72,12 @@ class TestLoginAndLogout(TestCaseWithFactory):
     def test_logging_in_and_logging_out_the_old_way(self):
         # A test showing that we can authenticate a request that had the
         # person/account ID stored in the 'personid' session variable instead
-        # of 'accountid' -- where it's stored by logInPerson(). Also shows
+        # of 'accountid' -- where it's stored by logInPrincipal(). Also shows
         # that after logoutPerson() we can no longer authenticate it.
         # This is just for backwards compatibility.
 
-        # This is to setup an interaction so that we can call logInPerson
-        # below.
+        # This is to setup an interaction so that we can do the same thing
+        # that's done by logInPrincipal() below.
         login('foo.bar@example.com')
 
         session = ISession(self.request)
