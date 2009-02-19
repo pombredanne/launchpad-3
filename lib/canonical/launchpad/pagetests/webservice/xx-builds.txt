@@ -25,7 +25,6 @@ of properties:
     datecreated: u'2007-07-08T00:00:00+00:00'
     dependencies: None
     distribution_link: u'http://.../ubuntu'
-    estimated_build_duration: None
     pocket: u'Release'
     resource_type_link: u'http://.../#build'
     self_link: u'http://.../~cprov/+archive/ppa/+build/26'
