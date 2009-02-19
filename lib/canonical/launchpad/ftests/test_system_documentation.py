@@ -855,6 +855,10 @@ special = {
             layer=LaunchpadZopelessLayer,
             setUp=setUp, tearDown=tearDown,
             ),
+    'sourceforge-remote-products.txt': LayeredDocFileSuite(
+            '../doc/sourceforge-remote-products.txt',
+            layer=LaunchpadZopelessLayer,
+            ),
     # This test is actually run twice to prove that the AppServerLayer
     # properly isolates the database between tests.
     'launchpadlib.txt': LayeredDocFileSuite(
