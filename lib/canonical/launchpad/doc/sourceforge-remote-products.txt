@@ -10,6 +10,7 @@ IProductSet.getSFLinkedProductsWithNoneRemoteProduct().
 There are currently no Products in the database linked to a SourceForge
 project without a remote_product set.
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.product import IProductSet
     >>> products = getUtility(
     ...     IProductSet).getSFLinkedProductsWithNoneRemoteProduct()
