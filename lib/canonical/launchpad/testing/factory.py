@@ -29,6 +29,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
+from canonical.database.sqlbase import flush_database_updates
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
@@ -247,7 +248,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         email.status = email_address_status
         
         # Ensure all Stores can see the new user and updated ValidPersonCache
-        transaction.commit()
+        flush_database_updates()
         return person
 
     def makePersonByName(self, first_name, set_preferred_email=True,
@@ -297,6 +298,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         getUtility(IEmailAddressSet).new(alternative_address, person,
                                          EmailAddressStatus.VALIDATED,
                                          person.account)
+        flush_database_updates()
         return person
 
     def makeEmail(self, address, person, email_status=None):

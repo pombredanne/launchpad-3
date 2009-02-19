@@ -15,6 +15,7 @@ import storm
 from storm.databases.postgres import compile as postgres_compile
 from storm.locals import Storm
 from storm.store import Store
+from storm.zope.interfaces import IZStorm
 
 from sqlobject.sqlbuilder import sqlrepr
 import transaction
@@ -572,7 +573,9 @@ def flush_database_updates():
         assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
 
     """
-    _get_sqlobject_store().flush()
+    zstorm = getUtility(IZStorm)
+    for name, store in zstorm.iterstores():
+        store.flush()
 
 
 def flush_database_caches():
