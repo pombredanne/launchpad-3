@@ -51,9 +51,9 @@ ExternalBugTracker that doesn't require network access.
     ...         return FakeExternalBugTracker()
 
 
-== updateRemoteProduct() ==
+== updateByBugTrackerType() ==
 
-The updateRemoteProduct() method looks at the bug watches that are
+The updateByBugTrackerType() method looks at the bug watches that are
 linked to the product, to decide what remote_product should be set to.
 It accepts a single parameter, the type of the bug tracker that should
 be updated.
@@ -78,7 +78,7 @@ If there are no bug watches, nothing will be done.
 
     >>> list(bugzilla_product.getLinkedBugWatches())
     []
-    >>> updater.updateRemoteProduct(BugTrackerType.RT)
+    >>> updater.updateByBugTrackerType(BugTrackerType.RT)
     >>> print bugzilla_product.remote_product
     None
     >>> print rt_product.remote_product
@@ -102,7 +102,7 @@ given one are ignored.
     ...     '84', bugtracker=rt, bug=rt_bugtask.bug)
     >>> rt_bugtask.bugwatch = rt_bugwatch
 
-    >>> updater.updateRemoteProduct(BugTrackerType.RT)
+    >>> updater.updateByBugTrackerType(BugTrackerType.RT)
     >>> print rt_product.remote_product
     product-for-bug-84
 
@@ -125,7 +125,7 @@ If a product already has remote_product set, it will not be updated.
 
     >>> rt_product.remote_product = u'already-set'
     >>> updater = NoNetworkRemoteProductUpdater(FakeTransaction())
-    >>> updater.updateRemoteProduct(BugTrackerType.RT)
+    >>> updater.updateByBugTrackerType(BugTrackerType.RT)
     >>> print rt_product.remote_product
     already-set
 
@@ -145,7 +145,7 @@ after each product's remote_product has been updated.
     ...     rt_bugtask.bugwatch = rt_bugwatch
     >>> updater = NoNetworkRemoteProductUpdater(
     ...     FakeTransaction(log_calls=True))
-    >>> updater.updateRemoteProduct(BugTrackerType.RT)
+    >>> updater.updateByBugTrackerType(BugTrackerType.RT)
     COMMIT
     COMMIT
     COMMIT

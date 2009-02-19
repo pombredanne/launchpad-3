@@ -22,7 +22,7 @@ class RemoteProductUpdater:
         """Get the IExternalBugTracker for the given bug tracker."""
         return get_external_bugtracker(bug_tracker)
 
-    def updateRemoteProduct(self, bugtracker_type):
+    def updateByBugTrackerType(self, bugtracker_type):
         """Update `remote_product` for Products using the bug tracker type.
 
         The `remote_product` attribute is only updated if it's None.
