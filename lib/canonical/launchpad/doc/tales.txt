@@ -307,14 +307,14 @@ Merge proposals also have a link formatter, which displays branch titles:
 
 === Merge proposals ===
 
-    >>> login('foo.bar@canonical.com')
-    >>> proposal = factory.makeBranchMergeProposal()
-    >>> proposal.source_branch.title = 'baz'
-    >>> proposal.target_branch.title = 'qux'
+    >>> login('admin@canonical.com')
+    >>> source = factory.makeProductBranch(
+    ...     product=fooix, owner=eric, name="fix")
+    >>> target = factory.makeProductBranch(product=fooix)
+    >>> fooix.development_focus.user_branch = target
+    >>> proposal = source.addLandingTarget(eric, target)
     >>> test_tales("proposal/fmt:link", proposal=proposal)
-    u'<a href="...">[Merge]
-    lp://dev/~person-name38/product-name30/branch40 into
-    lp://dev/~person-name24/product-name30/branch26</a>'
+    u'<a href="...">[Merge] lp://dev/~eric/fooix/fix into lp://dev/fooix</a>'
 
 
 === Code review comments ===

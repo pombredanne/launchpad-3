@@ -97,20 +97,22 @@ def format_address(name, address):
     return str(formataddr((name, address)))
 
 
-def simple_sendmail(from_addr, to_addrs, subject, body, headers=None):
+def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,
+                    bulk=True):
     """Send an email from from_addr to to_addrs with the subject and body
     provided. to_addrs can be a list, tuple, or ASCII string.
 
     Arbitrary headers can be set using the headers parameter. If the value for
     a given key in the headers dict is a list or tuple, the header will be
-    added to the message once for each value in the list.  Note however that
-    the `Precedence` header will always be set to `bulk`, overriding any
-    `Precedence` header in `headers`.
+    added to the message once for each value in the list.
+
+    Note however that the `Precedence` header will be set to `bulk` by
+    default, overriding any `Precedence` header in `headers`.
 
     Returns the `Message-Id`.
     """
     ctrl = MailController(from_addr, to_addrs, subject, body, headers)
-    return ctrl.send()
+    return ctrl.send(bulk=bulk)
 
 
 class MailController(object):
@@ -184,8 +186,8 @@ class MailController(object):
         msg['Subject'] = self.subject
         return msg
 
-    def send(self):
-        return sendmail(self.makeMessage())
+    def send(self, bulk=True):
+        return sendmail(self.makeMessage(), bulk=bulk)
 
 
 def simple_sendmail_from_person(

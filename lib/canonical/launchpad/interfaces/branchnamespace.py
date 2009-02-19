@@ -1,5 +1,5 @@
 # Copyright 2008-2009 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0213
+# pylint: disable-msg=E0213,E0211
 
 """Interface for a branch namespace."""
 
@@ -10,6 +10,7 @@ __all__ = [
     'IBranchNamespaceSet',
     'InvalidNamespace',
     'lookup_branch_namespace',
+    'split_unique_name',
     ]
 
 from zope.component import getUtility
@@ -25,8 +26,8 @@ class IBranchNamespace(Interface):
         "The name of the namespace. This is prepended to the branch name.")
 
     def createBranch(branch_type, name, registrant, url=None, title=None,
-                     lifecycle_status=BranchLifecycleStatus.NEW, summary=None,
-                     whiteboard=None):
+                     lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
+                     summary=None, whiteboard=None):
         """Create and return an `IBranch` in this namespace."""
 
     def createBranchWithPrefix(branch_type, prefix, registrant, url=None):
@@ -198,3 +199,8 @@ def get_branch_namespace(person, product=None, distroseries=None,
 
 def lookup_branch_namespace(namespace_name):
     return getUtility(IBranchNamespaceSet).lookup(namespace_name)
+
+
+def split_unique_name(unique_name):
+    """Return the namespace and branch name of a unique name."""
+    return unique_name.rsplit('/', 1)

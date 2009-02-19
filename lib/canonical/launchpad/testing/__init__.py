@@ -9,7 +9,7 @@ import zope.event
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
@@ -312,19 +312,28 @@ class TestCaseWithFactory(TestCase):
             browser.open(url)
         return browser
 
-    def create_branch_and_tree(self, tree_location='.'):
+    def create_branch_and_tree(self, tree_location='.', product=None,
+                               hosted=False):
         """Create a database branch, bzr branch and bzr checkout.
 
         :return: a `Branch` and a workingtree.
         """
         from bzrlib.bzrdir import BzrDir
         from bzrlib.transport import get_transport
-        db_branch = self.factory.makeAnyBranch()
-        transport = get_transport(db_branch.warehouse_url)
+        if product is None:
+            db_branch = self.factory.makeAnyBranch()
+        else:
+            db_branch = self.factory.makeProductBranch(product)
+        if hosted:
+            branch_url = db_branch.getPullURL()
+        else:
+            branch_url = db_branch.warehouse_url
+        transport = get_transport(branch_url)
         transport.clone('../..').ensure_base()
         transport.clone('..').ensure_base()
-        bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
-        return db_branch, bzr_branch.create_checkout(tree_location)
+        bzr_branch = BzrDir.create_branch_convenience(branch_url)
+        return db_branch, bzr_branch.create_checkout(
+            tree_location, lightweight=True)
 
     @staticmethod
     def getMirroredPath(branch):
@@ -378,21 +387,29 @@ class TestCaseWithFactory(TestCase):
         self.addCleanup(restore_bzr_home)
 
     def useBzrBranches(self):
-        """Prepare for using bzr branches."""
+        """Prepare for using bzr branches.
+
+        This sets up support for lp-hosted and lp-mirrored URLs,
+        changes to a temp directory, and overrides the bzr home directory.
+        """
         from canonical.codehosting.scanner.tests.test_bzrsync import (
             FakeTransportServer)
         from bzrlib.transport import get_transport
         self.useTempBzrHome()
-        server = FakeTransportServer(get_transport('.'))
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        os.mkdir('lp-mirrored')
+        mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
+        mirror_server.setUp()
+        self.addCleanup(mirror_server.tearDown)
+        os.mkdir('lp-hosted')
+        hosted_server = FakeTransportServer(
+            get_transport('lp-hosted'), url_prefix='lp-hosted:///')
+        hosted_server.setUp()
+        self.addCleanup(hosted_server.tearDown)
 
 
 def capture_events(callable_obj, *args, **kwargs):
     """Capture the events emitted by a callable.
 
-    :param event_type: The type of event that notification is expected
-        for.
     :param callable_obj: The callable to call.
     :param *args: The arguments to pass to the callable.
     :param **kwargs: The keyword arguments to pass to the callable.

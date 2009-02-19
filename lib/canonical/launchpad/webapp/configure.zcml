@@ -369,6 +369,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.diff.IPreviewDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.ICodeImport"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"

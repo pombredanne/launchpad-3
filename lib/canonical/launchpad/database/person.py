@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612
 
