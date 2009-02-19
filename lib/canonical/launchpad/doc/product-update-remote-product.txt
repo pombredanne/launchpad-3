@@ -172,3 +172,23 @@ after each product's remote_product has been updated.
     COMMIT
     COMMIT
     COMMIT
+
+
+== update-remote-product.py ==
+
+The script that uses RemoteProductUpdater is update-remote-product.py.
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     ['cronscripts/update-remote-product.py'],
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out
+    ''
+    >>> process.returncode
+    0
+
+    >>> print err
+    INFO    creating lockfile
+    INFO    Time for this run: ... seconds.
