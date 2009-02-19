@@ -46,7 +46,7 @@ ExternalBugTracker that doesn't require network access.
     ...         return 'product-for-bug-%s' % remote_bug
 
 
-    >>> class TestRemoteProductUpdater(RemoteProductUpdater):
+    >>> class NoNetworkRemoteProductUpdater(RemoteProductUpdater):
     ...     def _getExternalBugTracker(self, bug_tracker):
     ...         return FakeExternalBugTracker()
 
@@ -92,7 +92,7 @@ arbitrary bug watch will be retrieved, and queried for its remote
 product. Products having a bug tracker of a different type than the
 given one are ignored.
 
-    >>> updater = TestRemoteProductUpdater(FakeTransaction())
+    >>> updater = NoNetworkRemoteProductUpdater(FakeTransaction())
     >>> bugzilla_bugtask = factory.makeBugTask(target=bugzilla_product)
     >>> bugzilla_bugwatch = factory.makeBugWatch(
     ...     '42', bugtracker=bugzilla, bug=bugzilla_bugtask.bug)
@@ -124,7 +124,7 @@ If a product already has remote_product set, it will not be updated.
     >>> rt_bugtask.bugwatch = rt_bugwatch
 
     >>> rt_product.remote_product = u'already-set'
-    >>> updater = TestRemoteProductUpdater(FakeTransaction())
+    >>> updater = NoNetworkRemoteProductUpdater(FakeTransaction())
     >>> updater.updateRemoteProduct(BugTrackerType.RT)
     >>> print rt_product.remote_product
     already-set
@@ -143,7 +143,8 @@ after each product's remote_product has been updated.
     ...     rt_bugwatch = factory.makeBugWatch(
     ...         '84', bugtracker=rt, bug=rt_bugtask.bug)
     ...     rt_bugtask.bugwatch = rt_bugwatch
-    >>> updater = TestRemoteProductUpdater(FakeTransaction(log_calls=True))
+    >>> updater = NoNetworkRemoteProductUpdater(
+    ...     FakeTransaction(log_calls=True))
     >>> updater.updateRemoteProduct(BugTrackerType.RT)
     COMMIT
     COMMIT
