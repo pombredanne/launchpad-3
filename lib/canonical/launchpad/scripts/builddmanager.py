@@ -35,11 +35,9 @@ class RecordingSlave:
     major slave-scanner throughput issue while avoiding large-scale changes to
     its code base.
     """
-    def __init__(self, name, url, vm_host, virtualized):
+    def __init__(self, name, url):
         self.name = name
         self.url = url
-        self.vm_host = vm_host
-        self.virtualized = virtualized
         self.resume = False
         self.resume_argv = None
         self.calls = []
@@ -61,7 +59,7 @@ class RecordingSlave:
         The supplied resume command will be run in a deferred and parallel
         fashion in order to increase the slave-scanner throughput.
         For now we merely record it.
-        
+
         :param logger: the logger to use
         :param resume_argv: the resume command to run (sequence of strings)
 
@@ -86,11 +84,13 @@ class RecordingSlave:
         return d
 
 
-class BuilddManager(service.Service):
+class BuilddProxy:
 
-    def __init__(self):
+    @write_transaction
+    def scanAllBuilders(self):
+        recording_slaves = []
+
         level = logging.DEBUG
-
         logger = logging.getLogger('slave-scanner')
         logger.setLevel(level)
         ch = logging.StreamHandler()
@@ -98,15 +98,6 @@ class BuilddManager(service.Service):
         ch.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
         logger.addHandler(ch)
         self.runningJobs = 0
-
-    def startService(self):
-        deferred = deferToThread(self.scanAllBuilders)
-        deferred.addCallback(self.resumeAndDispatch)
-
-    @write_transaction
-    def scanAllBuilders(self):
-        recording_slaves = []
-        logger = logging.getLogger('slave-scanner')
 
         newInteraction()
 
@@ -129,9 +120,7 @@ class BuilddManager(service.Service):
                 logger.debug("No build candidates available for builder.")
                 continue
 
-            slave = RecordingSlave(
-                builder.name, builder.url, builder.vm_host,
-                builder.virtualized)
+            slave = RecordingSlave(builder.name, builder.url)
             builder.setSlaveForTesting(slave)
 
             builder.dispatchBuildCandidate(candidate)
@@ -139,40 +128,19 @@ class BuilddManager(service.Service):
 
         return recording_slaves
 
-    def resumeAndDispatch(self, recording_slaves):
-        print 'RESUME/DISPATCH:', recording_slaves
+    def _cleanJob(self, job):
+        if job is not None:
+            job.build.buildstate = BuildStatus.NEEDSBUILD
+            job.builder = None
+            job.buildstart = None
+            job.logtail = None
 
-        for slave in recording_slaves:
-            self.runningJobs += 1
-            if slave.resume:
-                # The buildd slave needs to be reset before we can dispatch
-                # builds to it.
-                d = slave.resumeSlaveHost()
-                d.addCallback(self.checkResume, slave.name)
-                d.addCallback(self.dispatchBuild, slave)
-            else:
-                # Buildd slave is clean, we can dispatch a build to it
-                # straightaway.
-                d = defer.Deferred()
-                d.addCallback(self.dispatchBuild, True, slave)
-            d.addBoth(self.stopWhenDone)
-
-    def dispatchBuild(self, resume_ok, slave):
-        # Stop right here if the buildd slave could not be reset.
-        if not resume_ok:
-            return
-
-        proxy = Proxy(str(urlappend(slave.url, 'rpc')))
-        for method, args in slave.calls:
-            self.runningJobs += 1
-            d = proxy.callRemote(method, *args)
-            d.addCallback(self.checkDispatch, slave.name)
-            d.addErrback(self.dispatchFail, slave.name)
-
-    def stopWhenDone(self, result):
-        self.runningJobs -= 1
-        if self.runningJobs <= 0:
-            reactor.stop()
+    @write_transaction
+    def resetBuilder(self, name):
+        newInteraction()
+        print 'RESET'
+        builder = getUtility(IBuilderSet)[name]
+        self._cleanJob(builder.currentjob)
 
     @write_transaction
     def dispatchFail(self, error, name):
@@ -182,31 +150,66 @@ class BuilddManager(service.Service):
         builder.failbuilder(error)
         self._cleanJob(builder.currentjob)
 
-    def checkDispatch(self, response, name):
-        status, info = response
-        if not status:
-            print 'DISPATCH FAIL', name, response
-            self.resetBuilder(name)
+
+class BuilddManager(service.Service):
+
+    def __init__(self):
+        self.buildd_proxy = BuilddProxy()
+
+    def startService(self):
+        deferred = deferToThread(self.scan)
+        deferred.addCallback(self.resume)
+
+    def scan(self):
+        return self.buildd_proxy.scanAllBuilders()
 
     def checkResume(self, response, name):
         out, err, code = response
         if code != 0:
             print 'RESUME FAIL', name, response
-            self.resetBuilder(name)
-            return False
-        else:
-            return True
+            self.buildd_proxy.resetBuilder(name)
 
-    @write_transaction
-    def resetBuilder(self, name):
-        newInteraction()
-        print 'RESET'
-        builder = getUtility(IBuilderSet)[name]
-        self._cleanJob(builder.currentjob)
+    def resume(self, recording_slaves):
+        print 'RESUMING:', recording_slaves
 
-    def _cleanJob(self, job):
-        if job is not None:
-            job.build.buildstate = BuildStatus.NEEDSBUILD
-            job.builder = None
-            job.buildstart = None
-            job.logtail = None
+        self.rounds = 0
+        def check_rounds(r):
+            self.rounds -= 1
+            if self.rounds == 0:
+                self.dispatch(recording_slaves)
+
+        for slave in recording_slaves:
+            if slave.resume:
+                self.rounds += 1
+                d = slave.resumeSlaveHost()
+                d.addCallback(self.checkResume, slave.name)
+                d.addBoth(check_rounds)
+
+        if self.rounds == 0:
+            reactor.stop()
+
+    def checkDispatch(self, response, name):
+        status, info = response
+        if not status:
+            print 'DISPATCH FAIL', name, response
+            self.buildd_proxy.resetBuilder(name)
+
+    def dispatch(self, recording_slaves):
+        print 'DISPATCHING:', recording_slaves
+
+        self.rounds = 0
+        def check_rounds(r):
+            self.rounds -= 1
+            if self.rounds == 0:
+                reactor.stop()
+
+        for slave in recording_slaves:
+            # Configurable socket timeouts!
+            proxy = Proxy(
+                str(urlappend(slave.url, 'rpc')))
+            for method, args in slave.calls:
+                self.rounds += 1
+                d = proxy.callRemote(method, *args)
+                d.addCallback(self.checkDispatch, slave.name)
+                d.addErrback(self.buildd_proxy.dispatchFail, slave.name)
+                d.addBoth(check_rounds)
