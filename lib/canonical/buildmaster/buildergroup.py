@@ -388,7 +388,7 @@ class BuilderGroup:
         # us by sqlobject refreshing the builder object during the
         # transaction cache clearing. Once we sort the previous problem
         # this step should probably not be required anymore.
-        queueItem.builder.setSlaveProxy(
+        queueItem.builder.setSlaveForTesting(
             removeSecurityProxy(original_slave))
 
         # Store build information, build record was already updated during

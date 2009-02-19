@@ -26,6 +26,16 @@ class FakeZTM:
 
 
 class RecordingSlave:
+    """An RPC proxy for buildd slaves that records instructions to the latter.
+
+    The idea here is to merely record the instructions that the slave-scanner
+    issues to the buildd slaves and "replay" them a bit later in asynchronous
+    and parallel fashion.
+
+    By dealing with a number of buildd slaves in parallel we remove *the*
+    major slave-scanner throughput issue while avoiding large-scale changes to
+    its code base.
+    """
     def __init__(self, name, url, vm_host, virtualized):
         self.name = name
         self.url = url
@@ -47,9 +57,9 @@ class RecordingSlave:
         return ('BuilderStatus.BUILDING', args[0])
 
     def resumeHost(self, logger, resume_argv):
-        """Initialize a virtual builder to a known state.
+        """Record the request to initialize a builder to a known state.
 
-        The supplied resume command will be run in deferred and parallel
+        The supplied resume command will be run in a deferred and parallel
         fashion in order to increase the slave-scanner throughput.
         For now we merely record it.
         
@@ -107,23 +117,22 @@ class BuilddManager(service.Service):
             # XXX cprov 2007-11-09: we don't support manual dispatching
             # yet. Once we support it this clause should be removed.
             if builder.manual:
-                logger.warn('builder is in manual state. Ignored.')
+                logger.warn('Builder is in manual state, ignored.')
                 continue
 
             if not builder.is_available:
-                logger.warn('builder is not available. Ignored.')
+                logger.warn('Builder is not available, ignored.')
                 continue
 
             candidate = builder.findBuildCandidate()
             if candidate is None:
-                logger.debug(
-                    "No candidates available for builder.")
+                logger.debug("No build candidates available for builder.")
                 continue
 
             slave = RecordingSlave(
                 builder.name, builder.url, builder.vm_host,
                 builder.virtualized)
-            builder.setSlaveProxy(slave)
+            builder.setSlaveForTesting(slave)
 
             builder.dispatchBuildCandidate(candidate)
             recording_slaves.append(slave)

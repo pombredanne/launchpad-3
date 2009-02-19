@@ -207,7 +207,7 @@ class IBuilder(IHasOwner):
         :return: command stdout and stderr buffers as a tuple.
         """
 
-    def setSlaveProxy(proxy):
+    def setSlaveForTesting(proxy):
         """Sets the RPC proxy through which to operate the build slave."""
 
     def slaveStatus():

@@ -240,7 +240,7 @@ class Builder(SQLBase):
         # slave in various states - which can be hard to create.
         return BuilderSlave(self.url)
 
-    def setSlaveProxy(self, proxy):
+    def setSlaveForTesting(self, proxy):
         """See IBuilder."""
         self.slave = proxy
 
