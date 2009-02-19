@@ -228,6 +228,9 @@ class IAccountPrivate(Interface):
     password = PasswordField(
         title=_("Password."), readonly=False, required=True)
 
+    def createPerson(self, rationale):
+        """Create and return a new `IPerson` associated to this account."""
+
 
 class IAccount(IAccountPublic, IAccountPrivate):
     """Interface describing an `Account`."""

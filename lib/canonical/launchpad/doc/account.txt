@@ -215,6 +215,40 @@ encrypted, by setting password_is_encrypted to True.
     >>> clear_account.password
     u'clear_password'
 
+From a newly created account which has no person associated with, it is
+possible to create a new person that will be associated with it.
+
+    >>> from canonical.launchpad.interfaces.person import (
+    ...     PersonCreationRationale)
+    >>> fresh_account, email = account_set.createAccountAndEmail(
+    ...     'foo@example.com',
+    ...     AccountCreationRationale.OWNER_CREATED_UBUNTU_SHOP,
+    ...     'Display name', 'password')
+    >>> person = fresh_account.createPerson(
+    ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    >>> person.account == fresh_account
+    True
+    >>> person.creation_rationale
+    <DBItem PersonCreationRationale.OWNER_CREATED_LAUNCHPAD...
+
+However, if the account has an associated person or has no preferred email
+address, a new Person cannot be created.
+
+    >>> person = fresh_account.createPerson(
+    ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Can't create a Person for an account which already has
+    one.
+
+    >>> print clear_account.preferredemail
+    None
+    >>> person = clear_account.createPerson(
+    ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Can't create a Person for an account which has no email.
+
 
 == OpenID identifiers ==
 

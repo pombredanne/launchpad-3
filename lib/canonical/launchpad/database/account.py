@@ -93,6 +93,20 @@ class Account(SQLBase):
 
     password = property(_get_password, _set_password)
 
+    def createPerson(self, rationale):
+        """See `IAccount`."""
+        from canonical.launchpad.database.person import (
+            generate_nick, Person, PersonSet)
+        assert self.preferredemail is not None, (
+            "Can't create a Person for an account which has no email.")
+        store = Store.of(self)
+        assert store.find(Person, account=self).one() is None, (
+            "Can't create a Person for an account which already has one.")
+        name = generate_nick(self.preferredemail.email)
+        return PersonSet()._newPerson(
+            name, self.displayname, hide_email_addresses=True,
+            rationale=rationale, account=self)
+
 
 class AccountSet:
     """See `IAccountSet`."""
@@ -163,7 +177,8 @@ class AccountSet:
     def createOpenIDIdentifier(self, mnemonic):
         """See `IAccountSet`.
 
-        The random component of the identifier is a number betwee 000 and 999.
+        The random component of the identifier is a number between 000 and
+        999.
         """
         assert isinstance(mnemonic, (str, unicode)) and mnemonic is not '', (
             'The mnemonic must be a non-empty string.')
