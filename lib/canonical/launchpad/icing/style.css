@@ -300,6 +300,12 @@ table.duplicate.listing * {color: #999;}
 table.listing table.simple {margin-left: 2em;}
 table.listing table.simple td {padding: 0.25em;}
 
+table.listing .section-heading {
+  font-size: 1.2em;
+  border: none;
+  padding-top: 1.5em;
+}
+
 table.compressed { width: auto }
 table.compressed td { padding: 0.25em 0.5em }
 
@@ -1471,10 +1477,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 }
 
 body.tab-branches table.listing .section-heading {
-  font-size: 1.2em;
   color: #d18b39;
-  border: none;
-  padding-top: 1.5em;
 }
 
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
