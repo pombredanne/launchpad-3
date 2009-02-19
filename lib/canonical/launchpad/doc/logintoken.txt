@@ -37,6 +37,15 @@ Let's create a new LoginToken to confirm an email address for foobar.
     >>> to_addrs
     ['foo.bar2@canonical.com']
 
+The email does not have a precedence header because the user implicitly
+requested it to complete his task.
+
+    >>> import email
+
+    >>> msg = email.message_from_string(raw_msg)
+    >>> print msg['Precedence']
+    None
+
 As the process is not yet finished, foobar will see this as one of his
 unconfirmed email addresses.
 
