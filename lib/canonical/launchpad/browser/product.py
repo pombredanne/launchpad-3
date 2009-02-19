@@ -1158,6 +1158,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "project",
         "official_codehosting",
         "bugtracker",
+        "remote_product",
         "enable_bug_expiration",
         "official_blueprints",
         "official_rosetta",

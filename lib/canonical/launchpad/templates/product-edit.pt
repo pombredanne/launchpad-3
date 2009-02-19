@@ -22,6 +22,37 @@
 
   </div>
 
+  <script type="text/javascript">
+YUI().use('dom', 'node', function(Y) {
+    var remote_product_input = Y.DOM.byId('field.remote_product');
+    var bugtracker_inputs = Y.DOM.byTag('input', null, function(elem) {
+        return elem.name == 'field.bugtracker';
+    });
+
+    var constraint = function(event) {
+        Y.each(bugtracker_inputs, function(input) {
+            if (input.checked) {
+                if (input.value == 'external') {
+                    remote_product_input.disabled = false;
+                }
+                else {
+                    remote_product_input.value = '';
+                    remote_product_input.disabled = true;
+                }
+            }
+        });
+    };
+
+    // Check constraint on page load.
+    constraint();
+
+    // Check constraint when input is changed.
+    Y.each(bugtracker_inputs, function(input) {
+        (new Y.Node(input)).on('change', constraint);
+    });
+});
+  </script>
+
 </div>
 
 </body>
