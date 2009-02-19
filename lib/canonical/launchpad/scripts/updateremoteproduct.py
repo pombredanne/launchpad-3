@@ -28,7 +28,7 @@ class RemoteProductUpdater:
         The `remote_product` attribute is only updated if it's None.
         """
         product_set = getUtility(IProductSet)
-        product_needing_updating = (
+        products_needing_updating = (
             product_set.getProductsWithNoneRemoteProduct(bugtracker_type))
         for product in products_needing_updating:
             # Pick an arbitrary bug watch for the product. They all
