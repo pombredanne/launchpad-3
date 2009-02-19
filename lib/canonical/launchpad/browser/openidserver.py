@@ -290,12 +290,11 @@ class OpenIDMixin:
         """
         assert self.account is not None, (
             'Must be logged in to calculate team membership')
-        # XXX: salgado, 2009-02-12: Will change this to return False when
-        # self.account.person is None; that will be possible when I complete
-        # this work.
-        # TODO: Remove this XXX, but first write some tests that fail before
-        # doing the fix described above.
         person = IPerson(self.account)
+        # XXX: Dear reviewer. I can't use "person is None" here because zope
+        # wraps the return of IPerson(account) above into a security proxy.
+        if not person:
+            return
         args = self.openid_request.message.getArgs(LAUNCHPAD_TEAMS_NS)
         team_names = args.get('query_membership')
         if not team_names:

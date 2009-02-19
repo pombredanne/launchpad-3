@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from urllib import urlencode
 import unittest
 
-from openid.message import Message
+from openid.message import Message, OPENID2_NS
 from openid.server.server import OpenIDResponse
 
 from zope.component import getUtility
@@ -221,30 +221,47 @@ class OpenIDMixin_checkTeamMembership_TestCase(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        """Sets up a very simple openid_mixin with a FakeOpenIdRequest.
-
-        The user is set-up to have logged 90 days ago.
-        """
         TestCaseWithFactory.setUp(self)
         self.request = LaunchpadTestRequest(
             SERVER_URL='http://openid.launchpad.net/+openid')
         login("test@canonical.com", self.request)
-        self.openid_mixin = OpenIDMixin(None, self.request)
+        self.person = getUtility(IPersonSet).getByEmail(
+            'guilherme.salgado@canonical.com')
         self.account = self.factory.makeAccount(
             'Test account, without a person')
         self.account_email = self.factory.makeEmail(
             'test@example.com', None, self.account)
-        self.openid_mixin.account = self.account
+        class CheckTeamMembershipTest(OpenIDMixin):
+            # Must create this class so that we can override account, which is
+            # a @property on OpenIDMixin.
+            account = None
+        self.openid_mixin = CheckTeamMembershipTest(None, self.request)
         self.openid_mixin.request = self.request
         self.openid_request = FakeOpenIdRequest()
-        self.openid_response = OpenIDResponse(self.request)
+        self.openid_request.args = {'query_membership': 'admins'}
+        self.openid_request.namespace = OPENID2_NS
+        self.openid_response = OpenIDResponse(self.openid_request)
         self.openid_mixin.openid_request = self.openid_request
 
     def tearDown(self):
         logout()
 
-    def test_(self):
+    def test_personless_account(self):
+        # A call to checkTeamMembership() won't add anything to the OpenID
+        # response if the account has no Person associated with.
+        self.openid_mixin.account = self.account
         self.openid_mixin.checkTeamMembership(self.openid_response)
+        self.failUnlessEqual(self.openid_response.fields.args, {})
+
+    def test_full_fledged_account(self):
+        # A call to checkTeamMembership() will add stuff to the OpenID
+        # response if the account has a Person associated with.
+        self.openid_mixin.account = self.person.account
+        self.openid_mixin.checkTeamMembership(self.openid_response)
+        self.failUnlessEqual(
+            self.openid_response.fields.args,
+            {('http://ns.launchpad.net/2007/openid-teams', 'is_member'):
+                'admins'})
 
 
 def test_suite():
