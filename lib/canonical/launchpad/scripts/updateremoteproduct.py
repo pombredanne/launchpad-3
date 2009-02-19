@@ -44,12 +44,14 @@ class RemoteProductUpdater:
         self.logger.info("%s projects using %s needing updating." % (
             len(products_needing_updating), bugtracker_type.name))
         for product in products_needing_updating:
+            self.logger.debug("Trying to update %s" % product.name)
             # Pick an arbitrary bug watch for the product. They all
             # should point to the same product in the external bug
             # tracker. We could do some sampling to make it more
             # reliable, but it's not worth the trouble.
             bug_watch = product.getLinkedBugWatches().any()
             if bug_watch is None:
+                self.logger.debug("No bug watches for %s" % product.name)
                 # No bug watches have been created for this product, so
                 # we can't figure out what remote_product should be.
                 continue
@@ -57,5 +59,7 @@ class RemoteProductUpdater:
                 bug_watch.bugtracker)
             remote_product = external_bugtracker.getRemoteProduct(
                 bug_watch.remotebug)
+            self.logger.info("Setting remote_product for %s to %r" % (
+                product.name, remote_product))
             product.remote_product = remote_product
             self.txn.commit()
