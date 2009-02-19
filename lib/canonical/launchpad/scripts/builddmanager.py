@@ -101,7 +101,6 @@ class BuilddProxy:
         ch.setLevel(level)
         ch.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
         logger.addHandler(ch)
-        self.runningJobs = 0
 
         newInteraction()
 
@@ -159,6 +158,7 @@ class BuilddManager(service.Service):
 
     def __init__(self):
         self.buildd_proxy = BuilddProxy()
+        self.runningJobs = 0
 
     def startService(self):
         deferred = deferToThread(self.scan)
