@@ -456,3 +456,34 @@ slaves must be updated through their conjoined master.
 
     >>> bug.bugtasks[0].status.title
     'New'
+
+
+== Getting linked bug watches for a product ==
+
+Product has a method, getLinkedBugWatches, for getting all the bug
+watches that are linked to a bug task targeted to the Product.
+
+    >>> product = factory.makeProduct(official_malone=False)
+    >>> [bug_watch.remotebug for bug_watch in product.getLinkedBugWatches()]
+    []
+
+    >>> product = factory.makeProduct(official_malone=False)
+    >>> bug_task = factory.makeBugTask(target=product)
+    >>> bug_watch = factory.makeBugWatch(remote_bug='42')
+    >>> bug_task.bugwatch = bug_watch
+    >>> product.bugtracker = bug_watch.bugtracker
+    >>> [bug_watch.remotebug for bug_watch in product.getLinkedBugWatches()]
+    [u'42']
+
+It's not uncommon to link to other bug trackers than the one the Product
+is using officially, for example to link to related bugs. To avoid
+errors, we ignore such bug watches.
+
+    >>> product = factory.makeProduct(official_malone=False)
+    >>> bug_task = factory.makeBugTask(target=product)
+    >>> bug_watch = factory.makeBugWatch(remote_bug='84')
+    >>> bug_task.bugwatch = bug_watch
+    >>> product.bugtracker == bug_watch.bugtracker
+    False
+    >>> [bug_watch.remotebug for bug_watch in product.getLinkedBugWatches()]
+    []

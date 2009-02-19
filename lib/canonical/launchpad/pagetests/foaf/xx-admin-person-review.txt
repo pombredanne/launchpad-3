@@ -1,0 +1,31 @@
+== Review person ==
+
+Launchpad admins such as Foo Bar can review users and update some of their
+information.
+
+    >>> admin_browser.open('http://launchpad.dev/~salgado')
+
+    >>> admin_browser.getLink('Administer').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/~salgado/+review
+    >>> print admin_browser.title
+    Review Guilherme Salgado
+
+    >>> admin_browser.getControl(
+    ...     'Display Name', index=0).value = 'The one and only Salgado'
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    The one and only Salgado in Launchpad
+
+Non admins cannot access the +review page.
+
+    >>> user_browser.open('http://launchpad.dev/~salgado')
+    >>> user_browser.getLink('Administer')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.open('http://launchpad.dev/~salgado/+review')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...

@@ -88,6 +88,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
     ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
@@ -744,9 +745,7 @@ class IBranch(IHasOwner):
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
-    # XXX: JonathanLange 2008-12-08 spec=package-branches: decorates blows up
-    # if we call this 'context'!
-    container = Attribute("The context that this branch belongs to.")
+    target = Attribute("The target of this branch, as an `IBranchTarget`.")
 
     # Product attributes
     # ReferenceChoice is Interface rather than IProduct as IProduct imports
@@ -840,9 +839,16 @@ class IBranch(IHasOwner):
         the revisions that match the revision history from bzrlib for this
         branch.
         """)
-    subscriptions = Attribute(
-        "BranchSubscriptions associated to this branch.")
-    subscribers = Attribute("Persons subscribed to this branch.")
+    subscriptions = exported(
+        CollectionField(
+            title=_("BranchSubscriptions associated to this branch."),
+            readonly=True,
+            value_type=Reference(Interface))) # Really IBranchSubscription
+    subscribers = exported(
+        CollectionField(
+            title=_("Persons subscribed to this branch."),
+            readonly=True,
+            value_type=Reference(IPerson)))
 
     date_created = exported(
         Datetime(
@@ -979,7 +985,7 @@ class IBranch(IHasOwner):
 
         Use this when traversing to this branch in the web UI.
 
-        In particular, add information about the branch's container to the
+        In particular, add information about the branch's target to the
         launchbag. If the branch has a product, add that; if it has a source
         package, add lots of information about that.
 
