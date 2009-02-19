@@ -260,7 +260,10 @@ class IAccountSet(Interface):
 
     def createAccountAndEmail(email, rationale, displayname, password,
                               password_is_encrypted=False):
-        """
+        """Create and return both a new `IAccount` and `IEmailAddress`.
+
+        The account will be in the ACTIVE state, with the email address set as
+        its preferred email address.
         """
 
     def getByEmail(email):

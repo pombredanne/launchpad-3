@@ -136,9 +136,7 @@ class AccountSet:
         account = self.new(
             account_rationale, displayname, openid_mnemonic,
             password=password, password_is_encrypted=password_is_encrypted)
-        # XXX: Should the account really be in the ACTIVE state?
         account.status = AccountStatus.ACTIVE
-        # XXX: Should the email really be in the PREFERRED state?
         email = getUtility(IEmailAddressSet).new(
             email, status=EmailAddressStatus.PREFERRED, account=account)
         return account, email
