@@ -141,14 +141,14 @@ class BuilddProxy:
     @write_transaction
     def resetBuilder(self, name):
         newInteraction()
-        print 'RESET'
+        print('RESET')
         builder = getUtility(IBuilderSet)[name]
         self._cleanJob(builder.currentjob)
 
     @write_transaction
     def dispatchFail(self, error, name):
         newInteraction()
-        print 'ERROR'
+        print('ERROR')
         builder = getUtility(IBuilderSet)[name]
         builder.failbuilder(error)
         self._cleanJob(builder.currentjob)
@@ -159,6 +159,7 @@ class BuilddManager(service.Service):
     def __init__(self):
         self.buildd_proxy = BuilddProxy()
         self.runningJobs = 0
+        self.logger = logging.getLogger('slave-scanner')
 
     def startService(self):
         deferred = deferToThread(self.scan)
@@ -170,23 +171,23 @@ class BuilddManager(service.Service):
     def checkResume(self, response, name):
         out, err, code = response
         if code != 0:
-            print 'RESUME FAIL', name, response
+            self.logger.debug('RESUME FAIL: %s/%s' % (name, response))
             self.buildd_proxy.resetBuilder(name)
 
     def resumeAndDispatch(self, recording_slaves):
-        print('BM: resumeAndDispatch()')
-        print('RESUME/DISPATCH: %s' % recording_slaves)
+        self.logger.debug('BM: resumeAndDispatch()')
+        self.logger.debug('RESUME/DISPATCH: %s' % recording_slaves)
 
         for slave in recording_slaves:
             self.runningJobs += 1
             if slave.resume:
-                print('RESUME: yes')
+                self.logger.debug('RESUME: yes')
                 # The buildd slave needs to be reset before we can dispatch
                 # builds to it.
                 d = slave.resumeSlaveHost()
                 d.addCallback(self.checkResume, slave.name)
             else:
-                print('RESUME: no')
+                self.logger.debug('RESUME: no')
                 # Buildd slave is clean, we can dispatch a build to it
                 # straightaway.
                 d = defer.maybeDeferred(lambda: True)
@@ -194,8 +195,8 @@ class BuilddManager(service.Service):
             d.addBoth(self.stopWhenDone)
 
     def dispatchBuild(self, resume_ok, slave):
-        print('BM: dispatchBuild()')
-        print('DISPATCH: %s/%s' % (resume_ok, slave))
+        self.logger.debug('in BM: dispatchBuild()')
+        self.logger.debug('DISPATCH: %s/%s' % (resume_ok, slave))
         # Stop right here if the buildd slave could not be reset.
         if not resume_ok:
             return
@@ -203,12 +204,16 @@ class BuilddManager(service.Service):
         proxy = Proxy(str(urlappend(slave.url, 'rpc')))
         for method, args in slave.calls:
             self.runningJobs += 1
+            self.logger.debug('PROXY: %s/%s' % (method, args))
             d = proxy.callRemote(method, *args)
             d.addCallback(self.checkDispatch, slave.name)
             d.addErrback(self.dispatchFail, slave.name)
+            d.addBoth(self.stopWhenDone)
+
+        self.logger.debug('out BM: dispatchBuild()')
 
     def stopWhenDone(self, result):
-        print('STOP: %s' % self.runningJobs)
+        self.logger.debug('STOP: %s' % self.runningJobs)
         self.runningJobs -= 1
         if self.runningJobs <= 0:
             reactor.stop()
@@ -216,6 +221,17 @@ class BuilddManager(service.Service):
     def checkDispatch(self, response, name):
         status, info = response
         if not status:
-            print 'DISPATCH FAIL', name, response
+            self.logger.debug('DISPATCH FAIL: %s/%s' % (name, response))
             self.buildd_proxy.resetBuilder(name)
 
+if __name__ == "__main__":
+    from canonical.config import dbconfig
+    from canonical.launchpad.scripts import execute_zcml_for_scripts
+
+    # Connect to database
+    dbconfig.setConfigSection('builddmaster')
+    execute_zcml_for_scripts()
+
+    bm = BuilddManager()
+    bm.startService()
+    reactor.run()
