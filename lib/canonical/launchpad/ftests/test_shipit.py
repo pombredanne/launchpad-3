@@ -364,9 +364,12 @@ class TestShippingRequest(unittest.TestCase):
         # If the user becomes inactive (which can be done by having his
         # account closed by an admin or by the user himself), though, the
         # recipient_email will be just a piece of text explaining that.
-        email = request.recipient.preferredemail
+        import transaction
+        from canonical.launchpad.interfaces import IMasterDBObject
+        email = IMasterDBObject(request.recipient.preferredemail)
         email.status = EmailAddressStatus.VALIDATED
         email.destroySelf()
+        transaction.commit()
         # Need to clean the cache because preferredemail is a cached property.
         request.recipient._preferredemail_cached = None
         self.failIf(request.recipient.preferredemail is not None)
