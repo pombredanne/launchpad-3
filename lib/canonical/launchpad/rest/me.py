@@ -49,5 +49,8 @@ def cache_me_link_when_principal_identified(event):
         cache = IJSONRequestCache(event.request)
     except TypeError:
         cache = None
+    # If the principal is an OpenIDPrincipal, it means there's no Person entry
+    # for the logged in user, so we can't (and don't need to, anyway) cache
+    # the 'me' link.
     if cache is not None and not IOpenIDPrincipal.providedBy(event.principal):
         cache.links['me'] = IPerson(event.principal)
