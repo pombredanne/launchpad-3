@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -153,6 +154,9 @@ class GetPersonTestCase(unittest.TestCase):
         <person xmlns="https://launchpad.net/xmlns/2006/bugs"
                 name="foo" email="foo@example.com">Foo User</person>''')
         person = importer.getPerson(personnode)
+        # Commit as we just made changes to two different stores, and the
+        # rest of these tests require the changes to be visible.
+        transaction.commit()
         self.assertNotEqual(person, None)
         self.assertEqual(person.name, 'foo')
         self.assertEqual(person.displayname, 'Foo User')
