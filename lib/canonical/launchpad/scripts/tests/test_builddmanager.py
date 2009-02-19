@@ -1,6 +1,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""Tests for ..."""
+"""Tests for the renovated slave scanner aka BuilddManager."""
 
 import unittest
 
@@ -13,7 +13,7 @@ from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import TwistedLayer
 
 
-class TestRecordinSlaves(unittest.TestCase):
+class TestRecordingSlaves(unittest.TestCase):
 
     def setUp(self):
         self.slave = RecordingSlave('foo', 'http://foo:8221/rpc')
