@@ -95,6 +95,7 @@ class Account(SQLBase):
 
     def createPerson(self, rationale):
         """See `IAccount`."""
+        # Need a local import because of circular dependencies.
         from canonical.launchpad.database.person import (
             generate_nick, Person, PersonSet)
         assert self.preferredemail is not None, (
