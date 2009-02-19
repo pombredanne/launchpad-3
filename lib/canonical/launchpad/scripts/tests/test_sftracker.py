@@ -179,6 +179,9 @@ class PersonMappingTestCase(unittest.TestCase):
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product)
         person = importer.get_person('foo')
+        # Changes where just made to two different Stores, so commit
+        # to make the changes visible to the subsequent tests.
+        transaction.commit()
         self.assertNotEqual(person, None)
         self.assertEqual(person.guessedemails.count(), 1)
         self.assertEqual(person.guessedemails[0].email,
@@ -264,6 +267,10 @@ class TrackerItemImporterTestCase(unittest.TestCase):
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product)
         bug = importer.importTrackerItem(item)
+        # Creating a user makes changes to two different Stores, so we have
+        # to commit to make these changes visible (or we have to pull this
+        # information from the correct stores, which is a more tedious fix).
+        transaction.commit()
         bugtask = bug.bugtasks[0]
 
         self.assertEqual(bug.name, 'sf1278591')
