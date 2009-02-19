@@ -62,7 +62,6 @@ class PlacelessAuthUtility:
                 if person.is_valid_person:
                     password = credentials.getPassword()
                     if principal.validate(password):
-                        request.setPrincipal(principal)
                         # We send a LoggedInEvent here, when the
                         # cookie auth below sends a PrincipalIdentified,
                         # as the login form is never visited for BasicAuth.
@@ -101,12 +100,6 @@ class PlacelessAuthUtility:
             return None
         elif (IOpenIDPrincipal.providedBy(principal)
               or person_set.get(principal.person.id).is_valid_person):
-            # XXX: Dear reviewer. Is it ok to set the principal in the request
-            # here when it's an OpenIDPrincipal that will be swallowed by
-            # LaunchpadBrowserPublication.getPrincipal() or do we need to
-            # swallow it here instead?  If we need to swallow it here, we'll
-            # need a way of not swallowing it when we're in login.lp.net.
-            request.setPrincipal(principal)
             login = authdata['login']
             assert login, 'login is %s!' % repr(login)
             notify(CookieAuthPrincipalIdentifiedEvent(
@@ -296,6 +289,13 @@ class LaunchpadLoginSource:
 
     def _getOpenIDPrincipal(self, account, access_level, scope,
                             want_password=True):
+        """Return an OpenIDPrincipal for the given account.
+
+        The OpenIDPrincipal will also have the given access level and scope.
+
+        If want_password is True, the principal's password will be set to the
+        account's password.  Otherwise it's set to None.
+        """
         naked_account = removeSecurityProxy(account)
         if want_password:
             password = naked_account.password
@@ -310,6 +310,14 @@ class LaunchpadLoginSource:
 
     def _getLaunchpadPrincipal(self, person, access_level, scope,
                                want_password=True):
+        """Return a LaunchpadPrincipal for the given person.
+
+        The LaunchpadPrincipal will also have the given access level and
+        scope.
+
+        If want_password is True, the principal's password will be set to the
+        person's password.  Otherwise it's set to None.
+        """
         naked_person = removeSecurityProxy(person)
         if want_password:
             password = naked_person.password
@@ -330,6 +338,11 @@ loginSource.__parent__ = authService
 
 
 class BaseLaunchpadPrincipal:
+    """Base class for Launchpad-specific IPrincipal classes.
+
+    It defines an access level and a scope of access for the principal, as
+    well as other attributes of IPrincipal.
+    """
 
     def __init__(self, id, title, description, pwd=None,
                  access_level=AccessLevel.WRITE_PRIVATE, scope=None):
@@ -351,6 +364,7 @@ class BaseLaunchpadPrincipal:
 
 
 class LaunchpadPrincipal(BaseLaunchpadPrincipal):
+    """See `ILaunchpadPrincipal`"""
 
     implements(ILaunchpadPrincipal)
 
@@ -363,6 +377,7 @@ class LaunchpadPrincipal(BaseLaunchpadPrincipal):
 
 
 class OpenIDPrincipal(BaseLaunchpadPrincipal):
+    """See `IOpenIDPrincipal`"""
 
     implements(IOpenIDPrincipal)
 

@@ -61,7 +61,7 @@ class SimpleRegistrationTestCase(unittest.TestCase):
     def test_sreg_fields(self):
         # Test that user details are extracted correctly.
         class FieldValueTest(OpenIDMixin):
-            user = getUtility(IPersonSet).getByEmail('david@canonical.com')
+            account = getUtility(IPersonSet).getByEmail('david@canonical.com')
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
                 'x_address1', 'x_address2', 'x_city', 'x_province',
@@ -86,7 +86,7 @@ class SimpleRegistrationTestCase(unittest.TestCase):
         person = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         self.assertEqual(person.lastShippedRequest(), None)
         class FieldValueTest(OpenIDMixin):
-            user = person
+            account = person.account
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
                 'x_address1', 'x_address2', 'x_city', 'x_province',
@@ -157,11 +157,14 @@ class OpenIDMixin_shouldReauthenticate_TestCase(unittest.TestCase):
 
         The user is set-up to have logged 90 days ago.
         """
+        class ShouldReauthenticateTest(OpenIDMixin):
+            # Must create this class so that we can override account, which is
+            # a @property on OpenIDMixin.
+            account = object()
         self.request = LaunchpadTestRequest(
             SERVER_URL='http://openid.launchpad.net/+openid')
         login("test@canonical.com", self.request)
-        self.openid_mixin = OpenIDMixin(None, self.request)
-        self.openid_mixin.user = object()
+        self.openid_mixin = ShouldReauthenticateTest(None, self.request)
         self.openid_mixin.request = self.request
         self.openid_request = FakeOpenIdRequest()
         self.openid_mixin.openid_request = self.openid_request
