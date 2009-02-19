@@ -739,6 +739,12 @@ class TestPublisher(TestPublisherBase):
         See https://bugs.edge.launchpad.net/soyuz/+bug/243630 and
         https://bugs.edge.launchpad.net/soyuz/+bug/269014.
         """
+        # XXX cprov 20090218 bug-279248: when hardy's apt gets fixed by a
+        # SRU, this test will fail in PQM/Buildbot. Then we should change
+        # the actual code for passing file descriptors instead of text to
+        # apt (it will perform better this way) and obviously remove this
+        # test.
+
         # Skip this test if it's not being run on Ubuntu/hardy.
         lsb_info = get_lsb_information()
         if (lsb_info.get('ID') != 'Ubuntu' or
