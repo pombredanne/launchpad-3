@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 
 """Cron job to update Product.remote_product using bug watch information.  """
 
