@@ -234,7 +234,7 @@ class LaunchpadLoginSource:
         else:
             account = getUtility(IAccountSet).get(id)
             if account is not None:
-                person = IPerson(account)
+                person = IPerson(account, None)
             else:
                 return None
 
