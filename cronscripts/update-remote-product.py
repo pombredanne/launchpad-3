@@ -17,7 +17,7 @@ class UpdateRemoteProduct(LaunchpadCronScript):
     def main(self):
         start_time = time.time()
 
-        updater = RemoteProductUpdater(self.txn)
+        updater = RemoteProductUpdater(self.txn, self.logger)
         updater.update()
 
         run_time = time.time() - start_time
