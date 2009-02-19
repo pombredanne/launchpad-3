@@ -342,6 +342,11 @@ def updateRemoteProductSetup(test):
     setUp(test)
     LaunchpadZopelessLayer.switchDbUser(config.updateremoteproduct.dbuser)
 
+def updateRemoteProductTeardown(test):
+    # Mark the DB as dirty, since we run a script in a sub process.
+    DatabaseLayer.force_dirty_database()
+    tearDown(test)
+
 
 # Files that have special needs can construct their own suite
 special = {
@@ -888,7 +893,7 @@ special = {
     'product-update-remote-product.txt': LayeredDocFileSuite(
             '../doc/product-update-remote-product.txt',
             setUp=updateRemoteProductSetup,
-            tearDown=tearDown,
+            tearDown=updateRemoteProductTeardown,
             layer=LaunchpadZopelessLayer
             ),
     }
