@@ -10,6 +10,8 @@ __all__ = [
     'CollectionResource',
     'Entry',
     'EntryAdapterUtility',
+    'EntryField',
+    'EntryFieldResource',
     'EntryHTMLView',
     'EntryResource',
     'HTTPResource',
@@ -64,7 +66,8 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionResource, IEntry, IEntryResource,
+    ICollection, ICollectionResource, IEntry, IEntryField,
+    IEntryFieldResource, IEntryResource,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
@@ -644,6 +647,22 @@ class EntryHTMLView:
                        for name, value in names_and_values])
         namespace['context'] = data
         return self.HTML_TEMPLATE.pt_render(namespace)
+
+
+class EntryFieldResource(ReadOnlyResource):
+    """An individual field of an entry."""
+    implements(IEntryFieldResource, IJSONPublishable)
+
+    def do_GET(self):
+        return "Foobar"
+
+
+class EntryField:
+    implements(IEntryField)
+
+    def __init__(self, entry, field):
+        self.entry = entry
+        self.field = field.bind(entry)
 
 
 class EntryResource(ReadWriteResource, CustomOperationResourceMixin):

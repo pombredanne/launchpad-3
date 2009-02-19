@@ -11,6 +11,8 @@ __all__ = [
     'ICollection',
     'ICollectionResource',
     'IEntry',
+    'IEntryField',
+    'IEntryFieldResource',
     'IEntryResource',
     'IFieldMarshaller',
     'IHTTPResource',
@@ -95,6 +97,16 @@ class IEntryResource(IHTTPResource):
         """Return the underlying entry for this resource."""
 
 
+class IEntryFieldResource(IHTTPResource):
+    """A resource that represents one of an entry's fields."""
+
+    def do_GET():
+        """Retrieve the value of the field.
+
+        :return: A string representation.
+        """
+
+
 class ICollectionResource(IHTTPResource):
     """A resource that represents a collection of entry resources."""
 
@@ -169,6 +181,14 @@ class IScopedCollection(ICollection):
     relationship = Attribute("The relationship between an entry and a "
                              "collection.")
     collection = Attribute("The collection scoped to an entry.")
+
+
+class IEntryField(Interface):
+    """An individual field of an entry."""
+
+    entry = Attribute("The entry whose field this is.")
+
+    field = Attribute("The field, bound to the entry.")
 
 
 class ITopLevelEntryLink(Interface):
