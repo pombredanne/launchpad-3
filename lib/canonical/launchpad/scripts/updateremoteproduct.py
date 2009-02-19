@@ -27,9 +27,14 @@ class RemoteProductUpdater:
 
     def update(self):
         """Update `remote_product` for all Products it can be set for."""
+        # We can't interact with an e-mail address, so don't try to
+        # update products with such trackers.
+        types_to_exclude = (
+            SINGLE_PRODUCT_BUGTRACKERTYPES + [BugTrackerType.EMAILADDRESS])
         multi_product_trackers = [
             bugtracker_type for bugtracker_type in BugTrackerType.items
-            if bugtracker_type not in SINGLE_PRODUCT_BUGTRACKERTYPES]
+            if bugtracker_type not in types_to_exclude]
+
         for bugtracker_type in multi_product_trackers:
             self.updateByBugTrackerType(bugtracker_type)
 
