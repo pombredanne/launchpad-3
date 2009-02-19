@@ -1988,6 +1988,7 @@ class ProductActiveReviewsView(BranchMergeProposalListingView):
         personal_review_count = (
             len(self.review_groups.get(self.TO_DO, [])) +
             len(self.review_groups.get(self.CAN_DO, [])) +
+            len(self.review_groups.get(self.MINE, [])) +
             len(self.review_groups.get(self.ARE_DOING, [])))
         if personal_review_count > 0:
             return _('Other reviews')
