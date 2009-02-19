@@ -57,7 +57,7 @@ ExternalBugTracker that doesn't require network access.
 The update method simply loops over all the bug tracker types that can
 track more than one product, and calls updateByBugTrackerType(). Any bug
 tracker type that isn't specified as being for a single product is being
-looped over. The EMAILADRESS one is special, though. It could be used
+looped over. The EMAILADDRESS one is special, though. It could be used
 for more than one product, but we have no way of interacting with it, so
 it's skipped as well.
 
