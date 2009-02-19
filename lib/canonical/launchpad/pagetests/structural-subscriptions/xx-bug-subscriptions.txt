@@ -25,7 +25,7 @@ And subscribe some people to the Firefox source package in Ubuntu.
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox')
     >>> browser.getLink('Subscribe to bug mail').click()
     >>> subscribe_myself = browser.getControl(
-    ...    'I want to subscribe to notifications')
+    ...    'I want to receive these notifications by e-mail')
     >>> subscribe_myself.selected
     False
     >>> subscribe_myself.selected = True
@@ -51,7 +51,7 @@ Sample Person and the Landscape team are now subscribed.
 Sample Person can also unsubscribe himself and the Landscape team.
 
     >>> subscribe_myself = browser.getControl(
-    ...    'I want to subscribe to notifications')
+    ...    'I want to receive these notifications by e-mail')
     >>> subscribe_myself.selected = False
     >>> subscribe_team = browser.getControl('Landscape')
     >>> subscribe_team.selected = False
@@ -97,7 +97,7 @@ No Privileges Person is now subscribed...
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
-    "No Privileges Person" was successfully subscribed to mozilla-firefox in ubuntu.
+    No Privileges Person will now receive an e-mail each time someone reports or changes a public bug in "mozilla-firefox in ubuntu".
 
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
@@ -117,7 +117,7 @@ No Privileges Person is now subscribed...
     >>> browser.getControl('Save these changes').click()
     >>> print find_tags_by_class(
     ...    browser.contents, 'informational message')[0].contents[0]
-    "No Privileges Person" was successfully unsubscribed from mozilla-firefox in ubuntu.
+    No Privileges Person will no longer automatically receive e-mail about public bugs in "mozilla-firefox in ubuntu".
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
       For...mozilla-firefox...source package in Ubuntu:
