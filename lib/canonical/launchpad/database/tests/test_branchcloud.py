@@ -9,6 +9,7 @@ import unittest
 
 import pytz
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.branch import BranchType, IBranchCloud
 from canonical.launchpad.testing import TestCaseWithFactory, time_counter
@@ -36,7 +37,7 @@ class TestBranchCloud(TestCaseWithFactory):
             num_products, store_flavor=MASTER_FLAVOR)
 
     def makeBranch(self, product=None, branch_type=None,
-                   last_commit_date=None):
+                   last_commit_date=None, private=False):
         """Make a product branch with a particular last commit date"""
         revision_count = 5
         delta = timedelta(days=1)
@@ -51,9 +52,10 @@ class TestBranchCloud(TestCaseWithFactory):
             start_date = start_date.replace(tzinfo=pytz.UTC)
             date_generator = time_counter(start_date, delta)
         branch = self.factory.makeProductBranch(
-            product=product, branch_type=branch_type)
+            product=product, branch_type=branch_type, private=private)
         self.factory.makeRevisionsForBranch(
-            branch, count=revision_count, date_generator=date_generator)
+            removeSecurityProxy(branch), count=revision_count,
+            date_generator=date_generator)
         return branch
 
     def test_empty_with_no_branches(self):
@@ -91,6 +93,12 @@ class TestBranchCloud(TestCaseWithFactory):
         # getProductsWithInfo doesn't consider remote branches to contribute
         # to the count of branches on a product.
         branch = self.makeBranch(branch_type=BranchType.REMOTE)
+        products_with_info = self.getProductsWithInfo()
+        self.assertEqual([], list(products_with_info))
+
+    def test_private_branches_not_counted(self):
+        # getProductsWithInfo doesn't count private branches.
+        branch = self.makeBranch(private=True)
         products_with_info = self.getProductsWithInfo()
         self.assertEqual([], list(products_with_info))
 

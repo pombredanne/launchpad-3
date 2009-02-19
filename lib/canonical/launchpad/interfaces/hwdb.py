@@ -42,7 +42,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    ASCIILine, Bool, Bytes, Choice, Datetime, Int, TextLine)
+    ASCIILine, Bool, Bytes, Choice, Datetime, Int, List, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -56,6 +56,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_read_operation, exported,
@@ -255,7 +256,7 @@ class IHWSubmissionSet(Interface):
         """
 
     def search(user=None, device=None, driver=None, distribution=None,
-               distroseries=None, architecture=None):
+               distroseries=None, architecture=None, owner=None):
         """Return the submissions matiching the given parmeters.
 
         :param user: The `IPerson` running the query. Private submissions
@@ -271,6 +272,7 @@ class IHWSubmissionSet(Interface):
             this `IDistroSeries`.
         :param architecture: Limit results to submissions made for
             a specific architecture.
+        :param owner: Limit results to submissions from this person.
 
         Only one of :distribution: or :distroseries: may be supplied.
         """
@@ -319,6 +321,45 @@ class IHWDriver(Interface):
         Choice(
             title=u'License of the Driver', required=False,
             vocabulary=License))
+    @operation_parameters(
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution.',
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution series.',
+            required=False),
+        architecture = TextLine(
+            title=u'A processor architecture',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given architecture.',
+            required=False),
+        owner = copy_field(IHWSubmission['owner']))
+    @operation_returns_collection_of(IHWSubmission)
+    @export_read_operation()
+    def getSubmissions(distribution=None, distroseries=None,
+                       architecture=None, owner=None):
+        """List all submissions which mention this driver.
+
+        :param distribution: Limit results to submissions for this
+            `IDistribution`.
+        :param distroseries: Limit results to submissions for this
+            `IDistroSeries`.
+        :param architecture: Limit results to submissions for this
+            architecture.
+        :param owner: Limit results to submissions from this person.
+
+        Only submissions matching all given criteria are returned.
+        Only one of :distribution: or :distroseries: may be supplied.
+        """
 
 
 class IHWDriverSet(Interface):
@@ -368,12 +409,19 @@ class IHWDriverSet(Interface):
         :return: A sequence of IHWDriver instances.
         """
 
-    def getByID(self, id):
+    def getByID(id):
         """Return an IHWDriver record with the given database ID.
 
         :param id: The database ID.
         :return: An IHWDriver instance.
         """
+
+    package_names = List(
+        title=u'Package Names',
+        description=
+            u'All known distinct package names appearing in HWDriver.',
+        value_type=TextLine(),
+        readonly=True)
 
 
 # Identification of a hardware device.
@@ -660,11 +708,12 @@ class IHWDevice(Interface):
             description=
                 u'If specified, the result set is limited to sumbissions '
                 'made for the given architecture.',
-            required=False))
+            required=False),
+        owner = copy_field(IHWSubmission['owner']))
     @operation_returns_collection_of(IHWSubmission)
     @export_read_operation()
     def getSubmissions(driver=None, distribution=None,
-                       distroseries=None, architecture=None):
+                       distroseries=None, architecture=None, owner=None):
         """List all submissions which mention this device.
 
         :param driver: Limit results to devices that use the given
@@ -675,6 +724,7 @@ class IHWDevice(Interface):
             `IDistroSeries`.
         :param architecture: Limit results to submissions for this
             architecture.
+        :param owner: Limit results to submissions from this person.
 
         Only submissions matching all given criteria are returned.
         Only one of :distribution: or :distroseries: may be supplied.
@@ -980,6 +1030,14 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         :param bus: A `HWBus` value.
         :return: A list of strings with vendor IDs fr this bus,
         """
+
+    package_names = exported(
+        List(title=u'Package Names',
+             description=
+                 u'All known distinct package names appearing in HWDriver.',
+             value_type=TextLine(),
+             readonly=True))
+
 
 class IllegalQuery(Exception):
     """Exception raised when trying to run an illegal submissions query."""

@@ -59,7 +59,7 @@
                           </tal:XXX>
                           <a href="/+recently-imported-branches">over 1000
                           <abbr>CVS</abbr> and <abbr>SVN</abbr> projects</a>,
-                          so you can use Bazaar with those too.
+                          so you can use Bazaar with those too. (<a href="https://help.launchpad.net/Code">Read our guide</a>)
                         </p>
 
       <div id="project-cloud-preview">

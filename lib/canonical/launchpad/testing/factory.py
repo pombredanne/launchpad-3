@@ -373,7 +373,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeProduct(self, name=None, project=None, displayname=None,
                     licenses=None, owner=None, registrant=None,
-                    title=None, summary=None):
+                    title=None, summary=None, official_malone=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -390,7 +390,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if summary is None:
             summary = self.getUniqueString('summary')
-        return getUtility(IProductSet).createProduct(
+        product = getUtility(IProductSet).createProduct(
             owner,
             name,
             displayname,
@@ -400,6 +400,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             licenses=licenses,
             project=project,
             registrant=registrant)
+        if official_malone is not None:
+            product.official_malone = official_malone
+        return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
                           summary=None):
@@ -1318,6 +1321,19 @@ class LaunchpadObjectFactory(ObjectFactory):
                     'attachment; filename="%s"' % filename)
                 msg.attach(attachment)
         return msg
+
+    def makeBundleMergeDirectiveEmail(self, source_branch, target_branch):
+        """Create a merge directive email from two bzr branches."""
+        from bzrlib.merge_directive import MergeDirective2
+        md = MergeDirective2.from_objects(
+            source_branch.repository, source_branch.last_revision(),
+            public_branch=source_branch.get_public_branch(),
+            target_branch=target_branch.warehouse_url,
+            local_target_branch=target_branch.warehouse_url, time=0,
+            timezone=0)
+        return self.makeSignedMessage(
+            body='My body', subject='My subject',
+            attachment_contents=''.join(md.to_lines()))
 
     def makeMergeDirective(self, source_branch=None, target_branch=None,
         source_branch_url=None, target_branch_url=None):

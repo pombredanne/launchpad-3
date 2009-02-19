@@ -212,6 +212,13 @@ class ExternalBugTracker:
         """
         raise NotImplementedError(self.getRemoteStatus)
 
+    def getRemoteProduct(self, remote_bug):
+        """Return the remote product for a given bug.
+
+        See `IExternalBugTracker`.
+        """
+        return None
+
     def _fetchPage(self, page):
         """Fetch a page from the remote server.
 

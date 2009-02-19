@@ -1083,6 +1083,18 @@ We can even limit the results to a specific distro series and architecture.
     ...     distroseries=ubuntu['hoary'], architecture='powerpc').count()
     0
 
+We can also search for submissions from a particular user.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> owner = getUtility(IPersonSet).getByName('name12')
+    >>> for submission in sata_controller.getSubmissions(owner=owner):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> not_owner = getUtility(IPersonSet).getByName('name20')
+    >>> sata_controller.getSubmissions(owner=not_owner).count()
+    0
+
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 HWDevice.drivers is the set of drivers that are associated via
@@ -1325,6 +1337,65 @@ HWDriverSet.getByID() returns None if no record with the passed ID exists.
 
     >>> driver = driver_set.getByID(1000000)
     >>> print driver
+    None
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+We can search all the submissions related to a driver.
+
+    >>> driver = driver_set.getByID(1)
+    >>> for submission in driver.getSubmissions():
+    ...     print submission.submission_key
+    sample-submission
+
+We can limit our search to submissions for a particular distribution.
+
+    >>> for submission in driver.getSubmissions(distribution=ubuntu):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> print driver.getSubmissions(distribution=debian).count()
+    0
+
+We can limit the results to a specific distro series.
+
+    >>> for submission in driver.getSubmissions(
+    ...     distroseries=ubuntu['hoary']):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> driver.getSubmissions(distroseries=ubuntu['warty']).count()
+    0
+
+We can also limit the results to a specific distro series and architecture.
+
+    >>> for submission in driver.getSubmissions(
+    ...     distroseries=ubuntu['hoary'], architecture='i386'):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> driver.getSubmissions(
+    ...     distroseries=ubuntu['hoary'], architecture='powerpc').count()
+    0
+
+And We can search for submissions from a particular user.
+
+    >>> for submission in driver.getSubmissions(owner=owner):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> driver.getSubmissions(owner=not_owner).count()
+    0
+
+    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+
+HWDriverSet.packages_names is a distinct list of known package names.
+
+    >>> for name in driver_set.package_names:
+    ...     print name
+    <BLANKLINE>
+    linux-image-2.6.24-19-generic
+    linux-image-generic
     None
 
 

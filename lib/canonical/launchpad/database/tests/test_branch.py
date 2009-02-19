@@ -50,6 +50,7 @@ from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
     NoSuchSeries)
@@ -183,28 +184,28 @@ class TestBranch(TestCaseWithFactory):
                 branch.name),
             branch.unique_name)
 
-    def test_container_name_junk(self):
+    def test_target_name_junk(self):
         branch = self.factory.makePersonalBranch()
-        self.assertEqual('+junk', branch.container.name)
+        self.assertEqual('+junk', branch.target.name)
 
-    def test_container_name_product(self):
+    def test_target_name_product(self):
         branch = self.factory.makeProductBranch()
-        self.assertEqual(branch.product.name, branch.container.name)
+        self.assertEqual(branch.product.name, branch.target.name)
 
-    def test_container_name_package(self):
+    def test_target_name_package(self):
         branch = self.factory.makePackageBranch()
         self.assertEqual(
             '%s/%s/%s' % (
                 branch.distribution.name, branch.distroseries.name,
                 branch.sourcepackagename.name),
-            branch.container.name)
+            branch.target.name)
 
     def makeLaunchBag(self):
         return getUtility(IOpenLaunchBag)
 
     def test_addToLaunchBag_product(self):
         # Branches are not added directly to the launchbag. Instead,
-        # information about their container is added.
+        # information about their target is added.
         branch = self.factory.makeProductBranch()
         launchbag = self.makeLaunchBag()
         branch.addToLaunchBag(launchbag)
@@ -1358,6 +1359,31 @@ class TestGetByUrl(TestCaseWithFactory):
         self.assertEqual(branch, branch2)
         branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
         self.assertEqual(branch, branch2)
+
+    def test_URIToUniqueName(self):
+        """Ensure URIToUniqueName works.
+
+        Only codehosting-based using http, sftp or bzr+ssh URLs will
+        be handled. If any other URL gets passed the returned will be
+        None.
+        """
+        branch_set = getUtility(IBranchSet)
+        uri = URI(config.codehosting.supermirror_root)
+        uri.path = '/~foo/bar/baz'
+        # Test valid schemes
+        uri.scheme = 'http'
+        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        uri.scheme = 'sftp'
+        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        uri.scheme = 'bzr+ssh'
+        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        # Test invalid scheme
+        uri.scheme = 'ftp'
+        self.assertIs(None, branch_set.URIToUniqueName(uri))
+        # Test valid scheme, invalid domain
+        uri.scheme = 'sftp'
+        uri.host = 'example.com'
+        self.assertIs(None, branch_set.URIToUniqueName(uri))
 
 
 class TestGetByLPPath(TestCaseWithFactory):

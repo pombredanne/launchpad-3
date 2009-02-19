@@ -35,8 +35,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
-from canonical.launchpad.database.branchcontainer import (
-    PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.database.branchmergeproposal import (
      BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -73,6 +71,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -148,15 +147,16 @@ class Branch(SQLBase):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
 
     @property
-    def container(self):
+    def target(self):
         """See `IBranch`."""
         if self.product is None:
             if self.distroseries is None:
-                return PersonContainer(self.owner)
+                target = self.owner
             else:
-                return PackageContainer(self.sourcepackage)
+                target = self.sourcepackage
         else:
-            return ProductContainer(self.product)
+            target = self.product
+        return IBranchTarget(target)
 
     @property
     def distribution(self):
@@ -381,7 +381,7 @@ class Branch(SQLBase):
     def unique_name(self):
         """See `IBranch`."""
         return u'~%s/%s/%s' % (
-            self.owner.name, self.container.name, self.name)
+            self.owner.name, self.target.name, self.name)
 
     @property
     def displayname(self):
@@ -1037,6 +1037,10 @@ class BranchSet:
         # "branch" violates check constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
 
+        # Run any necessary data massage on the branch URL.
+        if url is not None:
+            url = IBranch['url'].normalize(url)
+
         # Make sure that the new branch has a unique name if not a junk
         # branch.
         namespace = get_branch_namespace(
@@ -1081,17 +1085,26 @@ class BranchSet:
         notify(SQLObjectCreatedEvent(branch))
         return branch
 
+    @staticmethod
+    def URIToUniqueName(uri):
+        """See `IBranchSet`."""
+        schemes = ('http', 'sftp', 'bzr+ssh')
+        codehosting_host = URI(config.codehosting.supermirror_root).host
+        if uri.scheme in schemes and uri.host == codehosting_host:
+            return uri.path.lstrip('/')
+        else:
+            return None
+
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""
         assert not url.endswith('/')
-        schemes = ('http', 'sftp', 'bzr+ssh')
         try:
             uri = URI(url)
         except InvalidURIError:
             return None
-        codehosting_host = URI(config.codehosting.supermirror_root).host
-        if uri.scheme in schemes and uri.host == codehosting_host:
-            branch = self.getByUniqueName(uri.path.lstrip('/'))
+        unique_name = self.URIToUniqueName(uri)
+        if unique_name is not None:
+            branch = self.getByUniqueName(unique_name)
         elif uri.scheme == 'lp':
             branch = None
             allowed_hosts = set()
@@ -1589,6 +1602,7 @@ class BranchCloud:
         # the last revision date.
         result = store.find(
             (Product, Count(Branch.id), Max(Revision.revision_date)),
+            Branch.private == False,
             Branch.product == Product.id,
             Or(Branch.branch_type == BranchType.HOSTED,
                Branch.branch_type == BranchType.MIRRORED),
