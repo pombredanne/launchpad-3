@@ -15,6 +15,9 @@ from canonical.launchpad.interfaces.product import IProductSet
 class RemoteProductUpdater:
     """Updates Product.remote_product."""
 
+    def __init__(self, txn):
+        self.txn = txn
+
     def _getExternalBugTracker(self, bug_tracker):
         """Get the IExternalBugTracker for the given bug tracker."""
         return get_external_bugtracker(bug_tracker)
@@ -25,7 +28,7 @@ class RemoteProductUpdater:
         The `remote_product` attribute is only updated if it's None.
         """
         product_set = getUtility(IProductSet)
-        products_needing_updating = (
+        product_needing_updating = (
             product_set.getProductsWithNoneRemoteProduct(bugtracker_type))
         for product in products_needing_updating:
             # Pick an arbitrary bug watch for the product. They all
@@ -42,3 +45,4 @@ class RemoteProductUpdater:
             remote_product = external_bugtracker.getRemoteProduct(
                 bug_watch.remotebug)
             product.remote_product = remote_product
+            self.txn.commit()

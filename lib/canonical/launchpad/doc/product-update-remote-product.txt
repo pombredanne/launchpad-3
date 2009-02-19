@@ -15,7 +15,13 @@ automatically.
     >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
     >>> from canonical.launchpad.scripts.updateremoteproduct import (
     ...     RemoteProductUpdater)
-    >>> updater = RemoteProductUpdater()
+    >>> class FakeTransaction:
+    ...     def __init__(self, log_calls=False):
+    ...         self.log_calls = log_calls
+    ...     def commit(self):
+    ...         if self.log_calls:
+    ...             print "COMMIT"
+    >>> updater = RemoteProductUpdater(FakeTransaction())
 
 
 == Testing ==
@@ -86,7 +92,7 @@ arbitrary bug watch will be retrieved, and queried for its remote
 product. Products having a bug tracker of a different type than the
 given one are ignored.
 
-    >>> updater = TestRemoteProductUpdater()
+    >>> updater = TestRemoteProductUpdater(FakeTransaction())
     >>> bugzilla_bugtask = factory.makeBugTask(target=bugzilla_product)
     >>> bugzilla_bugwatch = factory.makeBugWatch(
     ...     '42', bugtracker=bugzilla, bug=bugzilla_bugtask.bug)
@@ -118,7 +124,27 @@ If a product already has remote_product set, it will not be updated.
     >>> rt_bugtask.bugwatch = rt_bugwatch
 
     >>> rt_product.remote_product = u'already-set'
-    >>> updater = TestRemoteProductUpdater()
+    >>> updater = TestRemoteProductUpdater(FakeTransaction())
     >>> updater.updateRemoteProduct(BugTrackerType.RT)
     >>> print rt_product.remote_product
     already-set
+
+=== Transaction handling ===
+
+To avoid long-running write transactions, the transaction is committed
+after each product's remote_product has been updated.
+
+    >>> for index in range(3):
+    ...     rt_product = factory.makeProduct(official_malone=False)
+    ...     rt = factory.makeBugTracker(
+    ...         bugtrackertype=BugTrackerType.RT)
+    ...     rt_product.bugtracker = rt
+    ...     rt_bugtask = factory.makeBugTask(target=rt_product)
+    ...     rt_bugwatch = factory.makeBugWatch(
+    ...         '84', bugtracker=rt, bug=rt_bugtask.bug)
+    ...     rt_bugtask.bugwatch = rt_bugwatch
+    >>> updater = TestRemoteProductUpdater(FakeTransaction(log_calls=True))
+    >>> updater.updateRemoteProduct(BugTrackerType.RT)
+    COMMIT
+    COMMIT
+    COMMIT
