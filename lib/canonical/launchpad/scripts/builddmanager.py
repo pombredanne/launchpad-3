@@ -19,24 +19,30 @@ from canonical.librarian.db import read_transaction, write_transaction
 
 
 class FakeZTM:
-
     def commit(self):
         pass
-
     def abort(self):
         pass
 
 
 class RecordingSlave:
+    """An RPC proxy for buildd slaves that records instructions to the latter.
 
+    The idea here is to merely record the instructions that the slave-scanner
+    issues to the buildd slaves and "replay" them a bit later in asynchronous
+    and parallel fashion.
+
+    By dealing with a number of buildd slaves in parallel we remove *the*
+    major slave-scanner throughput issue while avoiding large-scale changes to
+    its code base.
+    """
     def __init__(self, name, url, vm_host, virtualized):
         self.name = name
         self.url = url
         self.vm_host = vm_host
         self.virtualized = virtualized
-
         self.resume = False
-
+        self.resume_argv = None
         self.calls = []
 
     def __repr__(self):
@@ -50,11 +56,34 @@ class RecordingSlave:
         self.calls.append(('build', args))
         return ('BuilderStatus.BUILDING', args[0])
 
-    def resumeHost(self):
-        resume_command = config.builddmaster.vm_resume_command % {
-            'vm_host': self.vm_host}
-        resume_argv = [str(part) for part in resume_command.split()]
-        d = utils.getProcessOutputAndValue(resume_argv[0], resume_argv[1:])
+    def resumeHost(self, logger, resume_argv):
+        """Record the request to initialize a builder to a known state.
+
+        The supplied resume command will be run in a deferred and parallel
+        fashion in order to increase the slave-scanner throughput.
+        For now we merely record it.
+        
+        :param logger: the logger to use
+        :param resume_argv: the resume command to run (sequence of strings)
+
+        :return: a (stdout, stderr, subprocess exitcode) triple
+        """
+        self.resume = True
+        logger.debug("Recording slave reset request for %s", self.url)
+        self.resume_argv = resume_argv
+        return ('', '', 0)
+
+    def resumeSlaveHost():
+        """Initialize a virtual builder to a known state.
+
+        The recorded resume command is run in a subprocess in order to reset a
+        slave to a known state. This method will only be invoked for virtual
+        slaves.
+
+        :return: a deferred
+        """
+        d = utils.getProcessOutputAndValue(
+            self.resume_argv[0], self.resume_argv[1:])
         return d
 
 
@@ -88,29 +117,21 @@ class BuilddManager(service.Service):
             # XXX cprov 2007-11-09: we don't support manual dispatching
             # yet. Once we support it this clause should be removed.
             if builder.manual:
-                logger.warn('builder is in manual state. Ignored.')
+                logger.warn('Builder is in manual state, ignored.')
                 continue
 
             if not builder.is_available:
-                logger.warn('builder is not available. Ignored.')
+                logger.warn('Builder is not available, ignored.')
                 continue
 
             candidate = builder.findBuildCandidate()
             if candidate is None:
-                logger.debug(
-                    "No candidates available for builder.")
+                logger.debug("No build candidates available for builder.")
                 continue
 
             slave = RecordingSlave(
                 builder.name, builder.url, builder.vm_host,
                 builder.virtualized)
-
-            def localResume():
-                slave.resume = True
-
-            from zope.security.proxy import removeSecurityProxy
-            naked_builder = removeSecurityProxy(builder)
-            naked_builder.resumeSlaveHost = localResume
             builder.setSlaveForTesting(slave)
 
             builder.dispatchBuildCandidate(candidate)
@@ -136,7 +157,7 @@ class BuilddManager(service.Service):
         for slave in recording_slaves:
             if slave.resume:
                 self.rounds += 1
-                d = slave.resumeHost()
+                d = slave.resumeSlaveHost()
                 d.addCallback(self.checkResume, slave.name)
                 d.addBoth(check_rounds)
 
@@ -181,6 +202,7 @@ class BuilddManager(service.Service):
                 reactor.stop()
 
         for slave in recording_slaves:
+            # Configurable socket timeouts!
             proxy = Proxy(
                 str(urlappend(slave.url, 'rpc')))
             for method, args in slave.calls:
@@ -189,3 +211,4 @@ class BuilddManager(service.Service):
                 d.addCallback(self.checkDispatch, slave.name)
                 d.addErrback(self.dispatchFail, slave.name)
                 d.addBoth(check_rounds)
+

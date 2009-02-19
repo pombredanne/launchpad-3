@@ -21,6 +21,7 @@ __all__ = [
     ]
 
 from StringIO import StringIO
+import subprocess
 import xmlrpclib
 
 
@@ -166,6 +167,24 @@ class OkSlave:
     def info(self):
         return ('1.0', 'i386', 'debian')
 
+    def resumeHost(self, logger, resume_argv):
+        """Initialize a virtual builder to a known state.
+
+        The supplied resume command is run in a subprocess in order to reset a
+        slave to a known state. This method will only be invoked for virtual
+        slaves.
+
+        :param logger: the logger to use
+        :param resume_argv: the resume command to run (sequence of strings)
+
+        :return: a (stdout, stderr, subprocess exitcode) triple
+        """
+        logger.debug('Running: %s', resume_argv)
+        resume_process = subprocess.Popen(
+            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = resume_process.communicate()
+
+        return (stdout, stderr, resume_process.returncode)
 
 class BuildingSlave(OkSlave):
     """A mock slave that looks like it's currently building."""
