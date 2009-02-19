@@ -337,6 +337,12 @@ def hwdbDeviceTablesSetup(test):
     LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 
+def updateRemoteProductSetup(test):
+    """Setup to use the 'updateremoteproduct' db user."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.updateremoteproduct.dbuser)
+
+
 # Files that have special needs can construct their own suite
 special = {
     # No setup or teardown at all, since it is demonstrating these features.
@@ -878,7 +884,13 @@ special = {
         layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown),
     'filebug-data-parser.txt': LayeredDocFileSuite(
-        '../doc/filebug-data-parser.txt')
+        '../doc/filebug-data-parser.txt'),
+    'product-update-remote-product.txt': LayeredDocFileSuite(
+            '../doc/product-update-remote-product.txt',
+            setUp=updateRemoteProductSetup,
+            tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     }
 
 

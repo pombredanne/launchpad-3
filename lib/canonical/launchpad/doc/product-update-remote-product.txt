@@ -87,8 +87,6 @@ be updated.
 
 If there are no bug watches, nothing will be done.
 
-    >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> bugzilla_product = factory.makeProduct(
     ...     name=u'bugzilla-product', official_malone=False)
     >>> bugzilla = factory.makeBugTracker(
