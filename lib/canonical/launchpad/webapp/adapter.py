@@ -28,7 +28,7 @@ from zope.component import getUtility
 from zope.interface import (
     classImplements, classProvides, alsoProvides,
     implementer, implements, Interface)
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
@@ -501,14 +501,18 @@ def get_object_from_master_store(obj):
     method to return an security proxied object that rejects access to
     all attributes.
     """
-    obj = removeSecurityProxy(obj)
-    master_store = IMasterStore(obj)
-    if master_store is not Store.of(obj):
-        obj = master_store.get(obj.__class__, obj.id)
-        if obj is None:
+    naked_obj = removeSecurityProxy(obj)
+    is_wrapped = naked_obj is not obj
+    master_store = IMasterStore(naked_obj)
+    if master_store is not Store.of(naked_obj):
+        naked_obj = master_store.get(naked_obj.__class__, naked_obj.id)
+        if naked_obj is None:
             return None
-    alsoProvides(obj, IMasterDBObject)
-    return obj
+    alsoProvides(naked_obj, IMasterDBObject)
+    if is_wrapped:
+        return ProxyFactory(naked_obj)
+    else:
+        return naked_obj
 
 
 def get_store_name(store):

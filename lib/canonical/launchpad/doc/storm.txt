@@ -87,8 +87,10 @@ If the adapted object was security proxied, the master copy is
 similarly wrapped.
 
     >>> from canonical.launchpad.interfaces.account import IAccountSet
-    >>> t = transaction.begin()
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> account = getUtility(IAccountSet).getByEmail('no-priv@canonical.com')
+    >>> removeSecurityProxy(account) is account
+    False
     >>> account.displayname
     u'No Privileges Person'
     >>> account.password
@@ -97,11 +99,20 @@ similarly wrapped.
     Unauthorized: ...
 
     >>> account = IMasterDBObject(account)
+    >>> removeSecurityProxy(account) is account
+    False
     >>> account.displayname
     u'No Privileges Person'
     >>> account.password
     Traceback (most recent call last):
     ...
     Unauthorized: ...
-    >>> transaction.abort()
+
+    >>> account = IMasterDBObject(removeSecurityProxy(account))
+    >>> removeSecurityProxy(account) is account
+    True
+    >>> account.displayname
+    u'No Privileges Person'
+    >>> account.password
+    u'...'
 
