@@ -258,7 +258,7 @@ class OpenIDMixin:
         values['email'] = self.account.preferredemail.email
         # XXX: Dear reviewer. I can't use "person is None" here because zope
         # wraps the return of IPerson(account) above into a security proxy.
-        person = IPerson(self.account)
+        person = IPerson(self.account, None)
         if person:
             values['nickname'] = person.name
             if person.time_zone is not None:
@@ -290,7 +290,7 @@ class OpenIDMixin:
         """
         assert self.account is not None, (
             'Must be logged in to calculate team membership')
-        person = IPerson(self.account)
+        person = IPerson(self.account, None)
         # XXX: Dear reviewer. I can't use "person is None" here because zope
         # wraps the return of IPerson(account) above into a security proxy.
         if not person:
