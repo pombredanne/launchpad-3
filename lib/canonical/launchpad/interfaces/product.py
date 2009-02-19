@@ -760,6 +760,10 @@ class IProductSet(Interface):
         with a given bugtracker type.
         """
 
+    def getSFLinkedProductsWithNoneRemoteProduct(self):
+        """Get all IProducts with a sourceforge project and no remote_product
+        """
+
 
 emptiness_vocabulary = SimpleVocabulary.fromItems(
         [('Empty', True), ('Not Empty', False)])

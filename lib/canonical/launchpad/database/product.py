@@ -1293,3 +1293,13 @@ class ProductSet:
                 BugTracker.bugtrackertype == bugtracker_type,
                 ])
         return store.find(Product, And(*conditions))
+
+    def getSFLinkedProductsWithNoneRemoteProduct(self):
+        """See `IProductSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        conditions = And(
+            Product.remote_product == None,
+            Product.sourceforgeproject != None)
+
+        return store.find(Product, conditions)
+

@@ -1,0 +1,16 @@
+= Setting remote_products from SourceForge =
+
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+    >>> product_1 = factory.makeProduct(name='my-first-product')
+
+    >>> product_1.sourceforgeproject = 'fronobulator'
+
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> products = getUtility(
+    ...     IProductSet).getSFLinkedProductsWithNoneRemoteProduct()
+
+    >>> for product in products:
+    ...     print product.name, product.sourceforgeproject
+    my-first-product fronobulator
