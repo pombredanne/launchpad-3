@@ -933,6 +933,7 @@ class BranchMergeProposalJobDerived(object):
                 Or(Branch.next_mirror_time == None,
                    Branch.branch_type != BranchType.HOSTED)
                 ))
+        jobs.config(distinct=True)
         return (klass(job) for job in jobs)
 
 
