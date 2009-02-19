@@ -71,7 +71,7 @@ Commercial admins can create a team too.
 
     >>> login('commercial-member@canonical.com')
     >>> form = {
-    ...     'field.name': 'secret-project',
+    ...     'field.name': 'secret-team',
     ...     'field.displayname': 'Shhhh',
     ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
@@ -93,10 +93,9 @@ Commercial admins can create a team too.
 
     >>> import transaction
     >>> transaction.commit()
-    >>> secret_project = personset.getByName('secret-project')
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> print removeSecurityProxy(secret_project).visibility
-    Private Membership
+    >>> secret_team = personset.getByName('secret-team')
+    >>> print secret_team.visibility.name
+    PRIVATE_MEMBERSHIP
 
 Admins can successfully create a private team.
 
@@ -125,8 +124,8 @@ Admins can successfully create a private team.
     >>> import transaction
     >>> transaction.commit()
     >>> super_secret = personset.getByName('super-secret')
-    >>> print removeSecurityProxy(super_secret).visibility
-    Private Membership
+    >>> print super_secret.visibility.name
+    PRIVATE_MEMBERSHIP
 
 
 Admins who attempt to create a new team with the name of an existing
