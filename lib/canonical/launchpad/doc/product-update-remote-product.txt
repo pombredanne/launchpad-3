@@ -153,6 +153,7 @@ If a product already has remote_product set, it will not be updated.
     >>> print rt_product.remote_product
     already-set
 
+
 === Transaction handling ===
 
 To avoid long-running write transactions, the transaction is committed
@@ -173,4 +174,3 @@ after each product's remote_product has been updated.
     COMMIT
     COMMIT
     COMMIT
-
