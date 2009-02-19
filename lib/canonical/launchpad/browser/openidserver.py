@@ -48,7 +48,8 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadPrincipal, IPlacelessLoginSource, UnexpectedFormData)
+    ILaunchpadPrincipal, IOpenIDPrincipal, IPlacelessLoginSource,
+    UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
     logInPerson, logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured
@@ -119,23 +120,12 @@ class OpenIDMixin:
             raise ValueError('Too many principals')
         else:
             principal = principals[0]
-            # XXX: salgado, 2009-02-12: Right now we know that the principal
-            # is either an ILaunchpadPrincipal or the unauthenticated
-            # principal, so we either return principal.person.account or None
-            # here.  However, once I complete the work I'm doing, there will
-            # be a third kind of principal (IOpenIDPrincipal) which has no
-            # Person associated with, so we'll have to replace this code with
-            # what's commented below it.
-            if ILaunchpadPrincipal.providedBy(principal):
+            if IOpenIDPrincipal.providedBy(principal):
+                return principal.account
+            elif ILaunchpadPrincipal.providedBy(principal):
                 return principal.person.account
             else:
                 return None
-            # if IOpenIDPrincipal.providedBy(principal):
-            #     return principal.account
-            # elif ILaunchpadPrincipal.providedBy(principal):
-            #     return principal.person.account
-            # else:
-            #     return None
 
     @property
     def user_identity_url(self):
@@ -266,29 +256,28 @@ class OpenIDMixin:
         values = {}
         values['fullname'] = self.account.displayname
         values['email'] = self.account.preferredemail.email
-        # XXX: salgado, 2009-02-12: When I complete this work there will be
-        # accounts without an associated Person, so all the values below will
-        # be available only if there's a Person associated with this user's
-        # account.
+        # XXX: Dear reviewer. I can't use "person is None" here because zope
+        # wraps the return of IPerson(account) above into a security proxy.
         person = IPerson(self.account)
-        values['nickname'] = person.name
-        if person.time_zone is not None:
-            values['timezone'] = person.time_zone
-        shipment = person.lastShippedRequest()
-        if shipment is not None:
-            values['x_address1'] = shipment.addressline1
-            values['x_city'] = shipment.city
-            values['country'] = shipment.country.name
-            if shipment.addressline2 is not None:
-                values['x_address2'] = shipment.addressline2
-            if shipment.organization is not None:
-                values['x_organization'] = shipment.organization
-            if shipment.province is not None:
-                values['x_province'] = shipment.province
-            if shipment.postcode is not None:
-                values['postcode'] = shipment.postcode
-            if shipment.phone is not None:
-                values['x_phone'] = shipment.phone
+        if person:
+            values['nickname'] = person.name
+            if person.time_zone is not None:
+                values['timezone'] = person.time_zone
+            shipment = person.lastShippedRequest()
+            if shipment is not None:
+                values['x_address1'] = shipment.addressline1
+                values['x_city'] = shipment.city
+                values['country'] = shipment.country.name
+                if shipment.addressline2 is not None:
+                    values['x_address2'] = shipment.addressline2
+                if shipment.organization is not None:
+                    values['x_organization'] = shipment.organization
+                if shipment.province is not None:
+                    values['x_province'] = shipment.province
+                if shipment.postcode is not None:
+                    values['postcode'] = shipment.postcode
+                if shipment.phone is not None:
+                    values['x_phone'] = shipment.phone
         return [(field, values[field])
                 for field in self.sreg_field_names if field in values]
 
@@ -304,6 +293,8 @@ class OpenIDMixin:
         # XXX: salgado, 2009-02-12: Will change this to return False when
         # self.account.person is None; that will be possible when I complete
         # this work.
+        # TODO: Remove this XXX, but first write some tests that fail before
+        # doing the fix described above.
         person = IPerson(self.account)
         args = self.openid_request.message.getArgs(LAUNCHPAD_TEAMS_NS)
         team_names = args.get('query_membership')

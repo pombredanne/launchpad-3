@@ -719,9 +719,11 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     # Use a method to set self.next_url rather than a property because we
     # want to override self.next_url in a subclass of this.
     def setNextUrl(self):
-        # XXX: salgado, 2009-02-12: Need to return early here if this is part
-        # of an OpenID communication, as in that case we don't care about
-        # self.next_url.
+        if self.has_openid_request:
+            # For OpenID requests we don't use self.next_url, so don't even
+            # bother setting it.
+            return
+
         if self.context.redirection_url:
             self.next_url = self.context.redirection_url
         elif self.account is not None:

@@ -11,6 +11,7 @@ from urllib import urlencode
 import unittest
 
 from openid.message import Message
+from openid.server.server import OpenIDResponse
 
 from zope.component import getUtility
 from zope.session.interfaces import ISession
@@ -21,6 +22,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.database.openidserver import OpenIDAuthorization
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.testing.pages import setupBrowser
@@ -208,6 +210,38 @@ class OpenIDMixin_shouldReauthenticate_TestCase(unittest.TestCase):
             datetime.utcnow() - timedelta(seconds=3601))
         self.openid_request.args['max_auth_age'] = '3600'
         self.assertEquals(True, self.openid_mixin.shouldReauthenticate())
+
+
+class OpenIDMixin_checkTeamMembership_TestCase(TestCaseWithFactory):
+    """Test cases for the checkTeamMembership() method."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        """Sets up a very simple openid_mixin with a FakeOpenIdRequest.
+
+        The user is set-up to have logged 90 days ago.
+        """
+        TestCaseWithFactory.setUp(self)
+        self.request = LaunchpadTestRequest(
+            SERVER_URL='http://openid.launchpad.net/+openid')
+        login("test@canonical.com", self.request)
+        self.openid_mixin = OpenIDMixin(None, self.request)
+        self.account = self.factory.makeAccount(
+            'Test account, without a person')
+        self.account_email = self.factory.makeEmail(
+            'test@example.com', None, self.account)
+        self.openid_mixin.account = self.account
+        self.openid_mixin.request = self.request
+        self.openid_request = FakeOpenIdRequest()
+        self.openid_response = OpenIDResponse(self.request)
+        self.openid_mixin.openid_request = self.openid_request
+
+    def tearDown(self):
+        logout()
+
+    def test_(self):
+        self.openid_mixin.checkTeamMembership(self.openid_response)
 
 
 def test_suite():

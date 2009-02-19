@@ -393,7 +393,7 @@ perform the last step of the workflow for adding a GPG key.
     >>> login(ANONYMOUS, request)
     >>> validategpg_view = getMultiAdapter(
     ...     (login_token, request), name="+validategpg")
-    >>> print validategpg_view.user
+    >>> print validategpg_view.account
     None
     >>> validategpg_view.initialize()
     >>> print "\n".join(
