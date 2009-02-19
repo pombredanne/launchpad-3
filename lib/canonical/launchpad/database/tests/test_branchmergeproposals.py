@@ -986,7 +986,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_iterReady_includes_ready_jobs(self):
         """Ready jobs should be listed."""
-        # Avoid creating a MergeProposalCreatedJob early.
+        # Suppress events to avoid creating a MergeProposalCreatedJob early.
         bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
         job = MergeProposalCreatedJob.create(bmp)
         job.job.sync()
@@ -995,7 +995,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_iterReady_excludes_unready_jobs(self):
         """Unready jobs should not be listed."""
-        # Avoid creating a MergeProposalCreatedJob early.
+        # Suppress events to avoid creating a MergeProposalCreatedJob early.
         bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
         job = MergeProposalCreatedJob.create(bmp)
         job.job.start()
@@ -1004,6 +1004,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_iterReady_excludes_hosted_needing_mirror(self):
         """Skip Jobs with a hosted source branch that needs mirroring."""
+        # Suppress events to avoid creating a MergeProposalCreatedJob early.
         bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
         bmp.source_branch.requestMirror()
         job = MergeProposalCreatedJob.create(bmp)
@@ -1013,6 +1014,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         """Skip Jobs with a hosted source branch that needs mirroring."""
         source_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED)
+        # Suppress events to avoid creating a MergeProposalCreatedJob early.
         bmp = capture_events(
             self.factory.makeBranchMergeProposal,
             source_branch=source_branch)[0]
