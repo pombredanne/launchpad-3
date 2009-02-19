@@ -1808,13 +1808,13 @@ li {
 
 /* Clouds of links. */
 .cloud-size-smallest {
-  font-size: 1em;
+  font-size: 0.8em;
 }
 .cloud-size-small {
-  font-size: 1.2em;
+  font-size: 1.1em;
 }
 .cloud-size-medium {
-  font-size: 1.35em;
+  font-size: 1.4em;
 }
 .cloud-size-large {
   font-size: 1.7em;
