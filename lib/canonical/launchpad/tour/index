@@ -38,19 +38,21 @@
                 <img src="images/home/main-image.jpg" alt="Collaborate with free software communities." />
             </p>
             <p class="intro-text center">
-                <strong>Launchpad is a unique collaboration and hosting platform for free software, available through the web, email and a web services API.</strong></p>
-                <p>It brings communities together &mdash; regardless of their choice of tools &mdash; by making it easy to share code, bug reports, translations and ideas across projects.
+                <strong>Launchpad is a unique collaboration and hosting platform for software projects.</strong></p>
+                <p>It brings communities together &mdash; regardless of their choice of tools &mdash; by making it <br />easy to share code, bug reports, translations and ideas across projects.
             </p><br />
             <h2>Choose Launchpad to&#58;</h2>
             <ul>
+                <li>Develop, promote and <br />publish your software.</li>
                 <li>Encourage contributions to <br />your project.</li>
                 <li>Improve collaboration with <br />other projects and developers.</li>
-                <li>Build communities using teams <br />and mailing lists.</li>
-                <li>Promote and publish your software.</li>
+                <li>Build communities using <br />teams and mailing lists.</li>            
             </ul>
 
             <div class="clear"></div>
+            <div style="float: left; margin: 0 20px; padding-bottom: 1em; font-size: 8pt;"><strong>Need Launchpad for a commercial project?</strong><br /><a href="">Read about our commercial services &gt;</a></div>
             <div id="link-holder"><a href="https://launchpad.net/+login">Create your Launchpad account &gt;</a><br /><a href="https://launchpad.net/projects/+new-guided">Add your project to Launchpad &gt;</a></div>
+            
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
