@@ -96,7 +96,7 @@
         <p id="application-summary">
           With Launchpad you can track blueprints
           (lightweight feature specifications) from discussion through to
-          review, approval, and implementation.
+          review, approval, and implementation. (<a href="https://help.launchpad.net/Blueprint">Read our guide</a>)
         </p>
         <div class="columns">
           <div class="three column left"

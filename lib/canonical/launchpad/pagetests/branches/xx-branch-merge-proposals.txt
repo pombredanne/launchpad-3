@@ -150,7 +150,7 @@ shown first.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Merge Proposals').click()
     >>> printMergeProposals(browser, 'landing-candidates')
-    ~name12/gnome-terminal/scanned (New) - view proposal details
+    ~name12/gnome-terminal/scanned (Development) - view proposal details
       Needs review
     ~name12/gnome-terminal/klingon (Experimental) - view proposal details
       Merge proposed by No Privileges Person
@@ -244,7 +244,8 @@ This causes a notification to be sent.
 
 The message notifies the requested reviewer.
 
-    >>> print notification.get_payload(decode=True)
+    >>> from canonical.launchpad.mail.helpers import get_main_body
+    >>> print get_main_body(notification)
     You have been requested to review the proposed merge of
     lp://dev/~name12/gnome-terminal/klingon into
     lp://dev/~name12/gnome-terminal/main.
@@ -273,7 +274,7 @@ Additional reviews can be requested.
 This sends a notification only to the requested reviewer.
 
     >>> [notification] = pop_notifications()
-    >>> print notification.get_payload(decode=True)
+    >>> print get_main_body(notification)
     You have been requested to review the proposed merge of
     lp://dev/~name12/gnome-terminal/klingon into
     lp://dev/~name12/gnome-terminal/main.
@@ -293,7 +294,7 @@ sent.
     >>> sample_browser.getControl('Review type').value = 'second'
     >>> sample_browser.getControl('Request Review').click()
     >>> [notification] = pop_notifications()
-    >>> print notification.get_payload(decode=True)
+    >>> print get_main_body(notification)
     You have been requested to review the proposed merge of
     lp://dev/~name12/gnome-terminal/klingon into
     lp://dev/~name12/gnome-terminal/main.
@@ -414,7 +415,7 @@ Gone from the target branch.
     >>> nopriv_browser.getLink('~name12/gnome-terminal/main').click()
     >>> nopriv_browser.getLink(url="+merges").click()
     >>> printMergeProposals(nopriv_browser, 'landing-candidates')
-    ~name12/gnome-terminal/scanned (New) - view proposal details
+    ~name12/gnome-terminal/scanned (Development) - view proposal details
       Needs review
 
 If the user subsequently wants to set the merged revision number,

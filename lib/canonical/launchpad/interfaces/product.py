@@ -536,18 +536,28 @@ class IProductPublic(
         status=List(
             title=_("A list of merge proposal statuses to filter by."),
             value_type=Choice(vocabulary=BranchMergeProposalStatus)))
+    @call_with(visible_by_user=REQUEST_USER)
     @operation_returns_collection_of(IBranchMergeProposal)
     @export_read_operation()
-    def getMergeProposals(status=None):
+    def getMergeProposals(status=None, visible_by_user=None):
         """Returns all merge proposals of a given status.
 
         :param status: A list of statuses to filter with.
+        :param visible_by_user: Normally the user who is asking.
         :returns: A list of `IBranchMergeProposal`.
         """
 
-
     def userCanEdit(user):
         """Can the user edit this product?"""
+
+    def getLinkedBugWatches():
+        """Return all the bug watches that are linked to this Product.
+
+        Being linked, means that a bug watch having the same bug tracker
+        as this Product is using, is linked to a bug task targeted to
+        this Product.
+        """
+
 
 class IProduct(IProductEditRestricted, IProductCommercialRestricted,
                IProductPublic):

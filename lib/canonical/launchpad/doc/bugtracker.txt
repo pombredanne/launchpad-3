@@ -374,11 +374,13 @@ For the RT tracker we specify a Queue in which to file a ticket.
     bug_search_url: http://.../Search/Build.html?Query=Queue = '42'
 
 SourceForge and its kin use a Group ID and an ATID to specify which
-product a bug should be filed against.
+product a bug should be filed against. These are stored as an
+ampersand-separated string and getBugFilingAndSearchLinks() expects them
+to be passed to it in that form.
 
     >>> example_sourceforge = factory.makeBugTracker(
     ...     'http://forge.example.com', BugTrackerType.SOURCEFORGE)
-    >>> links = example_sourceforge.getBugFilingAndSearchLinks(('123', '456'))
+    >>> links = example_sourceforge.getBugFilingAndSearchLinks('123&456')
     >>> print_links(links)
     bug_filing_url: http://.../tracker/?func=add&group_id=123&atid=456
     bug_search_url: http://.../search/?group_id=123&type...artifact
@@ -387,7 +389,7 @@ The URL returned by the SourceForge celebrity points to the new version
 of the SourceForge bug tracker.
 
     >>> sourceforge = getUtility(IBugTrackerSet).getByName('sf')
-    >>> links = sourceforge.getBugFilingAndSearchLinks(('123', '456'))
+    >>> links = sourceforge.getBugFilingAndSearchLinks('123&456')
     >>> print_links(links)
     bug_filing_url: http://.../tracker2/?func=add&group_id=123&atid=456
     bug_search_url: http://.../search/?group_id=123&type...artifact
@@ -443,13 +445,15 @@ both filing and searching URLs.
     bug_filing_url: None
     bug_search_url: None
 
-As does DebBugs, which is also an email-based bugtracker.
+Debbugs - an email-based bug tracker - doesn't provide a bug filing form.
+However, it is possible to obtain a bug search URL for Debbugs-using
+products.
 
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
     >>> links = debbugs.getBugFilingAndSearchLinks('testproduct')
     >>> print_links(links)
     bug_filing_url: None
-    bug_search_url: None
+    bug_search_url: http://.../cgi-bin/pkgreport.cgi?package=testproduct
 
 The remote_product values passed to getBugFilingAndSearchLinks() are
 URL-encoded to ensure that the returned URL is valid.
@@ -488,8 +492,10 @@ the constraints of multi_product=True are not violated by any
 BugTracker.
 
 If you try passing remote_product=None to a multi product bugtracker's
-getBugFilingAndSearchLinks() method you'll get None back, since a
-product is required to be able to generate URLs for those bug trackers.
+getBugFilingAndSearchLinks() method you'll get None back for both URLs,
+since a product is required to be able to generate URLs for those bug
+trackers.
 
-    >>> print mozilla_bugzilla.getBugFilingAndSearchLinks(None)
-    None
+    >>> print_links(mozilla_bugzilla.getBugFilingAndSearchLinks(None))
+    bug_filing_url: None
+    bug_search_url: None

@@ -88,6 +88,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
     ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
@@ -102,12 +103,6 @@ class BranchLifecycleStatus(DBEnumeratedType):
     Essentially, this tells us what the author of the branch thinks of the
     code in the branch.
     """
-
-    NEW = DBItem(1, """
-        New
-
-        Has just been created.
-        """)
 
     EXPERIMENTAL = DBItem(10, """
         Experimental
@@ -373,7 +368,6 @@ class UICreatableBranchType(EnumeratedType):
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
-    BranchLifecycleStatus.NEW,
     BranchLifecycleStatus.EXPERIMENTAL,
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
@@ -744,9 +738,7 @@ class IBranch(IHasOwner):
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
-    # XXX: JonathanLange 2008-12-08 spec=package-branches: decorates blows up
-    # if we call this 'context'!
-    container = Attribute("The context that this branch belongs to.")
+    target = Attribute("The target of this branch, as an `IBranchTarget`.")
 
     # Product attributes
     # ReferenceChoice is Interface rather than IProduct as IProduct imports
@@ -777,7 +769,7 @@ class IBranch(IHasOwner):
     lifecycle_status = exported(
         Choice(
             title=_('Status'), vocabulary=BranchLifecycleStatus,
-            default=BranchLifecycleStatus.NEW))
+            default=BranchLifecycleStatus.DEVELOPMENT))
 
     # Mirroring attributes. For more information about how these all relate to
     # each other, look at
@@ -840,9 +832,16 @@ class IBranch(IHasOwner):
         the revisions that match the revision history from bzrlib for this
         branch.
         """)
-    subscriptions = Attribute(
-        "BranchSubscriptions associated to this branch.")
-    subscribers = Attribute("Persons subscribed to this branch.")
+    subscriptions = exported(
+        CollectionField(
+            title=_("BranchSubscriptions associated to this branch."),
+            readonly=True,
+            value_type=Reference(Interface))) # Really IBranchSubscription
+    subscribers = exported(
+        CollectionField(
+            title=_("Persons subscribed to this branch."),
+            readonly=True,
+            value_type=Reference(IPerson)))
 
     date_created = exported(
         Datetime(
@@ -979,7 +978,7 @@ class IBranch(IHasOwner):
 
         Use this when traversing to this branch in the web UI.
 
-        In particular, add information about the branch's container to the
+        In particular, add information about the branch's target to the
         launchbag. If the branch has a product, add that; if it has a source
         package, add lots of information about that.
 
@@ -1163,7 +1162,8 @@ class IBranchSet(Interface):
         """
 
     def new(branch_type, name, registrant, owner, product=None, url=None,
-            title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            title=None,
+            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
             summary=None, whiteboard=None, date_created=None,
             distroseries=None, sourcepackagename=None):
         """Create a new branch.
@@ -1379,7 +1379,7 @@ class BranchLifecycleStatusFilter(EnumeratedType):
     use_template(BranchLifecycleStatus)
 
     sort_order = (
-        'CURRENT', 'ALL', 'NEW', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
+        'CURRENT', 'ALL', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
         'MERGED', 'ABANDONED')
 
     CURRENT = Item("""

@@ -232,8 +232,7 @@ class CodeHandler:
         deferred to jobs to create BranchMergeProposals.
         """
         if email_addr.startswith('merge@'):
-            job = getUtility(ICreateMergeProposalJobSource).create(file_alias)
-            return True
+            return self.createMergeProposalJob(mail, email_addr, file_alias)
         else:
             try:
                 return self.processComment(mail, email_addr, file_alias)
@@ -242,7 +241,24 @@ class CodeHandler:
                 simple_sendmail('merge@code.launchpad.net',
                     [mail.get('from')],
                     'Error Creating Merge Proposal', body)
-                return
+                return True
+
+    def createMergeProposalJob(self, mail, email_addr, file_alias):
+        """Check that the message is signed and create the job."""
+        try:
+            ensure_not_weakly_authenticated(
+                mail, email_addr, 'not-signed-md.txt',
+                'key-not-registered-md.txt')
+        except IncomingEmailError, error:
+            user = getUtility(ILaunchBag).user
+            send_process_error_notification(
+                str(user.preferredemail.email),
+                'Submit Request Failure',
+                error.message, mail, error.failing_command)
+            transaction.abort()
+        else:
+            getUtility(ICreateMergeProposalJobSource).create(file_alias)
+        return True
 
     def processCommands(self, context, email_body_text):
         """Process the commadns in the email_body_text against the context."""
@@ -354,7 +370,7 @@ class CodeHandler:
         return mp_source, mp_target
 
     @staticmethod
-    def _getNewBranchInfo(url, target, submitter):
+    def _getNewBranchInfo(url, target_branch, submitter):
         """Return the namespace and basename for a branch.
 
         If an LP URL is provided, the namespace and basename will match the
@@ -368,7 +384,7 @@ class CodeHandler:
         If no URL is supplied, 'merge' is used as the base.
 
         :param url: The public URL of the source branch, if any.
-        :param target: The target branch.
+        :param target_branch: The target branch.
         :param submitter: The person submitting the merge proposal.
         """
         if url is not None:
@@ -381,7 +397,7 @@ class CodeHandler:
             basename = 'merge'
         else:
             basename = urlparse(url)[2].split('/')[-1]
-        namespace = target.container.getNamespace(submitter)
+        namespace = target_branch.target.getNamespace(submitter)
         return namespace, basename
 
     def _getNewBranch(self, branch_type, url, target, submitter):
@@ -504,6 +520,13 @@ class CodeHandler:
             context = CodeReviewEmailCommandExecutionContext(
                 bmp, submitter, notify_event_listeners=False)
             processed_count = self.processCommands(context, comment_text)
+
+            # If there are no reviews requested yet, request the default
+            # reviewer of the target branch.
+            if bmp.votes.count() == 0:
+                bmp.nominateReviewer(
+                    target.code_reviewer, submitter, None,
+                    _notify_listeners=False)
 
             if comment_text.strip() == '':
                 comment = None
