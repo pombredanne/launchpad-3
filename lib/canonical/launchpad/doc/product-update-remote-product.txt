@@ -102,3 +102,23 @@ given one are ignored.
 
     >>> print bugzilla_product.remote_product
     None
+
+
+=== remote_product already set ===
+
+If a product already has remote_product set, it will not be updated.
+
+    >>> rt_product = factory.makeProduct(official_malone=False)
+    >>> rt = factory.makeBugTracker(
+    ...     bugtrackertype=BugTrackerType.RT)
+    >>> rt_product.bugtracker = rt
+    >>> rt_bugtask = factory.makeBugTask(target=rt_product)
+    >>> rt_bugwatch = factory.makeBugWatch(
+    ...     '84', bugtracker=rt, bug=rt_bugtask.bug)
+    >>> rt_bugtask.bugwatch = rt_bugwatch
+
+    >>> rt_product.remote_product = u'already-set'
+    >>> updater = TestRemoteProductUpdater()
+    >>> updater.updateRemoteProduct(BugTrackerType.RT)
+    >>> print rt_product.remote_product
+    already-set
