@@ -361,6 +361,30 @@ with a PATCH request.
   ...
 
 
+=== Content negotiation during modification ===
+
+When making a PATCH, you don't have to get a JSON representation
+back. You can also get an HTML representation.
+
+  >>> print modify_person('salgado', salgado, 'PATCH',
+  ...                     headers={'Accept': 'application/xhtml+xml'})
+  HTTP/1.1 209 Content Returned
+  ...
+  Content-Type: application/xhtml+xml
+  ...
+  <?xml version="1.0"?>
+  ...
+
+You can even get a WADL representation, though that's pretty useless.
+
+  >>> print modify_person('salgado', salgado, 'PATCH',
+  ...                     headers={'Accept': 'application/vd.sun.wadl+xml'})
+  HTTP/1.1 209 Content Returned
+  ...
+  Content-Type: application/vd.sun.wadl+xml
+  ...
+
+
 === Server-side modification ===
 
 Sometimes the server will transparently modify a value sent by the

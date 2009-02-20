@@ -47,7 +47,7 @@
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasStanding"/>
     <allow
-      interface="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
+      interface="canonical.launchpad.interfaces.person.IPersonCommAdminWriteRestricted"
       />
 
     <require
@@ -68,8 +68,8 @@
                   canonical.launchpad.interfaces.person.ITeamPublic"
       />
     <require
-      permission="launchpad.Admin"
-      set_schema="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
+      permission="launchpad.Commercial"
+      set_schema="canonical.launchpad.interfaces.person.IPersonCommAdminWriteRestricted"
       />
     <require
       permission="launchpad.Special"
