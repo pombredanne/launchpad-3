@@ -4,17 +4,29 @@
 import logging
 
 from twisted.application import service
-from twisted.internet import reactor, utils, defer
+from twisted.internet import defer, reactor, utils
 from twisted.internet.threads import deferToThread
-from twisted.web.xmlrpc import Proxy
+from twisted.protocols.policies import TimeoutMixin
+from twisted.web.xmlrpc import Proxy, _QueryFactory, QueryProtocol
 
 from zope.component import getUtility
 from zope.security.management import newInteraction
 
+from canonical.config import config
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
+
+
+class QueryWithTimeoutProtocol(QueryProtocol, TimeoutMixin):
+    def connectionMade(self):
+        QueryProtocol.connectionMade(self)
+        self.setTimeout(config.builddmaster.socket_timeout)
+
+
+class QueryFactoryWithTimeout(_QueryFactory):
+    protocol = QueryWithTimeoutProtocol
 
 
 class FakeZTM:
@@ -191,10 +203,12 @@ class BuilddManager(service.Service):
     def _getProxyForSlave(self, slave):
         """Return a twisted.web.xmlrpc.Proxy for the buildd slave.
 
-        XXX: setup it in a way it has a timeout of
+        It is setup in a way it has a timeout of
         'config.builddmaster.socket_timeout' seconds.
         """
-        return Proxy(str(urlappend(slave.url, 'rpc')))
+        proxy = Proxy(str(urlappend(slave.url, 'rpc')))
+        proxy.queryFactory = QueryFactoryWithTimeout
+        return proxy
 
     def dispatchBuild(self, resume_ok, slave):
         # Stop right here if the buildd slave could not be reset.
