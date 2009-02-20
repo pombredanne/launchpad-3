@@ -792,17 +792,22 @@ class IBranch(IHasOwner):
         required=False)
 
     # Scanning attributes
-    last_scanned = Datetime(
-        title=_("Last time this branch was successfully scanned."),
-        required=False)
-    last_scanned_id = Text(
-        title=_("Last scanned revision ID"), required=False,
-        description=_("The head revision ID of the branch when last "
-                      "successfully scanned."))
-    revision_count = Int(
-        title=_("Revision count"),
-        description=_("The revision number of the tip of the branch.")
-        )
+    last_scanned = exported(
+        Datetime(
+            title=_("Last time this branch was successfully scanned."),
+            required=False, readonly=True))
+    last_scanned_id = exported(
+        TextLine(
+            title=_("Last scanned revision ID"),
+            required=False, readonly=True,
+            description=_("The head revision ID of the branch when last "
+                          "successfully scanned.")))
+
+    revision_count = exported(
+        Int(
+            title=_("Revision count"), readonly=True,
+            description=_("The revision number of the tip of the branch.")
+            ))
 
     stacked_on = Attribute('Stacked-on branch')
 

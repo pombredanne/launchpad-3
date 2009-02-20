@@ -644,6 +644,12 @@ class BranchMergeProposal(SQLBase):
         self.preview_diff.update(
             diff_content, diff_stat, source_revision_id, target_revision_id,
             dependent_revision_id, conflicts)
+
+        # XXX: TimPenhey 2009-02-19 bug 324724
+        # Since the branch_merge_proposal attribute of the preview_diff
+        # is a on_remote reference, it may not be found unless we flush
+        # the storm store.
+        Store.of(self).flush()
         return self.preview_diff
 
 
