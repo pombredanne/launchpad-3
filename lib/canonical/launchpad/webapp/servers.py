@@ -1149,7 +1149,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
                 elif IBytes.providedBy(field):
                     result = self._traverseToByteStorage(
                         request, entry, field, name)
-                else:
+                elif field is not None:
                     result = EntryField(entry, field, name)
             if result is not None:
                 return result
