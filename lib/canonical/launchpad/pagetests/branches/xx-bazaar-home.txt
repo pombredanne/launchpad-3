@@ -33,7 +33,7 @@ with a link to the complete listing.
     >>> print extract_text(preview)
     Projects with active branches
     firefox
-    more&#8230;
+    see all projects&#8230;
 
     >>> print preview.fetch('a')[-1]['href']
     /+project-cloud

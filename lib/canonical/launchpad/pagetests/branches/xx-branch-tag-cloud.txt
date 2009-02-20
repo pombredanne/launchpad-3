@@ -15,7 +15,7 @@ the link is shown.
     >>> tags = find_tag_by_id(anon_browser.contents, 'project-tags')
     >>> for anchor in tags.fetch('a'):
     ...     print anchor.renderContents(), anchor['class']
-    firefox cloud-size-large cloud-light
+    firefox cloud-size-largest cloud-light
 
 If the project is using bzr as its main branch repository then the class is
 different from the other projects.  This allows the CSS to show these projects
