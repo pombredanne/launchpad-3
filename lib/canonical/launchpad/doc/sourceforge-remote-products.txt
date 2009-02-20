@@ -35,29 +35,12 @@ getSFLinkedProductsWithNoneRemoteProduct() will return it.
     ...     print product.name, product.sourceforgeproject
     my-first-product fronobulator
 
-We'll create a test version of SourceForgeRemoteProductFinder that won't
-try to access the interwubs.
-
-    >>> import os
-    >>> import re
-    >>> from canonical.launchpad.scripts.sfremoteproductfinder import (
-    ...     SourceForgeRemoteProductFinder)
-
-    >>> class TestSFRemoteProductFinder(SourceForgeRemoteProductFinder):
-    ...
-    ...     def _getPage(self, page):
-    ...         self.logger.info("Getting page %s" % page)
-    ...         project_re = re.compile('projects/([a-z]+)')
-    ...         match = project_re.match(page)
-    ...
-    ...         if match is not None:
-    ...             project = match.groups()[0]
-    ...             file_path = os.path.join(
-    ...                 os.path.dirname(__file__), 'testfiles',
-    ...                 'sourceforge-project-%s.html' % project)
-    ...         return open(file_path, 'r').read()
+We'll use a test version of SourceForgeRemoteProductFinder that won't
+try to access SourceForge.
 
     >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.launchpad.ftests.sfremoteproductfinder import (
+    ...     TestSFRemoteProductFinder)
     >>> finder = TestSFRemoteProductFinder(txn=LaunchpadZopelessLayer.txn)
 
 SourceForgeRemoteProductFinder has a method,
@@ -68,8 +51,13 @@ project's 'Tracker' index within that page and follows it. Finally, it
 extracts the URL of the project's bug tracker and returns the group_id and
 atid therein as an ampersand-separated string.
 
-    >>> print finder.getRemoteProductFromSourceForge('fronobulator')
+    >>> remote_product = finder.getRemoteProductFromSourceForge(
+    ...     'fronobulator')
     INFO...Getting page projects/fronobulator
+    INFO...Getting page /tracker/?group_id=5570
+
+    >>> print remote_product
+    5570&105570
 
 We'll add a few more SourceForge-linked products for the purposes of
 demonstration.

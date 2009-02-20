@@ -7,6 +7,10 @@ __all__ = [
     'SourceForgeRemoteProductFinder',
     ]
 
+import re
+import urllib
+
+from BeautifulSoup import BeautifulSoup
 from urllib2 import urlopen
 
 from zope.component import getUtility
@@ -15,7 +19,7 @@ from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities)
 from canonical.launchpad.scripts.logger import log as default_log
-from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp import urlappend, urlsplit
 
 
 class SourceForgeRemoteProductFinder:
@@ -45,7 +49,37 @@ class SourceForgeRemoteProductFinder:
             'group_id&atid'.
         """
         # First, fetch the project page.
-        project_page = self._getPage("projects/%s" % sf_project)
+        soup = BeautifulSoup(self._getPage("projects/%s" % sf_project))
+
+        # Find the Tracker link and fetch that.
+        tracker_link = soup.find('a', text='Tracker')
+        tracker_url = tracker_link.findParent()['href']
+        soup = BeautifulSoup(self._getPage(tracker_url))
+
+        # Extract the group_id and atid from the bug tracker link.
+        bugtracker_link = soup.find('a', text='Bugs')
+        bugtracker_url = bugtracker_link.findParent()['href']
+
+        # We need to replace encoded ampersands in the URL since
+        # SourceForge usually encodes them.
+        bugtracker_url = bugtracker_url.replace('&amp;', '&')
+        schema, host, path, query, fragment = urlsplit(bugtracker_url)
+
+        query_dict = {}
+        query_bits = query.split('&')
+        for bit in query_bits:
+            key, value = urllib.splitvalue(bit)
+            query_dict[key] = value
+
+        try:
+            atid = int(query_dict.get('atid', None))
+            group_id = int(query_dict.get('group_id', None))
+        except ValueError:
+            # If anything goes wrong when int()ing the IDs, just return
+            # None.
+            return None
+
+        return '%s&%s' % (group_id, atid)
 
     def setRemoteProductsFromSourceForge(self):
         """Find and set the remote product for SF-linked Products."""
