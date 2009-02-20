@@ -88,3 +88,28 @@ There are no other SourceForge-linked products that have no remote product.
 
     >>> print products.count()
     0
+
+
+== update-sourceforge-remote-products.py ==
+
+There is a cronscript, update-sourceforge-remote-products.py, which will use
+the SourceForgeRemoteProductFinder to periodically update Products'
+remote_product fields.
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     ['cronscripts/update-sourceforge-remote-products.py', '-v'],
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out
+    ''
+    >>> process.returncode
+    0
+
+    >>> print err
+    INFO    creating lockfile
+    INFO    No Products to update.
+    INFO    Time for this run: ... seconds.
+    DEBUG   Removing lock file:...
+    <BLANKLINE>

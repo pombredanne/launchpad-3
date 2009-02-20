@@ -86,6 +86,10 @@ class SourceForgeRemoteProductFinder:
         products_to_update = getUtility(
             IProductSet).getSFLinkedProductsWithNoneRemoteProduct()
 
+        if products_to_update.count() == 0:
+            self.logger.info("No Products to update.")
+            return
+
         self.logger.info(
             "Updating %s Products using SourceForge project data" %
             products_to_update.count())
