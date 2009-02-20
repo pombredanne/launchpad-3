@@ -24,8 +24,12 @@ records to disk, including configuration and indexes.
     True
     >>> cprov_archive.authorized_size
     1024
-    >>> cprov_archive.whiteboard
-    u'It is not my fault.'
+    >>> print cprov_archive.whiteboard
+    It is not my fault.
+    >>> print cprov_archive.signing_key
+    None
+    >>> print cprov_archive.signing_key_fingerprint
+    None
     >>> cprov_archive.private
     False
     >>> cprov_archive.require_virtualized
@@ -35,6 +39,10 @@ records to disk, including configuration and indexes.
     >>> cprov_archive.binaries_cached
     3
     >>> cprov_archive.is_ppa
+    True
+    >>> cprov_archive.is_main
+    False
+    >>> cprov_archive.distribution.main_archive.is_main
     True
     >>> cprov_archive.total_count
     4
@@ -709,7 +717,7 @@ IArchive provides properties to calculate the number and the size of
 the packages (sources and binaries) currently published in the
 archive. They are based in the publication lookup methods.
 
-    >>> cprov_archive.number_of_sources_published
+    >>> cprov_archive.number_of_sources
     3
     >>> cprov_archive.number_of_binaries
     3
@@ -726,7 +734,7 @@ in the archive (+1kbytes for each publication)
     ...     cprov_archive.sources_size + cprov_archive.binaries_size)
 
     >>> number_of_publications = (
-    ...     cprov_archive.number_of_sources_published +
+    ...     cprov_archive.number_of_sources +
     ...     cprov_archive.number_of_binaries)
     >>> indexes_size = number_of_publications * 1024
 
@@ -790,14 +798,14 @@ see if the counter decreases.
 Superseding a source package and verifying that the source counter
 decreases.
 
-    >>> cprov_archive.number_of_sources_published
+    >>> cprov_archive.number_of_sources
     3
     >>> superseded = cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0].supersede()
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(superseded)
 
-    >>> cprov_archive.number_of_sources_published
+    >>> cprov_archive.number_of_sources
     2
 
 Superseding a binary package and verifying that the binary counter
@@ -867,6 +875,14 @@ The status filter can also be a sequence of status.
     >>> cprov_archive.getSourcesForDeletion(
     ...      name='ice', status=irrelevant_status).count()
     1
+
+The series filter can be used to return only sources from a certain
+series:
+
+    >>> cprov_archive.getSourcesForDeletion(distroseries=warty).count()
+    2
+    >>> cprov_archive.getSourcesForDeletion(distroseries=hoary).count()
+    0
 
 The source publication is only excluded from 'deletion list' when its
 binary is also DELETED.
@@ -2142,7 +2158,7 @@ As with syncSources() you need to have edit permission on the archive.
     Traceback (most recent call last):
     ...
     Unauthorized...
-    
+
 Login as sabdfl to continue.
 
     >>> login("mark@hbd.com")

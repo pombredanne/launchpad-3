@@ -67,7 +67,7 @@ from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
     mutator_for, rename_parameters_as, webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -345,8 +345,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary='DistroSeries')
-    milestone = exported(Choice(
-        title=_('Milestone'), required=False, vocabulary='Milestone'))
+    milestone = exported(ReferenceChoice(
+        title=_('Milestone'),
+        required=False,
+        vocabulary='Milestone',
+        schema=Interface)) # IMilestone
+
     # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
@@ -374,8 +378,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
              readonly=True),
         exported_as='bug_target_name')
     bugwatch = exported(
-        Choice(
+        ReferenceChoice(
             title=_("Remote Bug Details"), required=False,
+            schema=IBugWatch,
             vocabulary='BugWatch', description=_(
                 "Select the bug watch that "
                 "represents this task in the relevant bug tracker. If none "

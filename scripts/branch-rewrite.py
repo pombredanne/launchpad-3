@@ -13,7 +13,7 @@ import _pythonpath
 import sys
 import xmlrpclib
 
-from canonical.codehosting.branchfsclient import BlockingProxy
+from canonical.codehosting.vfs import BlockingProxy
 from canonical.codehosting.rewrite import BranchRewriter
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadScript
@@ -52,8 +52,13 @@ class BranchRewriteScript(LaunchpadScript):
         self.logger.debug("Starting up...")
         while True:
             try:
-                line = sys.stdin.readline().strip()
-                print self.rewriter.rewriteLine(line)
+                line = sys.stdin.readline()
+                # Mod-rewrite always gives us a newline terminated string.
+                if line:
+                    print self.rewriter.rewriteLine(line.strip())
+                else:
+                    # Standard input has been closed, so die.
+                    return
             except KeyboardInterrupt:
                 sys.exit()
             except:

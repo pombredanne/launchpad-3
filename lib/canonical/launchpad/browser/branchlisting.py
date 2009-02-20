@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces import (
     IProductSeriesSet,
     IRevisionSet,
     ISpecificationBranchSet)
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from lazr.delegates import delegates
@@ -66,6 +67,11 @@ class BranchListingItem(BranchBadges):
         self._now = now
         self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
+
+    @property
+    def active_series(self):
+        return [series for series in self.associated_product_series
+                if series.status != DistroSeriesStatus.OBSOLETE]
 
     @property
     def bzr_identity(self):

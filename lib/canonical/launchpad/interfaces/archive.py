@@ -102,11 +102,6 @@ class IArchivePublic(IHasOwner):
             constraint=name_validator,
             description=_("The name of this archive.")))
 
-    description = exported(
-        Text(
-            title=_("Archive contents description"), required=False,
-            description=_("A short description of this archive's contents.")))
-
     enabled = Bool(
         title=_("Enabled"), required=False,
         description=_("Whether the archive is enabled or not."))
@@ -172,14 +167,15 @@ class IArchivePublic(IHasOwner):
 
     is_copy = Attribute("True if this archive is a copy archive.")
 
+    is_main = Bool(
+        title=_("True if archive is a main archive type"), required=False)
+
     title = exported(
         Text(title=_("Archive Title."), required=False))
 
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     number_of_sources = Attribute(
-        'The total number of sources in the context archive.')
-    number_of_sources_published = Attribute(
         'The number of sources published in the context archive.')
     number_of_binaries = Attribute(
         'The number of binaries published in the context archive.')
@@ -228,11 +224,12 @@ class IArchivePublic(IHasOwner):
         paths to cope with non-primary and PPA archives publication workflow.
         """
 
-    def getSourcesForDeletion(name=None, status=None):
+    def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
         :param: name: optional source name filter (SQL LIKE)
         :param: status: `PackagePublishingStatus` filter, can be a sequence.
+        :param: distroseries: `IDistroSeries` filter.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
@@ -555,7 +552,7 @@ class IArchivePublic(IHasOwner):
             are to be copied.
         :param requestor: The `IPerson` who is requesting the package copy
             operation.
-        :param suite: The `IDistroSeries` name with optional pocket, for 
+        :param suite: The `IDistroSeries` name with optional pocket, for
             example, 'hoary-security'. If this is not provided it will
             default to the current series' release pocket.
         :param copy_binaries: Whether or not binary packages should be copied
@@ -575,8 +572,19 @@ class IArchiveView(Interface):
     buildd_secret = TextLine(
         title=_("Buildd Secret"), required=False,
         description=_("The password used by the builder to access the "
-                      "archive.")
-        )
+                      "archive."))
+
+    description = exported(
+        Text(
+            title=_("Archive contents description"), required=False,
+            description=_("A short description of this archive's contents.")))
+
+    signing_key_fingerprint = exported(
+        Text(
+            title=_("Archive signing key fingerprint"), required=False,
+            description=_("A OpenPGP signing key fingerprint (40 chars) "
+                          "for this PPA or None if there is no signing "
+                          "key available.")))
 
     @rename_parameters_as(name="source_name", distroseries="distro_series")
     @operation_parameters(
@@ -661,7 +669,7 @@ class IArchiveView(Interface):
         """Return a dictionary containing a summary of the build statuses.
 
         Only information for sources belonging to the current archive will
-        be returned. See 
+        be returned. See
         `IPublishingSet`.getBuildStatusSummariesForSourceIdsAndArchive() for
         details.
 
@@ -812,11 +820,6 @@ class IPPAActivateForm(Interface):
 class IArchiveSourceSelectionForm(Interface):
     """Schema used to select sources within an archive."""
 
-    name_filter = TextLine(
-        title=_("Package name"), required=False, default=None,
-        description=_("Display packages only with name matching the given "
-                      "filter."))
-
 
 class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
     """Schema used to delete packages within an archive."""
@@ -877,7 +880,7 @@ class IArchiveSet(Interface):
 
     def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
         """Return a single PPA.
-        
+
         :param distribution: The context IDistribution.
         :param person_name: The context IPerson.
         :param ppa_name: The name of the archive (PPA)

@@ -9,7 +9,7 @@ __all__ = [
     'IDistributionSourcePackage',
     ]
 
-from zope.interface import Attribute
+from zope.interface import Attribute, Interface
 from zope.schema import Int, TextLine
 
 from canonical.lazr.fields import Reference
@@ -46,6 +46,16 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         exported_as="display_name")
     title = exported(
         TextLine(title=_("Title for this package."), readonly=True))
+
+    upstream_product = exported(
+        Reference(
+            title=_("The upstream product to which this package is linked."),
+            required=False,
+            readonly=True,
+            # This is really an IProduct but we get a circular import
+            # problem if we do that here. This is patched in
+            # interfaces/product.py.
+            schema=Interface))
 
     currentrelease = Attribute(
         "The latest published SourcePackageRelease of a source package with "
@@ -135,3 +145,4 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         Distro sourcepackages compare not equal if either of their distribution
         or sourcepackagename compare not equal.
         """
+

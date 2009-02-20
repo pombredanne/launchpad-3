@@ -720,7 +720,7 @@ resources.
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
     ['archive', 'archive_permission', 'branch', 'branch_merge_proposal',
-     'bug', 'bug_attachment', 'bug_subscription', ...]
+     'branch_subscription', 'bug', 'bug_attachment', 'bug_subscription', ...]
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.
@@ -939,17 +939,22 @@ XML id. Here that's not a problem; we have one custom POST method
 === Standard entry operations ===
 
 The standard GET operation defines a 'response' tag, which tells the
-client that they can use content negotiation to get two different
+client that they can use content negotiation to get three different
 representations of a bug task: the JSON one described above as
-"BugTask-full", and a WADL document--the sort of document shown in the
-very first section of this test.
+"BugTask-full", an XHTML snippet, and a WADL document--the sort of
+document shown in the very first section of this test.
 
     >>> response = get.find(wadl_tag('response'))
     >>> response.tag
     '...response'
-    >>> full, wadl = list(response)
+    >>> full, html, wadl = list(response)
     >>> full.attrib['href']
     'http://.../#bug_task-full'
+
+    >>> html.attrib['id']
+    'bug_task-xhtml'
+    >>> html.attrib['mediaType']
+    'application/xhtml+xml'
 
     >>> wadl.attrib['id']
     'bug_task-wadl'

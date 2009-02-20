@@ -81,7 +81,7 @@ from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchmergeproposallisting import (
-    BranchMergeProposalListingView)
+    BranchMergeProposalListingItem, BranchMergeProposalListingView)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
@@ -108,6 +108,7 @@ from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget)
+from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -564,40 +565,41 @@ class ProductBountiesMenu(ApplicationMenu):
         return Link('+linkbounty', text, icon='edit')
 
 
-class ProductTranslationsMenu(ApplicationMenu):
+class ProductTranslationsMenu(NavigationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = [
+    links = (
+        'overview',
         'translators',
-        'imports',
         'translationdownload',
-        'help_translate',
-        ]
+        'imports',
+        )
 
     def imports(self):
-        text = 'See import queue'
+        text = 'Import queue'
         return Link('+imports', text)
 
     @enabled_with_permission('launchpad.Edit')
     def translators(self):
-        text = 'Change translators'
+        text = 'Settings'
         return Link('+changetranslators', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
-        text = 'Download translations'
+        text = 'Download'
         preferred_series = self.context.primary_translatable
         enabled = (self.context.official_rosetta and
             preferred_series is not None)
         link = ''
         if enabled:
             link = '%s/+export' % preferred_series.name
+            text = 'Download "%s"' % preferred_series.name
 
         return Link(link, text, icon='download', enabled=enabled)
 
-    def help_translate(self):
-        text = 'Help translate'
+    def overview(self):
+        text = 'Overview'
         link = canonical_url(self.context, rootsite='translations')
         return Link(link, text, icon='translation')
 
@@ -674,11 +676,12 @@ class SortSeriesMixin:
         for series in self.product.serieses:
             if filter is None or filter(series):
                 series_list.append(series)
-        # It should never be possible to mark the product's development focus
-        # series as obsolete.
-        assert self.product.development_focus in series_list, (
-            'Development focus series should not have been made obsolete')
-        series_list.remove(self.product.development_focus)
+        # In production data, there exist development focus series that are
+        # obsolete.  This may be caused by bad data, or it may be intended
+        # functionality.  In either case, ensure that the development focus
+        # branch is first in the list.
+        if self.product.development_focus in series_list:
+            series_list.remove(self.product.development_focus)
         # Now sort the list by name with newer versions before older.
         series_list = sorted_version_numbers(series_list,
                                              key=attrgetter('name'))
@@ -918,6 +921,10 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def initialize(self):
         self.status_message = None
+        self.title_edit_widget = TextLineEditorWidget(
+            self.context, 'title',
+            canonical_url(self.context, view_name='+edit'),
+            id="product-title", title="Edit this title")
 
     @property
     def show_license_status(self):
@@ -1771,15 +1778,11 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""
-        # XXX: thumper 2008-04-22
-        # When bug 181157 is fixed, only get branches for non-obsolete
-        # series.
-
         # We want to show each series branch only once, always show the
         # development focus branch, no matter what's it lifecycle status, and
         # skip subsequent series where the lifecycle status is Merged or
         # Abandoned
-        sorted_series = self.sorted_series_list
+        sorted_series = self.sorted_active_series_list
         def show_branch(branch):
             if self.selected_lifecycle_status is None:
                 return True
@@ -1907,8 +1910,79 @@ class ProductBranchesView(ProductBranchListingView):
 class ProductActiveReviewsView(BranchMergeProposalListingView):
     """Branch merge proposals for the product that are needing review."""
 
-    extra_columns = ['date_review_requested', 'vote_summary']
-    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+    show_diffs = False
+
+    # The grouping classifications.
+    TO_DO = 'to_do'
+    ARE_DOING = 'are_doing'
+    CAN_DO = 'can_do'
+    OTHER = 'other'
+
+    def _getReviewGroup(self, proposal, votes):
+        """Return one of TO_DO, CAN_DO, ARE_DOING, or OTHER.
+
+        These groupings define the different tables that the user is able to
+        see.
+
+        If there is a pending vote reference for the logged in user, then the
+        group is TO_DO as the user is expected to review.  If there is a vote
+        reference where it is not pending, this means that the user has
+        reviewed, so the group is ARE_DOING.  If there is a pending review
+        requested of a team that the user is in, then the review becomes a
+        CAN_DO.  All others are OTHER.
+        """
+        result = self.OTHER
+        for vote in votes:
+            if self.user is not None:
+                if vote.reviewer == self.user:
+                    if vote.comment is None:
+                        return self.TO_DO
+                    else:
+                        return self.ARE_DOING
+                # Since team reviews are always pending, and we've eliminated
+                # the case where the reviewer is ther person, then if the user
+                # is in the reviewer team, it is a can do.
+                if self.user.inTeam(vote.reviewer):
+                    result = self.CAN_DO
+        return result
+
+    def initialize(self):
+        # Work out the review groups
+        self.review_groups = {}
+        getter = getUtility(IBranchMergeProposalGetter)
+        proposals = list(getter.getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW],
+            self.user))
+        all_votes = getter.getVotesForProposals(proposals)
+        vote_summaries = getter.getVoteSummariesForProposals(proposals)
+        for proposal in proposals:
+            proposal_votes = all_votes[proposal]
+            review_group = self._getReviewGroup(
+                proposal, proposal_votes)
+            self.review_groups.setdefault(review_group, []).append(
+                BranchMergeProposalListingItem(
+                    proposal, vote_summaries[proposal], None, proposal_votes))
+            if proposal.preview_diff is not None:
+                self.show_diffs = True
+        self.proposal_count = len(proposals)
+
+    @property
+    def other_heading(self):
+        """Return the heading to be used for the OTHER group.
+
+        If there is no user, or there are no reviews in any user specific
+        group, then don't show a heading for the OTHER group.
+        """
+        if self.user is None:
+            return None
+        personal_review_count = (
+            len(self.review_groups.get(self.TO_DO, [])) +
+            len(self.review_groups.get(self.CAN_DO, [])) +
+            len(self.review_groups.get(self.ARE_DOING, [])))
+        if personal_review_count > 0:
+            return _('Other reviews')
+        else:
+            return None
 
     @property
     def heading(self):

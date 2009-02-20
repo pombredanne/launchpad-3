@@ -26,8 +26,8 @@ from bzrlib.config import TransportConfig
 from bzrlib import errors
 
 from canonical.codehosting.branchfs import LaunchpadInternalServer
-from canonical.codehosting.branchfsclient import BlockingProxy
-from canonical.codehosting.transport import (
+from canonical.codehosting.vfs import BlockingProxy
+from canonical.codehosting.vfs.transport import (
     get_chrooted_transport, get_readonly_transport, _MultiServer)
 from canonical.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.config import config
@@ -39,11 +39,11 @@ def get_server(read_only):
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     authserver = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
-        config.codehosting.branches_root)
+        config.codehosting.hosted_branches_root)
     if read_only:
         hosted_transport = get_readonly_transport(hosted_transport)
     mirrored_transport = get_chrooted_transport(
-        config.supermirror.branchesdest)
+        config.codehosting.mirrored_branches_root)
     if read_only:
         mirrored_transport = get_readonly_transport(mirrored_transport)
     hosted_server = LaunchpadInternalServer(
