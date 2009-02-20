@@ -55,7 +55,7 @@ Running ``ec2tests``
 
 # python2.4 ~/path/to/lp-dev-utils/ec2test.py \
             -o '-1vp' \
-            -p --headless \
+            --headless \
             --no-rsync --no-merge \
             -b sourcecodegen=lp:sourcecodegen/trunk \
 	    -b chameleon.core=lp:chameleon.core/trunk \
