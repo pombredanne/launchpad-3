@@ -426,3 +426,28 @@ def capture_events(callable_obj, *args, **kwargs):
         return result, events
     finally:
         zope.event.subscribers[:] = old_subscribers
+
+
+def get_lsb_information():
+    """Returns a dictionary with the LSB host information.
+
+    Code stolen form /usr/bin/lsb-release
+    """
+    distinfo = {}
+    if os.path.exists('/etc/lsb-release'):
+        for line in open('/etc/lsb-release'):
+            line = line.strip()
+            if not line:
+                continue
+            # Skip invalid lines
+            if not '=' in line:
+                continue
+            var, arg = line.split('=', 1)
+            if var.startswith('DISTRIB_'):
+                var = var[8:]
+                if arg.startswith('"') and arg.endswith('"'):
+                    arg = arg[1:-1]
+                distinfo[var] = arg
+
+    return distinfo
+

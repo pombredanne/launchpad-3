@@ -17,7 +17,7 @@ from email.Utils import make_msgid
 
 from lazr.delegates import delegates
 import simplejson
-from storm.expr import And
+from storm.expr import And, Or
 from storm.store import Store
 from storm.base import Storm
 import transaction
@@ -644,6 +644,12 @@ class BranchMergeProposal(SQLBase):
         self.preview_diff.update(
             diff_content, diff_stat, source_revision_id, target_revision_id,
             dependent_revision_id, conflicts)
+
+        # XXX: TimPenhey 2009-02-19 bug 324724
+        # Since the branch_merge_proposal attribute of the preview_diff
+        # is a on_remote reference, it may not be found unless we flush
+        # the storm store.
+        Store.of(self).flush()
         return self.preview_diff
 
 
@@ -947,12 +953,19 @@ class BranchMergeProposalJobDerived(object):
     @classmethod
     def iterReady(klass):
         """Iterate through all ready BranchMergeProposalJobs."""
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.interfaces.branch import BranchType
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.find(
             (BranchMergeProposalJob),
             And(BranchMergeProposalJob.job_type == klass.class_job_type,
                 BranchMergeProposalJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs)))
+                Job.id.is_in(Job.ready_jobs),
+                BranchMergeProposal.source_branch == Branch.id,
+                Or(Branch.next_mirror_time == None,
+                   Branch.branch_type != BranchType.HOSTED)
+                ))
+        jobs.config(distinct=True)
         return (klass(job) for job in jobs)
 
 
