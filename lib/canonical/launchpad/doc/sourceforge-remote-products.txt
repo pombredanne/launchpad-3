@@ -63,6 +63,16 @@ atid therein as an ampersand-separated string.
     >>> print remote_product
     5570&105570
 
+If an error is raised when trying to fetch the project pages from the
+remote server, it will be logged.
+
+    >>> from canonical.launchpad.ftests.sfremoteproductfinder import (
+    ...     TestBrokenSFRemoteProductFinder)
+    >>> broken_finder = TestBrokenSFRemoteProductFinder(
+    ...     txn=LaunchpadZopelessLayer.txn, logger=FakeLogger())
+    >>> broken_finder.getRemoteProductFromSourceForge('fronobulator')
+    ERROR...Error fetching project...: HTTP Error 500: This is an error
+
 SourceForgeRemoteProductFinder.setRemoteProductsFromSourceForge()
 iterates over the list of products returned by
 getSFLinkedProductsWithNoneRemoteProduct() and then calls
@@ -72,7 +82,7 @@ getRemoteProductFromSourceForge() to fetch their remote products.
     INFO...Updating 1 Products using SourceForge project data
     DEBUG...Updating remote_product for Product 'my-first-product'
     DEBUG...Getting page projects/fronobulator
-    DEBUG...Getting page /tracker/?group_id=5570
+    DEBUG...Getting page tracker/?group_id=5570
 
 The product that was linked to SourceForge without a remote_product now has
 its remote_product set.

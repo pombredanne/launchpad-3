@@ -7,6 +7,9 @@ __all__ = ['TestSFRemoteProductFinder']
 
 import os
 import re
+
+from urllib2 import HTTPError
+
 from canonical.launchpad.scripts.sfremoteproductfinder import (
     SourceForgeRemoteProductFinder)
 
@@ -31,6 +34,15 @@ class TestSFRemoteProductFinder(SourceForgeRemoteProductFinder):
             file_path = os.path.join(
                 os.path.dirname(__file__), 'testfiles',
                 'sourceforge-tracker-%s.html' % group_id)
+        else:
+            raise AssertionError(
+                "The requested page '%s' isn't a project or tracker page."
+                % page)
 
         return open(file_path, 'r').read()
 
+
+class TestBrokenSFRemoteProductFinder(SourceForgeRemoteProductFinder):
+
+    def _getPage(self, page):
+        raise HTTPError(page, 500, "This is an error", None, None)

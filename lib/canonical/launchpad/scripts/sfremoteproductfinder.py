@@ -11,7 +11,7 @@ import re
 import urllib
 
 from BeautifulSoup import BeautifulSoup
-from urllib2 import urlopen
+from urllib2 import HTTPError, urlopen
 
 from zope.component import getUtility
 
@@ -49,19 +49,41 @@ class SourceForgeRemoteProductFinder:
             'group_id&atid'.
         """
         # First, fetch the project page.
-        soup = BeautifulSoup(self._getPage("projects/%s" % sf_project))
+        try:
+            soup = BeautifulSoup(self._getPage("projects/%s" % sf_project))
+        except HTTPError, error:
+            self.logger.error(
+                "Error fetching project %s: %s" %
+                (sf_project, error))
+            return None
 
         # Find the Tracker link and fetch that.
         tracker_link = soup.find('a', text='Tracker')
+        if tracker_link is None:
+            self.logger.error(
+                "No tracker link for project '%s'" % sf_project)
+            return None
+
         tracker_url = tracker_link.findParent()['href']
 
         # Clean any leading '/' from tracker_url so that urlappend
         # doesn't choke on it.
         tracker_url = tracker_url.lstrip('/')
-        soup = BeautifulSoup(self._getPage(tracker_url))
+        try:
+            soup = BeautifulSoup(self._getPage(tracker_url))
+        except HTTPError, error:
+            self.logger.error(
+                "Error fetching project %s: %s" %
+                (sf_project, error))
+            return None
 
         # Extract the group_id and atid from the bug tracker link.
         bugtracker_link = soup.find('a', text='Bugs')
+        if bugtracker_link is None:
+            self.logger.error(
+                "No bug tracker link for project '%s'" % sf_project)
+            return None
+
         bugtracker_url = bugtracker_link.findParent()['href']
 
         # We need to replace encoded ampersands in the URL since
