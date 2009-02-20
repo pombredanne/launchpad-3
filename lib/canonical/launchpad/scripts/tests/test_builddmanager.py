@@ -13,6 +13,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces.builder import IBuilderSet
+from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.scripts.builddmanager import (
     BuilddManager, BuilddManagerHelper, RecordingSlave)
 from canonical.launchpad.scripts.logger import BufferLogger
@@ -267,33 +268,54 @@ class TestBuilddDatabaseHelper(unittest.TestCase):
     def setUp(self):
         self.db_helper = BuilddManagerHelper()
 
-    def _getBob(self):
-        """Return a fixed `IBuilder`instance from the sampledata.
+    def _getBuilder(self):
+        """Return a fixed `IBuilder` instance from the sampledata.
 
         Ensure it's active (builderok=True) and it has a in-progress job.
         """
         login('foo.bar@canonical.com')
-        bob = getUtility(IBuilderSet)['bob']
-        bob.builderok = True
-        job = bob.currentjob
+
+        builder = getUtility(IBuilderSet)['bob']
+        builder.builderok = True
+
+        job = builder.currentjob
         self.assertEqual(
             'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
             job.build.title)
+
+        self.assertEqual('BUILDING', job.build.buildstate.name)
+        self.assertNotEqual(None, job.builder)
+        self.assertNotEqual(None, job.buildstart)
+        self.assertNotEqual(None, job.logtail)
+
         transaction.commit()
         logout()
-        return bob
+
+        return builder, job.id
+
+    def assertJobIsClean(self, job_id):
+        """Re-fetch the `IBuildQueue` record and check if it's clean."""
+        login('foo.bar@canonical.com')
+        job = getUtility(IBuildQueueSet).get(job_id)
+        self.assertEqual('NEEDSBUILD', job.build.buildstate.name)
+        self.assertEqual(None, job.builder)
+        self.assertEqual(None, job.buildstart)
+        self.assertEqual(None, job.logtail)
+        logout()
 
     def testResetBuilder(self):
         """`BuilddManagerHelper.resetBuilder` clean any existing jobs.
 
         Although it keeps the builder active in pool.
         """
-        bob = self._getBob()
+        builder, job_id = self._getBuilder()
 
-        self.db_helper.resetBuilder('bob')
+        self.db_helper.resetBuilder(builder.name)
 
-        self.assertTrue(bob.builderok)
-        self.assertEqual(None, bob.currentjob)
+        self.assertTrue(builder.builderok)
+        self.assertEqual(None, builder.currentjob)
+
+        self.assertJobIsClean(job_id)
 
     def testFailBuilder(self):
         """`BuilddManagerHelper.failBuilder` excludes the builder from pool.
@@ -301,14 +323,15 @@ class TestBuilddDatabaseHelper(unittest.TestCase):
         It marks the build as failed (builderok=False) and clean any
         existing jobs.
         """
-        bob = self._getBob()
+        builder, job_id = self._getBuilder()
 
-        self.db_helper.failBuilder('bob', 'does not work!')
+        self.db_helper.failBuilder(builder.name, 'does not work!')
 
-        self.assertFalse(bob.builderok)
-        self.assertEqual('does not work!', bob.failnotes)
-        self.assertEqual(None, bob.currentjob)
+        self.assertFalse(builder.builderok)
+        self.assertEqual(None, builder.currentjob)
+        self.assertEqual('does not work!', builder.failnotes)
 
+        self.assertJobIsClean(job_id)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
