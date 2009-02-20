@@ -162,6 +162,7 @@ class HTTPResource:
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        super(HTTPResource, self).__init__(context, request)
 
     def __call__(self):
         """See `IHTTPResource`."""
@@ -483,6 +484,9 @@ class BatchingResourceMixin:
 
     """A mixin for resources that need to batch lists of entries."""
 
+    def __init__(self, context, request):
+        super(ReadWriteResource, self).__init__(context, request)
+
     def batch(self, entries, request):
         """Prepare a batch from a (possibly huge) list of entries.
 
@@ -518,6 +522,9 @@ class BatchingResourceMixin:
 class CustomOperationResourceMixin:
 
     """A mixin for resources that implement a collection-entry pattern."""
+
+    def __init__(self, context, request):
+        super(ReadWriteResource, self).__init__(context, request)
 
     def handleCustomGET(self, operation_name):
         """Execute a custom search-type operation triggered through GET.
@@ -575,6 +582,9 @@ class CustomOperationResourceMixin:
 class ReadOnlyResource(HTTPResource):
     """A resource that serves a string in response to GET."""
 
+    def __init__(self, context, request):
+        super(ReadOnlyResource, self).__init__(context, request)
+
     def __call__(self):
         """Handle a GET or (if implemented) POST request."""
         result = ""
@@ -597,6 +607,9 @@ class ReadOnlyResource(HTTPResource):
 
 class ReadWriteResource(HTTPResource):
     """A resource that responds to GET, PUT, and PATCH."""
+
+    def __init__(self, context, request):
+        super(ReadWriteResource, self).__init__(context, request)
 
     def __call__(self):
         """Handle a GET, PUT, or PATCH request."""
@@ -653,7 +666,8 @@ class UnmarshallsFieldsMixin:
 
     missing = object()
 
-    def unmarshalls_init(self):
+    def __init__(self, context, request):
+        super(UnmarshallsFieldsMixin, self).__init__(context, request)
         self._unmarshalled_field_cache = {}
 
     def _unmarshallField(self, field_name, field):
@@ -697,7 +711,6 @@ class EntryFieldResource(ReadOnlyResource, UnmarshallsFieldsMixin):
     def __init__(self, context, request):
         super(EntryFieldResource, self).__init__(context, request)
         self.entry = self.context.entry
-        self.unmarshalls_init()
 
     def do_GET(self):
         name, value = self._unmarshallField(
@@ -729,7 +742,6 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
         super(EntryResource, self).__init__(context, request)
         self.etags_by_media_type = {}
         self.entry = IEntry(context)
-        self.unmarshalls_init()
 
     def getETag(self, media_type, unmarshalled_field_values=None):
         """Calculate the ETag for an entry.
