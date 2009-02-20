@@ -14,7 +14,7 @@ __all__ = [
     'NoSuchDistribution',
     ]
 
-from zope.schema import Choice, Datetime, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from canonical.lazr.rest.declarations import (
@@ -248,6 +248,12 @@ class IDistributionPublic(
     upstream_report_excluded_packages = Attribute(
         "A list of the source packages that should not be shown on the "
         "upstream bug report for this Distribution.")
+
+    has_published_binaries = Bool(
+        title=_("Has Published Binaries"),
+        description=_("True if this distribution has binaries published "
+                      "on disk."),
+        readonly=True, required=False)
 
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().

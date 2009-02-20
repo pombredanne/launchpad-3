@@ -21,6 +21,7 @@ from sqlobject import (
     SQLObjectNotFound, AND)
 from storm.expr import And
 from storm.locals import Unicode
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -39,6 +40,7 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugtracker import BugTracker
+from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.commercialsubscription import (
     CommercialSubscription)
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -977,6 +979,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             user.inTeam(celebs.admin) or
             user.inTeam(self.owner))
 
+    def getLinkedBugWatches(self):
+        """See `IProduct`."""
+        store = Store.of(self)
+        return store.find(
+            BugWatch,
+            And(self == BugTask.product,
+                BugTask.bugwatch == BugWatch.id,
+                BugWatch.bugtracker == self.getExternalBugTracker()))
+
 
 class ProductSet:
     implements(IProductSet)
@@ -1293,3 +1304,13 @@ class ProductSet:
                 BugTracker.bugtrackertype == bugtracker_type,
                 ])
         return store.find(Product, And(*conditions))
+
+    def getSFLinkedProductsWithNoneRemoteProduct(self):
+        """See `IProductSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        conditions = And(
+            Product.remote_product == None,
+            Product.sourceforgeproject != None)
+
+        return store.find(Product, conditions)
+

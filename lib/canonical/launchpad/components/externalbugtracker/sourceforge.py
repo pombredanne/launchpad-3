@@ -255,5 +255,5 @@ class SourceForge(ExternalBugTracker):
         if group_id is None or atid is None:
             return None
         else:
-            return (group_id, atid)
+            return "%s&%s" % (group_id, atid)
 

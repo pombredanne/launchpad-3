@@ -2,16 +2,20 @@
 
 The HWDB API allows access to the HWDB tables.
 
+
 == The HWDB application root ==
 
 The HWDB application root provides the core methods to access HWDB
-tables.
+tables. It also provides the set of known package names appearing
+in the table HWDriver.
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> hwdb_root = webservice.get('/+hwdb').jsonBody()
     >>> pprint_entry(hwdb_root)
+    package_names: [u'linux-image-2.6.24-19-generic']
     resource_type_link: u'http://api.launchpad.dev/beta/#hwdb'
     self_link: u'http://api.launchpad.dev/beta/+hwdb'
+
 
 === Device Queries and Devices ===
 
