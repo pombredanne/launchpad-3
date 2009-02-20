@@ -189,10 +189,11 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
                 continue
             argument_store = Store.of(argument)
             if argument_store is not store:
-                argument = store.find(
+                new_argument = store.find(
                     argument.__class__, id=argument.id).one()
-                assert argument is not None
-                kwargs[key] = argument
+                assert new_argument is not None, (
+                    '%s not yet synced to this store' % repr(argument))
+                kwargs[key] = new_argument
                 
         store.add(self)
         try:
@@ -547,11 +548,7 @@ quoteIdentifier = quote_identifier # Backwards compatibility for now.
 
 
 def flush_database_updates():
-    """Flushes all pending database updates for the MAIN DEFAULT store.
-
-    We only bother with the MAIN DEFAULT store as this is all that is needed
-    for the SQLObject compatibility layer. Storm aware code should be using
-    the Storm stores directly.
+    """Flushes all pending database updates.
 
     When SQLObject's _lazyUpdate flag is set, then it's possible to have
     changes written to objects that aren't flushed to the database, leading to
@@ -579,8 +576,7 @@ def flush_database_updates():
 
 
 def flush_database_caches():
-    """Flush all cached values from the database for the current connection.
-    SQLObject compatibility - DEPRECATED.
+    """Flush all database caches.
 
     SQLObject caches field values from the database in SQLObject
     instances.  If SQL statements are issued that change the state of
@@ -591,9 +587,10 @@ def flush_database_caches():
     connection's cache, and synchronises them with the database.  This
     ensures that they all reflect the values in the database.
     """
-    store = _get_sqlobject_store()
-    store.flush()
-    store.invalidate()
+    zstorm = getUtility(IZStorm)
+    for name, store in zstorm.iterstores():
+        store.flush()
+        store.invalidate()
 
 
 def block_implicit_flushes(func):
