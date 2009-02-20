@@ -5,11 +5,15 @@ from zope.traversing.namespace import view
 
 from canonical.launchpad.webapp.launchpadform import LaunchpadFormView
 
-class form(view):
+class FormNamespaceView(view):
+    """A namespace view to handle traversals with ++form++."""
+
+    # Use a class variable for the template so that it does not need
+    # to be created during the traverse.
     template = ViewPageTemplateFile('../templates/launchpad-form-body.pt')
 
     def traverse(self, name, ignored):
-        """Form traversal adapter
+        """Form traversal adapter.
 
         This adapter allows any LaunchpadFormView to simply render the
         form body.
@@ -22,7 +26,8 @@ class form(view):
         if isinstance(context, LaunchpadFormView):
             # Note: without explicitely creating the BoundPageTemplate here
             # the view fails to render.
-            context.index = BoundPageTemplate(form.template, context)
+            context.index = BoundPageTemplate(FormNamespaceView.template,
+                                              context)
         else:
             raise TraversalError("The URL does not correspond to a form.")
 

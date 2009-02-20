@@ -683,8 +683,7 @@
     <view
         name="form" type="*"
         provides="zope.traversing.interfaces.ITraversable" for="*"
-        factory="canonical.launchpad.webapp.namespace.form"
+        factory="canonical.launchpad.webapp.namespace.FormNamespaceView"
         />
-        <!-- TODO: permission -->
 
 </configure>
