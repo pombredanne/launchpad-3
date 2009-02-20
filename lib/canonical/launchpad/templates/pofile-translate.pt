@@ -23,8 +23,11 @@
                         marginTop: 0, marginBottom: 0,
                         paddingTop: 0, paddingBottom: 0 }
               });
-              hideAnim.set('duration', 0.4);
               node.setStyle('border', 'none');
+              hideAnim.set('duration', 0.4);
+              hideAnim.on('end', function(e) {
+                  node.setStyle('display', 'none');
+              });
               hideAnim.run();
           }
 
@@ -38,9 +41,11 @@
 
               var cancel_button = container.query(
                 '.important-notice-cancel-button');
+              // Since cancel buttons only makes sense with JavaScript
+              // enabled, show it from here.
               cancel_button.setStyle('visibility', 'visible');
               cancel_button.on('click', function(e) {
-                  e.preventDefault();
+                  e.halt();
                   hideDiv(balloon);
                   Y.Cookie.set(full_cookie_name, true);
               });
