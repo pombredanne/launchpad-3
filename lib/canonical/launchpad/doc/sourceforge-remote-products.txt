@@ -38,6 +38,7 @@ getSFLinkedProductsWithNoneRemoteProduct() will return it.
 We'll create a test version of SourceForgeRemoteProductFinder that won't
 try to access the interwubs.
 
+    >>> import os
     >>> import re
     >>> from canonical.launchpad.scripts.sfremoteproductfinder import (
     ...     SourceForgeRemoteProductFinder)
@@ -45,13 +46,41 @@ try to access the interwubs.
     >>> class TestSFRemoteProductFinder(SourceForgeRemoteProductFinder):
     ...
     ...     def _getPage(self, page):
-    ...         print "Getting page: %s" % page
+    ...         self.logger.info("Getting page %s" % page)
     ...         project_re = re.compile('projects/([a-z]+)')
-    ...         project = project_re.match(page).groups()[0]
+    ...         match = project_re.match(page)
     ...
-    ...         file_path = os.path.join(
-    ...             os.path.dirname(__file__), 'testfiles',
-    ...             'sourceforge-project-%s.html' % project)
+    ...         if match is not None:
+    ...             project = match.groups()[0]
+    ...             file_path = os.path.join(
+    ...                 os.path.dirname(__file__), 'testfiles',
+    ...                 'sourceforge-project-%s.html' % project)
     ...         return open(file_path, 'r').read()
 
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> finder = TestSFRemoteProductFinder(txn=LaunchpadZopelessLayer.txn)
 
+SourceForgeRemoteProductFinder has a method,
+getRemoteProductFromSourceForge(), which does all the heavy lifting of finding
+the bug tracker for a given SourceForge project. It does this by fetching the
+SourceForge project page about each of them. It then finds the link to the
+project's 'Tracker' index within that page and follows it. Finally, it
+extracts the URL of the project's bug tracker and returns the group_id and
+atid therein as an ampersand-separated string.
+
+    >>> print finder.getRemoteProductFromSourceForge('fronobulator')
+    INFO...Getting page projects/fronobulator
+
+We'll add a few more SourceForge-linked products for the purposes of
+demonstration.
+
+    >>> for i in range(3):
+    ...     product = factory.makeProduct(name="product-%s" % i)
+    ...     product.sourceforgeproject = "sfproject-%s" % i
+
+SourceForgeRemoteProductFinder.setRemoteProductsFromSourceForge()
+iterates over the list of products returned by
+getSFLinkedProductsWithNoneRemoteProduct() and 
+
+    >>> finder.setRemoteProductsFromSourceForge()
+    INFO...Updating 4 Products using SourceForge project data
