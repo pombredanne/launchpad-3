@@ -4,7 +4,7 @@
 import logging
 
 from twisted.application import service
-from twisted.internet import reactor, utils, defer
+from twisted.internet import defer, reactor, utils
 from twisted.internet.threads import deferToThread
 from twisted.protocols.policies import TimeoutMixin
 from twisted.web.xmlrpc import Proxy, _QueryFactory, QueryProtocol
@@ -27,7 +27,7 @@ class FakeZTM:
 
 
 class QueryWithTimeoutProtocol(QueryProtocol, TimeoutMixin):
-    """XMLRPC query protocol with with the configuration timeout."""
+    """XMLRPC query protocol with a configurable timeout."""
 
     def connectionMade(self):
         QueryProtocol.connectionMade(self)
@@ -99,10 +99,27 @@ class RecordingSlave:
         return d
 
 
-class BuilddProxy:
+class BuilddManagerHelper:
+    """Helper class for build slave mananager.
+
+    This class encapsulates the dealings with the database.
+    """
 
     @write_transaction
     def scanAllBuilders(self):
+        """Scan all builders and "dispatch" build jobs to the idle ones.
+
+        All builders are polled for status and any required post-processing
+        actions are performed.
+
+        Subsequently, build job candidates are selected and assigned to the
+        idle builders. The necessary build job assignment actions are not
+        carried out directly though but merely memorized by the recording
+        build slaves.
+
+        In a second stage (see resumeAndDispatch()) each of the latter will be
+        handled in an asynchronous and parallel fashion.
+        """
         recording_slaves = []
 
         level = logging.DEBUG
@@ -143,6 +160,7 @@ class BuilddProxy:
         return recording_slaves
 
     def _cleanJob(self, job):
+        """Clean up in case of builder reset or dispatch failure."""
         if job is not None:
             job.build.buildstate = BuildStatus.NEEDSBUILD
             job.builder = None
@@ -151,12 +169,14 @@ class BuilddProxy:
 
     @write_transaction
     def resetBuilder(self, name):
+        """Clean up in case a builder could not be reset."""
         newInteraction()
         builder = getUtility(IBuilderSet)[name]
         self._cleanJob(builder.currentjob)
 
     @write_transaction
     def dispatchFail(self, error, name):
+        """Clean up in case we failed to dispatch to a builder."""
         newInteraction()
         builder = getUtility(IBuilderSet)[name]
         builder.failbuilder(error)
@@ -166,7 +186,7 @@ class BuilddProxy:
 class BuilddManager(service.Service):
 
     def __init__(self):
-        self.buildd_proxy = BuilddProxy()
+        self.helper = BuilddManagerHelper()
         self.running_jobs = 0
 
     def startService(self):
@@ -174,19 +194,19 @@ class BuilddManager(service.Service):
         deferred.addCallback(self.resumeAndDispatch)
 
     def scan(self):
-        return self.buildd_proxy.scanAllBuilders()
+        return self.helper.scanAllBuilders()
 
     def checkResume(self, response, name):
         out, err, code = response
         if code != 0:
-            self.buildd_proxy.resetBuilder(name)
+            self.helper.resetBuilder(name)
             return False
         return True
 
     def checkDispatch(self, response, name):
         status, info = response
         if not status:
-            self.buildd_proxy.dispatchFail(info, name)
+            self.helper.dispatchFail(info, name)
 
     def resumeAndDispatch(self, recording_slaves):
         for slave in recording_slaves:
