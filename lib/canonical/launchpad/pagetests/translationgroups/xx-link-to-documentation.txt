@@ -93,3 +93,84 @@ the documentation url through the edit view.
     http://www.launchpad.net/
 
 
+== Notification display ==
+
+We are looking at how are translation instructions displayed on
+Spanish Evolution translation page.
+
+    >>> evolution_spanish_url = ('http://translations.launchpad.dev/'
+    ...     'evolution/trunk/+pots/evolution-2.2/es/+translate')
+
+    >>> # We've already confirmed setting URLs works: define methods
+    >>> # to change them more easily.
+    >>> def set_group_url(browser, url):
+    ...     group_edit_url = ("http://translations.launchpad.dev/"
+    ...         "+groups/testing-translation-team/+edit")
+    ...     browser.open(group_edit_url)
+    ...     browser.getControl('Translation instructions').value = url
+    ...     browser.getControl('Change').click()
+
+    >>> def set_team_url(browser, url):
+    ...     team_edit_url = ("http://translations.launchpad.dev/"
+    ...         "+groups/testing-translation-team/es/+edit")
+    ...     browser.open(team_edit_url)
+    ...     browser.getControl('Translation guidelines').value = url
+    ...     browser.getControl('Change').click()
+
+When no documentation URLs are set, no notification with the documentation
+links is displayed.
+
+    >>> set_group_url(carlos_browser, '')
+    >>> set_team_url(carlos_browser, '')
+
+    >>> browser.open(evolution_spanish_url)
+    >>> notification = find_tags_by_class(
+    ...     browser.contents, 'important-notice-container')
+    >>> print notification
+    []
+
+Setting a group documentation will add the notification with the link
+to it.
+
+    >>> set_group_url(carlos_browser, u'https://help.launchpad.net/')
+    >>> browser.open(evolution_spanish_url)
+    >>> notification = find_tags_by_class(
+    ...     browser.contents, 'important-notice-container')[0]
+    >>> print extract_text(notification)
+    Before translating, make sure to go through Just a testing team
+    instructions.
+
+    >>> links = notification.findAll('a')
+    >>> links[0]['href']
+    u'https://help.launchpad.net/'
+
+Adding a Spanish team documentation adds a link to the notification.
+
+    >>> set_team_url(carlos_browser, 'https://help.launchpad.net/Spanish')
+    >>> browser.open(evolution_spanish_url)
+    >>> notification = find_tags_by_class(
+    ...     browser.contents, 'important-notice-container')[0]
+    >>> print extract_text(notification)
+    Before translating, make sure to go through Just a testing team
+    instructions and Spanish guidelines.
+
+    >>> links = notification.findAll('a')
+    >>> links[0]['href']
+    u'https://help.launchpad.net/'
+    >>> links[1]['href']
+    u'https://help.launchpad.net/Spanish'
+
+When there is no group documentation, but only team documentation,
+narrative is changed a bit to include the full team name as well.
+
+    >>> set_group_url(carlos_browser, '')
+    >>> browser.open(evolution_spanish_url)
+    >>> notification = find_tags_by_class(
+    ...     browser.contents, 'important-notice-container')[0]
+    >>> print extract_text(notification)
+    Before translating, make sure to go through testing Spanish team
+    guidelines.
+
+    >>> links = notification.findAll('a')
+    >>> links[0]['href']
+    u'https://help.launchpad.net/Spanish'

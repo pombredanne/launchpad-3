@@ -1305,6 +1305,7 @@ beside the mugshot. */
   text-align: center;
   width: 100%;
   padding-bottom: 1em;
+  position: relative;
 }
 .important-notice-balloon {
   -moz-border-radius: 5px;
@@ -1326,7 +1327,7 @@ beside the mugshot. */
 }
 .important-notice {
   //background: url(/@@/info-large) center left no-repeat;
-  //padding: 0px 0px 0px 40px;
+  padding: 0px 0px 40px 0px;
   height: 32px;
   overflow: hidden;
 }

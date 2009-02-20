@@ -11,41 +11,43 @@
 >
   <body>
     <script metal:fill-slot="head_epilogue" type="text/javascript">
-        registerLaunchpadFunction(insertAllExpansionButtons);
-        YUI().use('node', 'cookie', 'anim', function(Y) {
+      registerLaunchpadFunction(insertAllExpansionButtons);
+      YUI().use('node', 'cookie', 'anim', function(Y) {
           var full_cookie_name = ('translation-docs-for-' +
                                   documentation_cookie);
 
           var hideDiv = function(node) {
-            var hideAnim = new Y.Anim({
-              node: node,
-              to: { height: 0,
-                    marginTop: 0, marginBottom: 0,
-                    paddingTop: 0, paddingBottom: 0 }
-            });
-            hideAnim.set('duration', 0.4);
-            node.setStyle('border', 'none');
-            hideAnim.run();
+              var hideAnim = new Y.Anim({
+                  node: node,
+                  to: { height: 0,
+                        marginTop: 0, marginBottom: 0,
+                        paddingTop: 0, paddingBottom: 0 }
+              });
+              hideAnim.set('duration', 0.4);
+              node.setStyle('border', 'none');
+              hideAnim.run();
           }
 
-          Y.on('domready', function() {
-            var container = Y.get('.important-notice-container');
-            var balloon = container.query('.important-notice-balloon');
-            var already_read = Y.Cookie.get(full_cookie_name, Boolean);
-            if (already_read) {
-               container.setStyle('display', 'none');
-            }
+          var updateNotificationBox = function(e) {
+              var container = Y.get('.important-notice-container');
+              var balloon = container.query('.important-notice-balloon');
+              var already_read = Y.Cookie.get(full_cookie_name, Boolean);
+              if (already_read) {
+                 container.setStyle('display', 'none');
+              }
 
-            var cancel_button = container.query(
-              '.important-notice-cancel-button');
-            cancel_button.setStyle('visibility', 'visible');
-            cancel_button.on('click', function(e) {
-              e.preventDefault();
-              hideDiv(balloon);
-              Y.Cookie.set(full_cookie_name, true);
-            });
-          });
-        });
+              var cancel_button = container.query(
+                '.important-notice-cancel-button');
+              cancel_button.setStyle('visibility', 'visible');
+              cancel_button.on('click', function(e) {
+                  e.preventDefault();
+                  hideDiv(balloon);
+                  Y.Cookie.set(full_cookie_name, true);
+              });
+          };
+
+          Y.on('domready', updateNotificationBox);
+      });
     </script>
     <div metal:fill-slot="main">
       <script type="text/javascript"
@@ -82,6 +84,12 @@
           <div class="important-notice-container"
                tal:condition="view/has_any_documentation">
             <div class="important-notice-balloon">
+              <div style="float: right">
+              <span class="important-notice-buttons">
+                <img class="important-notice-cancel-button" src="/@@/no"
+                     alt="Don't show this notice anymore"
+                     title="Hide this notice for the duration of this session" />
+              </span></div>
               <img src="/@@/info" alt="Information" />
               <span class="important-notice"
                   tal:condition="view/translation_group/translation_guide_url">
@@ -110,12 +118,7 @@
                    tal:content="string:${view/translation_team/translator/displayname}
                                 guidelines"
                    tal:attributes="href view/translation_team/style_guide_url">
-                  Serbian guidelines</a>
-              </span>
-              <span class="important-notice-buttons">
-                <img class="important-notice-cancel-button" src="/@@/no"
-                     alt="Don't show this notice anymore"
-                     title="Hide this notice for the duration of this session" />
+                  Serbian guidelines</a>.
               </span>
             </div>
           </div>
