@@ -542,12 +542,12 @@ class Build(SQLBase):
         """See `IBuild`."""
         if self.buildlog is None:
             return None
-        else:
-            # The librarian URL is explicitly not used here because if
-            # the build is a private one then it would be in the
-            # restricted librarian.  It's proxied through the webapp and
-            # security applied accordingly.
-            return canonical_url(self) + "/+files/" + self.buildlog.filename
+
+        # The librarian URL is explicitly not used here because if
+        # the build is a private one then it would be in the
+        # restricted librarian.  It's proxied through the webapp and
+        # security applied accordingly.
+        return canonical_url(self) + "/+files/" + self.buildlog.filename
 
     def notify(self, extra_info=None):
         """See `IBuild`"""
