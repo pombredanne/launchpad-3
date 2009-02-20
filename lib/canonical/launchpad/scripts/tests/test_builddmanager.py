@@ -13,9 +13,12 @@ from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import TwistedLayer
 
 
-class TestRecordinSlaves(unittest.TestCase):
+class TestRecordinSlaves(TrialTestCase):
+
+    layer = TwistedLayer
 
     def setUp(self):
+        TrialTestCase.setUp(self)
         self.slave = RecordingSlave('foo', 'http://foo:8221/rpc')
 
     def testInstantiation(self):
@@ -44,14 +47,23 @@ class TestRecordinSlaves(unittest.TestCase):
         self.assertFalse(self.slave.resume)
 
         self.assertEqual(
-            ('', '', 0),
-            self.slave.resumeHost(logger, cmd_argv))
+            ('', '', 0), self.slave.resumeHost(logger, cmd_argv))
         self.assertTrue(self.slave.resume)
         self.assertEqual(
             ['echo', 'hello', 'world'], self.slave.resume_argv)
         self.assertEqual(
             'DEBUG: Recording slave reset request for %s http://foo:8221/rpc',
             logger.buffer.getvalue().strip())
+
+        def check_resume(response):
+            out, err, code = response
+            self.assertEqual(0, code)
+            self.assertEqual('', err)
+            self.assertEqual('hello world', out.strip())
+
+        d = self.slave.resumeSlaveHost()
+        d.addCallback(check_resume)
+        return d
 
 
 class TestBuilddProxy:
@@ -88,6 +100,7 @@ class TestBuilddManager(TrialTestCase):
                 ['foo', 'bar'], [slave.name for slave in slaves])
         d = defer.maybeDeferred(self.manager.scan)
         d.addCallback(check_slaves)
+        return d
 
 
 def test_suite():

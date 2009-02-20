@@ -46,12 +46,10 @@ class RecordingSlave:
         return '<%s:%s>' % (self.name, self.url)
 
     def ensurepresent(self, *args):
-        print('RS: ensurepresent()')
         self.calls.append(('ensurepresent', args))
         return (True, 'Download')
 
     def build(self, *args):
-        print('RS: build()')
         self.calls.append(('build', args))
         return ('BuilderStatus.BUILDING', args[0])
 
@@ -67,7 +65,6 @@ class RecordingSlave:
 
         :return: a (stdout, stderr, subprocess exitcode) triple
         """
-        print('RS: resumeHost()')
         self.resume = True
         logger.debug("Recording slave reset request for %s", self.url)
         self.resume_argv = resume_argv
@@ -82,7 +79,6 @@ class RecordingSlave:
 
         :return: a deferred
         """
-        print('RS: resumeSlaveHost()')
         d = utils.getProcessOutputAndValue(
             self.resume_argv[0], self.resume_argv[1:])
         return d
@@ -141,14 +137,12 @@ class BuilddProxy:
     @write_transaction
     def resetBuilder(self, name):
         newInteraction()
-        print 'RESET'
         builder = getUtility(IBuilderSet)[name]
         self._cleanJob(builder.currentjob)
 
     @write_transaction
     def dispatchFail(self, error, name):
         newInteraction()
-        print 'ERROR'
         builder = getUtility(IBuilderSet)[name]
         builder.failbuilder(error)
         self._cleanJob(builder.currentjob)
@@ -170,23 +164,17 @@ class BuilddManager(service.Service):
     def checkResume(self, response, name):
         out, err, code = response
         if code != 0:
-            print 'RESUME FAIL', name, response
             self.buildd_proxy.resetBuilder(name)
 
     def resumeAndDispatch(self, recording_slaves):
-        print('BM: resumeAndDispatch()')
-        print('RESUME/DISPATCH: %s' % recording_slaves)
-
         for slave in recording_slaves:
             self.runningJobs += 1
             if slave.resume:
-                print('RESUME: yes')
                 # The buildd slave needs to be reset before we can dispatch
                 # builds to it.
                 d = slave.resumeSlaveHost()
                 d.addCallback(self.checkResume, slave.name)
             else:
-                print('RESUME: no')
                 # Buildd slave is clean, we can dispatch a build to it
                 # straightaway.
                 d = defer.maybeDeferred(lambda: True)
@@ -194,8 +182,6 @@ class BuilddManager(service.Service):
             d.addBoth(self.stopWhenDone)
 
     def dispatchBuild(self, resume_ok, slave):
-        print('BM: dispatchBuild()')
-        print('DISPATCH: %s/%s' % (resume_ok, slave))
         # Stop right here if the buildd slave could not be reset.
         if not resume_ok:
             return
@@ -208,7 +194,6 @@ class BuilddManager(service.Service):
             d.addErrback(self.dispatchFail, slave.name)
 
     def stopWhenDone(self, result):
-        print('STOP: %s' % self.runningJobs)
         self.runningJobs -= 1
         if self.runningJobs <= 0:
             reactor.stop()
@@ -216,6 +201,5 @@ class BuilddManager(service.Service):
     def checkDispatch(self, response, name):
         status, info = response
         if not status:
-            print 'DISPATCH FAIL', name, response
             self.buildd_proxy.resetBuilder(name)
 
