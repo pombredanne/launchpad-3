@@ -6,7 +6,7 @@
 - Need to pull the following dependencies into ``sourcecode``::
 
   - lp:sourcecodegen/trunk
-  - lp:~sidnei/chameleon.core/check-macro-exists
+  - lp:chameleon.core/trunk
   - lp:chameleon.zpt/trunk
   - lp:~sidnei/z3c.pt/tales-function-namespaces
   - lp:z3c.ptcompat/trunk
@@ -44,3 +44,22 @@ z3c.pt.
 See bugs #312498, #317572, #317573, #317893, #317953, #317965 and
 #317967.
 
+Running ``ec2tests``
+~~~~~~~~~~~~~~~~~~~~
+
+- This might be useful: https://wiki.canonical.com/Launchpad/EC2Test
+
+- ``ec2tests.py`` can be found on lp:~launchpad/lp-dev-utils/trunk (I hacked
+  my own version, which doesn't run rsync since I've got no access to
+  devpad. It can be found at lp:~sidnei/lp-dev-utils/trunk).
+
+# python2.4 ~/path/to/lp-dev-utils/ec2test.py \
+            -o '-1vp' \
+            -p --headless \
+            --no-rsync --no-merge \
+            -b sourcecodegen=lp:sourcecodegen/trunk \
+	    -b chameleon.core=lp:chameleon.core/trunk \
+	    -b chameleon.zpt=lp:chameleon.zpt/trunk \
+	    -b z3c.pt=lp:~sidnei/z3c.pt/tales-function-namespaces \
+	    -b z3c.ptcompat=lp:z3c.ptcompat/trunk \
+            template-speedup
