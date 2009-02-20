@@ -43,7 +43,6 @@ Salgado receives the email message from No Priv.
     Sender: bounces@canonical.com
     Errors-To: bounces@canonical.com
     Return-Path: bounces@canonical.com
-    Precedence: bulk
     X-Generated-By: Launchpad (canonical.com); Revision="...";
         Instance="launchpad-lazr.conf"
     X-Launchpad-Hash: ...
@@ -102,7 +101,6 @@ alternative addresses.
     Sender: bounces@canonical.com
     Errors-To: bounces@canonical.com
     Return-Path: bounces@canonical.com
-    Precedence: bulk
     X-Generated-By: Launchpad (canonical.com); Revision="...";
         Instance="launchpad-lazr.conf"
     X-Launchpad-Hash: ...

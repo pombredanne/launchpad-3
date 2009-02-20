@@ -40,6 +40,7 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
+from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseries import DistroSeries
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
@@ -49,8 +50,8 @@ from canonical.launchpad.database.milestone import (
 from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing, BinaryPackageFilePublishing,
-    SourcePackagePublishingHistory)
+    BinaryPackageFilePublishing, BinaryPackagePublishingHistory,
+    SourcePackageFilePublishing, SourcePackagePublishingHistory)
 from canonical.launchpad.database.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
@@ -1385,6 +1386,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             status=DistroSeriesStatus.EXPERIMENTAL,
             parent_series=parent_series,
             owner=owner)
+
+    @property
+    def has_published_binaries(self):
+        """See `IDistribution`."""
+        store = Store.of(self)
+        results = store.find(
+            BinaryPackagePublishingHistory,
+            DistroArchSeries.distroseries == DistroSeries.id,
+            DistroSeries.distribution == self,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED).config(limit=1)
+
+        # XXX 2009-02-19 Julian
+        # Storm is not very useful for bool checking on the results,
+        # see: https://bugs.launchpad.net/soyuz/+bug/246200
+        return results.any() != None
 
 
 class DistributionSet:

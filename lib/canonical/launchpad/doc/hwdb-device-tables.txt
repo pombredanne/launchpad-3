@@ -1389,6 +1389,16 @@ And We can search for submissions from a particular user.
 
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
+HWDriverSet.packages_names is a distinct list of known package names.
+
+    >>> for name in driver_set.package_names:
+    ...     print name
+    <BLANKLINE>
+    linux-image-2.6.24-19-generic
+    linux-image-generic
+    None
+
+
 == HWDeviceDriverLink ==
 
 This table links devices and drivers.
