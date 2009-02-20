@@ -1150,7 +1150,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
                     result = self._traverseToByteStorage(
                         request, entry, field, name)
                 else:
-                    result = EntryField(entry, field)
+                    result = EntryField(entry, field, name)
             if result is not None:
                 return result
         return super(WebServicePublication, self).traverseName(

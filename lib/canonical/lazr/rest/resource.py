@@ -307,7 +307,6 @@ class HTTPResource:
             return zlib.compress(representation)
         return representation
 
-
     def implementsPOST(self):
         """Returns True if this resource will respond to POST.
 
@@ -595,6 +594,7 @@ class ReadOnlyResource(HTTPResource):
             self.request.response.setHeader("Allow", allow_string)
         return self.applyTransferEncoding(result)
 
+
 class ReadWriteResource(HTTPResource):
     """A resource that responds to GET, PUT, and PATCH."""
 
@@ -649,23 +649,74 @@ class EntryHTMLView:
         return self.HTML_TEMPLATE.pt_render(namespace)
 
 
-class EntryFieldResource(ReadOnlyResource):
+class UnmarshallsFieldsMixin:
+
+    missing = object()
+
+    def unmarshalls_init(self):
+        self._unmarshalled_field_cache = {}
+
+    def _unmarshallField(self, field_name, field):
+        """See what a field would look like in a representation.
+
+        :return: a 2-tuple (representation_name, representation_value).
+        """
+        cached_value = self._unmarshalled_field_cache.get(
+            field_name, self.missing)
+        if cached_value is not self.missing:
+            return cached_value
+
+        field = field.bind(self.context)
+        marshaller = getMultiAdapter((field, self.request),
+                                     IFieldMarshaller)
+        try:
+            if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
+                value = None
+            else:
+                value = getattr(self.entry, field_name)
+            repr_value = marshaller.unmarshall(self.entry, value)
+        except Unauthorized:
+            # Either the client doesn't have permission to see
+            # this field, or it doesn't have permission to read
+            # its current value. Rather than denying the client
+            # access to the resource altogether, use our special
+            # 'redacted' tag: URI for the field's value.
+            repr_value = self.REDACTED_VALUE
+
+        unmarshalled = (marshaller.representation_name, repr_value)
+        self._unmarshalled_field_cache[field_name] = unmarshalled
+        return unmarshalled
+
+
+class EntryFieldResource(ReadOnlyResource, UnmarshallsFieldsMixin):
     """An individual field of an entry."""
     implements(IEntryFieldResource, IJSONPublishable)
 
+    SUPPORTED_CONTENT_TYPES = [HTTPResource.JSON_TYPE]
+
+    def __init__(self, context, request):
+        super(EntryFieldResource, self).__init__(context, request)
+        self.entry = self.context.entry
+        self.unmarshalls_init()
+
     def do_GET(self):
-        return "Foobar"
+        name, value = self._unmarshallField(
+            self.context.name, self.context.field)
+        self.request.response.setHeader('Content-Type', self.JSON_TYPE)
+        return simplejson.dumps(value)
 
 
 class EntryField:
     implements(IEntryField)
 
-    def __init__(self, entry, field):
+    def __init__(self, entry, field, name):
         self.entry = entry
         self.field = field.bind(entry)
+        self.name = name
 
 
-class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
+class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
+                    UnmarshallsFieldsMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
 
@@ -673,14 +724,12 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                                HTTPResource.XHTML_TYPE,
                                HTTPResource.JSON_TYPE]
 
-    missing = object()
-
     def __init__(self, context, request):
         """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(context, request)
         self.etags_by_media_type = {}
         self.entry = IEntry(context)
-        self._unmarshalled_field_cache = {}
+        self.unmarshalls_init()
 
     def getETag(self, media_type, unmarshalled_field_values=None):
         """Calculate the ETag for an entry.
@@ -885,37 +934,6 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             raise AssertionError((
                     "No representation implementation for media type %s"
                     % media_type))
-
-    def _unmarshallField(self, field_name, field):
-        """See what a field would look like in a representation.
-
-        :return: a 2-tuple (representation_name, representation_value).
-        """
-        cached_value = self._unmarshalled_field_cache.get(
-            field_name, self.missing)
-        if cached_value is not self.missing:
-            return cached_value
-
-        field = field.bind(self.context)
-        marshaller = getMultiAdapter((field, self.request),
-                                     IFieldMarshaller)
-        try:
-            if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
-                value = None
-            else:
-                value = getattr(self.entry, field_name)
-            repr_value = marshaller.unmarshall(self.entry, value)
-        except Unauthorized:
-            # Either the client doesn't have permission to see
-            # this field, or it doesn't have permission to read
-            # its current value. Rather than denying the client
-            # access to the resource altogether, use our special
-            # 'redacted' tag: URI for the field's value.
-            repr_value = self.REDACTED_VALUE
-
-        unmarshalled = (marshaller.representation_name, repr_value)
-        self._unmarshalled_field_cache[field_name] = unmarshalled
-        return unmarshalled
 
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
