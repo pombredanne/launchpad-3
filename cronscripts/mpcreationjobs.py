@@ -35,7 +35,8 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
             runner.runAll()
         finally:
             server.tearDown()
-        print 'Ran %d MergeProposalCreatedJobs.' % len(runner.completed_jobs)
+        self.logger.info(
+            'Ran %d MergeProposalCreatedJobs.', len(runner.completed_jobs))
 
 
 if __name__ == '__main__':
