@@ -4,12 +4,14 @@
 
 import unittest
 
+import transaction
+
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
-from zope.security.management import endInteraction, newInteraction
 
+from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.scripts.builddmanager import (
     BuilddManager, BuilddManagerHelper, RecordingSlave)
@@ -19,17 +21,27 @@ from canonical.testing.layers import (
 
 
 class TestRecordingSlaves(TrialTestCase):
-    """Testis for the recording slave class."""
+    """Tests for the recording slave class."""
     layer = TwistedLayer
 
     def setUp(self):
+        """Setup a fresh `RecordingSlave` for tests."""
         TrialTestCase.setUp(self)
         self.slave = RecordingSlave('foo', 'http://foo:8221/rpc')
 
     def testInstantiation(self):
+        """`RecordingSlave` has a custom representation.
+
+        It encloses builder name and xmlrpc url for debug purposes.
+        """
         self.assertEqual('<foo:http://foo:8221/rpc>', repr(self.slave))
 
     def testEnsurePresent(self):
+        """`RecordingSlave.ensurepresent` always succeed.
+
+        It returns the expected succeed code and records the interation
+        information for later use.
+        """
         self.assertEqual(
             (True, 'Download'),
             self.slave.ensurepresent('boing', 'bar', 'baz'))
@@ -38,6 +50,11 @@ class TestRecordingSlaves(TrialTestCase):
             self.slave.calls)
 
     def testBuild(self):
+        """`RecordingSlave.build` always succeed.
+
+        It returns the expected succeed code and records the interation
+        information for later use.
+        """
         self.assertEqual(
             ('BuilderStatus.BUILDING', 'boing'),
             self.slave.build('boing', 'bar', 'baz'))
@@ -46,6 +63,7 @@ class TestRecordingSlaves(TrialTestCase):
             self.slave.calls)
 
     def testResume(self):
+        """`RecordingSlave.resumeHost` returns a deferred resume request."""
         cmd_argv = 'echo hello world'.split()
         logger = BufferLogger()
 
@@ -73,9 +91,10 @@ class TestRecordingSlaves(TrialTestCase):
 
 class TestBuilddManagerHelper:
     """This class mimics the BuilddManagerHelper class."""
+
     def __init__(self):
         self.builders_reset = []
-        self.dispatch_failures = []
+        self.builders_failed = []
 
     def scanAllBuilders(self):
         fake_slaves = (
@@ -86,19 +105,21 @@ class TestBuilddManagerHelper:
     def resetBuilder(self, name):
         self.builders_reset.append(name)
 
-    def dispatchFail(self, error, name):
-        self.dispatch_failures.append((name, error))
+    def failBuilder(self, name, info):
+        self.builders_failed.append((name, info))
 
 
-class TestWebProxy:
+class TestXMLRPCProxy:
     """This class mimics a twisted XMLRPC Proxy class."""
-    def __init__(self, works=True):
-        self.works = works
+
+    def __init__(self, failure_info=None):
         self.calls = []
+        self.failure_info = failure_info
+        self.works = failure_info is None
 
     def callRemote(self, *args):
         self.calls.append(args)
-        return defer.maybeDeferred(lambda: (self.works, None))
+        return defer.maybeDeferred(lambda: (self.works, self.failure_info))
 
 
 class TestBuilddManager(TrialTestCase):
@@ -109,55 +130,98 @@ class TestBuilddManager(TrialTestCase):
         TrialTestCase.setUp(self)
         self.manager = BuilddManager()
         self.manager.helper = TestBuilddManagerHelper()
+
+        self.test_proxy = TestXMLRPCProxy()
         self.stopped = False
-        self.test_proxy = TestWebProxy()
 
     def testStopWhenDone(self):
+        """Check if the chain is terminated and database updates are done.
+
+        'BuilddManager.stopWhenDone' verifies the number of 'running_jobs'
+        and once they cease it performs all needed database updates (builder
+        reset or failure) synchronously and call `BuilddManager.gameOver`.
+        """
+        # 'running_jobs' is ZERO on a just intantiated BuilddManager.
         self.assertEqual(0, self.manager.running_jobs)
 
+        # We will instrument the `gameOver` method and schedule one reset
+        # and one failure update.
         def game_over():
             self.stopped = True
         self.manager.gameOver = game_over
+        self.manager.builders_to_reset = ['foo']
+        self.manager.builders_to_fail = [('bar', 'boingo')]
 
+        # When `stopWhenDone` is called, and it is called after all build
+        # slave interation, `running_job` is decremented. If there are still
+        # jobs running nothing is done.
         self.manager.running_jobs = 2
         self.manager.stopWhenDone('ignore-me')
         self.assertEqual(1, self.manager.running_jobs)
         self.assertFalse(self.stopped)
+        self.assertEqual(
+            [], self.manager.helper.builders_reset)
+        self.assertEqual(
+            [], self.manager.helper.builders_failed)
 
+        # When there are no more running jobs the reset and failure database
+        # updates requests are performed and the `gameOver` method is called.
         self.manager.stopWhenDone('ignore-me')
         self.assertEqual(0, self.manager.running_jobs)
-        self.assertTrue(self.stopped, 'Boing')
+        self.assertTrue(self.stopped)
+        self.assertEqual(
+            ['foo'], self.manager.helper.builders_reset)
+        self.assertEqual(
+            [('bar', 'boingo')], self.manager.helper.builders_failed)
 
     def testScannedSlaves(self):
+        """`BuilddManager.scan` return a list of `RecordingSlaves`.
+
+        The returned slaves contain interactions that should be performed
+        asynchronously.
+        """
         slaves = self.manager.scan()
         self.assertEqual(['foo', 'bar'], [slave.name for slave in slaves])
 
     def testCheckResume(self):
+        """`BuilddManager.checkResume` is chained after resume requests.
+
+        If the resume request succeed it returns True, otherwise it returns
+        False and schedule the build for database reset.
+
+        See `RecordingSlave.resumeHost` for more information about the resume
+        result contents.
+        """
         successful_response = ('', '', 0)
         result = self.manager.checkResume(
             successful_response, 'foo')
         self.assertTrue(result)
         self.assertEqual(
-            [], self.manager.helper.builders_reset)
+            [], self.manager.builders_to_reset)
 
         failed_response = ('', '', 1)
         result = self.manager.checkResume(
             failed_response, 'foo')
         self.assertFalse(result)
         self.assertEqual(
-            ['foo'], self.manager.helper.builders_reset)
+            ['foo'], self.manager.builders_to_reset)
 
     def testCheckDispatch(self):
+        """`BuilddManager.checkDispatch` is chained after dispatch requests.
+
+        If the dispatch request fails it schedules the build for database
+        failure update.
+        """
         successful_response = (True, 'cool builder')
         self.manager.checkDispatch(successful_response, 'foo')
         self.assertEqual(
-            [], self.manager.helper.dispatch_failures)
+            [], self.manager.builders_to_fail)
 
         failed_response = (False, 'uncool builder')
         self.manager.checkDispatch(failed_response, 'foo')
         self.assertEqual(
             [('foo', 'uncool builder')],
-             self.manager.helper.dispatch_failures)
+             self.manager.builders_to_fail)
 
     def testDispatchBuild(self):
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/')
@@ -181,40 +245,68 @@ class TestBuilddManager(TrialTestCase):
              ('build', 'boing', 'bar', 'baz')],
             self.test_proxy.calls)
         self.assertEqual(
-            [], self.manager.helper.builders_reset)
+            [], self.manager.builders_to_reset)
         self.assertEqual(
-            [], self.manager.helper.dispatch_failures)
+            [], self.manager.builders_to_fail)
 
-        self.test_proxy = TestWebProxy(False)
+        self.test_proxy = TestXMLRPCProxy('very broken slave')
         result = self.manager.dispatchBuild(True, slave)
         # Reseting only once is enough.
         self.assertEqual(
-            [], self.manager.helper.builders_reset)
+            [], self.manager.builders_to_reset)
         self.assertEqual(
-            [('foo', None), ('foo', None)],
-            self.manager.helper.dispatch_failures)
+            [('foo', 'very broken slave'), ('foo', 'very broken slave')],
+            self.manager.builders_to_fail)
 
 
 class TestBuilddDatabaseHelper(unittest.TestCase):
     """Tests for the buildd manager helper class."""
-    
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         self.db_helper = BuilddManagerHelper()
 
-    def testResetBuilder(self):
-        newInteraction()
-        bob = getUtility(IBuilderSet)['bob']
+    def _getBob(self):
+        """Return a fixed `IBuilder`instance from the sampledata.
 
+        Ensure it's active (builderok=True) and it has a in-progress job.
+        """
+        login('foo.bar@canonical.com')
+        bob = getUtility(IBuilderSet)['bob']
+        bob.builderok = True
         job = bob.currentjob
         self.assertEqual(
-            u'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
+            'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
             job.build.title)
+        transaction.commit()
+        logout()
+        return bob
 
-        endInteraction()
+    def testResetBuilder(self):
+        """`BuilddManagerHelper.resetBuilder` clean any existing jobs.
+
+        Although it keeps the builder active in pool.
+        """
+        bob = self._getBob()
+
         self.db_helper.resetBuilder('bob')
 
+        self.assertTrue(bob.builderok)
+        self.assertEqual(None, bob.currentjob)
+
+    def testFailBuilder(self):
+        """`BuilddManagerHelper.failBuilder` excludes the builder from pool.
+
+        It marks the build as failed (builderok=False) and clean any
+        existing jobs.
+        """
+        bob = self._getBob()
+
+        self.db_helper.failBuilder('bob', 'does not work!')
+
+        self.assertFalse(bob.builderok)
+        self.assertEqual('does not work!', bob.failnotes)
         self.assertEqual(None, bob.currentjob)
 
 
