@@ -23,6 +23,7 @@ from StringIO import StringIO
 import os.path
 
 import pytz
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -191,10 +192,23 @@ class LaunchpadObjectFactory(ObjectFactory):
             pocket)
         return location
 
-    def makePerson(self, email=None, name=None, password=None,
-                   email_address_status=None, hide_email_addresses=False,
-                   displayname=None, time_zone=None, latitude=None,
-                   longitude=None):
+    def makePerson(self, *args, **kwargs):
+        """As makePersonNoCommit, except with an implicit transaction commit.
+
+        makePersonNoCommit makes changes to two seperate database connections,
+        and the returned Person can have odd behavior until a commit is
+        made. For example, person.preferredemail will be None as this
+        is looking in the main Store for email address details, not the
+        email address master Store (the auth Store).
+        """
+        rv = self.makePersonNoCommit(*args, **kwargs)
+        transaction.commit()
+        return rv
+
+    def makePersonNoCommit(
+        self, email=None, name=None, password=None,
+        email_address_status=None, hide_email_addresses=False,
+        displayname=None, time_zone=None, latitude=None, longitude=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -375,12 +389,23 @@ class LaunchpadObjectFactory(ObjectFactory):
         return Milestone(product=product, distribution=distribution,
                          name=name)
 
-    def makeProduct(self, name=None, project=None, displayname=None,
-                    licenses=None, owner=None, registrant=None,
-                    title=None, summary=None, official_malone=None):
+    def makeProduct(self, *args, **kwargs):
+        """As makeProductNoCommit with an implicit transaction commit.
+        
+        This ensures that generated owners and registrants are fully
+        flushed and available from all Stores.
+        """
+        product = self.makeProductNoCommit(*args, **kwargs)
+        transaction.commit()
+        return product
+
+    def makeProductNoCommit(
+        self, name=None, project=None, displayname=None,
+        licenses=None, owner=None, registrant=None,
+        title=None, summary=None, official_malone=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
-            owner = self.makePerson()
+            owner = self.makePersonNoCommit()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
@@ -1000,6 +1025,10 @@ class LaunchpadObjectFactory(ObjectFactory):
                               merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
+            # Until we commit, sender.preferredemail returns None
+            # because the email address changes pending in the auth Store
+            # are not available via the main Store.
+            transaction.commit()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
