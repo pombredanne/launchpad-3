@@ -47,10 +47,18 @@ class WebServiceExceptionView:
         if getattr(self.request, 'oopsid', None) is not None:
             response.setHeader('X-Lazr-OopsId', self.request.oopsid)
 
-        result = [str(self.context)]
-        show_tracebacks = (
-            getUtility(ILaunchBag).developer or
-            config.canonical.show_tracebacks)
+        is_developer = getUtility(ILaunchBag).developer
+        show_tracebacks = (is_developer or config.canonical.show_tracebacks)
+        if (not show_tracebacks and self.status / 100 == 5):
+            # People who aren't developers shouldn't be shown the
+            # exception message for an exception that caused an
+            # internal server error--unless it's going to show up
+            # anyway in a traceback.
+            result = [self.context.__class__.__name__]
+        else:
+            # It's okay to show the exception message
+            result = [str(self.context)]
+
         if show_tracebacks:
             result.append('\n\n')
             result.append(traceback.format_exc())

@@ -54,13 +54,14 @@ class BMPMailer(BranchMailer):
                  from_address, delta=None, message_id=None,
                  requested_reviews=None, comment=None, review_diff=None):
         BranchMailer.__init__(self, subject, template_name, recipients,
-            from_address, delta, message_id)
+            from_address, delta, message_id=message_id)
         self.merge_proposal = merge_proposal
         if requested_reviews is None:
             requested_reviews = []
         self.requested_reviews = requested_reviews
         self.comment = comment
         self.review_diff = review_diff
+        self.template_params = self._generateTemplateParams()
 
     def sendAll(self):
         BranchMailer.sendAll(self)
@@ -129,10 +130,6 @@ class BMPMailer(BranchMailer):
     def _getHeaders(self, email):
         """Return the mail headers to use."""
         headers = BranchMailer._getHeaders(self, email)
-        reason, rationale = self._recipients.getReason(email)
-        headers['X-Launchpad-Branch'] = reason.branch.unique_name
-        if reason.branch.product is not None:
-            headers['X-Launchpad-Project'] = reason.branch.product.name
         if self.merge_proposal.root_message_id is not None:
             headers['In-Reply-To'] = self.merge_proposal.root_message_id
         return headers
@@ -143,11 +140,9 @@ class BMPMailer(BranchMailer):
                 self.review_diff.diff.text, content_type='text/x-diff',
                 inline=True, filename='review.diff')
 
-    def _getTemplateParams(self, email):
-        """Return a dict of values to use in the body and subject."""
-        # Expand the requested reviews.
-        params = BranchMailer._getTemplateParams(self, email)
-        params.update({
+    def _generateTemplateParams(self):
+        """For template params that don't change, calcualte just once."""
+        params = {
             'proposal_registrant': self.merge_proposal.registrant.displayname,
             'source_branch': self.merge_proposal.source_branch.bzr_identity,
             'target_branch': self.merge_proposal.target_branch.bzr_identity,
@@ -158,7 +153,7 @@ class BMPMailer(BranchMailer):
             'gap': '',
             'reviews': '',
             'whiteboard': '', # No more whiteboard.
-            })
+            }
 
         requested_reviews = []
         for review in self.requested_reviews:
@@ -177,5 +172,11 @@ class BMPMailer(BranchMailer):
             params['comment'] = (self.comment.message.text_contents)
             if len(requested_reviews) > 0:
                 params['gap'] = '\n\n'
+        return params
 
+    def _getTemplateParams(self, email):
+        """Return a dict of values to use in the body and subject."""
+        # Expand the requested reviews.
+        params = BranchMailer._getTemplateParams(self, email)
+        params.update(self.template_params)
         return params

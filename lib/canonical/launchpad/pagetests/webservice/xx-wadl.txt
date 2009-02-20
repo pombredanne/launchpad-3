@@ -674,6 +674,44 @@ The 'find' custom operation returns a collection of people.
     'http://.../#person-page'
 
 
+==== Parameter data types ====
+
+Operation parameters are always transfered between client and server
+as strings. But a parameter may have a logical data type which
+indicates how to treat the string. Data types are specified using the
+primitive types from the XML Schema standard.
+
+Here's a parameter of type 'date'.
+
+    >>> project_series_resource_type = single_list_value([
+    ...     type for type in entry_resource_types
+    ...     if type.attrib['id'] == 'project_series'])
+
+    >>> new_milestone = single_list_value([
+    ...     method for method in project_series_resource_type.findall(
+    ...         wadl_tag('method'))
+    ...     if method.attrib['id'] == 'project_series-newMilestone'])
+
+    >>> new_milestone_request = new_milestone.find(wadl_tag('request'))
+    >>> new_milestone_repr = new_milestone_request.getchildren()[0]
+
+    >>> date_targeted = single_list_value(
+    ...     [param for param in new_milestone_repr
+    ...      if param.attrib.get('name') == 'date_targeted'])
+    >>> date_targeted.attrib['type']
+    'xsd:date'
+
+If no data type is provided, the WADL standard says to default to
+"xsd:string". This is the case for the vast majority of parameters.
+
+    >>> description = single_list_value(
+    ...     [param for param in new_milestone_repr
+    ...           if param.attrib.get('name') == 'description'])
+
+    >>> 'type' in description.attrib
+    False
+
+
 == An entry resource type ==
 
 Now let's look at how the service root WADL describes entry
@@ -682,7 +720,7 @@ resources.
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
     ['archive', 'archive_permission', 'branch', 'branch_merge_proposal',
-     'bug', 'bug_attachment', 'bug_subscription', ...]
+     'branch_subscription', 'bug', 'bug_attachment', 'bug_subscription', ...]
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.
@@ -744,11 +782,24 @@ the parameter's value.
 So to get the bug link out of a JSON data structure you need to
 look up the element called "bug_link".
 
+Just as with operation parameters, a representation parameter may have
+an optional data type. As with operation parameters, the default is
+"xsd:string".
+
+    >>> date_closed = single_list_value(
+    ...     [param for param in full_params
+    ...      if param.attrib['name'] == 'date_closed'])
+    >>> date_closed.attrib['type']
+    'xsd:dateTime'
+
+    >>> title = single_list_value([param for param in full_params
+    ...                            if param.attrib['name'] == 'title'])
+    >>> 'type' in title.attrib
+    False
+
 A parameter may also have human-readable documentation: an optional
 name for the parameter and an optional short description.
 
-    >>> [date_closed] = [param for param in full_params
-    ...                  if param.attrib['name'] == 'date_closed']
     >>> doc = date_closed[0]
     >>> doc.tag
     '...doc'
@@ -862,7 +913,8 @@ is kept in the <resource_type> tag.
     >>> methods = sorted(
     ...     entry_type.findall(wadl_tag('method')), key=sort_by_id)
     >>> (get, patch, put, transitionToAssignee,
-    ...     transitionToImportance, transitionToStatus) = methods
+    ...     transitionToImportance, transitionToStatus,
+    ...     transitionToTarget) = methods
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
@@ -880,23 +932,29 @@ XML id. Here that's not a problem; we have one custom POST method
      ('POST', 'bug_task-transitionToAssignee'),
      ('POST', 'bug_task-transitionToImportance'),
      ('POST', 'bug_task-transitionToStatus'),
+     ('POST', 'bug_task-transitionToTarget'),
      ('PUT', 'bug_task-put')]
 
 
 === Standard entry operations ===
 
 The standard GET operation defines a 'response' tag, which tells the
-client that they can use content negotiation to get two different
+client that they can use content negotiation to get three different
 representations of a bug task: the JSON one described above as
-"BugTask-full", and a WADL document--the sort of document shown in the
-very first section of this test.
+"BugTask-full", an XHTML snippet, and a WADL document--the sort of
+document shown in the very first section of this test.
 
     >>> response = get.find(wadl_tag('response'))
     >>> response.tag
     '...response'
-    >>> full, wadl = list(response)
+    >>> full, html, wadl = list(response)
     >>> full.attrib['href']
     'http://.../#bug_task-full'
+
+    >>> html.attrib['id']
+    'bug_task-xhtml'
+    >>> html.attrib['mediaType']
+    'application/xhtml+xml'
 
     >>> wadl.attrib['id']
     'bug_task-wadl'

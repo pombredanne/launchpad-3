@@ -47,7 +47,7 @@
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasStanding"/>
     <allow
-      interface="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
+      interface="canonical.launchpad.interfaces.person.IPersonCommAdminWriteRestricted"
       />
 
     <require
@@ -68,8 +68,8 @@
                   canonical.launchpad.interfaces.person.ITeamPublic"
       />
     <require
-      permission="launchpad.Admin"
-      set_schema="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
+      permission="launchpad.Commercial"
+      set_schema="canonical.launchpad.interfaces.person.IPersonCommAdminWriteRestricted"
       />
     <require
       permission="launchpad.Special"
@@ -125,21 +125,13 @@
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
-  <browser:editform
+  <browser:page
     name="+review"
     for="canonical.launchpad.interfaces.IPerson"
-    schema="canonical.launchpad.interfaces.IPerson"
-    label="Review person"
-    fields="name displayname password
-            personal_standing personal_standing_reason"
+    class="canonical.launchpad.browser.PersonAdministerView"
     permission="launchpad.Admin"
     template="../templates/person-review.pt"
-    >
-    <browser:widget
-      field="password"
-      class="canonical.widgets.PasswordChangeWidget"
-      />
-  </browser:editform>
+    />
 
   <browser:page
     name="+claimteam"
@@ -656,6 +648,15 @@
     permission="zope.Public"
     facet="branches"
     name="+activereviews"
+    template="../templates/person-mergeproposals.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonRequestedReviewsView"
+    permission="zope.Public"
+    facet="branches"
+    name="+requestedreviews"
     template="../templates/person-mergeproposals.pt"
     />
 

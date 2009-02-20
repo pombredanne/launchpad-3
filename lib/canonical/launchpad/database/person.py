@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612
 
@@ -121,19 +121,19 @@ from canonical.launchpad.interfaces.teammembership import (
     TeamMembershipStatus)
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
+from canonical.launchpad.interfaces.translator import ITranslatorSet
 from canonical.launchpad.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
-from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.emailaddress import (
     EmailAddress, HasOwnerMixin)
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pillar import PillarName
-from canonical.launchpad.database.pofile import POFileTranslator
+from canonical.launchpad.database.pofiletranslator import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.shipit import ShippingRequest
@@ -667,12 +667,7 @@ class Person(
 
     @property
     def browsername(self):
-        """Return a name suitable for display on a web page.
-
-        Originally, this was calculated but now we just use displayname.
-        You should continue to use this method, however, as we may want to
-        change again, such as returning '$displayname ($name)'.
-        """
+        """See `IPersonPublic`."""
         return self.displayname
 
     @property
@@ -918,20 +913,6 @@ class Person(
                         sub.sourcepackagename is not None)]
         packages.sort(key=lambda x: x.name)
         return packages
-
-    def getBranch(self, product_name, branch_name):
-        """See `IPerson`."""
-        if product_name is None or product_name == '+junk':
-            return Branch.selectOne(
-                'owner=%d AND product is NULL AND name=%s'
-                % (self.id, quote(branch_name)))
-        else:
-            pillar = getUtility(IPillarNameSet).getByName(product_name)
-            if not IProduct.providedBy(pillar):
-                # pillar is either None or not a Product.
-                return None
-            return Branch.selectOneBy(
-                owner=self, product=pillar, name=branch_name)
 
     def findPathToTeam(self, team):
         """See `IPerson`."""
@@ -2133,26 +2114,19 @@ class Person(
     @property
     def translation_history(self):
         """See `IPerson`."""
-        # Note that we can't use selectBy here because of the prejoins.
-        query = ['POFileTranslator.person = %s' % sqlvalues(self),
-                 'POFileTranslator.pofile = POFile.id',
-                 'POFile.language = Language.id',
-                 "Language.code <> 'en'"]
-        history = POFileTranslator.select(
-            ' AND '.join(query),
-            prejoins=[
-                'pofile.potemplate',
-                'latest_message',
-                'latest_message.potmsgset.msgid_singular',
-                'latest_message.msgstr0'],
-            clauseTables=['Language', 'POFile'],
-            orderBy="-date_last_touched")
-        return history
+        return POFileTranslator.select(
+            'POFileTranslator.person = %s' % sqlvalues(self),
+            orderBy='-date_last_touched')
 
     @property
     def translation_groups(self):
         """See `IPerson`."""
         return getUtility(ITranslationGroupSet).getByPerson(self)
+
+    @property
+    def translators(self):
+        """See `IPerson`."""
+        return getUtility(ITranslatorSet).getByTranslator(self)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
@@ -2966,14 +2940,6 @@ class PersonSet:
             'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
         skip.append(('gpgkey','owner'))
-
-        # Update OpenID. Just trash the authorizations for from_id - don't
-        # risk opening up auth wider than the user actually wants.
-        cur.execute("""
-                DELETE FROM OpenIDAuthorization WHERE person=%(from_id)d
-                """ % vars()
-                )
-        skip.append(('openidauthorization', 'person'))
 
         # Update shipit shipments.
         cur.execute('''

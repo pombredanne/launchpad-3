@@ -5,16 +5,6 @@
   xmlns:zope="http://namespaces.zope.org/zope"
   i18n:domain="launchpad">
 
-  <!-- CommercialSubscription -->
-  <class class="canonical.launchpad.database.CommercialSubscription">
-    <allow
-      interface="canonical.launchpad.interfaces.ICommercialSubscription" />
-    <require
-      permission="launchpad.Edit"
-      set_attributes="date_expires date_starts purchaser registrant
-                      sales_system_id is_active"
-      />
-  </class>
   <!-- Product -->
   <class class="canonical.launchpad.database.Product">
     <allow interface="canonical.launchpad.interfaces.IProductPublic" />
@@ -38,7 +28,8 @@
                       homepage_content icon logo mugshot
                       license_info licenses
                       bug_reporting_guidelines
-                      commercial_subscription redeemSubscriptionVoucher"
+                      commercial_subscription redeemSubscriptionVoucher
+                      remote_product"
       />
 <!-- sabdfl 2006-04-10 I put "name" in the admin group because
       with Bazaar now in place, lots of people can have personal
@@ -54,10 +45,17 @@
       />
 
     <require
-      permission="launchpad.Commercial"
-      set_attributes="active private_bugs license_reviewed
-                      license_approved reviewer_whiteboard"
+      permission="zope.Public"
+      attributes="qualifies_for_free_hosting"
       />
+
+    <require
+      permission="launchpad.Commercial"
+      attributes="reviewer_whiteboard is_permitted license_reviewed license_approved"
+      set_schema="canonical.launchpad.interfaces.product.IProductCommercialRestricted"
+      set_attributes="active private_bugs "
+      />
+
     <!-- Changes to official_rosetta must be available to Launchpad
          Translations admins so we need its own permission. -->
     <require
@@ -389,7 +387,7 @@
     permission="zope.Public"
     facet="branches"
     name="+activereviews"
-    template="../templates/product-mergeproposals.pt"
+    template="../templates/product-active-reviews.pt"
     />
 
   <browser:page
@@ -544,13 +542,23 @@
 
   <!-- ProductSet-->
   <class class="canonical.launchpad.database.ProductSet">
-    <allow interface="canonical.launchpad.interfaces.IProductSet" />
+    <allow
+      attributes="title people all_active get getByName getProductsWithBranches
+                  createProduct search latest getTranslatables
+                  featuredTranslatables count_all count_translatables
+                  count_bounties count_buggy count_featureful count_reviewed
+                  count_answered count_codified"
+      />
   </class>
 
   <securedutility
     class="canonical.launchpad.database.ProductSet"
     provides="canonical.launchpad.interfaces.IProductSet">
     <allow interface="canonical.launchpad.interfaces.IProductSet" />
+    <require
+      permission="launchpad.Commercial"
+      attributes="forReview"
+      />
   </securedutility>
 
   <browser:defaultView

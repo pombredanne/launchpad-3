@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces import (
     IProductSeriesSet,
     IRevisionSet,
     ISpecificationBranchSet)
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from lazr.delegates import delegates
@@ -66,6 +67,11 @@ class BranchListingItem(BranchBadges):
         self._now = now
         self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
+
+    @property
+    def active_series(self):
+        return [series for series in self.associated_product_series
+                if series.status != DistroSeriesStatus.OBSOLETE]
 
     @property
     def bzr_identity(self):
@@ -108,10 +114,8 @@ class BranchListingItem(BranchBadges):
 
     @property
     def revision_codebrowse_link(self):
-        return "%(codebrowse_root)s%(branch)s/revision/%(rev_no)s" % {
-            'codebrowse_root': config.codehosting.codebrowse_root,
-            'branch': self.context.unique_name,
-            'rev_no': self.context.revision_count}
+        return self.context.codebrowse_url(
+            'revision', str(self.context.revision_count))
 
 
 class BranchListingBatchNavigator(TableBatchNavigator):
@@ -126,6 +130,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         self.view = view
         self.column_count = 4 + len(view.extra_columns)
         self._now = datetime.now(pytz.UTC)
+        self._dev_series_map = {}
 
     @cachedproperty
     def _branches_for_current_batch(self):
@@ -193,20 +198,23 @@ class BranchListingBatchNavigator(TableBatchNavigator):
                 series.insert(0, dev_focus)
         return series
 
+    def getDevFocusBranch(self, branch):
+        """Get the development focus branch that relates to `branch`."""
+        if branch.product is None:
+            return None
+        try:
+            return self._dev_series_map[branch.product]
+        except KeyError:
+            result = branch.product.development_focus.series_branch
+            self._dev_series_map[branch.product] = result
+            return result
+
     def _createItem(self, branch):
         last_commit = self.tip_revisions[branch.id]
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
         associated_product_series = self.getProductSeries(branch)
-        # XXX thumper 2007-11-14
-        # We can't do equality checks here due to BranchWithSortKeys
-        # being constructed from the BranchSet queries, and the development
-        # focus branch being an actual Branch instance.
-        if self.view.development_focus_branch is None:
-            is_dev_focus = False
-        else:
-            is_dev_focus = (
-                branch.id == self.view.development_focus_branch.id)
+        is_dev_focus = (self.getDevFocusBranch(branch) == branch)
         return BranchListingItem(
             branch, last_commit, self._now, show_bug_badge,
             show_blueprint_badge, is_dev_focus, associated_product_series)

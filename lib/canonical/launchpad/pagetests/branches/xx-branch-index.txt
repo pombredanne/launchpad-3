@@ -18,7 +18,7 @@ Modifying/creating test data for this test case.
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> anonymous_product = factory.makeProduct(
     ...     name='anonymous-product', owner=sample_person)
-    >>> anonymous_branch = factory.makeBranch(
+    >>> anonymous_branch = factory.makeProductBranch(
     ...     name='anonymous-branch', product=anonymous_product,
     ...     owner=sample_person)
     >>> anonymous_product.setAliases(['alias-for-product'])
@@ -378,7 +378,7 @@ Public branches use the lp spec bzr lookup name.
 == Branch formats ==
 
     >>> login('no-priv@canonical.com')
-    >>> branch = factory.makeBranch(
+    >>> branch = factory.makeAnyBranch(
     ...     branch_format=BranchFormat.BZR_BRANCH_5,
     ...     repository_format=RepositoryFormat.BZR_KNITPACK_1)
     >>> url = canonical_url(branch)
@@ -400,10 +400,11 @@ The data that we specified is shown on the web page.
 Say we have one branch stacked on another:
 
     >>> login('no-priv@canonical.com')
-    >>> stacked_on_branch = factory.makeBranch()
-    >>> stacked_branch = factory.makeBranch(stacked_on=stacked_on_branch)
+    >>> stacked_on_branch = factory.makeAnyBranch()
+    >>> stacked_branch = factory.makeAnyBranch(
+    ...     stacked_on=stacked_on_branch)
     >>> url = canonical_url(stacked_branch)
-    >>> stacked_on_name = stacked_on_branch.unique_name
+    >>> stacked_on_name = stacked_on_branch.bzr_identity
     >>> stacked_on_url = canonical_url(stacked_on_branch)
     >>> logout()
 

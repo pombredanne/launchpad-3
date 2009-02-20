@@ -118,7 +118,7 @@ class MilestoneSet:
         return milestone
 
 
-class ProjectMilestone:
+class ProjectMilestone(HasBugsBase):
     """A virtual milestone implementation for project.
 
     The current database schema has no formal concept of milestones related to
@@ -172,3 +172,7 @@ class ProjectMilestone:
         if self.dateexpected:
             title += ' due ' + self.dateexpected.strftime('%Y-%m-%d')
         return title
+
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this milestone."""
+        search_params.milestone = self

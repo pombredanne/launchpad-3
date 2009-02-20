@@ -30,6 +30,7 @@ __all__ = [
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
+    'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
@@ -80,9 +81,14 @@ from canonical.launchpad.interfaces.teammembership import (
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 from canonical.launchpad.interfaces.wikiname import IWikiName
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
+from canonical.launchpad.webapp.authorization import check_permission
+
+
+PRIVATE_TEAM_PREFIX = 'private-'
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -321,9 +327,17 @@ class PersonVisibility(DBEnumeratedType):
 
 
 class PersonNameField(BlacklistableContentNameField):
-    """A Person's name, which is unique."""
+    """A `Person` team name, which is unique and performs psuedo blacklisting.
 
+    If the team name is not unique, and the clash is with a private team,
+    return the blacklist message.  Also return the blacklist message if the
+    private prefix is used but the user is not privileged to create private
+    teams.
+    """
     errormessage = _("%s is already in use by another person or team.")
+
+    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
+                         "administrators.")
 
     @property
     def _content_iface(self):
@@ -333,6 +347,30 @@ class PersonNameField(BlacklistableContentNameField):
     def _getByName(self, name):
         """Return a Person by looking up his name."""
         return getUtility(IPersonSet).getByName(name, ignore_merged=False)
+
+    def _validate(self, input):
+        """See `UniqueField`."""
+        # If the name didn't change then we needn't worry about validating it.
+        if self.unchanged(input):
+            return
+
+        if not check_permission('launchpad.Commercial', self.context):
+            # Commercial admins can create private teams, with or without the
+            # private prefix.
+
+            if input.startswith(PRIVATE_TEAM_PREFIX):
+                raise LaunchpadValidationError(self.blacklistmessage % input)
+
+            # If a non-privileged user attempts to use an existing name AND
+            # the existing project is private, then return the blacklist
+            # message rather than the message indicating the project exists.
+            existing_object = self._getByAttribute(input)
+            if (existing_object is not None and
+                existing_object.visibility != PersonVisibility.PUBLIC):
+                raise LaunchpadValidationError(self.blacklistmessage % input)
+
+        # Perform the normal validation, including the real blacklist checks.
+        super(PersonNameField, self)._validate(input)
 
 
 class IPersonChangePassword(Interface):
@@ -387,6 +425,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     id = Int(title=_('ID'), required=True, readonly=True)
     account = Object(schema=IAccount)
+    accountID = Int(title=_('Account ID'), required=True, readonly=True)
     name = exported(
         PersonNameField(
             title=_('Name'), required=True, readonly=False,
@@ -699,6 +738,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     translation_groups = Attribute(
         "The set of TranslationGroup objects this person is a member of.")
 
+    translators = Attribute(
+        "The set of Translator objects this person is a member of.")
+
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
@@ -833,15 +875,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
         This method must be used only for people, not teams.
         """
-
-    def getBranch(product_name, branch_name):
-        """The branch associated to this person and product with this name.
-
-        The product_name may be None.
-        """
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API is no
-        # longer appropriate, given source package branches. It's used in
-        # browser/person.py, browser/specification.py.
 
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
     # into account whether or not a team's memberships are private.
@@ -1397,7 +1430,7 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPersonAdminWriteRestricted(Interface):
+class IPersonCommAdminWriteRestricted(Interface):
     """IPerson attributes that require launchpad.Admin permission to set."""
 
     visibility = exported(
@@ -1449,7 +1482,7 @@ class IPersonSpecialRestricted(Interface):
 
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IPersonAdminWriteRestricted, IPersonSpecialRestricted,
+              IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
               IHasStanding, ISetLocation):
     """A Person."""
     export_as_webservice_entry(plural_name='people')

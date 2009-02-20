@@ -102,11 +102,6 @@ class IArchivePublic(IHasOwner):
             constraint=name_validator,
             description=_("The name of this archive.")))
 
-    description = exported(
-        Text(
-            title=_("Archive contents description"), required=False,
-            description=_("A short description of this archive's contents.")))
-
     enabled = Bool(
         title=_("Enabled"), required=False,
         description=_("Whether the archive is enabled or not."))
@@ -172,14 +167,15 @@ class IArchivePublic(IHasOwner):
 
     is_copy = Attribute("True if this archive is a copy archive.")
 
+    is_main = Bool(
+        title=_("True if archive is a main archive type"), required=False)
+
     title = exported(
         Text(title=_("Archive Title."), required=False))
 
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     number_of_sources = Attribute(
-        'The total number of sources in the context archive.')
-    number_of_sources_published = Attribute(
         'The number of sources published in the context archive.')
     number_of_binaries = Attribute(
         'The number of binaries published in the context archive.')
@@ -228,11 +224,12 @@ class IArchivePublic(IHasOwner):
         paths to cope with non-primary and PPA archives publication workflow.
         """
 
-    def getSourcesForDeletion(name=None, status=None):
+    def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
         :param: name: optional source name filter (SQL LIKE)
         :param: status: `PackagePublishingStatus` filter, can be a sequence.
+        :param: distroseries: `IDistroSeries` filter.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
@@ -555,7 +552,7 @@ class IArchivePublic(IHasOwner):
             are to be copied.
         :param requestor: The `IPerson` who is requesting the package copy
             operation.
-        :param suite: The `IDistroSeries` name with optional pocket, for 
+        :param suite: The `IDistroSeries` name with optional pocket, for
             example, 'hoary-security'. If this is not provided it will
             default to the current series' release pocket.
         :param copy_binaries: Whether or not binary packages should be copied
@@ -575,8 +572,19 @@ class IArchiveView(Interface):
     buildd_secret = TextLine(
         title=_("Buildd Secret"), required=False,
         description=_("The password used by the builder to access the "
-                      "archive.")
-        )
+                      "archive."))
+
+    description = exported(
+        Text(
+            title=_("Archive contents description"), required=False,
+            description=_("A short description of this archive's contents.")))
+
+    signing_key_fingerprint = exported(
+        Text(
+            title=_("Archive signing key fingerprint"), required=False,
+            description=_("A OpenPGP signing key fingerprint (40 chars) "
+                          "for this PPA or None if there is no signing "
+                          "key available.")))
 
     @rename_parameters_as(name="source_name", distroseries="distro_series")
     @operation_parameters(
@@ -661,7 +669,7 @@ class IArchiveView(Interface):
         """Return a dictionary containing a summary of the build statuses.
 
         Only information for sources belonging to the current archive will
-        be returned. See 
+        be returned. See
         `IPublishingSet`.getBuildStatusSummariesForSourceIdsAndArchive() for
         details.
 
@@ -756,10 +764,29 @@ class IArchiveAppend(Interface):
         """Create a new authorisation token.
 
         :param person: An IPerson whom this token is for
-        :param token: Optional token string, one will be generated if not set
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given
         :param date_created: Optional, defaults to now
 
         :return: A new IArchiveAuthToken
+        """
+
+    def newSubscription(subscriber, registrant, date_expires=None,
+                        description=None):
+        """Create a new subscribtion to this archive.
+
+        Create an `ArchiveSubscriber` record which allows an `IPerson` to
+        access a private repository.
+
+        :param subscriber: An `IPerson` who is allowed to access the
+        repository for this archive.
+        :param registrant: An `IPerson` who created this subscription.
+        :param date_expires: When the subscription should expire; None if
+            it should not expire (default).
+        :param description: An option textual description of the subscription
+            being created.
+
+        :return: The `IArchiveSubscriber` that was created.
         """
 
 
@@ -792,11 +819,6 @@ class IPPAActivateForm(Interface):
 
 class IArchiveSourceSelectionForm(Interface):
     """Schema used to select sources within an archive."""
-
-    name_filter = TextLine(
-        title=_("Package name"), required=False, default=None,
-        description=_("Display packages only with name matching the given "
-                      "filter."))
 
 
 class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
@@ -850,13 +872,19 @@ class IArchiveSet(Interface):
             description;
 
         :return: an `IArchive` object.
+        :raises AssertionError if name is already taken within distribution.
         """
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
 
-    def getPPAByDistributionAndOwnerName(distribution, person_name):
-        """Return a single PPA the given (distribution, name) pair."""
+    def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
+        """Return a single PPA.
+
+        :param distribution: The context IDistribution.
+        :param person_name: The context IPerson.
+        :param ppa_name: The name of the archive (PPA)
+        """
 
     def getByDistroPurpose(distribution, purpose, name=None):
         """Return the IArchive with the given distribution and purpose.
@@ -922,21 +950,27 @@ class IArchiveSet(Interface):
         :return a dictionary with the 4 keys specified above.
         """
 
-    def getArchivesForDistribution(distribution, name=None, purposes=None):
+    def getArchivesForDistribution(distribution, name=None, purposes=None,
+        user=None):
         """Return a list of all the archives for a distribution.
-        
+
         This will return all the archives for the given distribution, with
         the following parameters:
-        
+
         :param distribution: target `IDistribution`
         :param name: An optional archive name which will further restrict
             the results to only those archives with this name.
         :param purposes: An optional achive purpose or list of purposes with
             which to filter the results.
+        :param user: An optional `IPerson` who is requesting the archives,
+            which is used to include private archives for which the user
+            has permission. If it is not supplied, only public archives
+            will be returned.
 
         :return: A queryset of all the archives for the given
             distribution matching the given params.
         """
+
 
 class ArchivePurpose(DBEnumeratedType):
     """The purpose, or type, of an archive.

@@ -103,14 +103,6 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if not branch_name:
             branch_name = unicode_branch_url.split('/')[-1]
 
-        if author_email:
-            author = person_set.getByEmail(author_email)
-        else:
-            author = registrant
-        if author is None:
-            return faults.NoSuchPerson(
-                type="author", email_address=author_email)
-
         try:
             if branch_url:
                 branch_type = BranchType.MIRRORED
@@ -120,7 +112,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 branch_type=branch_type,
                 name=branch_name, registrant=registrant, owner=owner,
                 product=product, url=branch_url, title=branch_title,
-                summary=branch_description, author=author)
+                summary=branch_description)
             if branch_type == BranchType.MIRRORED:
                 branch.requestMirror()
         except BranchCreationForbidden:

@@ -14,26 +14,30 @@ Log-in an administrator to avoid permission problems.
 
 Make a trunk branch and set as the development focus branch.
 
-    >>> trunk = factory.makeBranch(product=fooix)
+    >>> trunk = factory.makeProductBranch(product=fooix)
     >>> fooix.development_focus.user_branch = trunk
 
-Make a single proposal for albert that is needing review.
+Make a single proposal for albert that is needing review by robert.
 
-    >>> albert = factory.makePerson(name='albert')
-    >>> branch = factory.makeBranch(
+    >>> albert = factory.makePerson(
+    ...     name='albert', email="albert@example.com", password="test")
+    >>> robert = factory.makePerson(name='robert')
+    >>> branch = factory.makeProductBranch(
     ...     owner=albert, product=fooix, name='review')
     >>> proposal = branch.addLandingTarget(albert, trunk)
     >>> proposal.requestReview()
+    >>> _unused_vote = proposal.nominateReviewer(robert, albert,
+    ...                                          review_type='ui')
 
 Make two proposals for bob, one needing review, and one approved.
 
     >>> bob = factory.makePerson(name='bob')
-    >>> branch = factory.makeBranch(
+    >>> branch = factory.makeProductBranch(
     ...     owner=bob, product=fooix, name='review')
     >>> proposal = branch.addLandingTarget(bob, trunk)
     >>> proposal.requestReview()
 
-    >>> branch = factory.makeBranch(
+    >>> branch = factory.makeProductBranch(
     ...     owner=bob, product=fooix, name='approved')
     >>> proposal = branch.addLandingTarget(bob, trunk)
     >>> proposal.approveBranch(trunk.owner, 'some-revision')
@@ -54,13 +58,13 @@ for these.
 
     >>> browser.getLink('pending proposals').click()
     >>> print browser.title
-    Active code reviews for Fooix
+    Pending proposals
 
 The proposals are listed in a table that shows the source and target branches,
 who requested the merge, the date the review was requested, and the vote
 summary.
 
-    >>> print_tag_with_id(browser.contents, 'proposal-listing')
+    >>> print_tag_with_id(browser.contents, 'reviews-other')
     Branch Merge Proposal   Requested By          Activity
     lp://dev/~albert/fooix/review &rArr; lp://dev/fooix
             Albert        ...                     None
@@ -89,8 +93,45 @@ and approved merges.
     >>> browser.open('http://code.launchpad.dev/~albert')
     >>> print_tag_with_id(browser.contents, 'page-summary')
     Related branches: 1 (1 registered, 1 owned, 1 subscribed)
-    1 active review, 0 approved merges
+    1 active proposal, 0 approved merges, 0 requested reviews
 
     >>> browser.getLink('approved merges').click()
     >>> print_tag_with_id(browser.contents, 'no-proposals')
     Albert has no approved merges.
+
+
+== Listings for person's requested reviews ==
+
+A person can also list all of their currently requested reviews, and the status
+of their reviews
+
+    >>> browser.open('http://code.launchpad.dev/~robert/+requestedreviews')
+    >>> print_tag_with_id(browser.contents, 'page-summary')
+    Related branches: 0 (0 registered, 0 owned, 0 subscribed)
+    0 active proposals, 0 approved merges, 1 requested review
+
+    >>> print_tag_with_id(browser.contents, 'proposal-listing')
+    Branch Merge Proposal             Requested By    Review
+    lp://dev/~albert/fooix/review ... Albert ...      Pending ui
+
+The requested reviews for a team will only ever show pending reviews, as a
+team cannot approve a review, only a person can.
+
+    >>> login('foo.bar@canonical.com')
+    >>> team = factory.makeTeam(
+    ...     owner=albert, name="a-team", displayname="A-Team")
+    >>> logout()
+
+    >>> browser = setupBrowser(auth='Basic albert@example.com:test')
+    >>> browser.open('http://code.launchpad.dev/~albert/fooix/review')
+    >>> browser.getLink('Ready for review').click()
+    >>> browser.getLink('Request another review').click()
+    >>> browser.getControl('Reviewer').value = 'a-team'
+    >>> browser.getControl('Review type').value = 'tag'
+    >>> browser.getControl('Request Review').click()
+
+    >>> browser.open('http://code.launchpad.dev/~a-team')
+    >>> browser.getLink('requested review').click()
+    >>> print_tag_with_id(browser.contents, 'proposal-listing')
+    Branch Merge Proposal             Requested By    Review
+    lp://dev/~albert/fooix/review ... Albert ...      Pending

@@ -19,10 +19,10 @@ And links to the important applications and facets:
 
   >>> people_link = browser.getLink(url='/people')
   >>> people_link.url
-  'http://launchpad.dev/people'
+  'http://launchpad.dev/people/+newteam'
 
   >>> people_link.text
-  'People and Teams'
+  '[IMG]'
 
   >>> code_link = browser.getLink(url='code')
   >>> code_link.url
@@ -33,21 +33,17 @@ And links to the important applications and facets:
 
 It also includes a search form...
 
-  >>> '<input type="submit" value="Search"' in browser.contents
+  >>> '<input type="submit" value="Search Launchpad"' in browser.contents
   True
 
 ...and lists of featured projects and marketing material.
 
-  >>> for tag in find_tags_by_class(browser.contents, 'three column right'):
+  >>> for tag in find_tags_by_class(browser.contents, 'three column left'):
   ...     print extract_text(tag.renderContents())
   Featured projects
   ...
   Ubuntu
 
-  >>> for tag in find_tags_by_class(browser.contents, 'three column left'):
-  ...     print extract_text(tag.renderContents())
-  What is Launchpad?
-  ...
 
 The front pages for the other applications, however, do have
 application tabs. On these pages, the tab normally named "Overview"
