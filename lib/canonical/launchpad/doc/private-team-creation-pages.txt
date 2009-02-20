@@ -5,6 +5,8 @@ Private teams may only be created by commercial admins
 the UI by only displaying the 'visibility' control to commercial
 admins.
 
+Unprivileged users do not see the visibility widget.
+
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> nopriv = personset.getByEmail('no-priv@canonical.com')
@@ -15,6 +17,20 @@ admins.
     ...     form={}, principal=nopriv)
     >>> 'visibility' in [field.__name__ for field in view.form_fields]
     False
+
+Members of the commercial team who are not admins do see the
+visibility widget.
+
+    >>> login('commercial-member@canonical.com')
+    >>> commercial_member = (
+    ...     personset.getByEmail('commercial-member@canonical.com'))
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form={}, principal=commercial_member)
+    >>> 'visibility' in [field.__name__ for field in view.form_fields]
+    True
+
+And real admins see the visibility widget too.
 
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
@@ -51,6 +67,36 @@ must be 'Restricted.'
     ...     print error
     Private teams must have a Restricted subscription policy.
 
+Commercial admins can create a team too.
+
+    >>> login('commercial-member@canonical.com')
+    >>> form = {
+    ...     'field.name': 'secret-team',
+    ...     'field.displayname': 'Shhhh',
+    ...     'field.description': 'my own team description',
+    ...     'field.defaultmembershipperiod': '365',
+    ...     'field.defaultrenewalperiod': '365',
+    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.renewal_policy': 'NONE',
+    ...     'field.visibility': 'Private Membership',
+    ...     'field.actions.create': 'Create',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     personset, '+newteam',
+    ...     form=form, principal=commercial_member)
+
+    >>> print len(view.request.notifications)
+    0
+
+    >>> print len(view.errors)
+    0
+
+    >>> import transaction
+    >>> transaction.commit()
+    >>> secret_team = personset.getByName('secret-team')
+    >>> print secret_team.visibility.name
+    PRIVATE_MEMBERSHIP
+
 Admins can successfully create a private team.
 
     >>> login('foo.bar@canonical.com')
@@ -78,9 +124,9 @@ Admins can successfully create a private team.
     >>> import transaction
     >>> transaction.commit()
     >>> super_secret = personset.getByName('super-secret')
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> print removeSecurityProxy(super_secret).visibility
-    Private Membership
+    >>> print super_secret.visibility.name
+    PRIVATE_MEMBERSHIP
+
 
 Admins who attempt to create a new team with the name of an existing
 team get the normal error message.

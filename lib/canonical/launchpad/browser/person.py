@@ -3571,7 +3571,7 @@ class PersonEditView(BasePersonEditView):
             len(self.unknown_trust_roots_user_logged_in) > 0
             and not bypass_check):
             # Warn the user that they might shoot themselves in the foot.
-            self.setFieldError('name', structured(dedent("""
+            self.setFieldError('name', structured(dedent('''
             <div class="inline-warning">
               <p>Changing your name will change your
                   public OpenID identifier. This means that you might be
@@ -3588,7 +3588,7 @@ class PersonEditView(BasePersonEditView):
               <p>If you click 'Save' again, we will rename your account
                  anyway.
               </p>
-            </div>"""),
+            </div>'''),
              ", ".join(self.unknown_trust_roots_user_logged_in)))
             self.i_know_this_is_an_openid_security_issue_input = dedent("""\
                 <input type="hidden"
