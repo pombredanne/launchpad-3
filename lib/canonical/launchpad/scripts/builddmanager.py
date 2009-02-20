@@ -107,6 +107,19 @@ class BuilddManagerHelper:
 
     @write_transaction
     def scanAllBuilders(self):
+        """Scan all builders and "dispatch" build jobs to the idle ones.
+
+        All builders are polled for status and any required post-processing
+        actions are performed.
+
+        Subsequently, build job candidates are selected and assigned to the
+        idle builders. The necessary build job assignment actions are not
+        carried out directly though but merely memorized by the recording
+        build slaves.
+
+        In a second stage (see resumeAndDispatch()) each of the latter will be
+        handled in an asynchronous and parallel fashion.
+        """
         recording_slaves = []
 
         level = logging.DEBUG
@@ -147,6 +160,7 @@ class BuilddManagerHelper:
         return recording_slaves
 
     def _cleanJob(self, job):
+        """Clean up in case of builder reset or dispatch failure."""
         if job is not None:
             job.build.buildstate = BuildStatus.NEEDSBUILD
             job.builder = None
@@ -155,12 +169,14 @@ class BuilddManagerHelper:
 
     @write_transaction
     def resetBuilder(self, name):
+        """Clean up in case a builder could not be reset."""
         newInteraction()
         builder = getUtility(IBuilderSet)[name]
         self._cleanJob(builder.currentjob)
 
     @write_transaction
     def dispatchFail(self, error, name):
+        """Clean up in case we failed to dispatch to a builder."""
         newInteraction()
         builder = getUtility(IBuilderSet)[name]
         builder.failbuilder(error)
