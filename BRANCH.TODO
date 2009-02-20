@@ -2,10 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-webapp.login.logInPerson() is the one true way of logging in users, but it's given a request, a principal and an email address, so I would like to rename it to logInPrincipal().
-
-Then create a new logInPrincipalAndMaybeCreatePerson() function (to be used in
-certain places), that would check if the principal's account has an associated
-person and create one if not.  It would also have to replace OpenIDPrincipals
-with LaunchpadPrincipals after doing that.
