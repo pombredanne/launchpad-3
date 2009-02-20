@@ -225,3 +225,14 @@ class BuilddManager(service.Service):
         if self.running_jobs <= 0:
             self.gameOver()
 
+if __name__ == "__main__":
+    from canonical.config import dbconfig
+    from canonical.launchpad.scripts import execute_zcml_for_scripts
+
+    # Connect to database
+    dbconfig.setConfigSection('builddmaster')
+    execute_zcml_for_scripts()
+
+    bm = BuilddManager()
+    bm.startService()
+    reactor.run()

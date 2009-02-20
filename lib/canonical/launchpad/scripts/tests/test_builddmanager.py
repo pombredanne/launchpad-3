@@ -1,6 +1,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""Tests for ..."""
+"""Tests for the renovated slave scanner aka BuilddManager."""
 
 import unittest
 
