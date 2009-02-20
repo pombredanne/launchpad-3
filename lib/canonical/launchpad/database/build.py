@@ -45,7 +45,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
 
@@ -88,7 +88,9 @@ class Build(SQLBase):
         if self.upload_log is None:
             return None
 
-        return self.upload_log.getURL()
+        url = urlappend(canonical_url(self), "+files")
+        url = urlappend(url, self.upload_log.filename)
+        return url
 
     @property
     def current_component(self):
@@ -538,10 +540,7 @@ class Build(SQLBase):
     @property
     def build_log_url(self):
         """See `IBuild`."""
-        if self.buildlog is None or self.buildstate in (
-            BuildStatus.NEEDSBUILD, BuildStatus.SUPERSEDED,
-            BuildStatus.BUILDING):
-            # In a state with no log file.
+        if self.buildlog is None:
             return None
         else:
             # The librarian URL is explicitly not used here because if

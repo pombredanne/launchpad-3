@@ -158,7 +158,7 @@ build-failedtoupload-workflow.txt for further information.
     upload_9_log.txt
 
     >>> print active_build.upload_log_url
-    http://localhost:58000/93/upload_9_log.txt
+    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9/+files/upload_9_log.txt
 
 Once the transaction is committed, the file is available in the
 librarian, and we can retrieve its contents.
