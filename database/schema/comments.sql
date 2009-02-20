@@ -275,6 +275,7 @@ COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker en
 COMMENT ON COLUMN BugTracker.version IS 'The version of the bug tracker software being used.';
 COMMENT ON COLUMN BugTracker.block_comment_pushing IS 'Whether to block pushing comments to the bug tracker. Having a value of false means that we will push the comments if the bug tracker supports it.';
 COMMENT ON COLUMN BugTracker.has_lp_plugin IS 'Whether we have confirmed that the Launchpad plugin was installed on the bug tracker, the last time checkwatches was run.';
+COMMENT ON COLUMN BugTracker.active IS 'Indicates if we should perform automated actions, like fetching remote statuses, against this bug tracker. For example, to stop checking a broken bug tracker or when bug watches point to a private bug tracker. The summary and/or contact details can be used to explain when a bug tracker is disabled.';
 
 -- BugTrackerAlias
 
