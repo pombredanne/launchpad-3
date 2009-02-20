@@ -228,6 +228,8 @@ possible to create a new person that will be associated with it.
     ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
     >>> person.account == fresh_account
     True
+    >>> person.preferredemail == fresh_account.preferredemail
+    True
     >>> person.creation_rationale
     <DBItem PersonCreationRationale.OWNER_CREATED_LAUNCHPAD...
 

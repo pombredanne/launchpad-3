@@ -18,12 +18,14 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet, LoginTokenType)
-from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.person import (
+    IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessAuthUtility, IPlacelessLoginSource)
+    ILaunchpadPrincipal, IOpenIDPrincipal, IPlacelessAuthUtility,
+    IPlacelessLoginSource)
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
@@ -381,6 +383,25 @@ def logInPrincipal(request, principal, email):
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
+
+
+def logInPrincipalAndMaybeCreatePerson(request, principal, email):
+    """Log the principal in, creating a Person if necessary.
+
+    If the given principal is an IOpenIDPrincipal (meaning it has no Person
+    associated with), we create a new person, fetch a new principal (this time
+    an ILaunchpadPrincipal) and set it in the request.
+
+    Password validation must be done in callsites.
+    """
+    logInPrincipal(request, principal, email)
+    if IOpenIDPrincipal.providedBy(principal):
+        person = principal.account.createPerson(
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+        lp_principal = getUtility(IPlacelessLoginSource).getPrincipalByLogin(
+            email)
+        assert ILaunchpadPrincipal.providedBy(lp_principal)
+        request.setPrincipal(lp_principal)
 
 
 def expireSessionCookie(request, client_id_manager=None,

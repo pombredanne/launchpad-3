@@ -104,9 +104,11 @@ class Account(SQLBase):
         assert store.find(Person, account=self).one() is None, (
             "Can't create a Person for an account which already has one.")
         name = generate_nick(self.preferredemail.email)
-        return PersonSet()._newPerson(
+        person = PersonSet()._newPerson(
             name, self.displayname, hide_email_addresses=True,
             rationale=rationale, account=self)
+        self.preferredemail.person = person
+        return person
 
 
 class AccountSet:

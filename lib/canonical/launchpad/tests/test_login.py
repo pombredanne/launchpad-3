@@ -9,14 +9,18 @@ from zope.session.interfaces import ISession
 
 from canonical.config import config
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, IAccountSet)
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
+from canonical.launchpad.webapp.authentication import (
+    LaunchpadPrincipal, OpenIDPrincipal)
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, IPlacelessAuthUtility)
-from canonical.launchpad.webapp.login import logInPrincipal, logoutPerson
+    CookieAuthLoggedInEvent, ILaunchpadPrincipal, IOpenIDPrincipal,
+    IPlacelessAuthUtility)
+from canonical.launchpad.webapp.login import (
+    logInPrincipal, logInPrincipalAndMaybeCreatePerson, logoutPerson)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -41,8 +45,8 @@ class TestLoginAndLogout(TestCaseWithFactory):
 
     def test_logging_in_and_logging_out(self):
         # A test showing that we can authenticate the request after
-        # logInPrincipal() is called, and after logoutPerson() we can no longer
-        # authenticate it.
+        # logInPrincipal() is called, and after logoutPerson() we can no
+        # longer authenticate it.
 
         # This is to setup an interaction so that we can call logInPrincipal
         # below.
@@ -50,7 +54,8 @@ class TestLoginAndLogout(TestCaseWithFactory):
 
         logInPrincipal(self.request, self.principal, 'foo.bar@example.com')
         session = ISession(self.request)
-        # logInPrincipal() stores the account ID in a variable named 'accountid'.
+        # logInPrincipal() stores the account ID in a variable named
+        # 'accountid'.
         self.failUnlessEqual(
             session['launchpad.authenticateduser']['accountid'],
             self.principal.id)
@@ -102,6 +107,53 @@ class TestLoginAndLogout(TestCaseWithFactory):
         principal = getUtility(IPlacelessAuthUtility).authenticate(
             self.request)
         self.failUnless(principal is None)
+
+
+class TestLoggingInWithPersonlessAccount(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.request = LaunchpadTestRequest()
+        login(ANONYMOUS)
+        account_set = getUtility(IAccountSet)
+        account, email = account_set.createAccountAndEmail(
+            'foo@example.com', AccountCreationRationale.UNKNOWN,
+            'Display name', 'password')
+        self.principal = OpenIDPrincipal(
+            account.id, account.displayname, account.displayname, account)
+        login('foo@example.com')
+
+    def test_logInPrincipal(self):
+        # logInPrincipal() will log the given principal in and not worry about
+        # its lack of an associated Person.
+        logInPrincipal(self.request, self.principal, 'foo@example.com')
+
+        # This is so that the authenticate() call below uses cookie auth.
+        self.request.response.setCookie(
+            config.launchpad_session.cookie, 'xxx')
+
+        principal = getUtility(IPlacelessAuthUtility).authenticate(
+            self.request)
+        self.failUnless(IOpenIDPrincipal.providedBy(principal))
+        self.failUnless(IPerson(self.principal.account, None) is None)
+
+    def test_logInPrincipalAndMaybeCreatePerson(self):
+        # logInPrincipalAndMaybeCreatePerson() will log the given principal in
+        # and create a Person entry associated with it if one doesn't exist
+        # already.
+        logInPrincipalAndMaybeCreatePerson(
+            self.request, self.principal, 'foo@example.com')
+
+        # This is so that the authenticate() call below uses cookie auth.
+        self.request.response.setCookie(
+            config.launchpad_session.cookie, 'xxx')
+
+        principal = getUtility(IPlacelessAuthUtility).authenticate(
+            self.request)
+        self.failUnless(ILaunchpadPrincipal.providedBy(principal))
+        person = IPerson(self.principal.account)
+        self.failUnless(IPerson.providedBy(person))
 
 
 def test_suite():
