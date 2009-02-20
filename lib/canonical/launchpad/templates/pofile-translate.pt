@@ -12,42 +12,46 @@
   <body>
     <script metal:fill-slot="head_epilogue" type="text/javascript">
       registerLaunchpadFunction(insertAllExpansionButtons);
-      YUI().use('node', 'cookie', 'anim', function(Y) {
-          var full_cookie_name = ('translation-docs-for-' +
-                                  documentation_cookie);
 
-          var hideDiv = function(node) {
-              var hideAnim = new Y.Anim({
+      YUI().use('node', 'cookie', 'anim', function(Y) {
+          var dismiss_notice_cookie = ('translation-docs-for-' +
+                                       documentation_cookie);
+
+          var hide_notification = function(node) {
+              var hide_anim = new Y.Anim({
                   node: node,
                   to: { height: 0,
                         marginTop: 0, marginBottom: 0,
                         paddingTop: 0, paddingBottom: 0 }
               });
               node.setStyle('border', 'none');
-              hideAnim.set('duration', 0.4);
-              hideAnim.on('end', function(e) {
+              hide_anim.set('duration', 0.4);
+              hide_anim.on('end', function(e) {
                   node.setStyle('display', 'none');
               });
-              hideAnim.run();
+              hide_anim.run();
           }
 
           var updateNotificationBox = function(e) {
-              var container = Y.get('.important-notice-container');
-              var balloon = container.query('.important-notice-balloon');
-              var already_read = Y.Cookie.get(full_cookie_name, Boolean);
-              if (already_read) {
-                 container.setStyle('display', 'none');
+              var notice = Y.get('.important-notice-container');
+              var balloon = notice.query('.important-notice-balloon');
+
+              // Check the cookie to see if the user has already dismissed
+              // the notification box for this session.
+              var already_seen = Y.Cookie.get(dismiss_notice_cookie, Boolean);
+              if (already_seen) {
+                 notice.setStyle('display', 'none');
               }
 
-              var cancel_button = container.query(
-                '.important-notice-cancel-button');
-              // Since cancel buttons only makes sense with JavaScript
-              // enabled, show it from here.
+              var cancel_button = notice.query(
+                  '.important-notice-cancel-button');
+              // Cancel button starts out hidden.  If user has JavaScript,
+              // then we want to show it.
               cancel_button.setStyle('visibility', 'visible');
               cancel_button.on('click', function(e) {
                   e.halt();
-                  hideDiv(balloon);
-                  Y.Cookie.set(full_cookie_name, true);
+                  hide_notification(balloon);
+                  Y.Cookie.set(dismiss_notice_cookie, true);
               });
           };
 
@@ -90,12 +94,11 @@
           <div class="important-notice-container"
                tal:condition="view/has_any_documentation">
             <div class="important-notice-balloon">
-              <div style="float: right">
-              <span class="important-notice-buttons">
+              <div class="important-notice-buttons">
                 <img class="important-notice-cancel-button" src="/@@/no"
                      alt="Don't show this notice anymore"
                      title="Hide this notice for the duration of this session" />
-              </span></div>
+              </div>
               <img src="/@@/info" alt="Information" />
               <span class="important-notice"
                   tal:condition="view/translation_group/translation_guide_url">

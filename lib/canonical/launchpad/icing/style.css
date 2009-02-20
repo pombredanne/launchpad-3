@@ -1307,6 +1307,7 @@ beside the mugshot. */
   padding-bottom: 1em;
   position: relative;
 }
+
 .important-notice-balloon {
   -moz-border-radius: 5px;
   -o-border-radius: 5px;
@@ -1317,20 +1318,22 @@ beside the mugshot. */
   width: auto;
   overflow: hidden;
 }
+
 .important-notice-buttons {
-  width: 100%;
-  text-align: right;
+  float: right;
 }
+
 .important-notice-cancel-button {
   visibility: hidden;
   cursor: pointer;
 }
+
 .important-notice {
-  //background: url(/@@/info-large) center left no-repeat;
   padding: 0px 0px 40px 0px;
   height: 32px;
   overflow: hidden;
 }
+
 .important-notice a {
   font-weight: bold;
   color: black;

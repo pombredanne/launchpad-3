@@ -397,7 +397,13 @@ class POFileTranslateView(BaseTranslationView):
 
     @cachedproperty
     def translation_group(self):
-        """Is there a translation group for this translation?"""
+        """Is there a translation group for this translation?
+
+        :return: TranslationGroup or None if not found.
+        """
+        # XXX 2009-02-20 Danilo (bug #332044): potemplate.translationgroups
+        # provides a list of translation groups even if it can have at
+        # most one.
         translation_groups = self.context.potemplate.translationgroups
         if translation_groups is not None and len(translation_groups) > 0:
             group = translation_groups[0]
@@ -407,8 +413,12 @@ class POFileTranslateView(BaseTranslationView):
 
     @cachedproperty
     def translation_team(self):
+        """Is there a translation group for this translation."""
         group = self.translation_group
-        team = group.query_translator(self.context.language)
+        if group is not None:
+            team = group.query_translator(self.context.language)
+        else:
+            team = None
         return team
 
     @cachedproperty

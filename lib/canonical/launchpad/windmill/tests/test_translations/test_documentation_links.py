@@ -89,13 +89,15 @@ class DocumentationLinksTest:
                                         timeout=u'8000')
 
         # Navigating to the next page of this translation doesn't show
-        # the documentation box.
+        # the notification box.
         client.click(classname=u'next')
         client.waits.forPageLoad(timeout=u'20000')
         client.asserts.assertProperty(classname=u'important-notice-container',
                                       validator=u'style.display|none')
 
-        # Looking at Catalan translation instead shows the notice box again.
+        # Look at Catalan translations page to make sure that the
+        # notification box is visible even though user dismissed Spanish
+        # translation notification.
         client.waits.forElement(
             link=u'Template "evolution-2.2" in Evolution trunk',
             timeout=u'8000')
