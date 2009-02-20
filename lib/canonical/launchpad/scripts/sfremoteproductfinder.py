@@ -54,6 +54,10 @@ class SourceForgeRemoteProductFinder:
         # Find the Tracker link and fetch that.
         tracker_link = soup.find('a', text='Tracker')
         tracker_url = tracker_link.findParent()['href']
+
+        # Clean any leading '/' from tracker_url so that urlappend
+        # doesn't choke on it.
+        tracker_url = tracker_url.lstrip('/')
         soup = BeautifulSoup(self._getPage(tracker_url))
 
         # Extract the group_id and atid from the bug tracker link.

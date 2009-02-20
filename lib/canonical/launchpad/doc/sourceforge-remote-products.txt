@@ -58,7 +58,7 @@ atid therein as an ampersand-separated string.
     >>> remote_product = finder.getRemoteProductFromSourceForge(
     ...     'fronobulator')
     DEBUG...Getting page projects/fronobulator
-    DEBUG...Getting page /tracker/?group_id=5570
+    DEBUG...Getting page tracker/?group_id=5570
 
     >>> print remote_product
     5570&105570
