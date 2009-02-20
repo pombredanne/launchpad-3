@@ -1950,7 +1950,7 @@ def send_direct_contact_email(
         message['Message-ID'] = make_msgid('launchpad')
         message['X-Launchpad-Message-Rationale'] = rational_header
         # Send the message.
-        sendmail(message)
+        sendmail(message, bulk=False)
     # BarryWarsaw 19-Nov-2008: If any messages were sent, record the fact that
     # the sender contacted the team.  This is not perfect though because we're
     # really recording the fact that the person contacted the last member of
