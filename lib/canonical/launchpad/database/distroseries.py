@@ -103,7 +103,8 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
+    TranslationUnavailable)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
