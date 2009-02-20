@@ -485,7 +485,7 @@ class BatchingResourceMixin:
     """A mixin for resources that need to batch lists of entries."""
 
     def __init__(self, context, request):
-        super(ReadWriteResource, self).__init__(context, request)
+        super(BatchingResourceMixin, self).__init__(context, request)
 
     def batch(self, entries, request):
         """Prepare a batch from a (possibly huge) list of entries.
@@ -524,7 +524,7 @@ class CustomOperationResourceMixin:
     """A mixin for resources that implement a collection-entry pattern."""
 
     def __init__(self, context, request):
-        super(ReadWriteResource, self).__init__(context, request)
+        super(CustomOperationResourceMixin, self).__init__(context, request)
 
     def handleCustomGET(self, operation_name):
         """Execute a custom search-type operation triggered through GET.

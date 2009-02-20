@@ -1,4 +1,8 @@
 It's possible to get the value of one particular field.
 
     >>> print webservice.get('/~salgado/display_name')
-    ''
+    HTTP/1.1 200 Ok
+    ...
+    Content-Type: application/json
+    ...
+    "Guilherme Salgado"
