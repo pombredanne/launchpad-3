@@ -796,12 +796,12 @@ finally name).
     ...     person, DEFAULT_BRANCH_STATUS_IN_LISTING)
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
-    New ~person/a/b
+    Development ~person/a/b
     Mature ~other/b/a
     Mature ~person/b/a
-    New ~person/b/b
-    New ~person/b/c
-    New ~person/+junk/junk
+    Development ~person/b/b
+    Development ~person/b/c
+    Development ~person/+junk/junk
 
     >>> branches = branchset.getBranchesForContext(
     ...     person, DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -810,10 +810,10 @@ finally name).
     ...     print branch.lifecycle_status.title, branch.unique_name
     Mature ~other/b/a
     Mature ~person/b/a
-    New ~person/a/b
-    New ~person/b/b
-    New ~person/b/c
-    New ~person/+junk/junk
+    Development ~person/a/b
+    Development ~person/b/b
+    Development ~person/b/c
+    Development ~person/+junk/junk
 
 In order to further restrict the branches that are returned for a person
 there is the BranchPersonSearchContext, which has a restriction from
@@ -840,13 +840,13 @@ A BranchPersonSearchContext takes a person and a restriction.
     ~name12/gnome-terminal/slowness
     ~name12/gnome-terminal/2.6
     ~name12/gnome-terminal/main
-    ~name12/gnome-terminal/klingon
     ~name12/gnome-terminal/mirrored
     ~name12/gnome-terminal/pushed
     ~name12/gnome-terminal/scanned
+    ~name12/gnome-terminal/klingon
     ~landscape-developers/landscape/trunk
-    ~name12/+junk/junk.dev
     ~name12/+junk/junk.contrib
+    ~name12/+junk/junk.dev
 
     >>> search_context = BranchPersonSearchContext(
     ...     sample_person, BranchPersonSearchRestriction.SUBSCRIBED)
@@ -871,20 +871,20 @@ extra display information.
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.owner.displayname,
     ...     print branch.unique_name
-    New Launchpad Developers ~launchpad/gnome-terminal/launchpad
+    Development Launchpad Developers ~launchpad/gnome-terminal/launchpad
     Mature Sample Person ~name12/gnome-terminal/2.6
     Development Sample Person ~name12/gnome-terminal/main
+    Development Sample Person ~name12/gnome-terminal/mirrored
+    Development Sample Person ~name12/gnome-terminal/pushed
+    Development Sample Person ~name12/gnome-terminal/scanned
     Experimental Sample Person ~name12/gnome-terminal/klingon
-    New Sample Person ~name12/gnome-terminal/mirrored
-    New Sample Person ~name12/gnome-terminal/pushed
-    New Sample Person ~name12/gnome-terminal/scanned
-    New VCS imports ~vcs-imports/gnome-terminal/import
+    Development VCS imports ~vcs-imports/gnome-terminal/import
 
     >>> branches = branchset.getBranchesForContext(
-    ...     gnome_terminal, [BranchLifecycleStatus.DEVELOPMENT])
+    ...     gnome_terminal, [BranchLifecycleStatus.EXPERIMENTAL])
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
-    Development ~name12/gnome-terminal/main
+    Experimental ~name12/gnome-terminal/klingon
 
 
 == Getting branches for a project ==
@@ -901,12 +901,12 @@ products that belong to a given project.
     ...         print branch.lifecycle_status.title, branch.unique_name
 
     >>> printMozillaBranches()
-    New ~name12/firefox/main
-    New ~sabdfl/firefox/release--0.9.1
-    New ~sabdfl/firefox/release-0.8
-    New ~sabdfl/firefox/release-0.9
-    New ~sabdfl/firefox/release-0.9.2
-    New ~stevea/thunderbird/main
+    Development ~name12/firefox/main
+    Development ~sabdfl/firefox/release--0.9.1
+    Development ~sabdfl/firefox/release-0.8
+    Development ~sabdfl/firefox/release-0.9
+    Development ~sabdfl/firefox/release-0.9.2
+    Development ~stevea/thunderbird/main
 
 Filtering by status must work here too.
 
