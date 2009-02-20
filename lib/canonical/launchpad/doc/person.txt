@@ -245,7 +245,7 @@ We can't adapt an account which has no person associated with, though.
     ...     AccountCreationRationale, IAccountSet)
     >>> personless_account = getUtility(IAccountSet).new(
     ...     AccountCreationRationale.UNKNOWN, 'Display name')
-    >>> IPerson(personless_account, None)
+    >>> print IPerson(personless_account, None)
     None
 
 

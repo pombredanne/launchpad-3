@@ -30,8 +30,8 @@ checkid_setup request, sending the user to Launchpad:
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
 
-At this point, we are at the login page.  Lets try to create a new
-account for an email address that has already been registered:
+At this point, we are at the login page.  Let's create a new account for
+an email address that has not been registered:
 
     >>> print browser.title
     Launchpad Login Service

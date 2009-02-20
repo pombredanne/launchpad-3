@@ -323,10 +323,6 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
             # It should be possible to do the login before this and avoid
             # this hack. In case the user doesn't want to be logged in
             # automatically we can log him out after doing what we want.
-            # XXX: Steve Alexander 2005-03-18:
-            #      Local import, because I don't want this import copied
-            #      elsewhere! This code is to be removed when the
-            #      UpgradeToBusinessClass specification is implemented.
             from zope.security.proxy import removeSecurityProxy
             naked_person = removeSecurityProxy(person)
             #      end of evil code.
