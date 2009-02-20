@@ -46,12 +46,10 @@ class RecordingSlave:
         return '<%s:%s>' % (self.name, self.url)
 
     def ensurepresent(self, *args):
-        print('RS: ensurepresent()')
         self.calls.append(('ensurepresent', args))
         return (True, 'Download')
 
     def build(self, *args):
-        print('RS: build()')
         self.calls.append(('build', args))
         return ('BuilderStatus.BUILDING', args[0])
 
@@ -67,7 +65,6 @@ class RecordingSlave:
 
         :return: a (stdout, stderr, subprocess exitcode) triple
         """
-        print('RS: resumeHost()')
         self.resume = True
         logger.debug("Recording slave reset request for %s", self.url)
         self.resume_argv = resume_argv
@@ -82,7 +79,6 @@ class RecordingSlave:
 
         :return: a deferred
         """
-        print('RS: resumeSlaveHost()')
         d = utils.getProcessOutputAndValue(
             self.resume_argv[0], self.resume_argv[1:])
         return d
@@ -141,14 +137,12 @@ class BuilddProxy:
     @write_transaction
     def resetBuilder(self, name):
         newInteraction()
-        print('RESET')
         builder = getUtility(IBuilderSet)[name]
         self._cleanJob(builder.currentjob)
 
     @write_transaction
     def dispatchFail(self, error, name):
         newInteraction()
-        print('ERROR')
         builder = getUtility(IBuilderSet)[name]
         builder.failbuilder(error)
         self._cleanJob(builder.currentjob)
@@ -158,8 +152,7 @@ class BuilddManager(service.Service):
 
     def __init__(self):
         self.buildd_proxy = BuilddProxy()
-        self.runningJobs = 0
-        self.logger = logging.getLogger('slave-scanner')
+        self.running_jobs = 0
 
     def startService(self):
         deferred = deferToThread(self.scan)
@@ -171,58 +164,66 @@ class BuilddManager(service.Service):
     def checkResume(self, response, name):
         out, err, code = response
         if code != 0:
-            self.logger.debug('RESUME FAIL: %s/%s' % (name, response))
             self.buildd_proxy.resetBuilder(name)
+            return False
+        return True
+
+    def checkDispatch(self, response, name):
+        status, info = response
+        if not status:
+            self.buildd_proxy.dispatchFail(info, name)
 
     def resumeAndDispatch(self, recording_slaves):
-        self.logger.debug('BM: resumeAndDispatch()')
-        self.logger.debug('RESUME/DISPATCH: %s' % recording_slaves)
-
         for slave in recording_slaves:
-            self.runningJobs += 1
+            self.running_jobs += 1
             if slave.resume:
-                self.logger.debug('RESUME: yes')
                 # The buildd slave needs to be reset before we can dispatch
                 # builds to it.
                 d = slave.resumeSlaveHost()
                 d.addCallback(self.checkResume, slave.name)
             else:
-                self.logger.debug('RESUME: no')
                 # Buildd slave is clean, we can dispatch a build to it
                 # straightaway.
                 d = defer.maybeDeferred(lambda: True)
             d.addCallback(self.dispatchBuild, slave)
             d.addBoth(self.stopWhenDone)
 
+    def _getProxyForSlave(self, slave):
+        """Return a twisted.web.xmlrpc.Proxy for the buildd slave.
+
+        XXX: setup it in a way it has a timeout of
+        'config.builddmaster.socket_timeout' seconds.
+        """
+        return Proxy(str(urlappend(slave.url, 'rpc')))
+
     def dispatchBuild(self, resume_ok, slave):
-        self.logger.debug('in BM: dispatchBuild()')
-        self.logger.debug('DISPATCH: %s/%s' % (resume_ok, slave))
         # Stop right here if the buildd slave could not be reset.
         if not resume_ok:
-            return
+            return False
 
-        proxy = Proxy(str(urlappend(slave.url, 'rpc')))
+        proxy = self._getProxyForSlave(slave)
         for method, args in slave.calls:
-            self.runningJobs += 1
-            self.logger.debug('PROXY: %s/%s' % (method, args))
+            self.running_jobs += 1
             d = proxy.callRemote(method, *args)
             d.addCallback(self.checkDispatch, slave.name)
-            d.addErrback(self.dispatchFail, slave.name)
-            d.addBoth(self.stopWhenDone)
 
-        self.logger.debug('out BM: dispatchBuild()')
+        return True
+
+    def gameOver(self):
+        """Stops the reactor.
+
+        It is usually overridden for tests.
+        """
+        reactor.stop()
 
     def stopWhenDone(self, result):
-        self.logger.debug('STOP: %s' % self.runningJobs)
-        self.runningJobs -= 1
-        if self.runningJobs <= 0:
-            reactor.stop()
+        """Finishes the process if there are no 'running jobs'.
 
-    def checkDispatch(self, response, name):
-        status, info = response
-        if not status:
-            self.logger.debug('DISPATCH FAIL: %s/%s' % (name, response))
-            self.buildd_proxy.resetBuilder(name)
+        See `gameOver`.
+        """
+        self.running_jobs -= 1
+        if self.running_jobs <= 0:
+            self.gameOver()
 
 if __name__ == "__main__":
     from canonical.config import dbconfig
