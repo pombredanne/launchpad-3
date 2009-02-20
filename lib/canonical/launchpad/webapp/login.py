@@ -231,8 +231,11 @@ class LoginOrRegister:
         appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        if (principal is not None
-            and principal.person.account_status == AccountStatus.DEACTIVATED):
+        if IOpenIDPrincipal.providedBy(principal):
+            logInPrincipalAndMaybeCreatePerson(self.request, principal, email)
+            self.redirectMinusLogin()
+        elif (principal is not None and
+              principal.person.account_status == AccountStatus.DEACTIVATED):
             self.login_error = _(
                 'The email address belongs to a deactivated account. '
                 'Use the "Forgotten your password" link to reactivate it.')
