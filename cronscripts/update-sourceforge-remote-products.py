@@ -2,7 +2,7 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0403
 
-"""Cron job to update Product.remote_product using SourceForge products."""
+"""Cron job to update remote_products using SourceForge project data."""
 
 import time
 import _pythonpath
