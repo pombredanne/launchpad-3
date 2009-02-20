@@ -315,51 +315,53 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         the LoginToken (self.context) used is consumed, so nobody can use
         it again.
         """
-        emailset = getUtility(IEmailAddressSet)
-        emailaddress = emailset.getByEmail(self.context.email)
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(
+            self.context.email)
         person = emailaddress.person
+        if person is not None:
+            # XXX: Guilherme Salgado 2006-09-27 bug=62674:
+            # It should be possible to do the login before this and avoid
+            # this hack. In case the user doesn't want to be logged in
+            # automatically we can log him out after doing what we want.
+            # XXX: Steve Alexander 2005-03-18:
+            #      Local import, because I don't want this import copied
+            #      elsewhere! This code is to be removed when the
+            #      UpgradeToBusinessClass specification is implemented.
+            from zope.security.proxy import removeSecurityProxy
+            naked_person = removeSecurityProxy(person)
+            #      end of evil code.
 
-        # XXX: Guilherme Salgado 2006-09-27 bug=62674:
-        # It should be possible to do the login before this and avoid
-        # this hack. In case the user doesn't want to be logged in
-        # automatically we can log him out after doing what we want.
-        # XXX: Steve Alexander 2005-03-18:
-        #      Local import, because I don't want this import copied
-        #      elsewhere! This code is to be removed when the
-        #      UpgradeToBusinessClass specification is implemented.
-        from zope.security.proxy import removeSecurityProxy
-        naked_person = removeSecurityProxy(person)
-        #      end of evil code.
+            # Suspended accounts cannot reset their password.
+            reason = ('Your password cannot be reset because your account '
+                      'is suspended.')
+            if self.accountWasSuspended(naked_person, reason):
+                return
+            # Reset password can be used to reactivate a deactivated account.
+            elif naked_person.account.status == AccountStatus.DEACTIVATED:
+                naked_person.reactivateAccount(
+                    comment=
+                        "User reactivated the account using reset password.",
+                    password=data['password'],
+                    preferred_email=emailaddress)
+                self.request.response.addInfoNotification(
+                    _('Welcome back to Launchpad.'))
+            else:
+                naked_person.password = data.get('password')
 
-        # Suspended accounts cannot reset their password.
-        reason = ('Your password cannot be reset because your account '
-            'is suspended.')
-        if self.accountWasSuspended(naked_person, reason):
-            return
-        # Reset password can be used to reactivate a deactivated account.
-        elif naked_person.account.status == AccountStatus.DEACTIVATED:
-            naked_person.reactivateAccount(
-                comment="User reactivated the account using reset password.",
-                password=data['password'],
-                preferred_email=emailaddress)
-            self.request.response.addInfoNotification(
-                _('Welcome back to Launchpad.'))
-        else:
-            naked_person.password = data.get('password')
+            # Make sure this person has a preferred email address.
+            if naked_person.preferredemail != emailaddress:
+                # Must remove the security proxy of the email address because
+                # the user is not logged in at this point and we may need to
+                # change its status.
+                naked_person.validateAndEnsurePreferredEmail(
+                    removeSecurityProxy(emailaddress))
 
-        # Make sure this person has a preferred email address.
-        if naked_person.preferredemail != emailaddress:
-            # Must remove the security proxy of the email address because the
-            # user is not logged in at this point and we may need to change
-            # its status.
-            naked_person.validateAndEnsurePreferredEmail(
-                removeSecurityProxy(emailaddress))
+            self.next_url = canonical_url(person)
 
         self.context.consume()
 
         self.logInPrincipalByEmail(self.context.email)
 
-        self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
             _('Your password has been reset successfully.'))
 

@@ -36,6 +36,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.components.openidserver import (
     OpenIDPersistentIdentity, CurrentOpenIDEndPoint)
+from canonical.launchpad.interfaces.account import IAccountSet, AccountStatus
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.logintoken import (
@@ -661,22 +662,30 @@ class LoginServiceLoginView(LoginServiceBaseView):
             self.addError('Please enter a valid email address.')
             return
 
-        person = getUtility(IPersonSet).getByEmail(email)
+        account = getUtility(IAccountSet).getByEmail(email)
         if action == 'login':
             self.validateEmailAndPassword(email, password)
         elif action == 'resetpassword':
-            if person is None:
+            if account is None:
+                # This may be a team's email address.
+                person = getUtility(IPersonSet).getByEmail(email)
+            else:
+                person = IPerson(account, None)
+            if account is None and person is None:
                 self.addError(_(
                     "Your account details have not been found. Please "
                     "check your subscription email address and try again."))
-            elif person.isTeam():
+            elif account is None and person.isTeam():
                 self.addError(
                     structured(_(
                     "The email address <strong>${email}</strong> can not be "
                     "used to log in as it belongs to a team.",
                     mapping=dict(email=email))))
+            else:
+                # Everything looks fine.
+                pass
         elif action == 'createaccount':
-            if person is not None and person.is_valid_person:
+            if account is not None and account.status == AccountStatus.ACTIVE:
                 self.addError(_(
                     "Sorry, someone has already registered the ${email} "
                     "email address.  If this is you and you've forgotten "
@@ -697,7 +706,10 @@ class LoginServiceLoginView(LoginServiceBaseView):
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
-            person = getUtility(IPersonSet).getByEmail(email)
+            account = getUtility(IAccountSet).getByEmail(email)
+            person = IPerson(account, None)
+            if person is None:
+                return
             if person.preferredemail is None:
                 self.addError(
                         _(
@@ -731,8 +743,9 @@ class LoginServiceLoginView(LoginServiceBaseView):
             loginsource = getUtility(IPlacelessLoginSource)
             principal = loginsource.getPrincipalByLogin(email)
             logInPrincipal(self.request, principal, email)
+            # XXX: Need to do something about this.
             # Update the attribute holding the cached user.
-            self._user = principal.person
+            #self._user = principal.person
             return self.renderOpenIDResponse(self.createPositiveResponse())
         elif action == 'resetpassword':
             return self.process_password_recovery(email)
@@ -753,7 +766,11 @@ class LoginServiceLoginView(LoginServiceBaseView):
         return self.email_sent_template()
 
     def process_password_recovery(self, email):
-        person = getUtility(IPersonSet).getByEmail(email)
+        # XXX: salgado, 2009-02-20: This (person = None) is a quick hack to
+        # make it possible for us to use LoginToken to reset the passwords of
+        # personless accounts.  The correct fix is to use AuthToken, which
+        # takes an account rather than a person.
+        person = None
         logintokenset = getUtility(ILoginTokenSet)
         self.token = logintokenset.new(
             person, email, email, LoginTokenType.PASSWORDRECOVERY)

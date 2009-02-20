@@ -88,6 +88,60 @@ the Person table for it.
     None
     >>> logout()
 
+That account can obviously be used in further OpenID interactions.
+
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(PROTOCOL_URI))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
+    >>> print browser.title
+    Launchpad Login Service
+    >>> browser.getControl(name='field.email').value = 'new-user@example.com'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl('Continue').click()
+
+    # Here we see the OpenID interaction completed successfully.
+    >>> info = complete_from_browser(consumer, browser, expected_claimed_id)
+    >>> print info.status
+    success
+
+If the user forgets their password, it's possible to reset it.
+
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(PROTOCOL_URI))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
+    >>> print browser.title
+    Launchpad Login Service
+    >>> browser.getControl(name='field.email').value = 'new-user@example.com'
+    >>> browser.getControl("I've forgotten my password").click()
+    >>> browser.getControl('Continue').click()
+
+    >>> soup = find_main_content(browser.contents)
+    >>> print soup.find('h1').renderContents()
+    Forgotten your password?
+
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> token_url = get_token_url_from_email(msg)
+    >>> browser.open(token_url)
+    >>> print browser.url
+    http://.../+resetpassword
+
+    >>> browser.getControl('Email').value = 'new-user@example.com'
+    >>> browser.getControl('Password').value = 'test2'
+    >>> browser.getControl(name='field.password_dupe').value = 'test2'
+    >>> browser.getControl('Continue').click()
+
+    # Here we see the OpenID interaction completed successfully.
+    >>> info = complete_from_browser(consumer, browser, expected_claimed_id)
+    >>> print info.status
+    success
+
+
+== Browsing launchpad.net ==
+
 If the user uses the same browser "window" to navigate into Launchpad,
 they will see everything just like an anonymous user would.
 
@@ -109,7 +163,7 @@ an associated Person entry for that account.
     >>> browser.handleErrors = False
     >>> browser.getControl(
     ...     'E-mail address:', index=0).value = 'new-user@example.com'
-    >>> browser.getControl('Password').value = 'test'
+    >>> browser.getControl('Password').value = 'test2'
     >>> browser.getControl('Log In').click()
 
     >>> browser.url
