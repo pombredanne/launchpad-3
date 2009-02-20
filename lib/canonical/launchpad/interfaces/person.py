@@ -1430,7 +1430,7 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPersonAdminWriteRestricted(Interface):
+class IPersonCommAdminWriteRestricted(Interface):
     """IPerson attributes that require launchpad.Admin permission to set."""
 
     visibility = exported(
@@ -1482,7 +1482,7 @@ class IPersonSpecialRestricted(Interface):
 
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IPersonAdminWriteRestricted, IPersonSpecialRestricted,
+              IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
               IHasStanding, ISetLocation):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
