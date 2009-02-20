@@ -107,38 +107,6 @@ class TestBuilddManager(TrialTestCase):
         self.stopped = False
         self.test_proxy = TestWebProxy()
 
-    def testScannedSlaves(self):
-        slaves = self.manager.scan()
-        self.assertEqual(['foo', 'bar'], [slave.name for slave in slaves])
-
-    def testCheckResumeOK(self):
-        successful_response = ('', '', 0)
-        result = self.manager.checkResume(
-            successful_response, 'foo')
-        self.assertTrue(result)
-        self.assertEqual(
-            [], self.manager.buildd_proxy.builders_reset)
-
-    def testCheckResumeFAILED(self):
-        failed_response = ('', '', 1)
-        result = self.manager.checkResume(
-            failed_response, 'foo')
-        self.assertFalse(result)
-        self.assertEqual(
-            ['foo'], self.manager.buildd_proxy.builders_reset)
-
-    def testCheckDispatchOK(self):
-        successful_response = (True, 'cool builder')
-        self.manager.checkDispatch(successful_response, 'foo')
-        self.assertEqual(
-            [], self.manager.buildd_proxy.builders_reset)
-
-    def testCheckDispatchFAILED(self):
-        failed_response = (False, 'uncool builder')
-        self.manager.checkDispatch(failed_response, 'foo')
-        self.assertEqual(
-            ['foo'], self.manager.buildd_proxy.builders_reset)
-
     def testStopWhenDone(self):
         self.assertEqual(0, self.manager.running_jobs)
 
@@ -154,6 +122,37 @@ class TestBuilddManager(TrialTestCase):
         self.manager.stopWhenDone('ignore-me')
         self.assertEqual(0, self.manager.running_jobs)
         self.assertTrue(self.stopped, 'Boing')
+
+    def testScannedSlaves(self):
+        slaves = self.manager.scan()
+        self.assertEqual(['foo', 'bar'], [slave.name for slave in slaves])
+
+    def testCheckResume(self):
+        successful_response = ('', '', 0)
+        result = self.manager.checkResume(
+            successful_response, 'foo')
+        self.assertTrue(result)
+        self.assertEqual(
+            [], self.manager.buildd_proxy.builders_reset)
+
+        failed_response = ('', '', 1)
+        result = self.manager.checkResume(
+            failed_response, 'foo')
+        self.assertFalse(result)
+        self.assertEqual(
+            ['foo'], self.manager.buildd_proxy.builders_reset)
+
+    def testCheckDispatch(self):
+        successful_response = (True, 'cool builder')
+        self.manager.checkDispatch(successful_response, 'foo')
+        self.assertEqual(
+            [], self.manager.buildd_proxy.dispatch_failures)
+
+        failed_response = (False, 'uncool builder')
+        self.manager.checkDispatch(failed_response, 'foo')
+        self.assertEqual(
+            [('foo', 'uncool builder')],
+             self.manager.buildd_proxy.dispatch_failures)
 
     def testDispatchBuild(self):
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/')
@@ -177,6 +176,17 @@ class TestBuilddManager(TrialTestCase):
             self.test_proxy.calls)
         self.assertEqual(
             [], self.manager.buildd_proxy.builders_reset)
+        self.assertEqual(
+            [], self.manager.buildd_proxy.dispatch_failures)
+
+        self.test_proxy = TestWebProxy(False)
+        result = self.manager.dispatchBuild(True, slave)
+        # Reseting only once it enough.
+        self.assertEqual(
+            [], self.manager.buildd_proxy.builders_reset)
+        self.assertEqual(
+            [('foo', None), ('foo', None)],
+            self.manager.buildd_proxy.dispatch_failures)
 
 
 def test_suite():

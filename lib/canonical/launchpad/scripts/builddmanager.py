@@ -171,7 +171,7 @@ class BuilddManager(service.Service):
     def checkDispatch(self, response, name):
         status, info = response
         if not status:
-            self.buildd_proxy.resetBuilder(name)
+            self.buildd_proxy.dispatchFail(info, name)
 
     def resumeAndDispatch(self, recording_slaves):
         for slave in recording_slaves:
@@ -206,7 +206,6 @@ class BuilddManager(service.Service):
             self.running_jobs += 1
             d = proxy.callRemote(method, *args)
             d.addCallback(self.checkDispatch, slave.name)
-            d.addErrback(self.buildd_proxy.dispatchFail, slave.name)
 
         return True
 
