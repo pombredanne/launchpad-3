@@ -862,7 +862,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     def setContactAddress(email):
         """Set the given email address as this team's contact address.
 
-        This method must be used only for teams.
+        This method must be used only for teams, unless the disable argument
+        is True.
 
         If the team has a contact address its status will be changed to
         VALIDATED.
@@ -872,6 +873,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     def setPreferredEmail(email):
         """Set the given email address as this person's preferred one.
+
+        If ``email`` is None, the preferred email address is set to valid,
+        which will make the person invalid.
 
         This method must be used only for people, not teams.
         """
