@@ -68,6 +68,10 @@ class TestRecordinSlaves(TrialTestCase):
 
 class TestBuilddProxy:
 
+    def __init__(self):
+        self.builders_reset = []
+        self.dispatch_failures = []
+
     def scanAllBuilders(self):
         fake_slaves = (
             RecordingSlave(name, 'http://%s:8221/rpc/')
@@ -75,10 +79,21 @@ class TestBuilddProxy:
         return fake_slaves
 
     def resetBuilder(self, name):
-        pass
+        self.builders_reset.append(name)
 
     def dispatchFail(self, error, name):
-        pass
+        self.dispatch_failures.append((name, error))
+
+
+class TestWebProxy:
+
+    def __init__(self, works=True):
+        self.works = works
+        self.calls = []
+
+    def callRemote(self, *args):
+        self.calls.append(args)
+        return defer.maybeDeferred(lambda: (self.works, None))
 
 
 class TestBuilddManager(TrialTestCase):
@@ -87,20 +102,81 @@ class TestBuilddManager(TrialTestCase):
 
     def setUp(self):
         TrialTestCase.setUp(self)
-
         self.manager = BuilddManager()
         self.manager.buildd_proxy = TestBuilddProxy()
-
-    def tearDown(self):
-        TrialTestCase.tearDown(self)
+        self.stopped = False
+        self.test_proxy = TestWebProxy()
 
     def testScannedSlaves(self):
-        def check_slaves(slaves):
-            self.assertEqual(
-                ['foo', 'bar'], [slave.name for slave in slaves])
-        d = defer.maybeDeferred(self.manager.scan)
-        d.addCallback(check_slaves)
-        return d
+        slaves = self.manager.scan()
+        self.assertEqual(['foo', 'bar'], [slave.name for slave in slaves])
+
+    def testCheckResumeOK(self):
+        successful_response = ('', '', 0)
+        result = self.manager.checkResume(
+            successful_response, 'foo')
+        self.assertTrue(result)
+        self.assertEqual(
+            [], self.manager.buildd_proxy.builders_reset)
+
+    def testCheckResumeFAILED(self):
+        failed_response = ('', '', 1)
+        result = self.manager.checkResume(
+            failed_response, 'foo')
+        self.assertFalse(result)
+        self.assertEqual(
+            ['foo'], self.manager.buildd_proxy.builders_reset)
+
+    def testCheckDispatchOK(self):
+        successful_response = (True, 'cool builder')
+        self.manager.checkDispatch(successful_response, 'foo')
+        self.assertEqual(
+            [], self.manager.buildd_proxy.builders_reset)
+
+    def testCheckDispatchFAILED(self):
+        failed_response = (False, 'uncool builder')
+        self.manager.checkDispatch(failed_response, 'foo')
+        self.assertEqual(
+            ['foo'], self.manager.buildd_proxy.builders_reset)
+
+    def testStopWhenDone(self):
+        self.assertEqual(0, self.manager.running_jobs)
+
+        def game_over():
+            self.stopped = True
+        self.manager.gameOver = game_over
+
+        self.manager.running_jobs = 2
+        self.manager.stopWhenDone('ignore-me')
+        self.assertEqual(1, self.manager.running_jobs)
+        self.assertFalse(self.stopped)
+
+        self.manager.stopWhenDone('ignore-me')
+        self.assertEqual(0, self.manager.running_jobs)
+        self.assertTrue(self.stopped, 'Boing')
+
+    def testDispatchBuild(self):
+        slave = RecordingSlave('foo', 'http://foo.buildd:8221/')
+        slave.ensurepresent('boing', 'bar', 'baz')
+        slave.build('boing', 'bar', 'baz')
+
+        result = self.manager.dispatchBuild(False, slave)
+        self.assertFalse(result)
+        self.assertEqual(0, self.manager.running_jobs)
+
+        def getTestProxy(slave):
+            return self.test_proxy
+        self.manager._getProxyForSlave = getTestProxy
+
+        result = self.manager.dispatchBuild(True, slave)
+        self.assertTrue(result)
+        self.assertEqual(2, self.manager.running_jobs)
+        self.assertEqual(
+            [('ensurepresent', 'boing', 'bar', 'baz'),
+             ('build', 'boing', 'bar', 'baz')],
+            self.test_proxy.calls)
+        self.assertEqual(
+            [], self.manager.buildd_proxy.builders_reset)
 
 
 def test_suite():

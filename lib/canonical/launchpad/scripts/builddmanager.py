@@ -152,7 +152,7 @@ class BuilddManager(service.Service):
 
     def __init__(self):
         self.buildd_proxy = BuilddProxy()
-        self.runningJobs = 0
+        self.running_jobs = 0
 
     def startService(self):
         deferred = deferToThread(self.scan)
@@ -165,10 +165,17 @@ class BuilddManager(service.Service):
         out, err, code = response
         if code != 0:
             self.buildd_proxy.resetBuilder(name)
+            return False
+        return True
+
+    def checkDispatch(self, response, name):
+        status, info = response
+        if not status:
+            self.buildd_proxy.resetBuilder(name)
 
     def resumeAndDispatch(self, recording_slaves):
         for slave in recording_slaves:
-            self.runningJobs += 1
+            self.running_jobs += 1
             if slave.resume:
                 # The buildd slave needs to be reset before we can dispatch
                 # builds to it.
@@ -181,25 +188,41 @@ class BuilddManager(service.Service):
             d.addCallback(self.dispatchBuild, slave)
             d.addBoth(self.stopWhenDone)
 
+    def _getProxyForSlave(self, slave):
+        """Return a twisted.web.xmlrpc.Proxy for the buildd slave.
+
+        XXX: setup it in a way it has a timeout of
+        'config.builddmaster.socket_timeout' seconds.
+        """
+        return Proxy(str(urlappend(slave.url, 'rpc')))
+
     def dispatchBuild(self, resume_ok, slave):
         # Stop right here if the buildd slave could not be reset.
         if not resume_ok:
-            return
+            return False
 
-        proxy = Proxy(str(urlappend(slave.url, 'rpc')))
+        proxy = self._getProxyForSlave(slave)
         for method, args in slave.calls:
-            self.runningJobs += 1
+            self.running_jobs += 1
             d = proxy.callRemote(method, *args)
             d.addCallback(self.checkDispatch, slave.name)
-            d.addErrback(self.dispatchFail, slave.name)
+            d.addErrback(self.buildd_proxy.dispatchFail, slave.name)
+
+        return True
+
+    def gameOver(self):
+        """Stops the reactor.
+
+        It is usually overridden for tests.
+        """
+        reactor.stop()
 
     def stopWhenDone(self, result):
-        self.runningJobs -= 1
-        if self.runningJobs <= 0:
-            reactor.stop()
+        """Finishes the process if there are no 'running jobs'.
 
-    def checkDispatch(self, response, name):
-        status, info = response
-        if not status:
-            self.buildd_proxy.resetBuilder(name)
+        See `gameOver`.
+        """
+        self.running_jobs -= 1
+        if self.running_jobs <= 0:
+            self.gameOver()
 
