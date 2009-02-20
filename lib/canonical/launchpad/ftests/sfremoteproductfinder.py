@@ -13,7 +13,7 @@ from canonical.launchpad.scripts.sfremoteproductfinder import (
 class TestSFRemoteProductFinder(SourceForgeRemoteProductFinder):
 
     def _getPage(self, page):
-        self.logger.info("Getting page %s" % page)
+        self.logger.debug("Getting page %s" % page)
 
         project_re = re.compile('projects/([a-z]+)')
         tracker_re = re.compile('/?tracker/\?group_id=([0-9]+)')

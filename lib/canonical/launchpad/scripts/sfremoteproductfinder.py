@@ -79,7 +79,7 @@ class SourceForgeRemoteProductFinder:
             # None.
             return None
 
-        return '%s&%s' % (group_id, atid)
+        return u'%s&%s' % (group_id, atid)
 
     def setRemoteProductsFromSourceForge(self):
         """Find and set the remote product for SF-linked Products."""
@@ -91,4 +91,9 @@ class SourceForgeRemoteProductFinder:
             products_to_update.count())
 
         for product in products_to_update:
-            pass
+            self.txn.begin()
+            self.logger.debug(
+                "Updating remote_product for Product '%s'" % product.name)
+            product.remote_product = self.getRemoteProductFromSourceForge(
+                product.sourceforgeproject)
+            self.txn.commit()
