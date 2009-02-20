@@ -48,82 +48,93 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         batch_navigator = view.proposals
         # There will only be one item in the list of proposals.
         [listing_item] = batch_navigator.proposals
-        return listing_item.vote_summary
+        return (list(listing_item.vote_summary_items),
+                listing_item.comment_count)
 
     def test_no_votes_or_comments(self):
         # If there are no votes or comments, then we show that.
         proposal = self.factory.makeBranchMergeProposal()
-        self.assertEqual(
-            '<em>None</em>',
-            self._get_vote_summary(proposal))
+        summary, comment_count = self._get_vote_summary(proposal)
+        self.assertEqual([], summary)
+        self.assertEqual(0, comment_count)
 
     def test_no_votes_with_comments(self):
         # The comment count is shown.
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(proposal)
-        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
-        self.assertEqual(
-            'Comments:&nbsp;1',
-            self._get_vote_summary(proposal))
+        summary, comment_count = self._get_vote_summary(proposal)
+        self.assertEqual([], summary)
+        self.assertEqual(1, comment_count)
 
     def test_vote_without_comment(self):
         # If there are no comments we don't show a count.
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(
             proposal, vote=CodeReviewVote.APPROVE, comment=None)
-        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
+        summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
-            '<span class="voteAPPROVE">Approve:&nbsp;1</span>',
-            self._get_vote_summary(proposal))
+            [{'name': 'APPROVE', 'title':'Approve', 'count':1,
+              'reviewers': ''}],
+            summary)
+        self.assertEqual(0, comment_count)
 
     def test_vote_with_comment(self):
         # A vote with a comment counts as a vote and a comment.
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.APPROVE)
-        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
+        summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
-            '<span class="voteAPPROVE">Approve:&nbsp;1</span>, '
-            'Comments:&nbsp;1',
-            self._get_vote_summary(proposal))
+            [{'name': 'APPROVE', 'title':'Approve', 'count':1,
+              'reviewers': ''}],
+            summary)
+        self.assertEqual(1, comment_count)
 
     def test_disapproval(self):
         # Shown as Disapprove: <count>.
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.DISAPPROVE)
-        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
+        summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
-            '<span class="voteDISAPPROVE">Disapprove:&nbsp;1</span>, '
-            'Comments:&nbsp;1',
-            self._get_vote_summary(proposal))
+            [{'name': 'DISAPPROVE', 'title':'Disapprove', 'count':1,
+              'reviewers': ''}],
+            summary)
+        self.assertEqual(1, comment_count)
 
     def test_abstain(self):
         # Shown as Abstain: <count>.
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.ABSTAIN)
-        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
+        summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
-            '<span class="voteABSTAIN">Abstain:&nbsp;1</span>, '
-            'Comments:&nbsp;1',
-            self._get_vote_summary(proposal))
+            [{'name': 'ABSTAIN', 'title':'Abstain', 'count':1,
+              'reviewers': ''}],
+            summary)
+        self.assertEqual(1, comment_count)
 
     def test_vote_ranking(self):
         # Votes go from best to worst.
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.DISAPPROVE)
         self._createComment(proposal, vote=CodeReviewVote.APPROVE)
-        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
+        summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
-            '<span class="voteAPPROVE">Approve:&nbsp;1</span>, '
-            '<span class="voteDISAPPROVE">Disapprove:&nbsp;1</span>, '
-            'Comments:&nbsp;2',
-            self._get_vote_summary(proposal))
+            [{'name': 'APPROVE', 'title':'Approve', 'count':1,
+              'reviewers': ''},
+             {'name': 'DISAPPROVE', 'title':'Disapprove', 'count':1,
+              'reviewers': ''}],
+            summary)
+        self.assertEqual(2, comment_count)
         self._createComment(proposal, vote=CodeReviewVote.ABSTAIN)
+        summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
-            '<span class="voteAPPROVE">Approve:&nbsp;1</span>, '
-            '<span class="voteABSTAIN">Abstain:&nbsp;1</span>, '
-            '<span class="voteDISAPPROVE">Disapprove:&nbsp;1</span>, '
-            'Comments:&nbsp;3',
-            self._get_vote_summary(proposal))
+            [{'name': 'APPROVE', 'title':'Approve', 'count':1,
+              'reviewers': ''},
+             {'name': 'ABSTAIN', 'title':'Abstain', 'count':1,
+              'reviewers': ''},
+             {'name': 'DISAPPROVE', 'title':'Disapprove', 'count':1,
+              'reviewers': ''}],
+            summary)
+        self.assertEqual(3, comment_count)
 
     def test_multiple_votes_for_type(self):
         # Multiple votes of a type are aggregated in the summary.
@@ -136,13 +147,16 @@ class TestProposalVoteSummary(TestCaseWithFactory):
             proposal, vote=CodeReviewVote.ABSTAIN, comment=None)
         self._createComment(
             proposal, vote=CodeReviewVote.APPROVE, comment=None)
-        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
+        summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
-            '<span class="voteAPPROVE">Approve:&nbsp;3</span>, '
-            '<span class="voteABSTAIN">Abstain:&nbsp;1</span>, '
-            '<span class="voteDISAPPROVE">Disapprove:&nbsp;2</span>, '
-            'Comments:&nbsp;4',
-            self._get_vote_summary(proposal))
+            [{'name': 'APPROVE', 'title':'Approve', 'count':3,
+              'reviewers': ''},
+             {'name': 'ABSTAIN', 'title':'Abstain', 'count':1,
+              'reviewers': ''},
+             {'name': 'DISAPPROVE', 'title':'Disapprove', 'count':2,
+              'reviewers': ''}],
+            summary)
+        self.assertEqual(4, comment_count)
 
 
 def test_suite():

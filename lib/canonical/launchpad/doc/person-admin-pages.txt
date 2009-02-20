@@ -1,0 +1,55 @@
+= Person admin pages =
+
+Admistrators can access a subset of any IPerson's fields from the UI.
+The PersonAdministerView is registered under the +review name.
+
+    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> login('foo.bar@canonical.com')
+    >>> admin = getUtility(IOpenLaunchBag).user
+    >>> user = factory.makePerson(name='a-user')
+    >>> view = create_initialized_view(user, '+review')
+    >>> check_permission('launchpad.Admin', view)
+    True
+    >>> print view.errors
+    []
+    >>> view.field_names
+    ['name', 'displayname', 'password',
+     'personal_standing',  'personal_standing_reason']
+    >>> view.label
+    'Review person'
+
+The PersonAdministerView allows Launchpad admins to change some
+of a user's attributes.
+
+    >>> old_password = user.password
+    >>> form = {
+    ...     'field.name': 'zaphod',
+    ...     'field.displayname': 'Zaphod Beeblebrox',
+    ...     'field.password': 'secret',
+    ...     'field.password_dupe': 'secret',
+    ...     'field.personal_standing': 'POOR',
+    ...     'field.personal_standing_reason': "Zaphod's just this guy.",
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(user, '+review', form=form)
+    >>> print view.errors
+    []
+    >>> print user.name
+    zaphod
+    >>> print user.displayname
+    Zaphod Beeblebrox
+    >>> user.password != old_password
+    True
+    >>> user.personal_standing
+    <DBItem PersonalStanding.POOR, ...>
+    >>> print user.personal_standing_reason
+    Zaphod's just this guy.
+
+Non administrators cannot access the +review view
+
+    >>> login_person(user)
+    >>> view = create_initialized_view(user, '+review')
+    >>> check_permission('launchpad.Admin', view)
+    False

@@ -45,9 +45,8 @@
     </li>
   </ul>
 
-
   <tal:built-packages condition="view/built_packages" omit-tag="">
-    <h3>Built Packages</h3>
+    <h3>Built packages</h3>
     <ul tal:repeat="package view/built_packages"
         style="margin-top: 0; margin-bottom: 0">
       <li>
@@ -57,14 +56,16 @@
     </ul>
   </tal:built-packages>
 
-  <h3>Download files from Librarian</h3>
+  <h3>Package files</h3>
   <span tal:condition="not: published_source_and_binary_files"
      style="padding-left: 1em">No files published for this package.</span>
-  <ul tal:repeat="file published_source_and_binary_files"
-      style="margin-top: 0; margin-bottom: 0">
-    <li><a tal:attributes ="href string:+files/${file/filename}"
-           tal:content="string:${file/filename}"></a>
-            (<span tal:content="file/filesize/fmt:bytes" />)</li>
+  <ul style="margin-top: 0; margin-bottom: 0">
+    <li tal:repeat="file published_source_and_binary_files"
+        tal:attributes="class string: package ${file/class}">
+      <a tal:attributes ="href string:+files/${file/filename}"
+         tal:content="file/filename"></a>
+         (<span tal:replace="file/filesize/fmt:bytes" />)
+    </li>
   </ul>
 
 </tal:root>

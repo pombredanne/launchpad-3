@@ -7,11 +7,21 @@ ExternalBugTracker works.
 
 == Basics ==
 
-The class that implements EBT is called Bugzilla. It works differently
-depending on which version of Bugzilla it is talking to. If it's a
-version we can't parse, UnparseableBugTrackerVersion is raised:
+The class that implements ExternalBugTracker is called Bugzilla.
 
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     IExternalBugTracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> external_bugzilla = Bugzilla('http://example.com')
+    >>> verifyObject(IExternalBugTracker, external_bugzilla)
+    True
+
+The Bugzilla ExternalBugTracker works differently depending on which
+version of Bugzilla it is talking to. If it's a version we can't parse,
+UnparseableBugTrackerVersion is raised:
+
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B4')
@@ -424,3 +434,40 @@ it can be displayed to the user.
     >>> bug_watch2 = getUtility(IBugWatchSet).get(bug_watch2_id)
     >>> bug_watch2.last_error_type.title
     'Unparsable Bug'
+
+
+== Getting Remote Product ==
+
+getRemoteProduct() returns the product a remote bug is associated with
+in Bugzilla. getRemoteProduct() has to be called after
+initializeRemoteBugDB() has been called, in order for the bug
+information to be fetched from the external Bugzilla instance.
+
+    >>> external_bugzilla = TestBugzilla()
+    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.initializeRemoteBugDB(['84'])
+    >>> external_bugzilla.remote_bug_product['84']
+    u'product-84'
+    >>> external_bugzilla.getRemoteProduct('84')
+    u'product-84'
+
+Sometimes we might not get the product in the bug listing. In these
+cases getRemoteProduct() returns None.
+
+    >>> external_bugzilla = TestBugzilla()
+    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> # Make the buglist XML not include the product tag.
+    >>> external_bugzilla.bug_item_file = 'gnome_bug_li_item_noproduct.xml'
+    >>> external_bugzilla.initializeRemoteBugDB(['84'])
+    >>> print external_bugzilla.getRemoteProduct('84')
+    None
+
+Requesting the product for a bug that doesn't exist raises BugNotFound.
+
+    >>> external_bugzilla = TestBugzilla()
+    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.initializeRemoteBugDB(['84'])
+    >>> external_bugzilla.getRemoteProduct('42')
+    Traceback (most recent call last):
+    ...
+    BugNotFound: 42

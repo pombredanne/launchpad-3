@@ -271,22 +271,25 @@ if [ ! -e $LPDEV_SOURCES ]; then
   sudo touch $LPDEV_SOURCES
 fi
 
-grep -q "^deb http://lpdebs.canonical.com/" $LPDEV_SOURCES
+LP_DEBS="deb http://lpdebs.canonical.com/${DISTRIB_CODENAME} ./"
+grep -q "^${LP_DEBS}" $LPDEV_SOURCES
 if [ $? -ne 0 ]; then
   echo "Adding lpdebs package repository to package source list."
-  echo "deb http://lpdebs.canonical.com/${DISTRIB_CODENAME} ./" | sudo tee -a $LPDEV_SOURCES
+  echo "$LP_DEBS" | sudo tee -a $LPDEV_SOURCES
 fi
 
-grep -q "^deb http://ppa.launchpad.net/launchpad/ppa/ubuntu intrepid/" $LPDEV_SOURCES
+LP_PPA="deb http://ppa.launchpad.net/launchpad/ppa/ubuntu ${DISTRIB_CODENAME} main"
+grep -q "^${LP_PPA}" $LPDEV_SOURCES
 if [ $? -ne 0 ]; then
   echo "Adding ~launchpad PPA repository to package source list."
-  echo "deb http://ppa.launchpad.net/launchpad/ppa/ubuntu intrepid main"  | sudo tee -a $LPDEV_SOURCES
+  echo "$LP_PPA"  | sudo tee -a $LPDEV_SOURCES
 fi
 
-grep -q "^deb http://ppa.launchpad.net/bzr/ubuntu" $LPDEV_SOURCES
+BZR_PPA="deb http://ppa.launchpad.net/bzr/ppa/ubuntu ${DISTRIB_CODENAME} main"
+grep -q "^${BZR_PPA}" $LPDEV_SOURCES
 if [ $? -ne 0 ]; then
   echo "Adding ~bzr PPA repository to package source list."
-  echo "deb http://ppa.launchpad.net/bzr/ppa/ubuntu ${DISTRIB_CODENAME} main" | sudo tee -a $LPDEV_SOURCES
+  echo "$BZR_PPA" | sudo tee -a $LPDEV_SOURCES
 fi
 
 # Get the key used to sign the launchpad-developer-dependencies in the PPA.
@@ -321,7 +324,7 @@ do_install() {
   }
 
 sudo aptitude update
-REQUIRED_PACKAGES="launchpad-developer-dependencies apache2"
+REQUIRED_PACKAGES="launchpad-developer-dependencies apache2 apache2-mpm-worker"
 for pkg in $REQUIRED_PACKAGES; do
   do_install;
 done
@@ -329,10 +332,6 @@ done
 # Create the document root(s) to avoid Apache warnings
 mkdir -p /var/tmp/bazaar.launchpad.dev/static
 mkdir -p /var/tmp/bazaar.launchpad.dev/mirrors
-
-# Create an empty rewritemap file so that Apache will start.
-mkdir -p /var/tmp/bazaar.launchpad.dev/config
-touch /var/tmp/bazaar.launchpad.dev/config/launchpad-lookup.txt
 
 sudo a2enmod proxy > /dev/null
 if [ $? -ne 0 ]; then

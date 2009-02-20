@@ -6,17 +6,19 @@ __metaclass__ = type
 
 from datetime import datetime
 from textwrap import dedent
-import transaction
 from unittest import TestCase, TestLoader
 
 from pytz import UTC
 from zope.component import getUtility
+import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+
 from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposalGetter, is_valid_transition)
-from canonical.launchpad.interfaces import WrongBranchMergeProposal
+    BranchMergeProposalGetter, CreateMergeProposalJob, is_valid_transition)
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -24,15 +26,15 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    IBranchMergeProposalGetter)
+    IBranchMergeProposalGetter, ICreateMergeProposalJob,
+    ICreateMergeProposalJobSource, WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
-
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from canonical.launchpad.webapp.testing import verifyObject
 
 
 class TestBranchMergeProposalTransitions(TestCaseWithFactory):
@@ -518,6 +520,34 @@ class TestMergeProposalGetComment(TestCase):
                           self.merge_proposal2.getComment, self.comment.id)
 
 
+class TestMergeProposalGetVoteReference(TestCaseWithFactory):
+    """Tester for `BranchMergeProposal.getComment`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        # Testing behavior, not permissions here.
+        login('foo.bar@canonical.com')
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        self.merge_proposal2 = self.factory.makeBranchMergeProposal()
+        self.vote = self.merge_proposal.nominateReviewer(
+            reviewer=self.merge_proposal.registrant,
+            registrant=self.merge_proposal.registrant)
+
+    def test_getVoteReference(self):
+        """Tests that we can get a comment."""
+        self.assertEqual(
+            self.vote, self.merge_proposal.getVoteReference(
+                self.vote.id))
+
+    def test_getVoteReferenceWrongBranchMergeProposal(self):
+        """Tests that we can get a comment."""
+        self.assertRaises(WrongBranchMergeProposal,
+                          self.merge_proposal2.getVoteReference,
+                          self.vote.id)
+
+
 class TestMergeProposalNotification(TestCaseWithFactory):
     """Test that events are created when merge proposals are manipulated"""
 
@@ -669,6 +699,22 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
         utility = getUtility(IBranchMergeProposalGetter)
         retrieved = utility.get(merge_proposal.id)
         self.assertEqual(merge_proposal, retrieved)
+
+    def test_getVotesForProposals(self):
+        # Check the resulting format of the dict.  getVotesForProposals
+        # returns a dict mapping merge proposals to a list of votes for that
+        # proposal.
+        mp_no_reviews = self.factory.makeBranchMergeProposal()
+        mp_with_reviews = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        login_person(mp_with_reviews.registrant)
+        vote_reference = mp_with_reviews.nominateReviewer(
+            reviewer, mp_with_reviews.registrant)
+        self.assertEqual(
+            {mp_no_reviews: [],
+             mp_with_reviews: [vote_reference]},
+            getUtility(IBranchMergeProposalGetter).getVotesForProposals(
+                [mp_with_reviews, mp_no_reviews]))
 
 
 class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
@@ -1036,6 +1082,48 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(comment, vote.comment)
         # Still only one vote.
         self.assertEqual(1, len(list(merge_proposal.votes)))
+
+
+class TestCreateMergeProposalJob(TestCaseWithFactory):
+    """Tests for CreateMergeProposalJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def test_providesInterface(self):
+        """The class and instances correctly implement their interfaces."""
+        verifyObject(ICreateMergeProposalJobSource, CreateMergeProposalJob)
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
+        job = CreateMergeProposalJob.create(file_alias)
+        job.context.sync()
+        verifyObject(IMessageJob, job)
+        verifyObject(ICreateMergeProposalJob, job)
+
+    def test_run_creates_proposal(self):
+        """CreateMergeProposalJob.run should create a merge proposal."""
+        message, file_alias, source, target = (
+            self.factory.makeMergeDirectiveEmail())
+        job = CreateMergeProposalJob.create(file_alias)
+        transaction.commit()
+        proposal, comment = job.run()
+        self.assertEqual(proposal.source_branch, source)
+        self.assertEqual(proposal.target_branch, target)
+
+    def test_iterReady_includes_ready_jobs(self):
+        """Ready jobs should be listed."""
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
+        job = CreateMergeProposalJob.create(file_alias)
+        self.assertEqual([job], list(CreateMergeProposalJob.iterReady()))
+
+    def test_iterReady_excludes_unready_jobs(self):
+        """Unready jobs should not be listed."""
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
+        job = CreateMergeProposalJob.create(file_alias)
+        job.job.start()
+        job.job.complete()
+        self.assertEqual([], list(CreateMergeProposalJob.iterReady()))
 
 
 class TestUpdatePreviewDiff(TestCaseWithFactory):

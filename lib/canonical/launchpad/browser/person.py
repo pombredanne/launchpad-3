@@ -11,6 +11,7 @@ __all__ = [
     'FOAFSearchView',
     'EmailToPersonView',
     'PersonActiveReviewsView',
+    'PersonAdministerView',
     'PersonAddView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
@@ -333,10 +334,20 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepto('+archive')
     def traverse_archive(self):
+
         if self.request.stepstogo:
-            # If the URL has a PPA name in it, use that.
+            # If the URL has something that could be a PPA name in it,
+            # use that, but just in case it fails, keep a copy
+            # of the traversal stack so we can try using the default
+            # archive afterwards:
+            traversal_stack = self.request.getTraversalStack()
             ppa_name = self.request.stepstogo.consume()
-            return traverse_named_ppa(self.context.name, ppa_name)
+
+            try:
+                return traverse_named_ppa(self.context.name, ppa_name)
+            except NotFoundError:
+                self.request.setTraversalStack(traversal_stack)
+                # and simply continue below...
 
         # Otherwise try to get the default PPA and if it exists redirect
         # to the new-style URL, if it doesn't, return None (to trigger a
@@ -1080,7 +1091,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+editsshkeys'
         text = 'Update SSH keys'
         summary = (
-            'Used if %s stores code on the Supermirror' %
+            'Used if %s stores code on Launchpad' %
             self.context.browsername)
         return Link(target, text, summary, icon='edit')
 
@@ -1088,7 +1099,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def editpgpkeys(self):
         target = '+editpgpkeys'
         text = 'Update OpenPGP keys'
-        summary = 'Used for the Supermirror, and when maintaining packages'
+        summary = 'Used when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -1761,6 +1772,33 @@ class PersonRdfContentsView:
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class PersonAdministerView(LaunchpadEditFormView):
+    """Administer an `IPerson`."""
+    schema = IPerson
+    label = "Review person"
+    field_names = [
+        'name', 'displayname', 'password',
+        'personal_standing',  'personal_standing_reason']
+    custom_widget('password', PasswordChangeWidget)
+    custom_widget(
+        'personal_standing_reason', TextAreaWidget, height=5, width=60)
+
+    @property
+    def next_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.context)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Update the IPerson."""
+        self.updateContextFromData(data)
 
 
 def userIsActiveTeamMember(team):

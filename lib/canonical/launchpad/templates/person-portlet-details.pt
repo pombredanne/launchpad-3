@@ -81,7 +81,7 @@
         >
         <strong>Membership:</strong><br />
         <tal:private_membership condition="not: can_view_membership">
-          You are not allowed to view this team's membership.
+          This team's membership list is private.
         </tal:private_membership>
         <tal:private_membership condition="can_view_membership">
           <tal:active content="context/all_member_count" />
