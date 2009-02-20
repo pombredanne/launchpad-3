@@ -256,10 +256,8 @@ class OpenIDMixin:
         values = {}
         values['fullname'] = self.account.displayname
         values['email'] = self.account.preferredemail.email
-        # XXX: Dear reviewer. I can't use "person is None" here because zope
-        # wraps the return of IPerson(account) above into a security proxy.
         person = IPerson(self.account, None)
-        if person:
+        if person is not None:
             values['nickname'] = person.name
             if person.time_zone is not None:
                 values['timezone'] = person.time_zone
@@ -291,9 +289,7 @@ class OpenIDMixin:
         assert self.account is not None, (
             'Must be logged in to calculate team membership')
         person = IPerson(self.account, None)
-        # XXX: Dear reviewer. I can't use "person is None" here because zope
-        # wraps the return of IPerson(account) above into a security proxy.
-        if not person:
+        if person is None:
             return
         args = self.openid_request.message.getArgs(LAUNCHPAD_TEAMS_NS)
         team_names = args.get('query_membership')
