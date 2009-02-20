@@ -5,6 +5,7 @@ import logging
 
 from twisted.application import service
 from twisted.internet import reactor, utils, defer
+from twisted.internet.threads import deferToThread
 from twisted.protocols.policies import TimeoutMixin
 from twisted.web.xmlrpc import Proxy, _QueryFactory, QueryProtocol
 
@@ -192,7 +193,6 @@ class BuilddManager(service.Service):
         self._deferreds = []
 
     def startService(self):
-        from twisted.internet.threads import deferToThread
         d = deferToThread(self.scan)
         d.addCallback(self.resumeAndDispatch)
         d.addCallback(self.finishCycle)
