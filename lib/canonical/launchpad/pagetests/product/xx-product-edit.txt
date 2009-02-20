@@ -370,10 +370,10 @@ Revert name12's team membership.
 The remote_product field - which stores a Product's ID on the remote bug
 tracker - can be set from the +edit page, too.
 
-    >>> admin_browser.open('http://launchpad.dev/thunderbird/+edit')
-    >>> admin_browser.getControl('Remote project').value = 'Thunderbird'
-    >>> admin_browser.getControl('Change').click()
+    >>> user_browser.open('http://launchpad.dev/thunderbird/+edit')
+    >>> user_browser.getControl('Remote project').value = 'Thunderbird'
+    >>> user_browser.getControl('Change').click()
 
-    >>> admin_browser.open('http://launchpad.dev/thunderbird/+edit')
-    >>> print admin_browser.getControl('Remote project').value
+    >>> user_browser.open('http://launchpad.dev/thunderbird/+edit')
+    >>> print user_browser.getControl('Remote project').value
     Thunderbird
