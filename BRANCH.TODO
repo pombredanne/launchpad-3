@@ -53,7 +53,7 @@ Running ``ec2tests``
   my own version, which doesn't run rsync since I've got no access to
   devpad. It can be found at lp:~sidnei/lp-dev-utils/trunk).
 
-# python2.4 ~/path/to/lp-dev-utils/ec2test.py \
+# python2.5 ~/path/to/lp-dev-utils/ec2test.py \
             -o '-1vp' \
             --headless \
             --no-rsync --no-merge \
