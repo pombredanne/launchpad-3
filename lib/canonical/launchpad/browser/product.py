@@ -1162,6 +1162,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "official_blueprints",
         "official_rosetta",
         "official_answers",
+        "remote_product",
         "homepageurl",
         "sourceforgeproject",
         "freshmeatproject",
