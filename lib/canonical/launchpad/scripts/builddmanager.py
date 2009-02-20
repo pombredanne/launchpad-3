@@ -5,6 +5,7 @@ import logging
 
 from twisted.application import service
 from twisted.internet import reactor, utils, defer
+from twisted.internet.threads import deferToThread
 from twisted.protocols.policies import TimeoutMixin
 from twisted.web.xmlrpc import Proxy, _QueryFactory, QueryProtocol
 
@@ -187,43 +188,65 @@ class BuilddManager(service.Service):
 
     def __init__(self):
         self.helper = BuilddManagerHelper()
-        self.running_jobs = 0
         self.builders_to_reset = []
         self.builders_to_fail = []
+        self._deferreds = []
 
     def startService(self):
-        deferred = defer.maybeDeferred(self.scan)
-        deferred.addCallback(self.resumeAndDispatch)
+        d = deferToThread(self.scan)
+        d.addCallback(self.resumeAndDispatch)
+        d.addCallback(self.finishCycle)
+
+    def gameOver(self):
+        """Stops the reactor.
+
+        It is usually overridden for tests.
+        """
+        reactor.stop()
+
+    def finishCycle(self, r=None):
+        def done(results):
+            self._deferreds = []
+            for name in self.builders_to_reset:
+                self.helper.resetBuilder(name)
+            for name, info in self.builders_to_fail:
+                self.helper.failBuilder(name, info)
+            self.gameOver()
+
+        dl = defer.DeferredList(self._deferreds, consumeErrors=True)
+        dl.addBoth(done)
+        return dl
 
     def scan(self):
         return self.helper.scanAllBuilders()
 
-    def checkResume(self, response, name):
+    def checkResume(self, response, slave):
         out, err, code = response
         if code != 0:
-            self.builders_to_reset.append(name)
+            self.builders_to_reset.append(slave.name)
             return False
         return True
 
-    def checkDispatch(self, response, name):
+    def checkDispatch(self, response, slave):
         status, info = response
         if not status:
-            self.builders_to_fail.append((name, info))
+            self.builders_to_fail.append((slave.name, info))
+            return
+        self._maybeDispatch(slave)
 
     def resumeAndDispatch(self, recording_slaves):
         for slave in recording_slaves:
-            self.running_jobs += 1
             if slave.resume:
                 # The buildd slave needs to be reset before we can dispatch
                 # builds to it.
                 d = slave.resumeSlaveHost()
-                d.addCallback(self.checkResume, slave.name)
+                d.addCallback(self.checkResume, slave)
             else:
                 # Buildd slave is clean, we can dispatch a build to it
                 # straightaway.
                 d = defer.maybeDeferred(lambda: True)
             d.addCallback(self.dispatchBuild, slave)
-            d.addBoth(self.stopWhenDone)
+            self._deferreds.append(d)
 
     def _getProxyForSlave(self, slave):
         """Return a twisted.web.xmlrpc.Proxy for the buildd slave.
@@ -243,46 +266,21 @@ class BuilddManager(service.Service):
         # Stop right here if the buildd slave could not be reset.
         if not resume_ok:
             return False
+        return self._maybeDispatch(slave)
+
+    def _maybeDispatch(self, slave):
+        if len(slave.calls) == 0:
+            return False
 
         # Get an XMPRPC proxy for the buildd slave.
         proxy = self._getProxyForSlave(slave)
+        method, args = slave.calls.pop(0)
+        d = proxy.callRemote(method, *args)
+        d.addCallback(self.checkDispatch, slave)
+        self._deferreds.append(d)
 
-        # We want the actions (needed to dispatch the build) chained in
-        # the same order in which they were recorded.
-        previous_deferred = deferred = None
-
-        for method, args in slave.calls:
-            deferred = proxy.callRemote(method, *args)
-            if previous_deferred is not None:
-                previous_deferred.chainDeferred(deferred)
-            previous_deferred = deferred
-
-        # Last but not least, add the method that will check whether the
-        # dispatching succeeded.
-        deferred.addCallback(self.checkDispatch, slave.name)
-
-        self.running_jobs += 1
         return True
 
-    def gameOver(self):
-        """Stops the reactor.
-
-        It is usually overridden for tests.
-        """
-        reactor.stop()
-
-    def stopWhenDone(self, result):
-        """Finishes the process if there are no 'running jobs'.
-
-        See `gameOver`.
-        """
-        self.running_jobs -= 1
-        if self.running_jobs <= 0:
-            for name in self.builders_to_reset:
-                self.helper.resetBuilder(name)
-            for name, info in self.builders_to_fail:
-                self.helper.failBuilder(name, info)
-            self.gameOver()
 
 
 if __name__ == "__main__":
