@@ -84,6 +84,10 @@ class CachedProperty:
         self.attrname = attrname
         self.marker = object()
 
+    # Store the transaction the cached value is valid for,
+    # so we can detect when it has become invalid.
+    last_transaction = None
+
     def __get__(self, inst, cls=None):
         current_transaction = transaction.get()
         if inst is None:
