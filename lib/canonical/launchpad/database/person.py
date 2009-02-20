@@ -11,6 +11,7 @@ __all__ = [
     'IrcIDSet',
     'JabberID',
     'JabberIDSet',
+    'Owner',
     'Person',
     'PersonLanguage',
     'PersonSet',
@@ -38,6 +39,7 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import Store
 from storm.expr import And, Join
+from storm.info import ClassAlias
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -3599,6 +3601,11 @@ class PersonSet:
         # Listify, since this is a pure cache.
         list(LibraryFileAlias.select("LibraryFileAlias.id IN %s"
              % sqlvalues(aliases), prejoins=["content"]))
+
+
+# Provide a storm alias from Person to Owner. This is useful in queries on
+# objects that have more than just an owner associated with them.
+Owner = ClassAlias(Person, 'Owner')
 
 
 class PersonLanguage(SQLBase):

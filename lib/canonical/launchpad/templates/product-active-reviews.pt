@@ -20,36 +20,44 @@
                      define = "to_do view/review_groups/to_do|nothing;
                                are_doing view/review_groups/are_doing|nothing;
                                can_do view/review_groups/can_do|nothing;
+                               mine  view/review_groups/mine|nothing;
                                other view/review_groups/other|nothing;
-                               show_diffs view/show_diffs">
+                               show_diffs view/show_diffs;
+                               col_count python: view.show_diffs and 4 or 3">
+
+  <table id="proposals" class="listing">
 
     <tal:to-do condition="to_do"
                define="proposals to_do;
-                       table_id string:reviews-to-do;
                        heading string:Reviews I need to do;">
       <metal:to-do use-macro="context/@@+bmp-macros/active-reviews"/>
     </tal:to-do>
 
     <tal:to-do condition="can_do"
                define="proposals can_do;
-                       table_id string:reviews-can-do;
                        heading string:Reviews I can do;">
+      <metal:to-do use-macro="context/@@+bmp-macros/active-reviews"/>
+    </tal:to-do>
+
+    <tal:to-do condition="mine"
+               define="proposals mine;
+                       heading string:Reviews I am waiting on;">
       <metal:to-do use-macro="context/@@+bmp-macros/active-reviews"/>
     </tal:to-do>
 
     <tal:to-do condition="are_doing"
                define="proposals are_doing;
-                       table_id string:reviews-are-doing;
-                       heading string:Completed reviews;">
+                       heading string:Reviews I have done;">
       <metal:to-do use-macro="context/@@+bmp-macros/active-reviews"/>
     </tal:to-do>
 
     <tal:to-do condition="other"
                define="proposals other;
-                       table_id string:reviews-other;
                        heading view/other_heading">
       <metal:to-do use-macro="context/@@+bmp-macros/active-reviews"/>
     </tal:to-do>
+
+  </table>
 
   </tal:has-proposals>
 
