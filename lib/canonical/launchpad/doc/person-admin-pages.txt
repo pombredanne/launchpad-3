@@ -21,7 +21,7 @@ The PersonAdministerView is registered under the +review name.
     'Review person'
 
 The template for the view is shared with the +reviewaccount view, so
-the is_viewing_person person property is provide to verify of the context
+the is_viewing_person view property is provide to verify of the context
 is an IPerson or IAccount.
 
     >>> view.is_viewing_person
@@ -88,8 +88,8 @@ The context is an IAccount, so the is_viewing_person property is False.
     >>> view.is_viewing_person
     False
 
-The view displays information no-editable user information too so that
-the admin does not need to look in the db.
+The view displays non-editable user information too so that the admin does
+not need to look in the db.
 
     >>> view.email_addresses
     [u'email1@example.com']

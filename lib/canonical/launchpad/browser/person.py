@@ -1788,7 +1788,11 @@ class PersonAdministerView(LaunchpadEditFormView):
 
     @property
     def is_viewing_person(self):
-        """Is the view showing an `IPerson`?"""
+        """Is the view showing an `IPerson`?
+
+        PersonAdministerView and PersonAccountAdministerView share a
+        template. It needs to know what the context is.
+        """
         return True
 
     @property
@@ -1808,7 +1812,7 @@ class PersonAdministerView(LaunchpadEditFormView):
 
 
 class PersonAccountAdministerView(LaunchpadEditFormView):
-    """Administer an IAccount belonging to an `IPerson`."""
+    """Administer an `IAccount` belonging to an `IPerson`."""
     schema = IAccount
     label = "Review person's account"
     field_names = [
@@ -1826,7 +1830,11 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
 
     @property
     def is_viewing_person(self):
-        """Is the view showing an `IPerson`?"""
+        """Is the view showing an `IPerson`?
+
+        PersonAdministerView and PersonAccountAdministerView share a
+        template. It needs to know what the context is.
+        """
         return False
 
     @property

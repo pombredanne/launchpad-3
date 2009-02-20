@@ -39,7 +39,7 @@
           <tal:review-account tal:condition="not: view/is_viewing_person">
             <p>
               The account displayname is not always the same as the Launchpad
-              Displayname.
+              displayname.
             </p>
             <p>
               <a tal:attributes="

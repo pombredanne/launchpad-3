@@ -67,7 +67,7 @@ The admin can update the user's account.
     The one and only Salgado does not use Launchpad
 
 The admin can see the account information of a user that does not use
-launchpad, and can change the account too.
+Launchpad, and can change the account too.
 
     >>> admin_browser.getLink('Administer').click()
     >>> admin_browser.getLink(url='+reviewaccount').click()
