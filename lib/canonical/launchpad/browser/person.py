@@ -1861,7 +1861,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         if (data['status'] == AccountStatus.ACTIVE
             and self.context.status != AccountStatus.ACTIVE):
             self.request.response.addNoticeNotification(
-                u'The user is reactivated. He must use '
+                u'The user is reactivated. He must use the '
                 u'"forgot password" to log in.')
         self.updateContextFromData(data)
 
