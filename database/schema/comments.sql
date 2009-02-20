@@ -208,6 +208,7 @@ COMMENT ON COLUMN BugTask.date_triaged IS 'The date when this bug transitioned t
 COMMENT ON COLUMN BugTask.date_fix_committed IS 'The date when this bug transitioned to a status >= FIXCOMMITTED.';
 COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitioned to a FIXRELEASED status.';
 COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
+COMMENT ON COLUMN BugTask.date_milestone_set IS 'The date when this bug was targed to the milestone that is currently set.';
 
 
 -- BugNotification
