@@ -1,5 +1,6 @@
 from zope.app.pagetemplate.viewpagetemplatefile import (
     ViewPageTemplateFile, BoundPageTemplate)
+from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import TraversalError
 from zope.traversing.namespace import view
 
@@ -20,7 +21,6 @@ class FormNamespaceView(view):
         """
         # Note: removeSecurityProxy seems necessary here as otherwise
         # isinstance below doesn't determine the type of the context.
-        from zope.security.proxy import removeSecurityProxy
         context = removeSecurityProxy(self.context)
 
         if isinstance(context, LaunchpadFormView):
