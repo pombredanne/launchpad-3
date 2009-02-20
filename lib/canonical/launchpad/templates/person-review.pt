@@ -58,11 +58,11 @@
               </tr>
               <tr>
                 <th>OpenID Identifier:</th>
-                <td><tal:reason replace="view/context/openid_identifier" /></td>
+                <td><tal:openid replace="view/context/openid_identifier" /></td>
               </tr>
               <tr>
                 <th>Beta OpenID Identifier:</th>
-                <td><tal:reason replace="view/context/new_openid_identifier" /></td>
+                <td><tal:openid replace="view/context/new_openid_identifier" /></td>
               </tr>
               <tr>
                 <th>Email Addresses:</th>
@@ -74,6 +74,7 @@
                     </span>
                   </tal:emails>
                 </td>
+              </tr>
             </table>
           </tal:review-account>
         </div>
