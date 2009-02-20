@@ -7,10 +7,15 @@ import unittest
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
+from zope.component import getUtility
+from zope.security.management import endInteraction, newInteraction
+
+from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.scripts.builddmanager import (
-    BuilddManager, RecordingSlave)
+    BuilddManager, BuilddProxy, RecordingSlave)
 from canonical.launchpad.scripts.logger import BufferLogger
-from canonical.testing.layers import TwistedLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, TwistedLayer)
 
 
 class TestRecordinSlaves(TrialTestCase):
@@ -187,6 +192,28 @@ class TestBuilddManager(TrialTestCase):
         self.assertEqual(
             [('foo', None), ('foo', None)],
             self.manager.buildd_proxy.dispatch_failures)
+
+
+class TestBuilddDatabaseProxy(unittest.TestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        self.db_proxy = BuilddProxy()
+
+    def testResetBuilder(self):
+        newInteraction()
+        bob = getUtility(IBuilderSet)['bob']
+
+        job = bob.currentjob
+        self.assertEqual(
+            u'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
+            job.build.title)
+        endInteraction()
+
+        self.db_proxy.resetBuilder('bob')
+
+        self.assertEqual(None, bob.currentjob)
 
 
 def test_suite():

@@ -19,21 +19,24 @@ from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
 
 
+class FakeZTM:
+    def commit(self):
+        pass
+    def abort(self):
+        pass
+
+
 class QueryWithTimeoutProtocol(QueryProtocol, TimeoutMixin):
+    """XMLRPC query protocol with with the configuration timeout."""
+
     def connectionMade(self):
         QueryProtocol.connectionMade(self)
         self.setTimeout(config.builddmaster.socket_timeout)
 
 
 class QueryFactoryWithTimeout(_QueryFactory):
+    """XMLRPC client facory with timeout support."""
     protocol = QueryWithTimeoutProtocol
-
-
-class FakeZTM:
-    def commit(self):
-        pass
-    def abort(self):
-        pass
 
 
 class RecordingSlave:
@@ -203,8 +206,7 @@ class BuilddManager(service.Service):
     def _getProxyForSlave(self, slave):
         """Return a twisted.web.xmlrpc.Proxy for the buildd slave.
 
-        It is setup in a way it has a timeout of
-        'config.builddmaster.socket_timeout' seconds.
+        Uses a protocol with timeout support, See QueryFactoryWithTimeout.
         """
         proxy = Proxy(str(urlappend(slave.url, 'rpc')))
         proxy.queryFactory = QueryFactoryWithTimeout
@@ -238,6 +240,7 @@ class BuilddManager(service.Service):
         self.running_jobs -= 1
         if self.running_jobs <= 0:
             self.gameOver()
+
 
 if __name__ == "__main__":
     from canonical.config import dbconfig
