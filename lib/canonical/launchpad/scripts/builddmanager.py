@@ -27,7 +27,7 @@ class FakeZTM:
 
 
 class QueryWithTimeoutProtocol(QueryProtocol, TimeoutMixin):
-    """XMLRPC query protocol with with the configuration timeout."""
+    """XMLRPC query protocol with a configurable timeout."""
 
     def connectionMade(self):
         QueryProtocol.connectionMade(self)
@@ -99,7 +99,11 @@ class RecordingSlave:
         return d
 
 
-class BuilddProxy:
+class BuilddManagerHelper:
+    """Helper class for build slave mananager.
+
+    This class encapsulates the dealings with the database.
+    """
 
     @write_transaction
     def scanAllBuilders(self):
@@ -166,7 +170,7 @@ class BuilddProxy:
 class BuilddManager(service.Service):
 
     def __init__(self):
-        self.buildd_proxy = BuilddProxy()
+        self.helper = BuilddManagerHelper()
         self.running_jobs = 0
 
     def startService(self):
@@ -174,19 +178,19 @@ class BuilddManager(service.Service):
         deferred.addCallback(self.resumeAndDispatch)
 
     def scan(self):
-        return self.buildd_proxy.scanAllBuilders()
+        return self.helper.scanAllBuilders()
 
     def checkResume(self, response, name):
         out, err, code = response
         if code != 0:
-            self.buildd_proxy.resetBuilder(name)
+            self.helper.resetBuilder(name)
             return False
         return True
 
     def checkDispatch(self, response, name):
         status, info = response
         if not status:
-            self.buildd_proxy.dispatchFail(info, name)
+            self.helper.dispatchFail(info, name)
 
     def resumeAndDispatch(self, recording_slaves):
         for slave in recording_slaves:

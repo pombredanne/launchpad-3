@@ -12,7 +12,7 @@ from zope.security.management import endInteraction, newInteraction
 
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.scripts.builddmanager import (
-    BuilddManager, BuilddProxy, RecordingSlave)
+    BuilddManager, BuilddManagerHelper, RecordingSlave)
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, TwistedLayer)
@@ -71,7 +71,7 @@ class TestRecordinSlaves(TrialTestCase):
         return d
 
 
-class TestBuilddProxy:
+class TestBuilddManagerHelper:
 
     def __init__(self):
         self.builders_reset = []
@@ -108,7 +108,7 @@ class TestBuilddManager(TrialTestCase):
     def setUp(self):
         TrialTestCase.setUp(self)
         self.manager = BuilddManager()
-        self.manager.buildd_proxy = TestBuilddProxy()
+        self.manager.helper = TestBuilddManagerHelper()
         self.stopped = False
         self.test_proxy = TestWebProxy()
 
@@ -138,26 +138,26 @@ class TestBuilddManager(TrialTestCase):
             successful_response, 'foo')
         self.assertTrue(result)
         self.assertEqual(
-            [], self.manager.buildd_proxy.builders_reset)
+            [], self.manager.helper.builders_reset)
 
         failed_response = ('', '', 1)
         result = self.manager.checkResume(
             failed_response, 'foo')
         self.assertFalse(result)
         self.assertEqual(
-            ['foo'], self.manager.buildd_proxy.builders_reset)
+            ['foo'], self.manager.helper.builders_reset)
 
     def testCheckDispatch(self):
         successful_response = (True, 'cool builder')
         self.manager.checkDispatch(successful_response, 'foo')
         self.assertEqual(
-            [], self.manager.buildd_proxy.dispatch_failures)
+            [], self.manager.helper.dispatch_failures)
 
         failed_response = (False, 'uncool builder')
         self.manager.checkDispatch(failed_response, 'foo')
         self.assertEqual(
             [('foo', 'uncool builder')],
-             self.manager.buildd_proxy.dispatch_failures)
+             self.manager.helper.dispatch_failures)
 
     def testDispatchBuild(self):
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/')
@@ -170,6 +170,7 @@ class TestBuilddManager(TrialTestCase):
 
         def getTestProxy(slave):
             return self.test_proxy
+
         self.manager._getProxyForSlave = getTestProxy
 
         result = self.manager.dispatchBuild(True, slave)
@@ -180,26 +181,27 @@ class TestBuilddManager(TrialTestCase):
              ('build', 'boing', 'bar', 'baz')],
             self.test_proxy.calls)
         self.assertEqual(
-            [], self.manager.buildd_proxy.builders_reset)
+            [], self.manager.helper.builders_reset)
         self.assertEqual(
-            [], self.manager.buildd_proxy.dispatch_failures)
+            [], self.manager.helper.dispatch_failures)
 
         self.test_proxy = TestWebProxy(False)
         result = self.manager.dispatchBuild(True, slave)
-        # Reseting only once it enough.
+        # Reseting only once is enough.
         self.assertEqual(
-            [], self.manager.buildd_proxy.builders_reset)
+            [], self.manager.helper.builders_reset)
         self.assertEqual(
             [('foo', None), ('foo', None)],
-            self.manager.buildd_proxy.dispatch_failures)
+            self.manager.helper.dispatch_failures)
 
 
-class TestBuilddDatabaseProxy(unittest.TestCase):
-
+class TestBuilddDatabaseHelper(unittest.TestCase):
+    """Tests for the buildd manager helper class."""
+    
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        self.db_proxy = BuilddProxy()
+        self.db_helper = BuilddManagerHelper()
 
     def testResetBuilder(self):
         newInteraction()
@@ -209,9 +211,9 @@ class TestBuilddDatabaseProxy(unittest.TestCase):
         self.assertEqual(
             u'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
             job.build.title)
-        endInteraction()
 
-        self.db_proxy.resetBuilder('bob')
+        endInteraction()
+        self.db_helper.resetBuilder('bob')
 
         self.assertEqual(None, bob.currentjob)
 
