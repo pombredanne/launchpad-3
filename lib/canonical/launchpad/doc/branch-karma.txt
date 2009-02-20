@@ -36,8 +36,11 @@ Karma is added for registering a branch.
     >>> login('test@canonical.com')
     >>> fooix = factory.makeProduct(name='fooix')
     >>> eric = factory.makePerson(name='eric', password='test')
+    >>> import transaction
+    >>> transaction.commit() # Commit to make eric valid
     >>> branch = factory.makeProductBranch(owner=eric, product=fooix)
     Karma added: action=branchcreated, product=fooix, person=eric
+
 
 However, no karma is added for junk branches.
 
