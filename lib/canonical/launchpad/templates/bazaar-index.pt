@@ -69,7 +69,7 @@
                            class product/html_class;
                            title product/html_title"
            tal:content="product/name">project</a>
-        <p><a href="/+project-cloud">more&#8230;</a></p>
+        <p><a href="/+project-cloud">see all projects&#8230;</a></p>
       </div>
 
                         <div class="columns">

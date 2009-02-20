@@ -1,0 +1,36 @@
+= Getting remote products from SourceForge projects =
+
+Launchpad Products can be linked to SourceForge projects by setting
+their 'sourceforgeproject' attribute.
+
+It's possible to get a list of the Products that are linked to a
+SourceForge project but which have no remote_product set by calling
+IProductSet.getSFLinkedProductsWithNoneRemoteProduct().
+
+There are currently no Products in the database linked to a SourceForge
+project without a remote_product set.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> products = getUtility(
+    ...     IProductSet).getSFLinkedProductsWithNoneRemoteProduct()
+
+    >>> print products.count()
+    0
+
+If we add a Product and link it to a SourceForge project,
+getSFLinkedProductsWithNoneRemoteProduct() will return it.
+
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+
+    >>> product_1 = factory.makeProduct(name='my-first-product')
+    >>> product_1.sourceforgeproject = 'fronobulator'
+
+    >>> products = getUtility(
+    ...     IProductSet).getSFLinkedProductsWithNoneRemoteProduct()
+
+    >>> for product in products:
+    ...     print product.name, product.sourceforgeproject
+    my-first-product fronobulator
