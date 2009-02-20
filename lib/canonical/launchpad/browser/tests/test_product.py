@@ -172,8 +172,14 @@ class TestProductActiveReviewGroups(TestCaseWithFactory):
             self.bmp.source_branch.owner, ProductActiveReviewsView.MINE)
 
     def test_proposal_registrant(self):
-        # If the logged in user it the registrant of the proposal, then
-        # it is MINE.
+        # If the logged in user it the registrant of the proposal, then it is
+        # MINE only if the registrant is a member of the team that owns the
+        # branch.
+        self.assertReviewGroupForUser(
+            self.bmp.registrant, ProductActiveReviewsView.OTHER)
+        team = self.factory.makeTeam(self.bmp.registrant)
+        login_person(self.bmp.source_branch.owner)
+        self.bmp.source_branch.owner = team
         self.assertReviewGroupForUser(
             self.bmp.registrant, ProductActiveReviewsView.MINE)
 

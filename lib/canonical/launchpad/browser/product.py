@@ -1937,7 +1937,8 @@ class ProductActiveReviewsView(BranchMergeProposalListingView):
         """
         if (self.user is not None and
             (proposal.source_branch.owner == self.user or
-             proposal.registrant == self.user)):
+             (self.user.inTeam(proposal.source_branch.owner) and
+              proposal.registrant == self.user))):
             return self.MINE
 
         result = self.OTHER
