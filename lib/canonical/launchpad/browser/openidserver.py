@@ -661,14 +661,10 @@ class LoginServiceLoginView(LoginServiceBaseView):
             self.addError('Please enter a valid email address.')
             return
 
-        # XXX: Will have to fix this so that a personless account can use our
-        # OpenID server.
         person = getUtility(IPersonSet).getByEmail(email)
         if action == 'login':
             self.validateEmailAndPassword(email, password)
         elif action == 'resetpassword':
-            # XXX: May have to change the forgotten-password logintoken view
-            # to handle personless accounts as well.
             if person is None:
                 self.addError(_(
                     "Your account details have not been found. Please "
@@ -734,8 +730,6 @@ class LoginServiceLoginView(LoginServiceBaseView):
         if action == 'login':
             loginsource = getUtility(IPlacelessLoginSource)
             principal = loginsource.getPrincipalByLogin(email)
-            # XXX: This call to logInPrincipal() must not create a Person
-            # entry.
             logInPrincipal(self.request, principal, email)
             # Update the attribute holding the cached user.
             self._user = principal.person
