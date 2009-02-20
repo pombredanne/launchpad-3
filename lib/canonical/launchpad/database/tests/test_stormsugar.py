@@ -50,19 +50,19 @@ class TestSugar(TestCase):
             UnknownProperty, SugarDerived, id=500, status=0, foo='bar')
         self.assertEqual('Class SugarDerived has no property "foo".', str(e))
 
-    def test_get(self):
+    def test_getById(self):
         """Get either returns the desired object or raises."""
-        e = self.assertRaises(ObjectNotFound, SugarDerived.get, 500)
-        self.assertEqual('Not found: SugarDerived with id 500.', str(e))
+        e = self.assertRaises(ObjectNotFound, SugarDerived.getById, 500)
+        self.assertEqual("'Not found: SugarDerived with id 500.'", str(e))
         created = SugarDerived(id=500, status=0)
-        gotten = SugarDerived.get(500)
+        gotten = SugarDerived.getById(500)
         self.assertEqual(created, gotten)
 
-    def test_destroySelf(self):
+    def test_remove(self):
         """destroySelf destroys the object in question."""
         created = SugarDerived(id=500, status=0)
-        created.destroySelf()
-        self.assertRaises(ObjectNotFound, SugarDerived.get, 500)
+        created.remove()
+        self.assertRaises(ObjectNotFound, SugarDerived.getById, 500)
 
     def test_flush_exercises_constraints(self):
         """Sugar.flush causes constraints to be tested."""
@@ -71,25 +71,25 @@ class TestSugar(TestCase):
         # has the NOT NULL constraint.
         self.assertRaises(IntegrityError, created.flush)
 
-    def test_selectBy(self):
-        """Sugar selectBy works."""
+    def test_find(self):
+        """Sugar.find works."""
         obj1 = SugarDerived(id=500, status=5)
         obj2 = SugarDerived(id=501, status=6)
-        self.assertEqual([obj1], list(SugarDerived.selectBy(status=5)))
-        self.assertEqual([], list(SugarDerived.selectBy(status=4)))
-        self.assertRaises(AssertionError, SugarDerived.selectBy)
+        self.assertEqual([obj1], list(SugarDerived.find(status=5)))
+        self.assertEqual([], list(SugarDerived.find(status=4)))
+        self.assertRaises(AssertionError, SugarDerived.find)
 
-    def test_selectBy_with_multiple_clauses(self):
+    def test_find_with_multiple_clauses(self):
         """Multiple kwargs are ANDed."""
         obj1 = SugarDerived(status=5, progress=1)
         obj2 = SugarDerived(status=5, progress=2)
         obj3 = SugarDerived(status=6, progress=2)
         self.assertEqual(
-            [obj1], list(SugarDerived.selectBy(status=5, progress=1)))
+            [obj1], list(SugarDerived.find(status=5, progress=1)))
         self.assertEqual(
-            [obj2], list(SugarDerived.selectBy(status=5, progress=2)))
+            [obj2], list(SugarDerived.find(status=5, progress=2)))
         self.assertEqual(
-            [obj3], list(SugarDerived.selectBy(status=6, progress=2)))
+            [obj3], list(SugarDerived.find(status=6, progress=2)))
 
     def test_ForeignKey(self):
         """ForeignKey works, and defaults to property name."""

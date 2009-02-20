@@ -1,30 +1,40 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0203
 
-"""Storm is powerful stuff.  This helps it go down more easily."""
+"""Storm is powerful stuff.  This helps it go down more easily.
+
+This module is experimental.  Please give feedback and feel free to adjust it.
+"""
 
 __metaclass__ = type
 
 
-__all__ = ['ObjectNotFound', 'UnknownProperty', 'ForeignKey', 'Sugar']
+__all__ = [
+    'ForeignKey',
+    'ObjectNotFound',
+    'Sugar',
+    'UnknownProperty',
+    ]
 
 
 from storm.locals import Int, Reference, Store, Storm
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
-     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR, NotFoundError)
 
 
-class ObjectNotFound(Exception):
+class ObjectNotFound(NotFoundError):
     """Exception raised when a storm object can't be got."""
 
     def __init__(self, orm_class, id):
         msg = 'Not found: %s with id %s.' % (orm_class.__name__, id)
-        Exception.__init__(self, msg)
+        NotFoundError.__init__(self, msg)
 
 
 class UnknownProperty(Exception):
     """The property name specified in a kwarg is not pre-defined."""
+
     def __init__(self, orm_class, name):
         msg = 'Class %s has no property "%s".' % (orm_class.__name__, name)
         Exception.__init__(self, msg)
@@ -42,19 +52,19 @@ class ForeignKey(Reference):
 class Sugary(Storm.__metaclass__):
     """Metaclass that adds support for ForeignKey."""
 
-    def __init__(mcs, name, bases, dct):
-        for key in dir(mcs):
-            val = getattr(mcs, key, None)
+    def __init__(cls, name, bases, dict):
+        for key in dir(cls):
+            val = getattr(cls, key, None)
             if not isinstance(val, ForeignKey):
                 continue
             col_name = val.name
             if col_name is None:
                 col_name = key
             val._local_key = Int(col_name)
-            setattr(mcs, '_%s_id' % key, val._local_key)
+            setattr(cls, '_%s_id' % key, val._local_key)
         # Do this last, because it wants References to have their local_key
         # properly set up.
-        super(Sugary, mcs).__init__(name, bases, dct)
+        super(Sugary, cls).__init__(name, bases, dict)
 
 
 class Sugar(Storm):
@@ -67,7 +77,7 @@ class Sugar(Storm):
     id = Int(primary=True)
 
     def __init__(self, **kwargs):
-        Storm.__init__(self)
+        super(Sugar).__init__(Sugar, self)
         for key, value in kwargs.items():
             if getattr(self.__class__, key, None) is None:
                 raise UnknownProperty(self.__class__, key)
@@ -86,7 +96,7 @@ class Sugar(Storm):
         return selector.get(klass.__store_type__, DEFAULT_FLAVOR)
 
     @classmethod
-    def get(klass, id):
+    def getById(klass, id):
         """Return the object of this type with given id."""
         store = klass.getDefaultStore()
         obj = store.get(klass, id)
@@ -95,7 +105,7 @@ class Sugar(Storm):
         return obj
 
     @classmethod
-    def selectBy(klass, **kwargs):
+    def find(klass, **kwargs):
         """Select the instances whose properties match kwargs."""
         assert len(kwargs) > 0
         store = klass.getDefaultStore()
@@ -107,6 +117,6 @@ class Sugar(Storm):
         store.flush()
         store.autoreload(self)
 
-    def destroySelf(self):
-        """Remote this object from the database."""
+    def remove(self):
+        """Remove this object from the database."""
         Store.of(self).remove(self)
