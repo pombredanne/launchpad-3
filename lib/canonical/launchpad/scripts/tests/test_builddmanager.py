@@ -18,8 +18,8 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer, TwistedLayer)
 
 
-class TestRecordinSlaves(TrialTestCase):
-
+class TestRecordingSlaves(TrialTestCase):
+    """Testis for the recording slave class."""
     layer = TwistedLayer
 
     def setUp(self):
@@ -72,7 +72,7 @@ class TestRecordinSlaves(TrialTestCase):
 
 
 class TestBuilddManagerHelper:
-
+    """This class mimics the BuilddManagerHelper class."""
     def __init__(self):
         self.builders_reset = []
         self.dispatch_failures = []
@@ -91,7 +91,7 @@ class TestBuilddManagerHelper:
 
 
 class TestWebProxy:
-
+    """This class mimics a twisted XMLRPC Proxy class."""
     def __init__(self, works=True):
         self.works = works
         self.calls = []
@@ -102,7 +102,7 @@ class TestWebProxy:
 
 
 class TestBuilddManager(TrialTestCase):
-
+    """Tests for the actual build slave manager."""
     layer = TwistedLayer
 
     def setUp(self):
