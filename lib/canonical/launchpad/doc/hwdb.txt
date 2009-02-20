@@ -368,9 +368,7 @@ When an anonymous submitter later registers a Launchpad account, the field
     ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
     >>> email = getUtility(IEmailAddressSet).getByEmail(
     ...     u'beeblebrox@example.com')
-    >>> transaction.commit()
     >>> user.validateAndEnsurePreferredEmail(email)
-    >>> transaction.commit()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
