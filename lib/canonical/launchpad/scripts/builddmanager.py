@@ -4,8 +4,7 @@
 import logging
 
 from twisted.application import service
-from twisted.internet import defer, reactor, utils
-from twisted.internet.threads import deferToThread
+from twisted.internet import reactor, utils, defer
 from twisted.protocols.policies import TimeoutMixin
 from twisted.web.xmlrpc import Proxy, _QueryFactory, QueryProtocol
 
@@ -176,11 +175,11 @@ class BuilddManagerHelper:
         self._cleanJob(builder.currentjob)
 
     @write_transaction
-    def dispatchFail(self, error, name):
+    def failBuilder(self, name, info):
         """Clean up in case we failed to dispatch to a builder."""
         newInteraction()
         builder = getUtility(IBuilderSet)[name]
-        builder.failbuilder(error)
+        builder.failbuilder(info)
         self._cleanJob(builder.currentjob)
 
 
@@ -189,9 +188,11 @@ class BuilddManager(service.Service):
     def __init__(self):
         self.helper = BuilddManagerHelper()
         self.running_jobs = 0
+        self.builders_to_reset = []
+        self.builders_to_fail = []
 
     def startService(self):
-        deferred = deferToThread(self.scan)
+        deferred = defer.maybeDeferred(self.scan)
         deferred.addCallback(self.resumeAndDispatch)
 
     def scan(self):
@@ -200,14 +201,14 @@ class BuilddManager(service.Service):
     def checkResume(self, response, name):
         out, err, code = response
         if code != 0:
-            self.helper.resetBuilder(name)
+            self.builders_to_reset.append(name)
             return False
         return True
 
     def checkDispatch(self, response, name):
         status, info = response
         if not status:
-            self.helper.dispatchFail(info, name)
+            self.builders_to_fail.append((name, info))
 
     def resumeAndDispatch(self, recording_slaves):
         for slave in recording_slaves:
@@ -277,6 +278,10 @@ class BuilddManager(service.Service):
         """
         self.running_jobs -= 1
         if self.running_jobs <= 0:
+            for name in self.builders_to_reset:
+                self.helper.resetBuilder(name)
+            for name, info in self.builders_to_fail:
+                self.helper.failBuilder(name, info)
             self.gameOver()
 
 
