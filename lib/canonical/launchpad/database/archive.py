@@ -53,8 +53,8 @@ from canonical.launchpad.database.queue import (
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
-    IArchive, IArchiveSet, IDistributionArchive, IPPA, PocketNotFound,
-    SourceNotFound)
+    IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
+    PocketNotFound, SourceNotFound)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
@@ -176,6 +176,11 @@ class Archive(SQLBase):
         return self.purpose == ArchivePurpose.COPY
 
     @property
+    def is_main(self):
+        """See `IArchive`."""
+        return self.purpose in MAIN_ARCHIVE_PURPOSES
+
+    @property
     def title(self):
         """See `IArchive`."""
         if self.is_ppa:
@@ -255,6 +260,13 @@ class Archive(SQLBase):
         return urlappend(
             config.archivepublisher.base_url,
             self.distribution.name + postfix)
+
+    @property
+    def signing_key_fingerprint(self):
+        if self.signing_key is not None:
+            return self.signing_key.fingerprint
+
+        return None
 
     def getPubConfig(self):
         """See `IArchive`."""
@@ -376,7 +388,8 @@ class Archive(SQLBase):
 
         return sources
 
-    def getSourcesForDeletion(self, name=None, status=None):
+    def getSourcesForDeletion(self, name=None, status=None,
+            distroseries=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -415,6 +428,11 @@ class Archive(SQLBase):
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
+
+        if distroseries is not None:
+            clauses.append("""
+                SourcePackagePublishingHistory.distroseries = %s
+            """ % sqlvalues(distroseries))
 
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 

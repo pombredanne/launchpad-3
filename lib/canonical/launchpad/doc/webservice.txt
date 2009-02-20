@@ -1561,7 +1561,7 @@ set the field value to 'tag:launchpad.net:2008:redacted'.
     >>> put_request = create_web_service_request(
     ...     beard_url, body=body, environ=headers, method='PUT')
     >>> put_request.traverse(app)()
-    ''
+    '{...}'
 
 And since no special permission is necessary to _change_ a person's
 'favorite_recipe', it's possible to set it to a visible recipe using
@@ -1574,7 +1574,7 @@ PUT, even when its current value is redacted.
     >>> put_request = create_web_service_request(
     ...     beard_url, body=body, environ=headers, method='PUT')
     >>> put_request.traverse(app)()
-    ''
+    '{...}'
 
 After that PUT, James Beard's 'favorite_recipe' attribute is no longer
 redacted. It's the value set by the PUT request.
@@ -1784,7 +1784,7 @@ their URLs, we make the change by modifying the cookbook's
     >>> path = '/beta/authors/Julia%20Child'
 
     >>> change_joy_author(u'http://api.launchpad.dev' + path)
-    ''
+    '{...}'
 
     >>> joy_resource = create_web_service_request(
     ...     '/beta/cookbooks/The%20Joy%20of%20Cooking').traverse(app)
@@ -1809,18 +1809,18 @@ port in the URLs you send.
 
     >>> change_joy_author(u'http://api.launchpad.dev:9000' + path,
     ...                   host='api.launchpad.dev:9000')
-    ''
+    '{...}'
 
 You don't have to specify the default port in the URLs you send, even
 if you specified it when you made the request.
 
     >>> change_joy_author(u'http://api.launchpad.dev' + path,
     ...                   host='api.launchpad.dev:80')
-    ''
+    '{...}'
 
     >>> change_joy_author(u'http://api.launchpad.dev:80' + path,
     ...                   host='api.launchpad.dev')
-    ''
+    '{...}'
 
     >>> change_joy_author(u'https://api.launchpad.dev' + path,
     ...                   host='api.launchpad.dev:443')
@@ -1833,7 +1833,7 @@ if you specified it when you made the request.
     ...     """)
     >>> change_joy_author(u'https://api.launchpad.dev' + path,
     ...                   host='api.launchpad.dev:443')
-    ''
+    '{...}'
 
     >>> ignored = config.pop('use-https')
 

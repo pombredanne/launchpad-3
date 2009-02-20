@@ -16,9 +16,9 @@
                        date_created date_review_requested date_reviewed
                        review_diff preview_diff votes root_comment all_comments
                        isPersonValidReviewer isMergable getComment
-                       getNotificationRecipients isValidTransition
-                       getUnlandedSourceBranchRevisions root_message_id
-                       getUsersVoteReference"/>
+                       getNotificationRecipients getVoteReference
+                       isValidTransition getUnlandedSourceBranchRevisions
+                       root_message_id getUsersVoteReference"/>
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message
@@ -33,6 +33,11 @@
         permission="launchpad.AnyPerson"
         attributes="createComment createCommentFromMessage"
     />
+  </class>
+
+  <class class="canonical.launchpad.database.CreateMergeProposalJob">
+    <allow interface="canonical.launchpad.interfaces.IMessageJob" />
+    <allow interface="canonical.launchpad.interfaces.ICreateMergeProposalJob" />
   </class>
 
   <subscriber
@@ -61,10 +66,6 @@
       factory="canonical.launchpad.browser.branchmergeproposal.BranchMergeProposalPrimaryContext"
       />
 
-  <class class="canonical.launchpad.database.MergeProposalCreatedJob">
-    <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalJob"/>
-    <allow interface="canonical.launchpad.interfaces.IMergeProposalCreatedJob"/>
-  </class>
   <!-- hierarchy -->
   <browser:page
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
@@ -244,15 +245,20 @@
       template="../templates/branchmergeproposal-listing.pt"
       permission="zope.Public" />
 
+  <browser:page
+      for="*"
+      name="+bmp-macros"
+      permission="zope.Public"
+      template="../templates/branchmergeproposal-macros.pt" />
+
   <securedutility
       class="canonical.launchpad.database.BranchMergeProposalGetter"
       provides="canonical.launchpad.interfaces.IBranchMergeProposalGetter" >
     <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalGetter" />
   </securedutility>
   <securedutility
-      component="canonical.launchpad.database.MergeProposalCreatedJob"
-      provides="canonical.launchpad.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource" >
-    <allow
-    interface="canonical.launchpad.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource" />
+      component="canonical.launchpad.database.CreateMergeProposalJob"
+      provides="canonical.launchpad.interfaces.ICreateMergeProposalJobSource" >
+    <allow interface="canonical.launchpad.interfaces.ICreateMergeProposalJobSource" />
   </securedutility>
 </configure>

@@ -48,6 +48,9 @@ PPA in order to be able to copy packages.
     >>> jblack_browser = setupBrowser(
     ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
 
+    >>> jblack_extra_browser = setupBrowser(
+    ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
+
     >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> jblack_browser.getLink('Copy packages').click()
 
@@ -134,7 +137,7 @@ default and wants to refine the options.
 
     >>> jblack_browser.getControl(
     ...     name='field.name_filter').value = 'pmount'
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
 There we go, James can be certain about which package to select, only
 pmount is presented.
@@ -164,10 +167,10 @@ helper function will do this job in this test.
 The page section id is built using "pub$ID" notation.
 
     >>> pmount_pub_id = getPPAPubIDsFor('cprov', 'pmount')[0]
-    >>> pmount_details_id = "pub%s" % pmount_pub_id
-    >>> pmount_details = find_tag_by_id(
-    ...     jblack_browser.contents, pmount_details_id)
-    >>> print extract_text(pmount_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % pmount_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
       Published on 2007-07-09
       Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
@@ -179,9 +182,9 @@ The page section id is built using "pub$ID" notation.
       -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
     Builds
       i386
-    Built Packages
+    Built packages
       pmount pmount shortdesc
-    Download files from Librarian
+    Package files
       No files published for this package.
 
 James is absolutely sure that's the package he wants, he selects it.
@@ -252,10 +255,10 @@ were not copied and instead a build was already created in his PPA
 context.
 
     >>> pmount_pub_id = getPPAPubIDsFor('jblack', 'pmount')[0]
-    >>> pmount_details_id = "pub%s" % pmount_pub_id
-    >>> pmount_details = find_tag_by_id(
-    ...     jblack_browser.contents, pmount_details_id)
-    >>> print extract_text(pmount_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % pmount_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
       Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
     Changelog
@@ -266,7 +269,7 @@ context.
       -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
     Builds
       i386
-    Download files from Librarian
+    Package files
       No files published for this package.
 
 The package was copied from the primary archive and not from a PPA.
@@ -598,7 +601,7 @@ Packages in other status can be browsed by adjusting the status
 filter dropdown box.
 
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
@@ -755,24 +758,24 @@ James just gives a quick look to the details section of each copied
 sources to ensure the binaries are really there.
 
     >>> pmount_pub_id = getPPAPubIDsFor('jblack-friends', 'pmount')[0]
-    >>> pmount_details_id = "pub%s" % pmount_pub_id
-    >>> pmount_details = find_tag_by_id(
-    ...     jblack_browser.contents, pmount_details_id)
-    >>> print extract_text(pmount_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % pmount_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
     ...
-    Built Packages
+    Built packages
       pmount
     ...
 
     >>> iceweasel_pub_id = getPPAPubIDsFor('jblack-friends', 'iceweasel')[0]
-    >>> iceweasel_details_id = "pub%s" % iceweasel_pub_id
-    >>> iceweasel_details = find_tag_by_id(
-    ...     jblack_browser.contents, iceweasel_details_id)
-    >>> print extract_text(iceweasel_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % iceweasel_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
     ...
-    Built Packages
+    Built packages
       mozilla-firefox
       ff from iceweasel
     ...
@@ -832,7 +835,7 @@ insane because PPA-copy-ui is so cool.
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -884,7 +887,7 @@ interface can be used to resurrect deleted packages.
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> deleted_pub_id = getPPAPubIDsFor(
@@ -1100,7 +1103,7 @@ foo-9.9 source from 'James-Friend's PPA.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> jblack_browser.getControl(name='field.name_filter').value = 'foo'
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source     Uploader  Published   Status     Series   Section  Build Status
