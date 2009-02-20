@@ -238,13 +238,11 @@ class LaunchpadLoginSource:
             else:
                 return None
 
-        # XXX: Dear reviewer. I can't use "person is None" here because zope
-        # wraps the return of IPerson(account) above into a security proxy.
-        if person:
-            return self._getLaunchpadPrincipal(person, access_level, scope)
-        else:
+        if person is None:
             # Our account has no person, so we return an OpenIDPrincipal.
             return self._getOpenIDPrincipal(account, access_level, scope)
+        else:
+            return self._getLaunchpadPrincipal(person, access_level, scope)
 
     def getPrincipals(self, name):
         raise NotImplementedError
