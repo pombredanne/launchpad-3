@@ -88,7 +88,7 @@
                         </p>
                         <p>
                             
-                         Launchpad and Bazaar strip away the barriers to contributing to your project. In just a few key strokes anyone can create their own local branch of your trunk with full version control.<br /><br />
+                         Launchpad and the <a href="http://bazaar-vcs.org/">Bazaar</a> distributed versional control system strip away the barriers to contributing to your project. In just a few key strokes anyone can create their own local branch of your trunk with full version control.<br /><br />
                          
                          When they're ready, they can upload their branch to Launchpad and propose it for merging back into your trunk. Code review &mdash; by web and email &mdash; gives you a public forum to discuss and approve or reject the merge.<br /><br />
                          
