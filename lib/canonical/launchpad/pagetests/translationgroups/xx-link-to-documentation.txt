@@ -118,8 +118,12 @@ instructions displayed.
     ...     browser.getControl('Change').click()
 
     >>> def get_notification_content(browser):
-    ...     return find_tags_by_class(
-    ...         browser.contents, 'important-notice-container').pop(0)
+    ...     tags = find_tags_by_class(
+    ...         browser.contents, 'important-notice-container')
+    ...     if len(tags) > 0:
+    ...         return tags[0]
+    ...     else:
+    ...         return None
 
 When no documentation URLs are set, no notification will be displayed.
 
