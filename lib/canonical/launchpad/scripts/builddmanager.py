@@ -20,6 +20,7 @@ from canonical.librarian.db import write_transaction
 
 
 class FakeZTM:
+    """Fake transaction manager."""
     def commit(self):
         pass
     def abort(self):
@@ -233,16 +234,33 @@ class BuilddManager(service.Service):
         return proxy
 
     def dispatchBuild(self, resume_ok, slave):
+        """Dispatch a build to a slave.
+
+        This may involve a number of actions which should be chained in the
+        same order as recorded.
+        """
         # Stop right here if the buildd slave could not be reset.
         if not resume_ok:
             return False
 
+        # Get an XMPRPC proxy for the buildd slave.
         proxy = self._getProxyForSlave(slave)
-        for method, args in slave.calls:
-            self.running_jobs += 1
-            d = proxy.callRemote(method, *args)
-            d.addCallback(self.checkDispatch, slave.name)
 
+        # We want the actions (needed to dispatch the build) chained in
+        # the same order in which they were recorded.
+        previous_deferred = deferred = None
+
+        for method, args in slave.calls:
+            deferred = proxy.callRemote(method, *args)
+            if previous_deferred is not None:
+                previous_deferred.chainDeferred(deferred)
+            previous_deferred = deferred
+
+        # Last but not least, add the method that will check whether the
+        # dispatching succeeded.
+        deferred.addCallback(self.checkDispatch, slave.name)
+
+        self.running_jobs += 1
         return True
 
     def gameOver(self):
