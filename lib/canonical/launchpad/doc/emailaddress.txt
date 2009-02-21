@@ -12,7 +12,8 @@ email addresses must be unique.
 We can get an email address through IEmailAddressSet.getByEmail().
 
     >>> email = emailset.getByEmail(person.preferredemail.email)
-    >>> email == person.preferredemail
+    >>> # Compare by id as the objects have come from different Stores.
+    >>> email.id == person.preferredemail.id
     True
 
 Note that IEmailAddressSet.getByEmail() is not case-sensitive.
