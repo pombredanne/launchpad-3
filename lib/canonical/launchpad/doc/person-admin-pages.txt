@@ -21,7 +21,7 @@ The PersonAdministerView is registered under the +review name.
     'Review person'
 
 The template for the view is shared with the +reviewaccount view, so
-the is_viewing_person view property is provide to verify of the context
+the is_viewing_person view property is provide to verify that the context
 is an IPerson or IAccount.
 
     >>> view.is_viewing_person

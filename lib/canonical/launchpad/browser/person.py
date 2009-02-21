@@ -1790,7 +1790,7 @@ class PersonAdministerView(LaunchpadEditFormView):
     def is_viewing_person(self):
         """Is the view showing an `IPerson`?
 
-        PersonAdministerView and PersonAccountAdministerView share a
+        `PersonAdministerView` and `PersonAccountAdministerView` share a
         template. It needs to know what the context is.
         """
         return True
@@ -1832,7 +1832,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     def is_viewing_person(self):
         """Is the view showing an `IPerson`?
 
-        PersonAdministerView and PersonAccountAdministerView share a
+        `PersonAdministerView` and `PersonAccountAdministerView` share a
         template. It needs to know what the context is.
         """
         return False
