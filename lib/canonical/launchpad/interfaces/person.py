@@ -437,7 +437,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     displayname = exported(
         StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
-            description=_(If ``email`` is None, the preferred email address is unset, which 
+            description=_(
                 "Your name as you would like it displayed throughout "
                 "Launchpad. Most people use their full name here.")),
         exported_as='display_name')
