@@ -96,7 +96,7 @@ class RecordingSlave:
         :return: a deferred
         """
         d = utils.getProcessOutputAndValue(
-            self.resume_argv[0], self.resume_argv[1:])
+            str(self.resume_argv[0]), [str(u) for u in self.resume_argv[1:]])
         return d
 
 
