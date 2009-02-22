@@ -10,7 +10,7 @@ from twisted.protocols.policies import TimeoutMixin
 from twisted.web.xmlrpc import Proxy, _QueryFactory, QueryProtocol
 
 from zope.component import getUtility
-from zope.security.management import newInteraction
+from zope.security.management import endInteraction, newInteraction
 
 from canonical.config import config
 from canonical.launchpad.interfaces.build import BuildStatus
@@ -131,7 +131,6 @@ class FailBuilderRequest(BaseBuilderRequest):
 
     @write_transaction
     def __call__(self):
-        newInteraction()
         builder = getUtility(IBuilderSet)[self.slave.name]
         builder.failbuilder(self.info)
         self._cleanJob(builder.currentjob)
@@ -145,10 +144,8 @@ class ResetBuilderRequest(BaseBuilderRequest):
 
     @write_transaction
     def __call__(self):
-        newInteraction()
         builder = getUtility(IBuilderSet)[self.slave.name]
         self._cleanJob(builder.currentjob)
-
 
 
 class BuilddManager(service.Service):
@@ -158,18 +155,45 @@ class BuilddManager(service.Service):
 
     def __init__(self):
         self._deferreds = []
+        self.remaining_slaves = []
+
+        level = logging.INFO
+        logger = logging.getLogger('slave-scanner')
+        logger.setLevel(level)
+        ch = logging.StreamHandler()
+        ch.setLevel(level)
+        ch.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
+        logger.addHandler(ch)
+        self.logger = logger
 
     def startService(self):
+        self.logger.info('Starting scanning cycle.')
         d = deferToThread(self.scan)
         d.addCallback(self.resumeAndDispatch)
-        d.addBoth(self.finishCycle)
+        d.addErrback(self.scanFailed)
 
-    def gameOver(self):
+    def scanFailed(self, error):
+        self.logger.info(
+            'Scanning failed with: %s' % error.getErrorMessage())
+        #traceback_lines = error.getBriefTraceback().splitlines()
+        #for line in traceback_lines:
+        #    self.logger.info('\t%s' % line)
+        self.finishCycle()
+
+    def nextCycle(self):
         """Stops the reactor.
 
         It is usually overridden for tests.
         """
-        reactor.stop()
+        self.logger.info('Next cycle in 5 seconds.')
+        reactor.callLater(5, self.startService) #reactor.stop()
+
+    def slaveDone(self, slave):
+        """Mark slave as done for this cycle."""
+        self.logger.info('%r marked as done.' % slave)
+        self.remaining_slaves.remove(slave)
+        if len(self.remaining_slaves) == 0:
+            self.finishCycle()
 
     def finishCycle(self, r=None):
         """Finishes a slave-scanning cycle.
@@ -179,16 +203,21 @@ class BuilddManager(service.Service):
          * Evaluate pending builder update requests;
          * Clean the list of active events;
          * Call `gameOver`.
-
         """
         def done(results):
-            for status, request in results:
-                if isinstance(request, BaseBuilderRequest):
-                    request()
+            self.logger.info('Scanning cycle finished.')
+            requests = [
+                request for status, request in results
+                if isinstance(request, BaseBuilderRequest)]
+            for request in requests:
+                self.logger.info('%r' % request)
+                request()
+
             self._deferreds = []
-            self.gameOver()
+            self.nextCycle()
             return results
 
+        self.logger.info('Finishing scanning cycle.')
         dl = defer.DeferredList(self._deferreds, consumeErrors=True)
         dl.addBoth(done)
         return dl
@@ -210,33 +239,24 @@ class BuilddManager(service.Service):
         """
         recording_slaves = []
 
-        level = logging.DEBUG
-        logger = logging.getLogger('slave-scanner')
-        logger.setLevel(level)
-        ch = logging.StreamHandler()
-        ch.setLevel(level)
-        ch.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
-        logger.addHandler(ch)
-
         newInteraction()
-
         builder_set = getUtility(IBuilderSet)
-        builder_set.pollBuilders(logger, FakeZTM())
+        builder_set.pollBuilders(self.logger, FakeZTM())
 
         for builder in builder_set:
             # XXX cprov 2007-11-09: we don't support manual dispatching
             # yet. Once we support it this clause should be removed.
             if builder.manual:
-                logger.warn('Builder is in manual state, ignored.')
+                self.logger.debug('Builder is in manual state, ignored.')
                 continue
 
             if not builder.is_available:
-                logger.warn('Builder is not available, ignored.')
+                self.logger.debug('Builder is not available, ignored.')
                 continue
 
             candidate = builder.findBuildCandidate()
             if candidate is None:
-                logger.debug("No build candidates available for builder.")
+                self.logger.debug("No build candidates available for builder.")
                 continue
 
             slave = RecordingSlave(builder.name, builder.url)
@@ -245,6 +265,7 @@ class BuilddManager(service.Service):
             builder.dispatchBuildCandidate(candidate)
             recording_slaves.append(slave)
 
+        endInteraction()
         return recording_slaves
 
     def checkResume(self, response, slave):
@@ -256,6 +277,7 @@ class BuilddManager(service.Service):
         out, err, code = response
         if code == 0:
             return
+        self.slaveDone(slave)
         return self.reset_request(slave)
 
     def checkDispatch(self, response, slave):
@@ -269,6 +291,7 @@ class BuilddManager(service.Service):
         if status:
             self._mayDispatch(slave)
             return
+        self.slaveDone(slave)
         return self.fail_request(slave, info)
 
     def resumeAndDispatch(self, recording_slaves):
@@ -276,6 +299,11 @@ class BuilddManager(service.Service):
 
         See `RecordingSlave.resumeSlaveHost` for more details.
         """
+        self.logger.info('Resuming slaves: %s' % recording_slaves)
+        self.remaining_slaves = recording_slaves
+        if len(self.remaining_slaves) == 0:
+            self.finishCycle()
+
         for slave in recording_slaves:
             if slave.resume:
                 # The buildd slave needs to be reset before we can dispatch
@@ -301,7 +329,9 @@ class BuilddManager(service.Service):
         if the slave resuming succeeed, it starts the XMLRPC dialog. See
         `_mayDispatch` for more information.
         """
+        self.logger.info('Dispatching: %s' % slave)
         if resume_result is not None:
+            self.slaveDone(slave)
             return resume_result
         self._mayDispatch(slave)
 
@@ -321,6 +351,7 @@ class BuilddManager(service.Service):
         proxy, dispatch the call and set `checkDispatch` as callback
         """
         if len(slave.calls) == 0:
+            self.slaveDone(slave)
             return
 
         # Get an XMPRPC proxy for the buildd slave.
@@ -331,16 +362,4 @@ class BuilddManager(service.Service):
 
         # Store another active event.
         self._deferreds.append(d)
-
-
-if __name__ == "__main__":
-    from canonical.config import dbconfig
-    from canonical.launchpad.scripts import execute_zcml_for_scripts
-
-    # Connect to database
-    dbconfig.setConfigSection('builddmaster')
-    execute_zcml_for_scripts()
-
-    bm = BuilddManager()
-    bm.startService()
-    reactor.run()
+        self.logger.info('%s -> %s(%s)' % (slave, method, args))

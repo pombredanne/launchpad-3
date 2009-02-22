@@ -11,7 +11,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.scripts.builddmanager import (
@@ -129,23 +129,27 @@ class TestBuilddManager(TrialTestCase):
     def setUp(self):
         TrialTestCase.setUp(self)
         self.manager = TestingBuilddManager()
+        self.manager.logger = BufferLogger()
 
         # We will use an intrumented BuilddManager.
         self.stopped = False
-        def game_over():
+        def testNextCycle():
             self.stopped = True
-        self.manager.gameOver = game_over
+        self.manager.nextCycle = testNextCycle
 
         self.test_proxy = TestingXMLRPCProxy()
-        def getTestProxy(slave):
+        def testGetProxyForSlave(slave):
             return self.test_proxy
-        self.manager._getProxyForSlave = getTestProxy
+        self.manager._getProxyForSlave = testGetProxyForSlave
 
-        def scan():
-            return (
-                RecordingSlave(name, 'http://%s:8221/rpc/')
-                for name in ['foo', 'bar'])
-        self.manager.scan = scan
+        def testScan():
+            return (RecordingSlave(name, 'http://%s:8221/rpc/')
+                    for name in ['foo', 'bar'])
+        self.manager.scan = testScan
+
+        def testSlaveDone(slave):
+            pass
+        self.manager.slaveDone = testSlaveDone
 
     def testFinishCycle(self):
         """Check if the chain is terminated and database updates are done.
@@ -310,19 +314,16 @@ class TestBuilderRequest(unittest.TestCase):
         self.assertNotEqual(None, job.logtail)
 
         transaction.commit()
-        logout()
 
         return builder, job.id
 
     def assertJobIsClean(self, job_id):
         """Re-fetch the `IBuildQueue` record and check if it's clean."""
-        login('foo.bar@canonical.com')
         job = getUtility(IBuildQueueSet).get(job_id)
         self.assertEqual('NEEDSBUILD', job.build.buildstate.name)
         self.assertEqual(None, job.builder)
         self.assertEqual(None, job.buildstart)
         self.assertEqual(None, job.logtail)
-        logout()
 
     def testResetBuilderRequest(self):
         """`ResetBuilderRequest` clean any existing jobs.
@@ -331,14 +332,15 @@ class TestBuilderRequest(unittest.TestCase):
         """
         builder, job_id = self._getBuilder()
 
+        login(ANONYMOUS)
         slave = RecordingSlave(builder.name, builder.url)
         request = ResetBuilderRequest(slave)
         request()
 
+        self.assertJobIsClean(job_id)
+
         self.assertTrue(builder.builderok)
         self.assertEqual(None, builder.currentjob)
-
-        self.assertJobIsClean(job_id)
 
     def testFailBuilderRequest(self):
         """`FailBuilderRequest` excludes the builder from pool.
@@ -348,15 +350,16 @@ class TestBuilderRequest(unittest.TestCase):
         """
         builder, job_id = self._getBuilder()
 
+        login(ANONYMOUS)
         slave = RecordingSlave(builder.name, builder.url)
         request = FailBuilderRequest(slave, 'does not work!')
         request()
 
+        self.assertJobIsClean(job_id)
+
         self.assertFalse(builder.builderok)
         self.assertEqual(None, builder.currentjob)
         self.assertEqual('does not work!', builder.failnotes)
-
-        self.assertJobIsClean(job_id)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
