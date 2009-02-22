@@ -243,3 +243,34 @@ statuses:
     Remote bug 1722257: Fix Committed
     Remote bug 1722258: Invalid
     Remote bug 1722259: Won't Fix
+
+
+== Getting the remote product for a bug ==
+
+It's possible to get the remote product for a bug by calling
+SourceForge.getRemoteProduct(). In SourceForge's case, what we refer to
+in Launchpad as a 'remote product' is a combination of (group_id, atid),
+where 'group_id' is the ID of the 'artifact group' on SourceForge to
+which a bug belongs and 'atid' is the 'artifact tracker ID'. This allows
+us to pinpoint the specific SourceForge tracker to which the bug
+belongs. The remote product is returned by getRemoteProduct() as an
+ampersand-separated string.
+
+    >>> print sourceforge.getRemoteProduct('1722250')
+    155120&794532
+
+If you try to get the remote product of a bug that doesn't exist you'll
+get a BugNotFound error.
+
+    >>> print sourceforge.getRemoteProduct(999999999)
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 999999999
+
+If SourceForge can't find the group_id and atid for the bug (for example
+if the bug is private), getRemoteProduct() will return None.
+
+    >>> sourceforge.trace_calls = False
+    >>> sourceforge.initializeRemoteBugDB([99])
+    >>> print sourceforge.getRemoteProduct(99)
+    None

@@ -1,0 +1,111 @@
+= Review person =
+
+Launchpad admins such as Foo Bar can review users and update some of their
+information.
+
+    >>> admin_browser.open('http://launchpad.dev/~salgado')
+
+    >>> admin_browser.getLink('Administer').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/~salgado/+review
+    >>> print admin_browser.title
+    Review Guilherme Salgado
+
+    >>> content = find_main_content(admin_browser.contents)
+    >>> print extract_text(content.h1)
+    Review person
+
+    >>> admin_browser.getControl(
+    ...     'Display Name', index=0).value = 'The one and only Salgado'
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    The one and only Salgado in Launchpad
+
+
+== Review account ==
+
+The review page has a link to the review account page.
+
+    >>> admin_browser.getLink('Administer').click()
+    >>> link = admin_browser.getLink(url='+reviewaccount')
+    >>> print link.text
+    edit[IMG] Review the user's account information
+
+    >>> link.click()
+    >>> print admin_browser.title
+    Review The one and only Salgado
+
+The +reviewaccount page displays account information that is normally
+hidden from the UI.
+
+    >>> content = find_main_content(admin_browser.contents)
+    >>> print extract_text(content.h1)
+    Review person's account
+
+    >>> for tr in content.find(id='summary').findAll('tr'):
+    ...     print extract_text(tr)
+    Created: 2005-06-06
+    Creation reason: Created by the owner himself, coming from Launchpad.
+    OpenID Identifier: salgado_oid
+    Beta OpenID Identifier:
+    Email Addresses: guilherme.salgado@canonical.com
+
+The page also contains a link back to the +review page.
+
+    >>> link = admin_browser.getLink(url='+review')
+    >>> print link.text
+    edit[IMG] Review the user's Launchpad information
+
+The admin can update the user's account.
+
+    >>> admin_browser.getControl(
+    ...     'The status of this account').value = ['SUSPENDED']
+    >>> admin_browser.getControl(
+    ...     name='field.status_comment').value = 'Bad boy.'
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    The one and only Salgado does not use Launchpad
+
+The admin can see the account information of a user that does not use
+Launchpad, and can change the account too.
+
+    >>> admin_browser.getLink('Administer').click()
+    >>> admin_browser.getLink(url='+reviewaccount').click()
+    >>> print admin_browser.title
+    Review The one and only Salgado
+
+    >>> control = admin_browser.getControl(name='field.status_comment')
+    >>> print control.value
+    Bad boy.
+
+    >>> control.value = 'Reinstated after he apologised'
+    >>> admin_browser.getControl(
+    ...     'The status of this account').value = ['ACTIVE']
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    The one and only Salgado does not use Launchpad
+
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    The user is reactivated. He must use the "forgot password" to log in.
+
+
+== Restricted to admins ==
+
+Non admins cannot access the +review and +reviewaccount pages.
+
+    >>> user_browser.open('http://launchpad.dev/~salgado')
+    >>> user_browser.getLink('Administer')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.open('http://launchpad.dev/~salgado/+review')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+    >>> user_browser.open('http://launchpad.dev/~salgado/+reviewaccount')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
