@@ -130,10 +130,9 @@ class GenericBranchCollection:
         else:
             # A union is used here rather than the more simplistic simple
             # joins due to the query plans generated.  If we just have a
-            # simple query then we are joining against TeamParticipation in
-            # two places, once for the owner, and also for the
-            # BranchSubscription.  This creates a bad plan, hence the use of
-            # a union.
+            # simple query then we are joining across TeamParticipation and
+            # BranchSubscription.  This creates a bad plan, hence the use of a
+            # union.
             visible_branches = Union(
                 public_branches,
                 # Branches the person owns (or a team the person is in).
