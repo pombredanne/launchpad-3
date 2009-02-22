@@ -1,7 +1,7 @@
 #!/usr/bin/python2.4
 # Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
-"""Kill <IDLE> in transaction connections that have hung around for too long.
+"""Kill transaction that have hung around for too long.
 """
 
 __metaclass__ = type
