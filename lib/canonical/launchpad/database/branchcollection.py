@@ -7,7 +7,7 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And, LeftJoin, Join, Or, Select
+from storm.expr import And, LeftJoin, Join, Or, Select, Union
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -121,16 +121,32 @@ class GenericBranchCollection:
         if (person == LAUNCHPAD_SERVICES or
             user_has_special_branch_access(person)):
             return self
-        # Do this in a sub-query to avoid making the main query a DISTINCT
-        # one, which would make sorting and the like harder.
-        visible_branches = Select(
-            Branch.id,
-            Or(Branch.private == False,
-               And(Branch.owner == TeamParticipation.teamID,
-                   TeamParticipation.person == person),
-               And(BranchSubscription.branch == Branch.id,
-                   BranchSubscription.person == TeamParticipation.teamID,
-                   TeamParticipation.person == person)))
+        # Everyone can see public branches.
+        public_branches = Select(Branch.id, Branch.private == False)
+
+        if person is None:
+            # Anonymous users can only see the public branches.
+            visible_branches = public_branches
+        else:
+            # A union is used here rather than the more simplistic simple
+            # joins due to the query plans generated.  If we just have a
+            # simple query then we are joining against TeamParticipation in
+            # two places, once for the owner, and also for the
+            # BranchSubscription.  This creates a bad plan, hence the use of
+            # a union.
+            visible_branches = Union(
+                public_branches,
+                # Branches the person owns (or a team the person is in).
+                Select(Branch.id,
+                       And(Branch.owner == TeamParticipation.teamID,
+                           TeamParticipation.person == person)),
+                # Private branches the person is subscribed to, either
+                # directly or indirectly.
+                Select(Branch.id,
+                       And(BranchSubscription.branch == Branch.id,
+                           BranchSubscription.person == TeamParticipation.teamID,
+                           TeamParticipation.person == person,
+                           Branch.private == True)))
         return self._filterBy([], Branch.id.is_in(visible_branches))
 
     def withLifecycleStatus(self, *statuses):
