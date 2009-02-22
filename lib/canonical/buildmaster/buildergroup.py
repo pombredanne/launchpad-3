@@ -70,7 +70,7 @@ class BuilderGroup:
         :param builder: A builder object.
         :param arch: The expected architecture family of the builder.
         """
-        self.logger.info('Checking %s' % builder.name)
+        self.logger.debug('Checking %s' % builder.name)
         try:
             builder.checkSlaveAlive()
             builder.checkCanBuildForDistroArchSeries(arch)
