@@ -11,7 +11,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.scripts.builddmanager import (
@@ -154,9 +154,9 @@ class TestBuilddManager(TrialTestCase):
     def testFinishCycle(self):
         """Check if the chain is terminated and database updates are done.
 
-        'BuilddManager.stopWhenDone' verifies the number of active deferreds
+        'BuilddManager.finishCycle' verifies the number of active deferreds
         and once they cease it performs all needed database updates (builder
-        reset or failure) synchronously and call `BuilddManager.gameOver`.
+        reset or failure) synchronously and call `BuilddManager.nextCycle`.
         """
         # There are no active deferreds in a just intantiated BuilddManager.
         self.assertEqual(0, len(self.manager._deferreds))
@@ -174,6 +174,7 @@ class TestBuilddManager(TrialTestCase):
         events = self.manager.finishCycle()
         def check_events(results):
             self.assertTrue(self.stopped)
+            self.assertEqual(0, len(self.manager._deferreds))
             [reset, fail] = [
                 r for s, r in results if isinstance(r, BaseBuilderRequest)]
             self.assertEqual(
@@ -257,11 +258,11 @@ class TestBuilddManager(TrialTestCase):
         self.assertEqual(2, len(self.manager._deferreds))
 
         events = self.manager.finishCycle()
-        def check_events(results):
+        def check_no_events(results):
             errors = [
                 r for s, r in results if isinstance(r, BaseBuilderRequest)]
             self.assertEqual(0, len(errors))
-        events.addCallback(check_events)
+        events.addCallback(check_no_events)
 
         # Create a broken slave and insert interaction that will
         # cause the builder to be marked as fail.

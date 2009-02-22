@@ -173,6 +173,7 @@ class BuilddManager(service.Service):
         d.addErrback(self.scanFailed)
 
     def scanFailed(self, error):
+        """Deal with scanning failures."""
         self.logger.info(
             'Scanning failed with: %s' % error.getErrorMessage())
         #traceback_lines = error.getBriefTraceback().splitlines()
@@ -181,10 +182,7 @@ class BuilddManager(service.Service):
         self.finishCycle()
 
     def nextCycle(self):
-        """Stops the reactor.
-
-        It is usually overridden for tests.
-        """
+        """Schedulle the next scanning cycle."""
         self.logger.info('Next cycle in 5 seconds.')
         reactor.callLater(5, self.startService) #reactor.stop()
 
@@ -256,7 +254,8 @@ class BuilddManager(service.Service):
 
             candidate = builder.findBuildCandidate()
             if candidate is None:
-                self.logger.debug("No build candidates available for builder.")
+                self.logger.debug(
+                    "No build candidates available for builder.")
                 continue
 
             slave = RecordingSlave(builder.name, builder.url)
@@ -347,8 +346,9 @@ class BuilddManager(service.Service):
     def _mayDispatch(self, slave):
         """Dispatch the next XMLRPC for the given slave.
 
-        If there are not return None, Otherwise it will fetch a new XMLRPC
-        proxy, dispatch the call and set `checkDispatch` as callback
+        If there are no messages to dispatch return None and mark the slave
+        as done for this cycle. Otherwise it will fetch a new XMLRPC proxy,
+        dispatch the call and set `checkDispatch` as callback.
         """
         if len(slave.calls) == 0:
             self.slaveDone(slave)
