@@ -676,6 +676,10 @@ class BranchMergeProposalGetter:
         # BranchMergeProposals are only visible is the user is able to
         # see both the source and target branches.  Here we need to use
         # a similar query to branches.
+
+        # XXX: This is using _generateVisibilityClause -- a private method
+        # that no longer exists.
+
         lp_admins = getUtility(ILaunchpadCelebrities).admin
         if visible_by_user is not None and visible_by_user.inTeam(lp_admins):
             return query
@@ -771,6 +775,8 @@ class BranchMergeProposalGetter:
 
 class BranchMergeProposalQueryBuilder:
     """A utility class to help build branch merge proposal query strings."""
+
+    # XXX: I think that this can be moved into IBranchCollection.
 
     def __init__(self, context, statuses):
         self._tables = ['BranchMergeProposal']
