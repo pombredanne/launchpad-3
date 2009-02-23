@@ -6,3 +6,23 @@ It's possible to get the value of one particular field.
     Content-Type: application/json
     ...
     "Guilherme Salgado"
+
+Field resources are read-only.
+
+  >>> for method in ['HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']:
+  ...     print webservice("/~salgado/display_name", method)
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...

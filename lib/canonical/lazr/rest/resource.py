@@ -485,6 +485,11 @@ class BatchingResourceMixin:
     """A mixin for resources that need to batch lists of entries."""
 
     def __init__(self, context, request):
+        """A basic constructor."""
+        # Like all mixin classes, this class is designed to be used
+        # with multiple inheritance. That requires defining __init__
+        # to call the next constructor in the chain, which means using
+        # super() even though this class itself has no superclass.
         super(BatchingResourceMixin, self).__init__(context, request)
 
     def batch(self, entries, request):
@@ -524,6 +529,11 @@ class CustomOperationResourceMixin:
     """A mixin for resources that implement a collection-entry pattern."""
 
     def __init__(self, context, request):
+        """A basic constructor."""
+        # Like all mixin classes, this class is designed to be used
+        # with multiple inheritance. That requires defining __init__
+        # to call the next constructor in the chain, which means using
+        # super() even though this class itself has no superclass.
         super(CustomOperationResourceMixin, self).__init__(context, request)
 
     def handleCustomGET(self, operation_name):
@@ -579,10 +589,58 @@ class CustomOperationResourceMixin:
         return self.handleCustomPOST(operation_name)
 
 
+class FieldUnmarshallerMixin:
+
+    def __init__(self, context, request):
+        """A basic constructor."""
+        # Like all mixin classes, this class is designed to be used
+        # with multiple inheritance. That requires defining __init__
+        # to call the next constructor in the chain, which means using
+        # super() even though this class itself has no superclass.
+        super(FieldUnmarshallerMixin, self).__init__(context, request)
+        self._unmarshalled_field_cache = {}
+
+    def _unmarshallField(self, field_name, field):
+        """See what a field would look like in a representation.
+
+        :return: a 2-tuple (representation_name, representation_value).
+        """
+        missing = object()
+        cached_value = self._unmarshalled_field_cache.get(
+            field_name, missing)
+        if cached_value is not missing:
+            return cached_value
+
+        field = field.bind(self.context)
+        marshaller = getMultiAdapter((field, self.request),
+                                     IFieldMarshaller)
+        try:
+            if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
+                value = None
+            else:
+                value = getattr(self.entry, field_name)
+            repr_value = marshaller.unmarshall(self.entry, value)
+        except Unauthorized:
+            # Either the client doesn't have permission to see
+            # this field, or it doesn't have permission to read
+            # its current value. Rather than denying the client
+            # access to the resource altogether, use our special
+            # 'redacted' tag: URI for the field's value.
+            repr_value = self.REDACTED_VALUE
+
+        unmarshalled = (marshaller.representation_name, repr_value)
+        self._unmarshalled_field_cache[field_name] = unmarshalled
+        return unmarshalled
+
+
 class ReadOnlyResource(HTTPResource):
     """A resource that serves a string in response to GET."""
 
     def __init__(self, context, request):
+        """A basic constructor."""
+        # This class is designed to be used with mixins. That means
+        # defining __init__ to call the next constructor in the chain,
+        # even though there's no other code in __init__.
         super(ReadOnlyResource, self).__init__(context, request)
 
     def __call__(self):
@@ -609,6 +667,10 @@ class ReadWriteResource(HTTPResource):
     """A resource that responds to GET, PUT, and PATCH."""
 
     def __init__(self, context, request):
+        """A basic constructor."""
+        # This class is designed to be used with mixins. That means
+        # defining __init__ to call the next constructor in the chain,
+        # even though there's no other code in __init__.
         super(ReadWriteResource, self).__init__(context, request)
 
     def __call__(self):
@@ -662,57 +724,19 @@ class EntryHTMLView:
         return self.HTML_TEMPLATE.pt_render(namespace)
 
 
-class UnmarshallsFieldsMixin:
-
-    missing = object()
-
-    def __init__(self, context, request):
-        super(UnmarshallsFieldsMixin, self).__init__(context, request)
-        self._unmarshalled_field_cache = {}
-
-    def _unmarshallField(self, field_name, field):
-        """See what a field would look like in a representation.
-
-        :return: a 2-tuple (representation_name, representation_value).
-        """
-        cached_value = self._unmarshalled_field_cache.get(
-            field_name, self.missing)
-        if cached_value is not self.missing:
-            return cached_value
-
-        field = field.bind(self.context)
-        marshaller = getMultiAdapter((field, self.request),
-                                     IFieldMarshaller)
-        try:
-            if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
-                value = None
-            else:
-                value = getattr(self.entry, field_name)
-            repr_value = marshaller.unmarshall(self.entry, value)
-        except Unauthorized:
-            # Either the client doesn't have permission to see
-            # this field, or it doesn't have permission to read
-            # its current value. Rather than denying the client
-            # access to the resource altogether, use our special
-            # 'redacted' tag: URI for the field's value.
-            repr_value = self.REDACTED_VALUE
-
-        unmarshalled = (marshaller.representation_name, repr_value)
-        self._unmarshalled_field_cache[field_name] = unmarshalled
-        return unmarshalled
-
-
-class EntryFieldResource(ReadOnlyResource, UnmarshallsFieldsMixin):
+class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
     """An individual field of an entry."""
     implements(IEntryFieldResource, IJSONPublishable)
 
     SUPPORTED_CONTENT_TYPES = [HTTPResource.JSON_TYPE]
 
     def __init__(self, context, request):
+        """Initialize with respect to a context and request."""
         super(EntryFieldResource, self).__init__(context, request)
         self.entry = self.context.entry
 
     def do_GET(self):
+        """Create a representation of a single field."""
         name, value = self._unmarshallField(
             self.context.name, self.context.field)
         self.request.response.setHeader('Content-Type', self.JSON_TYPE)
@@ -723,13 +747,14 @@ class EntryField:
     implements(IEntryField)
 
     def __init__(self, entry, field, name):
+        """Initialize with respect to a named field of an entry."""
         self.entry = entry
         self.field = field.bind(entry)
         self.name = name
 
 
 class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
-                    UnmarshallsFieldsMixin):
+                    FieldUnmarshallerMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
 
