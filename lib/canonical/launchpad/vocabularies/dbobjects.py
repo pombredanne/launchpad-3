@@ -209,7 +209,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
         """See `IVocabularyTokenized`."""
         search_results = self.searchForTerms(token)
         if search_results.count() == 1:
-            return self.toTerm(iter(search_results).next())
+            return iter(search_results).next()
         raise LookupError(token)
 
     def _getCollection(self):
@@ -220,10 +220,13 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
 
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""
-        collection = self._getCollection()
+        logged_in_user = getUtility(ILaunchBag).user
+        collection = self._getCollection().visibleByUser(logged_in_user)
         if query is None:
-            return collection.getBranches()
-        return collection.search(query)
+            branches = collection.getBranches()
+        else:
+            branches = collection.search(query)
+        return CountableIterator(branches.count(), branches, self.toTerm)
 
     def __len__(self):
         """See `IVocabulary`."""
