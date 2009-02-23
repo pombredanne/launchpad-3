@@ -62,10 +62,12 @@ class RecordingSlave:
         return '<%s:%s>' % (self.name, self.url)
 
     def ensurepresent(self, *args):
+        """Download files needed for the build."""
         self.calls.append(('ensurepresent', args))
         return (True, 'Download')
 
     def build(self, *args):
+        """Perform the build."""
         self.calls.append(('build', args))
         return ('BuilderStatus.BUILDING', args[0])
 
@@ -93,7 +95,7 @@ class RecordingSlave:
         slave to a known state. This method will only be invoked for virtual
         slaves.
 
-        :return: a deferred
+        :return: a Deferred
         """
         d = utils.getProcessOutputAndValue(
             str(self.resume_argv[0]), [str(u) for u in self.resume_argv[1:]])
@@ -101,10 +103,7 @@ class RecordingSlave:
 
 
 class BaseBuilderRequest:
-    """Base class for *BuilderRequest variations.
-
-    This calls
-    """
+    """Base class for *BuilderRequest variations."""
 
     def __init__(self, slave, info=None):
         self.slave = slave
@@ -120,7 +119,7 @@ class BaseBuilderRequest:
 
     def ___call__(self):
         raise NotImplementedError(
-            "Call sites must define a evaluation method.")
+            "Call sites must define an evaluation method.")
 
 
 class FailBuilderRequest(BaseBuilderRequest):
@@ -149,14 +148,20 @@ class ResetBuilderRequest(BaseBuilderRequest):
 
 
 class BuilddManager(service.Service):
+    """Build slave manager."""
 
+    # To be used for build slaves that could not be reset.
     reset_request = ResetBuilderRequest
+    # To be used in cases where we failed to dispatch a build to a slave.
     fail_request = FailBuilderRequest
 
     def __init__(self):
         self._deferreds = []
+        # Keep track of build slaves that need handling in a scan/dipatch
+        # cycle.
         self.remaining_slaves = []
 
+        # Logger setup
         level = logging.INFO
         logger = logging.getLogger('slave-scanner')
         logger.setLevel(level)
@@ -167,6 +172,7 @@ class BuilddManager(service.Service):
         self.logger = logger
 
     def startService(self):
+        """Service entry point, run at the start of a scan/dispatch cycle."""
         self.logger.info('Starting scanning cycle.')
         d = deferToThread(self.scan)
         d.addCallback(self.resumeAndDispatch)
@@ -176,15 +182,12 @@ class BuilddManager(service.Service):
         """Deal with scanning failures."""
         self.logger.info(
             'Scanning failed with: %s' % error.getErrorMessage())
-        #traceback_lines = error.getBriefTraceback().splitlines()
-        #for line in traceback_lines:
-        #    self.logger.info('\t%s' % line)
         self.finishCycle()
 
     def nextCycle(self):
-        """Schedulle the next scanning cycle."""
+        """Schedule the next scanning cycle."""
         self.logger.info('Next cycle in 5 seconds.')
-        reactor.callLater(5, self.startService) #reactor.stop()
+        reactor.callLater(5, self.startService)
 
     def slaveDone(self, slave):
         """Mark slave as done for this cycle."""
@@ -222,7 +225,7 @@ class BuilddManager(service.Service):
 
     @write_transaction
     def scan(self):
-        """Scan all builders and "dispatch" build jobs to the idle ones.
+        """Scan all builders and dispatch build jobs to the idle ones.
 
         All builders are polled for status and any required post-processing
         actions are performed.
@@ -242,8 +245,6 @@ class BuilddManager(service.Service):
         builder_set.pollBuilders(self.logger, FakeZTM())
 
         for builder in builder_set:
-            # XXX cprov 2007-11-09: we don't support manual dispatching
-            # yet. Once we support it this clause should be removed.
             if builder.manual:
                 self.logger.debug('Builder is in manual state, ignored.')
                 continue
