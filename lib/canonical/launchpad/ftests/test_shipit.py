@@ -365,8 +365,8 @@ class TestShippingRequest(unittest.TestCase):
         # account closed by an admin or by the user himself), though, the
         # recipient_email will be just a piece of text explaining that.
         import transaction
-        from canonical.launchpad.interfaces import IMasterDBObject
-        email = IMasterDBObject(request.recipient.preferredemail)
+        from canonical.launchpad.interfaces import IMasterObject
+        email = IMasterObject(request.recipient.preferredemail)
         email.status = EmailAddressStatus.VALIDATED
         email.destroySelf()
         transaction.commit()

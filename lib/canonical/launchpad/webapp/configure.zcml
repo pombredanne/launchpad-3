@@ -524,7 +524,7 @@
         factory="canonical.launchpad.webapp.adapter.get_slave_store"
         />
     <adapter
-        provides="canonical.launchpad.interfaces.IMasterDBObject"
+        provides="canonical.launchpad.interfaces.IMasterObject"
         for="canonical.launchpad.interfaces.IDBObject"
         factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
         />

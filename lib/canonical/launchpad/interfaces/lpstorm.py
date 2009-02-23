@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'IDBObject', 'IMasterDBObject', 'IMasterStore', 'ISlaveStore', 'IStore',
+    'IDBObject', 'IMasterObject', 'IMasterStore', 'ISlaveStore', 'IStore',
     ]
 
 
@@ -33,6 +33,6 @@ class IDBObject(Interface):
     """A Storm database object."""
 
 
-class IMasterDBObject(IDBObject):
+class IMasterObject(IDBObject):
     """A Storm database object associated with its master Store."""
 

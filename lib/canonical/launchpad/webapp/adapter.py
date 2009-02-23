@@ -34,7 +34,7 @@ from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.lazr.utils import safe_hasattr
 from canonical.launchpad.interfaces import (
-    IMasterDBObject, IMasterStore, ISlaveStore, IStore)
+    IMasterObject, IMasterStore, ISlaveStore, IStore)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, DEFAULT_FLAVOR, MAIN_STORE,
     MASTER_FLAVOR, SLAVE_FLAVOR)
@@ -508,7 +508,7 @@ def get_object_from_master_store(obj):
         naked_obj = master_store.get(naked_obj.__class__, naked_obj.id)
         if naked_obj is None:
             return None
-    alsoProvides(naked_obj, IMasterDBObject)
+    alsoProvides(naked_obj, IMasterObject)
     if is_wrapped:
         return ProxyFactory(naked_obj)
     else:

@@ -602,8 +602,8 @@ subscriptions that use that address are automatically deleted as well.
     >>> transaction.commit()
     >>> kara.preferredemail == kara_alternative
     False
-    >>> from canonical.launchpad.interfaces import IMasterDBObject
-    >>> IMasterDBObject(kara_alternative).destroySelf()
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> IMasterObject(kara_alternative).destroySelf()
     >>> transaction.commit()
     >>> print sorted(email.email
     ...              for email in list_six.getSubscribedAddresses())

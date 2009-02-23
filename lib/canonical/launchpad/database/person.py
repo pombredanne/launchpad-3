@@ -71,7 +71,7 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 
-from canonical.launchpad.interfaces import IMasterDBObject, IMasterStore
+from canonical.launchpad.interfaces import IMasterObject, IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
@@ -1810,7 +1810,7 @@ class Person(
         account.password = password
         if preferred_email is not None:
             self.validateAndEnsurePreferredEmail(
-                IMasterDBObject(preferred_email))
+                IMasterObject(preferred_email))
         # sync so validpersoncache updates.
         account.sync()
 
@@ -1881,7 +1881,7 @@ class Person(
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
         self.password = None
-        IMasterDBObject(self.preferredemail).status = EmailAddressStatus.NEW
+        IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
@@ -2154,7 +2154,7 @@ class Person(
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
-        email = IMasterDBObject(email)
+        email = IMasterObject(email)
         assert not self.is_team, "This method must not be used for teams."
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
@@ -2256,7 +2256,7 @@ class Person(
             existing_preferred_email.status = EmailAddressStatus.VALIDATED
 
         email = removeSecurityProxy(email)
-        IMasterDBObject(email).status = EmailAddressStatus.PREFERRED
+        IMasterObject(email).status = EmailAddressStatus.PREFERRED
 
         getUtility(IHWSubmissionSet).setOwnership(email)
 
