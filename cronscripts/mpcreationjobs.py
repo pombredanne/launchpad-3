@@ -41,5 +41,5 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = RunMergeProposalCreatedJobs(
-        'sendcodemail', config.mpcreationjobs.dbuser)
+        'mpcreationjobs', config.mpcreationjobs.dbuser)
     script.lock_and_run()
