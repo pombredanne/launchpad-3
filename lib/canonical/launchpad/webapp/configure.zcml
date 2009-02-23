@@ -679,4 +679,12 @@
         layer="canonical.launchpad.layers.PageTestLayer"
         />
 
+    <class class="canonical.launchpad.webapp.vocabulary.CountableIterator">
+      <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
+    <class class="canonical.launchpad.webapp.vocabulary.BatchedCountableIterator">
+      <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
 </configure>

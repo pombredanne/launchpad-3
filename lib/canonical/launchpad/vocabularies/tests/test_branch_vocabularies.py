@@ -59,15 +59,9 @@ class TestBranchVocabulary(BranchVocabTestCase):
         factory.makeProductBranch(
             owner=sprocket_person, product=widget, name='foo')
 
-    def test_emptySearch(self):
-        """An empty search should return an empty query string."""
-        query = self.vocab._constructNaiveQueryString('')
-        self.assertEqual(
-            '', query, "Expected empty query string and got %r" % query)
-
     def test_fizzbuzzBranches(self):
         """Return branches that match the string 'fizzbuzz'."""
-        results = self.vocab.search('fizzbuzz')
+        results = self.vocab.searchForTerms('fizzbuzz')
         expected = [
             u'~scotty/sprocket/fizzbuzz',
             u'~scotty/widget/fizzbuzz',
@@ -77,7 +71,7 @@ class TestBranchVocabulary(BranchVocabTestCase):
 
     def test_widgetBranches(self):
         """Searches match the product name too."""
-        results = self.vocab.search('widget')
+        results = self.vocab.searchForTerms('widget')
         expected = [
             u'~scotty/widget/fizzbuzz',
             u'~scotty/widget/mountain',
@@ -90,7 +84,7 @@ class TestBranchVocabulary(BranchVocabTestCase):
 
     def test_spottyBranches(self):
         """Searches also match the registrant name."""
-        results = self.vocab.search('spotty')
+        results = self.vocab.searchForTerms('spotty')
         expected = [
             u'~spotty/widget/hill',
             u'~spotty/widget/sprocket',
@@ -100,7 +94,7 @@ class TestBranchVocabulary(BranchVocabTestCase):
 
     def test_crossAttributeBranches(self):
         """The search checks name, product, and person."""
-        results = self.vocab.search('rocket')
+        results = self.vocab.searchForTerms('rocket')
         expected = [
             u'~scotty/sprocket/fizzbuzz',
             u'~spotty/widget/sprocket',
@@ -164,7 +158,7 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
 
         The result set should not show ~scotty/sprocket/main.
         """
-        results = self.vocab.search('main')
+        results = self.vocab.searchForTerms('main')
         expected = [
             u'~scotty/widget/main',
             ]
@@ -176,7 +170,7 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
 
         The result set should not show ~scotty/sprocket/main.
         """
-        results = self.vocab.search('scotty')
+        results = self.vocab.searchForTerms('scotty')
 
         expected = [
             u'~scotty/widget/main',

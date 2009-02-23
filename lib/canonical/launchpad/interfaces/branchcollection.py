@@ -67,6 +67,13 @@ class IBranchCollection(Interface):
         That is, branches that 'person' owns, registered or is subscribed to.
         """
 
+    def search(search_term):
+        """Search the collection for branches matching 'search_term'.
+
+        :param search_term: A string.
+        :return: An `ICountableIterator`.
+        """
+
     def subscribedBy(person):
         """Restrict the collection to branches subscribed to by 'person'."""
 

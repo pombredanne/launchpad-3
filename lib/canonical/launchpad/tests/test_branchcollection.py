@@ -14,7 +14,8 @@ from canonical.launchpad.database.branchcollection import (
     GenericBranchCollection)
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
+from canonical.launchpad.interfaces.branch import (
+    BranchLifecycleStatus, BranchType)
 from canonical.launchpad.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
 from canonical.launchpad.interfaces.branchsubscription import (
@@ -343,6 +344,117 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         self.assertEqual(
             set([self.public_branch, private_branch]),
             set(branches.getBranches()))
+
+
+class TestSearch(TestCaseWithFactory):
+    """Tests for IBranchCollection.search()."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        remove_all_sample_data_branches()
+        self.collection = getUtility(IAllBranches)
+
+    def test_exact_match_unique_name(self):
+        branch = self.factory.makeAnyBranch()
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search(branch.unique_name)
+        self.assertEqual([branch], list(search_results))
+
+    def test_unique_name_match_not_in_collection(self):
+        branch = self.factory.makeAnyBranch()
+        collection = self.collection.inProduct(self.factory.makeProduct())
+        search_results = collection.search(branch.unique_name)
+        self.assertEqual([], list(search_results))
+
+    def test_exact_match_remote_url(self):
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search(branch.url)
+        self.assertEqual([branch], list(search_results))
+
+    def test_exact_match_launchpad_url(self):
+        branch = self.factory.makeAnyBranch()
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search(branch.codebrowse_url())
+        self.assertEqual([branch], list(search_results))
+
+    def test_match_exact_branch_name(self):
+        branch1 = self.factory.makeAnyBranch(name='foo')
+        branch2 = self.factory.makeAnyBranch(name='foo')
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('foo')
+        self.assertEqual(set([branch1, branch2]), set(search_results))
+
+    def test_match_sub_branch_name(self):
+        branch1 = self.factory.makeAnyBranch(name='afoo')
+        branch2 = self.factory.makeAnyBranch(name='foob')
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('foo')
+        self.assertEqual(set([branch1, branch2]), set(search_results))
+
+    def test_match_exact_owner_name(self):
+        person = self.factory.makePerson(name='foo')
+        branch1 = self.factory.makeAnyBranch(owner=person)
+        branch2 = self.factory.makeAnyBranch(owner=person)
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('foo')
+        self.assertEqual(set([branch1, branch2]), set(search_results))
+
+    def test_match_sub_owner_name(self):
+        person1 = self.factory.makePerson(name='foom')
+        branch1 = self.factory.makeAnyBranch(owner=person1)
+        person2 = self.factory.makePerson(name='afoo')
+        branch2 = self.factory.makeAnyBranch(owner=person2)
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('foo')
+        self.assertEqual(set([branch1, branch2]), set(search_results))
+
+    def test_match_exact_product_name(self):
+        product = self.factory.makeProduct(name='foo')
+        branch1 = self.factory.makeAnyBranch(product=product)
+        branch2 = self.factory.makeAnyBranch(product=product)
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('foo')
+        self.assertEqual(set([branch1, branch2]), set(search_results))
+
+    def test_match_sub_product_name(self):
+        product1 = self.factory.makeProduct(name='foom')
+        branch1 = self.factory.makeProductBranch(product=product1)
+        product2 = self.factory.makeProduct(name='afoo')
+        branch2 = self.factory.makeProductBranch(product=product2)
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('foo')
+        self.assertEqual(set([branch1, branch2]), set(search_results))
+
+    def test_match_sub_distro_name(self):
+        branch = self.factory.makePackageBranch()
+        not_branch = self.factory.makeAnyBranch()
+        search_term = branch.distribution.name[1:]
+        search_results = self.collection.search(search_term)
+        self.assertEqual([branch], list(search_results))
+
+    def test_match_sub_distroseries_name(self):
+        branch = self.factory.makePackageBranch()
+        not_branch = self.factory.makeAnyBranch()
+        search_term = branch.distroseries.name[1:]
+        search_results = self.collection.search(search_term)
+        self.assertEqual([branch], list(search_results))
+
+    def test_match_sub_sourcepackage_name(self):
+        branch = self.factory.makePackageBranch()
+        not_branch = self.factory.makeAnyBranch()
+        search_term = branch.sourcepackagename.name[1:]
+        search_results = self.collection.search(search_term)
+        self.assertEqual([branch], list(search_results))
+
+    def test_dont_match_product_if_in_product(self):
+        product = self.factory.makeProduct('foo')
+        branch1 = self.factory.makeProductBranch(product=product, name='foo')
+        branch2 = self.factory.makeProductBranch(product=product, name='bar')
+        search_results = self.collection.inProduct(product).search('foo')
+        self.assertEqual([branch1], list(search_results))
 
 
 def test_suite():
