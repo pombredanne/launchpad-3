@@ -23,6 +23,7 @@ from StringIO import StringIO
 import os.path
 
 import pytz
+from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -32,6 +33,7 @@ from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.components.packagelocation import PackageLocation
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.processor import ProcessorFamilySet
@@ -201,9 +203,17 @@ class LaunchpadObjectFactory(ObjectFactory):
         is looking in the main Store for email address details, not the
         email address master Store (the auth Store).
         """
-        rv = self.makePersonNoCommit(*args, **kwargs)
+        person = self.makePersonNoCommit(*args, **kwargs)
         transaction.commit()
-        return rv
+        # Stuff the preferredemail cache. cachedproperty does not get
+        # reset across transactions, so person.preferredemail is still
+        # None despite the preferred email address now being available
+        # in the main Store.
+        person._preferredemail_cached = Store.of(person).find(
+            EmailAddress, personID=person.id,
+            status=EmailAddressStatus.PREFERRED).one()
+        assert person.preferredemail is not None, 'preferredemail not set!'
+        return person
 
     def makePersonNoCommit(
         self, email=None, name=None, password=None,
