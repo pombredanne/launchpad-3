@@ -57,7 +57,8 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.location import IPersonLocation
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
-from canonical.launchpad.interfaces.milestone import IMilestone
+from canonical.launchpad.interfaces.milestone import (
+    IMilestone, IProjectMilestone)
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
 from canonical.launchpad.interfaces.pofile import IPOFile
@@ -511,6 +512,14 @@ class AdminShippingRequestSetByShipItAdmins(
     permission = 'launchpad.Admin'
     usedfor = IShippingRequestSet
 
+
+class EditProjectMilestoneNever(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IProjectMilestone
+
+    def checkAuthenticated(self, user):
+        """IProjectMilestone is a fake content object."""
+        return False
 
 class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'

@@ -1,10 +1,3 @@
-<tal:root
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
-
-<tal:tag condition="view/update"/>
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
@@ -13,17 +6,79 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
+  <head>
+    <metal:css fill-slot="head_epilogue">
+    <style type="text/css">
+      table.form table {
+        margin-left: 18.5em;
+      }
+    </style>
+    </metal:css>
+  </head>
+  <body>
+    <div metal:fill-slot="main">
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <div metal:fill-slot="extra_info">
+          <tal:review-person tal:condition="view/is_viewing_person">
+            <p>
+              Changing a user's name will change his OpenID identifier and
+              may cause problems with relying parties. PPA and mailing lists
+              will be broken too.
+            </p>
+            <p>
+              <a tal:attributes="
+                href string:${view/context/fmt:url}/+reviewaccount"><img
+                tal:attributes="alt string:edit" src="/@@/edit" />
+                Review the user's account information</a>.
+            </p>
+          </tal:review-person>
 
-    <title tal:content="view/page_title|default"
-           metal:fill-slot="title">Launchpad
-    </title>
-    <body>
-        <div metal:fill-slot="main">
-            <div metal:use-macro="context/@@launchpad_editform/editform" />
+          <tal:review-account tal:condition="not: view/is_viewing_person">
+            <p>
+              The account displayname is not always the same as the Launchpad
+              displayname.
+            </p>
+            <p>
+              <a tal:attributes="
+                href string:${view/person/fmt:url}/+review"><img
+                tal:attributes="alt string:edit" src="/@@/edit" />
+                Review the user's Launchpad information</a>.
+            </p>
+             <table id="summary">
+              <tr>
+                <th>Created:</th>
+                <td><tal:date replace="view/context/date_created/fmt:date" /></td>
+              </tr>
+              <tr>
+                <th>Creation reason:</th>
+                <td><tal:reason replace="view/context/creation_rationale/title" /></td>
+              </tr>
+              <tr>
+                <th>OpenID Identifier:</th>
+                <td><tal:openid replace="view/context/openid_identifier" /></td>
+              </tr>
+              <tr>
+                <th>Beta OpenID Identifier:</th>
+                <td><tal:openid replace="view/context/new_openid_identifier" /></td>
+              </tr>
+              <tr>
+                <th>Email Addresses:</th>
+                <td>
+                  <tal:emails repeat="email view/email_addresses">
+                    <span style="white-space: nowrap">
+                      <tal:email replace="email">foo2@bar.com</tal:email>
+                      <br tal:omit-tag="repeat/email/end" />
+                    </span>
+                  </tal:emails>
+                </td>
+              </tr>
+            </table>
+          </tal:review-account>
         </div>
-    </body>
+      </div>
+    </div>
+  </body>
 </html>
-</tal:root>
