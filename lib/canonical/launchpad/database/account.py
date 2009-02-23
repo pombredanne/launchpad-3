@@ -10,6 +10,7 @@ import random
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.references import Reference
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
@@ -56,6 +57,8 @@ class Account(SQLBase):
     new_openid_identifier = StringCol(
         dbName='old_openid_identifier', notNull=False, default=DEFAULT)
 
+    person = Reference("id", "Person.account", on_remote=True)
+
     @property
     def preferredemail(self):
         """See `IAccount`."""
@@ -92,6 +95,13 @@ class Account(SQLBase):
             assert False, "This should not be reachable."
 
     password = property(_get_password, _set_password)
+
+    @property
+    def is_valid(self):
+        """See `IAccount`."""
+        if self.status != AccountStatus.ACTIVE:
+            return False
+        return self.preferredemail is not None
 
     def createPerson(self, rationale):
         """See `IAccount`."""

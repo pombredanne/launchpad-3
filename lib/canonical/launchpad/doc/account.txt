@@ -10,8 +10,8 @@ The AccountSet object provides methods to retrieve `IAccount`s. It
 implements the IAccountSet.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces.account import (
-    ...     IAccount, IAccountSet)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IAccount, IAccountSet, IPerson)
 
     >>> account_set = getUtility(IAccountSet)
     >>> verifyObject(IAccountSet, account_set)
@@ -164,6 +164,12 @@ unavailable.
     >>> account.displayname
     u'No Privileges Person'
 
+If an account has an associated person, it can be accessed via the
+person attribute:
+
+    >>> IPerson(account) == person
+    True
+
 An Account has an OpenID identifier used to generate the OpenID identity
 URL.
 
@@ -215,6 +221,46 @@ encrypted, by setting password_is_encrypted to True.
     >>> clear_account.password
     u'clear_password'
 
+
+== Valid Accounts ==
+
+Like person objects, an account is considered valid if it is in the
+active state and has a preferred email address.  So a newly created
+account with no email address is not valid:
+
+    >>> account = account_set.new(
+    ...     AccountCreationRationale.USER_CREATED,
+    ...     "Valid Account Test")
+    >>> syncUpdate(account)
+    >>> account.status = AccountStatus.ACTIVE
+    >>> account.is_valid
+    False
+
+Lets add a new email address to the account:
+
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> email = getUtility(IEmailAddressSet).new(
+    ...     "valid-account-test@example.com", account=account)
+    >>> account.is_valid
+    False
+
+The account is still not valid because it has no preferred email.
+Setting the email to preferred fixes this:
+
+    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> email.status = EmailAddressStatus.PREFERRED
+    >>> account.is_valid
+    True
+
+If the account is deactivated, it won't be considered valid any more:
+
+    >>> account.status = AccountStatus.DEACTIVATED
+    >>> account.is_valid
+    False
+
+
+== Creating an IPerson for an Account ==
+
 From a newly created account which has no person associated with, it is
 possible to create a new person that will be associated with it.
 
@@ -224,9 +270,16 @@ possible to create a new person that will be associated with it.
     ...     'foo@example.com',
     ...     AccountCreationRationale.OWNER_CREATED_UBUNTU_SHOP,
     ...     'Display name', 'password')
+    >>> IPerson(fresh_account)
+    Traceback (most recent call last):
+      ...
+    TypeError: ('Could not adapt', ...
+
     >>> person = fresh_account.createPerson(
     ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
     >>> person.account == fresh_account
+    True
+    >>> IPerson(fresh_account) == person
     True
     >>> person.preferredemail == fresh_account.preferredemail
     True
