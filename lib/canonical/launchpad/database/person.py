@@ -2248,19 +2248,18 @@ class Person(
                 "interface. %s doesn't." % email)
         assert email.personID == self.id
 
-        if self.preferredemail is not None:
-            self.preferredemail.status = EmailAddressStatus.VALIDATED
-            # We need to flush updates, because we don't know what order
-            # SQLObject will issue the changes and we can't set the new
-            # address to PREFERRED until the old one has been set to VALIDATED
-            self.preferredemail.syncUpdate()
+        existing_preferred_email = IMasterStore(EmailAddress).find(
+            EmailAddress, personID=self.id,
+            status=EmailAddressStatus.PREFERRED).one()
 
-        # Get the non-proxied EmailAddress object, so we can call
-        # syncUpdate() on it.
+        if existing_preferred_email is not None:
+            existing_preferred_email.status = EmailAddressStatus.VALIDATED
+
         email = removeSecurityProxy(email)
-        email.status = EmailAddressStatus.PREFERRED
-        email.syncUpdate()
+        IMasterDBObject(email).status = EmailAddressStatus.PREFERRED
+
         getUtility(IHWSubmissionSet).setOwnership(email)
+
         # Now we update our cache of the preferredemail. This has to be
         # the email address from the same store as the person.
         # It might be None if the emailaddresss was created in this

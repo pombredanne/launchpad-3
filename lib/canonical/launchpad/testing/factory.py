@@ -33,6 +33,7 @@ from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.components.packagelocation import PackageLocation
+from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
@@ -209,15 +210,17 @@ class LaunchpadObjectFactory(ObjectFactory):
         return person
 
     def _stuff_preferredemail_cache(self, person):
-        # Stuff the preferredemail cache. cachedproperty does not get
-        # reset across transactions, so person.preferredemail is still
-        # None despite the preferred email address now being available
-        # in the main Store.
+        """Stuff the preferredemail cache.
+        
+        cachedproperty does not get reset across transactions,
+        so person.preferredemail can contain a bogus value even after
+        a commit, despite all changes now being available in the main
+        store.
+        """
         person = removeSecurityProxy(person) # Need to poke person's privates
         person._preferredemail_cached = Store.of(person).find(
             EmailAddress, personID=person.id,
             status=EmailAddressStatus.PREFERRED).one()
-        assert person.preferredemail is not None, 'preferredemail not set!'
 
     def makePersonNoCommit(
         self, email=None, name=None, password=None,
@@ -322,9 +325,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             # over subscriptions in the doctests.
             person.mailing_list_auto_subscribe_policy = \
                 MailingListAutoSubscribePolicy.NEVER
-        getUtility(IEmailAddressSet).new(alternative_address, person,
-                                         EmailAddressStatus.VALIDATED,
-                                         person.account)
+        account = IMasterStore(Account).get(Account, person.accountID)
+        getUtility(IEmailAddressSet).new(
+            alternative_address, person, EmailAddressStatus.VALIDATED, account)
         transaction.commit()
         self._stuff_preferredemail_cache(person)
         return person

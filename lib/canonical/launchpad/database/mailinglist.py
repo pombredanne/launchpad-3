@@ -398,11 +398,14 @@ class MailingList(SQLBase):
             raise CannotChangeSubscription(
                 '%s is not a member of the mailing list: %s' %
                 (person.displayname, self.team.displayname))
-        if address is not None and address.person != person:
+        if address is not None and address.personID != person.id:
             raise CannotChangeSubscription(
                 '%s does not own the email address: %s' %
                 (person.displayname, address.email))
-        subscription.email_address = address
+        if address is None:
+            subscription.email_address = None
+        else:
+            subscription.email_addressID = address.id
 
     def getSubscribedAddresses(self):
         """See `IMailingList`."""
