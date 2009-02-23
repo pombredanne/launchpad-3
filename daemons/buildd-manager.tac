@@ -6,13 +6,13 @@
 from twisted.application import service
 from twisted.web import server
 
-from canonical.config import config, dbconfig
+from canonical.config import config
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts.builddmanager import BuilddManager
+from canonical.lp import initZopeless
 
-# Connect to database
-dbconfig.setConfigSection('builddmaster')
 execute_zcml_for_scripts()
+initZopeless(dbuser=config.builddmaster.dbuser)
 
 application = service.Application('BuilddManager')
 service = BuilddManager()

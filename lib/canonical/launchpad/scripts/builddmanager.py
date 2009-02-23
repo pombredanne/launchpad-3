@@ -10,7 +10,7 @@ from twisted.protocols.policies import TimeoutMixin
 from twisted.web.xmlrpc import Proxy, _QueryFactory, QueryProtocol
 
 from zope.component import getUtility
-from zope.security.management import newInteraction
+from zope.security.management import endInteraction, newInteraction
 
 from canonical.config import config
 from canonical.launchpad.interfaces.build import BuildStatus
@@ -96,18 +96,132 @@ class RecordingSlave:
         :return: a deferred
         """
         d = utils.getProcessOutputAndValue(
-            self.resume_argv[0], self.resume_argv[1:])
+            str(self.resume_argv[0]), [str(u) for u in self.resume_argv[1:]])
         return d
 
 
-class BuilddManagerHelper:
-    """Helper class for build slave mananager.
+class BaseBuilderRequest:
+    """Base class for *BuilderRequest variations.
 
-    This class encapsulates the dealings with the database.
+    This calls
     """
 
+    def __init__(self, slave, info=None):
+        self.slave = slave
+        self.info = info
+
+    def _cleanJob(self, job):
+        """Clean up in case of builder reset or dispatch failure."""
+        if job is not None:
+            job.build.buildstate = BuildStatus.NEEDSBUILD
+            job.builder = None
+            job.buildstart = None
+            job.logtail = None
+
+    def ___call__(self):
+        raise NotImplementedError(
+            "Call sites must define a evaluation method.")
+
+
+class FailBuilderRequest(BaseBuilderRequest):
+    """Clean up in case we failed to dispatch to a builder."""
+
+    def __repr__(self):
+        return  '%r failure (%s)' % (self.slave, self.info)
+
     @write_transaction
-    def scanAllBuilders(self):
+    def __call__(self):
+        builder = getUtility(IBuilderSet)[self.slave.name]
+        builder.failbuilder(self.info)
+        self._cleanJob(builder.currentjob)
+
+
+class ResetBuilderRequest(BaseBuilderRequest):
+    """Clean up in case a builder could not be reset."""
+
+    def __repr__(self):
+        return  '%r reset' % self.slave
+
+    @write_transaction
+    def __call__(self):
+        builder = getUtility(IBuilderSet)[self.slave.name]
+        self._cleanJob(builder.currentjob)
+
+
+class BuilddManager(service.Service):
+
+    reset_request = ResetBuilderRequest
+    fail_request = FailBuilderRequest
+
+    def __init__(self):
+        self._deferreds = []
+        self.remaining_slaves = []
+
+        level = logging.INFO
+        logger = logging.getLogger('slave-scanner')
+        logger.setLevel(level)
+        ch = logging.StreamHandler()
+        ch.setLevel(level)
+        ch.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
+        logger.addHandler(ch)
+        self.logger = logger
+
+    def startService(self):
+        self.logger.info('Starting scanning cycle.')
+        d = deferToThread(self.scan)
+        d.addCallback(self.resumeAndDispatch)
+        d.addErrback(self.scanFailed)
+
+    def scanFailed(self, error):
+        """Deal with scanning failures."""
+        self.logger.info(
+            'Scanning failed with: %s' % error.getErrorMessage())
+        #traceback_lines = error.getBriefTraceback().splitlines()
+        #for line in traceback_lines:
+        #    self.logger.info('\t%s' % line)
+        self.finishCycle()
+
+    def nextCycle(self):
+        """Schedulle the next scanning cycle."""
+        self.logger.info('Next cycle in 5 seconds.')
+        reactor.callLater(5, self.startService) #reactor.stop()
+
+    def slaveDone(self, slave):
+        """Mark slave as done for this cycle."""
+        self.logger.info('%r marked as done.' % slave)
+        self.remaining_slaves.remove(slave)
+        if len(self.remaining_slaves) == 0:
+            self.finishCycle()
+
+    def finishCycle(self, r=None):
+        """Finishes a slave-scanning cycle.
+
+        Once all the active events were executed:
+
+         * Evaluate pending builder update requests;
+         * Clean the list of active events;
+         * Call `gameOver`.
+        """
+        def done(results):
+            self.logger.info('Scanning cycle finished.')
+            requests = [
+                request for status, request in results
+                if isinstance(request, BaseBuilderRequest)]
+            for request in requests:
+                self.logger.info('%r' % request)
+                request()
+
+            self._deferreds = []
+            self.nextCycle()
+            return results
+
+        self.logger.info('Finishing scanning cycle.')
+        dl = defer.DeferredList(self._deferreds, consumeErrors=True)
+        dl.addBoth(done)
+        return dl
+
+    @write_transaction
+    def scan(self):
         """Scan all builders and "dispatch" build jobs to the idle ones.
 
         All builders are polled for status and any required post-processing
@@ -123,33 +237,25 @@ class BuilddManagerHelper:
         """
         recording_slaves = []
 
-        level = logging.DEBUG
-        logger = logging.getLogger('slave-scanner')
-        logger.setLevel(level)
-        ch = logging.StreamHandler()
-        ch.setLevel(level)
-        ch.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
-        logger.addHandler(ch)
-
         newInteraction()
-
         builder_set = getUtility(IBuilderSet)
-        builder_set.pollBuilders(logger, FakeZTM())
+        builder_set.pollBuilders(self.logger, FakeZTM())
 
         for builder in builder_set:
             # XXX cprov 2007-11-09: we don't support manual dispatching
             # yet. Once we support it this clause should be removed.
             if builder.manual:
-                logger.warn('Builder is in manual state, ignored.')
+                self.logger.debug('Builder is in manual state, ignored.')
                 continue
 
             if not builder.is_available:
-                logger.warn('Builder is not available, ignored.')
+                self.logger.debug('Builder is not available, ignored.')
                 continue
 
             candidate = builder.findBuildCandidate()
             if candidate is None:
-                logger.debug("No build candidates available for builder.")
+                self.logger.debug(
+                    "No build candidates available for builder.")
                 continue
 
             slave = RecordingSlave(builder.name, builder.url)
@@ -158,83 +264,45 @@ class BuilddManagerHelper:
             builder.dispatchBuildCandidate(candidate)
             recording_slaves.append(slave)
 
+        endInteraction()
         return recording_slaves
 
-    def _cleanJob(self, job):
-        """Clean up in case of builder reset or dispatch failure."""
-        if job is not None:
-            job.build.buildstate = BuildStatus.NEEDSBUILD
-            job.builder = None
-            job.buildstart = None
-            job.logtail = None
-
-    @write_transaction
-    def resetBuilder(self, name):
-        """Clean up in case a builder could not be reset."""
-        newInteraction()
-        builder = getUtility(IBuilderSet)[name]
-        self._cleanJob(builder.currentjob)
-
-    @write_transaction
-    def failBuilder(self, name, info):
-        """Clean up in case we failed to dispatch to a builder."""
-        newInteraction()
-        builder = getUtility(IBuilderSet)[name]
-        builder.failbuilder(info)
-        self._cleanJob(builder.currentjob)
-
-
-class BuilddManager(service.Service):
-
-    def __init__(self):
-        self.helper = BuilddManagerHelper()
-        self.builders_to_reset = []
-        self.builders_to_fail = []
-        self._deferreds = []
-
-    def startService(self):
-        d = deferToThread(self.scan)
-        d.addCallback(self.resumeAndDispatch)
-        d.addCallback(self.finishCycle)
-
-    def gameOver(self):
-        """Stops the reactor.
-
-        It is usually overridden for tests.
-        """
-        reactor.stop()
-
-    def finishCycle(self, r=None):
-        def done(results):
-            self._deferreds = []
-            for name in self.builders_to_reset:
-                self.helper.resetBuilder(name)
-            for name, info in self.builders_to_fail:
-                self.helper.failBuilder(name, info)
-            self.gameOver()
-
-        dl = defer.DeferredList(self._deferreds, consumeErrors=True)
-        dl.addBoth(done)
-        return dl
-
-    def scan(self):
-        return self.helper.scanAllBuilders()
-
     def checkResume(self, response, slave):
+        """Verify the results of a slave resume procedure.
+
+        If it failed returns a correspoding `ResetBuilderRequest` database
+        update request.
+        """
         out, err, code = response
-        if code != 0:
-            self.builders_to_reset.append(slave.name)
-            return False
-        return True
+        if code == 0:
+            return
+        self.slaveDone(slave)
+        return self.reset_request(slave)
 
     def checkDispatch(self, response, slave):
+        """Verify the results of a slave  xmlrpc calls.
+
+        If it failed returns a correspoding `FailBuilderRequest` database
+        update request. Otherwise dispatch the next call if there are any
+        and return None.
+        """
         status, info = response
-        if not status:
-            self.builders_to_fail.append((slave.name, info))
+        if status:
+            self._mayDispatch(slave)
             return
-        self._maybeDispatch(slave)
+        self.slaveDone(slave)
+        return self.fail_request(slave, info)
 
     def resumeAndDispatch(self, recording_slaves):
+        """Dispatch existing resume procedure calls and chain dispatching.
+
+        See `RecordingSlave.resumeSlaveHost` for more details.
+        """
+        self.logger.info('Resuming slaves: %s' % recording_slaves)
+        self.remaining_slaves = recording_slaves
+        if len(self.remaining_slaves) == 0:
+            self.finishCycle()
+
         for slave in recording_slaves:
             if slave.resume:
                 # The buildd slave needs to be reset before we can dispatch
@@ -244,9 +312,27 @@ class BuilddManager(service.Service):
             else:
                 # Buildd slave is clean, we can dispatch a build to it
                 # straightaway.
-                d = defer.maybeDeferred(lambda: True)
+                d = defer.succeed(None)
             d.addCallback(self.dispatchBuild, slave)
+            # Store the active deferred.
             self._deferreds.append(d)
+
+    def dispatchBuild(self, resume_result, slave):
+        """Start dispatching a build to a slave.
+
+        If the previous task in chain (slave resuming) has failed it will
+        receive a `ResetBuilderRequest` instance as 'resume_result' and
+        will immeadiately return that so the subsequent callback can collect
+        it.
+
+        if the slave resuming succeeed, it starts the XMLRPC dialog. See
+        `_mayDispatch` for more information.
+        """
+        self.logger.info('Dispatching: %s' % slave)
+        if resume_result is not None:
+            self.slaveDone(slave)
+            return resume_result
+        self._mayDispatch(slave)
 
     def _getProxyForSlave(self, slave):
         """Return a twisted.web.xmlrpc.Proxy for the buildd slave.
@@ -257,40 +343,23 @@ class BuilddManager(service.Service):
         proxy.queryFactory = QueryFactoryWithTimeout
         return proxy
 
-    def dispatchBuild(self, resume_ok, slave):
-        """Dispatch a build to a slave.
+    def _mayDispatch(self, slave):
+        """Dispatch the next XMLRPC for the given slave.
 
-        This may involve a number of actions which should be chained in the
-        same order as recorded.
+        If there are no messages to dispatch return None and mark the slave
+        as done for this cycle. Otherwise it will fetch a new XMLRPC proxy,
+        dispatch the call and set `checkDispatch` as callback.
         """
-        # Stop right here if the buildd slave could not be reset.
-        if not resume_ok:
-            return False
-        return self._maybeDispatch(slave)
-
-    def _maybeDispatch(self, slave):
         if len(slave.calls) == 0:
-            return False
+            self.slaveDone(slave)
+            return
 
         # Get an XMPRPC proxy for the buildd slave.
         proxy = self._getProxyForSlave(slave)
         method, args = slave.calls.pop(0)
         d = proxy.callRemote(method, *args)
         d.addCallback(self.checkDispatch, slave)
+
+        # Store another active event.
         self._deferreds.append(d)
-
-        return True
-
-
-
-if __name__ == "__main__":
-    from canonical.config import dbconfig
-    from canonical.launchpad.scripts import execute_zcml_for_scripts
-
-    # Connect to database
-    dbconfig.setConfigSection('builddmaster')
-    execute_zcml_for_scripts()
-
-    bm = BuilddManager()
-    bm.startService()
-    reactor.run()
+        self.logger.info('%s -> %s(%s)' % (slave, method, args))

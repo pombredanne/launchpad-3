@@ -70,7 +70,7 @@ class BuilderGroup:
         :param builder: A builder object.
         :param arch: The expected architecture family of the builder.
         """
-        self.logger.info('Checking %s' % builder.name)
+        self.logger.debug('Checking %s' % builder.name)
         try:
             builder.checkSlaveAlive()
             builder.checkCanBuildForDistroArchSeries(arch)
@@ -367,12 +367,12 @@ class BuilderGroup:
         # the DB changes done in process-upload, considering that the
         # transaction was set with ISOLATION_LEVEL_READ_COMMITED
         # isolation level.
-        #cur = cursor()
-        #cur.execute('SHOW transaction_isolation')
-        #isolation_str = cur.fetchone()[0]
-        #assert isolation_str == 'read committed', (
-        #    'BuildMaster/BuilderGroup transaction isolation should be '
-        #    'ISOLATION_LEVEL_READ_COMMITTED (not "%s")' % isolation_str)
+        cur = cursor()
+        cur.execute('SHOW transaction_isolation')
+        isolation_str = cur.fetchone()[0]
+        assert isolation_str == 'read committed', (
+            'BuildMaster/BuilderGroup transaction isolation should be '
+            'ISOLATION_LEVEL_READ_COMMITTED (not "%s")' % isolation_str)
 
         original_slave = queueItem.builder.slave
 

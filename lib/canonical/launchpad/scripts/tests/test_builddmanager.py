@@ -11,11 +11,12 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.scripts.builddmanager import (
-    BuilddManager, BuilddManagerHelper, RecordingSlave)
+    BaseBuilderRequest, BuilddManager, FailBuilderRequest, RecordingSlave,
+    ResetBuilderRequest)
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, TwistedLayer)
@@ -90,27 +91,7 @@ class TestRecordingSlaves(TrialTestCase):
         return d
 
 
-class TestBuilddManagerHelper:
-    """This class mimics the BuilddManagerHelper class."""
-
-    def __init__(self):
-        self.builders_reset = []
-        self.builders_failed = []
-
-    def scanAllBuilders(self):
-        fake_slaves = (
-            RecordingSlave(name, 'http://%s:8221/rpc/')
-            for name in ['foo', 'bar'])
-        return fake_slaves
-
-    def resetBuilder(self, name):
-        self.builders_reset.append(name)
-
-    def failBuilder(self, name, info):
-        self.builders_failed.append((name, info))
-
-
-class TestXMLRPCProxy:
+class TestingXMLRPCProxy:
     """This class mimics a twisted XMLRPC Proxy class."""
 
     def __init__(self, failure_info=None):
@@ -123,53 +104,85 @@ class TestXMLRPCProxy:
         return defer.maybeDeferred(lambda: (self.works, self.failure_info))
 
 
+class TestingResetBuilderRequest(ResetBuilderRequest):
+
+    def __call__(self):
+        pass
+
+
+class TestingFailBuilderRequest(FailBuilderRequest):
+
+    def __call__(self):
+        pass
+
+
+class TestingBuilddManager(BuilddManager):
+
+    reset_request = TestingResetBuilderRequest
+    fail_request = TestingFailBuilderRequest
+
+
 class TestBuilddManager(TrialTestCase):
     """Tests for the actual build slave manager."""
     layer = TwistedLayer
 
     def setUp(self):
         TrialTestCase.setUp(self)
-        self.manager = BuilddManager()
-        self.manager.helper = TestBuilddManagerHelper()
+        self.manager = TestingBuilddManager()
+        self.manager.logger = BufferLogger()
 
-        # We will instrument the `gameOver` method and schedule one reset
-        # and one failure update.
+        # We will use an intrumented BuilddManager.
         self.stopped = False
-        def game_over():
+        def testNextCycle():
             self.stopped = True
-        self.manager.gameOver = game_over
+        self.manager.nextCycle = testNextCycle
 
-        self.test_proxy = TestXMLRPCProxy()
-        def getTestProxy(slave):
+        self.test_proxy = TestingXMLRPCProxy()
+        def testGetProxyForSlave(slave):
             return self.test_proxy
-        self.manager._getProxyForSlave = getTestProxy
+        self.manager._getProxyForSlave = testGetProxyForSlave
+
+        def testScan():
+            return (RecordingSlave(name, 'http://%s:8221/rpc/')
+                    for name in ['foo', 'bar'])
+        self.manager.scan = testScan
+
+        def testSlaveDone(slave):
+            pass
+        self.manager.slaveDone = testSlaveDone
 
     def testFinishCycle(self):
         """Check if the chain is terminated and database updates are done.
 
-        'BuilddManager.stopWhenDone' verifies the number of active deferreds
+        'BuilddManager.finishCycle' verifies the number of active deferreds
         and once they cease it performs all needed database updates (builder
-        reset or failure) synchronously and call `BuilddManager.gameOver`.
+        reset or failure) synchronously and call `BuilddManager.nextCycle`.
         """
         # There are no active deferreds in a just intantiated BuilddManager.
         self.assertEqual(0, len(self.manager._deferreds))
 
-        self.manager.builders_to_reset = ['foo']
-        self.manager.builders_to_fail = [('bar', 'boingo')]
+        # Fill the deferred list with events we can check later.
+        reset_me = TestingResetBuilderRequest(
+            RecordingSlave('foo', 'http://foo'))
+        fail_me = TestingFailBuilderRequest(
+            RecordingSlave('bar', 'http://bar'), 'boingo')
+        self.manager._deferreds.extend(
+            [defer.succeed(reset_me), defer.succeed(fail_me), defer.fail()])
 
         # When `finishCycle` is called, and it is called after all build
         # slave interation, active deferreds are consumed.
-        self.manager._deferreds.extend(
-            [defer.succeed(True), defer.fail()])
-        wait_for = self.manager.finishCycle()
-
-        self.assertTrue(self.stopped)
-        self.assertEqual(
-            ['foo'], self.manager.helper.builders_reset)
-        self.assertEqual(
-            [('bar', 'boingo')], self.manager.helper.builders_failed)
-
-        return wait_for
+        events = self.manager.finishCycle()
+        def check_events(results):
+            self.assertTrue(self.stopped)
+            self.assertEqual(0, len(self.manager._deferreds))
+            [reset, fail] = [
+                r for s, r in results if isinstance(r, BaseBuilderRequest)]
+            self.assertEqual(
+                '<foo:http://foo> reset', repr(reset))
+            self.assertEqual(
+                '<bar:http://bar> failure (boingo)', repr(fail))
+        events.addCallback(check_events)
+        return events
 
     def testScannedSlaves(self):
         """`BuilddManager.scan` return a list of `RecordingSlaves`.
@@ -183,96 +196,103 @@ class TestBuilddManager(TrialTestCase):
     def testCheckResume(self):
         """`BuilddManager.checkResume` is chained after resume requests.
 
-        If the resume request succeed it returns True, otherwise it returns
-        False and schedule the build for database reset.
+        If the resume request succeed it returns None, otherwise it returns
+        a `ResetBuildRequest` (the one in the test context) that will be
+        collect and evaluated later.
 
         See `RecordingSlave.resumeHost` for more information about the resume
         result contents.
         """
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/')
+
         successful_response = ('', '', 0)
         result = self.manager.checkResume(
             successful_response, slave)
-        self.assertTrue(result)
-        self.assertEqual(
-            [], self.manager.builders_to_reset)
+        self.assertEqual(None, result)
 
         failed_response = ('', '', 1)
         result = self.manager.checkResume(
             failed_response, slave)
-        self.assertFalse(result)
+        self.assertTrue(isinstance(result, TestingResetBuilderRequest))
         self.assertEqual(
-            ['foo'], self.manager.builders_to_reset)
+            '<foo:http://foo.buildd:8221/> reset', repr(result))
 
     def testCheckDispatch(self):
         """`BuilddManager.checkDispatch` is chained after dispatch requests.
 
-        If the dispatch request fails it schedules the build for database
-        failure update.
+        If the dispatch request fails it returns a `FailBuilderRequest`
+        (in the test context) that will be evaluated later. On success
+        dispatching it returns None.
         """
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/')
         successful_response = (True, 'cool builder')
-        self.manager.checkDispatch(successful_response, slave)
-        self.assertEqual(
-            [], self.manager.builders_to_fail)
+        result = self.manager.checkDispatch(successful_response, slave)
+        self.assertEqual(None, result)
 
         failed_response = (False, 'uncool builder')
-        self.manager.checkDispatch(failed_response, slave)
+        result = self.manager.checkDispatch(failed_response, slave)
+        self.assertTrue(isinstance(result, TestingFailBuilderRequest))
         self.assertEqual(
-            [('foo', 'uncool builder')],
-             self.manager.builders_to_fail)
+            '<foo:http://foo.buildd:8221/> failure (uncool builder)',
+            repr(result))
 
-    def testDispatchBuildSuccess(self):
+    def testDispatchBuild(self):
         # A functional slave charged with some interactions.
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/')
         slave.ensurepresent('boing', 'bar', 'baz')
         slave.build('boing', 'bar', 'baz')
 
         # If the previous step (resuming) has failed nothing gets dispatched.
-        result = self.manager.dispatchBuild(False, slave)
-        self.assertFalse(result)
+        result = self.manager.dispatchBuild('ERROR', slave)
+        self.assertEqual('ERROR', result)
         self.assertEqual(0, len(self.manager._deferreds))
 
-        # Operation with the default (funcional slave), not resets or
+        # Operation with the default (funcional slave), no resets or
         # failures are triggered.
-        result = self.manager.dispatchBuild(True, slave)
-        self.assertTrue(result)
-        self.assertEqual(2, len(self.manager._deferreds))
+        result = self.manager.dispatchBuild(None, slave)
+        self.assertEqual(None, result)
         self.assertEqual(
             [('ensurepresent', 'boing', 'bar', 'baz'),
              ('build', 'boing', 'bar', 'baz')],
             self.test_proxy.calls)
-        self.assertEqual(
-            [], self.manager.builders_to_reset)
-        self.assertEqual(
-            [], self.manager.builders_to_fail)
+        self.assertEqual(2, len(self.manager._deferreds))
 
-        # Consume the previous interations.
-        ignore = self.manager.finishCycle()
+        events = self.manager.finishCycle()
+        def check_no_events(results):
+            errors = [
+                r for s, r in results if isinstance(r, BaseBuilderRequest)]
+            self.assertEqual(0, len(errors))
+        events.addCallback(check_no_events)
 
         # Create a broken slave and insert interaction that will
         # cause the builder to be marked as fail.
-        self.test_proxy = TestXMLRPCProxy('very broken slave')
+        self.test_proxy = TestingXMLRPCProxy('very broken slave')
+        slave = RecordingSlave('foo', 'http://foo.buildd:8221/')
         slave.ensurepresent('boing', 'bar', 'baz')
         slave.build('boing', 'bar', 'baz')
 
-        result = self.manager.dispatchBuild(True, slave)
+        result = self.manager.dispatchBuild(None, slave)
+        self.assertEqual(None, result)
+        self.assertEqual(1, len(self.manager._deferreds))
         self.assertEqual(
-            [], self.manager.builders_to_reset)
-        self.assertEqual(
-            [('foo', 'very broken slave')],
-            self.manager.builders_to_fail)
+            [('ensurepresent', 'boing', 'bar', 'baz')],
+            self.test_proxy.calls)
 
-        return self.manager.finishCycle()
+        events = self.manager.finishCycle()
+        def check_events(results):
+            [error] = [r for s, r in results if r is not None]
+            self.assertEqual(
+                '<foo:http://foo.buildd:8221/> failure (very broken slave)',
+                repr(error))
+        events.addCallback(check_events)
+
+        return events
 
 
-class TestBuilddDatabaseHelper(unittest.TestCase):
-    """Tests for the buildd manager helper class."""
+class TestBuilderRequest(unittest.TestCase):
+    """Tests `BaseBuilderRequest` variations."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        self.db_helper = BuilddManagerHelper()
 
     def _getBuilder(self):
         """Return a fixed `IBuilder` instance from the sampledata.
@@ -295,49 +315,52 @@ class TestBuilddDatabaseHelper(unittest.TestCase):
         self.assertNotEqual(None, job.logtail)
 
         transaction.commit()
-        logout()
 
         return builder, job.id
 
     def assertJobIsClean(self, job_id):
         """Re-fetch the `IBuildQueue` record and check if it's clean."""
-        login('foo.bar@canonical.com')
         job = getUtility(IBuildQueueSet).get(job_id)
         self.assertEqual('NEEDSBUILD', job.build.buildstate.name)
         self.assertEqual(None, job.builder)
         self.assertEqual(None, job.buildstart)
         self.assertEqual(None, job.logtail)
-        logout()
 
-    def testResetBuilder(self):
-        """`BuilddManagerHelper.resetBuilder` clean any existing jobs.
+    def testResetBuilderRequest(self):
+        """`ResetBuilderRequest` clean any existing jobs.
 
         Although it keeps the builder active in pool.
         """
         builder, job_id = self._getBuilder()
 
-        self.db_helper.resetBuilder(builder.name)
+        login(ANONYMOUS)
+        slave = RecordingSlave(builder.name, builder.url)
+        request = ResetBuilderRequest(slave)
+        request()
+
+        self.assertJobIsClean(job_id)
 
         self.assertTrue(builder.builderok)
         self.assertEqual(None, builder.currentjob)
 
-        self.assertJobIsClean(job_id)
-
-    def testFailBuilder(self):
-        """`BuilddManagerHelper.failBuilder` excludes the builder from pool.
+    def testFailBuilderRequest(self):
+        """`FailBuilderRequest` excludes the builder from pool.
 
         It marks the build as failed (builderok=False) and clean any
         existing jobs.
         """
         builder, job_id = self._getBuilder()
 
-        self.db_helper.failBuilder(builder.name, 'does not work!')
+        login(ANONYMOUS)
+        slave = RecordingSlave(builder.name, builder.url)
+        request = FailBuilderRequest(slave, 'does not work!')
+        request()
+
+        self.assertJobIsClean(job_id)
 
         self.assertFalse(builder.builderok)
         self.assertEqual(None, builder.currentjob)
         self.assertEqual('does not work!', builder.failnotes)
-
-        self.assertJobIsClean(job_id)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
