@@ -43,6 +43,10 @@ For testing, _getExternalBugTracker() can be overridden to return an
 ExternalBugTracker that doesn't require network access.
 
     >>> class FakeExternalBugTracker:
+    ...
+    ...     def initializeRemoteBugDB(self, bug_ids):
+    ...         print "Initializing DB for bugs: %s." % bug_ids
+    ...
     ...     def getRemoteProduct(self, remote_bug):
     ...         return 'product-for-bug-%s' % remote_bug
 
@@ -133,6 +137,8 @@ given one are ignored.
     >>> rt_bugtask.bugwatch = rt_bugwatch
 
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
+    Initializing DB for bugs: [u'84'].
+
     >>> print rt_product.remote_product
     product-for-bug-84
 
@@ -177,9 +183,13 @@ after each product's remote_product has been updated.
     ...     rt_bugtask.bugwatch = rt_bugwatch
     >>> updater = NoNetworkRemoteProductUpdater(
     ...     FakeTransaction(log_calls=True), QuietFakeLogger())
+    >>> updater.print_method_calls = False
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
+    Initializing DB for bugs: [u'84'].
     COMMIT
+    Initializing DB for bugs: [u'84'].
     COMMIT
+    Initializing DB for bugs: [u'84'].
     COMMIT
 
 
