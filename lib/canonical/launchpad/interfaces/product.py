@@ -480,7 +480,7 @@ class IProductPublic(
 
     remote_product = exported(
         TextLine(
-            title=_('Remote product'),
+            title=_('Remote project'), required=False,
             description=_(
                 "The ID of this project on its remote bug tracker.")))
 
@@ -767,6 +767,9 @@ class IProductSet(Interface):
         The result can be filtered to only return Products associated
         with a given bugtracker type.
         """
+
+    def getSFLinkedProductsWithNoneRemoteProduct(self):
+        """Get IProducts with a sourceforge project and no remote_product."""
 
 
 emptiness_vocabulary = SimpleVocabulary.fromItems(

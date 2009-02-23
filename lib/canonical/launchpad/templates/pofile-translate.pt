@@ -11,9 +11,59 @@
 >
   <body>
     <script metal:fill-slot="head_epilogue" type="text/javascript">
-        registerLaunchpadFunction(insertAllExpansionButtons);
+      registerLaunchpadFunction(insertAllExpansionButtons);
+
+      YUI().use('node', 'cookie', 'anim', function(Y) {
+          var dismiss_notice_cookie = ('translation-docs-for-' +
+                                       documentation_cookie);
+
+          var hide_notification = function(node) {
+              var hide_anim = new Y.Anim({
+                  node: node,
+                  to: { height: 0,
+                        marginTop: 0, marginBottom: 0,
+                        paddingTop: 0, paddingBottom: 0 }
+              });
+              node.setStyle('border', 'none');
+              hide_anim.set('duration', 0.4);
+              hide_anim.on('end', function(e) {
+                  node.setStyle('display', 'none');
+              });
+              hide_anim.run();
+          }
+
+          var updateNotificationBox = function(e) {
+              var notice = Y.get('.important-notice-container');
+              var balloon = notice.query('.important-notice-balloon');
+
+              // Check the cookie to see if the user has already dismissed
+              // the notification box for this session.
+              var already_seen = Y.Cookie.get(dismiss_notice_cookie, Boolean);
+              if (already_seen) {
+                 notice.setStyle('display', 'none');
+              }
+
+              var cancel_button = notice.query(
+                  '.important-notice-cancel-button');
+              // Cancel button starts out hidden.  If user has JavaScript,
+              // then we want to show it.
+              cancel_button.setStyle('visibility', 'visible');
+              cancel_button.on('click', function(e) {
+                  e.halt();
+                  hide_notification(balloon);
+                  Y.Cookie.set(dismiss_notice_cookie, true);
+              });
+          };
+
+          Y.on('domready', updateNotificationBox);
+      });
     </script>
     <div metal:fill-slot="main">
+      <script type="text/javascript"
+            tal:condition="view/translation_group"
+            tal:content="string:var documentation_cookie =
+                            '${view/translation_group/name}' + '_'  +
+                            '${context/language/code}';" />
       <div>
         <a tal:attributes="href context/potemplate/fmt:url"
            tal:content="context/potemplate/title">
@@ -38,6 +88,50 @@
           </tal:language>
         </h1>
       </tal:form-writeable>
+
+        <!-- Documentation links -->
+        <tal:documentation condition="view/translation_group">
+          <div class="important-notice-container"
+               tal:condition="view/has_any_documentation">
+            <div class="important-notice-balloon">
+              <div class="important-notice-buttons">
+                <img class="important-notice-cancel-button" src="/@@/no"
+                     alt="Don't show this notice anymore"
+                     title="Hide this notice for the duration of this session" />
+              </div>
+              <img src="/@@/info" alt="Information" />
+              <span class="important-notice"
+                  tal:condition="view/translation_group/translation_guide_url">
+                Before translating, make sure to go through
+                <a tal:content="string:${view/translation_group/title}
+                                instructions"
+                   tal:attributes="href
+                        view/translation_group/translation_guide_url">
+                  translation instructions</a><!--
+             --><tal:has_team
+                   condition="view/translation_team"><!--
+                  --><tal:has_guidelines
+                      tal:condition="view/translation_team/style_guide_url">
+                  and <a class="style-guide-url"
+                         tal:attributes="
+                           href view/translation_team/style_guide_url"
+                         tal:content="string:${context/language/englishname}
+                                      guidelines">Serbian guidelines</a><!--
+               --></tal:has_guidelines><!--
+             --></tal:has_team>.
+              </span>
+              <span class="important-notice"
+                  tal:condition="not:view/translation_group/translation_guide_url">
+                Before translating, make sure to go through
+                <a class="style-guide-url"
+                   tal:content="string:${view/translation_team/translator/displayname}
+                                guidelines"
+                   tal:attributes="href view/translation_team/style_guide_url">
+                  Serbian guidelines</a>.
+              </span>
+            </div>
+          </div>
+        </tal:documentation>
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 

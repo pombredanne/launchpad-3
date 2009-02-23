@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.publishing import (
-    getPublisher, Publisher)
+    Publisher, getPublisher, sha256)
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.interfaces.archivesigningkey import (
     IArchiveSigningKey)
+from canonical.launchpad.testing import get_lsb_information
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.zeca.ftests.harness import ZecaTestSetup
 
@@ -717,6 +718,8 @@ class TestPublisher(TestPublisherBase):
     def testAptSHA256(self):
         """Test issues with python-apt in Ubuntu/hardy.
 
+        This test only runs on Ubuntu/hardy systems.
+
         The version of python-apt in Ubuntu/hardy has problems with
         contents containing '\0' character.
 
@@ -736,7 +739,17 @@ class TestPublisher(TestPublisherBase):
         See https://bugs.edge.launchpad.net/soyuz/+bug/243630 and
         https://bugs.edge.launchpad.net/soyuz/+bug/269014.
         """
-        from canonical.archivepublisher.publishing import sha256
+        # XXX cprov 20090218 bug-279248: when hardy's apt gets fixed by a
+        # SRU, this test will fail in PQM/Buildbot. Then we should change
+        # the actual code for passing file descriptors instead of text to
+        # apt (it will perform better this way) and obviously remove this
+        # test.
+
+        # Skip this test if it's not being run on Ubuntu/hardy.
+        lsb_info = get_lsb_information()
+        if (lsb_info.get('ID') != 'Ubuntu' or
+            lsb_info.get('CODENAME') != 'hardy'):
+            return
 
         def _getSHA256(content):
             """Return checksums for the given content.

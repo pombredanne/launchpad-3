@@ -47,7 +47,7 @@ user in the launch bag:
     'test@canonical.com'
 
 In the above email the GPG signature was detached from the actual
-message. Inline signatures are supported as well. 
+message. Inline signatures are supported as well.
 
     >>> msg = read_test_message('signed_inline.txt')
     >>> principal = authenticateEmail(msg)
@@ -87,7 +87,6 @@ to deal with it if we receive a dash escaped message.
     True
     >>> launchbag.login
     'test@canonical.com'
-
 
 If the signature is invalid, that is it won't verify properly,
 InvalidSignature will be raised:
