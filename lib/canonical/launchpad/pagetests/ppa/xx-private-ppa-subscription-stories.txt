@@ -116,10 +116,6 @@ When Andrew clicks on the 'Activate subscription' button for Celso's PPA
 Then the sources.list snippet is updated to include a line for Celso's PPA
 And a notification is displayed on the screen
 
-After receiving an email notifying him of his subscription,
-Andrew Bennets (spiv) follows the link from the email and
-sees the required sources.list entry.
-
 === Scenario 2: A user activates a team subscription ===
 
 TBD
