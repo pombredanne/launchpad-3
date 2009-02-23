@@ -11,6 +11,7 @@ __all__ = [
     'IrcIDSet',
     'JabberID',
     'JabberIDSet',
+    'Owner',
     'Person',
     'PersonLanguage',
     'PersonSet',
@@ -38,6 +39,7 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
 from storm.expr import And, Join
+from storm.info import ClassAlias
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -2196,17 +2198,26 @@ class Person(
         assert self.is_team, "This method must be used only for teams."
 
         if email is None:
-            if self.preferredemail is not None:
-                email_address = IMasterDBObject(self.preferredemail)
-                email_address.status = EmailAddressStatus.VALIDATED
-                email_address.syncUpdate()
-            self._preferredemail_cached = None
+            self._unsetPreferredEmail()
         else:
             self._setPreferredEmail(email)
+
+    def _unsetPreferredEmail(self):
+        """Change the preferred email address to VALIDATED."""
+        email_address = IMasterStore(EmailAddress).find(
+            EmailAddress, personID=self.id,
+            status=EmailAddressStatus.PREFERRED).one()
+        if email_address is not None:
+            email_address.status = EmailAddressStatus.VALIDATED
+            email_address.syncUpdate()
+        self._preferredemail_cached = None
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
         assert not self.is_team, "This method must not be used for teams."
+        if email is None:
+            self._unsetPreferredEmail()
+            return
         if (self.preferredemail is None
             and self.account_status != AccountStatus.ACTIVE):
             # XXX sinzui 2008-07-14 bug=248518:
@@ -3664,6 +3675,11 @@ class PersonSet:
         # Listify, since this is a pure cache.
         list(LibraryFileAlias.select("LibraryFileAlias.id IN %s"
              % sqlvalues(aliases), prejoins=["content"]))
+
+
+# Provide a storm alias from Person to Owner. This is useful in queries on
+# objects that have more than just an owner associated with them.
+Owner = ClassAlias(Person, 'Owner')
 
 
 class PersonLanguage(SQLBase):

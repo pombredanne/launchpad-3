@@ -35,10 +35,11 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
             runner.runAll()
         finally:
             server.tearDown()
-        print 'Ran %d MergeProposalCreatedJobs.' % len(runner.completed_jobs)
+        self.logger.info(
+            'Ran %d MergeProposalCreatedJobs.', len(runner.completed_jobs))
 
 
 if __name__ == '__main__':
     script = RunMergeProposalCreatedJobs(
-        'sendcodemail', config.mpcreationjobs.dbuser)
+        'mpcreationjobs', config.mpcreationjobs.dbuser)
     script.lock_and_run()

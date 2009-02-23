@@ -184,6 +184,8 @@ if the bug is closed:
     "Won't Fix"
     >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
     'Invalid'
+    >>> external_bugzilla.convertRemoteStatus('CLOSED UPSTREAM').title
+    'Fix Released'
 
 If the status can't be converted an UnknownRemoteStatusError will be
 returned.

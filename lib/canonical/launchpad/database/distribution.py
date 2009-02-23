@@ -46,7 +46,8 @@ from canonical.launchpad.database.distroseries import DistroSeries
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.milestone import (
+    HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
@@ -109,7 +110,8 @@ from canonical.launchpad.webapp.url import urlparse
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
-                   QuestionTargetMixin, StructuralSubscriptionTargetMixin):
+                   QuestionTargetMixin, StructuralSubscriptionTargetMixin,
+                   HasMilestonesMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
@@ -229,25 +231,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return [archive.id for archive in self.all_distro_archives]
 
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.distribution == self)
+
     def getArchiveIDList(self, archive=None):
         """See `IDistribution`."""
         if archive is None:
             return self.all_distro_archive_ids
         else:
             return [archive.id]
-
-    @property
-    def all_milestones(self):
-        """See `IDistribution`."""
-        return Milestone.selectBy(
-            distribution=self, orderBy=['-dateexpected', 'name'])
-
-    @property
-    def milestones(self):
-        """See `IDistribution`."""
-        return Milestone.selectBy(
-            distribution=self, visible=True,
-            orderBy=['-dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):

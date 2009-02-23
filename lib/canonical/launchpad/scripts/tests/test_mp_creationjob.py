@@ -37,8 +37,10 @@ class TestDiffBMPs(TestCaseWithFactory):
         retcode, stdout, stderr = run_script(
             'cronscripts/mpcreationjobs.py', [])
         self.assertEqual(0, retcode)
-        self.assertEqual('Ran 1 MergeProposalCreatedJobs.\n', stdout)
-        self.assertEqual('INFO    creating lockfile\n', stderr)
+        self.assertEqual('', stdout)
+        self.assertEqual(
+            'INFO    creating lockfile\n'
+            'INFO    Ran 1 MergeProposalCreatedJobs.\n', stderr)
         self.assertIsNot(None, bmp.review_diff)
 
 
