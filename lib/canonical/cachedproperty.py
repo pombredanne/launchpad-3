@@ -85,10 +85,9 @@ class CachedProperty:
     def __init__(self, attrname, fn):
         self.fn = fn
         self.attrname = attrname
-
-    # Store the transaction the cached value is valid for,
-    # so we can detect when it has become invalid.
-    last_transaction = None
+        # Store the transaction the cached value is valid for,
+        # so we can detect when it has become invalid.
+        self.last_transaction = transaction.get()
 
     def __get__(self, inst, cls=None):
         if inst is None:
