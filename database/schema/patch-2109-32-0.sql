@@ -9,4 +9,4 @@ CREATE TRIGGER set_bugtask_date_milestone_set_t
     EXECUTE PROCEDURE set_bugtask_date_milestone_set();
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 32, 0);
