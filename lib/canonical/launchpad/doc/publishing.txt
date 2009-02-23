@@ -63,6 +63,27 @@ This is mostly as a convenience to API users.
     >>> print spph.section_name
     base
 
+There is also a property that returns the changesfile.  This is proxied
+through the webapp rather than being a librarian URL because the changesfile
+could be private and thus in the restricted librarian.
+
+    >>> from canonical.archiveuploader.tests import (
+    ...     insertFakeChangesFileForAllPackageUploads)
+    >>> insertFakeChangesFileForAllPackageUploads()
+
+The pmount source has no packageupload in the sampledata:
+
+    >>> print spph.changes_file_text
+    None
+
+The iceweasel source has good data:
+
+    >>> pub = spph.archive.getPublishedSources(name="iceweasel")[0]
+    >>> print pub.changes_file_text
+    -----BEGIN PGP SIGNED MESSAGE-----
+    Hash: SHA1
+    ...
+
 
 == Stanza generation ==
 
