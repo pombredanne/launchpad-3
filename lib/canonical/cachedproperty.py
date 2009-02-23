@@ -6,8 +6,6 @@ then returned each time it is asked for.
 
 __metaclass__ = type
 
-import transaction
-
 
 def cachedproperty(attrname_or_fn):
     """A decorator for methods that makes them properties with their return
@@ -45,19 +43,6 @@ def cachedproperty(attrname_or_fn):
     >>> cpt._bar_cached_value
     69
 
-    The cache is invalidated at transaction boundaries.
-
-    >>> cpt.bar
-    69
-    >>> transaction.abort()
-    >>> cpt.bar
-    bar computed
-    69
-    >>> transaction.commit()
-    >>> cpt.bar
-    bar computed
-    69
-
     """
     if isinstance(attrname_or_fn, basestring):
         attrname = attrname_or_fn
@@ -77,28 +62,20 @@ class CachedPropertyForAttr:
         return CachedProperty(self.attrname, fn)
 
 
-_marker = object()
-
-
 class CachedProperty:
 
     def __init__(self, attrname, fn):
         self.fn = fn
         self.attrname = attrname
-        # Store the transaction the cached value is valid for,
-        # so we can detect when it has become invalid.
-        self.last_transaction = transaction.get()
+        self.marker = object()
 
     def __get__(self, inst, cls=None):
         if inst is None:
             return self
-        cachedresult = getattr(inst, self.attrname, _marker)
-        current_transaction = transaction.get()
-        if (cachedresult is _marker
-            or self.last_transaction is not current_transaction):
+        cachedresult = getattr(inst, self.attrname, self.marker)
+        if cachedresult is self.marker:
             result = self.fn(inst)
             setattr(inst, self.attrname, result)
-            self.last_transaction = current_transaction
             return result
         else:
             return cachedresult
