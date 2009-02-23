@@ -380,6 +380,15 @@ class TestSearch(TestCaseWithFactory):
         search_results = self.collection.search(branch.codebrowse_url())
         self.assertEqual([branch], list(search_results))
 
+    def test_exact_match_url_trailing_slash(self):
+        # Sometimes, users are inconsiderately unaware of our arbitrary
+        # database restrictions and will put trailing slashes on their search
+        # queries. Rather bravely, we refuse to explode in this case.
+        branch = self.factory.makeAnyBranch()
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search(branch.codebrowse_url() + '/')
+        self.assertEqual([branch], list(search_results))
+
     def test_match_exact_branch_name(self):
         branch1 = self.factory.makeAnyBranch(name='foo')
         branch2 = self.factory.makeAnyBranch(name='foo')

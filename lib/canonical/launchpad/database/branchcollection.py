@@ -140,6 +140,7 @@ class GenericBranchCollection:
 
     def _getExactMatch(self, search_term):
         """Return the exact branch that 'search_term' matches, or None."""
+        search_term = search_term.rstrip('/')
         branch_set = getUtility(IBranchSet)
         branch = branch_set.getByUniqueName(search_term)
         if branch is None:
