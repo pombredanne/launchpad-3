@@ -1310,6 +1310,45 @@ beside the mugshot. */
   padding-top: 0;
 }
 
+.important-notice-container {
+  text-align: center;
+  width: 100%;
+  padding-bottom: 1em;
+  position: relative;
+}
+
+.important-notice-balloon {
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  background-color: #ededed;
+  padding: 1em;
+  border: 1px solid #000;
+  width: auto;
+  overflow: hidden;
+}
+
+.important-notice-buttons {
+  float: right;
+}
+
+.important-notice-cancel-button {
+  visibility: hidden;
+  cursor: pointer;
+}
+
+.important-notice {
+  padding: 0px 0px 40px 0px;
+  height: 32px;
+  overflow: hidden;
+}
+
+.important-notice a {
+  font-weight: bold;
+  color: black;
+  text-decoration: underline;
+}
+
 /* Soyuz-related styles (that don't have a facet, but generally are
  * under Overview)
  */
