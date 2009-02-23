@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
-    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError,
+    ILaunchpadRoot, IOpenIDPrincipal, IOpenLaunchBag, OffsiteFormPostError,
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.opstats import OpStats
@@ -180,10 +180,14 @@ class LaunchpadBrowserPublication(
         self.maybeBlockOffsiteFormPost(request)
 
     def getPrincipal(self, request):
-        """Return the authenticated principal for this request."""
+        """Return the authenticated principal for this request.
+
+        If there is no authenticated principal or it is an OpenIDPrincipal,
+        return the unauthenticated principal.
+        """
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.authenticate(request)
-        if principal is None:
+        if principal is None or IOpenIDPrincipal.providedBy(principal):
             principal = auth_utility.unauthenticatedPrincipal()
             assert principal is not None, "Missing unauthenticated principal."
         return principal

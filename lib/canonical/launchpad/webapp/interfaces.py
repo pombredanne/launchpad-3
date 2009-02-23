@@ -632,6 +632,16 @@ class ILaunchpadPrincipal(IPrincipal):
     person = Attribute("The IPerson the principal represents.")
 
 
+class IOpenIDPrincipal(IPrincipal):
+    """Marker interface for OpenID principals.
+
+    These principals have an account with no associated person.
+    """
+
+    account = Attribute("The Account the principal represents.")
+    access_level = ILaunchpadPrincipal['access_level']
+
+
 #
 # Browser notifications
 #

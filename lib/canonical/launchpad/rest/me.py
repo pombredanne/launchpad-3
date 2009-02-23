@@ -11,7 +11,8 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData, IOpenIDPrincipal)
 from canonical.launchpad.interfaces import IPerson, IPersonSet
 
 from canonical.lazr.interfaces.rest import (
@@ -48,5 +49,8 @@ def cache_me_link_when_principal_identified(event):
         cache = IJSONRequestCache(event.request)
     except TypeError:
         cache = None
-    if cache is not None:
+    # If the principal is an OpenIDPrincipal, it means there's no Person entry
+    # for the logged in user, so we can't (and don't need to, anyway) cache
+    # the 'me' link.
+    if cache is not None and not IOpenIDPrincipal.providedBy(event.principal):
         cache.links['me'] = IPerson(event.principal)

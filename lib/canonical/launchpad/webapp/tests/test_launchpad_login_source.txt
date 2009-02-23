@@ -11,7 +11,8 @@ person is found with the given e-mail address, None is returned
     None
 
 Giving getPrincipalByLogin() an existing e-mail address, returns a
-ILaunchpadPrincipal with the same id as the corresponding Person record.
+ILaunchpadPrincipal with the same id as the corresponding Person record's
+account id.
 
     >>> person = factory.makePerson(email='existing@example.com')
     >>> principal = login_source.getPrincipalByLogin('existing@example.com')
@@ -19,7 +20,7 @@ ILaunchpadPrincipal with the same id as the corresponding Person record.
     >>> from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
     >>> ILaunchpadPrincipal.providedBy(principal)
     True
-    >>> principal.id == person.id
+    >>> principal.id == person.account.id
     True
 
 The corresponding Person record is also in the principal, to make it

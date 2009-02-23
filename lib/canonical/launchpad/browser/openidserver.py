@@ -20,6 +20,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.publisher.interfaces import BadRequest
 from zope.session.interfaces import ISession, IClientIdManager
+from zope.security import management
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.extensions import pape
@@ -35,8 +36,9 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.components.openidserver import (
     OpenIDPersistentIdentity, CurrentOpenIDEndPoint)
+from canonical.launchpad.interfaces.account import IAccountSet, AccountStatus
 from canonical.launchpad.interfaces.person import (
-    IPersonSet, PersonVisibility)
+    IPerson, IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.openidserver import (
@@ -47,9 +49,10 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessLoginSource, UnexpectedFormData)
+    ILaunchpadPrincipal, IOpenIDPrincipal, IPlacelessLoginSource,
+    UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
-    logInPerson, logoutPerson, allowUnauthenticatedSession)
+    logInPrincipal, logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -94,12 +97,44 @@ class OpenIDMixin:
         self.openid_server = Server(store_factory(), self.server_url)
 
     @property
+    def user(self):
+        # This is to ensure subclasses don't use self.user, as that will
+        # attempt to adapt the principal into an IPerson, which will fail when
+        # the account has no Person associated with.
+        raise AttributeError(
+            'Cannot use self.user here; use self.account instead')
+
+    @property
+    def account(self):
+        """The account of the logged in user or None if not authenticated."""
+        interaction = management.queryInteraction()
+        if interaction is None:
+            return None
+        principals = [
+            participation.principal
+            for participation in list(interaction.participations)
+            if participation.principal is not None
+            ]
+        if not principals:
+            return None
+        elif len(principals) > 1:
+            raise ValueError('Too many principals')
+        else:
+            principal = principals[0]
+            if IOpenIDPrincipal.providedBy(principal):
+                return principal.account
+            elif ILaunchpadPrincipal.providedBy(principal):
+                return principal.person.account
+            else:
+                return None
+
+    @property
     def user_identity_url(self):
-        return OpenIDPersistentIdentity(self.user.account).openid_identity_url
+        return OpenIDPersistentIdentity(self.account).openid_identity_url
 
     def isIdentityOwner(self):
         """Return True if the user can authenticate as the given ID."""
-        assert self.user is not None, "user should be logged in by now."
+        assert self.account is not None, "user should be logged in by now."
         return (self.openid_request.idSelect() or
                 self.openid_request.identity == self.user_identity_url)
 
@@ -216,30 +251,32 @@ class OpenIDMixin:
         Shipping information is taken from the last shipped Shipit
         request.
         """
-        assert self.user is not None, (
+        assert self.account is not None, (
             'Must be logged in to calculate sreg items')
         # Collect registration values
         values = {}
-        values['nickname'] = self.user.name
-        values['fullname'] = self.user.displayname
-        values['email'] = self.user.preferredemail.email
-        if self.user.time_zone is not None:
-            values['timezone'] = self.user.time_zone
-        shipment = self.user.lastShippedRequest()
-        if shipment is not None:
-            values['x_address1'] = shipment.addressline1
-            values['x_city'] = shipment.city
-            values['country'] = shipment.country.name
-            if shipment.addressline2 is not None:
-                values['x_address2'] = shipment.addressline2
-            if shipment.organization is not None:
-                values['x_organization'] = shipment.organization
-            if shipment.province is not None:
-                values['x_province'] = shipment.province
-            if shipment.postcode is not None:
-                values['postcode'] = shipment.postcode
-            if shipment.phone is not None:
-                values['x_phone'] = shipment.phone
+        values['fullname'] = self.account.displayname
+        values['email'] = self.account.preferredemail.email
+        person = IPerson(self.account, None)
+        if person is not None:
+            values['nickname'] = person.name
+            if person.time_zone is not None:
+                values['timezone'] = person.time_zone
+            shipment = person.lastShippedRequest()
+            if shipment is not None:
+                values['x_address1'] = shipment.addressline1
+                values['x_city'] = shipment.city
+                values['country'] = shipment.country.name
+                if shipment.addressline2 is not None:
+                    values['x_address2'] = shipment.addressline2
+                if shipment.organization is not None:
+                    values['x_organization'] = shipment.organization
+                if shipment.province is not None:
+                    values['x_province'] = shipment.province
+                if shipment.postcode is not None:
+                    values['postcode'] = shipment.postcode
+                if shipment.phone is not None:
+                    values['x_phone'] = shipment.phone
         return [(field, values[field])
                 for field in self.sreg_field_names if field in values]
 
@@ -250,8 +287,11 @@ class OpenIDMixin:
         the OpenID request, annotate the response with the list of
         teams the user is actually a member of.
         """
-        assert self.user is not None, (
+        assert self.account is not None, (
             'Must be logged in to calculate team membership')
+        person = IPerson(self.account, None)
+        if person is None:
+            return
         args = self.openid_request.message.getArgs(LAUNCHPAD_TEAMS_NS)
         team_names = args.get('query_membership')
         if not team_names:
@@ -268,7 +308,7 @@ class OpenIDMixin:
                 and (self.rpconfig is None
                     or not self.rpconfig.can_query_any_team)):
                 continue
-            if self.user.inTeam(team):
+            if person.inTeam(team):
                 memberships.append(team_name)
         openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
         openid_response.fields.setArg(
@@ -293,7 +333,7 @@ class OpenIDMixin:
         user most have logged in not more than that number of seconds ago,
         Otherwise, they'll have to enter their password again.
         """
-        assert self.user is not None, (
+        assert self.account is not None, (
             'Must be logged in to query for max_auth_age check')
         pape_request = pape.Request.fromOpenIDRequest(self.openid_request)
 
@@ -329,7 +369,7 @@ class OpenIDMixin:
         then additional user information is included with the
         response.
         """
-        assert self.user is not None, (
+        assert self.account is not None, (
             'Must be logged in for positive OpenID response')
         assert self.openid_request is not None, (
             'No OpenID request to respond to.')
@@ -362,8 +402,7 @@ class OpenIDMixin:
         #response.addExtension(pape_response)
 
         rp_summary_set = getUtility(IOpenIDRPSummarySet)
-        rp_summary_set.record(
-            self.user.account, self.openid_request.trust_root)
+        rp_summary_set.record(self.account, self.openid_request.trust_root)
 
         return response
 
@@ -425,7 +464,7 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
             if not self.canHandleIdentity():
                 return self.invalid_identity_template()
 
-            if self.user is None:
+            if self.account is None:
                 return self.showLoginPage()
             if not self.isIdentityOwner():
                 openid_response = self.createFailedResponse()
@@ -490,14 +529,14 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
         """Check if the identity is authorized for the trust_root"""
         # Can't be authorized if we are not logged in, or logged in as a
         # user other than the identity owner.
-        if self.user is None or not self.isIdentityOwner():
+        if self.account is None or not self.isIdentityOwner():
             return False
 
         client_id = getUtility(IClientIdManager).getClientId(self.request)
         auth_set = getUtility(IOpenIDAuthorizationSet)
 
         return auth_set.isAuthorized(
-                self.user, self.openid_request.trust_root, client_id)
+                self.account, self.openid_request.trust_root, client_id)
 
 
 class LoginServiceBaseView(OpenIDMixin, LaunchpadFormView):
@@ -566,7 +605,7 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
     def auth_action(self, action, data):
         # If the user is not logged in (e.g. if they used the back
         # button in their browser, send them to the login page).
-        if self.user is None:
+        if self.account is None:
             return LoginServiceLoginView(
                 self.context, self.request, self.nonce)()
         self.trashRequest()
@@ -601,8 +640,8 @@ class LoginServiceLoginView(LoginServiceBaseView):
     @property
     def initial_values(self):
         values = super(LoginServiceLoginView, self).initial_values
-        if self.user:
-            values['email'] = self.user.preferredemail.email
+        if self.account:
+            values['email'] = self.account.preferredemail.email
         values['action'] = 'login'
         return values
 
@@ -623,22 +662,30 @@ class LoginServiceLoginView(LoginServiceBaseView):
             self.addError('Please enter a valid email address.')
             return
 
-        person = getUtility(IPersonSet).getByEmail(email)
+        account = getUtility(IAccountSet).getByEmail(email)
         if action == 'login':
             self.validateEmailAndPassword(email, password)
         elif action == 'resetpassword':
-            if person is None:
+            if account is None:
+                # This may be a team's email address.
+                person = getUtility(IPersonSet).getByEmail(email)
+            else:
+                person = IPerson(account, None)
+            if account is None and person is None:
                 self.addError(_(
                     "Your account details have not been found. Please "
                     "check your subscription email address and try again."))
-            elif person.isTeam():
+            elif account is None and person.isTeam():
                 self.addError(
                     structured(_(
                     "The email address <strong>${email}</strong> can not be "
                     "used to log in as it belongs to a team.",
                     mapping=dict(email=email))))
+            else:
+                # Everything looks fine.
+                pass
         elif action == 'createaccount':
-            if person is not None and person.is_valid_person:
+            if account is not None and account.status == AccountStatus.ACTIVE:
                 self.addError(_(
                     "Sorry, someone has already registered the ${email} "
                     "email address.  If this is you and you've forgotten "
@@ -659,7 +706,10 @@ class LoginServiceLoginView(LoginServiceBaseView):
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
-            person = getUtility(IPersonSet).getByEmail(email)
+            account = getUtility(IAccountSet).getByEmail(email)
+            person = IPerson(account, None)
+            if person is None:
+                return
             if person.preferredemail is None:
                 self.addError(
                         _(
@@ -692,9 +742,10 @@ class LoginServiceLoginView(LoginServiceBaseView):
         if action == 'login':
             loginsource = getUtility(IPlacelessLoginSource)
             principal = loginsource.getPrincipalByLogin(email)
-            logInPerson(self.request, principal, email)
+            logInPrincipal(self.request, principal, email)
+            # XXX: Need to do something about this.
             # Update the attribute holding the cached user.
-            self._user = principal.person
+            #self._user = principal.person
             return self.renderOpenIDResponse(self.createPositiveResponse())
         elif action == 'resetpassword':
             return self.process_password_recovery(email)
@@ -715,7 +766,11 @@ class LoginServiceLoginView(LoginServiceBaseView):
         return self.email_sent_template()
 
     def process_password_recovery(self, email):
-        person = getUtility(IPersonSet).getByEmail(email)
+        # XXX: salgado, 2009-02-20: This (person = None) is a quick hack to
+        # make it possible for us to use LoginToken to reset the passwords of
+        # personless accounts.  The correct fix is to use AuthToken, which
+        # takes an account rather than a person.
+        person = None
         logintokenset = getUtility(ILoginTokenSet)
         self.token = logintokenset.new(
             person, email, email, LoginTokenType.PASSWORDRECOVERY)
@@ -739,7 +794,7 @@ class ProtocolErrorView(LaunchpadView):
         return self.context.encodeToKVForm()
 
 
-class PreAuthorizeRPView(LaunchpadView):
+class PreAuthorizeRPView(OpenIDMixin, LaunchpadView):
     """Pre-authorize an OpenID consumer.
 
     This page expects to find a 'trust_root' and a 'callback' query parameters
@@ -775,7 +830,7 @@ class PreAuthorizeRPView(LaunchpadView):
             expires = (datetime.now(pytz.timezone('UTC'))
                        + timedelta(hours=self.PRE_AUTHORIZATION_VALIDITY))
             getUtility(IOpenIDAuthorizationSet).authorize(
-                self.user, trust_root, expires, client_id)
+                self.account, trust_root, expires, client_id)
             # Need to commit the transaction because this will always be
             # processing GET requests.
             import transaction
