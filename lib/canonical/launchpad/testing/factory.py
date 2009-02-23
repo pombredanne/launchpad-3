@@ -205,15 +205,19 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         person = self.makePersonNoCommit(*args, **kwargs)
         transaction.commit()
+        self._stuff_preferredemail_cache(person)
+        return person
+
+    def _stuff_preferredemail_cache(self, person):
         # Stuff the preferredemail cache. cachedproperty does not get
         # reset across transactions, so person.preferredemail is still
         # None despite the preferred email address now being available
         # in the main Store.
+        person = removeSecurityProxy(person) # Need to poke person's privates
         person._preferredemail_cached = Store.of(person).find(
             EmailAddress, personID=person.id,
             status=EmailAddressStatus.PREFERRED).one()
         assert person.preferredemail is not None, 'preferredemail not set!'
-        return person
 
     def makePersonNoCommit(
         self, email=None, name=None, password=None,
@@ -321,7 +325,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         getUtility(IEmailAddressSet).new(alternative_address, person,
                                          EmailAddressStatus.VALIDATED,
                                          person.account)
-        flush_database_updates()
+        transaction.commit()
+        self._stuff_preferredemail_cache(person)
         return person
 
     def makeEmail(self, address, person, email_status=None):
