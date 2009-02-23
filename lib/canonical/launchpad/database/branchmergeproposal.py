@@ -42,7 +42,8 @@ from canonical.launchpad.database.person import Person
 from canonical.launchpad.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
-from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
+from canonical.launchpad.interfaces.branch import (
+    IBranchNavigationMenu, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -677,7 +678,7 @@ class BranchMergeProposalGetter:
         # see both the source and target branches.  Here we need to use
         # a similar query to branches.
         lp_admins = getUtility(ILaunchpadCelebrities).admin
-        if visible_by_user is not None and visible_by_user.inTeam(lp_admins):
+        if user_has_special_branch_access(visible_by_user):
             return query
 
         if len(query) > 0:
