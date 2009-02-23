@@ -265,12 +265,8 @@ class SourcePackageRelease(SQLBase):
     @property
     def published_archives(self):
         """See `ISourcePacakgeRelease`."""
-        archives = set()
-        publishings = self.publishings.prejoin(['archive'])
-        for pub in publishings:
-            if pub.status in active_publishing_status:
-                archives.add(pub.archive)
-
+        archives = set(
+            pub.archive for pub in self.publishings.prejoin(['archive']))
         return sorted(archives, key=operator.attrgetter('id'))
 
     def addFile(self, file):
