@@ -2166,17 +2166,24 @@ class Person(
         assert self.is_team, "This method must be used only for teams."
 
         if email is None:
-            if self.preferredemail is not None:
-                email_address = self.preferredemail
-                email_address.status = EmailAddressStatus.VALIDATED
-                email_address.syncUpdate()
-            self._preferredemail_cached = None
+            self._unsetPreferredEmail()
         else:
             self._setPreferredEmail(email)
+
+    def _unsetPreferredEmail(self):
+        """Change the preferred email address to VALIDATED."""
+        if self.preferredemail is not None:
+            email_address = self.preferredemail
+            email_address.status = EmailAddressStatus.VALIDATED
+            email_address.syncUpdate()
+        self._preferredemail_cached = None
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
         assert not self.is_team, "This method must not be used for teams."
+        if email is None:
+            self._unsetPreferredEmail()
+            return
         if (self.preferredemail is None
             and self.account_status != AccountStatus.ACTIVE):
             # XXX sinzui 2008-07-14 bug=248518:

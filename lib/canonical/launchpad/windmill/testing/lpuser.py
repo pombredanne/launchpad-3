@@ -1,4 +1,5 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
+# -*- encoding: utf-8 -*-
 
 """Utilities for Windmill tests written in Python."""
 
@@ -60,3 +61,6 @@ FOO_BAR = LaunchpadUser(
 
 NO_PRIV = LaunchpadUser(
     'No Privileges User', 'no-priv@canonical.com', 'test')
+
+TRANSLATIONS_ADMIN = LaunchpadUser(
+    u'Carlos Perelló Marín', 'carlos@canonical.com', 'test')
