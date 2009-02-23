@@ -25,6 +25,7 @@ __all__ = [
     ]
 
 
+import cgi
 import copy
 from cStringIO import StringIO
 from datetime import datetime, date
@@ -162,6 +163,7 @@ class HTTPResource:
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.etags_by_media_type = {}
         super(HTTPResource, self).__init__(context, request)
 
     def __call__(self):
@@ -259,17 +261,60 @@ class HTTPResource:
         self.request.response.setStatus(412)
         return None
 
-    def getETag(self, media_type):
-        """Calculate an ETag for a representation of this resource.
+    def _getETagCore(self, cache=None):
+        """Calculate the core ETag for a representation.
 
-        The WADL representation of a resource only changes when the
-        software itself changes. Thus, we can use the Launchpad
-        revision number itself as an ETag. We delegate to subclasses
-        when it comes to calculating ETags for other representations.
+        :return: a string that will be used to calculate the full
+        ETag. If None is returned, no ETag at all will be calculated
+        for the given resource and media type.
         """
-        if media_type == self.WADL_TYPE:
-            return '"%s"' % versioninfo.revno
         return None
+
+    def getETag(self, media_type, cache=None):
+        """Calculate the ETag for an entry.
+
+        An ETag is derived from a 'core' string conveying information
+        about the representation itself, plus information about the
+        content type and the current Launchpad revision number. The
+        resulting string is hashed, and there's your ETag.
+
+        :arg unmarshalled_field_values: A dict mapping field names to
+        unmarshalled values, obtained during some other operation such
+        as the construction of a representation.
+        """
+        # Try to find a cached value.
+        etag = self.etags_by_media_type.get(media_type)
+        if etag is not None:
+            return etag
+
+        if media_type == self.WADL_TYPE:
+            # The WADL representation of a resource only changes when
+            # the software itself changes. Thus, we don't need any
+            # special information for its ETag core.
+            etag_core = ''
+        else:
+            # For other media types, we calculate the ETag core by
+            # delegating to the subclass.
+            etag_core = self._getETagCore(cache)
+
+        if etag_core is None:
+            return None
+
+        hash_object = sha.new()
+        hash_object.update(etag_core)
+
+        # Append the media type, so that web browsers won't treat
+        # different representations of a resource interchangeably.
+        hash_object.update("\0" + media_type)
+
+        # Append the revision number, because the algorithm for
+        # generating the representation might itself change across
+        # versions.
+        hash_object.update("\0" + str(versioninfo.revno))
+
+        etag = '"%s"' % hash_object.hexdigest()
+        self.etags_by_media_type[media_type] = etag
+        return etag
 
     def applyTransferEncoding(self, representation):
         """Apply a requested transfer-encoding to the representation.
@@ -728,7 +773,8 @@ class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
     """An individual field of an entry."""
     implements(IEntryFieldResource, IJSONPublishable)
 
-    SUPPORTED_CONTENT_TYPES = [HTTPResource.JSON_TYPE]
+    SUPPORTED_CONTENT_TYPES = [HTTPResource.JSON_TYPE,
+                               HTTPResource.XHTML_TYPE]
 
     def __init__(self, context, request):
         """Initialize with respect to a context and request."""
@@ -737,10 +783,31 @@ class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
 
     def do_GET(self):
         """Create a representation of a single field."""
+        media_type = self.handleConditionalGET()
+        if media_type is None:
+            # The conditional GET succeeded. Serve nothing.
+            return ""
+        else:
+            self.request.response.setHeader('Content-Type', media_type)
+            return self._representation(media_type)
+
+    def _getETagCore(self, unmarshalled_field_values=None):
+        """Calculate the ETag for an entry field.
+
+        The core of the ETag is the field value itself.
+        """
         name, value = self._unmarshallField(
             self.context.name, self.context.field)
-        self.request.response.setHeader('Content-Type', self.JSON_TYPE)
-        return simplejson.dumps(value)
+        return value
+
+    def _representation(self, media_type):
+        """Create a representation of the field value."""
+        name, value = self._unmarshallField(
+            self.context.name, self.context.field)
+        if media_type == self.JSON_TYPE:
+            return simplejson.dumps(value)
+        elif media_type == self.XHTML_TYPE:
+            return cgi.escape(value).encode("utf-8")
 
 
 class EntryField:
@@ -765,32 +832,15 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
     def __init__(self, context, request):
         """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(context, request)
-        self.etags_by_media_type = {}
         self.entry = IEntry(context)
 
-    def getETag(self, media_type, unmarshalled_field_values=None):
+    def _getETagCore(self, unmarshalled_field_values=None):
         """Calculate the ETag for an entry.
 
         :arg unmarshalled_field_values: A dict mapping field names to
         unmarshalled values, obtained during some other operation such
         as the construction of a representation.
         """
-        # Try to find a cached value.
-        etag = self.etags_by_media_type.get(media_type)
-        if etag is not None:
-            return etag
-
-        # Try to make the superclass handle it.
-        etag = super(EntryResource, self).getETag(media_type)
-        if etag is not None:
-            self.etags_by_media_type[media_type] = etag
-            return etag
-
-        # Calculate the ETag for a JSON or XHTML representation only.
-        if media_type not in (self.JSON_TYPE, self.XHTML_TYPE):
-            return None
-
-        hash_object = sha.new()
         values = []
         for name, field in getFieldsInOrder(self.entry.schema):
             if self.isModifiableField(field, False):
@@ -800,20 +850,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
                 else:
                     ignored, value = self._unmarshallField(name, field)
                 values.append(unicode(value))
-        hash_object.update("\0".join(values).encode("utf-8"))
-
-        # Append the media type, so that web browsers won't treat
-        # different representations of a resource interchangeably.
-        hash_object.update("\0" + media_type)
-
-        # Append the revision number, because the algorithm for
-        # generating the representation might itself change across
-        # versions.
-        hash_object.update("\0" + str(versioninfo.revno))
-
-        etag = '"%s"' % hash_object.hexdigest()
-        self.etags_by_media_type[media_type] = etag
-        return etag
+        return "\0".join(values).encode("utf-8")
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -1284,21 +1321,21 @@ class ServiceRootResource(HTTPResource):
         # it assumes it's being called in the context of a particular
         # request.
         # pylint:disable-msg=W0231
-        pass
+        self.etags_by_media_type = {}
 
     @property
     def request(self):
         """Fetch the current browser request."""
         return get_current_browser_request()
 
-    def getETag(self, media_type):
+    def _getETagCore(self, media_type):
         """Calculate an ETag for a representation of this resource.
 
         The service root resource changes only when the software
-        itself changes. Thus, we can use the revision number itself as
-        an ETag.
+        itself changes. This information goes into the ETag already,
+        so there's no need to provide anything.
         """
-        return '"%s-%s"' % (versioninfo.revno, media_type)
+        return ''
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""

@@ -1,28 +1,80 @@
-It's possible to get the value of one particular field.
+= Field resources =
+
+It's possible to get the value of one particular field. You can get a
+JSON or XHTML-fragment representation.
+
+    >>> import simplejson
+    >>> def set_display_name(name):
+    ...     """Sets salgado's display name."""
+    ...     representation = {'display_name': name}
+    ...     ignore = webservice('/~salgado', 'PATCH',
+    ...                         simplejson.dumps(representation))
+
+    >>> set_display_name("<b>Guilherme Salgado</b>")
 
     >>> print webservice.get('/~salgado/display_name')
     HTTP/1.1 200 Ok
     ...
     Content-Type: application/json
     ...
-    "Guilherme Salgado"
+    "<b>Guilherme Salgado</b>"
+
+    >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
+    HTTP/1.1 200 Ok
+    ...
+    Content-Type: application/xhtml+xml
+    ...
+    &lt;b&gt;Guilherme Salgado&lt;/b&gt;
+
+    >>> set_display_name("Guilherme Salgado")
+
+
+= Supported methods =
 
 Field resources are read-only.
 
-  >>> for method in ['HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']:
-  ...     print webservice("/~salgado/display_name", method)
-  HTTP/1.1 405 Method Not Allowed
-  Allow: GET
-  ...
-  HTTP/1.1 405 Method Not Allowed
-  Allow: GET
-  ...
-  HTTP/1.1 405 Method Not Allowed
-  Allow: GET
-  ...
-  HTTP/1.1 405 Method Not Allowed
-  Allow: GET
-  ...
-  HTTP/1.1 405 Method Not Allowed
-  Allow: GET
-  ...
+    >>> for method in ['HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']:
+    ...     print webservice("/~salgado/display_name", method)
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+
+
+=== Conditional GET ===
+
+Field resources have ETags independent of their parent entries. They
+respond to conditional GET.
+
+    >>> response = webservice.get('/~salgado')
+    >>> salgado_etag = response._response.getHeader('ETag')
+
+    >>> response = webservice.get('/~salgado/display_name')
+    >>> etag = response._response.getHeader('ETag')
+
+    >>> salgado_etag == etag
+    False
+
+    >>> print webservice.get('/~salgado/display_name',
+    ...                      headers={'If-None-Match': etag})
+    HTTP/1.1 304 Not Modified
+    ...
+
+    >>> set_display_name("new display name")
+    >>> print webservice.get('/~salgado/display_name',
+    ...                      headers={'If-None-Match': etag})
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> set_display_name("Guilherme Salgado")
