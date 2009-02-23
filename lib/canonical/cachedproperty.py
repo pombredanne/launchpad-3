@@ -89,7 +89,6 @@ class CachedProperty:
     last_transaction = None
 
     def __get__(self, inst, cls=None):
-        current_transaction = transaction.get()
         if inst is None:
             return self
         cachedresult = getattr(inst, self.attrname, self.marker)
