@@ -363,6 +363,29 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         proposals = self.all_branches.getMergeProposals()
         self.assertEqual([mp], list(proposals))
 
+    def test_just_owned_branch_merge_proposals(self):
+        # If the collection only includes branches owned by a person, the
+        # getMergeProposals() will only return merge proposals for branches
+        # that are owned by that person.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch1 = self.factory.makeProductBranch(
+            product=product, owner=person)
+        branch2 = self.factory.makeProductBranch(
+            product=product, owner=person)
+        branch3 = self.factory.makeProductBranch(product=product)
+        branch4 = self.factory.makeProductBranch(product=product)
+        target = self.factory.makeProductBranch(product=product)
+        mp1 = self.factory.makeBranchMergeProposal(
+            target_branch=target, source_branch=branch1)
+        mp2 = self.factory.makeBranchMergeProposal(
+            target_branch=target, source_branch=branch2)
+        mp3 = self.factory.makeBranchMergeProposal(
+            target_branch=target, source_branch=branch3)
+        collection = self.all_branches.ownedBy(person)
+        proposals = collection.getMergeProposals()
+        self.assertEqual(set([mp1, mp2]), set(proposals))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

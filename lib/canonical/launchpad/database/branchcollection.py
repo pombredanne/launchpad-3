@@ -83,7 +83,10 @@ class GenericBranchCollection:
 
     def getMergeProposals(self):
         """See `IBranchCollection`."""
-        return self.store.find(BranchMergeProposal)
+        branch_ids = self.getBranches().values(Branch.id)
+        return self.store.find(
+            BranchMergeProposal,
+            BranchMergeProposal.source_branchID.is_in(branch_ids))
 
     def inProduct(self, product):
         """See `IBranchCollection`."""
