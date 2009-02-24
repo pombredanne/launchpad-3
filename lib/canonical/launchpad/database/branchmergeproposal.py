@@ -43,6 +43,7 @@ from canonical.launchpad.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -647,10 +648,16 @@ class BranchMergeProposalGetter:
     @staticmethod
     def getProposalsForContext(context, status=None, visible_by_user=None):
         """See `IBranchMergeProposalGetter`."""
-        builder = BranchMergeProposalQueryBuilder(context, status)
-        return BranchMergeProposal.select(
-            BranchMergeProposalGetter._generateVisibilityClause(
-                builder.query, visible_by_user))
+        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+        if context is None:
+            pass
+        elif IProduct.providedBy(context):
+            collection = collection.inProduct(context)
+        elif IPerson.providedBy(context):
+            collection = collection.ownedBy(context)
+        else:
+            raise BadBranchMergeProposalSearchContext(context)
+        return collection.getMergeProposals(status)
 
     @staticmethod
     def getProposalsForReviewer(reviewer, status=None, visible_by_user=None):
