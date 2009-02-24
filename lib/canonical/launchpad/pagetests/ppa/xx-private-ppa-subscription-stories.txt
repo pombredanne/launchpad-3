@@ -30,14 +30,21 @@ And a browser for Celso currently navigated to the Manage Subscriptions page
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
 
-When Celso fills in the form with 'spiv' as the subscriber
+And a client of Celso's who has a launchpad name of 'joesmith'
+
+    >>> login('foo.bar@canonical.com')
+    >>> client = factory.makePerson(name="joesmith", displayname="Joe Smith",
+    ...     password="test")
+    >>> logout()
+
+When Celso fills in the form with 'joesmith' as the subscriber
 And a blank subscription expiry
-And a description of "spiv's my friend"
+And a description of "Joe is my friend"
 And clicks on the "Add subscriber" button
 
-    >>> cprov_browser.getControl(name='field.subscriber').value = 'spiv'
+    >>> cprov_browser.getControl(name='field.subscriber').value = 'joesmith'
     >>> cprov_browser.getControl(
-    ...     name='field.description').value = "spiv's my friend"
+    ...     name='field.description').value = "Joe is my friend"
     >>> cprov_browser.getControl(name="field.actions.add").click()
 
 Then Celso is redirected to the subscribers page
@@ -53,11 +60,11 @@ Create a helper function to print subscriptions:
 
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                Expires     Comment
-    Andrew Bennetts                 spiv's my friend
+    Joe Smith                       Joe is my friend
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    Andrew Bennetts has been added as a subscriber.
+    Joe Smith has been added as a subscriber.
 
 === Scenario 2: A team is added as a subscriber ===
 
