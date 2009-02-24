@@ -386,7 +386,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeProduct(self, name=None, project=None, displayname=None,
                     licenses=None, owner=None, registrant=None,
-                    title=None, summary=None):
+                    title=None, summary=None, official_malone=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -403,7 +403,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if summary is None:
             summary = self.getUniqueString('summary')
-        return getUtility(IProductSet).createProduct(
+        product = getUtility(IProductSet).createProduct(
             owner,
             name,
             displayname,
@@ -413,6 +413,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             licenses=licenses,
             project=project,
             registrant=registrant)
+        if official_malone is not None:
+            product.official_malone = official_malone
+        return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
                           summary=None):

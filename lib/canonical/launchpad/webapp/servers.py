@@ -1305,7 +1305,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
             # Everything is fine, let's return the principal.
             pass
         principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            token.person.id, access_level=token.permission,
+            token.person.account.id, access_level=token.permission,
             scope=token.context)
 
         # Make sure the principal is a member of the beta test team.
@@ -1318,8 +1318,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
                 webservice_beta_team_name)
             person = IPerson(principal)
             if not person.inTeam(webservice_beta_team):
-                raise Unauthorized(person.name +
-                                   " is not a member of the beta test team.")
+                raise Unauthorized(
+                    person.name + " is not a member of the beta test team.")
         return principal
 
 

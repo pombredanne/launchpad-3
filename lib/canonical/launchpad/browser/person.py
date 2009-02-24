@@ -10,7 +10,9 @@ __all__ = [
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
     'EmailToPersonView',
+    'PersonAccountAdministerView',
     'PersonActiveReviewsView',
+    'PersonAdministerView',
     'PersonAddView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
@@ -131,6 +133,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
+from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchListingSort, BranchPersonSearchContext,
     BranchPersonSearchRestriction, BugTaskSearchParams, BugTaskStatus,
@@ -1771,6 +1774,104 @@ class PersonRdfContentsView:
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class PersonAdministerView(LaunchpadEditFormView):
+    """Administer an `IPerson`."""
+    schema = IPerson
+    label = "Review person"
+    field_names = [
+        'name', 'displayname',
+        'personal_standing', 'personal_standing_reason']
+    custom_widget(
+        'personal_standing_reason', TextAreaWidget, height=5, width=60)
+
+    @property
+    def is_viewing_person(self):
+        """Is the view showing an `IPerson`?
+
+        `PersonAdministerView` and `PersonAccountAdministerView` share a
+        template. It needs to know what the context is.
+        """
+        return True
+
+    @property
+    def next_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.context)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Update the IPerson."""
+        self.updateContextFromData(data)
+
+
+class PersonAccountAdministerView(LaunchpadEditFormView):
+    """Administer an `IAccount` belonging to an `IPerson`."""
+    schema = IAccount
+    label = "Review person's account"
+    field_names = [
+        'displayname', 'password', 'status', 'status_comment']
+    custom_widget(
+        'status_comment', TextAreaWidget, height=5, width=60)
+    custom_widget('password', PasswordChangeWidget)
+
+    def __init__(self, context, request):
+        """See `LaunchpadEditFormView`."""
+        super(PersonAccountAdministerView, self).__init__(context, request)
+        # Only the IPerson can be traversed to, so it provides the IAccount.
+        self.person = self.context
+        self.context = self.context.account
+
+    @property
+    def is_viewing_person(self):
+        """Is the view showing an `IPerson`?
+
+        `PersonAdministerView` and `PersonAccountAdministerView` share a
+        template. It needs to know what the context is.
+        """
+        return False
+
+    @property
+    def email_addresses(self):
+        """A list of the user's preferred and validated email addresses."""
+        emails = sorted(
+            email.email for email in self.person.validatedemails)
+        if self.person.preferredemail is not None:
+            emails.insert(0, self.person.preferredemail.email)
+        return emails
+
+    @property
+    def next_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.person)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.person)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Update the IAccount."""
+        if (data['status'] == AccountStatus.SUSPENDED
+            and self.context.status != AccountStatus.SUSPENDED):
+            # Setting the password to a clear value makes it impossible to
+            # login. The preferred email address is removed to ensure no
+            # email is sent to the user.
+            data['password'] = 'invalid'
+            self.person.setPreferredEmail(None)
+        if (data['status'] == AccountStatus.ACTIVE
+            and self.context.status != AccountStatus.ACTIVE):
+            self.request.response.addNoticeNotification(
+                u'The user is reactivated. He must use the '
+                u'"forgot password" to log in.')
+        self.updateContextFromData(data)
 
 
 def userIsActiveTeamMember(team):
@@ -3543,7 +3644,7 @@ class PersonEditView(BasePersonEditView):
             len(self.unknown_trust_roots_user_logged_in) > 0
             and not bypass_check):
             # Warn the user that they might shoot themselves in the foot.
-            self.setFieldError('name', structured(dedent("""
+            self.setFieldError('name', structured(dedent('''
             <div class="inline-warning">
               <p>Changing your name will change your
                   public OpenID identifier. This means that you might be
@@ -3560,7 +3661,7 @@ class PersonEditView(BasePersonEditView):
               <p>If you click 'Save' again, we will rename your account
                  anyway.
               </p>
-            </div>"""),
+            </div>'''),
              ", ".join(self.unknown_trust_roots_user_logged_in)))
             self.i_know_this_is_an_openid_security_issue_input = dedent("""\
                 <input type="hidden"
