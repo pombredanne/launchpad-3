@@ -225,16 +225,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         owned_branch.unsubscribe(person)
         # Subscribe two other people to the owned branch to make sure
         # that the BranchSubscription join is doing it right.
-        owned_branch.subscribe(
-            self.factory.makePerson(),
-            BranchSubscriptionNotificationLevel.NOEMAIL,
-            BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
-        owned_branch.subscribe(
-            self.factory.makePerson(),
-            BranchSubscriptionNotificationLevel.NOEMAIL,
-            BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+        self.factory.makeBranchSubscription(branch=owned_branch)
+        self.factory.makeBranchSubscription(branch=owned_branch)
 
         registered_branch = self.factory.makeAnyBranch(
             owner=team, registrant=person)
