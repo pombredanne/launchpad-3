@@ -254,7 +254,9 @@ class GetPersonTestCase(unittest.TestCase):
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             'foo@example.com', PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
         email = getUtility(IEmailAddressSet).new('foo@preferred.com', person)
+        transaction.commit()
         person.setPreferredEmail(email)
+        transaction.commit()
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
 
         product = getUtility(IProductSet).getByName('netapplet')
