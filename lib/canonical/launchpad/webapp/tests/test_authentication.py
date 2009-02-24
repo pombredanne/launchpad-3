@@ -7,7 +7,6 @@ __metaclass__ = type
 import unittest
 
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
-from zope.component import getUtility
 
 from canonical.config import config
 from canonical.testing import (
