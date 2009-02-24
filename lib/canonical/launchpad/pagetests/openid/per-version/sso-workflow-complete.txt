@@ -95,6 +95,12 @@ That account can obviously be used in further OpenID interactions.
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
 
+    # This is just to log out of the OpenID server, so that we can log back
+    # in.
+    >>> print browser.title
+    Authenticate to http://launchpad.dev/
+    >>> browser.getControl("I'm Someone Else").click()
+
     >>> print browser.title
     Launchpad Login Service
     >>> browser.getControl(name='field.email').value = 'new-user@example.com'
@@ -112,6 +118,12 @@ If the user forgets their password, it's possible to reset it.
     ...     make_identifier_select_endpoint(PROTOCOL_URI))
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
+    # This is just to log out of the OpenID server, so that we can pretend we
+    # forgot the password.
+    >>> print browser.title
+    Authenticate to http://launchpad.dev/
+    >>> browser.getControl("I'm Someone Else").click()
 
     >>> print browser.title
     Launchpad Login Service

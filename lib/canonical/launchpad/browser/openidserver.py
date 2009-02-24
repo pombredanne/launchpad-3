@@ -703,8 +703,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
-            account = getUtility(IAccountSet).getByEmail(email)
-            person = IPerson(account, None)
+            person = principal.person
             if person is None:
                 return
             if person.preferredemail is None:
@@ -740,9 +739,6 @@ class LoginServiceLoginView(LoginServiceBaseView):
             loginsource = getUtility(IPlacelessLoginSource)
             principal = loginsource.getPrincipalByLogin(email)
             logInPrincipal(self.request, principal, email)
-            # XXX: Need to do something about this.
-            # Update the attribute holding the cached user.
-            #self._user = principal.person
             return self.renderOpenIDResponse(self.createPositiveResponse())
         elif action == 'resetpassword':
             return self.process_password_recovery(email)
