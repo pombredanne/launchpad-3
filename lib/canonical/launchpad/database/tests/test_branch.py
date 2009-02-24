@@ -44,12 +44,12 @@ from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
-from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
     NoSuchSeries)
@@ -183,28 +183,28 @@ class TestBranch(TestCaseWithFactory):
                 branch.name),
             branch.unique_name)
 
-    def test_container_name_junk(self):
+    def test_target_name_junk(self):
         branch = self.factory.makePersonalBranch()
-        self.assertEqual('+junk', branch.container.name)
+        self.assertEqual('+junk', branch.target.name)
 
-    def test_container_name_product(self):
+    def test_target_name_product(self):
         branch = self.factory.makeProductBranch()
-        self.assertEqual(branch.product.name, branch.container.name)
+        self.assertEqual(branch.product.name, branch.target.name)
 
-    def test_container_name_package(self):
+    def test_target_name_package(self):
         branch = self.factory.makePackageBranch()
         self.assertEqual(
             '%s/%s/%s' % (
                 branch.distribution.name, branch.distroseries.name,
                 branch.sourcepackagename.name),
-            branch.container.name)
+            branch.target.name)
 
     def makeLaunchBag(self):
         return getUtility(IOpenLaunchBag)
 
     def test_addToLaunchBag_product(self):
         # Branches are not added directly to the launchbag. Instead,
-        # information about their container is added.
+        # information about their target is added.
         branch = self.factory.makeProductBranch()
         launchbag = self.makeLaunchBag()
         branch.addToLaunchBag(launchbag)
@@ -1359,6 +1359,31 @@ class TestGetByUrl(TestCaseWithFactory):
         branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
         self.assertEqual(branch, branch2)
 
+    def test_URIToUniqueName(self):
+        """Ensure URIToUniqueName works.
+
+        Only codehosting-based using http, sftp or bzr+ssh URLs will
+        be handled. If any other URL gets passed the returned will be
+        None.
+        """
+        branch_set = getUtility(IBranchSet)
+        uri = URI(config.codehosting.supermirror_root)
+        uri.path = '/~foo/bar/baz'
+        # Test valid schemes
+        uri.scheme = 'http'
+        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        uri.scheme = 'sftp'
+        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        uri.scheme = 'bzr+ssh'
+        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        # Test invalid scheme
+        uri.scheme = 'ftp'
+        self.assertIs(None, branch_set.URIToUniqueName(uri))
+        # Test valid scheme, invalid domain
+        uri.scheme = 'sftp'
+        uri.host = 'example.com'
+        self.assertIs(None, branch_set.URIToUniqueName(uri))
+
 
 class TestGetByLPPath(TestCaseWithFactory):
     """Ensure URLs are correctly expanded."""
@@ -1422,68 +1447,6 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual(
             (branch, None, product.development_focus),
             branch_set.getByLPPath('bb'))
-
-
-class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
-    """Tests the visible_by_user checks for getBranchesForContext."""
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        # Use an admin user to set branch privacy easily.
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
-        self.product = self.factory.makeProduct()
-        self.public_branch = self.factory.makeProductBranch(
-            product=self.product)
-        self.private_branch_1 = self.factory.makeProductBranch(
-            product=self.product, private=True)
-        # Need a second private branch by another owner.
-        self.private_branch_2 = self.factory.makeProductBranch(
-            product=self.product, private=True)
-        self.public_only = set([self.public_branch])
-        self.all_branches = set(
-            [self.public_branch, self.private_branch_1,
-             self.private_branch_2])
-
-    def _getBranches(self, visible_by_user=None):
-        branches = getUtility(IBranchSet).getBranchesForContext(
-            context=self.product, visible_by_user=visible_by_user)
-        return set(branches)
-
-    def test_anonymous_only_sees_public(self):
-        # An anonymous user will only see public branches.
-        self.assertEqual(self.public_only, self._getBranches())
-
-    def test_normal_user_only_sees_public(self):
-        # A user who is not the owner nor special only sees public branches.
-        self.assertEqual(self.public_only, self._getBranches())
-
-    def test_private_owner_sees_public_and_own(self):
-        # A private branch owner can see their private branches and the public
-        # branches.
-        self.assertEqual(set([self.public_branch, self.private_branch_1]),
-                         self._getBranches(self.private_branch_1.owner))
-
-    def test_launchpad_services_sees_all(self):
-        # The special launchpad services identity can see all branches.
-        self.assertEqual(self.all_branches,
-                         self._getBranches(LAUNCHPAD_SERVICES))
-
-    def test_admins_see_all(self):
-        # Launchpad admins see all.
-        admin_user = self.factory.makePerson()
-        celebs = getUtility(ILaunchpadCelebrities)
-        celebs.admin.addMember(admin_user, celebs.admin.teamowner)
-
-        self.assertEqual(self.all_branches, self._getBranches(admin_user))
-
-    def test_bazaar_experts_see_all(self):
-        # Bazaar experts see all.
-        expert = self.factory.makePerson()
-        celebs = getUtility(ILaunchpadCelebrities)
-        celebs.bazaar_experts.addMember(
-            expert, celebs.bazaar_experts.teamowner)
-
-        self.assertEqual(self.all_branches, self._getBranches(expert))
 
 
 class TestCodebrowseURL(TestCaseWithFactory):

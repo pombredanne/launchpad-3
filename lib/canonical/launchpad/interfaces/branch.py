@@ -88,6 +88,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import (
     ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
@@ -490,6 +491,25 @@ def get_blacklisted_hostnames():
 
 class BranchURIField(URIField):
 
+    #XXX leonardr 2009-02-12 [bug=328588]:
+    # This code should be removed once the underlying database restriction
+    # is removed.
+    trailing_slash = False
+
+    # XXX leonardr 2009-02-12 [bug=328588]:
+    # This code should be removed once the underlying database restriction
+    # is removed.
+    def normalize(self, input):
+        """Be extra-strict about trailing slashes."""
+        input = super(BranchURIField, self).normalize(input)
+        if self.trailing_slash == False and input[-1] == '/':
+            # ensureNoSlash() doesn't trim the slash if the path
+            # is empty (eg. http://example.com/). Due to the database
+            # restriction on branch URIs, we need to remove a trailing
+            # slash in all circumstances.
+            input = input[:-1]
+        return input
+
     def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
@@ -502,9 +522,7 @@ class BranchURIField(URIField):
         # reused in the XMLRPC code, and the Authserver.
         # This also means we could get rid of the imports above.
 
-        # URIField has already established that we have a valid URI
-        uri = URI(value)
-        supermirror_root = URI(config.codehosting.supermirror_root)
+        uri = URI(self.normalize(value))
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
@@ -727,9 +745,7 @@ class IBranch(IHasOwner):
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
-    # XXX: JonathanLange 2008-12-08 spec=package-branches: decorates blows up
-    # if we call this 'context'!
-    container = Attribute("The context that this branch belongs to.")
+    target = Attribute("The target of this branch, as an `IBranchTarget`.")
 
     # Product attributes
     # ReferenceChoice is Interface rather than IProduct as IProduct imports
@@ -823,9 +839,16 @@ class IBranch(IHasOwner):
         the revisions that match the revision history from bzrlib for this
         branch.
         """)
-    subscriptions = Attribute(
-        "BranchSubscriptions associated to this branch.")
-    subscribers = Attribute("Persons subscribed to this branch.")
+    subscriptions = exported(
+        CollectionField(
+            title=_("BranchSubscriptions associated to this branch."),
+            readonly=True,
+            value_type=Reference(Interface))) # Really IBranchSubscription
+    subscribers = exported(
+        CollectionField(
+            title=_("Persons subscribed to this branch."),
+            readonly=True,
+            value_type=Reference(IPerson)))
 
     date_created = exported(
         Datetime(
@@ -962,7 +985,7 @@ class IBranch(IHasOwner):
 
         Use this when traversing to this branch in the web UI.
 
-        In particular, add information about the branch's container to the
+        In particular, add information about the branch's target to the
         launchbag. If the branch has a product, add that; if it has a source
         package, add lots of information about that.
 
@@ -1163,6 +1186,18 @@ class IBranchSet(Interface):
         """Find a branch by its ~owner/product/name unique name.
 
         Return None if no match was found.
+        """
+
+    def URIToUniqueName(uri):
+        """Return the unique name for the URL, if the URL is on codehosting.
+
+        This does not ensure that the unique name is valid.  It recognizes the
+        codehosting URLs of remote branches and mirrors, but not their
+        remote URLs.
+
+        :param uri: An instance of webapp.uri.URI
+        :return: The unique name if possible, None if the URI is not a valid
+            codehosting URI.
         """
 
     def getByUrl(url, default=None):

@@ -101,9 +101,9 @@ def traverse_distro_archive(distribution, name):
     archive = getUtility(
         IArchiveSet).getByDistroAndName(distribution, name)
     if archive is None:
-        return NotFoundError(name)
-    else:
-        return archive
+        raise NotFoundError(name)
+
+    return archive
 
 
 def traverse_named_ppa(person_name, ppa_name):

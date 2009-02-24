@@ -88,29 +88,27 @@
         <div class="three column middle">
           <h2>What&#8217;s new?</h2>
           <ul style="padding: 0; margin: auto;">
+           <li class="news">
+              <a href="http://blog.launchpad.net/?p=551">
+                <strong>Commercial subscriptions</strong><br />
+                Find out more about Launchpad's privacy features for your commercial projects.
+              </a>
+           </li>
             <li class="news">
-              <a href="http://news.launchpad.net/?p=448">
+              <a href="http://blog.launchpad.net/?p=534">
+                <strong>Build udebs in your PPA</strong><br />
+                Personal Package Archives now support Debian installer udeb packages.
+              </a>
+           </li>
+            <li class="news">
+              <a href="http://blog.launchpad.net/?p=448">
                 <strong>Upstreams: Ubuntu translations come full circle</strong><br />
                 Easily integrate the work done by distribution translators back into
                 your own translation effort.
               </a>
-           </li>
+           </li>           
            <li class="news">
-              <a href="http://news.launchpad.net/?p=450">
-                <strong>Translations style guides</strong><br />
-                Share your translation team's policies, best practices and guidelines
-                directly from translation pages.
-              </a>
-           </li>
-            <li class="news">
-              <a href="http://news.launchpad.net/cool-new-stuff/announcing-the-launchpad-plugin-api-spec">
-                <strong>New bug plugin API</strong><br />
-                Create your own plugin for direct communication between Launchpad
-                and your favourite bug tracker.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/?p=106">
+              <a href="http://blog.launchpad.net/?p=106">
                 <strong>Help test Launchpad's API!</strong><br />
                 Join the beta of our web services API and Python library.
               </a>
@@ -118,8 +116,8 @@
 
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2009-01-28.
-            <a href="http://news.launchpad.net">Read our blog!</a>
+            Updated 2009-02-26.
+            <a href="http://blog.launchpad.net">Read our blog!</a>
           </div>
         </div>
         <div class="three column right">
@@ -138,8 +136,8 @@
                 /></a> <a href="/people">Browse people &amp; teams</a>
               </div>
               <div class="home-banners">
-                <a href="/+tour"><img src="/@@/mentoring" alt=""
-                /></a> <a href="/+tour">Take the tour</a><br>
+                <a href="/+tour"><img src="/@@/tour-icon" alt=""
+                /></a> <a href="/+tour">Take the tour</a><br/>
                 <a href="https://help.launchpad.net/"><img src="/@@/maybe" alt=""
                 /></a> <a href="https://help.launchpad.net/">Read the guide</a>
               </div>

@@ -520,6 +520,34 @@ class TestMergeProposalGetComment(TestCase):
                           self.merge_proposal2.getComment, self.comment.id)
 
 
+class TestMergeProposalGetVoteReference(TestCaseWithFactory):
+    """Tester for `BranchMergeProposal.getComment`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        # Testing behavior, not permissions here.
+        login('foo.bar@canonical.com')
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        self.merge_proposal2 = self.factory.makeBranchMergeProposal()
+        self.vote = self.merge_proposal.nominateReviewer(
+            reviewer=self.merge_proposal.registrant,
+            registrant=self.merge_proposal.registrant)
+
+    def test_getVoteReference(self):
+        """Tests that we can get a comment."""
+        self.assertEqual(
+            self.vote, self.merge_proposal.getVoteReference(
+                self.vote.id))
+
+    def test_getVoteReferenceWrongBranchMergeProposal(self):
+        """Tests that we can get a comment."""
+        self.assertRaises(WrongBranchMergeProposal,
+                          self.merge_proposal2.getVoteReference,
+                          self.vote.id)
+
+
 class TestMergeProposalNotification(TestCaseWithFactory):
     """Test that events are created when merge proposals are manipulated"""
 
@@ -671,6 +699,22 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
         utility = getUtility(IBranchMergeProposalGetter)
         retrieved = utility.get(merge_proposal.id)
         self.assertEqual(merge_proposal, retrieved)
+
+    def test_getVotesForProposals(self):
+        # Check the resulting format of the dict.  getVotesForProposals
+        # returns a dict mapping merge proposals to a list of votes for that
+        # proposal.
+        mp_no_reviews = self.factory.makeBranchMergeProposal()
+        mp_with_reviews = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        login_person(mp_with_reviews.registrant)
+        vote_reference = mp_with_reviews.nominateReviewer(
+            reviewer, mp_with_reviews.registrant)
+        self.assertEqual(
+            {mp_no_reviews: [],
+             mp_with_reviews: [vote_reference]},
+            getUtility(IBranchMergeProposalGetter).getVotesForProposals(
+                [mp_with_reviews, mp_no_reviews]))
 
 
 class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):

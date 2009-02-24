@@ -41,16 +41,18 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
+from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseries import DistroSeries
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.milestone import (
+    HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing, BinaryPackageFilePublishing,
-    SourcePackagePublishingHistory)
+    BinaryPackageFilePublishing, BinaryPackagePublishingHistory,
+    SourcePackageFilePublishing, SourcePackagePublishingHistory)
 from canonical.launchpad.database.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
@@ -75,7 +77,7 @@ from canonical.launchpad.interfaces.build import IBuildSet, IHasBuildRecords
 from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from canonical.launchpad.interfaces.distributionmirror import (
-    MirrorContent, MirrorStatus)
+    IDistributionMirror, MirrorContent, MirrorStatus)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
@@ -108,7 +110,8 @@ from canonical.launchpad.webapp.url import urlparse
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
-                   QuestionTargetMixin, StructuralSubscriptionTargetMixin):
+                   QuestionTargetMixin, StructuralSubscriptionTargetMixin,
+                   HasMilestonesMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
@@ -228,25 +231,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return [archive.id for archive in self.all_distro_archives]
 
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.distribution == self)
+
     def getArchiveIDList(self, archive=None):
         """See `IDistribution`."""
         if archive is None:
             return self.all_distro_archive_ids
         else:
             return [archive.id]
-
-    @property
-    def all_milestones(self):
-        """See `IDistribution`."""
-        return Milestone.selectBy(
-            distribution=self, orderBy=['-dateexpected', 'name'])
-
-    @property
-    def milestones(self):
-        """See `IDistribution`."""
-        return Milestone.selectBy(
-            distribution=self, visible=True,
-            orderBy=['-dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):
@@ -390,7 +384,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if not self.full_functionality:
             return None
 
-        url = http_base_url or ftp_base_url
+        urls = {'http_base_url' : http_base_url,
+                'ftp_base_url' : ftp_base_url,
+                'rsync_base_url' : rsync_base_url}
+        for name, value in urls.items():
+            if value is not None:
+                urls[name] = IDistributionMirror[name].normalize(value)
+
+        url = urls['http_base_url'] or urls['ftp_base_url']
         assert url is not None, (
             "A mirror must provide either an HTTP or FTP URL (or both).")
         dummy, host, dummy, dummy, dummy, dummy = urlparse(url)
@@ -405,8 +406,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
             country=country, content=content, displayname=displayname,
-            description=description, http_base_url=http_base_url,
-            ftp_base_url=ftp_base_url, rsync_base_url=rsync_base_url,
+            description=description, http_base_url=urls['http_base_url'],
+            ftp_base_url=urls['ftp_base_url'],
+            rsync_base_url=urls['rsync_base_url'],
             official_candidate=official_candidate, enabled=enabled)
 
     def createBug(self, bug_params):
@@ -1385,6 +1387,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             status=DistroSeriesStatus.EXPERIMENTAL,
             parent_series=parent_series,
             owner=owner)
+
+    @property
+    def has_published_binaries(self):
+        """See `IDistribution`."""
+        store = Store.of(self)
+        results = store.find(
+            BinaryPackagePublishingHistory,
+            DistroArchSeries.distroseries == DistroSeries.id,
+            DistroSeries.distribution == self,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED).config(limit=1)
+
+        # XXX 2009-02-19 Julian
+        # Storm is not very useful for bool checking on the results,
+        # see: https://bugs.launchpad.net/soyuz/+bug/246200
+        return results.any() != None
 
 
 class DistributionSet:
