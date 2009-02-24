@@ -24,6 +24,8 @@ from StringIO import StringIO
 import subprocess
 import xmlrpclib
 
+from canonical.config import config
+
 
 class MockBuilder:
     """Emulates a IBuilder class."""
@@ -50,7 +52,7 @@ class MockBuilder:
     def requestAbort(self):
         return self.slave.abort()
 
-    def resumeSlaveHost(self, logger):
+    def resumeSlave(self, logger):
         return ('out', 'err')
 
     def checkSlaveAlive(self):
@@ -167,19 +169,8 @@ class OkSlave:
     def info(self):
         return ('1.0', 'i386', 'debian')
 
-    def resumeHost(self, logger, resume_argv):
-        """Initialize a virtual builder to a known state.
-
-        The supplied resume command is run in a subprocess in order to reset a
-        slave to a known state. This method will only be invoked for virtual
-        slaves.
-
-        :param logger: the logger to use
-        :param resume_argv: the resume command to run (sequence of strings)
-
-        :return: a (stdout, stderr, subprocess exitcode) triple
-        """
-        logger.debug('Running: %s', resume_argv)
+    def resume(self):
+        resume_argv = config.builddmaster.vm_resume_command.split()
         resume_process = subprocess.Popen(
             resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = resume_process.communicate()

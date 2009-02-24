@@ -1,7 +1,19 @@
-#!/usr/bin/env python
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Soyuz buildd slave manager logic."""
 
+__metaclass__ = type
+
+__all__ = [
+    'BaseDispatchResult',
+    'BuilddManager'
+    'FailDispatchResult',
+    'RecordingSlave',
+    'ResetDispatchResult',
+    'buildd_success_result_map',
+    ]
+
 import logging
+import os
 
 from twisted.application import service
 from twisted.internet import reactor, utils, defer
@@ -17,6 +29,12 @@ from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.builder import IBuilderSet
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
+
+
+buildd_success_result_map = {
+    'ensurepresent': True,
+    'build': 'BuilderStatus.BUILDING',
+    }
 
 
 class FakeZTM:
@@ -51,11 +69,12 @@ class RecordingSlave:
     major slave-scanner throughput issue while avoiding large-scale changes to
     its code base.
     """
-    def __init__(self, name, url):
+    def __init__(self, name, url, vm_host):
         self.name = name
         self.url = url
-        self.resume = False
-        self.resume_argv = None
+        self.vm_host = vm_host
+
+        self.resume_requested = False
         self.calls = []
 
     def __repr__(self):
@@ -64,46 +83,48 @@ class RecordingSlave:
     def ensurepresent(self, *args):
         """Download files needed for the build."""
         self.calls.append(('ensurepresent', args))
-        return (True, 'Download')
+        result = buildd_success_result_map.get('ensurepresent')
+        return (result, 'Download')
 
     def build(self, *args):
         """Perform the build."""
         self.calls.append(('build', args))
-        return ('BuilderStatus.BUILDING', args[0])
+        result = buildd_success_result_map.get('build')
+        return (result, args[0])
 
-    def resumeHost(self, logger, resume_argv):
-        """Record the request to initialize a builder to a known state.
+    def resume(self):
+        """Record the request to resume the builder..
 
-        The supplied resume command will be run in a deferred and parallel
-        fashion in order to increase the slave-scanner throughput.
-        For now we merely record it.
-
-        :param logger: the logger to use
-        :param resume_argv: the resume command to run (sequence of strings)
+        Always succeed.
 
         :return: a (stdout, stderr, subprocess exitcode) triple
         """
-        self.resume = True
-        logger.debug("Recording slave reset request for %s", self.url)
-        self.resume_argv = resume_argv
+        self.resume_requested = True
         return ('', '', 0)
 
-    def resumeSlaveHost(self):
-        """Initialize a virtual builder to a known state.
+    def resumeSlave(self):
+        """Resume the builder in a asynchronous fashion.
 
-        The recorded resume command is run in a subprocess in order to reset a
-        slave to a known state. This method will only be invoked for virtual
-        slaves.
+        Used the configuration command-line in the same way
+        `BuilddSlave.resume` does.
 
         :return: a Deferred
         """
-        d = utils.getProcessOutputAndValue(
-            str(self.resume_argv[0]), [str(u) for u in self.resume_argv[1:]])
+        resume_command = config.builddmaster.vm_resume_command % {
+            'vm_host': self.vm_host}
+        # Twisted API require string and the configuration provides unicode.
+        resume_argv = [str(term) for term in resume_command.split()]
+        d = utils.getProcessOutputAndValue(resume_argv[0], resume_argv[1:])
         return d
 
 
-class BaseBuilderRequest:
-    """Base class for *BuilderRequest variations."""
+class BaseDispatchResult:
+    """Base class for *DispatchResult variations.
+
+
+    It will be extended to represent dispatching results and allow
+    homogeneous processing.
+    """
 
     def __init__(self, slave, info=None):
         self.slave = slave
@@ -122,8 +143,13 @@ class BaseBuilderRequest:
             "Call sites must define an evaluation method.")
 
 
-class FailBuilderRequest(BaseBuilderRequest):
-    """Clean up in case we failed to dispatch to a builder."""
+class FailDispatchResult(BaseDispatchResult):
+    """Represents a communication failure while dispatching a build job..
+
+    When evaluated this object mark the corresponding `IBuilder` as
+    'NOK' with the given text as 'failnotes'. It also cleanup the running
+    job (`IBuildQueue`).
+    """
 
     def __repr__(self):
         return  '%r failure (%s)' % (self.slave, self.info)
@@ -135,8 +161,12 @@ class FailBuilderRequest(BaseBuilderRequest):
         self._cleanJob(builder.currentjob)
 
 
-class ResetBuilderRequest(BaseBuilderRequest):
-    """Clean up in case a builder could not be reset."""
+class ResetDispatchResult(BaseDispatchResult):
+    """Represents a failure to reset a builder.
+
+    When evaluated this object simply cleanup the running job
+    (`IBuildQueue`).
+    """
 
     def __repr__(self):
         return  '%r reset' % self.slave
@@ -150,14 +180,16 @@ class ResetBuilderRequest(BaseBuilderRequest):
 class BuilddManager(service.Service):
     """Build slave manager."""
 
-    # To be used for build slaves that could not be reset.
-    reset_request = ResetBuilderRequest
-    # To be used in cases where we failed to dispatch a build to a slave.
-    fail_request = FailBuilderRequest
+    # Dispatch result factories, used to build objects of type
+    # BaseDispatchResult representing the result of a dispatching chain.
+    reset_result = ResetDispatchResult
+    fail_result = FailDispatchResult
 
     def __init__(self):
+        # Store for running chains.
         self._deferreds = []
-        # Keep track of build slaves that need handling in a scan/dipatch
+
+        # Keep track of build slaves that need handling in a scan/dispatch
         # cycle.
         self.remaining_slaves = []
 
@@ -186,7 +218,7 @@ class BuilddManager(service.Service):
 
     def nextCycle(self):
         """Schedule the next scanning cycle."""
-        self.logger.info('Next cycle in 5 seconds.')
+        self.logger.debug('Next cycle in 5 seconds.')
         reactor.callLater(5, self.startService)
 
     def slaveDone(self, slave):
@@ -201,22 +233,30 @@ class BuilddManager(service.Service):
 
         Once all the active events were executed:
 
-         * Evaluate pending builder update requests;
-         * Clean the list of active events;
-         * Call `gameOver`.
+         * Evaluate pending builder update results;
+         * Clean the list of active events (_deferreds);
+         * Call `nextCycle`.
         """
-        def done(results):
+        def done(deferred_results):
             self.logger.info('Scanning cycle finished.')
-            requests = [
-                request for status, request in results
-                if isinstance(request, BaseBuilderRequest)]
-            for request in requests:
-                self.logger.info('%r' % request)
-                request()
+            # We are only interested in returned objects of type
+            # BaseDispatchResults, those are the ones that needs evaluation.
+            dispatch_results = [
+                result for status, result in deferred_results
+                if isinstance(result, BaseDispatchResult)]
 
+            # Evaluate then, which will synchronize the database information.
+            for result in dispatch_results:
+                self.logger.info('%r' % result)
+                result()
+
+            # Clean the events stored for this cycle and schedule the
+            # next one.
             self._deferreds = []
             self.nextCycle()
-            return results
+
+            # Return the evaluated events for testing purpose.
+            return deferred_results
 
         self.logger.info('Finishing scanning cycle.')
         dl = defer.DeferredList(self._deferreds, consumeErrors=True)
@@ -241,10 +281,14 @@ class BuilddManager(service.Service):
         recording_slaves = []
 
         newInteraction()
+
         builder_set = getUtility(IBuilderSet)
+        # Use FakeZTM to avoid partial commits.
         builder_set.pollBuilders(self.logger, FakeZTM())
 
         for builder in builder_set:
+            self.logger.debug("Considering %s" % builder.name)
+
             if builder.manual:
                 self.logger.debug('Builder is in manual state, ignored.')
                 continue
@@ -259,7 +303,7 @@ class BuilddManager(service.Service):
                     "No build candidates available for builder.")
                 continue
 
-            slave = RecordingSlave(builder.name, builder.url)
+            slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
             builder.setSlaveForTesting(slave)
 
             builder.dispatchBuildCandidate(candidate)
@@ -271,28 +315,33 @@ class BuilddManager(service.Service):
     def checkResume(self, response, slave):
         """Verify the results of a slave resume procedure.
 
-        If it failed returns a correspoding `ResetBuilderRequest` database
-        update request.
+        If it failed, it returns a corresponding `ResetDispatchResult`
+        dispatch result.
         """
         out, err, code = response
-        if code == 0:
-            return
+        if code == os.EX_OK:
+            return None
+
         self.slaveDone(slave)
-        return self.reset_request(slave)
+        return self.reset_result(slave)
 
-    def checkDispatch(self, response, slave):
-        """Verify the results of a slave  xmlrpc calls.
+    def checkDispatch(self, response, method, slave):
+        """Verify the results of a slave xmlrpc call.
 
-        If it failed returns a correspoding `FailBuilderRequest` database
-        update request. Otherwise dispatch the next call if there are any
-        and return None.
+        If it failed returns a corresponding `FailDispatchResult`.
+        Otherwise dispatch the next call if there are any and return None.
         """
+        assert method in buildd_success_result_map.keys(), (
+            'Unknown slave method %s' % method)
+        result = buildd_success_result_map.get(method)
+
         status, info = response
-        if status:
+        if status == result:
             self._mayDispatch(slave)
-            return
+            return None
+
         self.slaveDone(slave)
-        return self.fail_request(slave, info)
+        return self.fail_result(slave, info)
 
     def resumeAndDispatch(self, recording_slaves):
         """Dispatch existing resume procedure calls and chain dispatching.
@@ -305,10 +354,10 @@ class BuilddManager(service.Service):
             self.finishCycle()
 
         for slave in recording_slaves:
-            if slave.resume:
+            if slave.resume_requested:
                 # The buildd slave needs to be reset before we can dispatch
                 # builds to it.
-                d = slave.resumeSlaveHost()
+                d = slave.resumeSlave()
                 d.addCallback(self.checkResume, slave)
             else:
                 # Buildd slave is clean, we can dispatch a build to it
@@ -323,10 +372,10 @@ class BuilddManager(service.Service):
 
         If the previous task in chain (slave resuming) has failed it will
         receive a `ResetBuilderRequest` instance as 'resume_result' and
-        will immeadiately return that so the subsequent callback can collect
+        will immediately return that so the subsequent callback can collect
         it.
 
-        if the slave resuming succeeed, it starts the XMLRPC dialog. See
+        If the slave resuming succeed, it starts the XMLRPC dialog. See
         `_mayDispatch` for more information.
         """
         self.logger.info('Dispatching: %s' % slave)
@@ -359,7 +408,7 @@ class BuilddManager(service.Service):
         proxy = self._getProxyForSlave(slave)
         method, args = slave.calls.pop(0)
         d = proxy.callRemote(method, *args)
-        d.addCallback(self.checkDispatch, slave)
+        d.addCallback(self.checkDispatch, method, slave)
 
         # Store another active event.
         self._deferreds.append(d)

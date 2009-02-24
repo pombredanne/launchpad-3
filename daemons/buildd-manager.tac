@@ -6,9 +6,9 @@
 from twisted.application import service
 from twisted.web import server
 
+from canonical.buildmaster.manager import BuilddManager
 from canonical.config import config
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.scripts.builddmanager import BuilddManager
 from canonical.lp import initZopeless
 
 execute_zcml_for_scripts()
