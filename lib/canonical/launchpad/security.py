@@ -199,18 +199,12 @@ class EditAccount(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IAccount
 
-    # This is wrong as we need to give an Account rather than a
-    # Person ability to edit an account.
-    def checkAuthenticated(self, user):
-        # XXX: salgado, 2009-02-13: Thanks to our hack in
-        # webapp/authorization.py, this method may be called with user
-        # being either a Person or an Account, so we have to do this here.
-        if IAccount.providedBy(user):
-            return user.id == self.obj.id
-        else:
-            account = user.account
-            return ((account is not None and account.id == self.obj.id)
-                    or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+    def checkAccountAuthenticated(self, account):
+        if account.id == self.obj.id:
+            return True
+        user = IPerson(account, None)
+        return (user is not None and
+                user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
 
 class ViewAccount(EditAccount):
@@ -2023,18 +2017,16 @@ class ViewEmailAddress(AuthorizationBase):
             return False
         return not self.obj.person.hide_email_addresses
 
-    def checkAuthenticated(self, user):
+    def checkAccountAuthenticated(self, account):
         """Can the user see the details of this email address?
 
         If the email address' owner doesn't want his email addresses to be
         hidden, anyone can see them.  Otherwise only the owner himself or
         admins can see them.
         """
-        # XXX: salgado, 2009-02-13: Thanks to our hack in
-        # webapp/authorization.py, this method may be called with user
-        # being either a Person or an Account, so we have to do this here.
-        if IAccount.providedBy(user):
-            return user.id == self.obj.account.id
+        # Always allow users to see their own email addresses.
+        if self.obj.account is not None and self.obj.account.id == account.id:
+            return True
 
         # Email addresses without an associated Person cannot be seen by
         # others.
@@ -2043,6 +2035,11 @@ class ViewEmailAddress(AuthorizationBase):
 
         if not self.obj.person.hide_email_addresses:
             return True
+
+        user = IPerson(account, None)
+        if user is None:
+            return False
+
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)

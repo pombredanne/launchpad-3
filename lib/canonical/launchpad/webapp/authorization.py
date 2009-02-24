@@ -188,10 +188,11 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                 return False
             else:
                 account = IAccount(principal, None)
-                if account is None:
-                    result = authorization.checkUnauthenticated()
+                if ILaunchpadPrincipal.providedBy(principal):
+                    result = authorization.checkAccountAuthenticated(
+                        principal.account)
                 else:
-                    result = authorization.checkAccountAuthenticated(account)
+                    result = authorization.checkUnauthenticated()
                 if type(result) is not bool:
                     warnings.warn(
                         'authorization returning non-bool value: %r' %
