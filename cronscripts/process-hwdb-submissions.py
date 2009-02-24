@@ -20,6 +20,8 @@ submissions that cannot be processed are set to the status INVALID.
 
 import _pythonpath
 
+from canonical.config import config
+from canonical.launchpad.scripts import logger
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.hwdbsubmissions import (
     process_pending_submissions)
@@ -34,6 +36,9 @@ class HWDBSubmissionProcessor(LaunchpadCronScript):
             help='Limit the number of submissions which will be processed.')
 
     def main(self):
+        self.options.log_file = config['hwdb_submission_processing'].logfile
+        self.logger = logger(options=self.options)
+
         max_submissions = self.options.max_submissions
         if max_submissions is not None:
             try:
