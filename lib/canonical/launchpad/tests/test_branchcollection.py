@@ -386,6 +386,14 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         proposals = collection.getMergeProposals()
         self.assertEqual(set([mp1, mp2]), set(proposals))
 
+    def test_merge_proposals_in_product(self):
+        mp1 = self.factory.makeBranchMergeProposal()
+        mp2 = self.factory.makeBranchMergeProposal()
+        product = mp1.source_branch.product
+        collection = self.all_branches.inProduct(product)
+        proposals = collection.getMergeProposals()
+        self.assertEqual([mp1], list(proposals))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
