@@ -24,8 +24,7 @@ from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadPrincipal, IOpenIDPrincipal, IPlacelessAuthUtility,
-    IPlacelessLoginSource)
+    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
@@ -231,7 +230,7 @@ class LoginOrRegister:
         appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        if IOpenIDPrincipal.providedBy(principal):
+        if principal.person is None:
             logInPrincipalAndMaybeCreatePerson(self.request, principal, email)
             self.redirectMinusLogin()
         elif (principal is not None and
@@ -391,20 +390,19 @@ def logInPrincipal(request, principal, email):
 def logInPrincipalAndMaybeCreatePerson(request, principal, email):
     """Log the principal in, creating a Person if necessary.
 
-    If the given principal is an IOpenIDPrincipal (meaning it has no Person
-    associated with), we create a new person, fetch a new principal (this time
-    an ILaunchpadPrincipal) and set it in the request.
+    If the given principal has no associated person, we create a new
+    person, fetch a new principal and set it in the request.
 
     Password validation must be done in callsites.
     """
     logInPrincipal(request, principal, email)
-    if IOpenIDPrincipal.providedBy(principal):
+    if ILaunchpadPrincipal.providedBy(principal) and principal.person is None:
         person = principal.account.createPerson(
             PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        lp_principal = getUtility(IPlacelessLoginSource).getPrincipalByLogin(
-            email)
-        assert ILaunchpadPrincipal.providedBy(lp_principal)
-        request.setPrincipal(lp_principal)
+        new_principal = getUtility(IPlacelessLoginSource).getPrincipal(
+            principal.id)
+        assert ILaunchpadPrincipal.providedBy(new_principal)
+        request.setPrincipal(new_principal)
 
 
 def expireSessionCookie(request, client_id_manager=None,

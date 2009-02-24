@@ -119,11 +119,27 @@ class AuthorizationBase:
         return False
 
     def checkAuthenticated(self, user):
-        """See `IAuthorization.checkAuthenticated`.
+        """Return True if the given person has the given permission.
+
+        This method is implemented by security adapters that have not
+        been updated to work in terms of IAccount.
 
         :return: True or False.
         """
         return False
+
+    def checkAccountAuthenticated(self, account):
+        """See `IAuthorization.checkAccountAuthenticated`.
+
+        :return: True or False.
+        """
+        # For backward compatibility, delegate to one of
+        # checkAuthenticated() or checkUnauthenticated().
+        person = IPerson(account)
+        if person is None:
+            return self.checkUnauthenticated()
+        else:
+            return self.checkAuthenticated(person)
 
 
 class ViewByLoggedInUser(AuthorizationBase):

@@ -7,7 +7,6 @@ __all__ = [
     'get_oauth_authorization',
     'LaunchpadLoginSource',
     'LaunchpadPrincipal',
-    'OpenIDPrincipal',
     'PlacelessAuthUtility',
     'SSHADigestEncryptor',
     ]
@@ -31,14 +30,12 @@ from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccountSet
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.oauth import OAUTH_CHALLENGE
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, BasicAuthLoggedInEvent, CookieAuthPrincipalIdentifiedEvent,
-    ILaunchpadPrincipal, IOpenIDPrincipal, IPlacelessAuthUtility,
-    IPlacelessLoginSource)
+    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
 
 
 class PlacelessAuthUtility:
@@ -57,20 +54,18 @@ class PlacelessAuthUtility:
         if login is not None:
             login_src = getUtility(IPlacelessLoginSource)
             principal = login_src.getPrincipalByLogin(login)
-            if principal is not None:
-                person = getUtility(IPersonSet).get(principal.person.id)
-                if person.is_valid_person:
-                    password = credentials.getPassword()
-                    if principal.validate(password):
-                        # We send a LoggedInEvent here, when the
-                        # cookie auth below sends a PrincipalIdentified,
-                        # as the login form is never visited for BasicAuth.
-                        # This we treat each request as a separate
-                        # login/logout.
-                        notify(BasicAuthLoggedInEvent(
-                            request, login, principal
-                            ))
-                        return principal
+            if principal is not None and principal.account.is_valid:
+                password = credentials.getPassword()
+                if principal.validate(password):
+                    # We send a LoggedInEvent here, when the
+                    # cookie auth below sends a PrincipalIdentified,
+                    # as the login form is never visited for BasicAuth.
+                    # This we treat each request as a separate
+                    # login/logout.
+                    notify(BasicAuthLoggedInEvent(
+                        request, login, principal
+                        ))
+                    return principal
 
     def _authenticateUsingCookieAuth(self, request):
         session = ISession(request)
@@ -98,8 +93,7 @@ class PlacelessAuthUtility:
             # available in login source. This happens when account has
             # become invalid for some reason, such as being merged.
             return None
-        elif (IOpenIDPrincipal.providedBy(principal)
-              or person_set.get(principal.person.id).is_valid_person):
+        elif principal.account.is_valid:
             login = authdata['login']
             assert login, 'login is %s!' % repr(login)
             notify(CookieAuthPrincipalIdentifiedEvent(
@@ -228,21 +222,18 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        person = None
+        account = None
         if id_is_from_person:
             person = getUtility(IPersonSet).get(id)
+            if person is not None:
+                account = person.account
         else:
             account = getUtility(IAccountSet).get(id)
-            if account is not None:
-                person = IPerson(account, None)
-            else:
-                return None
 
-        if person is None:
-            # Our account has no person, so we return an OpenIDPrincipal.
-            return self._getOpenIDPrincipal(account, access_level, scope)
-        else:
-            return self._getLaunchpadPrincipal(person, access_level, scope)
+        if account is None:
+            return None
+
+        return self._principalForAccount(account, access_level, scope)
 
     def getPrincipals(self, name):
         raise NotImplementedError
@@ -274,39 +265,14 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        email = getUtility(IEmailAddressSet).getByEmail(login)
-        if email is None:
+        account = getUtility(IAccountSet).getByEmail(login)
+        if account is not None:
+            return self._principalForAccount(
+                    account, access_level, scope, want_password)
+        else:
             return None
-        elif email.person is not None:
-            return self._getLaunchpadPrincipal(
-                email.person, access_level, scope, want_password)
-        else:
-            assert email.account is not None
-            return self._getOpenIDPrincipal(
-                email.account, access_level, scope, want_password)
 
-    def _getOpenIDPrincipal(self, account, access_level, scope,
-                            want_password=True):
-        """Return an OpenIDPrincipal for the given account.
-
-        The OpenIDPrincipal will also have the given access level and scope.
-
-        If want_password is True, the principal's password will be set to the
-        account's password.  Otherwise it's set to None.
-        """
-        naked_account = removeSecurityProxy(account)
-        if want_password:
-            password = naked_account.password
-        else:
-            password = None
-        principal = OpenIDPrincipal(
-            naked_account.id, naked_account.displayname,
-            naked_account.displayname, account, password,
-            access_level=access_level, scope=scope)
-        principal.__parent__ = self
-        return principal
-
-    def _getLaunchpadPrincipal(self, person, access_level, scope,
+    def _principalForAccount(self, account, access_level, scope,
                                want_password=True):
         """Return a LaunchpadPrincipal for the given person.
 
@@ -316,14 +282,14 @@ class LaunchpadLoginSource:
         If want_password is True, the principal's password will be set to the
         person's password.  Otherwise it's set to None.
         """
-        naked_person = removeSecurityProxy(person)
+        naked_account = removeSecurityProxy(account)
         if want_password:
-            password = naked_person.password
+            password = naked_account.password
         else:
             password = None
         principal = LaunchpadPrincipal(
-            naked_person.account.id, naked_person.displayname,
-            naked_person.displayname, person, password,
+            naked_account.id, naked_account.displayname,
+            naked_account.displayname, account, password,
             access_level=access_level, scope=scope)
         principal.__parent__ = self
         return principal
@@ -335,20 +301,19 @@ loginSource = LaunchpadLoginSource()
 loginSource.__parent__ = authService
 
 
-class BaseLaunchpadPrincipal:
-    """Base class for Launchpad-specific IPrincipal classes.
+class LaunchpadPrincipal:
 
-    It defines an access level and a scope of access for the principal, as
-    well as other attributes of IPrincipal.
-    """
+    implements(ILaunchpadPrincipal)
 
-    def __init__(self, id, title, description, pwd=None,
+    def __init__(self, id, title, description, account, pwd=None,
                  access_level=AccessLevel.WRITE_PRIVATE, scope=None):
         self.id = id
         self.title = title
         self.description = description
         self.access_level = access_level
         self.scope = scope
+        self.account = account
+        self.person = IPerson(account, None)
         self.__pwd = pwd
 
     def getLogin(self):
@@ -359,32 +324,6 @@ class BaseLaunchpadPrincipal:
         pw1 = (pw or '').strip()
         pw2 = (self.__pwd or '').strip()
         return encryptor.validate(pw1, pw2)
-
-
-class LaunchpadPrincipal(BaseLaunchpadPrincipal):
-    """See `ILaunchpadPrincipal`"""
-
-    implements(ILaunchpadPrincipal)
-
-    def __init__(self, id, title, description, person, pwd=None,
-                 access_level=AccessLevel.WRITE_PRIVATE, scope=None):
-        super(LaunchpadPrincipal, self).__init__(
-            id, title, description, pwd=pwd, access_level=access_level,
-            scope=scope)
-        self.person = person
-
-
-class OpenIDPrincipal(BaseLaunchpadPrincipal):
-    """See `IOpenIDPrincipal`"""
-
-    implements(IOpenIDPrincipal)
-
-    def __init__(self, id, title, description, account, pwd=None,
-                 access_level=AccessLevel.WRITE_PRIVATE, scope=None):
-        super(OpenIDPrincipal, self).__init__(
-            id, title, description, pwd=pwd, access_level=access_level,
-            scope=scope)
-        self.account = account
 
 
 def get_oauth_authorization(request):

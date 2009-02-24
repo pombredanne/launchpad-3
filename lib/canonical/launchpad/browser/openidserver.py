@@ -49,8 +49,7 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadPrincipal, IOpenIDPrincipal, IPlacelessLoginSource,
-    UnexpectedFormData)
+    ILaunchpadPrincipal, IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
     logInPrincipal, logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured

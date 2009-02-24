@@ -1420,6 +1420,8 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
             body_instream=body_instream, environ=test_environ, **kw)
 
 
+# ---- openid
+
 class IdPublication(LaunchpadBrowserPublication):
     """The publication used for OpenID requests."""
 
@@ -1446,7 +1448,7 @@ class IdBrowserRequest(LaunchpadBrowserRequest):
 
 # XXX sinzui 2008-09-04 bug=264783:
 # Remove OpenIDPublication and OpenIDBrowserRequest.
-class OpenIDPublication(LaunchpadBrowserPublication):
+class OpenIDPublication(IdPublication):
     """The publication used for old OpenID requests."""
 
     root_object_interface = IOpenIDApplication
