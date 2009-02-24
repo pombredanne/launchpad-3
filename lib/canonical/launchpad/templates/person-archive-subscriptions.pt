@@ -1,0 +1,44 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+  >
+<body>
+
+  <div metal:fill-slot="main">
+
+    <h1 tal:content="CONTEXTS/fmt:pagetitle">
+      Manage archive subscriptions.
+    </h1>
+  <tal:has_subscriptions condition="view/has_subscriptions">
+    <p>All the private archives for which you have
+       a subscription are displayed below (TODO: mrevell).
+    </p>
+    <table summary="CONTEXTS/fmt:pagetitle" id="archive-subscriptions">
+      <thead>
+        <tr><th>Archive</th><th>Subscription description</th></tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="subscription view/subscriptions">
+          <td tal:content="subscription/archive/title">Private PPA for Celso
+          </td>
+          <td tal:content="subscription/description">Allow Team X access.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </tal:has_subscriptions>
+  <tal:has_no_subscriptions condition="not: view/has_subscriptions">
+    <p>You do not have any subscriptions to private archives that are
+       currently active (TODO: mrevell).
+    </p>
+  </tal:has_no_subscriptions>
+  </div>
+</body>
+</html>
