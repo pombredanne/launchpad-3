@@ -157,10 +157,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             if not self._checkPrivacy(access_level, objecttoauthorize):
                 return False
 
-        # XXX kiko 2007-02-07:
-        # webapp shouldn't be depending on launchpad interfaces..
-        from canonical.launchpad.interfaces import IAccount
-
         # This check shouldn't be needed, strictly speaking.
         # However, it is here as a "belt and braces".
 
@@ -187,7 +183,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             if authorization is None:
                 return False
             else:
-                account = IAccount(principal, None)
                 if ILaunchpadPrincipal.providedBy(principal):
                     result = authorization.checkAccountAuthenticated(
                         principal.account)
