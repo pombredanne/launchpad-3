@@ -230,7 +230,7 @@ class LaunchpadLoginSource:
     def getPrincipalByLogin(self, login,
                             access_level=AccessLevel.WRITE_PRIVATE,
                             scope=None, want_password=True):
-        """Return a principal based on the person with the email address
+        """Return a principal based on the account with the email address
         signified by "login".
 
         :param want_password: If want_password is False, the pricipal
@@ -239,7 +239,7 @@ class LaunchpadLoginSource:
         database connection does not have access to the Account or
         AccountPassword tables.
 
-        :return: None if there is no person with the given email address.
+        :return: None if there is no account with the given email address.
 
         The `access_level` can be used for further restricting the capability
         of the principal.  By default, no further restriction is added.
@@ -255,21 +255,21 @@ class LaunchpadLoginSource:
         request to the user and inform them it has done so.
         """
         account = getUtility(IAccountSet).getByEmail(login)
-        if account is not None:
-            return self._principalForAccount(
-                    account, access_level, scope, want_password)
-        else:
+        if account is None:
             return None
+        else:
+            return self._principalForAccount(
+                account, access_level, scope, want_password)
 
     def _principalForAccount(self, account, access_level, scope,
-                               want_password=True):
-        """Return a LaunchpadPrincipal for the given person.
+                             want_password=True):
+        """Return a LaunchpadPrincipal for the given account.
 
         The LaunchpadPrincipal will also have the given access level and
         scope.
 
         If want_password is True, the principal's password will be set to the
-        person's password.  Otherwise it's set to None.
+        account's password.  Otherwise it's set to None.
         """
         naked_account = removeSecurityProxy(account)
         if want_password:

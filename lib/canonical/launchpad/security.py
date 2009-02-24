@@ -200,7 +200,7 @@ class EditAccount(AuthorizationBase):
     usedfor = IAccount
 
     def checkAccountAuthenticated(self, account):
-        if account.id == self.obj.id:
+        if account == self.obj:
             return True
         user = IPerson(account, None)
         return (user is not None and
@@ -2025,7 +2025,7 @@ class ViewEmailAddress(AuthorizationBase):
         admins can see them.
         """
         # Always allow users to see their own email addresses.
-        if self.obj.account is not None and self.obj.account.id == account.id:
+        if self.obj.account == account:
             return True
 
         # Email addresses without an associated Person cannot be seen by

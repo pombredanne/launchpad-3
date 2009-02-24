@@ -1431,8 +1431,8 @@ class IdPublication(LaunchpadBrowserPublication):
         """Return the authenticated principal for this request.
 
         This is only necessary because, unlike in LaunchpadBrowserPublication,
-        here we want OpenIDPrincipals to be returned, so that personless
-        accounts can use our OpenID server.
+        here we want principals representing personless accounts to be
+        returned, so that personless accounts can use our OpenID server.
         """
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.authenticate(request)
