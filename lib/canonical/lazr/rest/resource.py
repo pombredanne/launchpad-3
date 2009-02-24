@@ -69,7 +69,7 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryField,
-    IEntryFieldResource, IEntryResource,
+    IEntryFieldHTMLView, IEntryFieldResource, IEntryResource,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
@@ -773,9 +773,9 @@ class EntryHTMLView:
 class EntryFieldHTMLView(FieldUnmarshallerMixin):
     """An XHTML snippet view of one of an entry's fields."""
 
-    def __init__(self, entry, field, request):
+    def __init__(self, object, field, request):
         """Initialize with respect to a field and request."""
-        self.entry = entry
+        self.entry = IEntry(object)
         self.field = field
         self.request = request
         self.context = EntryField(
@@ -787,7 +787,7 @@ class EntryFieldHTMLView(FieldUnmarshallerMixin):
         """Turn the field into an XHTML snippet."""
         name, value = self._unmarshallField(
             self.context.name, self.context.field)
-        return cgi.escape(value).encode("utf-8")
+        return cgi.escape(unicode(value).encode("utf-8"))
 
 
 class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
@@ -819,7 +819,7 @@ class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
         """
         name, value = self._unmarshallField(
             self.context.name, self.context.field)
-        return value
+        return str(value)
 
     def _representation(self, media_type):
         """Create a representation of the field value."""
@@ -830,6 +830,7 @@ class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
         elif media_type == self.XHTML_TYPE:
             view = getMultiAdapter(
                 (self.entry.context, self.context.field, self.request),
+                IEntryFieldHTMLView,
                 name="canonical.lazr.rest.resource.EntryFieldResource")
             return view()
         else:

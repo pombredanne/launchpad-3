@@ -101,9 +101,10 @@ type. Here's a simple view that serves some hard-coded HTML.
   ...     def __call__(*args):
   ...         return "<html>foo</html>"
 
-Register the view as the WebServiceLayer view for an IPerson entry...
+Register the view as the IEntryFieldHTMLView adapter for an IPerson entry...
 
-  >>> from canonical.lazr.interfaces.rest import WebServiceLayer
+  >>> from canonical.lazr.interfaces.rest import (
+  ...     IEntryFieldHTMLView, WebServiceLayer)
   >>> from canonical.launchpad.interfaces import IPerson
   >>> from zope.schema.interfaces import IText
   >>> from zope.interface.interfaces import IInterface
@@ -112,7 +113,7 @@ Register the view as the WebServiceLayer view for an IPerson entry...
   >>> manager = getGlobalSiteManager()
   >>> manager.registerAdapter(
   ...      factory=DummyView, required=[IPerson, IText, WebServiceLayer],
-  ...      provided=IInterface, name=view_name)
+  ...      provided=IEntryFieldHTMLView, name=view_name)
 
 ...and the XHTML representation of an IPerson will be the result of
 calling a DummyView object.
@@ -122,17 +123,37 @@ calling a DummyView object.
   ...
   <html>foo</html>
 
+In fact, that adapter will be used for every IText field of an IPerson.
+
+  >>> print webservice.get('/~salgado/name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <html>foo</html>
+
+It will not be used for IText fields of other interfaces:
+
+  >>> print webservice.get('/firefox/name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  firefox
+
+It will not be used for non-text fields of IPerson.
+
+  >>> print webservice.get('/~salgado/date_created', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  2005-06-06 08:59:51.596025+00:00
+
 Before we continue, here's some cleanup code to remove the custom view
 we just defined.
 
   >>> from zope.component import getGlobalSiteManager
   >>> ignored = getGlobalSiteManager().unregisterAdapter(
   ...      factory=DummyView, required=[IPerson, IText, WebServiceLayer],
-  ...      provided=IInterface, name=view_name)
+  ...      provided=IEntryFieldHTMLView, name=view_name)
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  <dl ...>
-  ...
-  </dl>
+  Guilherme Salgado
+

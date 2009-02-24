@@ -285,10 +285,11 @@
         name="canonical.lazr.rest.resource.EntryResource"
         />
 
-    <view
+    <adapter
         for="zope.interface.Interface
-             zope.schema.interfaces.IField"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+             zope.schema.interfaces.IField
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.rest.IEntryFieldHTMLView"
         factory="canonical.lazr.rest.resource.EntryFieldHTMLView"
         name="canonical.lazr.rest.resource.EntryFieldResource"
         />
