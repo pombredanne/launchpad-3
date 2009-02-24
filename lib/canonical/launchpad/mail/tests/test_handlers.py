@@ -457,7 +457,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(0, bmp.all_comments.count())
         transaction.commit()
 
-    def test_processMergeDirectiveEmailNeedsGPG(self):
+    def disabled_test_processMergeDirectiveEmailNeedsGPG(self):
         """process creates a merge proposal from a merge directive email."""
         message, file_alias, source, target = (
             self.factory.makeMergeDirectiveEmail())

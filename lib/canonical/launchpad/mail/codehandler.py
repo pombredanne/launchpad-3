@@ -245,20 +245,30 @@ class CodeHandler:
 
     def createMergeProposalJob(self, mail, email_addr, file_alias):
         """Check that the message is signed and create the job."""
-        try:
-            ensure_not_weakly_authenticated(
-                mail, email_addr, 'not-signed-md.txt',
-                'key-not-registered-md.txt')
-        except IncomingEmailError, error:
-            user = getUtility(ILaunchBag).user
-            send_process_error_notification(
-                str(user.preferredemail.email),
-                'Submit Request Failure',
-                error.message, mail, error.failing_command)
-            transaction.abort()
-        else:
-            getUtility(ICreateMergeProposalJobSource).create(file_alias)
+        # XXX: TimPenhey 2009-02-25
+        # Disable the signed requirement as LP's signed message handling does
+        # not handle the case where the first part is a clear signed message
+        # with an attached directive.  This is the default behaviour of
+        # Thunderbird, and until the signed message handling is fixed, we
+        # don't want to annoy too many of our users.
+        getUtility(ICreateMergeProposalJobSource).create(file_alias)
         return True
+        # Commenting out to make lint happy, but not deleting because we
+        # actually want this code.
+        #try:
+        #    ensure_not_weakly_authenticated(
+        #        mail, email_addr, 'not-signed-md.txt',
+        #        'key-not-registered-md.txt')
+        #except IncomingEmailError, error:
+        #    user = getUtility(ILaunchBag).user
+        #    send_process_error_notification(
+        #        str(user.preferredemail.email),
+        #        'Submit Request Failure',
+        #        error.message, mail, error.failing_command)
+        #    transaction.abort()
+        #else:
+        #    getUtility(ICreateMergeProposalJobSource).create(file_alias)
+        #return True
 
     def processCommands(self, context, email_body_text):
         """Process the commadns in the email_body_text against the context."""
@@ -361,7 +371,9 @@ class CodeHandler:
         mp_target = getUtility(IBranchSet).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
-        if md.bundle is None:
+        # XXX: TimPenhey 2009-02-25
+        # Disable bundle handling for 2.2.2 release.
+        if md.bundle is None or True:
             mp_source = self._getSourceNoBundle(
                 md, mp_target, submitter)
         else:
