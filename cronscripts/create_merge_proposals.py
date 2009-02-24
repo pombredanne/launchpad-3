@@ -11,6 +11,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.codehosting.jobs import JobRunner
+from canonical.codehosting.vfs import get_puller_server
 from canonical.launchpad.interfaces.branchmergeproposal import (
     ICreateMergeProposalJobSource,)
 from canonical.launchpad.scripts.base import LaunchpadCronScript
@@ -24,9 +25,14 @@ class RunCreateMergeProposalJobs(LaunchpadCronScript):
         globalErrorUtility.configure('create_merge_proposals')
         job_source = getUtility(ICreateMergeProposalJobSource)
         runner = JobRunner.fromReady(job_source)
-        runner.runAll()
-        self.logger.info(
-            'Ran %d CreateMergeProposalJobs.' % len(runner.completed_jobs))
+        server = get_puller_server()
+        server.setUp()
+        try:
+            runner.runAll()
+            self.logger.info(
+                'Ran %d CreateMergeProposalJobs.' % len(runner.completed_jobs))
+        finally:
+            server.tearDown()
 
 
 if __name__ == '__main__':

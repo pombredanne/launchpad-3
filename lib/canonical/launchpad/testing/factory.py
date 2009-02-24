@@ -66,6 +66,7 @@ from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.hwdb import (
     HWSubmissionFormat, IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -826,7 +827,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
             attachment_contents=None, force_transfer_encoding=False,
-            email_address=None):
+            email_address=None, fingerprint=None):
         mail = SignedMessage()
         if email_address is None:
             person = self.makePerson()
@@ -841,6 +842,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             body = self.getUniqueString('body')
         mail['Message-Id'] = msgid
         mail['Date'] = formatdate()
+        if fingerprint is not None:
+            gpghandler = getUtility(IGPGHandler)
+            body = gpghandler.signContent(body, fingerprint)
         if attachment_contents is None:
             mail.set_payload(body)
             body_part = mail
@@ -1326,7 +1330,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                 msg.attach(attachment)
         return msg
 
-    def makeBundleMergeDirectiveEmail(self, source_branch, target_branch):
+    def makeBundleMergeDirectiveEmail(self, source_branch, target_branch,
+                                      fingerprint=None):
         """Create a merge directive email from two bzr branches."""
         from bzrlib.merge_directive import MergeDirective2
         md = MergeDirective2.from_objects(
@@ -1337,7 +1342,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             timezone=0)
         return self.makeSignedMessage(
             body='My body', subject='My subject',
-            attachment_contents=''.join(md.to_lines()))
+            attachment_contents=''.join(md.to_lines()),
+            fingerprint=fingerprint)
 
     def makeMergeDirective(self, source_branch=None, target_branch=None,
         source_branch_url=None, target_branch_url=None):
@@ -1374,7 +1380,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             source_branch=source_branch_url, base_revision_id='base-revid',
             patch='booga')
 
-    def makeMergeDirectiveEmail(self, body='Hi!\n'):
+    def makeMergeDirectiveEmail(self, body='Hi!\n', fingerprint=None):
         """Create an email with a merge directive attached.
 
         :param body: The message body to use for the email.
@@ -1385,7 +1391,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             product=target_branch.product)
         md = self.makeMergeDirective(source_branch, target_branch)
         message = self.makeSignedMessage(body=body,
-            subject='My subject', attachment_contents=''.join(md.to_lines()))
+            subject='My subject', attachment_contents=''.join(md.to_lines()),
+            fingerprint=fingerprint)
         message_string = message.as_string()
         file_alias = getUtility(ILibraryFileAliasSet).create(
             '*', len(message_string), StringIO(message_string), '*')

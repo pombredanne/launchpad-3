@@ -64,6 +64,7 @@ class SignedMessage(email.Message.Message):
         if self.is_multipart():
             if len(payload) == 2:
                 content_part, signature_part = payload
+            if len(payload) == 2:
                 sig_content_type = signature_part.get_content_type()
                 if sig_content_type == 'application/pgp-signature':
                     # We need to extract the signed content from the
@@ -77,6 +78,12 @@ class SignedMessage(email.Message.Message):
                         self.parsed_string, re.DOTALL)
                     signed_content = match.group('signed_content')
                     signature = signature_part.get_payload()
+                else:
+                    match = clearsigned_re.search(content_part.get_payload())
+                    if match is not None:
+                        signed_content_unescaped = match.group(1)
+                        signed_content = dash_escaped.sub('', signed_content_unescaped)
+                        signature = match.group(2)
         else:
             match = clearsigned_re.search(payload)
             if match is not None:
