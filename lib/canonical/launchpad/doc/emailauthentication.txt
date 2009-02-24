@@ -78,12 +78,7 @@ character in the signed content are required to be escaped, so we need
 to deal with it if we receive a dash escaped message.
 
     >>> msg = read_test_message('signed_dash_escaped.txt')
-
-    # XXX AaronBentley 2009-02-16 bug=330241: This is broken on Intrepid.
-    # >>> principal = authenticateEmail(msg)
-    >>> login(email.Utils.parseaddr(msg['From'])[1])
-    >>> principal = launchbag.user
-
+    >>> principal = authenticateEmail(msg)
     >>> principal is not None
     True
     >>> name, addr = email.Utils.parseaddr(msg['From'])
@@ -92,7 +87,6 @@ to deal with it if we receive a dash escaped message.
     True
     >>> launchbag.login
     'test@canonical.com'
-
 
 If the signature is invalid, that is it won't verify properly,
 InvalidSignature will be raised:

@@ -108,6 +108,20 @@ Any other user attempt would result in a 401 error.
     HTTP/1.1 401 Unauthorized
     ...
 
+
+== getBuilds() ==
+
+The source publication object has a custom operation called 'getBuilds' and
+it returns the build records in the context of that publication.
+
+    >>> source_pub = pubs['entries'][0]
+    >>> builds = webservice.named_get(
+    ...     source_pub['self_link'], 'getBuilds').jsonBody()
+    >>> for entry in sorted(builds['entries']):
+    ...     print entry['title']
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+
+
 == IArchive.getBuildSummariesForSourceIds() ==
 
 A summary of the build statuses for source packages in an archive is

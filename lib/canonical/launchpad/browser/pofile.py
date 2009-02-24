@@ -395,6 +395,43 @@ class POFileTranslateView(BaseTranslationView):
     # BaseTranslationView API
     #
 
+    @cachedproperty
+    def translation_group(self):
+        """Is there a translation group for this translation?
+
+        :return: TranslationGroup or None if not found.
+        """
+        # XXX 2009-02-20 Danilo (bug #332044): potemplate.translationgroups
+        # provides a list of translation groups even if it can have at
+        # most one.
+        translation_groups = self.context.potemplate.translationgroups
+        if translation_groups is not None and len(translation_groups) > 0:
+            group = translation_groups[0]
+        else:
+            group = None
+        return group
+
+    @cachedproperty
+    def translation_team(self):
+        """Is there a translation group for this translation."""
+        group = self.translation_group
+        if group is not None:
+            team = group.query_translator(self.context.language)
+        else:
+            team = None
+        return team
+
+    @cachedproperty
+    def has_any_documentation(self):
+        """Return whether there is any documentation for this POFile."""
+        if (self.translation_group is not None and
+            self.translation_group.translation_guide_url is not None):
+            return True
+        if (self.translation_team is not None and
+            self.translation_team.style_guide_url is not None):
+            return True
+        return False
+
     def _buildBatchNavigator(self):
         """See BaseTranslationView._buildBatchNavigator."""
         return BatchNavigator(self._getSelectedPOTMsgSets(),

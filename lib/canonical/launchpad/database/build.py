@@ -45,7 +45,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
 
@@ -81,6 +81,16 @@ class Build(SQLBase):
 
     upload_log = ForeignKey(
         dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
+
+    @property
+    def upload_log_url(self):
+        """See `IBuild`."""
+        if self.upload_log is None:
+            return None
+
+        url = urlappend(canonical_url(self), "+files")
+        url = urlappend(url, self.upload_log.filename)
+        return url
 
     @property
     def current_component(self):
@@ -527,6 +537,18 @@ class Build(SQLBase):
         """See `IBuild`"""
         return BuildQueue(build=self)
 
+    @property
+    def build_log_url(self):
+        """See `IBuild`."""
+        if self.buildlog is None:
+            return None
+
+        # The librarian URL is explicitly not used here because if
+        # the build is a private one then it would be in the
+        # restricted librarian.  It's proxied through the webapp and
+        # security applied accordingly.
+        return canonical_url(self) + "/+files/" + self.buildlog.filename
+
     def notify(self, extra_info=None):
         """See `IBuild`"""
         if not config.builddmaster.send_build_notification:
@@ -621,8 +643,7 @@ class Build(SQLBase):
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
                 self.buildduration).approximateduration()
-            buildlog_url = (
-                canonical_url(self) + "/+files/" + self.buildlog.filename)
+            buildlog_url = self.build_log_url
             builder_url = canonical_url(self.builder)
 
         if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
