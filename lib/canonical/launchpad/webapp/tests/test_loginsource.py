@@ -9,11 +9,11 @@ from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.webapp.interfaces import AccessLevel
 from canonical.launchpad.webapp.authentication import (
     IPlacelessLoginSource)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class LaunchpadLoginSourceTest(unittest.TestCase):
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
@@ -24,7 +24,7 @@ class LaunchpadLoginSourceTest(unittest.TestCase):
         """By default, if getPrincipal() and getPrincipalByLogin() are given
         no access level, the returned principal will have full access.
         """
-        principal = self.login_source.getPrincipal(self.sabdfl.id)
+        principal = self.login_source.getPrincipal(self.sabdfl.account.id)
         self.assertEqual(principal.access_level, AccessLevel.WRITE_PRIVATE)
         principal = self.login_source.getPrincipalByLogin(
             self.sabdfl.preferredemail.email)
@@ -35,7 +35,7 @@ class LaunchpadLoginSourceTest(unittest.TestCase):
         getPrincipal(), the returned principal will use that.
         """
         principal = self.login_source.getPrincipal(
-            self.sabdfl.id, access_level=AccessLevel.WRITE_PUBLIC)
+            self.sabdfl.account.id, access_level=AccessLevel.WRITE_PUBLIC)
         self.assertEqual(principal.access_level, AccessLevel.WRITE_PUBLIC)
         principal = self.login_source.getPrincipalByLogin(
             self.sabdfl.preferredemail.email, AccessLevel.READ_PUBLIC)
