@@ -15,6 +15,8 @@ from zope.interface import implements
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.branchmergeproposal import (
+    BranchMergeProposal)
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.person import Owner
 from canonical.launchpad.database.product import Product
@@ -49,6 +51,18 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self.getBranches().count()
 
+    @property
+    def store(self):
+        # Although you might think we could set the default value for store in
+        # the constructor, we can't. The IStoreSelector utility is not
+        # available at the time that the branchcollection.zcml is parsed,
+        # which means we get an error if this code is in the constructor.
+        # -- JonathanLange 2009-02-17.
+        if self._store is None:
+            return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        else:
+            return self._store
+
     def _filterBy(self, tables, *expressions):
         """Return a subset of this collection, filtered by 'expressions'."""
         # NOTE: JonathanLange 2009-02-17: We might be able to avoid the need
@@ -60,21 +74,16 @@ class GenericBranchCollection:
 
     def getBranches(self):
         """See `IBranchCollection`."""
-        # Although you might think we could set the default value for store in
-        # the constructor, we can't. The IStoreSelector utility is not
-        # available at the time that the branchcollection.zcml is parsed,
-        # which means we get an error if this code is in the constructor.
-        # -- JonathanLange 2009-02-17.
-        if self._store is None:
-            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        else:
-            store = self._store
-        results = store.using(*(self._tables)).find(
+        results = self.store.using(*(self._tables)).find(
             Branch, *(self._branch_filter_expressions))
         def identity(x):
             return x
         # Decorate the result set to work around bug 217644.
         return DecoratedResultSet(results, identity)
+
+    def getMergeProposals(self):
+        """See `IBranchCollection`."""
+        return self.store.find(BranchMergeProposal)
 
     def inProduct(self, product):
         """See `IBranchCollection`."""

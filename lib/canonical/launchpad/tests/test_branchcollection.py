@@ -345,5 +345,24 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             set(branches.getBranches()))
 
 
+class TestBranchMergeProposals(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        remove_all_sample_data_branches()
+        self.all_branches = getUtility(IAllBranches)
+
+    def test_empty_branch_merge_proposals(self):
+        proposals = self.all_branches.getMergeProposals()
+        self.assertEqual([], list(proposals))
+
+    def test_some_branch_merge_proposals(self):
+        mp = self.factory.makeBranchMergeProposal()
+        proposals = self.all_branches.getMergeProposals()
+        self.assertEqual([mp], list(proposals))
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
