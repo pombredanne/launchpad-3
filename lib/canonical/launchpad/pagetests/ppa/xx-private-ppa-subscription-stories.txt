@@ -123,7 +123,14 @@ And clicks on the 'Private software subscriptions' link (only displayed to those
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
 
 Then a list of Andrew's pending subscriptions is displayed
-And a sources.list snippet is currently empty.
+
+    >>> subscription_table = find_tag_by_id(joe_browser.contents,
+    ...     "archive-subscriptions")
+    >>> print extract_text(subscription_table)
+    Archive                             Subscription description
+    Private PPA for Celso Providelo     Joe is my friend
+
+And the private_sources.list file is not displayed.
 
 When Andrew clicks on the 'Activate subscription' button for Celso's PPA
 Then the sources.list snippet is updated to include a line for Celso's PPA

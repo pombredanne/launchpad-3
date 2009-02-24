@@ -1,7 +1,9 @@
-= Private PPA Subscribers =
+= Private PPA Subscriptions =
 
 Note: This file contains all the pagetests for functionality that is not
 part of the stories in xx-private-ppa-subscription-stories.txt.
+
+== Managing Archive subscriptions ==
 
 Public PPAs do not have an option for managing subscriptions:
 
@@ -53,4 +55,13 @@ with a message:
     ...     'no-subscribers'))
     This PPA does not yet have any subscribers.
 
+== Managing a persons' Archive subscriptions ==
+
+A person who is not subscribed to any archives will see an appropriate
+explanation if they try to view their archive subscriptions:
+
+    >>> cprov_browser.open("/~cprov/+archivesubscriptions")
+    >>> explanation = find_main_content(cprov_browser.contents).find('p')
+    >>> print extract_text(explanation)
+    You do not have any subscriptions to private archives...
 

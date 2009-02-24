@@ -976,5 +976,37 @@ So we try again with an expiry date in the future:
     Andrew Bennetts
     Launchpad Developers
 
-Put archives back to public
 
+== PersonArchiveSubscriptions View ==
+
+The PersonArchiveSubscriptions view provides all the archive subscriptions
+for a person, as well as the ability to activate subscriptions.
+
+The has_subscriptions helper simply returns whether the current person
+has any archive subscriptions. Currently sabdfl isn't subscribed to any
+private archives:
+
+    >>> view = create_initialized_view(sabdfl, name="+archivesubscriptions")
+    >>> view.has_subscriptions
+    False
+
+But spiv is subscribed to a number of archives:
+
+    >>> spiv = getUtility(IPersonSet).getByName('spiv')
+    >>> login("andrew.bennetts@ubuntulinux.com")
+    >>> view = create_initialized_view(spiv, name="+archivesubscriptions")
+    >>> view.has_subscriptions
+    True
+
+The subscriptions property returns all the archive subscriptions for
+the current person (Needs to be updated to return only current subscriptions):
+
+    >>> for subscription in view.subscriptions:
+    ...     print subscription.archive.title
+    ...     print subscription.description
+    Private PPA for Celso Providelo         spiv's my friend
+    Private PPA for Mark Shuttleworth       spiv's still my friend
+
+
+
+TODO: Add an IArchiveSubscriber.getTokenForPerson or similar.

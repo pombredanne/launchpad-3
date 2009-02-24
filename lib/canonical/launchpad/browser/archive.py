@@ -1458,6 +1458,25 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
         self.next_url = str(self.request.URL)
 
 
+# NOTE: I'm not sure whether this should be here, or in browser/person.py.
+# I've got it here with the logic that archives are inherently dependent
+# on Person, but that Person does not need to know about Archives.
+# Perhaps best to move this view and the ArchiveSubscribers above into
+# a separate browser/archivesubscriptions.py file.
 class PersonArchiveSubscriptionsView(LaunchpadView):
-    """"""
-    pass
+    """A view for managing a persons archive subscriptions."""
+
+    @cachedproperty
+    def subscriptions(self):
+        """Return all the persons archive subscriptions."""
+        # TODO: This will change to current_subscriptions
+        return getUtility(IArchiveSubscriberSet).getBySubscriber(
+            self.context)
+
+    @cachedproperty
+    def has_subscriptions(self):
+        """Return whether this person has any subscriptions."""
+        # XXX noodles 20090224 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return self.subscriptions.count() > 0
+
