@@ -903,6 +903,31 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             reviewer, [BranchMergeProposalStatus.NEEDS_REVIEW])
         self.assertEqual([proposal1], list(proposals))
 
+    def test_getProposalsForReviewer_anonymous(self):
+        # Don't include proposals for private branches for anonymous views.
+        reviewer = self.factory.makePerson()
+        target_branch = self.factory.makeAnyBranch(private=True)
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch)
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
+            reviewer)
+        self.assertEqual([], list(proposals))
+
+    def test_getProposalsForReviewer_anonymous_source_private(self):
+        # Don't include proposals for private branches for anonymous views.
+        reviewer = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        source_branch = self.factory.makeProductBranch(
+            product=product, private=True)
+        target_branch = self.factory.makeProductBranch(product=product)
+        proposal = self.factory.makeBranchMergeProposal(
+            source_branch=source_branch, target_branch=target_branch)
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
+            reviewer)
+        self.assertEqual([], list(proposals))
+
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""

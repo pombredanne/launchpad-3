@@ -662,7 +662,7 @@ class BranchMergeProposalGetter:
     @staticmethod
     def getProposalsForReviewer(reviewer, status=None, visible_by_user=None):
         """See `IBranchMergeProposalGetter`."""
-        # XXX: This doesn't actually use visible_by_user!
+        from canonical.launchpad.database.branch import Branch
         store = Store.of(reviewer)
         tables = [
             BranchMergeProposal,
@@ -671,7 +671,12 @@ class BranchMergeProposalGetter:
                  BranchMergeProposal.id),
             LeftJoin(CodeReviewComment,
                  CodeReviewVoteReference.commentID == CodeReviewComment.id)]
-        expression = (CodeReviewVoteReference.reviewer == reviewer)
+        visible_branches = set(getUtility(IAllBranches).visibleByUser(
+            visible_by_user).getBranches().values(Branch.id))
+        expression = And(
+            CodeReviewVoteReference.reviewer == reviewer,
+            BranchMergeProposal.target_branchID.is_in(visible_branches),
+            BranchMergeProposal.source_branchID.is_in(visible_branches))
         if status is not None:
             expression = And(
                 expression, BranchMergeProposal.queue_status.is_in(status))
