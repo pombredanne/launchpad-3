@@ -397,7 +397,7 @@
     <!-- info: The text output of the command specified in the "command"
              attribute. The "commmand" attribute must contain the complote
              command line used to produce the text output, including
-             parameters used to inoke a program.
+             parameters used to invoke a program.
     -->
     <info command="dmidecode">
 # dmidecode 2.9
