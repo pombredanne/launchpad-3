@@ -157,3 +157,32 @@ we just defined.
   ...
   Guilherme Salgado
 
+It's also possible to define a custom HTML view for a single
+field. This code registers a view for the 'display_name' field of IPerson.
+
+  >>> manager.registerAdapter(
+  ...      factory=DummyView, required=[IPerson, WebServiceLayer],
+  ...      provided=IEntryFieldHTMLView, name='display_name')
+
+  >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <html>foo</html>
+
+Other IText fields of IPerson are not affected.
+
+  >>> print webservice.get('/~salgado/name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  salgado
+
+Before we continue, here's some code to unregister the view.
+
+  >>> ignored = getGlobalSiteManager().unregisterAdapter(
+  ...      factory=DummyView, required=[IPerson, WebServiceLayer],
+  ...      provided=IEntryFieldHTMLView, name='display_name')
+
+  >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  Guilherme Salgado

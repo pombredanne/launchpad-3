@@ -828,10 +828,17 @@ class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
                 self.context.name, self.context.field)
             return simplejson.dumps(value)
         elif media_type == self.XHTML_TYPE:
-            view = getMultiAdapter(
-                (self.entry.context, self.context.field, self.request),
-                IEntryFieldHTMLView,
-                name="canonical.lazr.rest.resource.EntryFieldResource")
+            view = None
+            try:
+                view = getMultiAdapter(
+                    (self.entry.context, self.request),
+                    name=self.context.field.__name__)
+            except ComponentLookupError:
+                if view is None:
+                    view = getMultiAdapter(
+                        (self.entry.context, self.context.field, self.request),
+                        IEntryFieldHTMLView,
+                        name="canonical.lazr.rest.resource.EntryFieldResource")
             return view()
         else:
             raise AssertionError((
