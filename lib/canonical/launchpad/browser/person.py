@@ -1584,7 +1584,7 @@ class PersonClaimView(LaunchpadFormView):
                      "generated based on the email address it's "
                      "associated with."
                      % self.context.name)
-        elif email.person != self.context:
+        elif email.personID != self.context.id:
             if email.person.is_valid_person:
                 error = structured(
                          "This email address is associated with yet another "
