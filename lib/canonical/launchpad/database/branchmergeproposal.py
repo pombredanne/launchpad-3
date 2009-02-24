@@ -653,9 +653,10 @@ class BranchMergeProposalGetter:
                 builder.query, visible_by_user))
 
     @staticmethod
-    def getProposalsForReviewer(context, status=None, visible_by_user=None):
+    def getProposalsForReviewer(reviewer, status=None, visible_by_user=None):
         """See `IBranchMergeProposalGetter`."""
-        store = Store.of(context)
+        # XXX: This doesn't actually use visible_by_user!
+        store = Store.of(reviewer)
         tables = [
             BranchMergeProposal,
             Join(CodeReviewVoteReference,
@@ -666,7 +667,7 @@ class BranchMergeProposalGetter:
         result = store.using(*tables).find(
             BranchMergeProposal,
             BranchMergeProposal.queue_status.is_in(status),
-            CodeReviewVoteReference.reviewer == context)
+            CodeReviewVoteReference.reviewer == reviewer)
         result.order_by(Desc(CodeReviewComment.vote))
 
         return result

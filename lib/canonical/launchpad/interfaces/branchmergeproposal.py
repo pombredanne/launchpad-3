@@ -548,7 +548,7 @@ class IBranchMergeProposalGetter(Interface):
     def getProposalsForContext(context, status=None, visible_by_user=None):
         """Return BranchMergeProposals associated with the context.
 
-        :param context: Either a 'Person' or 'Product'.
+        :param context: Either an `IPerson` or `IProduct`.
         :param status: An iterable of queue_status of the proposals to return.
             If None is specified, all the proposals of all possible states
             are returned.
@@ -562,10 +562,10 @@ class IBranchMergeProposalGetter(Interface):
             understood.
         """
 
-    def getProposalsForReviewer(context, status=None, visible_by_user=None):
-        """Returen BranchMergeProposals associated with a reviewer.
+    def getProposalsForReviewer(reviewer, status=None, visible_by_user=None):
+        """Return BranchMergeProposals that have the given reviewer.
 
-        :param context: Either a 'Person' or 'Product'.
+        :param reviewer: An `IPerson` who is a reviewer.
         :param status: An iterable of queue_status of the proposals to return.
             If None is specified, all the proposals of all possible states
             are returned.
