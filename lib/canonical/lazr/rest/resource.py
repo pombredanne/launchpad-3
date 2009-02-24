@@ -808,6 +808,10 @@ class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
             return simplejson.dumps(value)
         elif media_type == self.XHTML_TYPE:
             return cgi.escape(value).encode("utf-8")
+        else:
+            raise AssertionError((
+                    "No representation implementation for media type %s"
+                    % media_type))
 
 
 class EntryField:
