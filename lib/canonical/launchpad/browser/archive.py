@@ -1466,7 +1466,7 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for managing a persons archive subscriptions."""
 
-    @cachedproperty
+    @property
     def subscriptions(self):
         """Return all the persons archive subscriptions."""
         # TODO: This will change to current_subscriptions
