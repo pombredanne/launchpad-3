@@ -16,7 +16,7 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
@@ -188,6 +188,10 @@ class IAccountPublic(Interface):
     status = Choice(
         title=_("The status of this account"), required=True,
         readonly=False, vocabulary=AccountStatus)
+
+    is_valid = Bool(
+        title=_("True if this account is active and has a valid email."),
+        required=True, readonly=True)
 
     # We should use schema=IEmailAddress here, but we can't because that would
     # cause circular dependencies.

@@ -17,14 +17,21 @@ from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.basicauthadapter import BasicAuthAdapter
 
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
-from canonical.launchpad.webapp.authentication import PlacelessAuthUtility
-from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+from canonical.launchpad.webapp.authentication import (
+    LaunchpadPrincipal, PlacelessAuthUtility, SSHADigestEncryptor)
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.interfaces import (
-    IPasswordEncryptor, IPersonSet, IPerson)
+    IAccount, IPasswordEncryptor, IPersonSet, IPerson)
 
-Bruce = Principal('bruce', 'bruce', 'Bruce', 'bruce', 'bruce!')
+
+class DummyPerson(object):
+    implements(IPerson, IAccount)
+    is_valid = True
+
+
+Bruce = LaunchpadPrincipal(42, 'bruce', 'Bruce', DummyPerson(), 'bruce!')
+
 
 class DummyPlacelessLoginSource(object):
     implements(IPlacelessLoginSource)
@@ -38,21 +45,23 @@ class DummyPlacelessLoginSource(object):
         return [Bruce]
 
 
-class DummyPerson(object):
-    implements(IPerson)
-    is_valid_person = True
-
-
 class DummyPersonSet(object):
     implements(IPersonSet)
     def get(self, id):
         return DummyPerson()
 
 
+class DummyPasswordEncryptor(object):
+    implements(IPasswordEncryptor)
+
+    def validate(self, plaintext, encrypted):
+        return plaintext == encrypted
+
+
 class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
     def setUp(self):
         PlacelessSetup.setUp(self)
-        ztapi.provideUtility(IPasswordEncryptor, SSHADigestEncryptor())
+        ztapi.provideUtility(IPasswordEncryptor, DummyPasswordEncryptor())
         ztapi.provideUtility(IPlacelessLoginSource,
                              DummyPlacelessLoginSource())
         ztapi.provideUtility(IPlacelessAuthUtility, PlacelessAuthUtility())

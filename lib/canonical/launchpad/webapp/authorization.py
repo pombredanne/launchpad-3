@@ -25,8 +25,7 @@ from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.webapp.interfaces import (
-    AccessLevel, IAuthorization, ILaunchpadContainer, ILaunchpadPrincipal,
-    IOpenIDPrincipal)
+    AccessLevel, IAuthorization, ILaunchpadContainer, ILaunchpadPrincipal)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 
 
@@ -160,7 +159,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
 
         # XXX kiko 2007-02-07:
         # webapp shouldn't be depending on launchpad interfaces..
-        from canonical.launchpad.interfaces import IPerson
+        from canonical.launchpad.interfaces import IAccount
 
         # This check shouldn't be needed, strictly speaking.
         # However, it is here as a "belt and braces".
@@ -188,20 +187,11 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             if authorization is None:
                 return False
             else:
-                user = IPerson(principal, None)
-                if user is None:
-                    if IOpenIDPrincipal.providedBy(principal):
-                        # XXX: salgado, 2009-02-11: This is a hack to make it
-                        # possible for OpenID users to have access to their
-                        # email addresses and their accounts.  This ought to
-                        # be removed when we move OpenID out of our tree into
-                        # a standalone lazr module.
-                        result = authorization.checkAuthenticated(
-                            principal.account)
-                    else:
-                        result = authorization.checkUnauthenticated()
+                account = IAccount(principal, None)
+                if account is None:
+                    result = authorization.checkUnauthenticated()
                 else:
-                    result = authorization.checkAuthenticated(user)
+                    result = authorization.checkAccountAuthenticated(account)
                 if type(result) is not bool:
                     warnings.warn(
                         'authorization returning non-bool value: %r' %

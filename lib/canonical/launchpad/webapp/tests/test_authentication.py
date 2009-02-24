@@ -13,17 +13,18 @@ from canonical.config import config
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from canonical.launchpad.ftests import login
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.authentication import OpenIDPrincipal
+from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
-from canonical.launchpad.webapp.servers import IdPublication
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.servers import (
+    IdPublication, LaunchpadTestRequest, OpenIDPublication)
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 
 
-class TestAuthenticationOfPersonLessAccounts(TestCaseWithFactory):
+class TestAuthenticationOfPersonlessAccounts(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -31,8 +32,9 @@ class TestAuthenticationOfPersonLessAccounts(TestCaseWithFactory):
         self.request = LaunchpadTestRequest()
         self.account = self.factory.makeAccount('Personless account')
         self.email = self.factory.makeEmail(
-            'baz@example.com', person=None, account=self.account)
-        self.principal = OpenIDPrincipal(
+            'baz@example.com', person=None, account=self.account,
+            email_status=EmailAddressStatus.PREFERRED)
+        self.principal = LaunchpadPrincipal(
             self.account.id, self.account.displayname,
             self.account.displayname, self.account)
         login('baz@example.com')
@@ -48,7 +50,7 @@ class TestAuthenticationOfPersonLessAccounts(TestCaseWithFactory):
         principal = publication.getPrincipal(self.request)
         self.failUnless(isinstance(principal, UnauthenticatedPrincipal))
 
-    def test_navigate_logged_in_on_login_dot_launchpad_dot_net(self):
+    def test_navigate_logged_in_on_id_dot_launchpad_dot_net(self):
         # A user with the credentials of a personless account will browse
         # login.launchpad.net logged in as that account.
         logInPrincipal(self.request, self.principal, 'baz@example.com')
@@ -57,8 +59,22 @@ class TestAuthenticationOfPersonLessAccounts(TestCaseWithFactory):
 
         publication = IdPublication(None)
         principal = publication.getPrincipal(self.request)
-        self.failUnless(isinstance(principal, OpenIDPrincipal))
-        self.failUnlessEqual(self.principal.id, principal.id)
+        self.failUnless(isinstance(principal, LaunchpadPrincipal),
+                        "%r should be a LaunchpadPrincipal" % (principal,))
+        self.failUnlessEqual(principal.id, self.account.id)
+
+    def test_navigate_logged_in_on_login_dot_launchpad_dot_net(self):
+        # A user with the credentials of a personless account will browse
+        # login.launchpad.net logged in as that account.
+        logInPrincipal(self.request, self.principal, 'baz@example.com')
+        self.request.response.setCookie(
+            config.launchpad_session.cookie, 'xxx')
+
+        publication = OpenIDPublication(None)
+        principal = publication.getPrincipal(self.request)
+        self.failUnless(isinstance(principal, LaunchpadPrincipal),
+                        "%r should be a LaunchpadPrincipal" % (principal,))
+        self.failUnlessEqual(principal.id, self.account.id)
 
 
 def test_suite():

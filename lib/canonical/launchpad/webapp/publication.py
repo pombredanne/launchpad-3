@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
-    ILaunchpadRoot, IOpenIDPrincipal, IOpenLaunchBag, OffsiteFormPostError,
+    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError,
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.opstats import OpStats
@@ -187,7 +187,7 @@ class LaunchpadBrowserPublication(
         """
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.authenticate(request)
-        if principal is None or IOpenIDPrincipal.providedBy(principal):
+        if principal is None or principal.person is None:
             principal = auth_utility.unauthenticatedPrincipal()
             assert principal is not None, "Missing unauthenticated principal."
         return principal

@@ -49,8 +49,7 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadPrincipal, IOpenIDPrincipal, IPlacelessLoginSource,
-    UnexpectedFormData)
+    ILaunchpadPrincipal, IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
     logInPrincipal, logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured
@@ -121,10 +120,8 @@ class OpenIDMixin:
             raise ValueError('Too many principals')
         else:
             principal = principals[0]
-            if IOpenIDPrincipal.providedBy(principal):
+            if ILaunchpadPrincipal.providedBy(principal):
                 return principal.account
-            elif ILaunchpadPrincipal.providedBy(principal):
-                return principal.person.account
             else:
                 return None
 

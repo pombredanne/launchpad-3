@@ -14,11 +14,9 @@ from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, IAccountSet)
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.authentication import (
-    LaunchpadPrincipal, OpenIDPrincipal)
+from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, ILaunchpadPrincipal, IOpenIDPrincipal,
-    IPlacelessAuthUtility)
+    CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility)
 from canonical.launchpad.webapp.login import (
     logInPrincipal, logInPrincipalAndMaybeCreatePerson, logoutPerson)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -120,7 +118,7 @@ class TestLoggingInWithPersonlessAccount(TestCaseWithFactory):
         account, email = account_set.createAccountAndEmail(
             'foo@example.com', AccountCreationRationale.UNKNOWN,
             'Display name', 'password')
-        self.principal = OpenIDPrincipal(
+        self.principal = LaunchpadPrincipal(
             account.id, account.displayname, account.displayname, account)
         login('foo@example.com')
 
@@ -135,8 +133,8 @@ class TestLoggingInWithPersonlessAccount(TestCaseWithFactory):
 
         principal = getUtility(IPlacelessAuthUtility).authenticate(
             self.request)
-        self.failUnless(IOpenIDPrincipal.providedBy(principal))
-        self.failUnless(IPerson(self.principal.account, None) is None)
+        self.failUnless(ILaunchpadPrincipal.providedBy(principal))
+        self.failUnless(principal.person is None)
 
     def test_logInPrincipalAndMaybeCreatePerson(self):
         # logInPrincipalAndMaybeCreatePerson() will log the given principal in
@@ -152,7 +150,7 @@ class TestLoggingInWithPersonlessAccount(TestCaseWithFactory):
         principal = getUtility(IPlacelessAuthUtility).authenticate(
             self.request)
         self.failUnless(ILaunchpadPrincipal.providedBy(principal))
-        person = IPerson(self.principal.account)
+        person = IPerson(principal.account)
         self.failUnless(IPerson.providedBy(person))
 
 

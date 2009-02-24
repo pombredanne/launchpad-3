@@ -15,6 +15,7 @@ from zope.testing.cleanup import CleanUp
 
 from canonical.lazr.interfaces import IObjectPrivacy
 
+from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.security import AuthorizationBase
 from canonical.launchpad.testing import ObjectFactory
@@ -86,12 +87,12 @@ class PermissionAccessLevel:
 
 
 class FakePersonPrincipal:
-    """A minimal principal that can be adapted to `IPerson`.
+    """A minimal principal that can be adapted to `IAccount` and `IPerson`.
 
-    For simplicity we declare this class implements `IPerson` so it will
-    just adapt to itself.
+    For simplicity we declare this class implements `IAccount` and
+    `IPerson` so it will just adapt to itself.
     """
-    implements(IPerson)
+    implements(IAccount, IPerson)
     scope = None
     access_level = ''
 
