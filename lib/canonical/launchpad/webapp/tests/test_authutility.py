@@ -36,8 +36,7 @@ Bruce = LaunchpadPrincipal(42, 'bruce', 'Bruce', DummyPerson(), 'bruce!')
 class DummyPlacelessLoginSource(object):
     implements(IPlacelessLoginSource)
 
-    def getPrincipalByLogin(self, id, want_password=True,
-                            id_is_from_person=False):
+    def getPrincipalByLogin(self, id, want_password=True):
         return Bruce
 
     getPrincipal = getPrincipalByLogin

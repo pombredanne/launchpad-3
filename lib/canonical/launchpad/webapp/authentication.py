@@ -71,19 +71,20 @@ class PlacelessAuthUtility:
         session = ISession(request)
         authdata = session['launchpad.authenticateduser']
         id = authdata.get('accountid')
-        id_is_from_person = False
         if id is None:
             # XXX: salgado, 2009-02-17: This is for backwards compatibility,
             # when we used to store the person's ID in the session.
-            id = authdata.get('personid')
-            if id is None:
-                return None
-            id_is_from_person = True
+            person_id = authdata.get('personid')
+            if person_id is not None:
+                person = getUtility(IPersonSet).get(person_id)
+                if person is not None:
+                    id = person.account.id
+
+        if id is None:
+            return None
 
         login_src = getUtility(IPlacelessLoginSource)
-        principal = login_src.getPrincipal(
-            id, id_is_from_person=id_is_from_person)
-        person_set = getUtility(IPersonSet)
+        principal = login_src.getPrincipal(id)
         # Note, not notifying a LoggedInEvent here as for session-based
         # auth the login occurs when the login form is submitted, not
         # on each request.
@@ -134,13 +135,10 @@ class PlacelessAuthUtility:
         # TODO maybe configure the realm from zconfigure.
         a.needLogin(realm="launchpad")
 
-    # XXX: salgado, 2009-02-17: The id_is_from_person argument here is for
-    # backwards compatibility, when we used to store the person's ID in the
-    # session.
-    def getPrincipal(self, id, id_is_from_person=False):
+    def getPrincipal(self, id):
         """See IAuthenticationUtility."""
         utility = getUtility(IPlacelessLoginSource)
-        return utility.getPrincipal(id, id_is_from_person=id_is_from_person)
+        return utility.getPrincipal(id)
 
     def getPrincipals(self, name):
         """See IAuthenticationUtility."""
@@ -201,11 +199,8 @@ class LaunchpadLoginSource:
     """
     implements(IPlacelessLoginSource)
 
-    # XXX: salgado, 2009-02-17: The id_is_from_person argument here is for
-    # backwards compatibility, when we used to store the person's ID in the
-    # session.
-    def getPrincipal(self, id, id_is_from_person=False,
-                     access_level=AccessLevel.WRITE_PRIVATE, scope=None):
+    def getPrincipal(self, id, access_level=AccessLevel.WRITE_PRIVATE,
+                     scope=None):
         """Return an `ILaunchpadPrincipal` for the account with the given id.
 
         Return None if there is no account with the given id.
@@ -222,13 +217,7 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        account = None
-        if id_is_from_person:
-            person = getUtility(IPersonSet).get(id)
-            if person is not None:
-                account = person.account
-        else:
-            account = getUtility(IAccountSet).get(id)
+        account = getUtility(IAccountSet).get(id)
 
         if account is None:
             return None
