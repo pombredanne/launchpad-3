@@ -12,6 +12,7 @@ __all__ = [
     'EntryAdapterUtility',
     'EntryField',
     'EntryFieldResource',
+    'EntryFieldHTMLView',
     'EntryHTMLView',
     'EntryResource',
     'HTTPResource',
@@ -769,6 +770,26 @@ class EntryHTMLView:
         return self.HTML_TEMPLATE.pt_render(namespace)
 
 
+class EntryFieldHTMLView(FieldUnmarshallerMixin):
+    """An XHTML snippet view of one of an entry's fields."""
+
+    def __init__(self, entry, field, request):
+        """Initialize with respect to a field and request."""
+        self.entry = entry
+        self.field = field
+        self.request = request
+        self.context = EntryField(
+            self.entry, self.field, self.field.__name__)
+        super(EntryFieldHTMLView, self).__init__(self.context, request)
+        self.resource = EntryFieldResource(self.context, request)
+
+    def __call__(self):
+        """Turn the field into an XHTML snippet."""
+        name, value = self._unmarshallField(
+            self.context.name, self.context.field)
+        return cgi.escape(value).encode("utf-8")
+
+
 class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
     """An individual field of an entry."""
     implements(IEntryFieldResource, IJSONPublishable)
@@ -802,12 +823,15 @@ class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
 
     def _representation(self, media_type):
         """Create a representation of the field value."""
-        name, value = self._unmarshallField(
-            self.context.name, self.context.field)
         if media_type == self.JSON_TYPE:
+            name, value = self._unmarshallField(
+                self.context.name, self.context.field)
             return simplejson.dumps(value)
         elif media_type == self.XHTML_TYPE:
-            return cgi.escape(value).encode("utf-8")
+            view = getMultiAdapter(
+                (self.entry.context, self.context.field, self.request),
+                name="canonical.lazr.rest.resource.EntryFieldResource")
+            return view()
         else:
             raise AssertionError((
                     "No representation implementation for media type %s"

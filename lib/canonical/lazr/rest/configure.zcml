@@ -285,6 +285,14 @@
         name="canonical.lazr.rest.resource.EntryResource"
         />
 
+    <view
+        for="zope.interface.Interface
+             zope.schema.interfaces.IField"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.resource.EntryFieldHTMLView"
+        name="canonical.lazr.rest.resource.EntryFieldResource"
+        />
+
     <!-- System Errors -->
     <view
         for="zope.interface.common.interfaces.IException"
