@@ -680,39 +680,6 @@ class BranchMergeProposalGetter:
         return result
 
     @staticmethod
-    def _generateVisibilityClause(query, visible_by_user):
-        # BranchMergeProposals are only visible is the user is able to
-        # see both the source and target branches.  Here we need to use
-        # a similar query to branches.
-
-        # XXX: This is using _generateVisibilityClause -- a private method
-        # that no longer exists.
-
-        lp_admins = getUtility(ILaunchpadCelebrities).admin
-        if visible_by_user is not None and visible_by_user.inTeam(lp_admins):
-            return query
-
-        if len(query) > 0:
-            query = '%s AND ' % query
-
-        # Non logged in people can only see public branches.
-        if visible_by_user is None:
-            private_subquery = ('''
-                SELECT Branch.id
-                FROM Branch
-                WHERE NOT Branch.private
-                ''')
-        else:
-            # To avoid circular imports.
-            from canonical.launchpad.database.branch import BranchSet
-            private_subquery = BranchSet._getBranchVisibilitySubQuery(
-                visible_by_user)
-
-        return ('%sBranchMergeProposal.source_branch in (%s) '
-                ' AND BranchMergeProposal.target_branch in (%s)'
-                % (query, private_subquery, private_subquery))
-
-    @staticmethod
     def getVotesForProposals(proposals):
         """See `IBranchMergeProposalGetter`."""
         if len(proposals) == 0:
@@ -779,70 +746,6 @@ class BranchMergeProposalGetter:
                 comment_counts.get(proposal.id, 0))
             summary.update(vote_counts.get(proposal.id, {}))
         return result
-
-
-class BranchMergeProposalQueryBuilder:
-    """A utility class to help build branch merge proposal query strings."""
-
-    # XXX: I think that this can be moved into IBranchCollection.
-
-    def __init__(self, context, statuses):
-        self._tables = ['BranchMergeProposal']
-        self._where_clauses = []
-
-        if statuses:
-            self._where_clauses.append(
-                'BranchMergeProposal.queue_status in %s' % quote(statuses))
-
-        if context is None:
-            pass
-        elif IProduct.providedBy(context):
-            self._searchByProduct(context)
-        elif IPerson.providedBy(context):
-            self._searchByPerson(context)
-        else:
-            raise BadBranchMergeProposalSearchContext(context)
-
-    def _searchByProduct(self, product):
-        """Add restrictions to a particular product."""
-        # Restrict to merge proposals where the product on the target
-        # branch is the one specified.
-        self._tables.append('Branch as TargetBranch')
-        self._where_clauses.append(
-            'TargetBranch.id = BranchMergeProposal.target_branch')
-        self._where_clauses.append(
-            'TargetBranch.product = %s' % quote(product))
-
-    def _searchByPerson(self, person):
-        """Add restrictions to a particular person.
-
-        Return merge proposals where the source branch is owned by
-        the person.  This method does not check for team membership
-        to account for branches that are owned by a team that the
-        person is in.
-        """
-        self._tables.append('Branch as SourceBranch')
-        self._where_clauses.append(
-            'SourceBranch.id = BranchMergeProposal.source_branch')
-        self._where_clauses.append(
-            'SourceBranch.owner = %s' % quote(person))
-
-    @property
-    def query(self):
-        """Return a query string."""
-        if len(self._tables) == 1:
-            # Just the Branch table.
-            query = ' AND '.join(self._where_clauses)
-        else:
-            # More complex query needed.
-            query = ("""
-                BranchMergeProposal.id IN (
-                    SELECT BranchMergeProposal.id
-                    FROM %(tables)s
-                    WHERE %(where_clause)s)
-                """ % {'tables': ', '.join(self._tables),
-                       'where_clause': ' AND '.join(self._where_clauses)})
-        return query
 
 
 class CreateMergeProposalJob(object):
