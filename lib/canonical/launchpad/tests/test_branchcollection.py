@@ -223,6 +223,19 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # Unsubscribe the owner, to demonstrate that we show owned branches
         # even if they aren't subscribed.
         owned_branch.unsubscribe(person)
+        # Subscribe two other people to the owned branch to make sure
+        # that the BranchSubscription join is doing it right.
+        owned_branch.subscribe(
+            self.factory.makePerson(),
+            BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL)
+        owned_branch.subscribe(
+            self.factory.makePerson(),
+            BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL)
+
         registered_branch = self.factory.makeAnyBranch(
             owner=team, registrant=person)
         subscribed_branch = self.factory.makeAnyBranch()
@@ -232,8 +245,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             CodeReviewNotificationLevel.NOEMAIL)
         related_branches = self.all_branches.relatedTo(person)
         self.assertEqual(
-            set([owned_branch, registered_branch, subscribed_branch]),
-            set(related_branches.getBranches()))
+            sorted([owned_branch, registered_branch, subscribed_branch]),
+            sorted(related_branches.getBranches()))
 
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
