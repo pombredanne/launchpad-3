@@ -20,6 +20,11 @@
             <element name="questions">
                 <ref name="questionsSection"/>
             </element>
+            <optional>
+                <element name="context">
+                    <ref name="contextSection"/>
+                </element>
+            </optional>
           </interleave>
         </element>
     </start>
@@ -308,6 +313,17 @@
                         </element>
                     </optional>
                 </interleave>
+            </element>
+        </zeroOrMore>
+    </define>
+
+    <define name="contextSection">
+        <zeroOrMore>
+            <element name="info">
+                <attribute name="command">
+                    <text/>
+                </attribute>
+                <text/>
             </element>
         </zeroOrMore>
     </define>
