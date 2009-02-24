@@ -181,16 +181,8 @@ class IBranchMergeProposal(Interface):
             readonly=True,
             description=_("The current state of the proposal.")))
 
-    reviewer = exported(
-        PublicPersonChoice(
-            title=_('Default Review Team'),
-            required=False,
-            vocabulary='ValidPersonOrTeam',
-            description=_("The reviewer of a branch is the person or team "
-                          "that is responsible for reviewing proposals and "
-                          "merging into this branch.")))
-
-
+    # Not to be confused with a code reviewer. A code reviewer is someone who
+    # can vote or has voted on a proposal.
     reviewer = exported(
         PublicPersonChoice(
             title=_('Review person or team'), required=False,
@@ -564,6 +556,9 @@ class IBranchMergeProposalGetter(Interface):
 
     def getProposalsForReviewer(reviewer, status=None, visible_by_user=None):
         """Return BranchMergeProposals that have the given reviewer.
+
+        That is, all merge proposals that 'reviewer' has voted on or has been
+        invited to vote on.
 
         :param reviewer: An `IPerson` who is a reviewer.
         :param status: An iterable of queue_status of the proposals to return.
