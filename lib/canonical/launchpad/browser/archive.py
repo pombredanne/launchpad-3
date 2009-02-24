@@ -17,6 +17,7 @@ __all__ = [
     'ArchivePackageDeletionView',
     'ArchiveSubscribersView',
     'ArchiveView',
+    'PersonArchiveSubscriptionsView',
     'traverse_distro_archive',
     'traverse_named_ppa',
     ]
@@ -1455,3 +1456,8 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
 
         # Just ensure a redirect happens (back to ourselves).
         self.next_url = str(self.request.URL)
+
+
+class PersonArchiveSubscriptionsView(LaunchpadView):
+    """"""
+    pass
