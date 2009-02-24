@@ -7,7 +7,13 @@ import logging
 import os
 from unittest import TestCase, TestLoader
 
-import cElementTree as etree
+try:
+    import xml.elementtree.cElementTree as etree
+except ImportError:
+    try:
+        import cElementTree as etree
+    except ImportError:
+        import elementtree.ElementTree as etree
 import pytz
 
 from zope.testing.loghandler import Handler
@@ -541,8 +547,7 @@ class TestHWDBSubmissionParser(TestCase):
         self.assertEqual(result,
                          {'hal': 'parsed HAL data',
                           'processors': 'parsed processor data',
-                          'aliases': 'parsed alias data',
-                          },
+                          'aliases': 'parsed alias data'},
                          'Invalid parsing result for <hardware>')
 
     def testLsbRelease(self):
@@ -1270,39 +1275,14 @@ class TestHWDBSubmissionParser(TestCase):
             in a log string that matches (a)
         (c) result, which is supposed to contain an object representing
             the result of parsing a submission, is None.
-        (d) the log level is ERROR.
 
-        If all four criteria match, assertErrormessage does not raise any
+        If all three criteria match, assertErrormessage does not raise any
         exception.
         """
         expected_message = ('Parsing submission %s: %s'
                             % (submission_key, log_message))
         for r in self.handler.records:
             if r.levelno != logging.ERROR:
-                continue
-            candidate = r.getMessage()
-            if candidate == expected_message:
-                return
-        raise AssertionError('No log message found: %s' % expected_message)
-
-    def assertWarningMessage(self, submission_key, log_message):
-        """Search for message in the log entries for submission_key.
-
-        assertErrorMessage requires that
-        (a) a log message starts with "Parsing submisson <submission_key>:"
-        (b) the error message passed as the parameter message appears
-            in a log string that matches (a)
-        (c) result, which is supposed to contain an object representing
-            the result of parsing a submission, is None.
-        (d) the log level is WARNING.
-
-        If all four criteria match, assertWarningMessage does not raise any
-        exception.
-        """
-        expected_message = ('Parsing submission %s: %s'
-                            % (submission_key, log_message))
-        for r in self.handler.records:
-            if r.levelno != logging.WARNING:
                 continue
             candidate = r.getMessage()
             if candidate == expected_message:

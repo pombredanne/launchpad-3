@@ -428,12 +428,16 @@ class SubmissionParser(object):
             aliases.append(alias)
         return aliases
 
+    _parse_hardware_section = {
+        'hal': _parseHAL,
+        'processors': _parseProcessors,
+        'aliases': _parseAliases}
+
     def _setHardwareSectionParsers(self):
         self._parse_hardware_section = {
             'hal': self._parseHAL,
             'processors': self._parseProcessors,
-            'aliases': self._parseAliases,
-            }
+            'aliases': self._parseAliases}
 
     def _parseHardware(self, hardware_node):
         """Parse the <hardware> part of a submission.
