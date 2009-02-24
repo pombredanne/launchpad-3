@@ -36,7 +36,6 @@ class JobRunner(object):
             job.job.start()
             job.run()
         except Exception:
-            raise
             # Commit transaction to update the DB time.
             transaction.commit()
             job.job.fail()
@@ -58,6 +57,5 @@ class JobRunner(object):
             except LeaseHeld:
                 self.incomplete_jobs.append(job)
             except Exception:
-                raise
                 info = sys.exc_info()
                 errorlog.globalErrorUtility.raising(info)

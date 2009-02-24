@@ -845,6 +845,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if fingerprint is not None:
             gpghandler = getUtility(IGPGHandler)
             body = gpghandler.signContent(body, fingerprint)
+            assert body is not None
         if attachment_contents is None:
             mail.set_payload(body)
             body_part = mail

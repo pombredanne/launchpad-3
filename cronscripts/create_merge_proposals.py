@@ -7,11 +7,13 @@
 __metaclass__ = type
 
 import _pythonpath
+
+import os
+
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.codehosting.jobs import JobRunner
-from canonical.codehosting.vfs import get_puller_server
 from canonical.launchpad.interfaces.branchmergeproposal import (
     ICreateMergeProposalJobSource,)
 from canonical.launchpad.scripts.base import LaunchpadCronScript
@@ -23,16 +25,14 @@ class RunCreateMergeProposalJobs(LaunchpadCronScript):
 
     def main(self):
         globalErrorUtility.configure('create_merge_proposals')
+        if os.environ.get('import_public_test_keys') == '1':
+            from canonical.launchpad.ftests import import_public_test_keys
+            import_public_test_keys()
         job_source = getUtility(ICreateMergeProposalJobSource)
         runner = JobRunner.fromReady(job_source)
-        server = get_puller_server()
-        server.setUp()
-        try:
-            runner.runAll()
-            self.logger.info(
-                'Ran %d CreateMergeProposalJobs.' % len(runner.completed_jobs))
-        finally:
-            server.tearDown()
+        runner.runAll()
+        self.logger.info(
+            'Ran %d CreateMergeProposalJobs.' % len(runner.completed_jobs))
 
 
 if __name__ == '__main__':
