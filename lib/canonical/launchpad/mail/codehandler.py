@@ -245,12 +245,14 @@ class CodeHandler:
 
     def createMergeProposalJob(self, mail, email_addr, file_alias):
         """Check that the message is signed and create the job."""
-        # XXX: TimPenhey 2009-02-25
+        # XXX: TimPenhey 2009-02-25 bug 329834
         # Disable the signed requirement as LP's signed message handling does
         # not handle the case where the first part is a clear signed message
         # with an attached directive.  This is the default behaviour of
         # Thunderbird, and until the signed message handling is fixed, we
         # don't want to annoy too many of our users.
+        # See also:
+        #   TestCodeHandler.disabled_test_processMergeDirectiveEmailNeedsGPG
         getUtility(ICreateMergeProposalJobSource).create(file_alias)
         return True
         # Commenting out to make lint happy, but not deleting because we
@@ -371,7 +373,7 @@ class CodeHandler:
         mp_target = getUtility(IBranchSet).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
-        # XXX: TimPenhey 2009-02-25
+        # XXX: TimPenhey 2009-02-25 bug 334090
         # Disable bundle handling for 2.2.2 release.
         if md.bundle is None or True:
             mp_source = self._getSourceNoBundle(
