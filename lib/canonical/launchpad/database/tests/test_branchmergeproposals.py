@@ -882,6 +882,27 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             self._get_merge_proposals(
                 november, visible_by_user=self.factory.makePerson()))
 
+    def test_getProposalsForReviewer(self):
+        reviewer = self.factory.makePerson()
+        proposal = self.factory.makeBranchMergeProposal()
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposal2 = self.factory.makeBranchMergeProposal()
+        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
+            reviewer)
+        self.assertEqual([proposal], list(proposals))
+
+    def test_getProposalsForReviewer_filter_status(self):
+        reviewer = self.factory.makePerson()
+        proposal1 = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        proposal1.nominateReviewer(reviewer, reviewer)
+        proposal2 = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal2.nominateReviewer(reviewer, reviewer)
+        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
+            reviewer, [BranchMergeProposalStatus.NEEDS_REVIEW])
+        self.assertEqual([proposal1], list(proposals))
+
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""

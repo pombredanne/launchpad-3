@@ -671,12 +671,12 @@ class BranchMergeProposalGetter:
                  BranchMergeProposal.id),
             LeftJoin(CodeReviewComment,
                  CodeReviewVoteReference.commentID == CodeReviewComment.id)]
-        result = store.using(*tables).find(
-            BranchMergeProposal,
-            BranchMergeProposal.queue_status.is_in(status),
-            CodeReviewVoteReference.reviewer == reviewer)
+        expression = (CodeReviewVoteReference.reviewer == reviewer)
+        if status is not None:
+            expression = And(
+                expression, BranchMergeProposal.queue_status.is_in(status))
+        result = store.using(*tables).find(BranchMergeProposal, expression)
         result.order_by(Desc(CodeReviewComment.vote))
-
         return result
 
     @staticmethod
