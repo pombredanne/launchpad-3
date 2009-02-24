@@ -278,12 +278,19 @@ class Person(
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
         # this method is scheduled for demolition -- StuartBishop 20080514
-        if self.account is not None:
-            return removeSecurityProxy(self.account).password
+        from canonical.launchpad.database.account import AccountPassword
+        password = IStore(AccountPassword).find(
+            AccountPassword, accountID=self.accountID).one()
+        if password is None:
+            return None
+        else:
+            return password.password
 
     def _set_password(self, value):
-        assert self.account is not None, 'No account for this Person'
-        removeSecurityProxy(self.account).password = value
+        account = IMasterStore(Account).find(
+            Account, id=self.accountID).one()
+        assert account is not None, 'No account for this Person.'
+        account.password = value
 
     password = property(_get_password, _set_password)
 

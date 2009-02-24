@@ -262,6 +262,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         person = removeSecurityProxy(person)
         email = removeSecurityProxy(email)
 
+        assert person.password is not None, 'Password not set'
+
         if (time_zone is not None or latitude is not None or
             longitude is not None):
             person.setLocation(latitude, longitude, time_zone, person)

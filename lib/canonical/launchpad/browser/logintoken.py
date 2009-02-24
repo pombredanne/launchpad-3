@@ -216,12 +216,14 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
         naked_person.displayname = data['displayname']
         naked_person.hide_email_addresses = data['hide_email_addresses']
 
+        naked_email = removeSecurityProxy(email)
+
         naked_person.activateAccount(
             comment="Activated by claim profile.",
             password=data['password'],
-            preferred_email=email)
+            preferred_email=naked_email)
         self.context.consume()
-        self.logInPersonByEmail(removeSecurityProxy(email).email)
+        self.logInPersonByEmail(naked_email.email)
         self.request.response.addInfoNotification(_(
             "Profile claimed successfully"))
 
@@ -347,10 +349,7 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
 
         self.logInPersonByEmail(self.context.email)
 
-        # XXX: Huh? wtf is self.context.requester.name giving a
-        # Zope perm error? -- StuartBishop 20090211
-        self.next_url = canonical_url(
-            removeSecurityProxy(self.context.requester))
+        self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
             _('Your password has been reset successfully.'))
 
@@ -723,8 +722,9 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
 
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
-        if (self.email is not None and getUtility(IPersonSet).get(
-            removeSecurityProxy(self.email).personID).is_valid_person):
+        person = removeSecurityProxy(getUtility(IPersonSet).get(
+            removeSecurityProxy(self.email).personID))
+        if self.email is not None and person.is_valid_person:
             self.addError(_(
                 'The email address ${email} is already registered.',
                 mapping=dict(email=self.context.email)))
@@ -878,7 +878,7 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         # dupe account, so we can assign it to him.
         requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
-        email = emailset.getByEmail(self.context.email)
+        email = removeSecurityProxy(emailset.getByEmail(self.context.email))
         # As a person can have at most one preferred email, ensure
         # that this new email does not have the PREFERRED status.
         email.status = EmailAddressStatus.NEW
