@@ -1826,7 +1826,8 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         super(PersonAccountAdministerView, self).__init__(context, request)
         # Only the IPerson can be traversed to, so it provides the IAccount.
         self.person = self.context
-        self.context = self.context.account
+        from canonical.launchpad.interfaces import IMasterObject
+        self.context = IMasterObject(self.context.account)
 
     @property
     def is_viewing_person(self):
