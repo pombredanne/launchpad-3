@@ -80,7 +80,7 @@
           <tr class="archive_subscriber_row"
               tal:repeat="subscription view/subscriptions">
             <td tal:content="structure subscription/subscriber/fmt:link" />
-            <td tal:content="subscription/date_expires" />
+            <td tal:content="subscription/date_expires/fmt:date" />
             <td tal:content="subscription/description" />
          </tr>
         </tbody>

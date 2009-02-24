@@ -74,7 +74,7 @@ And clicks on the "Add subscriber" button
 
     >>> cprov_browser.getControl(name='field.subscriber').value = 'launchpad'
     >>> cprov_browser.getControl(
-    ...     name='field.expiry_date').value = '2200-08-01'
+    ...     name='field.date_expires').value = '2200-08-01'
     >>> cprov_browser.getControl(
     ...     name='field.description').value = "Launchpad developer access."
     >>> cprov_browser.getControl(name="field.actions.add").click()
@@ -84,12 +84,13 @@ And the new subscription for the launchpad team is displayed,
 And a notification about the new subscriber is also displayed.
 
     >>> print_archive_subscriptions(cprov_browser.contents)
-    Name                Expires     Comment
-    Andrew Bennetts                 spiv's my friend
+    Name                    Expires       Comment
+    ...
+    Launchpad Developers    2200-08-01    Launchpad developer access.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    Andrew Bennetts has been added as a subscriber.
+    Launchpad Developers has been added as a subscriber.
 
 == Story 2: An owner edits a subscription for her private archive ==
 TBD
@@ -109,6 +110,12 @@ Given a subscription for Celso's private PPA
 
 When Andrew visits his profile (?? where would be the logical place for this?)
 And clicks on the 'Private software subscriptions' link (only displayed to those with subscriptions)
+
+    spiv_browser = setupBrowser(
+        auth="Basic andrew.bennetts@canonical.com:test")
+    cprov_browser.open(
+        "http://launchpad.dev/~spiv/+archivesubscriptions")
+
 Then a list of Andrew's pending subscriptions is displayed
 And a sources.list snippet is currently empty.
 
