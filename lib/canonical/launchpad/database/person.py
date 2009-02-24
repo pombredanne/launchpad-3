@@ -1634,8 +1634,6 @@ class Person(
             include_teams=include_teams)
         person_list = []
         for person, email in result:
-            assert Store.of(person) is Store.of(email), (
-                'Email from wrong store')
             person._preferredemail_cached = email
             person_list.append(person)
         return person_list
@@ -2267,31 +2265,10 @@ class Person(
 
         getUtility(IHWSubmissionSet).setOwnership(email)
 
-        # Now we update our cache of the preferredemail. This has to be
-        # the email address from the same store as the person.
-        # It might be None if the emailaddresss was created in this
-        # transaction, because the main stores will not be able to see
-        # the new emailaddress until the transaction has been committed.
-        self._preferredemail_cached = Store.of(self).get(
-            EmailAddress, email.id)
+        # Now we update our cache of the preferredemail.
+        self._preferredemail_cached = email
 
-    # We have various bits of code wanting to update the cached
-    # preferredemail by poking its privates. However, we need to ensure
-    # that the preferredemail comes from the correct store. Here
-    # we setup a property that does validation to proxy the real cache.
-    # If we don't do this, code can stuff invalid values into the cache
-    # and we won't know about it until some time later, with no way of
-    # identifying the culprit.
-    def _get_preferredemail_cached(self):
-        return self._real_preferredemail_cached
-    def _set_preferredemail_cached(self, value):
-        assert value is None or Store.of(self) is Store.of(value), (
-            'Email from wrong store')
-        self._real_preferredemail_cached = value
-    _preferredemail_cached = property(
-        _get_preferredemail_cached, _set_preferredemail_cached)
-
-    @cachedproperty('_real_preferredemail_cached')
+    @cachedproperty('_preferredemail_cached')
     def preferredemail(self):
         """See `IPerson`."""
         emails = self._getEmailsByStatus(EmailAddressStatus.PREFERRED)
