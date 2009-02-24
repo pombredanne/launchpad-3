@@ -24,6 +24,7 @@ from twisted.web.xmlrpc import Proxy, _QueryFactory, QueryProtocol
 from zope.component import getUtility
 from zope.security.management import endInteraction, newInteraction
 
+from canonical.buildd.utils import notes
 from canonical.config import config
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.builder import IBuilderSet
@@ -147,7 +148,7 @@ class FailDispatchResult(BaseDispatchResult):
     """Represents a communication failure while dispatching a build job..
 
     When evaluated this object mark the corresponding `IBuilder` as
-    'NOK' with the given text as 'failnotes'. It also cleanup the running
+    'NOK' with the given text as 'failnotes'. It also cleans up the running
     job (`IBuildQueue`).
     """
 
@@ -164,7 +165,7 @@ class FailDispatchResult(BaseDispatchResult):
 class ResetDispatchResult(BaseDispatchResult):
     """Represents a failure to reset a builder.
 
-    When evaluated this object simply cleanup the running job
+    When evaluated this object simply cleans up the running job
     (`IBuildQueue`).
     """
 
@@ -193,19 +194,31 @@ class BuilddManager(service.Service):
         # cycle.
         self.remaining_slaves = []
 
-        # Logger setup
+        self.logger = self._setupLogger()
+
+    def _setupLogger(self):
+        """Setup a 'slave-scanner' logger
+
+        It is going to be used locally and within the thread running
+        the scan() method.
+        Make it less verbose to avoid messing too much with the old code.
+        """
         level = logging.INFO
         logger = logging.getLogger('slave-scanner')
         logger.setLevel(level)
-        ch = logging.StreamHandler()
-        ch.setLevel(level)
-        ch.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
-        logger.addHandler(ch)
-        self.logger = logger
+        channel = logging.StreamHandler()
+        channel.setLevel(level)
+        channel.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
+        logger.addHandler(channel)
+        return logger
 
     def startService(self):
         """Service entry point, run at the start of a scan/dispatch cycle."""
         self.logger.info('Starting scanning cycle.')
+
+        # Ensure there are no previous annotation from the previous cycle.
+        notes.notes = {}
+
         d = deferToThread(self.scan)
         d.addCallback(self.resumeAndDispatch)
         d.addErrback(self.scanFailed)
@@ -238,9 +251,14 @@ class BuilddManager(service.Service):
          * Call `nextCycle`.
         """
         def done(deferred_results):
+            """Called when all events quiesce.
+
+            Perform the finishing-cycle tasks mentioned above.
+            """
             self.logger.info('Scanning cycle finished.')
             # We are only interested in returned objects of type
             # BaseDispatchResults, those are the ones that needs evaluation.
+            # None, resulting from successful chains, are discarded.
             dispatch_results = [
                 result for status, result in deferred_results
                 if isinstance(result, BaseDispatchResult)]
@@ -280,9 +298,11 @@ class BuilddManager(service.Service):
         """
         recording_slaves = []
 
+        # Setup a new interaction since it's running in a separate thread.
         newInteraction()
 
         builder_set = getUtility(IBuilderSet)
+
         # Use FakeZTM to avoid partial commits.
         builder_set.pollBuilders(self.logger, FakeZTM())
 

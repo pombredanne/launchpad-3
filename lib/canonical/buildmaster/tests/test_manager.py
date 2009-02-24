@@ -2,9 +2,9 @@
 
 """Tests for the renovated slave scanner aka BuilddManager."""
 
-import unittest
-
+import os
 import transaction
+import unittest
 
 from twisted.internet import defer
 from twisted.internet.threads import deferToThread
@@ -76,9 +76,9 @@ class TestRecordingSlaves(TrialTestCase):
         # Resume isn't requested in a just-instantiated RecordingSlave.
         self.assertFalse(self.slave.resume_requested)
 
-        # When resume is called, it returns the succeed triple and mark
+        # When resume is called, it returns the success truple and mark
         # the slave for resuming.
-        self.assertEqual(('', '', 0), self.slave.resume())
+        self.assertEqual(('', '', os.EX_OK), self.slave.resume())
         self.assertTrue(self.slave.resume_requested)
 
         # The configuration testing command-line.
@@ -88,7 +88,7 @@ class TestRecordingSlaves(TrialTestCase):
         # When executed it returns the expected output.
         def check_resume_success(response):
             out, err, code = response
-            self.assertEqual(0, code)
+            self.assertEqual(os.EX_OK, code)
             self.assertEqual('', err)
             self.assertEqual('foo.host', out.strip())
 
@@ -104,9 +104,10 @@ class TestRecordingSlaves(TrialTestCase):
 
         def check_resume_failure(response):
             out, err, code = response
-            self.assertEqual(1, code)
+            self.assertNotEqual(os.EX_OK, code)
             self.assertEqual('', err)
             self.assertEqual('', out)
+            config.pop('vm_resume_command')
 
         d = self.slave.resumeSlave()
         d.addCallback(check_resume_failure)
@@ -249,13 +250,16 @@ class TestBuilddManager(TrialTestCase):
         """
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
 
-        successful_response = ('', '', 0)
+        successful_response = ('', '', os.EX_OK)
         result = self.manager.checkResume(successful_response, slave)
-        self.assertEqual(None, result)
+        self.assertEqual(
+            None, result, 'Successful resume checks should return None')
 
-        failed_response = ('', '', 1)
+        failed_response = ('', '', os.EX_USAGE)
         result = self.manager.checkResume(failed_response, slave)
-        self.assertTrue(isinstance(result, TestingResetDispatchResult))
+        self.assertTrue(
+            isinstance(result, TestingResetDispatchResult),
+            'Failed resume check should return instances of ResetBuildResult')
         self.assertEqual(
             '<foo:http://foo.buildd:8221/> reset', repr(result))
 
@@ -273,12 +277,16 @@ class TestBuilddManager(TrialTestCase):
             buildd_success_result_map.get('ensurepresent'), 'cool builder')
         result = self.manager.checkDispatch(
             successful_response, 'ensurepresent', slave)
-        self.assertEqual(None, result)
+        self.assertEqual(
+            None, result, 'Successful dispatch checks should return None')
 
         failed_response = (False, 'uncool builder')
         result = self.manager.checkDispatch(
             failed_response, 'ensurepresent', slave)
-        self.assertTrue(isinstance(result, TestingFailDispatchResult))
+        self.assertTrue(
+            isinstance(result, TestingFailDispatchResult),
+            'Failed dispatch check should return instances of '
+            'FailBuildResult')
         self.assertEqual(
             '<foo:http://foo.buildd:8221/> failure (uncool builder)',
             repr(result))
@@ -290,11 +298,11 @@ class TestBuilddManager(TrialTestCase):
     def testDispatchBuild(self):
         """Check `dispatchBuild` in various scenarios.
 
-        When there are not recording slaves (i.e. no build got dispatched
+        When there are no recording slaves (i.e. no build got dispatched
         in scan()) it simply finishes the cycle.
 
         When there is a recording slave with pending slave calls, they are
-        performed and if they all succeed the cycle is finished with not
+        performed and if they all succeed the cycle is finished with no
         errors.
 
         On slave call failure the chain is stopped immediately and an
