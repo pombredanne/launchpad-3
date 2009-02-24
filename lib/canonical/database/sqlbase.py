@@ -213,6 +213,13 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # A number of the doctests rely on this formatting.
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
 
+    def destroySelf(self):
+        from canonical.launchpad.interfaces import IMasterObject
+        my_master = IMasterObject(self)
+        if self is my_master:
+            super(SQLBase, self).destroySelf()
+        else:
+            my_master.destroySelf()
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")
