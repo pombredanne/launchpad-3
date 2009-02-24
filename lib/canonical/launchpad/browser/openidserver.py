@@ -120,10 +120,8 @@ class OpenIDMixin:
             raise ValueError('Too many principals')
         else:
             principal = principals[0]
-            if IOpenIDPrincipal.providedBy(principal):
+            if ILaunchpadPrincipal.providedBy(principal):
                 return principal.account
-            elif ILaunchpadPrincipal.providedBy(principal):
-                return principal.person.account
             else:
                 return None
 
