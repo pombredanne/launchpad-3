@@ -428,35 +428,11 @@ class SubmissionParser(object):
             aliases.append(alias)
         return aliases
 
-    def _parseDmi(self, dmi_node):
-        """Parse the <dmi> node.
-        """
-        # We don't store any DMI data at present, but the HWDB client
-        # for Jaunty will soon be able to include DMI data.
-        # For now, we'll just log a warning for submissions containing
-        # DMI data in order to be able to process these submissions
-        # again later, once we can store the DMI data.
-        # See bug 327147.
-        self._logWarning('Submission contains unprocessed DMI data.')
-
-    def _parseLspci(self, lspci_node):
-        """Parse the <lspci> node.
-        """
-        # We don't store the content of the <lspci> node at present, but
-        # the HWDB client for Jaunty will soon be able to include this
-        # data. For now, we'll just log a warning for submissions containing
-        # lspci output in order to be able to process these submissions
-        # again later, once we can store the lspci output.
-        # See bug 327147.
-        self._logWarning('Submission contains unprocessed lspci data.')
-
     def _setHardwareSectionParsers(self):
         self._parse_hardware_section = {
             'hal': self._parseHAL,
             'processors': self._parseProcessors,
             'aliases': self._parseAliases,
-            'dmi': self._parseDmi,
-            'lspci': self._parseLspci,
             }
 
     def _parseHardware(self, hardware_node):

@@ -626,16 +626,15 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                 'Expecting an element %s, got nothing' % tag,
                 'missing tag <%s> in <hardware>' % tag)
 
-        # The <aliases>, <dmi> and <lspci> tags may be omitted.
-        for tag in ('aliases', 'dmi', 'lspci'):
-            sample_data = self.replaceSampledata(
-                data=self.sample_data,
-                replace_text='',
-                from_text='<%s' % tag,
-                to_text='</%s>' % tag)
-            result, submission_id = self.runValidator(sample_data)
-            self.assertNotEqual(result, None,
-                                'submission without <%s> rejected' % tag)
+        # The <aliases> tag may be omitted.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<aliases',
+            to_text='</aliases>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None,
+                            'submission without <aliases> rejected')
 
         # Other subtags are not allowed in <hardware>.
         sample_data = self.insertSampledata(
@@ -1722,59 +1721,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Extra element aliases in interleave',
             'invalid sub-tag of <alias>')
-
-    def testDmiTagAttributes(self):
-        """Validation of attributes of the <dmi> tag."""
-        # The only allowed attribute is options. It may not be omitted.
-        sample_data = self.sample_data.replace('<dmi options="">', '<dmi>')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result, 'Extra element dmi in interleave',
-            'Missing required attribute options of <dmi> not detected')
-
-        # Other attributes are not allowed.
-        sample_data = self.sample_data.replace('<dmi options="">',
-                                               '<dmi options="" foo="bar">')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result, 'Extra element dmi in interleave',
-            'Invalid attribute of <dmi> not detected')
-
-    def testDmiSubTags(self):
-        """The <dmi> tag may not have any sub-tags."""
-        sample_data = self.sample_data.replace(
-            '<dmi options="">', '<dmi options=""><nonsense/>')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result, 'Extra element dmi in interleave',
-            'Invalid sub-tag of <dmi> not detected')
-
-    def testLspciTagAttributes(self):
-        """Validation of attributes of the <lspci> tag."""
-        # The only allowed attribute is options. It may not be omitted.
-        sample_data = self.sample_data.replace('<lspci options="">',
-                                               '<lspci>')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result, 'Extra element lspci in interleave',
-            'Missing required attribute options of <lspci> not detected')
-
-        # Other attributes are not allowed.
-        sample_data = self.sample_data.replace('<lspci options="">',
-                                               '<lspci options="" foo="bar">')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result, 'Extra element lspci in interleave',
-            'Invalid attribute of <lspci> not detected')
-
-    def testLspciSubTags(self):
-        """The <lspci> tag may not have any sub-tags."""
-        sample_data = self.sample_data.replace(
-            '<lspci options="">', '<lspci options=""><nonsense/>')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result, 'Extra element lspci in interleave',
-            'Invalid sub-tag of <lspci> not detected')
 
     def testSoftwareTagAttributes(self):
         """Test the attribute validation of the <software> tag."""

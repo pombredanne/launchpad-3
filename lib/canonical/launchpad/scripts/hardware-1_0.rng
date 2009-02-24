@@ -169,22 +169,6 @@
                     </zeroOrMore>
                 </element>
             </optional>
-            <optional>
-              <element name="dmi">
-                <attribute name="options">
-                  <text/>
-                </attribute>
-                <text/>
-              </element>
-            </optional>
-            <optional>
-              <element name="lspci">
-                <attribute name="options">
-                  <text/>
-                </attribute>
-                <text/>
-              </element>
-            </optional>
         </interleave>
     </define>
 
