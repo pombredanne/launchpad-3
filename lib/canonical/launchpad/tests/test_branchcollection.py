@@ -17,6 +17,8 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
 from canonical.launchpad.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
@@ -393,6 +395,18 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         collection = self.all_branches.inProduct(product)
         proposals = collection.getMergeProposals()
         self.assertEqual([mp1], list(proposals))
+
+    def test_status_restriction(self):
+        mp1 = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        mp2 = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        mp3 = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.CODE_APPROVED)
+        proposals = self.all_branches.getMergeProposals(
+            [BranchMergeProposalStatus.WORK_IN_PROGRESS,
+             BranchMergeProposalStatus.NEEDS_REVIEW])
+        self.assertEqual(set([mp1, mp2]), set(proposals))
 
 
 def test_suite():

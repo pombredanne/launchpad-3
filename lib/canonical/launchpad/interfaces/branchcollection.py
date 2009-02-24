@@ -46,9 +46,12 @@ class IBranchCollection(Interface):
     def getBranches():
         """Return a result set of all branches in this collection."""
 
-    def getMergeProposals():
+    def getMergeProposals(statuses=None):
         """Return a result set of merge proposals for the branches in this
         collection.
+
+        :param statuses: If specified, only return merge proposals with these
+            statuses. If not, return all merge proposals.
         """
 
     def inProduct(product):

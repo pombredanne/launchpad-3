@@ -81,12 +81,13 @@ class GenericBranchCollection:
         # Decorate the result set to work around bug 217644.
         return DecoratedResultSet(results, identity)
 
-    def getMergeProposals(self):
+    def getMergeProposals(self, statuses=None):
         """See `IBranchCollection`."""
         branch_ids = self.getBranches().values(Branch.id)
-        return self.store.find(
-            BranchMergeProposal,
-            BranchMergeProposal.source_branchID.is_in(branch_ids))
+        expression = BranchMergeProposal.source_branchID.is_in(branch_ids)
+        if statuses is not None:
+            expression = And(BranchMergeProposal.queue_status.is_in(statuses))
+        return self.store.find(BranchMergeProposal, expression)
 
     def inProduct(self, product):
         """See `IBranchCollection`."""
