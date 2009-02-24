@@ -66,7 +66,7 @@ class TestBranchVocabulary(BranchVocabTestCase):
             u'~scotty/sprocket/fizzbuzz',
             u'~scotty/widget/fizzbuzz',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_widgetBranches(self):
@@ -79,7 +79,7 @@ class TestBranchVocabulary(BranchVocabTestCase):
             u'~spotty/widget/sprocket',
             u'~sprocket/widget/foo',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_spottyBranches(self):
@@ -89,7 +89,7 @@ class TestBranchVocabulary(BranchVocabTestCase):
             u'~spotty/widget/hill',
             u'~spotty/widget/sprocket',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_crossAttributeBranches(self):
@@ -100,7 +100,7 @@ class TestBranchVocabulary(BranchVocabTestCase):
             u'~spotty/widget/sprocket',
             u'~sprocket/widget/foo',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_singleQueryResult(self):
@@ -162,7 +162,7 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
         expected = [
             u'~scotty/widget/main',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_ownersBranches(self):
@@ -176,7 +176,7 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
             u'~scotty/widget/main',
             u'~scotty/widget/mountain',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_singleQueryResult(self):
