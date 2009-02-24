@@ -62,6 +62,7 @@ class RemoteProductUpdater:
                 continue
             external_bugtracker = self._getExternalBugTracker(
                 bug_watch.bugtracker)
+            external_bugtracker.initializeRemoteBugDB([bug_watch.remotebug])
             remote_product = external_bugtracker.getRemoteProduct(
                 bug_watch.remotebug)
             self.logger.info("Setting remote_product for %s to %r" % (
