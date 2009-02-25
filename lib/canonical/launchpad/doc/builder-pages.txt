@@ -152,16 +152,9 @@ PPA.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='privacy-test',
     ...     archive=cprov.archive)
+    >>> [private_build] = private_source_pub.createMissingBuilds()
 
-Make a private build for the private source.
-
-    >>> private_build = private_source_pub.sourcepackagerelease.createBuild(
-    ...         test_publisher.breezy_autotest_hppa,
-    ...         PackagePublishingPocket.UPDATES,
-    ...         cprov.archive,
-    ...         status=BuildStatus.FULLYBUILT)
-
-Assign it to the 'frog' builder:
+Assign the build to the 'frog' builder:
 
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True
@@ -184,14 +177,14 @@ is widely available:
     True
 
     >>> print frog.currentjob.build.title
-    hppa build of privacy-test 666 in ubuntutest breezy-autotest UPDATES
+    i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
 
     >>> print frog.failnotes
     None
 
     >>> print frog.status
-    Building hppa build of privacy-test 666 in ubuntutest breezy-autotest
-        UPDATES [cprov]
+    Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
+        RELEASE [cprov]
 
 Accessing the view for $builder/+index as a Foo Bar, which has
 launchpad.View permission on the target archive of the 'currentjob',
@@ -211,14 +204,14 @@ all the 'private' information is exposed.
     True
 
     >>> print admin_view.context.currentjob.build.title
-    hppa build of privacy-test 666 in ubuntutest breezy-autotest UPDATES
+    i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
 
     >>> print admin_view.context.failnotes
     None
 
     >>> print admin_view.context.status
-    Building hppa build of privacy-test 666 in ubuntutest breezy-autotest
-        UPDATES [cprov]
+    Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
+        RELEASE [cprov]
 
 When accessing the same view as a unprivileged user, No-Priv, the
 sensitive information is hidden (the context class is 'cloaked', see
@@ -408,7 +401,7 @@ The 'PPA' builder category is also available in BuilderSetView as a
     True
 
     >>> print_category(builder_category)
-    386 0
+    386 1
     The Hamburger Builder
     The frog builder
     amd64 0
@@ -434,7 +427,7 @@ Now the pending build is included in the right category and group.
 
     >>> builder_category = builderset_view.ppa_builders
     >>> print_category(builder_category)
-    386 1
+    386 2
     The Hamburger Builder
     The frog builder
     amd64 0

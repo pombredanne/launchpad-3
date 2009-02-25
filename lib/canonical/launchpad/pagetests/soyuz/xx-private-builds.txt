@@ -39,15 +39,11 @@ We'll make a private archive and add a new build to it to demonstrate this.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='privacy-test',
     ...     archive=cprov.archive)
-    >>> private_build = private_source_pub.sourcepackagerelease.createBuild(
-    ...     test_publisher.breezy_autotest_hppa,
-    ...     PackagePublishingPocket.UPDATES,
-    ...     cprov.archive,
-    ...     status=BuildStatus.FULLYBUILT)
+    >>> [private_build] = private_source_pub.createMissingBuilds()
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True
     >>> private_build.builder = frog
-    >>> discard = BuildQueue(build=private_build, builder=frog)
+    >>> private_build.buildqueue_record.builder = frog
 
 We'll also make name12 a member of the launchpad-buildd-admins team, so we
 can use him to see builds from a buildd-admin perspective.
@@ -92,7 +88,7 @@ Launchpad Administrators are allowed to see the build in the portlet:
     ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status Building hppa build of privacy-test ... [cprov]
+    Status Building i386 build of privacy-test ... [cprov]
     ...
 
 and also the main area:
@@ -100,7 +96,7 @@ and also the main area:
     >>> print extract_text(find_main_content(admin_browser.contents))
     The frog builder
     Current status
-    hppa build of privacy-test 666 in ubuntutest breezy-autotest UPDATES
+    i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
     ...
 
 Buildd Administrators are not allowed to see the build in the portlet:
@@ -131,7 +127,7 @@ cprov is also allowed to see his own build in the portlet:
     ...     find_tag_by_id(cprov_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status Building hppa build of privacy-test ... [cprov]
+    Status Building i386 build of privacy-test ... [cprov]
     ...
 
 and also the main area:
@@ -139,7 +135,7 @@ and also the main area:
     >>> print extract_text(find_main_content(cprov_browser.contents))
     The frog builder
     Current status
-    hppa build of privacy-test 666 in ubuntutest breezy-autotest UPDATES
+    i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
     ...
 
 IBuild is also wrapped in a Zope security proxy to prevent unauthorised
@@ -264,14 +260,14 @@ An authorised user will see the build however:
     >>> print extract_text(builds_list)
     Package:
     ...
-    hppa build of privacy-test 666 in ubuntutest breezy-autotest UPDATES
+    i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
     ...
 
     >>> print extract_text(
     ...     find_tag_by_id(cprov_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status Building hppa build of privacy-test ... [cprov]
+    Status Building i386 build of privacy-test ... [cprov]
     ...
 
 
@@ -289,7 +285,7 @@ An admin user can see builds even if they are private:
     Register a new build machine
     PPA build machines
     386      0 builds waiting in queue
-    frog   AUTO    Building hppa build of privacy-test ... [cprov]
+    frog   AUTO    Building i386 build of privacy-test ... [cprov]
     Official distribution build machines
     386      1 builds waiting in queue
     bob    AUTO    Disabled
@@ -317,7 +313,7 @@ cprov can see his own private build:
     Register a new build machine
     PPA build machines
     386      0 builds waiting in queue
-    frog   AUTO    Building hppa build of privacy-test ... [cprov]
+    frog   AUTO    Building i386 build of privacy-test ... [cprov]
     Official distribution build machines
     386      1 builds waiting in queue
     bob    AUTO    Disabled
@@ -388,7 +384,7 @@ Now the anonymous user can see the build:
     Launchpad build machines
     PPA build machines
     386      0 builds waiting in queue
-    frog  AUTO    Building hppa build of privacy-test ... [cprov]
+    frog  AUTO    Building i386 build of privacy-test ... [cprov]
     Official distribution build machines
     386      1 builds waiting in queue
     bob   AUTO    Disabled
@@ -402,7 +398,7 @@ Any other logged-in user will also see the build:
     PPA build machines
     386     0 builds waiting in queue
     frog    AUTO
-    Building hppa build of privacy-test ... [cprov]
+    Building i386 build of privacy-test ... [cprov]
     Official distribution build machines
     386     1 builds waiting in queue
     bob AUTO    Disabled
@@ -414,10 +410,10 @@ Accessing the build page will now also work:
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     private_build.id)
     >>> print anon_browser.title
-    hppa build of privacy-test ...
+    i386 build of privacy-test ...
 
     >>> browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     private_build.id)
     >>> print browser.title
-    hppa build of privacy-test ...
+    i386 build of privacy-test ...

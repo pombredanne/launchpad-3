@@ -1017,12 +1017,9 @@ an extra build that is not published anywhere but in his PPA.
     >>> private_source_pub = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='privacy-test',
+    ...     architecturehintlist='i386',
     ...     archive=cprov.archive)
-    >>> private_build = private_source_pub.sourcepackagerelease.createBuild(
-    ...         test_publisher.breezy_autotest_hppa,
-    ...         PackagePublishingPocket.UPDATES,
-    ...         cprov.archive,
-    ...         status=BuildStatus.FULLYBUILT)
+    >>> [private_build] = private_source_pub.createMissingBuilds()
     >>> private_build.builder = bob
     >>> flush_database_updates()
 
@@ -1030,7 +1027,7 @@ Accessing the cprov builds when logged in as admin will see the records:
 
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    cprov: hppa build of privacy-test 666 in ubuntutest breezy-autotest...
+    cprov: i386 build of privacy-test 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -1042,7 +1039,7 @@ Likewise when logged in as cprov:
     >>> login('celso.providelo@canonical.com')
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    cprov: hppa build of privacy-test 666 in ubuntutest breezy-autotest...
+    cprov: i386 build of privacy-test 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE

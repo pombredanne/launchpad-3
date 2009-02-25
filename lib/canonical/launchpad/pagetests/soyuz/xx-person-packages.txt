@@ -187,7 +187,6 @@ so that they appear in his +packages page.
     >>> source1.sourcepackagerelease.creator=cprov
     >>> source1_sabdfl = source1.copyTo(
     ...     source1.distroseries, source1.pocket, sabdfl.archive)
-    >>> source1_sabdfl.secure_record.setPublished()
     >>> source2 = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='source2',
@@ -311,7 +310,7 @@ archive is public.
     source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
-Even afer the package is superseded, the package remains visibile in
+Even after the package is superseded, the package remains visibile in
 the listings.
 
     >>> login("foo.bar@canonical.com")
