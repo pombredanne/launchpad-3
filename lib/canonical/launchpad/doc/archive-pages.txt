@@ -1007,6 +1007,3 @@ the current person (Needs to be updated to return only current subscriptions):
     Private PPA for Celso Providelo         spiv's my friend
     Private PPA for Mark Shuttleworth       spiv's still my friend
 
-
-
-TODO: Add an IArchiveSubscriber.getTokenForPerson or similar.
