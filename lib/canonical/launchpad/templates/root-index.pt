@@ -88,32 +88,31 @@
         <div class="three column middle">
           <h2>What&#8217;s new?</h2>
           <ul style="padding: 0; margin: auto;">
-           <li class="news">
-              <a href="http://blog.launchpad.net/?p=551">
-                <strong>Commercial subscriptions</strong><br />
-                Find out more about Launchpad's privacy features for your commercial projects.
-              </a>
-           </li>
+
             <li class="news">
               <a href="http://blog.launchpad.net/?p=534">
-                <strong>Build udebs in your PPA</strong><br />
-                Personal Package Archives now support Debian installer udeb packages.
+                <strong>Improved upstream bug links</strong><br />
+                New quick-links to find and report bugs in external trackers.
               </a>
            </li>
             <li class="news">
-              <a href="http://blog.launchpad.net/?p=448">
-                <strong>Upstreams: Ubuntu translations come full circle</strong><br />
-                Easily integrate the work done by distribution translators back into
-                your own translation effort.
+              <a href="http://blog.launchpad.net/coming-features/ajax-in-launchpad">
+                <strong>AJAX in Launchpad</strong><br />
+                Read more about how we're making Launchpad's interface more responsive using AJAX.
               </a>
            </li>           
            <li class="news">
-              <a href="http://blog.launchpad.net/?p=106">
-                <strong>Help test Launchpad's API!</strong><br />
-                Join the beta of our web services API and Python library.
+              <a href="http://blog.launchpad.net/?p=556">
+                <strong>Tuning Launchpad in Performance Week</strong><br />
+                Faster PPA overviews, snappier translations pages, speedier project cloud. Read all about it!
               </a>
            </li>
-
+           <li class="news">
+              <a href="http://blog.launchpad.net/?p=551">
+                <strong>Need Launchpad for a commercial project?</strong><br />
+                Find out more about Launchpad's privacy features for your commercial projects.
+              </a>
+           </li>
           </ul>
           <div class="discreet" style="text-align: right">
             Updated 2009-02-26.
