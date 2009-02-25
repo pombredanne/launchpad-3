@@ -61,11 +61,9 @@ class AnnouncementDateWidget(SimpleInputWidget):
         self.announcement_date_widget = widgets['announcement_date']
 
     def __call__(self):
-        time_zone = getUtility(ILaunchBag).time_zone
         html = '<div>Publish this announcement:</div>\n'
-        html += "<p>%s</p><p>%s in the %s time zone</p>" % (
-            self.action_widget(), self.announcement_date_widget(),
-            time_zone)
+        html += "<p>%s</p><p>%s</p>" % (
+            self.action_widget(), self.announcement_date_widget())
         return html
 
     def hasInput(self):
@@ -107,7 +105,7 @@ class AnnouncementDateWidget(SimpleInputWidget):
                     _('Please provide a publication date.')))
             raise self._error
         if action == 'immediately':
-            return datetime.utcnow().replace(tzinfo=pytz.utc)
+            return datetime.now(pytz.utc)
         elif action == "sometime":
             return None
         elif action == "specific":
