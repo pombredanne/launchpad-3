@@ -648,7 +648,7 @@ class FieldUnmarshallerMixin:
         self._unmarshalled_field_cache = {}
 
     def _unmarshallField(self, field_name, field):
-        """See what a field would look like in a representation.
+        """See what a field would look like in a JSON representation.
 
         :return: a 2-tuple (representation_name, representation_value).
         """
@@ -679,6 +679,29 @@ class FieldUnmarshallerMixin:
         self._unmarshalled_field_cache[field_name] = unmarshalled
         return unmarshalled
 
+    def _unmarshallFieldHTML(self, field_name, field):
+        """See what a field would look like in an HTML representation.
+
+        :return: a 2-tuple (representation_name, representation_value).
+        """
+        name, value = self._unmarshallField(field_name, field)
+        try:
+            # Try to get a view for this particular field.
+            adapter = getMultiAdapter(
+                (self.entry.context, self.request),
+                name=field.__name__)
+        except ComponentLookupError:
+            # There's no view. Look up an IFieldHTMLUnmarshaller
+            # for this _type_ of field.
+            adapter_name = (
+                "canonical.lazr.rest.resource.EntryFieldResource")
+            field = field.bind(self.entry.context)
+            adapter = getMultiAdapter(
+                (self.entry.context, field, self.request),
+                IFieldHTMLUnmarshaller,
+                name=adapter_name)
+        return name, adapter(value)
+
 
 class FieldHTMLUnmarshaller(FieldUnmarshallerMixin):
     """An XHTML snippet view of one of an entry's fields."""
@@ -692,11 +715,9 @@ class FieldHTMLUnmarshaller(FieldUnmarshallerMixin):
             self.entry, self.field, self.field.__name__)
         super(FieldHTMLUnmarshaller, self).__init__(self.context, request)
 
-    def __call__(self):
+    def __call__(self, default_value):
         """Turn the field into an XHTML snippet."""
-        name, value = self._unmarshallField(
-            self.context.name, self.context.field)
-        return cgi.escape(unicode(value).encode("utf-8"))
+        return cgi.escape(unicode(default_value).encode("utf-8"))
 
 
 class ReadOnlyResource(HTTPResource):
@@ -829,22 +850,9 @@ class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
                 self.context.name, self.context.field)
             return simplejson.dumps(value)
         elif media_type == self.XHTML_TYPE:
-            adapter = None
-            try:
-                # Try to get a view for this particular field.
-                adapter = getMultiAdapter(
-                    (self.entry.context, self.request),
-                    name=self.context.field.__name__)
-            except ComponentLookupError:
-                # There's no view. Look up an IFieldHTMLUnmarshaller
-                # for this _type_ of field.
-                adapter_name = (
-                    "canonical.lazr.rest.resource.EntryFieldResource")
-                adapter = getMultiAdapter(
-                    (self.entry.context, self.context.field, self.request),
-                    IFieldHTMLUnmarshaller,
-                    name=adapter_name)
-            return adapter()
+            name, value = self._unmarshallFieldHTML(
+                self.context.name, self.context.field)
+            return value
         else:
             raise AssertionError((
                     "No representation implementation for media type %s"
@@ -911,10 +919,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
         data['resource_type_link'] = self.type_url
         unmarshalled_field_values = {}
         for name, field in getFieldsInOrder(self.entry.schema):
-            if self.media_type == self.JSON_TYPE:
+            if media_type == self.JSON_TYPE:
                 repr_name, repr_value = self._unmarshallField(name, field)
-            elif self.media_type == self.XHTML_TYPE:
-                pass
+            elif media_type == self.XHTML_TYPE:
+                repr_name, repr_value = self._unmarshallFieldHTML(name, field)
             else:
                 raise AssertionError((
                         "Cannot create data structure for media type %s"

@@ -184,6 +184,16 @@ IPerson/IText, other IText fields of IPerson are not affected.
   ...
   salgado
 
+The XHTML representation of an entry incorporates any custom XHTML
+representations of that entry's fields.
+
+  >>> print webservice.get('/~salgado', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <dt>custom_name</dt>
+  <dd>&lt;html&gt;foo&lt;/html&gt;</dd>
+  ...
+
 Before we continue, here's some code to unregister the view.
 
   >>> ignored = getGlobalSiteManager().unregisterAdapter(
