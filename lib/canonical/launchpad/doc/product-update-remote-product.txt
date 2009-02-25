@@ -143,7 +143,7 @@ given one are ignored.
     >>> import transaction
     >>> transaction.commit()
 
-    >>> updater.updateByBugTrackerType(BugTrackerType.RT, debug=False)
+    >>> updater.updateByBugTrackerType(BugTrackerType.RT)
     Initializing DB for bugs: [u'84'].
 
     >>> print rt_product.remote_product
@@ -242,4 +242,17 @@ tracker don't break the run for all bug trackers.
     DEBUG Trying to update fooix
     Initializing DB for bugs: [u'42'].
     ERROR Unable to set remote_product for 'fooix': Didn't find bug 42.
+
+AssertionErrors are also handled.
+
+    >>> class RaisesAssertionErrorExternalBugTracker(FakeExternalBugTracker):
+    ...     def initializeRemoteBugDB(self, bug_ids):
+    ...         assert True == False, "True isn't False!"
+
+    >>> updater.external_bugtracker_to_return = (
+    ...     RaisesAssertionErrorExternalBugTracker)
+    >>> updater.updateByBugTrackerType(BugTrackerType.RT)
+    INFO  1 projects using RT needing updating.
+    DEBUG Trying to update fooix
+    ERROR Unable to set remote_product for 'fooix': True isn't False!
 
