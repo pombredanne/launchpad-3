@@ -496,10 +496,8 @@ def get_object_from_master_store(obj):
 
     Returns the object if it already comes from the relevant master Store.
 
-    XXX: This adapter is broken! If obj is a security proxied object,
-    the return value is not proxied. I've had no success getting this
-    method to return an security proxied object that rejects access to
-    all attributes.
+    If the input is security wrapped, so is the result. Otherwise an
+    unwrapped object is returned.
     """
     naked_obj = removeSecurityProxy(obj)
     is_wrapped = naked_obj is not obj
