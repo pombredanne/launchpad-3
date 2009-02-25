@@ -60,7 +60,8 @@ from canonical.launchpad.interfaces.archivepermission import (
 from canonical.launchpad.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus)
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IHasBuildRecords, IBuildSet)
+    BuildStatus, IBuildSet)
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.launchpad import (
