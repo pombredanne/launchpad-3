@@ -9,13 +9,25 @@ will print them out:
     ...     table = find_main_content(browser.contents).find('table')
     ...     if table is None:
     ...         return None
-    ...     return extract_text(table)
+    ...     result = []
+    ...     for tr in table.findAll('tr'):
+    ...         row = []
+    ...         for td in tr.findAll('td'):
+    ...             td_text = ' '.join(text.strip()
+    ...                                for text in td.findAll(text=True))
+    ...             row.append('%-12s' % td_text)
+    ...         result.append(' '.join(row).strip())
+    ...     return '\n'.join(result)
 
     >>> def milestones_in_portlet(browser):
     ...     portlet = find_portlet(browser.contents, 'Active milestones')
     ...     if portlet is None:
     ...         return None
-    ...     return extract_text(portlet.find('table'))
+    ...     result = []
+    ...     for tr in portlet.find('table').findAll('tr'):
+    ...         result.append(
+    ...             ' '.join(text.strip() for text in tr.findAll(text=True)))
+    ...     return '\n'.join(result)
 
 == Milestone listings ==
 
@@ -57,21 +69,18 @@ a page in which all of their milestones are listed.
     'http://launchpad.dev/firefox/+milestones'
 
     >>> print all_milestones(anon_browser)
-    1.0
-    ...
+    1.0    2056-10-16...
 
 
 === Product Series ===
 
     >>> anon_browser.open('http://launchpad.dev/firefox/trunk/+milestones')
     >>> print all_milestones(anon_browser)
-    1.0
-    ...
+    1.0...
 
     >>> anon_browser.open('http://launchpad.dev/firefox/1.0/+milestones')
     >>> print all_milestones(anon_browser)
     None
-
 
 === Projects ===
 
@@ -86,25 +95,18 @@ The main project page has a portlet "Active milestones":
     >>> logout()
     >>> anon_browser.open('http://launchpad.dev/gnome')
     >>> print milestones_in_portlet(anon_browser)
-    2010-04-01
-    1.1
-    2010-04-02
-    1.1.
-    2011-04-01
-    1.2
+    2011-04-01  1.2
+    2010-04-02  1.1.
+    2010-04-01  1.1
 
 The page "All milestones" lists all milestones, including the inactive ones:
 
     >>> anon_browser.getLink('See all milestones').click()
     >>> print all_milestones(anon_browser)
-    1.1
-    ...
-    1.1.
-    ...
-    1.2
-    ...
-    1.3
-    ...
+    1.3        2012-04-01
+    1.2        2011-04-01
+    1.1.       2010-04-02
+    1.1        2010-04-01
 
 
 == Individual milestones ==
@@ -112,7 +114,7 @@ The page "All milestones" lists all milestones, including the inactive ones:
 Pages for the individual milestones show all specifications and bugtasks
 associated with that milestone for products of this project:
 
-    >>> anon_browser.getLink('1.1').click()
+    >>> anon_browser.getLink('1.1', index=1).click()
     >>> specs = find_tag_by_id(anon_browser.contents, 'milestone_specs')
     >>> print extract_text(specs)
     Specification Product Priority Assignee Delivery

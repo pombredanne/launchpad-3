@@ -1145,7 +1145,7 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         else:
             return (
                 '<a href="%(url)s" title="%(title)s" class="%(style)s">'
-                '%(line_count)s</a>' % args)
+                '<img src="/@@/download"/>&nbsp;%(line_count)s</a>' % args)
 
 
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):

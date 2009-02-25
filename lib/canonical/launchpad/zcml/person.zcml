@@ -134,6 +134,14 @@
     />
 
   <browser:page
+    name="+reviewaccount"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonAccountAdministerView"
+    permission="launchpad.Admin"
+    template="../templates/person-review.pt"
+    />
+
+  <browser:page
     name="+claimteam"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.BeginTeamClaimView"

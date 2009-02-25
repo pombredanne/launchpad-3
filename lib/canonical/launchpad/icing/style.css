@@ -266,8 +266,10 @@ table.contributions td {vertical-align: middle; width: 16px; text-align: left;}
 /* ==== Listing tables ==== */
 
 table.listing {margin: 0; width: 100%; font-size: 90%;}
-table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
-table.listing thead, table.listing thead th, table.listing tfoot tr {
+table.listing, table.listing tbody, table.listing td.end-of-section {
+  border-bottom: 1px solid #d2d2d2;}
+table.listing thead, table.listing thead th, table.listing tfoot tr,
+table.listing tr.thead th {
   border: 1px solid #d2d2d2;
   background-color: #fff;
 }
@@ -282,7 +284,8 @@ table.listing tr.note {font-size: smaller;}
 table.listing th, table.listing td {padding: 0.25em;}
 /* We don't want extra padding on nested tables, such as batch navigation. */
 table.listing table th, table.listing table td {padding: 0;}
-table.listing thead th {font-size: 1.125em; white-space: nowrap;}
+table.listing thead th, table.listing tr.thead th {
+  font-size: 1.125em; white-space: nowrap;}
 table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
 table.listing tr.note td {border-style: none;}
 table.listing img {vertical-align: middle;}
@@ -296,6 +299,12 @@ table.duplicate.listing * {color: #999;}
 
 table.listing table.simple {margin-left: 2em;}
 table.listing table.simple td {padding: 0.25em;}
+
+table.listing .section-heading {
+  font-size: 1.2em;
+  border: none;
+  padding-top: 1.5em;
+}
 
 table.compressed { width: auto }
 table.compressed td { padding: 0.25em 0.5em }
@@ -1301,6 +1310,45 @@ beside the mugshot. */
   padding-top: 0;
 }
 
+.important-notice-container {
+  text-align: center;
+  width: 100%;
+  padding-bottom: 1em;
+  position: relative;
+}
+
+.important-notice-balloon {
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  background-color: #ededed;
+  padding: 1em;
+  border: 1px solid #000;
+  width: auto;
+  overflow: hidden;
+}
+
+.important-notice-buttons {
+  float: right;
+}
+
+.important-notice-cancel-button {
+  visibility: hidden;
+  cursor: pointer;
+}
+
+.important-notice {
+  padding: 0px 0px 40px 0px;
+  height: 32px;
+  overflow: hidden;
+}
+
+.important-notice a {
+  font-weight: bold;
+  color: black;
+  text-decoration: underline;
+}
+
 /* Soyuz-related styles (that don't have a facet, but generally are
  * under Overview)
  */
@@ -1466,6 +1514,11 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .codereviewcomment .attachment, #review-diff .attachment {
   background-color: #f6f6f6;
 }
+
+body.tab-branches table.listing .section-heading {
+  color: #d18b39;
+}
+
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
 table.diff {
    white-space: pre-wrap;
@@ -1808,32 +1861,29 @@ li {
 */
 
 /* Clouds of links. */
+.cloud-size-smallest {
+  font-size: 0.8em;
+}
 .cloud-size-small {
-  font-size: 1em;
+  font-size: 1.1em;
 }
 .cloud-size-medium {
-  font-size: 1.35em;
+  font-size: 1.4em;
 }
 .cloud-size-large {
   font-size: 1.7em;
 }
-.cloud-shade-dark {
+.cloud-size-largest {
+  font-size: 2.0em;
+}
+.cloud-dark {
   color: #00f;
 }
-.cloud-shade-medium {
+.cloud-medium {
   color: #7878ff;
 }
-.cloud-shade-light {
+.cloud-light {
   color: #b8b8ff;
-}
-.cloud-highlight-dark {
-  color: #00c500;
-}
-.cloud-highlight-medium {
-  color: #90e090;
-}
-.cloud-highlight-light {
-  color: #b8ffb8;
 }
 
 .lowerCaseText {

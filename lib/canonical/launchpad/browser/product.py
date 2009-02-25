@@ -1162,6 +1162,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "official_blueprints",
         "official_rosetta",
         "official_answers",
+        "remote_product",
         "homepageurl",
         "sourceforgeproject",
         "freshmeatproject",
@@ -1916,13 +1917,17 @@ class ProductActiveReviewsView(BranchMergeProposalListingView):
     TO_DO = 'to_do'
     ARE_DOING = 'are_doing'
     CAN_DO = 'can_do'
+    MINE = 'mine'
     OTHER = 'other'
 
     def _getReviewGroup(self, proposal, votes):
-        """Return one of TO_DO, CAN_DO, ARE_DOING, or OTHER.
+        """Return one of MINE, TO_DO, CAN_DO, ARE_DOING, or OTHER.
 
         These groupings define the different tables that the user is able to
         see.
+
+        If the source branch is owned by the user, or the proposal was
+        registered by the user, then the group is MINE.
 
         If there is a pending vote reference for the logged in user, then the
         group is TO_DO as the user is expected to review.  If there is a vote
@@ -1931,7 +1936,14 @@ class ProductActiveReviewsView(BranchMergeProposalListingView):
         requested of a team that the user is in, then the review becomes a
         CAN_DO.  All others are OTHER.
         """
+        if (self.user is not None and
+            (proposal.source_branch.owner == self.user or
+             (self.user.inTeam(proposal.source_branch.owner) and
+              proposal.registrant == self.user))):
+            return self.MINE
+
         result = self.OTHER
+
         for vote in votes:
             if self.user is not None:
                 if vote.reviewer == self.user:
@@ -1978,6 +1990,7 @@ class ProductActiveReviewsView(BranchMergeProposalListingView):
         personal_review_count = (
             len(self.review_groups.get(self.TO_DO, [])) +
             len(self.review_groups.get(self.CAN_DO, [])) +
+            len(self.review_groups.get(self.MINE, [])) +
             len(self.review_groups.get(self.ARE_DOING, [])))
         if personal_review_count > 0:
             return _('Other reviews')
