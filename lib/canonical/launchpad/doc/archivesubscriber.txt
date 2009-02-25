@@ -121,30 +121,35 @@ finding a subscription for a particular user in a particular archive:
     ...     new_sub.subscriber, new_sub.archive)[0].archive.title
     PPA for Celso Providelo
 
-By default the getBySubscriber() method returns all active subscriptions:
+By default the getBySubscriber() and getByArchive() methods return
+all active subscriptions:
 
-    >>> for subscription in sub_set.getBySubscriber(new_sub.subscriber):
-    ...     print subscription.archive.title
-    PPA for Celso Providelo
-    PPA for Mark Shuttleworth
+    >>> sub_set.getBySubscriber(new_sub.subscriber).count()
+    2
+    >>> sub_set.getByArchive(sabdfl.archive).count()
+    1
 
-If we cancel one of the subscriptions, it no longer appears in the results
-of getBySubscriber():
+If we cancel one of the subscriptions:
 
     >>> login("mark@hbd.com")
     >>> new_sub_to_sabdfl_ppa.status = ArchiveSubscriberStatus.CANCELLED
     >>> login("test@canonical.com")
-    >>> for subscription in sub_set.getBySubscriber(new_sub.subscriber):
-    ...     print subscription.archive.title
-    PPA for Celso Providelo
+
+then the cancelled subscription longer appears in the results
+of getBySubscriber() and getByArchive():
+
+    >>> sub_set.getBySubscriber(new_sub.subscriber).count()
+    1
+    >>> sub_set.getByArchive(sabdfl.archive).count()
+    0
 
 Unless we explicitly ask for all subscriptions - not just the active ones:
 
-    >>> for subscription in sub_set.getBySubscriber(
-    ...     new_sub.subscriber, active_only=False):
-    ...     print subscription.archive.title
-    PPA for Celso Providelo
-    PPA for Mark Shuttleworth
+    >>> sub_set.getBySubscriber(
+    ...     new_sub.subscriber, active_only=False).count()
+    2
+    >>> sub_set.getByArchive(sabdfl.archive, active_only=False).count()
+    1
 
 == Amending Subscriptions ==
 

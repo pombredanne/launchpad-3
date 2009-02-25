@@ -118,9 +118,11 @@ class IArchiveSubscriberSet(Interface):
             subscriptions (which is the default).
         """
 
-    def getByArchive(archive):
+    def getByArchive(archive, active_only=True):
         """Return all the subscripions for an archive.
 
         :param archive: An `IArchive` for which to return all
             `ArchiveSubscriber` records.
+        :param active_only: Whether the result should only include active
+            subscriptions (which is the default).
         """

@@ -80,9 +80,16 @@ class ArchiveSubscriberSet:
             ArchiveSubscriber.subscriber == subscriber,
             *extra_exprs)
 
-    def getByArchive(self, archive):
+    def getByArchive(self, archive, active_only=True):
         """See `IArchiveSubscriberSet`."""
+        extra_exprs = []
+
+        if active_only:
+            extra_exprs.append(
+                ArchiveSubscriber.status == ArchiveSubscriberStatus.ACTIVE)
+
         store = Store.of(archive)
         return store.find(
             ArchiveSubscriber,
-            ArchiveSubscriber.archive == archive)
+            ArchiveSubscriber.archive == archive,
+            *extra_exprs)
