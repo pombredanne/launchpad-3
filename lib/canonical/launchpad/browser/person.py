@@ -364,7 +364,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_email(self, email):
         """Traverse to this person's emails on the webservice layer."""
         email = getUtility(IEmailAddressSet).getByEmail(email)
-        if email is None or email.person != self.context:
+        if email is None or email.personID != self.context.id:
             return None
         return email
 
