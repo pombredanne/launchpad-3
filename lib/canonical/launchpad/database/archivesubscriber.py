@@ -10,12 +10,14 @@ __all__ = [
 
 import pytz
 
+from storm.expr import And, Select
 from storm.locals import DateTime, Int, Reference, Store, Storm, Unicode
 
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
+from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriber)
 
@@ -64,7 +66,8 @@ class ArchiveSubscriber(Storm):
 class ArchiveSubscriberSet:
     """See `IArchiveSubscriberSet`."""
 
-    def getBySubscriber(self, subscriber, archive=None, current_only=True):
+    def getBySubscriber(self, subscriber, archive=None, current_only=True,
+                        include_team_subscriptions=True):
         """See `IArchiveSubscriberSet`."""
         extra_exprs = []
         if archive:
@@ -74,10 +77,32 @@ class ArchiveSubscriberSet:
             extra_exprs.append(
                 ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT)
 
+        if include_team_subscriptions:
+            # Create a subselect to capture all the teams that are
+            # subscribed to archives AND the user is a member of:
+            user_teams_subselect = Select(
+                TeamParticipation.teamID,
+                where=And(
+                    TeamParticipation.personID == subscriber.id,
+                    TeamParticipation.teamID ==
+                        ArchiveSubscriber.subscriberID))
+
+            # Set the main expression to find all the subscriptions for
+            # which the subscriber is a direct subscriber OR is a member
+            # of a subscribed team.
+            # Note: 'ArchiveSubscriber.subscriber == subscriber' 
+            # is unnecessary below because there is a TeamParticipation
+            # entry showing that each person is a member of the "team"
+            # that consists of themselves.
+            main_expr = ArchiveSubscriber.subscriberID.is_in(
+                user_teams_subselect)
+        else:
+            main_expr = ArchiveSubscriber.subscriber == subscriber
+
         store = Store.of(subscriber)
         return store.find(
             ArchiveSubscriber,
-            ArchiveSubscriber.subscriber == subscriber,
+            main_expr,
             *extra_exprs)
 
     def getByArchive(self, archive, current_only=True):

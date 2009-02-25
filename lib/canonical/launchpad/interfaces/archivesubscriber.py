@@ -107,7 +107,8 @@ class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
 class IArchiveSubscriberSet(Interface):
     """An interface for the set of all archive subscribers."""
 
-    def getBySubscriber(subscriber, archive=None, current_only=True):
+    def getBySubscriber(subscriber, archive=None, current_only=True,
+                        include_team_subscriptions=True):
         """Return all the subscriptions for a person.
 
         :param subscriber: An `IPerson` for whom to return all
@@ -116,6 +117,9 @@ class IArchiveSubscriberSet(Interface):
             the results to that particular archive.
         :param current_only: Whether the result should only include current
             subscriptions (which is the default).
+        :param include_team_subscriptions: Whether the result should include
+            team subscriptions for which the subscriber is a member (which
+            is the default).
         """
 
     def getByArchive(archive, current_only=True):
