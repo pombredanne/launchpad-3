@@ -171,14 +171,38 @@ to which the provided subscriber belongs:
     PPA for Celso Providelo        subscription for joesmith
     PPA for Mark Shuttleworth      Access for cprov team
 
-This can be overridden by asking explicitly for direct subscriptions
-only:
+This can be overridden by explicitly not including team subscriptions when
+calling getBySubscriber():
 
     >>> for subscription in sub_set.getBySubscriber(joesmith,
     ...     include_team_subscriptions=False):
     ...     print subscription.archive.title
     ...     print subscription.description
     PPA for Celso Providelo        subscription for joesmith
+
+Finally, many callsites of getBySubscriber() will be interested not only
+in each subscription of the subscriber, but also the generated
+ArchiveAuthToken for each subscription of the subscriber. These can
+be returned as well using the optional return_tokens param:
+
+First create a token for joesmith's subscription for cprov's archive:
+
+    >>> login("celso.providelo@canonical.com")
+    >>> ignore = cprov.archive.newAuthToken(joesmith, u"test_token")
+    >>> login("joe@example.com")
+
+Now print out all subscriptions with their tokens for joesmith:
+
+    >>> for subscription, token in sub_set.getBySubscriber(joesmith,
+    ...     return_tokens=True):
+    ...     if token:
+    ...         token_text = token.token
+    ...     else:
+    ...         token_text = "None"
+    ...     print subscription.archive.title
+    ...     print token_text
+    PPA for Celso Providelo            test_token
+    PPA for Mark Shuttleworth          None
 
 == Amending Subscriptions ==
 
