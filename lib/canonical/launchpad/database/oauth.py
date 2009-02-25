@@ -10,7 +10,6 @@ __all__ = [
     'OAuthRequestTokenSet']
 
 import pytz
-import time
 from datetime import datetime, timedelta
 
 from zope.component import getUtility
