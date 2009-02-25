@@ -99,7 +99,7 @@ and field type. Here's a simple unmarshaller that serves some hard-coded HTML.
   ...         pass
   ...
   ...     def __call__(*args):
-  ...         return "<html>foo</html>"
+  ...         return "<b>foo</b>"
 
 Register the unmarshaller as the IFieldHTMLUnmarshaller adapter for an
 IText field of an IPerson entry...
@@ -123,16 +123,20 @@ calling a DummyUnmarshaller object.
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  <html>foo</html>
+  <b>foo</b>
 
 In fact, that adapter will be used for every IText field of an IPerson.
 
   >>> print webservice.get('/~salgado/name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  <html>foo</html>
+  <b>foo</b>
 
-It will not be used for IText fields of other interfaces:
+Note that the XHTML is not escaped, as it is when the default adapter
+is used. Escaping user-entered XHTML, and distinguishing it from
+system-generated XHTML, is the responsibility of each adapter.
+
+The adapter will not be used for IText fields of other interfaces:
 
   >>> print webservice.get('/firefox/name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
@@ -174,7 +178,7 @@ a view on IPerson called "display_name".
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  <html>foo</html>
+  <b>foo</b>
 
 Unlike what happened when we registered an unmarshaller for
 IPerson/IText, other IText fields of IPerson are not affected.
@@ -190,8 +194,8 @@ representations of that entry's fields.
   >>> print webservice.get('/~salgado', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  <dt>custom_name</dt>
-  <dd>&lt;html&gt;foo&lt;/html&gt;</dd>
+  <dt>display_name</dt>
+  <dd><b>foo</b></dd>
   ...
 
 Before we continue, here's some code to unregister the view.
