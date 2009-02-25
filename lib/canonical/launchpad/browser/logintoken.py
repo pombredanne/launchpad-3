@@ -246,8 +246,8 @@ class ClaimTeamView(
 
     def initialize(self):
         if not self.redirectIfInvalidOrConsumedToken():
-            self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
-                self.context.email).person
+            self.claimed_profile = getUtility(IPersonSet).getByEmail(
+                self.context.email)
             # Let's pretend the claimed profile provides ITeam while we
             # render/process this page, so that it behaves like a team.
             directlyProvides(removeSecurityProxy(self.claimed_profile), ITeam)
