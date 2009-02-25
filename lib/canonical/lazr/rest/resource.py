@@ -648,7 +648,7 @@ class FieldUnmarshallerMixin:
         self._unmarshalled_field_cache = {}
 
     def _unmarshallField(self, field_name, field):
-        """See what a field would look like in a JSON representation.
+        """See what a field would look like in a generic representation.
 
         :return: a 2-tuple (representation_name, representation_value).
         """
@@ -681,6 +681,8 @@ class FieldUnmarshallerMixin:
 
     def _unmarshallFieldHTML(self, field_name, field):
         """See what a field would look like in an HTML representation.
+
+        This is usually similar to the value of _unmarshallField().
 
         :return: a 2-tuple (representation_name, representation_value).
         """
