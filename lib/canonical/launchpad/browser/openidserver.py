@@ -20,6 +20,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.publisher.interfaces import BadRequest
 from zope.session.interfaces import ISession, IClientIdManager
+from zope.security.proxy import removeSecurityProxy
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.extensions import pape
@@ -35,6 +36,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.components.openidserver import (
     OpenIDPersistentIdentity, CurrentOpenIDEndPoint)
+from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.logintoken import (
@@ -95,7 +97,8 @@ class OpenIDMixin:
 
     @property
     def user_identity_url(self):
-        return OpenIDPersistentIdentity(self.user.account).openid_identity_url
+        account = getUtility(IAccountSet).get(self.user.accountID)
+        return OpenIDPersistentIdentity(account).openid_identity_url
 
     def isIdentityOwner(self):
         """Return True if the user can authenticate as the given ID."""
@@ -218,11 +221,15 @@ class OpenIDMixin:
         """
         assert self.user is not None, (
             'Must be logged in to calculate sreg items')
+
         # Collect registration values
         values = {}
         values['nickname'] = self.user.name
         values['fullname'] = self.user.displayname
-        values['email'] = self.user.preferredemail.email
+        # The security check fails as self.user.preferredemail.person may
+        # be None during account signup, as changes haven't been committed
+        # yet and information available from all Stores.
+        values['email'] = removeSecurityProxy(self.user.preferredemail).email
         if self.user.time_zone is not None:
             values['timezone'] = self.user.time_zone
         shipment = self.user.lastShippedRequest()
