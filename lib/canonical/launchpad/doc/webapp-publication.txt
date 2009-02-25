@@ -1263,7 +1263,9 @@ raised, though.
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> access_token.date_expires = now - timedelta(days=1)
     >>> syncUpdate(access_token)
-    >>> test_request = LaunchpadTestRequest(form=form)
+    >>> form2 = form.copy()
+    >>> form2['oauth_nonce'] = '1764572616e48616d6d65724c61686'
+    >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Traceback (most recent call last):
     ...
@@ -1273,6 +1275,7 @@ raised, though.
 
     >>> form2 = form.copy()
     >>> form2['oauth_token'] += 'z'
+    >>> form2['oauth_nonce'] = '4572616e48616d6d65724c61686176'
     >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Traceback (most recent call last):

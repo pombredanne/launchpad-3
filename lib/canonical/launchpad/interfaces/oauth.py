@@ -25,7 +25,6 @@ from zope.interface import Attribute, Interface
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import AccessLevel, OAuthPermission
-from canonical.lazr.rest.declarations import webservice_error
 
 
 # The challenge included in responses with a 401 status.
@@ -246,15 +245,14 @@ class IOAuthNonce(Interface):
     access_token = Object(schema=IOAuthAccessToken, title=_('The token'))
     nonce = TextLine(title=_('Nonce'), required=True, readonly=True)
 
+# Note that these three exceptions are converted to Unauthorized (equating to
+# 401 status) in webapp/servers.py, WebServicePublication.getPrincipal.
 
 class NonceAlreadyUsed(Exception):
     """Nonce has been used together with same token but another timestamp."""
-    webservice_error(401)
 
 class TimestampOrderingError(Exception):
     """Timestamp is too old, compared to the last request."""
-    webservice_error(401)
 
 class ClockSkew(Exception):
     """Timestamp is too far off from server's clock."""
-    webservice_error(401)
