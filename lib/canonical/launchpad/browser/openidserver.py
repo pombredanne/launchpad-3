@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'LoginServiceStandaloneLoginView',
     'OpenIDMixin',
     ]
 
@@ -564,12 +565,10 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         if self.account is None:
             return LoginServiceLoginView(
                 self.context, self.request, self.nonce)()
-        self.trashRequest()
         return self.renderOpenIDResponse(self.createPositiveResponse())
 
     @action("Not Now", name='deny')
     def deny_action(self, action, data):
-        self.trashRequest()
         return self.renderOpenIDResponse(self.createFailedResponse())
 
     @action("I'm Someone Else", name='logout')
