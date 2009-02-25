@@ -90,10 +90,10 @@ a simple text node.
   ...
   Guilherme Salgado
 
-But it's possible to define a custom HTML view for a particular object
-type. Here's a simple view that serves some hard-coded HTML.
+But it's possible to define a custom HTML unmarshaller for a particular object
+and field type. Here's a simple unmarshaller that serves some hard-coded HTML.
 
-  >>> class DummyView:
+  >>> class DummyUnmarshaller:
   ...
   ...     def __init__(*args):
   ...         pass
@@ -101,7 +101,8 @@ type. Here's a simple view that serves some hard-coded HTML.
   ...     def __call__(*args):
   ...         return "<html>foo</html>"
 
-Register the view as the IFieldHTMLUnmarshaller adapter for an IPerson entry...
+Register the unmarshaller as the IFieldHTMLUnmarshaller adapter for an
+IText field of an IPerson entry...
 
   >>> from canonical.lazr.interfaces.rest import (
   ...     IFieldHTMLUnmarshaller, WebServiceLayer)
@@ -111,12 +112,13 @@ Register the view as the IFieldHTMLUnmarshaller adapter for an IPerson entry...
   >>> view_name = "canonical.lazr.rest.resource.EntryFieldResource"
   >>> from zope.component import getGlobalSiteManager
   >>> manager = getGlobalSiteManager()
+
   >>> manager.registerAdapter(
-  ...      factory=DummyView, required=[IPerson, IText, WebServiceLayer],
+  ...      factory=DummyUnmarshaller, required=[IPerson, IText, WebServiceLayer],
   ...      provided=IFieldHTMLUnmarshaller, name=view_name)
 
 ...and the XHTML representation of an IPerson will be the result of
-calling a DummyView object.
+calling a DummyUnmarshaller object.
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
@@ -144,12 +146,12 @@ It will not be used for non-text fields of IPerson.
   ...
   2005-06-06 08:59:51.596025+00:00
 
-Before we continue, here's some cleanup code to remove the custom view
-we just defined.
+Before we continue, here's some cleanup code to remove the custom
+unmarshaller we just defined.
 
   >>> from zope.component import getGlobalSiteManager
   >>> ignored = getGlobalSiteManager().unregisterAdapter(
-  ...      factory=DummyView, required=[IPerson, IText, WebServiceLayer],
+  ...      factory=DummyUnmarshaller, required=[IPerson, IText, WebServiceLayer],
   ...      provided=IFieldHTMLUnmarshaller, name=view_name)
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
@@ -157,11 +159,16 @@ we just defined.
   ...
   Guilherme Salgado
 
-It's also possible to define a custom HTML view for a single
-field. This code registers a view for the 'display_name' field of IPerson.
+
+== Defining a custom representation for a single field ==
+
+It's also possible to define a custom HTML representation of one
+particular field, by registering a view on the field. This code
+creates a custom unmarshaller for IPerson.display_name, by registering
+a view on IPerson called "display_name".
 
   >>> manager.registerAdapter(
-  ...      factory=DummyView, required=[IPerson, WebServiceLayer],
+  ...      factory=DummyUnmarshaller, required=[IPerson, WebServiceLayer],
   ...      provided=IFieldHTMLUnmarshaller, name='display_name')
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
@@ -169,7 +176,8 @@ field. This code registers a view for the 'display_name' field of IPerson.
   ...
   <html>foo</html>
 
-Other IText fields of IPerson are not affected.
+Unlike what happened when we registered an unmarshaller for
+IPerson/IText, other IText fields of IPerson are not affected.
 
   >>> print webservice.get('/~salgado/name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
@@ -179,7 +187,7 @@ Other IText fields of IPerson are not affected.
 Before we continue, here's some code to unregister the view.
 
   >>> ignored = getGlobalSiteManager().unregisterAdapter(
-  ...      factory=DummyView, required=[IPerson, WebServiceLayer],
+  ...      factory=DummyUnmarshaller, required=[IPerson, WebServiceLayer],
   ...      provided=IFieldHTMLUnmarshaller, name='display_name')
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
