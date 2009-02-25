@@ -1005,16 +1005,32 @@ after the commit the retried jobs are ready to be dispatched.
 IBuild's content class is wrapped in a Zope security wrapper that prevents
 access to private builds for unauthorised users.
 
-cprov's archive is private which makes its builds private.
+cprov's archive is private which makes its builds private.  We'll add
+an extra build that is not published anywhere but in his PPA.
 
     >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
     >>> removeSecurityProxy(cprov).archive.private = True
+    >>> private_source_pub = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='privacy-test',
+    ...     archive=cprov.archive)
+    >>> private_build = private_source_pub.sourcepackagerelease.createBuild(
+    ...         test_publisher.breezy_autotest_hppa,
+    ...         PackagePublishingPocket.UPDATES,
+    ...         cprov.archive,
+    ...         status=BuildStatus.FULLYBUILT)
+    >>> private_build.builder = bob
     >>> flush_database_updates()
 
 Accessing the cprov builds when logged in as admin will see the records:
 
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
+    cprov: hppa build of privacy-test 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -1026,6 +1042,7 @@ Likewise when logged in as cprov:
     >>> login('celso.providelo@canonical.com')
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
+    cprov: hppa build of privacy-test 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -1052,8 +1069,6 @@ Define a helper function to catch the security exception:
 And try to access the builds:
 
     >>> print_builds_with_exception(bob_builds)
-    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
 
 When logged in as anonymous this will generate a securtity exception
@@ -1062,8 +1077,6 @@ when accessing the builds:
     >>> login(ANONYMOUS)
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_builds_with_exception(bob_builds)
-    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
 
 == Estimated Build Duration ==
@@ -1074,11 +1087,7 @@ set from previous builds' 'buildduration' values.
 We will use SoyuzTestPublisher to generate coherent publications to
 test this behaviour.
 
-    >>> from canonical.launchpad.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
     >>> login('foo.bar@canonical.com')
-    >>> test_publisher.prepareBreezyAutotest()
 
 Create oldest SourcePackageRelease instance.
 
