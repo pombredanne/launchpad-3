@@ -64,7 +64,8 @@ class RemoteProductUpdater:
                 bug_watch.bugtracker)
 
             try:
-                external_bugtracker.initializeRemoteBugDB([bug_watch.remotebug])
+                external_bugtracker.initializeRemoteBugDB(
+                    [bug_watch.remotebug])
                 remote_product = external_bugtracker.getRemoteProduct(
                     bug_watch.remotebug)
             except (BugWatchUpdateError, BugWatchUpdateWarning), error:
