@@ -7,6 +7,8 @@ import logging
 import os
 from unittest import TestCase, TestLoader
 
+try:
+    import xml.elementtree.cElementTree as etree
 except ImportError:
     try:
         import cElementTree as etree
