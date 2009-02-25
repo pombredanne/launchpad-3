@@ -17,6 +17,7 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.account import (
         AccountCreationRationale, AccountStatus,
         IAccount, IAccountSet)
@@ -116,6 +117,10 @@ class AccountSet:
             AccountPassword(account=account, password=password)
 
         return account
+
+    def get(self, id):
+        """See `IAccountSet`."""
+        return IStore(Account).get(Account, id)
 
     def getByEmail(self, email):
         """See `IAccountSet`."""

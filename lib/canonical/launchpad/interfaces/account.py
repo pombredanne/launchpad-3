@@ -244,6 +244,9 @@ class IAccountSet(Interface):
         :return: The newly created `IAccount` provider.
         """
 
+    def get(id):
+        """Return the `IAccount` with the given id, or None."""
+
     def getByEmail(email):
         """Return the `IAccount` linked to the given email address.
 

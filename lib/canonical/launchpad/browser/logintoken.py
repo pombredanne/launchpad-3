@@ -30,7 +30,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPerson
@@ -722,12 +722,13 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
 
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
-        person = removeSecurityProxy(getUtility(IPersonSet).get(
-            removeSecurityProxy(self.email).personID))
-        if self.email is not None and person.is_valid_person:
-            self.addError(_(
-                'The email address ${email} is already registered.',
-                mapping=dict(email=self.context.email)))
+        if self.email is not None:
+            person = removeSecurityProxy(getUtility(IPersonSet).get(
+                removeSecurityProxy(self.email).personID))
+            if person.is_valid_person:
+                self.addError(_(
+                    'The email address ${email} is already registered.',
+                    mapping=dict(email=self.context.email)))
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
@@ -774,7 +775,8 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             person, email = self._createPersonAndEmail(
                 data['displayname'], data['hide_email_addresses'],
                 data['password'])
-            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+            account = getUtility(IAccountSet).get(person.accountID)
+            removeSecurityProxy(account).status = AccountStatus.ACTIVE
             person.validateAndEnsurePreferredEmail(email)
 
         self.created_person = person
