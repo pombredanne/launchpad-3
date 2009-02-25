@@ -7,7 +7,7 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And, LeftJoin, Join, Or, Select, Union
+from storm.expr import And, LeftJoin, Join, Select, Union
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -145,7 +145,8 @@ class GenericBranchCollection:
                 # directly or indirectly.
                 Select(Branch.id,
                        And(BranchSubscription.branch == Branch.id,
-                           BranchSubscription.person == TeamParticipation.teamID,
+                           BranchSubscription.person ==
+                               TeamParticipation.teamID,
                            TeamParticipation.person == person,
                            Branch.private == True)))
         return self._filterBy([], Branch.id.is_in(visible_branches))
