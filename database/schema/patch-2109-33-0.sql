@@ -5,7 +5,7 @@ SET client_min_messages=ERROR;
 -- it doesn't make sense to enforce nonces to be unique across tokens.
 ALTER TABLE OauthNonce DROP CONSTRAINT oauthnonce_nonce_token_key;
 ALTER TABLE OauthNonce
-    ADD CONSTRAINT oauthnonce_nonce_token_timestamp_key UNIQUE (
-        nonce, access_token, request_timestamp);
+    ADD CONSTRAINT oauthnonce__none__access_token__request_timestamp__key
+        UNIQUE (nonce, access_token, request_timestamp);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 33, 0);

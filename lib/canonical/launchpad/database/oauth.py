@@ -16,6 +16,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, StringCol
+from storm.expr import And
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -71,6 +72,7 @@ class OAuthBase(SQLBase):
         """
         return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
+    getStore = _get_store
 
 class OAuthConsumer(OAuthBase):
     """See `IOAuthConsumer`."""
@@ -165,21 +167,21 @@ class OAuthAccessToken(OAuthBase):
         if date < (now-skew) or date > (now+skew):
             raise ClockSkew('Timestamp appears to come from bad system clock')
         # Determine if the nonce was already used for this timestamp.
-        store = OAuthNonce._get_store()
-        oauth_nonce = store.find(
-            OAuthNonce,
-            (OAuthNonce.access_token==self) &
-            (OAuthNonce.nonce==nonce) &
-            (OAuthNonce.request_timestamp==date)).one()
+        store = OAuthNonce.getStore()
+        oauth_nonce = store.find(OAuthNonce,
+                                 And(OAuthNonce.access_token==self,
+                                     OAuthNonce.nonce==nonce,
+                                     OAuthNonce.request_timestamp==date)
+                                 ).one()
         if oauth_nonce is not None:
             raise NonceAlreadyUsed('This nonce has been used already.')
         # Determine if the timestamp is too old compared to most recent
         # request.
         limit = date + timedelta(seconds=TIMESTAMP_ACCEPTANCE_WINDOW)
-        match = store.find(
-            OAuthNonce,
-            (OAuthNonce.access_token==self) &
-            (OAuthNonce.request_timestamp>limit)).any()
+        match = store.find(OAuthNonce,
+                           And(OAuthNonce.access_token==self,
+                               OAuthNonce.request_timestamp>limit)
+                           ).any()
         if match is not None:
             raise TimestampOrderingError(
                 'Timestamp too old compared to most recent request')
