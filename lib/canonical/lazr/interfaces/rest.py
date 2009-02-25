@@ -185,8 +185,10 @@ class IScopedCollection(ICollection):
 
 
 class IFieldHTMLUnmarshaller(Interface):
-    """A marker interface for a class that turns a field value into XHTML."""
-    pass
+    """An interface for a class that turns a field value into XHTML."""
+
+    def __call__():
+        """Return an XHTML representation of the field's current value."""
 
 
 class IEntryField(Interface):
