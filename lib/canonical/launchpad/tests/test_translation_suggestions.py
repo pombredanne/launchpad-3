@@ -95,6 +95,8 @@ class TestTranslationSuggestions(unittest.TestCase):
         disabled_used_suggestions = (
             foomsg.getExternallyUsedTranslationMessages(self.nl))
         self.assertEquals(len(disabled_used_suggestions), 0)
+        # Restore the old configuration.
+        config.pop('disabled_suggestions')
 
     def test_SimpleOtherSuggestion(self):
         # Suggestions made for bar can also be useful suggestions for foo.
