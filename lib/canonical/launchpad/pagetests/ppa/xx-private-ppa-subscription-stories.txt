@@ -99,12 +99,13 @@ And a notification about the new subscriber is also displayed.
     ...     print msg
     Launchpad Developers has been added as a subscriber.
 
-== Story 2: An owner edits a subscription for her private archive ==
-TBD
-== Story 3: An owner cancels a subscription for his private archive ==
-TBD
+== Story 2: An owner edits a subscription for his private archive ==
 
-== Story 4: A subscriber activates a subscription ==
+ * As a software developer who has released some private software
+ * I want to edit subscriptions to my private PPA
+ * So that I can adjust who can download my software.
+
+== Story 3: A subscriber activates a subscription ==
 
  * As a user of Celso's software,
  * I want to obtain a private sources.list entry
@@ -138,9 +139,7 @@ And a notification is displayed on the screen
 
 === Scenario 2: A user activates a team subscription ===
 
-TBD
-
-== Story 5: A user's subscription expires or is cancelled ==
+== Story 4: A user's subscription expires or is cancelled ==
 
  * As a user of Celso's software
  * I want to know (eventually, be notified) when my subscription expires
