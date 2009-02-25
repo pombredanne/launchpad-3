@@ -691,7 +691,6 @@ class FieldHTMLUnmarshaller(FieldUnmarshallerMixin):
         self.context = EntryField(
             self.entry, self.field, self.field.__name__)
         super(FieldHTMLUnmarshaller, self).__init__(self.context, request)
-        self.resource = EntryFieldResource(self.context, request)
 
     def __call__(self):
         """Turn the field into an XHTML snippet."""
@@ -829,18 +828,22 @@ class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
                 self.context.name, self.context.field)
             return simplejson.dumps(value)
         elif media_type == self.XHTML_TYPE:
-            view = None
+            adapter = None
             try:
-                view = getMultiAdapter(
+                # Try to get a view for this particular field.
+                adapter = getMultiAdapter(
                     (self.entry.context, self.request),
                     name=self.context.field.__name__)
             except ComponentLookupError:
-                if view is None:
-                    view = getMultiAdapter(
-                        (self.entry.context, self.context.field, self.request),
-                        IFieldHTMLUnmarshaller,
-                        name="canonical.lazr.rest.resource.EntryFieldResource")
-            return view()
+                # There's no view. Look up an IFieldHTMLUnmarshaller
+                # for this _type_ of field.
+                adapter_name = (
+                    "canonical.lazr.rest.resource.EntryFieldResource")
+                adapter = getMultiAdapter(
+                    (self.entry.context, self.context.field, self.request),
+                    IFieldHTMLUnmarshaller,
+                    name=adapter_name)
+            return adapter()
         else:
             raise AssertionError((
                     "No representation implementation for media type %s"
@@ -1365,7 +1368,7 @@ class ServiceRootResource(HTTPResource):
         """Fetch the current browser request."""
         return get_current_browser_request()
 
-    def _getETagCore(self, media_type):
+    def _getETagCore(self, cache=None):
         """Calculate an ETag for a representation of this resource.
 
         The service root resource changes only when the software
