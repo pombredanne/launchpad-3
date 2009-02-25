@@ -282,12 +282,9 @@ An admin user can see builds even if they are private:
     >>> admin_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(admin_browser.contents))
     Launchpad build machines
-    Register a new build machine
-    PPA build machines
-    386      0 builds waiting in queue
+    ...
     frog   AUTO    Building i386 build of privacy-test ... [cprov]
-    Official distribution build machines
-    386      1 builds waiting in queue
+    ...
     bob    AUTO    Disabled
     Generated at ...
 
@@ -296,12 +293,9 @@ Launchpad Buildd admins cannot see private builds.
     >>> name12_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(name12_browser.contents))
     Launchpad build machines
-    Register a new build machine
-    PPA build machines
-    386      0 builds waiting in queue
+    ...
     frog   AUTO    Building private build
-    Official distribution build machines
-    386      1 builds waiting in queue
+    ...
     bob    AUTO    Disabled
     Generated at ...
 
@@ -310,12 +304,9 @@ cprov can see his own private build:
     >>> cprov_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(cprov_browser.contents))
     Launchpad build machines
-    Register a new build machine
-    PPA build machines
-    386      0 builds waiting in queue
+    ...
     frog   AUTO    Building i386 build of privacy-test ... [cprov]
-    Official distribution build machines
-    386      1 builds waiting in queue
+    ...
     bob    AUTO    Disabled
     Generated at ...
 
@@ -324,11 +315,9 @@ Anonymous users cannot see the private build:
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
     Launchpad build machines
-    PPA build machines
-    386      0 builds waiting in queue
+    ...
     frog   AUTO    Building private build
-    Official distribution build machines
-    386      1 builds waiting in queue
+    ...
     bob    AUTO    Disabled
     Generated at ...
 
@@ -382,11 +371,9 @@ Now the anonymous user can see the build:
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
     Launchpad build machines
-    PPA build machines
-    386      0 builds waiting in queue
+    ...
     frog  AUTO    Building i386 build of privacy-test ... [cprov]
-    Official distribution build machines
-    386      1 builds waiting in queue
+    ...
     bob   AUTO    Disabled
     Generated at ...
 
@@ -395,13 +382,10 @@ Any other logged-in user will also see the build:
     >>> browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(browser.contents))
     Launchpad build machines
-    PPA build machines
-    386     0 builds waiting in queue
-    frog    AUTO
-    Building i386 build of privacy-test ... [cprov]
-    Official distribution build machines
-    386     1 builds waiting in queue
-    bob AUTO    Disabled
+    ...
+    frog   AUTO   Building i386 build of privacy-test ... [cprov]
+    ...
+    bob    AUTO   Disabled
     Generated at ...
 
 Accessing the build page will now also work:
