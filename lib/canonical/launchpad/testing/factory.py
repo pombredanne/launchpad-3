@@ -746,9 +746,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             to this URL.
         """
         if product is None:
-            product = self.makeProduct()
+            product = self.makeProductNoCommit()
         if owner is None:
-            owner = self.makePerson()
+            owner = self.makePersonNoCommit()
         if title is None:
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
