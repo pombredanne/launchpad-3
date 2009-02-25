@@ -1,0 +1,74 @@
+= Private PPA Subscriptions =
+
+Note: This file contains all the pagetests for functionality that is not
+part of the stories in xx-private-ppa-subscription-stories.txt.
+
+== Managing Archive subscriptions ==
+
+Public PPAs do not have an option for managing subscriptions:
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> cprov_browser.getLink("Manage subscriptions")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Similarly, trying to access the subscriptions page directly will simply
+redirect back to the PPA page with a feedback message:
+
+    >>> cprov_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
+
+    >>> print cprov_browser.url
+    http://launchpad.dev/~cprov/+archive/ppa
+
+    >>> for msg in get_feedback_messages(cprov_browser.contents):
+    ...     print msg
+    Only private archives can have subscribers.
+
+Setup cprov's PPA as a private one:
+
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
+    >>> admin_browser.getControl("Save").click()
+
+Normally the subscriptions are accessed via the PPA page:
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> cprov_browser.getLink("Manage subscriptions").click()
+    >>> print cprov_browser.url
+    http://launchpad.dev/~cprov/+archive/ppa/+subscriptions
+
+Initially there are no subscriptions for a newly privatized PPA (although,
+this may need to change, to add the owner/team). A heading is displayed
+with a message:
+
+    >>> main_content = find_main_content(cprov_browser.contents)
+    >>> print extract_text(main_content.find('h1'))
+    Manage subscriptions for Private PPA for Celso Providelo
+
+    >>> print extract_text(find_tag_by_id(cprov_browser.contents,
+    ...     'no-subscribers'))
+    This PPA does not yet have any subscribers.
+
+== Managing a persons' Archive subscriptions ==
+
+The title of a persons archive subscriptions is displayed as the main
+heading:
+
+    >>> cprov_browser.open("/~cprov/+archivesubscriptions")
+    >>> h1_heading = find_main_content(cprov_browser.contents).find('h1')
+    >>> print extract_text(h1_heading)
+    Archive subscriptions for Celso Providelo
+
+A person who is not subscribed to any archives will see an appropriate
+explanation if they try to view their archive subscriptions:
+
+    >>> explanation = find_main_content(cprov_browser.contents).find('p')
+    >>> print extract_text(explanation)
+    You do not have any subscriptions to private archives...
+

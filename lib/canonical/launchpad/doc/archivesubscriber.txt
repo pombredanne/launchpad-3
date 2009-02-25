@@ -63,7 +63,14 @@ The new subscription is returned and reflects the data:
     >>> print new_sub.status.name
     ACTIVE
 
-Commit the new subscription to the database.
+Add another subscription for the test user, this time to sabdfl's ppa:
+
+    >>> login("mark@hbd.com")
+    >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
+    >>> new_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
+    ...     name12, sabdfl, description=u"subscription for name12")
+
+Commit the new subscriptions to the database.
 
     >>> from storm.store import Store
     >>> Store.of(new_sub).commit()
@@ -85,7 +92,7 @@ privilege which applies to the person in the subscriptions and launchpad
 admins.
 
     >>> from canonical.launchpad.interfaces.archivesubscriber import (
-    ...     IArchiveSubscriberSet)
+    ...     ArchiveSubscriberStatus, IArchiveSubscriberSet)
     >>> sub_set = getUtility(IArchiveSubscriberSet)
 
     >>> login("no-priv@canonical.com")
@@ -107,6 +114,42 @@ And retrieve the subscription by subscriber and archive:
     >>> print sub_set.getByArchive(new_sub.archive)[0].subscriber.name
     name12
 
+The getBySubscriber() method takes an optional archive parameter for
+finding a subscription for a particular user in a particular archive:
+
+    >>> print sub_set.getBySubscriber(
+    ...     new_sub.subscriber, new_sub.archive)[0].archive.title
+    PPA for Celso Providelo
+
+By default the getBySubscriber() and getByArchive() methods return
+all active subscriptions:
+
+    >>> sub_set.getBySubscriber(new_sub.subscriber).count()
+    2
+    >>> sub_set.getByArchive(sabdfl.archive).count()
+    1
+
+If we cancel one of the subscriptions:
+
+    >>> login("mark@hbd.com")
+    >>> new_sub_to_sabdfl_ppa.status = ArchiveSubscriberStatus.CANCELLED
+    >>> login("test@canonical.com")
+
+then the cancelled subscription longer appears in the results
+of getBySubscriber() and getByArchive():
+
+    >>> sub_set.getBySubscriber(new_sub.subscriber).count()
+    1
+    >>> sub_set.getByArchive(sabdfl.archive).count()
+    0
+
+Unless we explicitly ask for all subscriptions - not just the active ones:
+
+    >>> sub_set.getBySubscriber(
+    ...     new_sub.subscriber, active_only=False).count()
+    2
+    >>> sub_set.getByArchive(sabdfl.archive, active_only=False).count()
+    1
 
 == Amending Subscriptions ==
 

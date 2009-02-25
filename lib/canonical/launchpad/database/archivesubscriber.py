@@ -64,17 +64,32 @@ class ArchiveSubscriber(Storm):
 class ArchiveSubscriberSet:
     """See `IArchiveSubscriberSet`."""
 
-    def getBySubscriber(self, subscriber):
+    def getBySubscriber(self, subscriber, archive=None, active_only=True):
         """See `IArchiveSubscriberSet`."""
+        extra_exprs = []
+        if archive:
+            extra_exprs.append(ArchiveSubscriber.archive == archive)
+
+        if active_only:
+            extra_exprs.append(
+                ArchiveSubscriber.status == ArchiveSubscriberStatus.ACTIVE)
+
         store = Store.of(subscriber)
         return store.find(
             ArchiveSubscriber,
-            ArchiveSubscriber.subscriber == subscriber)
+            ArchiveSubscriber.subscriber == subscriber,
+            *extra_exprs)
 
-    def getByArchive(self, archive):
+    def getByArchive(self, archive, active_only=True):
         """See `IArchiveSubscriberSet`."""
+        extra_exprs = []
+
+        if active_only:
+            extra_exprs.append(
+                ArchiveSubscriber.status == ArchiveSubscriberStatus.ACTIVE)
+
         store = Store.of(archive)
         return store.find(
             ArchiveSubscriber,
-            ArchiveSubscriber.archive == archive)
-
+            ArchiveSubscriber.archive == archive,
+            *extra_exprs)
