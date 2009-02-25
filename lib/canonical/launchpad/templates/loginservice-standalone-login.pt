@@ -16,6 +16,9 @@
       <p>
         To learn more about using this service, please review the
         <a href="https://help.launchpad.net/OpenID">instructions</a>.</p>
+      <p>
+        If you want to change any of your account's details, you can do so by
+        logging in using the form below.</p>
     </div>
 
     <metal:block fill-slot="auth">

@@ -318,6 +318,8 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         emailaddress = getUtility(IEmailAddressSet).getByEmail(
             self.context.email)
         person = emailaddress.person
+        # XXX: Need to fix this to reset the password of personless accounts
+        # as well.
         if person is not None:
             # XXX: Guilherme Salgado 2006-09-27 bug=62674:
             # It should be possible to do the login before this and avoid
@@ -352,6 +354,8 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
                 naked_person.validateAndEnsurePreferredEmail(
                     removeSecurityProxy(emailaddress))
 
+            # XXX: And here we should redirect to token.redirection_url if
+            # it's not None.
             self.next_url = canonical_url(person)
 
         self.context.consume()
@@ -839,6 +843,8 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         """
         from zope.security.proxy import removeSecurityProxy
         rationale = self._getCreationRationale()
+        # XXX: Registering thorugh the standalone login form on openid.lp.dev
+        # will end up creating a Person, but we don't want that.
         if self.has_openid_request:
             person = None
             account, email = getUtility(IAccountSet).createAccountAndEmail(
