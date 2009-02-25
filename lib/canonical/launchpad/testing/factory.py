@@ -373,7 +373,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeProduct(self, name=None, project=None, displayname=None,
                     licenses=None, owner=None, registrant=None,
-                    title=None, summary=None):
+                    title=None, summary=None, official_malone=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -390,7 +390,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if summary is None:
             summary = self.getUniqueString('summary')
-        return getUtility(IProductSet).createProduct(
+        product = getUtility(IProductSet).createProduct(
             owner,
             name,
             displayname,
@@ -400,6 +400,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             licenses=licenses,
             project=project,
             registrant=registrant)
+        if official_malone is not None:
+            product.official_malone = official_malone
+        return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
                           summary=None):
@@ -560,18 +563,22 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
                                 product=None, review_diff=None,
-                                initial_comment=None):
+                                initial_comment=None, source_branch=None):
         """Create a proposal to merge based on anonymous branches."""
         if not product:
             product = _DEFAULT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
+            if source_branch is not None:
+                product = source_branch.product
             target_branch = self.makeBranch(product=product)
-        product = target_branch.product
+        if product == _DEFAULT:
+            product = target_branch.product
         if registrant is None:
             registrant = self.makePerson()
-        source_branch = self.makeBranch(product=product)
+        if source_branch is None:
+            source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch,
             review_diff=review_diff, initial_comment=initial_comment)

@@ -49,6 +49,7 @@ class Bugzilla(ExternalBugTracker):
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
+        self.remote_bug_product = {}
 
     def getExternalBugTrackerToUse(self):
         """Return the correct `Bugzilla` subclass for the current bugtracker.
@@ -178,7 +179,7 @@ class Bugzilla(ExternalBugTracker):
         ('RESOLVED', 'VERIFIED', 'CLOSED',
             LookupTree(
                 ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
-                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
+                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE', 'UPSTREAM',
                  BugTaskStatus.FIXRELEASED),
                 ('WONTFIX', BugTaskStatus.WONTFIX),
                 (BugTaskStatus.INVALID,))),
@@ -244,6 +245,7 @@ class Bugzilla(ExternalBugTracker):
             buglist_page = 'buglist.cgi'
             data = {'form_name'   : 'buglist.cgi',
                     'bug_id_type' : 'include',
+                    'columnlist'  : 'id,product,bug_status,resolution',
                     'bug_id'      : ','.join(bug_ids),
                     }
             if self.version < (2, 17, 1):
@@ -312,6 +314,16 @@ class Bugzilla(ExternalBugTracker):
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
 
+            product_nodes = bug_node.getElementsByTagName('bz:product')
+            assert len(product_nodes) <= 1, (
+                "Should be at most one product node for bug %s." % bug_id)
+            if len(product_nodes) == 0:
+                self.remote_bug_product[bug_id] = None
+            else:
+                product_node = product_nodes[0]
+                self.remote_bug_product[bug_id] = (
+                    product_node.childNodes[0].data)
+
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`.
 
@@ -331,6 +343,12 @@ class Bugzilla(ExternalBugTracker):
             return self.remote_bug_status[bug_id]
         except KeyError:
             raise BugNotFound(bug_id)
+
+    def getRemoteProduct(self, remote_bug):
+        """See `IExternalBugTracker`."""
+        if remote_bug not in self.remote_bug_product:
+            raise BugNotFound(remote_bug)
+        return self.remote_bug_product[remote_bug]
 
 
 def needs_authentication(func):
@@ -553,6 +571,11 @@ class BugzillaLPPlugin(Bugzilla):
             return "%s %s" % (status, resolution)
         else:
             return status
+
+    def getRemoteProduct(self, remote_bug):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(remote_bug)
+        return self._bugs[actual_bug_id]['product']
 
     def getCommentIds(self, bug_watch):
         """See `ISupportsCommentImport`."""

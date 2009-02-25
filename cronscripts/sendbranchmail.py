@@ -13,7 +13,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.codehosting.branchfs import get_scanner_server
+from canonical.codehosting.vfs import get_scanner_server
 from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.interfaces.branchjob import IRevisionMailJobSource
 from canonical.launchpad.scripts.base import LaunchpadCronScript
@@ -36,5 +36,6 @@ class RunRevisionMailJobs(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = RunRevisionMailJobs('sendcodemail', config.branchscanner.dbuser)
+    script = RunRevisionMailJobs(
+        'sendbranchmail', config.sendbranchmail.dbuser)
     script.lock_and_run()

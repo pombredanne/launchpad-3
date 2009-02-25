@@ -21,7 +21,7 @@ from canonical.codehosting.tests.helpers import (
 from canonical.codehosting.tests.servers import (
     CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
 from canonical.codehosting import get_bzr_path, get_bzr_plugins_path
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
@@ -315,7 +315,8 @@ class AcceptanceTests(SSHTestCase):
         return database.Branch(
             registrant=owner,
             name=branch_name, owner=owner, author=owner, product=product,
-            url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            url=url, title=None,
+            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
             summary=None, whiteboard=None, private=private,
             date_created=UTC_NOW, branch_type=branch_type)
 

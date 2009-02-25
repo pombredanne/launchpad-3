@@ -46,18 +46,20 @@
 <body>
 
 <div metal:fill-slot="main" class="pillar">
-  <tal:is-valid-person tal:condition="context/is_valid_person">
-    <div class="actions" style="float:right;">
+  <div class="actions" style="float:right;">
+    <tal:is-person condition="not: context/is_team">
       <tal:administer
         define="link context/menu:overview/administer"
         condition="link/enabled"
         replace="structure link/render" />
-      <tal:edit
-        define="link context/menu:overview/edit"
-        condition="link/enabled"
-        replace="structure link/render" />
-    </div>
+    </tal:is-person>
+    <tal:edit
+      define="link context/menu:overview/edit"
+      condition="link/enabled"
+      replace="structure link/render" />
+  </div>
 
+  <tal:is-valid-person tal:condition="context/is_valid_person">
     <tal:mugshot replace="structure context/image:mugshot" />
 
     <h1 tal:content="context/browsername">Some Person</h1>

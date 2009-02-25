@@ -14,7 +14,7 @@ from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryTransport
 from bzrlib.urlutils import escape
 
-from canonical.codehosting.branchfs import LaunchpadServer
+from canonical.codehosting.vfs.branchfs import LaunchpadServer
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 
 
