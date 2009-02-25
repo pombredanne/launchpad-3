@@ -900,6 +900,12 @@ special = {
             tearDown=updateRemoteProductTeardown,
             layer=LaunchpadZopelessLayer
             ),
+    'product-update-remote-product-script.txt': LayeredDocFileSuite(
+            '../doc/product-update-remote-product-script.txt',
+            setUp=updateRemoteProductSetup,
+            tearDown=updateRemoteProductTeardown,
+            layer=LaunchpadZopelessLayer
+            ),
     }
 
 
