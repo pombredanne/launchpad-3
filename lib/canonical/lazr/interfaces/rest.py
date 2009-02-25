@@ -12,9 +12,9 @@ __all__ = [
     'ICollectionResource',
     'IEntry',
     'IEntryField',
-    'IEntryFieldHTMLView',
     'IEntryFieldResource',
     'IEntryResource',
+    'IFieldHTMLUnmarshaller',
     'IFieldMarshaller',
     'IHTTPResource',
     'IJSONPublishable',
@@ -184,8 +184,8 @@ class IScopedCollection(ICollection):
     collection = Attribute("The collection scoped to an entry.")
 
 
-class IEntryFieldHTMLView(Interface):
-    """A marker interface for a fake view."""
+class IFieldHTMLUnmarshaller(Interface):
+    """A marker interface for a class that turns a field value into XHTML."""
     pass
 
 

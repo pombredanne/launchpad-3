@@ -101,10 +101,10 @@ type. Here's a simple view that serves some hard-coded HTML.
   ...     def __call__(*args):
   ...         return "<html>foo</html>"
 
-Register the view as the IEntryFieldHTMLView adapter for an IPerson entry...
+Register the view as the IFieldHTMLUnmarshaller adapter for an IPerson entry...
 
   >>> from canonical.lazr.interfaces.rest import (
-  ...     IEntryFieldHTMLView, WebServiceLayer)
+  ...     IFieldHTMLUnmarshaller, WebServiceLayer)
   >>> from canonical.launchpad.interfaces import IPerson
   >>> from zope.schema.interfaces import IText
   >>> from zope.interface.interfaces import IInterface
@@ -113,7 +113,7 @@ Register the view as the IEntryFieldHTMLView adapter for an IPerson entry...
   >>> manager = getGlobalSiteManager()
   >>> manager.registerAdapter(
   ...      factory=DummyView, required=[IPerson, IText, WebServiceLayer],
-  ...      provided=IEntryFieldHTMLView, name=view_name)
+  ...      provided=IFieldHTMLUnmarshaller, name=view_name)
 
 ...and the XHTML representation of an IPerson will be the result of
 calling a DummyView object.
@@ -150,7 +150,7 @@ we just defined.
   >>> from zope.component import getGlobalSiteManager
   >>> ignored = getGlobalSiteManager().unregisterAdapter(
   ...      factory=DummyView, required=[IPerson, IText, WebServiceLayer],
-  ...      provided=IEntryFieldHTMLView, name=view_name)
+  ...      provided=IFieldHTMLUnmarshaller, name=view_name)
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
@@ -162,7 +162,7 @@ field. This code registers a view for the 'display_name' field of IPerson.
 
   >>> manager.registerAdapter(
   ...      factory=DummyView, required=[IPerson, WebServiceLayer],
-  ...      provided=IEntryFieldHTMLView, name='display_name')
+  ...      provided=IFieldHTMLUnmarshaller, name='display_name')
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
@@ -180,7 +180,7 @@ Before we continue, here's some code to unregister the view.
 
   >>> ignored = getGlobalSiteManager().unregisterAdapter(
   ...      factory=DummyView, required=[IPerson, WebServiceLayer],
-  ...      provided=IEntryFieldHTMLView, name='display_name')
+  ...      provided=IFieldHTMLUnmarshaller, name='display_name')
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok

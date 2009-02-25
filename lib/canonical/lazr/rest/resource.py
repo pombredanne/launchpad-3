@@ -12,9 +12,9 @@ __all__ = [
     'EntryAdapterUtility',
     'EntryField',
     'EntryFieldResource',
-    'EntryFieldHTMLView',
     'EntryHTMLView',
     'EntryResource',
+    'FieldHTMLUnmarshaller',
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
@@ -69,7 +69,7 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryField,
-    IEntryFieldHTMLView, IEntryFieldResource, IEntryResource,
+    IFieldHTMLUnmarshaller, IEntryFieldResource, IEntryResource,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
@@ -149,10 +149,6 @@ class HTTPResource:
 
     # A preparsed template file for WADL representations of resources.
     WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-resource.pt')
-
-    # The representation value used when the client doesn't have
-    # authorization to see the real value.
-    REDACTED_VALUE = 'tag:launchpad.net:2008:redacted'
 
     HTTP_METHOD_OVERRIDE_ERROR = ("X-HTTP-Method-Override can only be used "
                                   "with a POST request.")
@@ -634,8 +630,13 @@ class CustomOperationResourceMixin:
         del self.request.form['ws.op']
         return self.handleCustomPOST(operation_name)
 
-
 class FieldUnmarshallerMixin:
+
+    """A class that needs to unmarshall field values."""
+
+    # The representation value used when the client doesn't have
+    # authorization to see the real value.
+    REDACTED_VALUE = 'tag:launchpad.net:2008:redacted'
 
     def __init__(self, context, request):
         """A basic constructor."""
@@ -677,6 +678,26 @@ class FieldUnmarshallerMixin:
         unmarshalled = (marshaller.representation_name, repr_value)
         self._unmarshalled_field_cache[field_name] = unmarshalled
         return unmarshalled
+
+
+class FieldHTMLUnmarshaller(FieldUnmarshallerMixin):
+    """An XHTML snippet view of one of an entry's fields."""
+
+    def __init__(self, object, field, request):
+        """Initialize with respect to a field and request."""
+        self.entry = IEntry(object)
+        self.field = field
+        self.request = request
+        self.context = EntryField(
+            self.entry, self.field, self.field.__name__)
+        super(FieldHTMLUnmarshaller, self).__init__(self.context, request)
+        self.resource = EntryFieldResource(self.context, request)
+
+    def __call__(self):
+        """Turn the field into an XHTML snippet."""
+        name, value = self._unmarshallField(
+            self.context.name, self.context.field)
+        return cgi.escape(unicode(value).encode("utf-8"))
 
 
 class ReadOnlyResource(HTTPResource):
@@ -770,26 +791,6 @@ class EntryHTMLView:
         return self.HTML_TEMPLATE.pt_render(namespace)
 
 
-class EntryFieldHTMLView(FieldUnmarshallerMixin):
-    """An XHTML snippet view of one of an entry's fields."""
-
-    def __init__(self, object, field, request):
-        """Initialize with respect to a field and request."""
-        self.entry = IEntry(object)
-        self.field = field
-        self.request = request
-        self.context = EntryField(
-            self.entry, self.field, self.field.__name__)
-        super(EntryFieldHTMLView, self).__init__(self.context, request)
-        self.resource = EntryFieldResource(self.context, request)
-
-    def __call__(self):
-        """Turn the field into an XHTML snippet."""
-        name, value = self._unmarshallField(
-            self.context.name, self.context.field)
-        return cgi.escape(unicode(value).encode("utf-8"))
-
-
 class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
     """An individual field of an entry."""
     implements(IEntryFieldResource, IJSONPublishable)
@@ -837,7 +838,7 @@ class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
                 if view is None:
                     view = getMultiAdapter(
                         (self.entry.context, self.context.field, self.request),
-                        IEntryFieldHTMLView,
+                        IFieldHTMLUnmarshaller,
                         name="canonical.lazr.rest.resource.EntryFieldResource")
             return view()
         else:
