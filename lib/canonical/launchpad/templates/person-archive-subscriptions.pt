@@ -25,7 +25,8 @@
         <tr><th>Archive</th><th>Subscription description</th></tr>
       </thead>
       <tbody>
-        <tr tal:repeat="subscription view/subscriptions">
+        <tr tal:repeat="subscription view/subscriptions"
+            class="archive-subscription-row">
           <td tal:content="subscription/archive/title">Private PPA for Celso
           </td>
           <td tal:content="subscription/description">Allow Team X access.

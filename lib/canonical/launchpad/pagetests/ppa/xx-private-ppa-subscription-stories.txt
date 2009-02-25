@@ -123,7 +123,7 @@ And clicks on the 'Private software subscriptions' link (only displayed to those
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
 
-Then a list of Andrew's pending subscriptions is displayed
+Then a list of Andrew's current subscriptions is displayed
 
     >>> subscription_table = find_tag_by_id(joe_browser.contents,
     ...     "archive-subscriptions")

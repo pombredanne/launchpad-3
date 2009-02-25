@@ -28,9 +28,14 @@ redirect back to the PPA page with a feedback message:
     ...     print msg
     Only private archives can have subscribers.
 
-Setup cprov's PPA as a private one:
+Setup both cprov's and sabdfl's PPAs as a private one:
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
+    >>> admin_browser.getControl("Save").click()
+    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa")
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
@@ -55,6 +60,43 @@ with a message:
     ...     'no-subscribers'))
     This PPA does not yet have any subscribers.
 
+Create two new users that can be subscribed to archives:
+
+    >>> login('foo.bar@canonical.com')
+    >>> joesmith = factory.makePerson(name="joesmith", displayname="Joe Smith",
+    ...     password="test", email="joe@example.com")
+    >>> bradsmith = factory.makePerson(name="bradsmith", displayname="Brad Smith",
+    ...     password="test", email="brad@example.com")
+    >>> logout()
+
+People can be subscribed by entering their details into the displayed
+form:
+
+    >>> cprov_browser.getControl(name='field.subscriber').value = 'joesmith'
+    >>> cprov_browser.getControl(
+    ...     name='field.description').value = "Joe is my friend"
+    >>> cprov_browser.getControl(name="field.actions.add").click()
+    >>> cprov_browser.getControl(name='field.subscriber').value = 'bradsmith'
+    >>> cprov_browser.getControl(
+    ...     name='field.date_expires').value = '2200-08-01'
+    >>> cprov_browser.getControl(
+    ...     name='field.description').value = "Brad can access for a while."
+    >>> cprov_browser.getControl(name="field.actions.add").click()
+
+Create a helper function to print subscriptions:
+
+    >>> def print_subscriptions_for_archive(contents):
+    ...     subscriptions = find_tags_by_class(contents,
+    ...                                        'archive_subscriber_row')
+    ...     for subscription in subscriptions:
+    ...         print extract_text(subscription)
+
+    >>> print_subscriptions_for_archive(cprov_browser.contents)
+    Name                Expires     Comment
+    Joe Smith                       Joe is my friend
+    Brad Smith          2200-08-01  Brad can access for a while.
+
+
 == Managing a persons' Archive subscriptions ==
 
 The title of a persons archive subscriptions is displayed as the main
@@ -71,4 +113,36 @@ explanation if they try to view their archive subscriptions:
     >>> explanation = find_main_content(cprov_browser.contents).find('p')
     >>> print extract_text(explanation)
     You do not have any subscriptions to private archives...
+
+First, create a subscription for Joe Smith to sabdfl's archive also, so that
+Joe has multiple subscriptions:
+
+    >>> sabdfl_browser = setupBrowser(
+    ...     auth="Basic mark@hbd.com:test")
+    >>> sabdfl_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa")
+    >>> sabdfl_browser.getLink("Manage subscriptions").click()
+    >>> sabdfl_browser.getControl(name='field.subscriber').value = 'joesmith'
+    >>> sabdfl_browser.getControl(
+    ...     name='field.description').value = "Joe is also my friend"
+    >>> sabdfl_browser.getControl(name="field.actions.add").click()
+
+First create a helper function for printing the archive subscriptions
+of a person:
+
+    >>> def print_subscriptions_for_person(contents):
+    ...     subscriptions = find_tags_by_class(contents,
+    ...                                        'archive-subscription-row')
+    ...     for subscription in subscriptions:
+    ...         print extract_text(subscription)
+
+A person who is subscribed to multiple archives will see all the archives
+listed:
+
+    >>> joe_browser = setupBrowser(auth="Basic joe@example.com:test")
+    >>> joe_browser.open(
+    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
+    >>> print_subscriptions_for_person(joe_browser.contents)
+    Private PPA for Celso Providelo    Joe is my friend
+    Private PPA for Mark Shuttleworth  Joe is also my friend
+
 
