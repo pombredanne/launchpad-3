@@ -162,8 +162,8 @@ And another helper function to set the private flag on a PPA:
     ...     admin_browser.getControl(name="field.buildd_secret").value = "x"
     ...     admin_browser.getControl("Save").click()
 
-Create some new source packages, p1 and p2, both created by cprov so that they
-appear in his +packages page.
+Create some new source packages, source1 and source2, both created by cprov
+so that they appear in his +packages page.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
@@ -180,24 +180,25 @@ appear in his +packages page.
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
-    >>> p1 = test_publisher.getPubSource(
+    >>> source1 = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
-    ...     sourcename='p1',
+    ...     sourcename='source1',
     ...     archive=cprov.archive)
-    >>> p1.sourcepackagerelease.creator=cprov
-    >>> p1_sabdfl = p1.copyTo(p1.distroseries, p1.pocket, sabdfl.archive)
-    >>> p1_sabdfl.secure_record.setPublished()
-    >>> p2 = test_publisher.getPubSource(
+    >>> source1.sourcepackagerelease.creator=cprov
+    >>> source1_sabdfl = source1.copyTo(
+    ...     source1.distroseries, source1.pocket, sabdfl.archive)
+    >>> source1_sabdfl.secure_record.setPublished()
+    >>> source2 = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
-    ...     sourcename='p2',
+    ...     sourcename='source2',
     ...     archive=nopriv.archive)
-    >>> p2.sourcepackagerelease.creator=cprov
+    >>> source2.sourcepackagerelease.creator=cprov
 
     >>> flush_database_updates()
     >>> logout()
 
-"p1" is now published in cprov and sabdfl's PPA.  "p2" is only published
-in no-priv's PPA.
+"source1" is now published in cprov and sabdfl's PPA.  "source2" is only
+published in no-priv's PPA.
 
 Make user_browser a known user that does not conflict with "no-priv":
 
@@ -210,9 +211,9 @@ the PPA section:
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    p1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    p2 PPA for No Privileges Person - Ubuntutest Breezy-autotest 666
+    source2 PPA for No Privileges Person - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 Now, let's make the PPA for "No Privileges Person" private:
@@ -227,14 +228,14 @@ The logged-in user's case:
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    p1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 The not logged-in (anonymous) user's case:
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
-    p1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 However no-priv himself and any Launchpad Administrator can still see
@@ -243,16 +244,16 @@ both packages:
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(nopriv_browser)
-    p1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    p2 Private PPA for No Privileges Person - Ubuntutest Breezy-autotest 666
+    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
-    p1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    p2 Private PPA for No Privileges Person - Ubuntutest Breezy-autotest 666
+    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 Let's make sabdfl's archive private and view the page again.
@@ -261,15 +262,15 @@ Let's make sabdfl's archive private and view the page again.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    p1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
-    p1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
-Notice that the p1 package in sabdfl's PPA is still appearing
+Notice that the source1 package in sabdfl's PPA is still appearing
 because it is also published in some non-private archives, which
 override the private nature of sabdfl's archive.
 
@@ -291,8 +292,9 @@ Now we'll publish it in the primary archive.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> primary = getUtility(IArchiveSet).getByDistroPurpose(ubuntu,
     ...     ArchivePurpose.PRIMARY)
-    >>> p1_ubuntu = p1.copyTo(p1.distroseries, p1.pocket, primary)
-    >>> p1_ubuntu.secure_record.setPublished()
+    >>> source1_ubuntu = source1.copyTo(
+    ...     source1.distroseries, source1.pocket, primary)
+    >>> source1_ubuntu.secure_record.setPublished()
     >>> flush_database_updates()
     >>> logout()
 
@@ -301,30 +303,30 @@ archive is public.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    p1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
-    p1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 Even afer the package is superseded, the package remains visibile in
 the listings.
 
     >>> login("foo.bar@canonical.com")
-    >>> discard = p1_ubuntu.supersede()
+    >>> discard = source1_ubuntu.supersede()
     >>> flush_database_updates()
     >>> logout()
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    p1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
-    p1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 
@@ -339,17 +341,17 @@ First list the packages in the PPA.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
-    p1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    p2 Private PPA for No Privileges Person - Ubuntutest Breezy-autotest 666
+    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
-Then delete the 'p2' package.
+Then delete the 'source2' package.
 
     >>> admin_browser.open(
     ...     "http://launchpad.dev/~no-priv/+archive/ppa/+delete-packages")
     >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['%s' % p2.id]
+    ...    name='field.selected_sources').value = ['%s' % source2.id]
     >>> admin_browser.getControl(
     ...     "Deletion comment").value = "Bug 184490"
     >>> admin_browser.getControl("Request Deletion").click()
@@ -358,7 +360,7 @@ Then delete the 'p2' package.
     >>> for msg in messages:
     ...     print msg
     Source and binaries deleted by Foo Bar request:
-    p2 666 in breezy-autotest
+    source2 666 in breezy-autotest
     Deletion comment: Bug 184490
 
     >>> def print_ppa_packages(contents):
@@ -370,13 +372,13 @@ Then delete the 'p2' package.
     ...         print extract_text(empty_section)
     >>> print_ppa_packages(admin_browser.contents)
 
-Now re-list the PPA's packages, 'p2' was deleted but still
+Now re-list the PPA's packages, 'source2' was deleted but still
 appears.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
-    p1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    p2 Private PPA for No Privileges Person - Ubuntutest Breezy-autotest 666
+    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
