@@ -373,9 +373,7 @@ class CodeHandler:
         mp_target = getUtility(IBranchSet).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
-        # XXX: TimPenhey 2009-02-25 bug 334090
-        # Disable bundle handling for 2.2.2 release.
-        if md.bundle is None or True:
+        if md.bundle is None:
             mp_source = self._getSourceNoBundle(
                 md, mp_target, submitter)
         else:
