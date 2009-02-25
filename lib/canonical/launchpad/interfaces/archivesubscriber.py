@@ -25,10 +25,10 @@ from canonical.lazr.fields import Reference
 class ArchiveSubscriberStatus(DBEnumeratedType):
     """The status of an `ArchiveSubscriber`."""
 
-    ACTIVE = DBItem(1, """
+    CURRENT = DBItem(1, """
         Active
 
-        The subscription is active.
+        The subscription is current.
         """)
 
     EXPIRED = DBItem(2, """
@@ -107,22 +107,22 @@ class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
 class IArchiveSubscriberSet(Interface):
     """An interface for the set of all archive subscribers."""
 
-    def getBySubscriber(subscriber, archive=None, active_only=True):
+    def getBySubscriber(subscriber, archive=None, current_only=True):
         """Return all the subscriptions for a person.
 
         :param subscriber: An `IPerson` for whom to return all
             `ArchiveSubscriber` records.
         :param archive: An optional `IArchive` which restricts
             the results to that particular archive.
-        :param active_only: Whether the result should only include active
+        :param current_only: Whether the result should only include current
             subscriptions (which is the default).
         """
 
-    def getByArchive(archive, active_only=True):
+    def getByArchive(archive, current_only=True):
         """Return all the subscripions for an archive.
 
         :param archive: An `IArchive` for which to return all
             `ArchiveSubscriber` records.
-        :param active_only: Whether the result should only include active
+        :param current_only: Whether the result should only include current
             subscriptions (which is the default).
         """

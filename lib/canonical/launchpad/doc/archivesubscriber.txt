@@ -61,7 +61,7 @@ The new subscription is returned and reflects the data:
     subscription for name12
 
     >>> print new_sub.status.name
-    ACTIVE
+    CURRENT
 
 Add another subscription for the test user, this time to sabdfl's ppa:
 
@@ -122,7 +122,7 @@ finding a subscription for a particular user in a particular archive:
     PPA for Celso Providelo
 
 By default the getBySubscriber() and getByArchive() methods return
-all active subscriptions:
+all current subscriptions:
 
     >>> sub_set.getBySubscriber(new_sub.subscriber).count()
     2
@@ -135,7 +135,7 @@ If we cancel one of the subscriptions:
     >>> new_sub_to_sabdfl_ppa.status = ArchiveSubscriberStatus.CANCELLED
     >>> login("test@canonical.com")
 
-then the cancelled subscription longer appears in the results
+then the cancelled subscription no longer appears in the results
 of getBySubscriber() and getByArchive():
 
     >>> sub_set.getBySubscriber(new_sub.subscriber).count()
@@ -143,12 +143,12 @@ of getBySubscriber() and getByArchive():
     >>> sub_set.getByArchive(sabdfl.archive).count()
     0
 
-Unless we explicitly ask for all subscriptions - not just the active ones:
+Unless we explicitly ask for all subscriptions - not just the current ones:
 
     >>> sub_set.getBySubscriber(
-    ...     new_sub.subscriber, active_only=False).count()
+    ...     new_sub.subscriber, current_only=False).count()
     2
-    >>> sub_set.getByArchive(sabdfl.archive, active_only=False).count()
+    >>> sub_set.getByArchive(sabdfl.archive, current_only=False).count()
     1
 
 == Amending Subscriptions ==
