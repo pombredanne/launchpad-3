@@ -1,11 +1,13 @@
 In addition to what Storm provides, we also have some Launchpad
-specific Storm tools.
+specific Storm tools to cope with our master and slave store arrangement.
 
     >>> import canonical.launchpad.webapp.adapter
     >>> from canonical.launchpad.interfaces import (
+    ...     EmailAddressStatus, IAccountSet, IEmailAddressSet,
     ...     IMasterObject, IMasterStore, ISlaveStore, IStore)
     >>> from canonical.launchpad.database import (
-    ...     Account, AccountPassword, Person)
+    ...     Account, AccountPassword, EmailAddress, Person)
+    >>> from zope.security.proxy import ProxyFactory
 
 
 You need to use the correct master Store to make changes to
@@ -66,7 +68,10 @@ this is less generally useful.
     False
 
 
-If we need the master copy of an object, we can adapt it to IMasterObject
+If we need the master copy of an object, we can adapt it to IMasterObject.
+Good defensive programming is to use this adapter if you want to make
+changes to an object, just in case you have been passed an instance
+from a store other than the correct Master.
 
     >>> auth_slave = ISlaveStore(Account)
     >>> t = transaction.begin()
@@ -86,7 +91,6 @@ If we need the master copy of an object, we can adapt it to IMasterObject
 If the adapted object was security proxied, the master copy is
 similarly wrapped.
 
-    >>> from canonical.launchpad.interfaces.account import IAccountSet
     >>> from zope.security.proxy import removeSecurityProxy
     >>> account = getUtility(IAccountSet).getByEmail('no-priv@canonical.com')
     >>> removeSecurityProxy(account) is account
@@ -115,4 +119,59 @@ similarly wrapped.
     u'No Privileges Person'
     >>> account.password
     u'...'
+
+Our objects may compare equal even if they have come from different
+stores.
+
+    >>> auth_master_email = IMasterStore(EmailAddress).find(
+    ...     EmailAddress, Person.name == 'janitor',
+    ...     EmailAddress.person==Person.id).one()
+    >>> auth_slave_email = ISlaveStore(EmailAddress).find(
+    ...     EmailAddress, Person.name == 'janitor',
+    ...     EmailAddress.person==Person.id).one()
+    >>> auth_master_email is auth_slave_email
+    False
+    >>> auth_master_email == auth_slave_email
+    True
+    >>> auth_master_email != auth_slave_email
+    False
+
+Comparison works for security wrapped objects too.
+
+    >>> wrapped_email = getUtility(IEmailAddressSet).getByEmail(
+    ...     auth_master_email.email)
+    >>> removeSecurityProxy(wrapped_email) is auth_master_email
+    True
+    >>> wrapped_email is auth_master_email
+    False
+    >>> wrapped_email == auth_master_email
+    True
+    >>> wrapped_email != auth_master_email
+    False
+
+Objects not yet flushed to the database also compare equal.
+
+    >>> unflushed = EmailAddress(
+    ...     email='notflushed@example.com', status=EmailAddressStatus.NEW,
+    ...     personID=1)
+    >>> unflushed == unflushed
+    True
+    >>> unflushed != unflushed
+    False
+    >>> wrapped_unflushed = ProxyFactory(unflushed)
+    >>> wrapped_unflushed is unflushed
+    False
+    >>> wrapped_unflushed == unflushed
+    True
+    >>> wrapped_unflushed != unflushed
+    False
+
+Objects differing by class never compare equal.
+
+    >>> account_one = IMasterStore(Account).get(Account, 1)
+    >>> person_one = IMasterStore(Account).get(Person, 1)
+    >>> account_one == person_one
+    False
+    >>> account_one != person_one
+    True
 
