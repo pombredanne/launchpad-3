@@ -729,6 +729,8 @@ logintoken_newaccount = 'Create a new Launchpad account'
 
 logintoken_resetpassword = 'Forgotten your password?'
 
+loginservice_standalone_login = loginservice_login
+
 logintoken_validateemail = 'Confirm e-mail address'
 
 logintoken_validategpg = 'Confirm OpenPGP key'
@@ -832,8 +834,6 @@ object_reassignment = ContextTitle('Reassign %s')
 object_translations = ContextDisplayName('Translation templates for %s')
 
 oops = 'Oops!'
-
-openid_index = 'Launchpad OpenID Server'
 
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""

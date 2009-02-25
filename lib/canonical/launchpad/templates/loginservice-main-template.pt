@@ -104,7 +104,7 @@
 
           <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
             <strong>Warning:</strong>
-            <em tal:content="view/openid_request/trust_root" /> does not look
+            <em tal:content="trust_root" /> does not look
             like a trustworthy URL.
           </p>
           <div tal:condition="logo">

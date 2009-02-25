@@ -210,14 +210,6 @@ class OpenIDMixin:
         self._sweep(now, session)
         session[key] = (now, query)
 
-    def trashRequestInSession(self, key):
-        """Remove the OpenIDRequest from the session using the given key."""
-        session = self.getSession()
-        try:
-            del session[key]
-        except KeyError:
-            pass
-
     @property
     def sreg_field_names(self):
         """Return the list of sreg keys that will be provided to the RP."""
@@ -423,12 +415,12 @@ class OpenIDMixin:
 class OpenIDView(OpenIDMixin, LaunchpadView):
     """An OpenID Provider endpoint for Launchpad.
 
-    This class implemnts an OpenID endpoint using the python-openid
+    This class implements an OpenID endpoint using the python-openid
     library.  In addition to the normal modes of operation, it also
     implements the OpenID 2.0 identifier select mode.
     """
 
-    default_template = ViewPageTemplateFile("../templates/openid-index.pt")
+    default_template = ViewPageTemplateFile("../templates/openid-default.pt")
     invalid_identity_template = ViewPageTemplateFile(
         "../templates/openid-invalid-identity.pt")
 
@@ -559,17 +551,6 @@ class LoginServiceBaseView(OpenIDMixin, LaunchpadFormView):
             raise UnexpectedFormData("No OpenID request.")
         self.restoreRequestFromSession('nonce' + self.nonce)
 
-    def trashRequest(self):
-        """Remove the OpenID request from the session."""
-        # XXX: jamesh 2007-06-22
-        # Removing the OpenID request from the session leads to an
-        # UnexpectedFormData exception if the user hits back and
-        # submits the form again.  Not deleting the request allows
-        # this behaviour (although a well designed RP will then
-        # complain about an unexpected OpenID response ...).
-
-        #self.trashRequestInSession('nonce' + self.nonce)
-
     @property
     def rpconfig(self):
         """Return a dictionary of information about the relying party.
@@ -625,25 +606,20 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
             self.context, self.request, self.nonce)()
 
 
-class LoginServiceLoginView(LoginServiceBaseView):
+class LoginServiceMixinLoginView:
 
     schema = ILoginServiceLoginForm
-    template = ViewPageTemplateFile("../templates/loginservice-login.pt")
-    custom_widget('action', LaunchpadRadioWidget)
-
     email_sent_template = ViewPageTemplateFile(
         "../templates/loginservice-email-sent.pt")
 
     @property
     def initial_values(self):
-        values = super(LoginServiceLoginView, self).initial_values
-        if self.account:
-            values['email'] = self.account.preferredemail.email
+        values = super(LoginServiceMixinLoginView, self).initial_values
         values['action'] = 'login'
         return values
 
     def setUpWidgets(self):
-        super(LoginServiceLoginView, self).setUpWidgets()
+        super(LoginServiceMixinLoginView, self).setUpWidgets()
         # Dissect the action radio button group into three buttons.
         soup = BeautifulSoup(self.widgets['action']())
         [login, createaccount, resetpassword] = soup.findAll('label')
@@ -730,16 +706,17 @@ class LoginServiceLoginView(LoginServiceBaseView):
             self.addError(_("Incorrect password for the provided "
                             "email address."))
 
+    def doLogin(self, email):
+        loginsource = getUtility(IPlacelessLoginSource)
+        principal = loginsource.getPrincipalByLogin(email)
+        logInPrincipal(self.request, principal, email)
+
     @action('Continue', name='continue')
     def continue_action(self, action, data):
         email = data['email']
         action = data['action']
-        self.trashRequest()
         if action == 'login':
-            loginsource = getUtility(IPlacelessLoginSource)
-            principal = loginsource.getPrincipalByLogin(email)
-            logInPrincipal(self.request, principal, email)
-            return self.renderOpenIDResponse(self.createPositiveResponse())
+            return self.doLogin(email)
         elif action == 'resetpassword':
             return self.process_password_recovery(email)
         elif action == 'createaccount':
@@ -772,6 +749,38 @@ class LoginServiceLoginView(LoginServiceBaseView):
         self.email_heading = 'Forgotten your password?'
         self.email_reason = 'with instructions on resetting your password.'
         return self.email_sent_template()
+
+
+class LoginServiceLoginView(LoginServiceMixinLoginView, LoginServiceBaseView):
+
+    template = ViewPageTemplateFile("../templates/loginservice-login.pt")
+    custom_widget('action', LaunchpadRadioWidget)
+
+    @property
+    def initial_values(self):
+        values = super(LoginServiceLoginView, self).initial_values
+        if self.account:
+            values['email'] = self.account.preferredemail.email
+        return values
+
+    def doLogin(self, email):
+        super(LoginServiceLoginView, self).doLogin(email)
+        return self.renderOpenIDResponse(self.createPositiveResponse())
+
+
+
+class LoginServiceStandaloneLoginView(LoginServiceMixinLoginView,
+                                      LaunchpadFormView):
+    custom_widget('action', LaunchpadRadioWidget)
+    template = ViewPageTemplateFile(
+        "../templates/loginservice-standalone-login.pt")
+
+    def saveRequestInSession(self, key):
+        pass
+
+    def doLogin(self, email):
+        super(LoginServiceStandaloneLoginView, self).doLogin(email)
+        self.next_url = '/'
 
 
 class ProtocolErrorView(LaunchpadView):
