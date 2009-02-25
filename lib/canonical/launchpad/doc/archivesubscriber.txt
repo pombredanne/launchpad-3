@@ -63,7 +63,14 @@ The new subscription is returned and reflects the data:
     >>> print new_sub.status.name
     ACTIVE
 
-Commit the new subscription to the database.
+Add another subscription for the test user, this time to sabdfl's ppa:
+
+    >>> login("mark@hbd.com")
+    >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
+    >>> new_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
+    ...     name12, sabdfl, description=u"subscription for name12")
+
+Commit the new subscriptions to the database.
 
     >>> from storm.store import Store
     >>> Store.of(new_sub).commit()
@@ -85,7 +92,7 @@ privilege which applies to the person in the subscriptions and launchpad
 admins.
 
     >>> from canonical.launchpad.interfaces.archivesubscriber import (
-    ...     IArchiveSubscriberSet)
+    ...     ArchiveSubscriberStatus, IArchiveSubscriberSet)
     >>> sub_set = getUtility(IArchiveSubscriberSet)
 
     >>> login("no-priv@canonical.com")
@@ -114,6 +121,30 @@ finding a subscription for a particular user in a particular archive:
     ...     new_sub.subscriber, new_sub.archive)[0].archive.title
     PPA for Celso Providelo
 
+By default the getBySubscriber() method returns all active subscriptions:
+
+    >>> for subscription in sub_set.getBySubscriber(new_sub.subscriber):
+    ...     print subscription.archive.title
+    PPA for Celso Providelo
+    PPA for Mark Shuttleworth
+
+If we cancel one of the subscriptions, it no longer appears in the results
+of getBySubscriber():
+
+    >>> login("mark@hbd.com")
+    >>> new_sub_to_sabdfl_ppa.status = ArchiveSubscriberStatus.CANCELLED
+    >>> login("test@canonical.com")
+    >>> for subscription in sub_set.getBySubscriber(new_sub.subscriber):
+    ...     print subscription.archive.title
+    PPA for Celso Providelo
+
+Unless we explicitly ask for all subscriptions - not just the active ones:
+
+    >>> for subscription in sub_set.getBySubscriber(
+    ...     new_sub.subscriber, active_only=False):
+    ...     print subscription.archive.title
+    PPA for Celso Providelo
+    PPA for Mark Shuttleworth
 
 == Amending Subscriptions ==
 
