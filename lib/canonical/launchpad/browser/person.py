@@ -2989,7 +2989,13 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                renderPersonMapSmall(%(center_lat)s, %(center_lng)s);
+                YUI().use('node', 'lp.mapping', function(Y) {
+                    function renderMap() {
+                        Y.lp.mapping.renderPersonMapSmall(
+                            %(center_lat)s, %(center_lng)s);
+                     }
+                     Y.on("domready", renderMap);
+                });
             </script>""" % replacements
 
     @property
