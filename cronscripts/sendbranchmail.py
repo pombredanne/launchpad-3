@@ -36,5 +36,6 @@ class RunRevisionMailJobs(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = RunRevisionMailJobs('sendcodemail', config.branchscanner.dbuser)
+    script = RunRevisionMailJobs(
+        'sendbranchmail', config.sendbranchmail.dbuser)
     script.lock_and_run()
