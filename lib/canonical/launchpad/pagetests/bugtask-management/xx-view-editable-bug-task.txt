@@ -16,12 +16,11 @@ https://launchpad.net/malone/+bug/49891)
 
     >>> login("test@canonical.com")
 
-    >>> firefox = getUtility(IProductSet).getByName("firefox")
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> sample_person = getUtility(IPersonSet).getByName("name12")
-    >>> firefox = removeSecurityProxy(firefox).master
-    >>> sample_person = removeSecurityProxy(sample_person).master
-    >>> firefox.setBugSupervisor(sample_person.master, sample_person.master)
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> firefox = IMasterObject(getUtility(IProductSet).getByName("firefox"))
+    >>> sample_person = IMasterObject(
+    ...     getUtility(IPersonSet).getByName("name12"))
+    >>> firefox.setBugSupervisor(sample_person, sample_person)
 
     >>> flush_database_updates()
 
