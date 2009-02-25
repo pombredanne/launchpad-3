@@ -104,28 +104,6 @@ class OpenIDMixin:
             'Cannot use self.user here; use self.account instead')
 
     @property
-    def account(self):
-        """The account of the logged in user or None if not authenticated."""
-        interaction = management.queryInteraction()
-        if interaction is None:
-            return None
-        principals = [
-            participation.principal
-            for participation in list(interaction.participations)
-            if participation.principal is not None
-            ]
-        if not principals:
-            return None
-        elif len(principals) > 1:
-            raise ValueError('Too many principals')
-        else:
-            principal = principals[0]
-            if ILaunchpadPrincipal.providedBy(principal):
-                return principal.account
-            else:
-                return None
-
-    @property
     def user_identity_url(self):
         return OpenIDPersistentIdentity(self.account).openid_identity_url
 
