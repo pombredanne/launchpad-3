@@ -784,10 +784,11 @@ class EntryHTMLView:
     def __call__(self):
         """Send the entry data through an HTML template."""
         namespace = self.HTML_TEMPLATE.pt_getContext()
-        names_and_values = self.resource.toDataForJSON().items()
-        data = sorted([{'name' : name, 'value': value}
-                       for name, value in names_and_values])
-        namespace['context'] = data
+        names_and_values = self.resource.toDataStructure(
+            HTTPResource.XHTML_TYPE).items()
+        data = [{'name' : name, 'value': value}
+                for name, value in names_and_values]
+        namespace['context'] = sorted(data)
         return self.HTML_TEMPLATE.pt_render(namespace)
 
 
@@ -890,21 +891,35 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
         return "\0".join(values).encode("utf-8")
 
     def toDataForJSON(self):
+        """Turn the object into a simple data structure."""
+        return self.toDataStructure(self.JSON_TYPE)
+
+    def toDataStructure(self, media_type):
         """Turn the object into a simple data structure.
 
         In this case, a dictionary containing all fields defined by
         the resource interface.
+
+        The values in the dictionary may differ depending on the value
+        of media_type.
         """
         data = {}
         data['self_link'] = canonical_url(self.context, self.request)
         data['resource_type_link'] = self.type_url
         unmarshalled_field_values = {}
         for name, field in getFieldsInOrder(self.entry.schema):
-            repr_name, repr_value = self._unmarshallField(name, field)
+            if self.media_type == self.JSON_TYPE:
+                repr_name, repr_value = self._unmarshallField(name, field)
+            elif self.media_type == self.XHTML_TYPE:
+                pass
+            else:
+                raise AssertionError((
+                        "Cannot create data structure for media type %s"
+                        % media_type))
             data[repr_name] = repr_value
             unmarshalled_field_values[name] =  repr_value
 
-        etag = self.getETag(self.JSON_TYPE, unmarshalled_field_values)
+        etag = self.getETag(media_type, unmarshalled_field_values)
         data['http_etag'] = etag
         return data
 
