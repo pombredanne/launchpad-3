@@ -596,7 +596,7 @@ class TranslationImportQueue:
         return TranslationImportQueueEntry.select().count()
 
     def iterNeedsReview(self):
-        """See ITranslationImportQueue."""
+        """Iterate over all entries in the queue that need review."""
         return iter(TranslationImportQueueEntry.selectBy(
             status=RosettaImportStatus.NEEDS_REVIEW,
             orderBy=['dateimported']))

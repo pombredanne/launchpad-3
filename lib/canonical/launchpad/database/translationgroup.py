@@ -38,9 +38,6 @@ class TranslationGroup(SQLBase):
 
     implements(ITranslationGroup)
 
-    # default to listing alphabetically
-    _defaultOrder = 'name'
-
     # db field names
     name = StringCol(unique=True, alternateID=True, notNull=True)
     title = StringCol(notNull=True)

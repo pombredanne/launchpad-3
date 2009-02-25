@@ -17,7 +17,7 @@ class IRosettaStats(Interface):
         should add up to the currentCount.
         """
 
-    def updateStatistics():
+    def updateStatistics(ztm=None):
         """Update the statistics associated with this object."""
 
     def messageCount():
