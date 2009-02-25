@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces.packagediff import (
     PackageDiffAlreadyRequested)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingStatus, active_publishing_status)
+    PackagePublishingStatus)
 from canonical.launchpad.interfaces.sourcepackage import (
     SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
