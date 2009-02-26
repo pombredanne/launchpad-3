@@ -24,6 +24,19 @@ information about their account.
     Welcome Mark Shuttleworth
 
 
+== Editing User Details ==
+
+The user can edit their details from this page:
+
+    >>> browser.getLink("edit").click()
+    >>> browser.getControl("Display Name").value = "sabdfl"
+    >>> browser.getControl("Change").click()
+    >>> print browser.url
+    http://openid.launchpad.dev/
+    >>> print browser.title
+    Welcome sabdfl
+
+
 == Previously Visited Sites ==
 
 XXX Fill in some code here.  Need to get OpenID code to properly

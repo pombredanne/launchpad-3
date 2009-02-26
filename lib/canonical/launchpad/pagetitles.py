@@ -837,6 +837,9 @@ oops = 'Oops!'
 
 openid_default = 'OpenID Endpoint'
 
+def openid_account_edit(context, view):
+    return smartquote("%s's details") % view.account.displayname
+
 def openid_index(context, view):
     return 'Welcome %s' % view.account.displayname
 
