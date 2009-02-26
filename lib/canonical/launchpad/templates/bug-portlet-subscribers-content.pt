@@ -40,8 +40,7 @@
           title subscription/display_subscribed_by;
         "
       >
-        <tal:block replace="structure subscription/person/image:icon" /> 
-        <tal:block replace="subscription/person/browsername" />
+        <tal:block replace="structure subscription/person/fmt:link" />
       </a>
     </div>
   </div>

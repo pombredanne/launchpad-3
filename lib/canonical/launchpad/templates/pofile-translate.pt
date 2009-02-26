@@ -124,7 +124,7 @@
                   tal:condition="not:view/translation_group/translation_guide_url">
                 Before translating, make sure to go through
                 <a class="style-guide-url"
-                   tal:content="string:${view/translation_team/translator/displayname}
+                   tal:content="string:${structure view/translation_team/translator/fmt:displayname}
                                 guidelines"
                    tal:attributes="href view/translation_team/style_guide_url">
                   Serbian guidelines</a>.

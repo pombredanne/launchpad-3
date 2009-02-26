@@ -33,8 +33,7 @@
             13 Sep 04 14:15
           </td>
           <td>
-            <a tal:content="log/person/displayname"
-               tal:attributes="href log/person/fmt:url">person</a></td>
+            <a tal:content="structure log/person/fmt:link">person</a></td>
             <td tal:content="log/whatchanged">description</td>
             <td tal:content="log/oldvalue">this</td>
             <td tal:content="log/newvalue">that</td>

@@ -409,13 +409,13 @@
     <li>
       <a tal:attributes="href string:${context/owner/fmt:url}/+ownedbranches">
         Other branches owned by <tal:person
-        replace="context/owner/displayname">Owner</tal:person>
+        replace="structure context/owner/fmt:displayname">Owner</tal:person>
       </a>
     </li>
     <li tal:condition="not:view/owner_is_registrant">
       <a tal:attributes="href string:${context/registrant/fmt:url}/+registeredbranches">
         Other branches registered by <tal:person
-        replace="context/registrant/displayname">Registrant</tal:person>
+        replace="structure context/registrant/fmt:displayname">Registrant</tal:person>
       </a>
     </li>
   </ul>

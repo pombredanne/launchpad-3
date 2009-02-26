@@ -45,7 +45,7 @@
        replace="structure view/batchnav/@@+navigation-links-lower" />
 
   <tal:no_packages condition="not: sourcepackagereleases">
-    <tal:name replace="context/displayname"/> does not maintain any packages.
+    <tal:name replace="structure context/fmt:displayname"/> does not maintain any packages.
   </tal:no_packages>
 
   </tal:maintained-packages>

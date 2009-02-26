@@ -35,7 +35,7 @@
   </div>
 
     <metal:heading fill-slot="pageheading">
-      <h1 tal:content="string:${context/displayname}'s bug reports by package">
+      <h1 tal:content="string:${structure context/fmt:displayname}'s bug reports by package">
         Foo Bar's bug reports by package
       </h1>
     </metal:heading>

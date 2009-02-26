@@ -21,7 +21,7 @@
 
     <p metal:fill-slot="extra_info">
       The bug supervisor is a person or team that is responsible for bug
-      management in <tal:displayname replace="context/displayname" />.
+      management in <tal:displayname replace="structure context/fmt:displayname" />.
     </p>
   </div>
 

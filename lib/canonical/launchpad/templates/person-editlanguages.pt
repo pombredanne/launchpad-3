@@ -19,7 +19,7 @@
 <div metal:fill-slot="main" >
 
   <h1 tal:condition="not: view/is_current_user">
-    <span tal:replace="context/displayname">Someone</span>'s
+    <span tal:replace="structure context/fmt:displayname">Someone</span>'s
     language preferences
   </h1>
 
