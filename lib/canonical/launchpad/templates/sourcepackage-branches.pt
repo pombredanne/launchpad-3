@@ -14,7 +14,12 @@
 
 <div metal:fill-slot="main">
 
-  <h1>HELLO SOURCE PACKAGE BRANCHES</h1>
+  <h1>Bazaar branches of <tal:project-name replace="context/displayname"/></h1>
+
+  <tal:has-branches condition="view/branch_count"
+                    define="branches view/branches">
+    <tal:branchlisting content="structure branches/@@+branch-listing" />
+  </tal:has-branches>
 
 </div>
 

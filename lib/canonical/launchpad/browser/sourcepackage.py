@@ -17,6 +17,8 @@ from apt_pkg import ParseSrcDepends
 from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
@@ -30,6 +32,7 @@ from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage,
     PackagePublishingPocket)
+from canonical.launchpad.interfaces.branch import IBranchSet
 from canonical.launchpad.webapp import (
     ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
     NavigationMenu, redirection, StandardLaunchpadFacets, stepto)
@@ -269,4 +272,9 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
 
 
 class SourcePackageBranchesView(BranchListingView):
-    pass
+
+    @cachedproperty
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user).count()
