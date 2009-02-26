@@ -724,7 +724,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         """Return the upstream bugtracker links for the current target.
 
         :return: The bug tracker links for the target, if the target is
-            an IProductPublic. If it isn't, return None. If
+            an `IProductPublic`. If it isn't, return None. If
             product.bugtracker is None, return None.
         """
         target = self.getTarget()
