@@ -93,9 +93,9 @@ a simple text node.
 But it's possible to define a custom HTML unmarshaller for a particular object
 and field type. Here's a simple unmarshaller that serves some hard-coded HTML.
 
-  >>> def dummy_unmarshaller(*args):
+  >>> def dummy_unmarshaller(context, field, request):
   ...     def inner_func(value):
-  ...         return "<b>foo</b>"
+  ...         return "<b>%s</b>" % value.encode("utf-8")
   ...     return inner_func
 
 Register the unmarshaller as the IFieldHTMLUnmarshaller adapter for an
@@ -120,14 +120,14 @@ calling a dummy_unmarshaller object.
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  <b>foo</b>
+  <b>Guilherme Salgado</b>
 
 In fact, that adapter will be used for every IText field of an IPerson.
 
   >>> print webservice.get('/~salgado/name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  <b>foo</b>
+  <b>salgado</b>
 
 Note that the XHTML is not escaped, as it is when the default adapter
 is used. Escaping user-entered XHTML, and distinguishing it from
@@ -178,7 +178,7 @@ a view on IPerson called "display_name".
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  <b>foo</b>
+  <b>Guilherme Salgado</b>
 
 Unlike what happened when we registered an unmarshaller for
 IPerson/IText, other IText fields of IPerson are not affected.
@@ -195,7 +195,7 @@ representations of that entry's fields.
   HTTP/1.1 200 Ok
   ...
   <dt>display_name</dt>
-  <dd><b>foo</b></dd>
+  <dd><b>Guilherme Salgado</b></dd>
   ...
 
 Before we continue, here's some code to unregister the view.

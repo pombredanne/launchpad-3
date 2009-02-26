@@ -702,7 +702,10 @@ class FieldUnmarshallerMixin:
 
 
 def unmarshall_field_to_html(object, field, request):
-    """Turn a field's current value into an XHTML snippet."""
+    """Turn a field's current value into an XHTML snippet.
+
+    This is the default adapter for IFieldHTMLUnmarshaller.
+    """
     def unmarshall(value):
         return cgi.escape(unicode(value).encode("utf-8"))
     return unmarshall
