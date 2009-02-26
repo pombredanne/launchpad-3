@@ -92,8 +92,8 @@ And a notification about the new subscriber is also displayed.
 
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
-    ...
     Launchpad Developers    2200-08-01    Launchpad developer access.
+    ...
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg

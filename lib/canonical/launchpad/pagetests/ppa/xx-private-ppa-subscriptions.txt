@@ -93,8 +93,8 @@ Create a helper function to print subscriptions:
 
     >>> print_subscriptions_for_archive(cprov_browser.contents)
     Name                Expires     Comment
-    Joe Smith                       Joe is my friend
     Brad Smith          2200-08-01  Brad can access for a while.
+    Joe Smith                       Joe is my friend
 
 
 == Managing a persons' Archive subscriptions ==
@@ -142,7 +142,7 @@ listed:
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> print_subscriptions_for_person(joe_browser.contents)
-    Private PPA for Celso Providelo    Joe is my friend
     Private PPA for Mark Shuttleworth  Joe is also my friend
+    Private PPA for Celso Providelo    Joe is my friend
 
 
