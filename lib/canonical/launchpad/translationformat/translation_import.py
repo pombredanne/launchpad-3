@@ -404,9 +404,11 @@ class FileImporter(object):
             # We don't have anything to import.
             return None
 
-        # If one is able to upload 'imported' translations,
-        # they already hold all the editing rights.
         if self.translation_import_queue_entry.is_published:
+            # An unprivileged user wouldn't have been able to upload a
+            # published file in the first place.  But for Soyuz uploads,
+            # the "importer" reflects the package upload, not the
+            # translations upload.  So don't check for editing rights.
             editing_rights = True
         else:
             editing_rights = self.is_editor
