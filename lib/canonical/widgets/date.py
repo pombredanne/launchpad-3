@@ -57,6 +57,7 @@ class DateTimeWidget(TextWidget):
     change their system time zone.
 
       >>> print widget()  #doctest: +ELLIPSIS
+      <BLANKLINE>
       <...<a href="/people/+me/+editlocation">...
 
     If there is a required time zone, then that overrides the user or system
