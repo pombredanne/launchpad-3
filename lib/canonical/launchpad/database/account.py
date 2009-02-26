@@ -20,7 +20,6 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -89,10 +88,8 @@ class Account(SQLBase):
         # XXX: salgado, 2009-02-26: Instead of doing what we do below, we
         # should just provide a hook for callsites to do other stuff that's
         # not directly related to the account itself.
-        person = IPerson(self, None)
+        person = self.person
         if person is not None:
-            from zope.security.proxy import removeSecurityProxy
-            person = removeSecurityProxy(person)
             # Since we have a person associated with this account, it may be
             # used to log into Launchpad, and so it may not have a preferred
             # email address anymore.  We need to ensure it does have one.

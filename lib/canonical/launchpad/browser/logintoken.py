@@ -841,10 +841,8 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         Also fire ObjectCreatedEvents for both the newly created Person
         and EmailAddress.
         """
-        from zope.security.proxy import removeSecurityProxy
         rationale = self._getCreationRationale()
-        if (self.has_openid_request
-            or self.context.tokentype == LoginTokenType.NEWPERSONLESSACCOUNT):
+        if self.context.tokentype == LoginTokenType.NEWPERSONLESSACCOUNT:
             person = None
             account, email = getUtility(IAccountSet).createAccountAndEmail(
                 self.context.email, rationale, displayname,
@@ -857,6 +855,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             notify(ObjectCreatedEvent(person))
             account = person.account
             person.validateAndEnsurePreferredEmail(email)
+            from zope.security.proxy import removeSecurityProxy
             removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
 
         notify(ObjectCreatedEvent(account))
