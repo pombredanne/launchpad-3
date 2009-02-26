@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'SourcePackageBranchesView',
     'SourcePackageBreadcrumbBuilder',
     'SourcePackageFacets',
     'SourcePackageNavigation',
@@ -17,6 +18,7 @@ from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
 
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
@@ -264,3 +266,7 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
         # this page is because it's unlikely that there will be so
         # many builds that the listing will be overwhelming.
         return None
+
+
+class SourcePackageBranchesView(BranchListingView):
+    pass
