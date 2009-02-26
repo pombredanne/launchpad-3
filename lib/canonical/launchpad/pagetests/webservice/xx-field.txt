@@ -93,26 +93,27 @@ a simple text node.
 But it's possible to define a custom HTML unmarshaller for a particular object
 and field type. Here's a simple unmarshaller that serves some hard-coded HTML.
 
-  >>> def dummy_unmarshaller(context, field, request):
-  ...     def inner_func(value):
+  >>> from zope.interface import implementer
+  >>> from zope.component import adapter
+  >>> from zope.schema.interfaces import IText
+  >>> from canonical.launchpad.interfaces import IPerson
+  >>> from canonical.lazr.interfaces.rest import (
+  ...     IFieldHTMLUnmarshaller, WebServiceLayer)
+
+  >>> @adapter(IPerson, IText, WebServiceLayer)
+  ... @implementer(IFieldHTMLUnmarshaller)
+  ... def dummy_unmarshaller(context, field, request):
+  ...     """Create a simple unmarshaller that bolds the original string."""
+  ...     def internal_func(value):
   ...         return "<b>%s</b>" % value.encode("utf-8")
-  ...     return inner_func
+  ...     return internal_func
 
 Register the unmarshaller as the IFieldHTMLUnmarshaller adapter for an
 IText field of an IPerson entry...
 
-  >>> from canonical.lazr.interfaces.rest import (
-  ...     IFieldHTMLUnmarshaller, WebServiceLayer)
-  >>> from canonical.launchpad.interfaces import IPerson
-  >>> from zope.schema.interfaces import IText
-  >>> from zope.interface.interfaces import IInterface
   >>> from zope.component import getGlobalSiteManager
   >>> manager = getGlobalSiteManager()
-
-  >>> manager.registerAdapter(
-  ...      factory=dummy_unmarshaller,
-  ...      required=[IPerson, IText, WebServiceLayer],
-  ...      provided=IFieldHTMLUnmarshaller)
+  >>> manager.registerAdapter(dummy_unmarshaller)
 
 ...and the XHTML representation of an IPerson will be the result of
 calling a dummy_unmarshaller object.
@@ -151,10 +152,7 @@ Before we continue, here's some cleanup code to remove the custom
 unmarshaller we just defined.
 
   >>> from zope.component import getGlobalSiteManager
-  >>> ignored = getGlobalSiteManager().unregisterAdapter(
-  ...      factory=dummy_unmarshaller,
-  ...      required=[IPerson, IText, WebServiceLayer],
-  ...      provided=IFieldHTMLUnmarshaller)
+  >>> ignored = getGlobalSiteManager().unregisterAdapter(dummy_unmarshaller)
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
@@ -169,11 +167,7 @@ particular field, by registering a view on the field. This code
 creates a custom unmarshaller for IPerson.display_name, by registering
 a view on IPerson called "display_name".
 
-  >>> from zope.schema.interfaces import IField
-  >>> manager.registerAdapter(
-  ...      factory=dummy_unmarshaller,
-  ...      required=[IPerson, IField, WebServiceLayer],
-  ...      provided=IFieldHTMLUnmarshaller, name='display_name')
+  >>> manager.registerAdapter(dummy_unmarshaller, name='display_name')
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
@@ -201,9 +195,7 @@ representations of that entry's fields.
 Before we continue, here's some code to unregister the view.
 
   >>> ignored = getGlobalSiteManager().unregisterAdapter(
-  ...      factory=dummy_unmarshaller,
-  ...      required=[IPerson, IField, WebServiceLayer],
-  ...      provided=IFieldHTMLUnmarshaller, name='display_name')
+  ...      dummy_unmarshaller, name='display_name')
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
