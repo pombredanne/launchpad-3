@@ -28,6 +28,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
@@ -104,6 +105,8 @@ from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
+from canonical.launchpad.webapp.adapter import StoreSelector
+from canonical.launchpad.webapp.interfaces import MASTER_FLAVOR
 
 SPACE = ' '
 
@@ -130,6 +133,25 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
+def default_master_store(func):
+    """Decorator to temporarily set the default Store to the master.
+    
+    In some cases, such as in the middle of a page test story,
+    we might be calling factory methods with the default Store set
+    to the slave which breaks stuff. For instance, if we set an account's
+    password that needs to happen on the master store and this is forced.
+    However, if we then read it back the default Store has to be used.
+    """
+    def with_default_master_store(*args, **kw):
+        current_flavor = StoreSelector.getDefaultFlavor()
+        try:
+            StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+            return func(*args, **kw)
+        finally:
+            StoreSelector.setDefaultFlavor(current_flavor)
+    return with_default_master_store
+
+
 # We use this for default paramters where None has a specific meaning.  For
 # example, makeBranch(product=None) means "make a junk branch".
 # None, because None means "junk branch".
@@ -138,6 +160,8 @@ _DEFAULT = object()
 
 class ObjectFactory:
     """Factory methods for creating basic Python objects."""
+
+    __metaclass__ = AutoDecorate(default_master_store)
 
     def __init__(self):
         # Initialise the unique identifier.
@@ -262,7 +286,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         person = removeSecurityProxy(person)
         email = removeSecurityProxy(email)
 
-        assert person.password is not None, 'Password not set'
+        assert person.password is not None, (
+            'Password not set. Wrong default auth Store?')
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
