@@ -5,14 +5,15 @@
 __metaclass__ = type
 
 __all__ = [
-        'AccountStatus',
-        'AccountCreationRationale',
-        'IAccount',
-        'IAccountPrivate',
-        'IAccountPublic',
-        'IAccountSet',
-        'INACTIVE_ACCOUNT_STATUSES',
-        ]
+    'AccountStatus',
+    'AccountCreationRationale',
+    'IAccount',
+    'IAccountPrivate',
+    'IAccountPublic',
+    'IAccountSet',
+    'IAccountSpecialRestricted',
+    'INACTIVE_ACCOUNT_STATUSES',
+    ]
 
 
 from zope.interface import Interface
@@ -234,6 +235,22 @@ class IAccountPrivate(Interface):
 
     def createPerson(self, rationale):
         """Create and return a new `IPerson` associated with this account."""
+
+
+class IAccountSpecialRestricted(Interface):
+    """Attributes of `IAccount` protected with launchpad.Special."""
+
+    def reactivate(comment, password, preferred_email):
+        """Reactivate the given account.
+
+        Set the account status to ACTIVE and possibly restore its name.
+        The preferred email address is set.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password, it cannot be None.
+        :param preferred_email: The `EmailAddress` to set as the account's
+            preferred email address. It cannot be None.
+        """
 
 
 class IAccount(IAccountPublic, IAccountPrivate):

@@ -20,6 +20,7 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -66,6 +67,44 @@ class Account(SQLBase):
         return Store.of(self).find(
             EmailAddress, account=self,
             status=EmailAddressStatus.PREFERRED).one()
+
+    def reactivate(self, comment, password, preferred_email):
+        """See `IAccountSpecialRestricted`.
+
+        :raise AssertionError: if the password is not valid.
+        :raise AssertionError: if the preferred email address is None.
+        """
+        if password in (None, ''):
+            raise AssertionError(
+                "Account %s cannot be reactivated without a "
+                "password." % self.id)
+        if preferred_email is None:
+            raise AssertionError(
+                "Account %s cannot be reactivated without a "
+                "preferred email address." % self.id)
+        self.status = AccountStatus.ACTIVE
+        self.status_comment = comment
+        self.password = password
+
+        # XXX: salgado, 2009-02-26: Instead of doing what we do below, we
+        # should just provide a hook for callsites to do other stuff that's
+        # not directly related to the account itself.
+        person = IPerson(self, None)
+        if person is not None:
+            from zope.security.proxy import removeSecurityProxy
+            person = removeSecurityProxy(person)
+            # Since we have a person associated with this account, it may be
+            # used to log into Launchpad, and so it may not have a preferred
+            # email address anymore.  We need to ensure it does have one.
+            person.validateAndEnsurePreferredEmail(preferred_email)
+
+            if '-deactivatedaccount' in person.name:
+                # The name was changed by deactivateAccount(). Restore the
+                # name, but we must ensure it does not conflict with a current
+                # user.
+                name_parts = person.name.split('-deactivatedaccount')
+                base_new_name = name_parts[0]
+                person.name = person._ensureNewName(base_new_name)
 
     # The password is actually stored in a separate table for security
     # reasons, so use a property to hide this implementation detail.
