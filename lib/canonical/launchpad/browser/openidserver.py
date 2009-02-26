@@ -689,6 +689,8 @@ class LoginServiceMixinLoginView:
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         logInPrincipal(self.request, principal, email)
+        # Update the attribute holding the cached user.
+        self._account = principal.account
 
     @action('Continue', name='continue')
     def continue_action(self, action, data):
