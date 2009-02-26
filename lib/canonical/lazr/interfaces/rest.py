@@ -185,14 +185,14 @@ class IScopedCollection(ICollection):
 
 
 class IFieldHTMLUnmarshaller(Interface):
-    """An interface for a class that turns a field value into XHTML."""
+    """An interface that converts generic strings to HTML representations.
 
-    def __call__(default_value):
-        """Return an XHTML representation of the field's current value.
+    This can be a callable class, or a function that returns another
+    function.
+    """
 
-        :param default_value: A generic representation of the field's
-        value.
-        """
+    def __call__(value):
+        """Return the HTML version of the given string value."""
 
 
 class IEntryField(Interface):

@@ -14,7 +14,6 @@ __all__ = [
     'EntryFieldResource',
     'EntryHTMLView',
     'EntryResource',
-    'FieldHTMLUnmarshaller',
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
@@ -23,6 +22,7 @@ __all__ = [
     'ScopedCollection',
     'ServiceRootResource',
     'WADL_SCHEMA_FILE',
+    'unmarshall_field_to_html',
     ]
 
 
@@ -69,7 +69,7 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryField,
-    IFieldHTMLUnmarshaller, IEntryFieldResource, IEntryResource,
+    IEntryFieldResource, IEntryResource, IFieldHTMLUnmarshaller,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
@@ -658,28 +658,12 @@ class FieldUnmarshallerMixin:
         if cached_value is not missing:
             return cached_value
 
-        field = field.bind(self.context)
-        marshaller = getMultiAdapter((field, self.request),
-                                     IFieldMarshaller)
-        try:
-            if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
-                value = None
-            else:
-                value = getattr(self.entry, field_name)
-            repr_value = marshaller.unmarshall(self.entry, value)
-        except Unauthorized:
-            # Either the client doesn't have permission to see
-            # this field, or it doesn't have permission to read
-            # its current value. Rather than denying the client
-            # access to the resource altogether, use our special
-            # 'redacted' tag: URI for the field's value.
-            repr_value = self.REDACTED_VALUE
-
-        unmarshalled = (marshaller.representation_name, repr_value)
+        unmarshalled = unmarshall_field(
+            self.context, self.entry, field, self.request)
         self._unmarshalled_field_cache[field_name] = unmarshalled
         return unmarshalled
 
-    def _unmarshallFieldHTML(self, field_name, field):
+    def unmarshallFieldToHTML(self, field_name, field):
         """See what a field would look like in an HTML representation.
 
         This is usually similar to the value of _unmarshallField().
@@ -690,36 +674,50 @@ class FieldUnmarshallerMixin:
         try:
             # Try to get a view for this particular field.
             adapter = getMultiAdapter(
-                (self.entry.context, self.request),
+                (self.entry.context, field, self.request),
                 name=field.__name__)
         except ComponentLookupError:
             # There's no view. Look up an IFieldHTMLUnmarshaller
             # for this _type_ of field.
-            adapter_name = (
-                "canonical.lazr.rest.resource.EntryFieldResource")
             field = field.bind(self.entry.context)
             adapter = getMultiAdapter(
                 (self.entry.context, field, self.request),
-                IFieldHTMLUnmarshaller,
-                name=adapter_name)
+                IFieldHTMLUnmarshaller)
         return name, adapter(value)
 
 
-class FieldHTMLUnmarshaller(FieldUnmarshallerMixin):
-    """An XHTML snippet view of one of an entry's fields."""
+def unmarshall_field(context, entry, field, request):
+    """Get string representations of a field's name and current value.
 
-    def __init__(self, object, field, request):
-        """Initialize with respect to a field and request."""
-        self.entry = IEntry(object)
-        self.field = field
-        self.request = request
-        self.context = EntryField(
-            self.entry, self.field, self.field.__name__)
-        super(FieldHTMLUnmarshaller, self).__init__(self.context, request)
+    The string representation can be turned into a more specific JSON or
+    XHTML representation later.
 
-    def __call__(self, default_value):
-        """Turn the field into an XHTML snippet."""
-        return cgi.escape(unicode(default_value).encode("utf-8"))
+    :return: a 2-tuple (representation_name, representation_value)
+    """
+    field = field.bind(context)
+    marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    try:
+        if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
+            value = None
+        else:
+            value = getattr(entry, field.__name__)
+        repr_value = marshaller.unmarshall(entry, value)
+    except Unauthorized:
+        # Either the client doesn't have permission to see
+        # this field, or it doesn't have permission to read
+        # its current value. Rather than denying the client
+        # access to the resource altogether, use our special
+        # 'redacted' tag: URI for the field's value.
+        repr_value = self.REDACTED_VALUE
+
+    return (marshaller.representation_name, repr_value)
+
+
+def unmarshall_field_to_html(object, field, request):
+    """Turn a field's current value into an XHTML snippet."""
+    def unmarshall(value):
+        return cgi.escape(unicode(value).encode("utf-8"))
+    return unmarshall
 
 
 class ReadOnlyResource(HTTPResource):
@@ -852,7 +850,7 @@ class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
                 self.context.name, self.context.field)
             return simplejson.dumps(value)
         elif media_type == self.XHTML_TYPE:
-            name, value = self._unmarshallFieldHTML(
+            name, value = self.unmarshallFieldToHTML(
                 self.context.name, self.context.field)
             return value
         else:
@@ -924,7 +922,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
             if media_type == self.JSON_TYPE:
                 repr_name, repr_value = self._unmarshallField(name, field)
             elif media_type == self.XHTML_TYPE:
-                repr_name, repr_value = self._unmarshallFieldHTML(name, field)
+                repr_name, repr_value = self.unmarshallFieldToHTML(name, field)
             else:
                 raise AssertionError((
                         "Cannot create data structure for media type %s"
