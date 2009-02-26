@@ -620,6 +620,7 @@ for that architecture are returned.
     >>> print hw_submission_set.search(architecture='amd64').count()
     0
 
+
 If a device is specified, only those submissions that include
 the device are returned.
 

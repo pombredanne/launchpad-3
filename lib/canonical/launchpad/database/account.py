@@ -75,7 +75,7 @@ class Account(SQLBase):
 
         if value is not None and password is None:
             # There is currently no AccountPassword record and we need one.
-            store.add(AccountPassword(accountID=self.id, password=value))
+            AccountPassword(accountID=self.id, password=value)
         elif value is None and password is not None:
             # There is an AccountPassword record that needs removing.
             store.remove(password)

@@ -13,8 +13,7 @@ from psycopg2.extensions import (
 import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
-from storm.locals import Storm
-from storm.store import Store
+from storm.locals import Storm, Store
 from storm.zope.interfaces import IZStorm
 
 from sqlobject.sqlbuilder import sqlrepr

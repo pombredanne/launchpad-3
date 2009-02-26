@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.account import AccountStatus
 
 
-UTC = pytz.utc
+UTC = pytz.UTC
 
 
 class LoginTokenSetNavigation(GetitemNavigation):

@@ -35,7 +35,7 @@ Persons can be adapted to a OpenIDPersistentIdentity too.
     >>> sample_identity_2 = IOpenIDPersistentIdentity(sample_person)
     >>> verifyObject(IOpenIDPersistentIdentity, sample_identity_2)
     True
-    >>> sample_identity.account.id == sample_identity_2.account.id
+    >>> sample_identity.account == sample_identity_2.account
     True
 
 OpenIDPersistentIdentity provides access to the account and the

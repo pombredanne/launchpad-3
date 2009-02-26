@@ -26,7 +26,6 @@ Make a single proposal for albert that is needing review by robert.
     ...     owner=albert, product=fooix, name='review')
     >>> proposal = branch.addLandingTarget(albert, trunk)
     >>> proposal.requestReview()
-    >>> proposal1 = proposal
     >>> _unused_vote = proposal.nominateReviewer(robert, albert,
     ...                                          review_type='ui')
 
@@ -37,7 +36,6 @@ Make two proposals for bob, one needing review, and one approved.
     ...     owner=bob, product=fooix, name='review')
     >>> proposal = branch.addLandingTarget(bob, trunk)
     >>> proposal.requestReview()
-    >>> proposal2 = proposal
     >>> # Ensure the date_created is later to ensure stable ordering.
     >>> from datetime import timedelta
     >>> from zope.security.proxy import removeSecurityProxy
@@ -47,7 +45,6 @@ Make two proposals for bob, one needing review, and one approved.
     ...     owner=bob, product=fooix, name='approved')
     >>> proposal = branch.addLandingTarget(bob, trunk)
     >>> proposal.approveBranch(trunk.owner, 'some-revision')
-    >>> proposal3 = proposal
     >>> removeSecurityProxy(proposal).date_created += timedelta(2)
     >>> logout()
 
