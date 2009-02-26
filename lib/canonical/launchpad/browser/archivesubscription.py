@@ -107,24 +107,18 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for managing a persons archive subscriptions."""
 
-    @cachedproperty
+    @property
     def subscriptions_with_tokens(self):
         """Return all the persons archive subscriptions with the token
         for each."""
-        tuple_result = getUtility(IArchiveSubscriberSet).getBySubscriber(
+        return getUtility(IArchiveSubscriberSet).getBySubscriber(
             self.context, return_tokens=True)
 
-        dict_result = []
-        for sub_with_token in tuple_result:
-            dict_result.append({
-                'subscription': sub_with_token[0],
-                'token': sub_with_token[1]})
-        return dict_result
-
-    @property
+    @cachedproperty
     def has_subscriptions(self):
         """Return whether this person has any subscriptions."""
         # XXX noodles 20090224 bug=246200: use bool() when it gets fixed
         # in storm.
-        return len(self.subscriptions_with_tokens)
+        return getUtility(IArchiveSubscriberSet).getBySubscriber(
+            self.context).count() > 0
 
