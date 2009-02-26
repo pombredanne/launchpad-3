@@ -289,8 +289,8 @@
         for="zope.interface.Interface
              zope.schema.interfaces.IField
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.rest.IFieldHTMLUnmarshaller"
-        factory="canonical.lazr.rest.resource.unmarshall_field_to_html"
+        provides="canonical.lazr.interfaces.rest.IFieldHTMLRenderer"
+        factory="canonical.lazr.rest.resource.render_field_to_html"
         />
 
     <!-- System Errors -->

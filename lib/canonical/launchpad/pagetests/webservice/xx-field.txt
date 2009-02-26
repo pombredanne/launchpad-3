@@ -98,17 +98,17 @@ and field type. Here's a simple unmarshaller that serves some hard-coded HTML.
   >>> from zope.schema.interfaces import IText
   >>> from canonical.launchpad.interfaces import IPerson
   >>> from canonical.lazr.interfaces.rest import (
-  ...     IFieldHTMLUnmarshaller, WebServiceLayer)
+  ...     IFieldHTMLRenderer, WebServiceLayer)
 
   >>> @adapter(IPerson, IText, WebServiceLayer)
-  ... @implementer(IFieldHTMLUnmarshaller)
+  ... @implementer(IFieldHTMLRenderer)
   ... def dummy_unmarshaller(context, field, request):
   ...     """Create a simple unmarshaller that bolds the original string."""
   ...     def internal_func(value):
   ...         return "<b>%s</b>" % value.encode("utf-8")
   ...     return internal_func
 
-Register the unmarshaller as the IFieldHTMLUnmarshaller adapter for an
+Register the unmarshaller as the IFieldHTMLRenderer adapter for an
 IText field of an IPerson entry...
 
   >>> from zope.component import getGlobalSiteManager

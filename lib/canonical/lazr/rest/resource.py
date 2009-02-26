@@ -17,12 +17,12 @@ __all__ = [
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'render_field_to_html',
     'ResourceJSONEncoder',
     'RESTUtilityBase',
     'ScopedCollection',
     'ServiceRootResource',
     'WADL_SCHEMA_FILE',
-    'unmarshall_field_to_html',
     ]
 
 
@@ -69,7 +69,7 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryField,
-    IEntryFieldResource, IEntryResource, IFieldHTMLUnmarshaller,
+    IEntryFieldResource, IEntryResource, IFieldHTMLRenderer,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
@@ -681,30 +681,31 @@ class FieldUnmarshallerMixin:
     def unmarshallFieldToHTML(self, field_name, field):
         """See what a field would look like in an HTML representation.
 
-        This is usually similar to the value of _unmarshallField().
+        This is usually similar to the value of _unmarshallField(),
+        but it might contain some custom HTML weirdness.
 
         :return: a 2-tuple (representation_name, representation_value).
         """
         name, value = self._unmarshallField(field_name, field)
         try:
-            # Try to get a view for this particular field.
-            adapter = getMultiAdapter(
+            # Try to get a renderer for this particular field.
+            renderer = getMultiAdapter(
                 (self.entry.context, field, self.request),
                 name=field.__name__)
         except ComponentLookupError:
-            # There's no view. Look up an IFieldHTMLUnmarshaller
-            # for this _type_ of field.
+            # There's no field-specific renderer. Look up an
+            # IFieldHTMLRenderer for this _type_ of field.
             field = field.bind(self.entry.context)
-            adapter = getMultiAdapter(
+            renderer = getMultiAdapter(
                 (self.entry.context, field, self.request),
-                IFieldHTMLUnmarshaller)
-        return name, adapter(value)
+                IFieldHTMLRenderer)
+        return name, renderer(value)
 
 
-def unmarshall_field_to_html(object, field, request):
+def render_field_to_html(object, field, request):
     """Turn a field's current value into an XHTML snippet.
 
-    This is the default adapter for IFieldHTMLUnmarshaller.
+    This is the default adapter for IFieldHTMLRenderer.
     """
     def unmarshall(value):
         return cgi.escape(unicode(value).encode("utf-8"))

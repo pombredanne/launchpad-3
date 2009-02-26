@@ -14,7 +14,7 @@ __all__ = [
     'IEntryField',
     'IEntryFieldResource',
     'IEntryResource',
-    'IFieldHTMLUnmarshaller',
+    'IFieldHTMLRenderer',
     'IFieldMarshaller',
     'IHTTPResource',
     'IJSONPublishable',
@@ -184,15 +184,15 @@ class IScopedCollection(ICollection):
     collection = Attribute("The collection scoped to an entry.")
 
 
-class IFieldHTMLUnmarshaller(Interface):
-    """An interface that converts generic strings to HTML representations.
+class IFieldHTMLRenderer(Interface):
+    """An interface that renders generic strings as HTML representations.
 
     This can be a callable class, or a function that returns another
     function.
     """
 
     def __call__(value):
-        """Return the HTML version of the given string value."""
+        """Render the given string as HTML."""
 
 
 class IEntryField(Interface):
