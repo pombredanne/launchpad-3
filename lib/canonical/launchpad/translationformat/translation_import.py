@@ -404,21 +404,12 @@ class FileImporter(object):
             # We don't have anything to import.
             return None
 
-        if self.translation_import_queue_entry.is_published:
-            # An unprivileged user wouldn't have been able to upload a
-            # published file in the first place.  But for Soyuz uploads,
-            # the "importer" reflects the package upload, not the
-            # translations upload.  So don't check for editing rights.
-            editing_rights = True
-        else:
-            editing_rights = self.is_editor
-
         try:
             # Do the actual import.
             translation_message = potmsgset.updateTranslation(
                 self.pofile, self.last_translator, message.translations,
                 self.translation_import_queue_entry.is_published,
-                self.lock_timestamp, force_edition_rights=editing_rights)
+                self.lock_timestamp, force_edition_rights=self.is_editor)
 
         except TranslationConflict:
             self._addConflictError(message, potmsgset)
@@ -434,7 +425,7 @@ class FileImporter(object):
                 self.pofile, self.last_translator, message.translations,
                 self.translation_import_queue_entry.is_published,
                 self.lock_timestamp, ignore_errors=True,
-                force_edition_rights=editing_rights)
+                force_edition_rights=self.is_editor)
 
             # Add the pomsgset to the list of pomsgsets with errors.
             self._addUpdateError(message, potmsgset, unicode(e))
@@ -663,12 +654,19 @@ class POFileImporter(FileImporter):
             self.last_translator = (
                 self.translation_import_queue_entry.importer)
 
-        # Use the importer rights to make sure the imported
-        # translations are actually accepted instead of being just
-        # suggestions.
-        self.is_editor = (
-            self.pofile.canEditTranslations(
-                self.translation_import_queue_entry.importer))
+        if self.translation_import_queue_entry.is_published:
+            # An unprivileged user wouldn't have been able to upload a
+            # published file in the first place.  But for Soyuz uploads,
+            # the "importer" reflects the package upload, not the
+            # translations upload.  So don't check for editing rights.
+            self.is_editor = True
+        else:
+            # Use the importer rights to make sure the imported
+            # translations are actually accepted instead of being just
+            # suggestions.
+            self.is_editor = (
+                self.pofile.canEditTranslations(
+                    self.translation_import_queue_entry.importer))
 
         self.pofile_in_db = (
             ExistingPOFileInDatabase(
