@@ -1,0 +1,49 @@
+<tal:root
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    i18n:domain="launchpad">
+
+<tal:not-logged-in condition="not:view/account">
+<tal:block replace="structure context/@@+standalone-login" />
+</tal:not-logged-in>
+
+<tal:logged-in condition="view/account">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master">
+  <body>
+    <div metal:fill-slot="main">
+      <p>Logged in as <tal:user replace="view/account/displayname" /></p>
+
+      <p>
+        <form action="+logout" method="post">
+          <input type="hidden" name="loggingout" value="1" />
+          <input type="submit" name="logout" value="Log Out" />
+        </form>
+      </p>
+
+      <h3>Visited Sites</h3>
+
+      <table class="listing">
+        <thead>
+          <tr>
+            <th>Site</th>
+            <th>Authorization Date</th>
+            <th>Expiration</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="auth view/getAuthorizations">
+            <td tal:content="auth/trust_root">Trust Root</td>
+            <td tal:content="auth/date_created">Creation Date</td>
+            <td tal:content="auth/date_expires">Expiration Date</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>
+</tal:logged-in>
+
+</tal:root>

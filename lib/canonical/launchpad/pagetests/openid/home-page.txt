@@ -1,0 +1,42 @@
+= Openid.launchpad.dev Home Page =
+
+When visiting the openid.launchpad.dev home page anonymously, the user
+is presented with a login form:
+
+    >>> browser.open('http://openid.launchpad.dev')
+    >>> print browser.title
+    Launchpad Login Service
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    This is the Launchpad login service
+    ...
+    If you want to change any of your account's details, you can do so
+    by logging in using the form below.
+    ...
+
+However, if the user is logged in, they are presented with some
+information about their account.
+
+    >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl('Continue').click()
+
+    >>> print browser.title
+    Welcome Mark Shuttleworth
+
+
+== Previously Visited Sites ==
+
+XXX Fill in some code here.  Need to get OpenID code to properly
+register authorisations first.
+
+
+== Logging Out ==
+
+From the Home page, the user can also log out:
+
+    >>> browser.open('http://openid.launchpad.dev')
+    >>> browser.getControl('Log Out').click()
+    >>> print browser.url
+    http://openid.launchpad.dev/
+    >>> print browser.title
+    Launchpad Login Service

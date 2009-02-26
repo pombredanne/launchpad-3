@@ -15,15 +15,13 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.browser.openidserver import (
-    LoginServiceStandaloneLoginView)
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.launchpad import (
     IOpenIDApplication, NotFoundError)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.openidserver import (
-    IOpenIDRPConfigSet, IOpenIDPersistentIdentity)
+    IOpenIDAuthorizationSet, IOpenIDRPConfigSet, IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -178,11 +176,10 @@ class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
 class OpenIDApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):
     """Render the OpenID index page."""
 
+    template = ViewPageTemplateFile(
+        "../templates/openid-index.pt")
     xrds_template = ViewPageTemplateFile(
         "../templates/openidapplication-xrds.pt")
 
-    def template(self):
-        # XXX: This is to be uncommented when we have a +home view.
-        # if self.account:
-        #     return LoginServiceHomeView(self.context, self.request)()
-        return LoginServiceStandaloneLoginView(self.context, self.request)()
+    def getAuthorizations(self):
+        return getUtility(IOpenIDAuthorizationSet).getByAccount(self.account)

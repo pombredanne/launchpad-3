@@ -21,5 +21,11 @@
         <allow interface="canonical.launchpad.interfaces.IAccountSet" />
     </securedutility>
 
+    <adapter
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
+        provides="canonical.launchpad.interfaces.IAccount"
+        factory="canonical.launchpad.components.account.accountFromPrincipal"
+      />
+
 </configure>
 
