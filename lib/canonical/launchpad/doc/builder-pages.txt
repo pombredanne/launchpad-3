@@ -419,18 +419,15 @@ We change the sampledata to create a pending build in for the 386
 processor queue in the PPA category.
 
     >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> login('foo.bar@canonical.com')
+
     >>> any_failed_build = cprov.archive.getBuildRecords(
     ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
-
-    >>> login('foo.bar@canonical.com')
     >>> any_failed_build.retry()
-    >>> login(ANONYMOUS)
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
 
 Now the pending build is included in the right category and group.
 
+    >>> login(ANONYMOUS)
     >>> builder_category = builderset_view.ppa_builders
     >>> print_category(builder_category)
     386 1
