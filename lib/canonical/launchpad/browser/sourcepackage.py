@@ -273,6 +273,12 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
 
 class SourcePackageBranchesView(BranchListingView):
 
+    # XXX: "By most interesting" search doesn't work at all
+
+    # XXX: No menu for this page, there should be.
+
+    # XXX: No link back to this page from branches
+
     @cachedproperty
     def branch_count(self):
         """The number of total branches the user can see."""
