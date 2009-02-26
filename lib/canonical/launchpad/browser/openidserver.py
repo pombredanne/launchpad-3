@@ -774,6 +774,9 @@ class LoginServiceLoginView(LoginServiceMixinLoginView, LoginServiceBaseView):
 
 class LoginServiceStandaloneLoginView(LoginServiceMixinLoginView,
                                       LaunchpadFormView):
+    """A stand alone login form for users to log into the SSO site without an
+    OpenID request.
+    """
     custom_widget('action', LaunchpadRadioWidget)
     template = ViewPageTemplateFile(
         "../templates/loginservice-standalone-login.pt")
@@ -783,6 +786,7 @@ class LoginServiceStandaloneLoginView(LoginServiceMixinLoginView,
         return self.request.getApplicationURL()
 
     def saveRequestInSession(self, key):
+        """Do nothing as we have no OpenID request."""
         pass
 
     def doLogin(self, email):
