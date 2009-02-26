@@ -15,6 +15,13 @@
   <body>
     <div metal:fill-slot="main">
       <p>Logged in as <tal:user replace="view/account/displayname" /></p>
+
+      <p>
+        <form action="+logout" method="post">
+          <input type="hidden" name="loggingout" value="1" />
+          <input type="submit" name="logout" value="Log Out" />
+        </form>
+      </p>
     </div>
   </body>
 </html>
