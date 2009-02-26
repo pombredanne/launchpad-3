@@ -17,6 +17,8 @@ from canonical.launchpad.database.openidserver import (
     OpenIDAuthorization, OpenIDAuthorizationSet)
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.ftests._login import login
+from canonical.launchpad.interfaces.openidserver import (
+    IOpenIDAuthorizationSet)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.adapter import StoreSelector
 from canonical.launchpad.webapp.interfaces import (
@@ -41,6 +43,32 @@ class OpenIDAuthorizationTestCase(unittest.TestCase):
         self.assertEquals(
             '%s-%s' % (MAIN_STORE, MASTER_FLAVOR),
             zstorm.get_name(OpenIDAuthorization._get_store()))
+
+
+class OpenIDAuthorizationSetTests(unittest.TestCase):
+    """Test for the OpenIDAuthorizationSet database class."""
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        login('no-priv@canonical.com')
+
+    def test_get_by_account(self):
+        """Test behaviour of the getByAccount() method."""
+        factory = LaunchpadObjectFactory()
+        account = factory.makeAccount("Test Account")
+
+        # Create two authorizations, committing the transaction so
+        # that we get different creation dates.
+        auth_set = getUtility(IOpenIDAuthorizationSet)
+        auth_set.authorize(account, "http://example.com", None)
+        transaction.commit()
+        auth_set.authorize(account, "http://example2.com", None)
+
+        result = auth_set.getByAccount(account)
+        self.assertEqual(result.count(), 2)
+        [authorization1, authorization2] = result
+        self.assertEqual(authorization1.trust_root, "http://example2.com")
+        self.assertEqual(authorization2.trust_root, "http://example.com")
 
 
 class OpenIDAuthorizationSet__with_SlaveStore_TestCase(unittest.TestCase):
@@ -74,7 +102,4 @@ class OpenIDAuthorizationSet__with_SlaveStore_TestCase(unittest.TestCase):
 
 
 def test_suite():
-    return unittest.TestSuite((
-        unittest.makeSuite(OpenIDAuthorizationTestCase),
-        unittest.makeSuite(OpenIDAuthorizationSet__with_SlaveStore_TestCase),
-            ))
+    return unittest.TestLoader().loadTestsFromName(__name__)
