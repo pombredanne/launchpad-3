@@ -66,6 +66,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IOpenIDApplication"
+        name="+edit"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.openidaccount.AccountEditView"
+        template="../templates/openid-account-edit.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
         layer="canonical.launchpad.layers.OpenIDLayer"
         class="canonical.launchpad.browser.openidserver.PreAuthorizeRPView"
         name="+pre-authorize-rp"

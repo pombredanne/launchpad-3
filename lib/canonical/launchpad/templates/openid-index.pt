@@ -14,7 +14,8 @@
     metal:use-macro="context/@@main_template/master">
   <body>
     <div metal:fill-slot="main">
-      <p>Logged in as <tal:user replace="view/account/displayname" /></p>
+      <p>Logged in as <tal:user replace="view/account/displayname" />
+      (<a href="+edit">edit</a>)</p>
 
       <p>
         <form action="+logout" method="post">
