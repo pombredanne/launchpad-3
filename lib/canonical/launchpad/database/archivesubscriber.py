@@ -10,7 +10,7 @@ __all__ = [
 
 import pytz
 
-from storm.expr import And, LeftJoin, Select
+from storm.expr import And, Desc, LeftJoin, Select
 from storm.locals import DateTime, Int, Reference, Store, Storm, Unicode
 
 from zope.interface import implements
@@ -131,7 +131,7 @@ class ArchiveSubscriberSet:
         return store.find(
             find_spec,
             main_expr,
-            *extra_exprs)
+            *extra_exprs).order_by(Desc(ArchiveSubscriber.date_created))
 
     def getByArchive(self, archive, current_only=True):
         """See `IArchiveSubscriberSet`."""
@@ -145,4 +145,4 @@ class ArchiveSubscriberSet:
         return store.find(
             ArchiveSubscriber,
             ArchiveSubscriber.archive == archive,
-            *extra_exprs)
+            *extra_exprs).order_by(Desc(ArchiveSubscriber.date_created))

@@ -68,6 +68,14 @@ The new subscription is returned and reflects the data:
     >>> print new_sub.status.name
     CURRENT
 
+Subscriptions also contain some date information:
+
+    >>> new_sub.date_created is not None
+    True
+
+    >>> print new_sub.date_expires
+    None
+
 Add another subscription for the test user, this time to sabdfl's ppa:
 
     >>> login("mark@hbd.com")
@@ -80,19 +88,20 @@ And also a subscription for a Team:
     >>> new_team_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
     ...     team_cprov, sabdfl, description=u"Access for cprov team")
 
+Explicitly set the date_created for testing purposes:
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> new_sub.date_created = datetime(2009, 2, 26, tzinfo=pytz.UTC)
+    >>> new_sub_to_sabdfl_ppa.date_created = datetime(
+    ...     2009, 2, 22, tzinfo=pytz.UTC)
+    >>> new_team_sub_to_sabdfl_ppa.date_created = datetime(
+    ...     2009, 2, 24, tzinfo=pytz.UTC)
+
 Commit the new subscriptions to the database.
 
     >>> from storm.store import Store
     >>> Store.of(new_sub).commit()
-
-Subscriptions also contain some date information:
-
-    >>> new_sub.date_created is not None
-    True
-
-    >>> print new_sub.date_expires
-    None
-
 
 == Retrieving existing subscriptions ==
 
@@ -132,12 +141,20 @@ finding a subscription for a particular user in a particular archive:
     PPA for Celso Providelo
 
 By default the getBySubscriber() and getByArchive() methods return
-all current subscriptions:
+all current subscriptions, most recently created first:
 
-    >>> sub_set.getBySubscriber(new_sub.subscriber).count()
-    2
-    >>> sub_set.getByArchive(sabdfl.archive).count()
-    2
+    >>> login('mark@hbd.com')
+    >>> for subscription in sub_set.getBySubscriber(new_sub.subscriber):
+    ...     print subscription.archive.title
+    ...     print subscription.date_created.date()
+    PPA for Celso Providelo      2009-02-26
+    PPA for Mark Shuttleworth    2009-02-22
+
+    >>> for subscription in sub_set.getByArchive(sabdfl.archive):
+    ...     print subscription.subscriber.displayname
+    ...     print subscription.date_created.date()
+    Team Cprov      2009-02-24
+    Joe Smith       2009-02-22
 
 If we cancel one of the subscriptions:
 
