@@ -843,8 +843,6 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         """
         from zope.security.proxy import removeSecurityProxy
         rationale = self._getCreationRationale()
-        # XXX: Registering thorugh the standalone login form on openid.lp.dev
-        # will end up creating a Person, but we don't want that.
         if (self.has_openid_request
             or self.context.tokentype == LoginTokenType.NEWPERSONLESSACCOUNT):
             person = None
