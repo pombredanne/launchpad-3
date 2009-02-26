@@ -146,8 +146,8 @@ So we try again with an expiry date in the future:
     []
     >>> for subscription in view.subscriptions:
     ...     print subscription.subscriber.displayname
-    Andrew Bennetts
     Launchpad Developers
+    Andrew Bennetts
 
 
 == PersonArchiveSubscriptions View ==
@@ -177,6 +177,6 @@ the current person (Needs to be updated to return only current subscriptions):
     >>> for subscription in view.subscriptions:
     ...     print subscription.archive.title
     ...     print subscription.description
-    Private PPA for Celso Providelo         spiv's my friend
     Private PPA for Mark Shuttleworth       spiv's still my friend
+    Private PPA for Celso Providelo         spiv's my friend
 

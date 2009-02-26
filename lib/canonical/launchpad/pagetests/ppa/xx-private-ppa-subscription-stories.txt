@@ -116,20 +116,20 @@ And a notification about the new subscriber is also displayed.
 
 Given a subscription for Celso's private PPA
 
-When Joe visits his profile (?? where would be the logical place for this?)
-And clicks on the 'Private software subscriptions' link (only displayed to those with subscriptions)
+When Joe visits his profile (Chat with beuno)
+And clicks on the 'Private software subscriptions' link
 
     >>> joe_browser = setupBrowser(auth="Basic joe@example.com:test")
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
 
-Then a list of Andrew's current subscriptions is displayed
+Then a list of Joe's current subscriptions is displayed
 
     >>> subscription_table = find_tag_by_id(joe_browser.contents,
     ...     "archive-subscriptions")
     >>> print extract_text(subscription_table)
     Archive                             Subscription description
-    Private PPA for Celso Providelo     Joe is my friend
+    Private PPA for Celso Providelo     Joe is my friend         Activate
 
 And the private_sources.list file is not displayed.
 

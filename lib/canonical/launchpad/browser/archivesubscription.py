@@ -109,7 +109,8 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
 
     @property
     def subscriptions(self):
-        """Return all the persons archive subscriptions."""
+        """Return all the persons archive subscriptions with the token
+        for each."""
         return getUtility(IArchiveSubscriberSet).getBySubscriber(
             self.context)
 

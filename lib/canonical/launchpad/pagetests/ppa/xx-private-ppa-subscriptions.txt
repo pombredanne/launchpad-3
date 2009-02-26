@@ -126,7 +126,7 @@ Joe has multiple subscriptions:
     ...     name='field.description').value = "Joe is also my friend"
     >>> sabdfl_browser.getControl(name="field.actions.add").click()
 
-First create a helper function for printing the archive subscriptions
+Next create a helper function for printing the archive subscriptions
 of a person:
 
     >>> def print_subscriptions_for_person(contents):
@@ -142,7 +142,7 @@ listed:
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> print_subscriptions_for_person(joe_browser.contents)
-    Private PPA for Mark Shuttleworth  Joe is also my friend
-    Private PPA for Celso Providelo    Joe is my friend
+    Private PPA for Mark Shuttleworth  Joe is also my friend  Activate
+    Private PPA for Celso Providelo    Joe is my friend       Activate
 
 
