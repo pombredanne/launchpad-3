@@ -729,7 +729,7 @@ class LoginServiceMixinLoginView:
         logintokenset = getUtility(ILoginTokenSet)
         self.token = logintokenset.new(
             requester=None, requesteremail=None, email=email,
-            tokentype=LoginTokenType.NEWACCOUNT,
+            tokentype=LoginTokenType.NEWPERSONLESSACCOUNT,
             redirection_url=self.redirection_url)
         self.token.sendNewUserNeutralEmail()
         self.saveRequestInSession('token' + self.token.token)

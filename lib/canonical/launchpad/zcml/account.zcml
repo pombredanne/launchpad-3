@@ -8,6 +8,9 @@
             permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IAccountPrivate" />
         <require
+            permission="launchpad.Special"
+            interface="canonical.launchpad.interfaces.IAccountSpecialRestricted" />
+        <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IAccount" />
     </class>

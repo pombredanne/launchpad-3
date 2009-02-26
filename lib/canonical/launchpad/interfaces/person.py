@@ -1472,18 +1472,6 @@ class IPersonSpecialRestricted(Interface):
         :param comment: An explanation of why the account status changed.
         """
 
-    def reactivateAccount(comment, password, preferred_email):
-        """Reactivate this person's Launchpad account.
-
-        Set the account status to ACTIVE and possibly restore the user's
-        name. The preferred email address is set.
-
-        :param comment: An explanation of why the account status changed.
-        :param password: The user's password, it cannot be None.
-        :param preferred_email: The `EmailAddress` to set as the user's
-            preferred email address. It cannot be None.
-        """
-
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
