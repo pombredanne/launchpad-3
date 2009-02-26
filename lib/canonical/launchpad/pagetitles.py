@@ -837,7 +837,8 @@ oops = 'Oops!'
 
 openid_default = 'OpenID Endpoint'
 
-openid_index = 'Launchpad OpenID Server'
+def openid_index(context, view):
+    return 'Welcome %s' % view.account.displayname
 
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""

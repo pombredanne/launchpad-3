@@ -20,7 +20,8 @@ Once successfully logged in, they will see the details of their account.
     >>> print browser.url
     http://openid.launchpad.dev/
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
-    XXX: This will fail!  It should show the account details here.
+    Logged in as Mark Shuttleworth
+    ...
 
 
 == Creating a new account ==
@@ -97,4 +98,5 @@ Once successfully logged in, they will see the details of their account.
     >>> browser.getControl(name='field.password').value = 'new password'
     >>> browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
-    XXX: This will fail!  It should show the account details here.
+    Logged in as New User
+    ...
