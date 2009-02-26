@@ -658,8 +658,23 @@ class FieldUnmarshallerMixin:
         if cached_value is not missing:
             return cached_value
 
-        unmarshalled = unmarshall_field(
-            self.context, self.entry, field, self.request)
+        field = field.bind(self.context)
+        marshaller = getMultiAdapter((field, self.request), IFieldMarshaller)
+        try:
+            if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
+                value = None
+            else:
+                value = getattr(self.entry, field.__name__)
+            repr_value = marshaller.unmarshall(self.entry, value)
+        except Unauthorized:
+            # Either the client doesn't have permission to see
+            # this field, or it doesn't have permission to read
+            # its current value. Rather than denying the client
+            # access to the resource altogether, use our special
+            # 'redacted' tag: URI for the field's value.
+            repr_value = self.REDACTED_VALUE
+
+        unmarshalled = (marshaller.representation_name, repr_value)
         self._unmarshalled_field_cache[field_name] = unmarshalled
         return unmarshalled
 
@@ -684,33 +699,6 @@ class FieldUnmarshallerMixin:
                 (self.entry.context, field, self.request),
                 IFieldHTMLUnmarshaller)
         return name, adapter(value)
-
-
-def unmarshall_field(context, entry, field, request):
-    """Get string representations of a field's name and current value.
-
-    The string representation can be turned into a more specific JSON or
-    XHTML representation later.
-
-    :return: a 2-tuple (representation_name, representation_value)
-    """
-    field = field.bind(context)
-    marshaller = getMultiAdapter((field, request), IFieldMarshaller)
-    try:
-        if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
-            value = None
-        else:
-            value = getattr(entry, field.__name__)
-        repr_value = marshaller.unmarshall(entry, value)
-    except Unauthorized:
-        # Either the client doesn't have permission to see
-        # this field, or it doesn't have permission to read
-        # its current value. Rather than denying the client
-        # access to the resource altogether, use our special
-        # 'redacted' tag: URI for the field's value.
-        repr_value = self.REDACTED_VALUE
-
-    return (marshaller.representation_name, repr_value)
 
 
 def unmarshall_field_to_html(object, field, request):
