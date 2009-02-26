@@ -61,18 +61,5 @@ def main(argv):
     ztm.commit()
 
 
-def test():
-    """Tries to clean project names taken from stdin.
-
-    Prints the lines it couldn't extract a valid SF project name from.
-    """
-    for name in sys.stdin:
-        name = name.strip()
-        if not valid_sourceforge_project_name(name):
-            if extract_project_name(name) is None:
-                print name
-
-
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
-    #test()
