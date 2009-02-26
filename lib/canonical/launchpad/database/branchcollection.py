@@ -115,12 +115,14 @@ class GenericBranchCollection:
     def relatedTo(self, person):
         """See `IBranchCollection`."""
         return self._filterBy(
-            [LeftJoin(
-                BranchSubscription,
-                BranchSubscription.branch == Branch.id)],
-            Or(Branch.owner == person,
-               Branch.registrant == person,
-               BranchSubscription.person == person))
+            [],
+            Branch.id.is_in(
+                Union(
+                    Select(Branch.id, Branch.owner == person),
+                    Select(Branch.id, Branch.registrant == person),
+                    Select(Branch.id,
+                           And(BranchSubscription.person == person,
+                               BranchSubscription.branch == Branch.id)))))
 
     def subscribedBy(self, person):
         """See `IBranchCollection`."""
