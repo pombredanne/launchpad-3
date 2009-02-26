@@ -723,13 +723,11 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
     def upstream_bugtracker_links(self):
         """Return the upstream bugtracker links for the current target.
 
-        :return: The bug tracker links for the target, if the target is
-            an `IProductPublic`. If it isn't, return None. If
-            product.bugtracker is None, return None.
+        :return: The bug tracker links for the target, as returned by
+            BugTracker.getBugFilingAndSearchLinks(). If product.bugtracker
+            is None, return None.
         """
         target = self.getTarget()
-        if not IProductPublic.providedBy(target):
-            return None
 
         if not target.bugtracker:
             return None
