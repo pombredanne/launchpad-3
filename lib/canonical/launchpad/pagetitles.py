@@ -835,9 +835,9 @@ object_translations = ContextDisplayName('Translation templates for %s')
 
 oops = 'Oops!'
 
-openid_default = "OpenID Endpoint"
+openid_default = 'OpenID Endpoint'
 
-openid_index = "Launchpad OpenID Server"
+openid_index = 'Launchpad OpenID Server'
 
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
