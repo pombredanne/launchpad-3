@@ -404,12 +404,19 @@ class FileImporter(object):
             # We don't have anything to import.
             return None
 
+        # If one is able to upload 'imported' translations,
+        # they already hold all the edition rights.
+        if self.translation_import_queue_entry.is_published:
+            edition_rights = True
+        else:
+            edition_rights = self.is_editor
+
         try:
             # Do the actual import.
             translation_message = potmsgset.updateTranslation(
                 self.pofile, self.last_translator, message.translations,
                 self.translation_import_queue_entry.is_published,
-                self.lock_timestamp, force_edition_rights=self.is_editor)
+                self.lock_timestamp, force_edition_rights=edition_rights)
 
         except TranslationConflict:
             self._addConflictError(message, potmsgset)

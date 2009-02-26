@@ -137,7 +137,7 @@ class FileImporterTestCase(unittest.TestCase):
             TEST_TEMPLATE_EXPORTED, TEST_TRANSLATION_EXPORTED, False)
 
     def _createImporterForPublishedEntries(self):
-        """Set up entries that where exported from LP, i.e. that do not
+        """Set up entries that where not exported from LP, i.e. that do not
         contain the 'X-Launchpad-Export-Date:' header."""
         return self._createFileImporters(
             TEST_TEMPLATE_PUBLISHED, TEST_TRANSLATION_PUBLISHED, True)
