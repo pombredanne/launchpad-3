@@ -405,7 +405,7 @@ class FileImporter(object):
             return None
 
         # If one is able to upload 'imported' translations,
-        # they already hold all the edition rights.
+        # they already hold all the editing rights.
         if self.translation_import_queue_entry.is_published:
             editing_rights = True
         else:
