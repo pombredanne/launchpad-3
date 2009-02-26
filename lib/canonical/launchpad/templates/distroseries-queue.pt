@@ -196,14 +196,15 @@
 
 
 <metal:macros fill-slot="bogus">
-<metal:macro define-macro="package-filelist">
+<metal:macro define-macro="package-filelist"
+	     tal:define="source_files packageupload/source_files">
 
   <tal:comment replace="nothing">
     This macro expects the following variables defined:
     :packageupload: A PackageUpload record for which we display files.
   </tal:comment>
 
-      <tr tal:repeat="file packageupload/source_files"
+      <tr tal:condition="source_files" tal:repeat="file source_files"
           tal:attributes="class string:${filelist_class}"
           style="display:none">
         <td/>

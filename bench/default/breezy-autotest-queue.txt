@@ -1,0 +1,43 @@
+This is ApacheBench, Version 2.3 <$Revision: 655654 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking localhost (be patient).....done
+
+
+Server Software:        zope.server.http
+Server Hostname:        localhost
+Server Port:            8085
+
+Document Path:          /ubuntu/breezy-autotest/+queue
+Document Length:        20386 bytes
+
+Concurrency Level:      10
+Time taken for tests:   24.735 seconds
+Complete requests:      100
+Failed requests:        0
+Write errors:           0
+Total transferred:      2061600 bytes
+HTML transferred:       2038600 bytes
+Requests per second:    4.04 [#/sec] (mean)
+Time per request:       2473.547 [ms] (mean)
+Time per request:       247.355 [ms] (mean, across all concurrent requests)
+Transfer rate:          81.39 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    4  13.6      0      53
+Processing:  1001 2392 349.9   2457    2943
+Waiting:      958 2379 352.0   2450    2938
+Total:       1014 2396 343.4   2457    2985
+
+Percentage of the requests served within a certain time (ms)
+  50%   2457
+  66%   2545
+  75%   2616
+  80%   2647
+  90%   2739
+  95%   2869
+  98%   2919
+  99%   2985
+ 100%   2985 (longest request)

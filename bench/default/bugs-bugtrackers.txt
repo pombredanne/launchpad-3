@@ -1,0 +1,43 @@
+This is ApacheBench, Version 2.3 <$Revision: 655654 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking localhost (be patient).....done
+
+
+Server Software:        zope.server.http
+Server Hostname:        localhost
+Server Port:            8085
+
+Document Path:          /bugs/bugtrackers
+Document Length:        8883 bytes
+
+Concurrency Level:      10
+Time taken for tests:   7.570 seconds
+Complete requests:      100
+Failed requests:        0
+Write errors:           0
+Total transferred:      911200 bytes
+HTML transferred:       888300 bytes
+Requests per second:    13.21 [#/sec] (mean)
+Time per request:       756.963 [ms] (mean)
+Time per request:       75.696 [ms] (mean, across all concurrent requests)
+Transfer rate:          117.55 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.6      0       2
+Processing:   248  736 162.3    772    1058
+Waiting:      219  720 160.2    741    1034
+Total:        250  737 162.0    772    1058
+
+Percentage of the requests served within a certain time (ms)
+  50%    772
+  66%    810
+  75%    855
+  80%    867
+  90%    907
+  95%   1011
+  98%   1040
+  99%   1058
+ 100%   1058 (longest request)
