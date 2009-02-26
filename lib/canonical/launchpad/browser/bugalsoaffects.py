@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, IAddBugTaskForm,
     IAddBugTaskWithProductCreationForm, IBug, IBugTaskSet, IBugTrackerSet,
     IBugWatchSet, IDistributionSourcePackage, ILaunchBag,
-    ILaunchpadCelebrities, IProductSet, NoBugTrackerFound,
+    ILaunchpadCelebrities, IProductPublic, IProductSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL, valid_remote_bug_url, valid_upstreamtask,
     validate_new_distrotask)
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -721,18 +721,21 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
 
     @property
     def upstream_bugtracker_links(self):
-        """Return the upstream bugtracker links for this project.
+        """Return the upstream bugtracker links for the current target.
 
-        :return: A dict of the bug filing URL and the search URL as
-            returned by `BugTracker.getBugFilingAndSearchLinks()`. If
-            self.bugtracker is None, return None.
+        :return: The bug tracker links for the target, if the target is
+            an IProductPublic. If it isn't, return None. If
+            product.bugtracker is None, return None.
         """
-        if not self.bugtracker:
+        target = self.getTarget()
+        if not IProductPublic.providedBy(target):
+            return None
+
+        if not target.bugtracker:
             return None
         else:
-            return self.bugtracker.getBugFilingAndSearchLinks(
-                self.remote_product)
-
+            return target.bugtracker.getBugFilingAndSearchLinks(
+                target.remote_product)
 
 
 class BugTrackerCreationStep(AlsoAffectsStep):
