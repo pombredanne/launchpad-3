@@ -588,6 +588,7 @@ class LoginServiceMixinLoginView:
     schema = ILoginServiceLoginForm
     email_sent_template = ViewPageTemplateFile(
         "../templates/loginservice-email-sent.pt")
+    redirection_url = None
 
     @property
     def initial_values(self):
@@ -667,7 +668,8 @@ class LoginServiceMixinLoginView:
                     "instructions on how to confirm that it belongs to you.",
                     mapping=dict(email=email)))
                 self.token = getUtility(ILoginTokenSet).new(
-                    person, email, email, LoginTokenType.VALIDATEEMAIL)
+                    person, email, email, LoginTokenType.VALIDATEEMAIL,
+                    redirection_url=self.redirection_url)
                 self.token.sendEmailValidationRequest(
                     self.request.getApplicationURL())
                 self.saveRequestInSession('token' + self.token.token)
@@ -705,7 +707,8 @@ class LoginServiceMixinLoginView:
         logintokenset = getUtility(ILoginTokenSet)
         self.token = logintokenset.new(
             requester=None, requesteremail=None, email=email,
-            tokentype=LoginTokenType.NEWACCOUNT)
+            tokentype=LoginTokenType.NEWACCOUNT,
+            redirection_url=self.redirection_url)
         self.token.sendNewUserNeutralEmail()
         self.saveRequestInSession('token' + self.token.token)
         self.email_heading = 'Registration mail sent'
@@ -720,7 +723,8 @@ class LoginServiceMixinLoginView:
         person = None
         logintokenset = getUtility(ILoginTokenSet)
         self.token = logintokenset.new(
-            person, email, email, LoginTokenType.PASSWORDRECOVERY)
+            person, email, email, LoginTokenType.PASSWORDRECOVERY,
+            redirection_url=self.redirection_url)
         self.token.sendPasswordResetNeutralEmail()
         self.saveRequestInSession('token' + self.token.token)
         self.email_heading = 'Forgotten your password?'
@@ -751,6 +755,10 @@ class LoginServiceStandaloneLoginView(LoginServiceMixinLoginView,
     custom_widget('action', LaunchpadRadioWidget)
     template = ViewPageTemplateFile(
         "../templates/loginservice-standalone-login.pt")
+
+    @property
+    def redirection_url(self):
+        return self.request.getApplicationURL()
 
     def saveRequestInSession(self, key):
         pass
