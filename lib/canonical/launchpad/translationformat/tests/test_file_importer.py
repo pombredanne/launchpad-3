@@ -219,10 +219,10 @@ class FileImporterTestCase(unittest.TestCase):
         # Steps:
         #  * Get a POT importer and import a POT file.
         #  * Get a POTMsgSet in the imported template.
-        #  * Create a non-published PO file importer with unprivileged
+        #  * Create a published PO file importer with unprivileged
         #    person as the importer.
         #  * Make sure this person lacks editing permissions.
-        #  * Try storing translations and watch it fail.
+        #  * Try storing translations and watch it succeed.
         #
         pot_importer = self._createPOTFileImporter(
             TEST_TEMPLATE_EXPORTED, True)
