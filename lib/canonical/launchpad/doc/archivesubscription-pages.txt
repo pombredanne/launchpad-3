@@ -171,12 +171,20 @@ But spiv is subscribed to a number of archives:
     >>> view.has_subscriptions
     True
 
-The subscriptions property returns all the archive subscriptions for
-the current person (Needs to be updated to return only current subscriptions):
+The subscriptions_with_tokens property returns all the current archive
+subscriptions for the person, with a corresponding token for each:
 
-    >>> for subscription in view.subscriptions:
-    ...     print subscription.archive.title
-    ...     print subscription.description
-    Private PPA for Mark Shuttleworth       spiv's still my friend
-    Private PPA for Celso Providelo         spiv's my friend
+    >>> def print_subscriptions_with_tokens():
+    ...     for subscription, token in view.subscriptions_with_tokens:
+    ...         print subscription.archive.title
+    ...         print subscription.description
+    ...         token_text = "None"
+    ...         if token:
+    ...             token_text = token.token
+    ...         print token
+    >>> print_subscriptions_with_tokens()
+    Private PPA for Mark Shuttleworth       spiv's still my friend   None
+    Private PPA for Celso Providelo         spiv's my friend         None
+
+
 

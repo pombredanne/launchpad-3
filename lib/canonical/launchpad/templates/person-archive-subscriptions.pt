@@ -22,15 +22,30 @@
     </p>
     <table summary="CONTEXTS/fmt:pagetitle" id="archive-subscriptions">
       <thead>
-        <tr><th>Archive</th><th>Subscription description</th></tr>
+        <tr class="archive-subscription-row">
+          <th>Archive</th><th>Subscription description</th>
+        </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="subscription view/subscriptions"
+        <tr tal:repeat="subscription_with_token view/subscriptions_with_tokens"
             class="archive-subscription-row">
+          <tal:subscription_and_token
+              define="subscription subscription_with_token/subscription;
+                      token subscription_with_token/token">
           <td tal:content="subscription/archive/title">Private PPA for Celso
           </td>
           <td tal:content="subscription/description">Allow Team X access.
           </td>
+          <td tal:condition="not: token"
+              tal:define="archive_id subscription/archive/id">
+            <form method="post" action="">
+              <input type="hidden" name="archive_id"
+                  tal:attributes="value string:${archive_id}"/>
+              <input type="submit" value="Activate"
+                  tal:attributes="id string:archive_${archive_id}"/>
+            </form>
+          </td>
+          </tal:subscription_and_token>
         </tr>
       </tbody>
     </table>

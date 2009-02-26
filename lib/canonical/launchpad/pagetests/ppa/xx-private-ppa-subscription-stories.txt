@@ -7,6 +7,24 @@ a custom sources.list entry and access the repository.
 The owner or admin of a private archive can also edit or cancel
 subscribers related to the archive.
 
+== Setup Helpers ==
+
+Just so the definition of these helpers doesn't get in the way of the
+story text, define them here.
+
+First create a helper function for printing the archive subscriptions
+of a person:
+
+    >>> def print_subscriptions_for_person(contents):
+    ...     subscriptions = find_tags_by_class(contents,
+    ...                                        'archive-subscription-row')
+    ...     for subscription in subscriptions:
+    ...         print extract_text(subscription)
+    ...         button = subscription.find(
+    ...             'input', value="Activate")
+    ...         if button:
+    ...             print "Activate"
+
 == Story: An archive owner can add a subscription for a private archive ==
 
  * As a software developer who plans to release some private software
@@ -125,9 +143,7 @@ And clicks on the 'Private software subscriptions' link
 
 Then a list of Joe's current subscriptions is displayed
 
-    >>> subscription_table = find_tag_by_id(joe_browser.contents,
-    ...     "archive-subscriptions")
-    >>> print extract_text(subscription_table)
+    >>> print_subscriptions_for_person(joe_browser.contents)
     Archive                             Subscription description
     Private PPA for Celso Providelo     Joe is my friend         Activate
 

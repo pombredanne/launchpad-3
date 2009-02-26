@@ -134,6 +134,10 @@ of a person:
     ...                                        'archive-subscription-row')
     ...     for subscription in subscriptions:
     ...         print extract_text(subscription)
+    ...         button = subscription.find(
+    ...             'input', value="Activate")
+    ...         if button:
+    ...             print "Activate"
 
 A person who is subscribed to multiple archives will see all the archives
 listed:
@@ -142,7 +146,8 @@ listed:
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> print_subscriptions_for_person(joe_browser.contents)
-    Private PPA for Mark Shuttleworth  Joe is also my friend  Activate
-    Private PPA for Celso Providelo    Joe is my friend       Activate
+    Archive                            Subscription description
+    Private PPA for Mark Shuttleworth  Joe is also my friend     Activate
+    Private PPA for Celso Providelo    Joe is my friend          Activate
 
 
