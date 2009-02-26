@@ -17,6 +17,7 @@ from zope.formlib import form
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.archive import ArchiveViewBase
+from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriber, IArchiveSubscriberSet)
 from canonical.launchpad.webapp.launchpadform import (
@@ -106,6 +107,66 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
 
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for managing a persons archive subscriptions."""
+
+    def redirectToSelf(self):
+        """As a function for readability."""
+        self.request.response.redirect(self.request.getURL())
+
+    def initialize(self):
+        """Process any POSTed subscription activations."""
+        super(PersonArchiveSubscriptionsView, self).initialize()
+
+        # We only need to do more if the request was POSTed:
+        if self.request.method != "POST":
+            return
+
+        # Just for clarity:
+        def rediretToSelf():
+            self.request.response.redirect(self.request.getURL())
+
+        archive_id = self.request.form.get('archive_id')
+        if archive_id is None or type(archive_id) != int:
+            # There is no input validation as it's a simple button,
+            # so just continue normally.
+            redirectToSelf()
+            return
+
+        # Grab the corresponding archive:
+        try:
+            archive = getUtility(IArchiveSet).get(
+                self.request.form["archive_id"])
+        except SQLObjectNotFound:
+            # Just ignore as it should only happen if the user
+            # is fiddling with POST params.
+            rediretToSelf()
+            return
+
+        # Grab the current user's subscriptions for this
+        # particular archive, as well as any token that already
+        # exists:
+        sub_set = getUtility(IArchiveSubscriberSet)
+        subscriptions_with_token = sub_set.getBySubscriber(
+            self.context,
+            archive=archive,
+            return_tokens=True
+        )
+
+        if subscriptions_with_token.count() == 0:
+            # The user does not have a subscription, so no token.
+            rediretToSelf() # Return an Unauthorized instead?
+            return
+
+        # Note: there may be multiple subscriptions for a user (through
+        # teams), but there should only ever be one token generated.
+        subscription, token = subscriptions_with_token[0]
+        if token:
+            # Generate a new token and notify the user.
+            # TODO:
+            pass
+        else:
+            token = archive.newAuthToken(self.context)
+            # Message the user and redirect:
+            redirectToSelf()
 
     @property
     def subscriptions_with_tokens(self):

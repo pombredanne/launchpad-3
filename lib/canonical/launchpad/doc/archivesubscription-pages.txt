@@ -180,11 +180,23 @@ subscriptions for the person, with a corresponding token for each:
     ...         print subscription.description
     ...         token_text = "None"
     ...         if token:
-    ...             token_text = token.token
-    ...         print token
+    ...             token_text = "Token"
+    ...         print token_text
+
     >>> print_subscriptions_with_tokens()
     Private PPA for Mark Shuttleworth       spiv's still my friend   None
     Private PPA for Celso Providelo         spiv's my friend         None
 
+Posting an Archive ID to the PersonArchiveSubscriptionView will
+generate a token for that archive:
 
+    >>> view = create_initialized_view(
+    ...     spiv,
+    ...     name="+archivesubscriptions",
+    ...     method="post",
+    ...     form={"archive_id": sabdfl.archive.id})
+
+    >>> print_subscriptions_with_tokens()
+    Private PPA for Mark Shuttleworth       spiv's still my friend   Token
+    Private PPA for Celso Providelo         spiv's my friend         None
 
