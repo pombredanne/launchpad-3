@@ -16,10 +16,9 @@ from zope.component import getUtility
 from canonical.launchpad.database.openidserver import (
     OpenIDAuthorization, OpenIDAuthorizationSet)
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.ftests._login import login
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDAuthorizationSet)
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.adapter import StoreSelector
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
@@ -45,17 +44,17 @@ class OpenIDAuthorizationTestCase(unittest.TestCase):
             zstorm.get_name(OpenIDAuthorization._get_store()))
 
 
-class OpenIDAuthorizationSetTests(unittest.TestCase):
+class OpenIDAuthorizationSetTests(TestCaseWithFactory):
     """Test for the OpenIDAuthorizationSet database class."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        login('no-priv@canonical.com')
+        super(OpenIDAuthorizationSetTests, self).setUp(
+            user='no-priv@canonical.com')
 
-    def test_get_by_account(self):
+    def test_getByAccount(self):
         """Test behaviour of the getByAccount() method."""
-        factory = LaunchpadObjectFactory()
-        account = factory.makeAccount("Test Account")
+        account = self.factory.makeAccount("Test Account")
 
         # Create two authorizations, committing the transaction so
         # that we get different creation dates.
@@ -71,15 +70,15 @@ class OpenIDAuthorizationSetTests(unittest.TestCase):
         self.assertEqual(authorization2.trust_root, "http://example.com")
 
 
-class OpenIDAuthorizationSet__with_SlaveStore_TestCase(unittest.TestCase):
+class OpenIDAuthorizationSet__with_SlaveStore_TestCase(TestCaseWithFactory):
     """Test for the OpenIDAuthorizationSet database class."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Mimic the setup when the default store is the SLAVE_FLAVOR."""
-        login('no-priv@canonical.com')
-        factory = LaunchpadObjectFactory()
-        person = factory.makePerson()
+        super(OpenIDAuthorizationSet__with_SlaveStore_TestCase, self).setUp(
+            user='no-priv@canonical.com')
+        person = self.factory.makePerson()
         # The person is created on the master flavor, commit and fetch it
         # back from the slave store.
         transaction.commit()
