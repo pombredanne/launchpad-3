@@ -110,7 +110,6 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
     @property
     def subscriptions(self):
         """Return all the persons archive subscriptions."""
-        # TODO: This will change to current_subscriptions
         return getUtility(IArchiveSubscriberSet).getBySubscriber(
             self.context)
 
