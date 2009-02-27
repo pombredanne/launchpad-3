@@ -32,7 +32,7 @@
       </foaf:Person>
     </metal:display-person>
   </tal:is-person>
-  <tal:public tal:condition="name context/name|nothing">
+  <tal:public tal:condition="context/name|nothing">
     <foaf:Group tal:condition="context/isTeam">
         <foaf:name tal:content="context/displayname">
             Team Display Name
