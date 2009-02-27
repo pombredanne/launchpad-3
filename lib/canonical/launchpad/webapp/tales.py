@@ -421,7 +421,6 @@ class ObjectFormatterAPI:
         :param view_name: If not None, return the URL to the page with that
             name on this object.
         """
-        #import pdb; pdb.set_trace(); # DO NOT COMMIT
         try:
             url = canonical_url(
                 self._context, path_only_if_possible=True,

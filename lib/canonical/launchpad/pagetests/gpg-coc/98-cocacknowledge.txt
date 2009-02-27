@@ -27,7 +27,7 @@ Ensure the CoC was acknowledge by searching in the CoC Admin Console:
   >>> admin_browser.getControl(name='search').click()
   >>> 'paper submission accepted by Foo Bar' in admin_browser.contents
   True
-  >>> '<a href="/~sabdfl">' in admin_browser.contents
+  >>> '<a href="http://launchpad.dev/~sabdfl">' in admin_browser.contents
   True
   >>> '[ACTIVE]' in admin_browser.contents
   True
@@ -41,7 +41,6 @@ Test if the advertisement email was sent:
   >>> print msg.get_payload(decode=True)
   <BLANKLINE>
   ...
-  User: 'Mark Shuttleworth' 
+  User: 'Mark Shuttleworth'
   Paper Submitted acknowledge by Foo Bar
   ...
-

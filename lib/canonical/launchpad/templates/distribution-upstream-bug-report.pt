@@ -225,7 +225,7 @@
                 <td align="center">
                   <a tal:attributes="href item/product/bug_supervisor/fmt:url"
                      ><img src="/@@/yes"
-                        tal:attributes="title structure item/product/bug_supervisor/fmt:displayname"
+                        tal:attributes="title item/product/bug_supervisor/fmt:displayname"
                         /></a>
                 </td>
               </tal:has-bug-supervisor>
