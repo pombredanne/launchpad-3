@@ -180,6 +180,3 @@ class OpenIDApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):
         "../templates/openid-index.pt")
     xrds_template = ViewPageTemplateFile(
         "../templates/openidapplication-xrds.pt")
-
-    def getAuthorizations(self):
-        return getUtility(IOpenIDAuthorizationSet).getByAccount(self.account)

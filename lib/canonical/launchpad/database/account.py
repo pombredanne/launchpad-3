@@ -10,6 +10,7 @@ import random
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.expr import Desc
 from storm.references import Reference
 from storm.store import Store
 
@@ -20,6 +21,7 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.database.openidserver import OpenIDRPSummary
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -66,6 +68,13 @@ class Account(SQLBase):
         return Store.of(self).find(
             EmailAddress, account=self,
             status=EmailAddressStatus.PREFERRED).one()
+
+    @property
+    def recently_authenticated_rps(self):
+        """See `IAccount`."""
+        result = Store.of(self).find(OpenIDRPSummary, account=self)
+        result.order_by(Desc(OpenIDRPSummary.date_last_used))
+        return result.config(limit=10)
 
     def reactivate(self, comment, password, preferred_email):
         """See `IAccountSpecialRestricted`.

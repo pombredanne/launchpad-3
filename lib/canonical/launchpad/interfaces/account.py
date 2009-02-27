@@ -17,7 +17,7 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
@@ -233,6 +233,14 @@ class IAccountPrivate(Interface):
     password = PasswordField(
         title=_("Password."), readonly=False, required=True)
 
+    recently_authenticated_rps = List(
+        title=_("Most recently authenticated relying parties."),
+        description=_(
+            "A list of up to 10 `IOpenIDRPSummary` objects representing the "
+            "OpenID Relying Parties in which this account authenticated "
+            "most recently."),
+        readonly=False, required=True)
+
     def createPerson(self, rationale):
         """Create and return a new `IPerson` associated with this account."""
 
@@ -253,7 +261,7 @@ class IAccountSpecialRestricted(Interface):
         """
 
 
-class IAccount(IAccountPublic, IAccountPrivate):
+class IAccount(IAccountPublic, IAccountPrivate, IAccountSpecialRestricted):
     """Interface describing an `Account`."""
 
 

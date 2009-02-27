@@ -5,7 +5,7 @@
     i18n:domain="launchpad">
 
 <tal:not-logged-in condition="not:view/account">
-<tal:block replace="structure context/@@+standalone-login" />
+  <tal:block replace="structure context/@@+standalone-login" />
 </tal:not-logged-in>
 
 <tal:logged-in condition="view/account">
@@ -24,24 +24,27 @@
         </form>
       </p>
 
-      <h3>Visited Sites</h3>
+      <tal:visited-sites define="rps view/account/recently_authenticated_rps"
+                         condition="rps/count">
+      <h3>Recently authenticated sites</h3>
 
       <table class="listing">
         <thead>
           <tr>
             <th>Site</th>
-            <th>Authorization Date</th>
-            <th>Expiration</th>
+            <th>First authenticated</th>
+            <th>Last authenticated</th>
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="auth view/getAuthorizations">
-            <td tal:content="auth/trust_root">Trust Root</td>
-            <td tal:content="auth/date_created">Creation Date</td>
-            <td tal:content="auth/date_expires">Expiration Date</td>
+          <tr tal:repeat="authenticated_rp rps">
+            <td tal:content="authenticated_rp/trust_root" />
+            <td tal:content="authenticated_rp/date_created/fmt:date" />
+            <td tal:content="authenticated_rp/date_last_used/fmt:date" />
           </tr>
         </tbody>
       </table>
+      </tal:visited-sites>
     </div>
   </body>
 </html>
