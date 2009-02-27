@@ -285,13 +285,7 @@
         name="canonical.lazr.rest.resource.EntryResource"
         />
 
-    <adapter
-        for="zope.interface.Interface
-             zope.schema.interfaces.IField
-             canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.rest.IFieldHTMLRenderer"
-        factory="canonical.lazr.rest.resource.render_field_to_html"
-        />
+    <adapter factory="canonical.lazr.rest.resource.render_field_to_html" />
 
     <!-- System Errors -->
     <view

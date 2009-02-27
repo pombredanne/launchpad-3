@@ -93,14 +93,14 @@ a simple text node.
 But it's possible to define a custom HTML unmarshaller for a particular object
 and field type. Here's a simple unmarshaller that serves some hard-coded HTML.
 
+  >>> from zope import component
   >>> from zope.interface import implementer
-  >>> from zope.component import adapter
   >>> from zope.schema.interfaces import IText
   >>> from canonical.launchpad.interfaces import IPerson
   >>> from canonical.lazr.interfaces.rest import (
   ...     IFieldHTMLRenderer, WebServiceLayer)
 
-  >>> @adapter(IPerson, IText, WebServiceLayer)
+  >>> @component.adapter(IPerson, IText, WebServiceLayer)
   ... @implementer(IFieldHTMLRenderer)
   ... def dummy_unmarshaller(context, field, request):
   ...     """Create a simple unmarshaller that bolds the original string."""

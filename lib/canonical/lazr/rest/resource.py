@@ -38,20 +38,22 @@ import zlib
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
+from zope import component
 from zope.component import (
-    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
-    getUtility, queryAdapter)
+    adapts, getAdapters, getAllUtilitiesRegisteredFor,
+    getMultiAdapter, getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.publisher.http import init_status_codes, status_reasons
-from zope.interface import implements, implementedBy, providedBy
+from zope.interface import (
+    implementer, implements, implementedBy, providedBy, Interface)
 from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFieldsInOrder
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IChoice, IObject)
+    ConstraintNotSatisfied, IBytes, IChoice, IField, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from canonical.lazr.enum import BaseItem
@@ -72,7 +74,8 @@ from canonical.lazr.interfaces import (
     IEntryFieldResource, IEntryResource, IFieldHTMLRenderer,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME,
+    WebServiceLayer)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 
@@ -691,7 +694,7 @@ class FieldUnmarshallerMixin:
             # Try to get a renderer for this particular field.
             renderer = getMultiAdapter(
                 (self.entry.context, field, self.request),
-                name=field.__name__)
+                IFieldHTMLRenderer, name=field.__name__)
         except ComponentLookupError:
             # There's no field-specific renderer. Look up an
             # IFieldHTMLRenderer for this _type_ of field.
@@ -702,6 +705,8 @@ class FieldUnmarshallerMixin:
         return name, renderer(value)
 
 
+@component.adapter(Interface, IField, WebServiceLayer)
+@implementer(IFieldHTMLRenderer)
 def render_field_to_html(object, field, request):
     """Turn a field's current value into an XHTML snippet.
 
