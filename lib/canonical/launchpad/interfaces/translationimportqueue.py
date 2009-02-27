@@ -380,6 +380,14 @@ class IEditTranslationImportQueueEntry(Interface):
             "in language pack or MO tarball exports."),
         required=False)
 
+    languagepack = Bool(
+        title=_("Include translations for this template in language packs?"),
+        description=_("For POT only: "
+            "Check this box if this template is part of a language pack so "
+            "its translations should be exported that way."),
+        required=True,
+        default=False)
+
     potemplate = Choice(
         title=_("Template"),
         description=_("For PO only: "
