@@ -120,6 +120,10 @@ class BranchPrimaryContext:
     # should happen to this class, given that IBranchTarget does something
     # fairly similar.
 
+    # XXX: JonathanLange 2009-02-27 spec=package-branches: Get rid of this,
+    # and change the adapter for IPrimaryContext to be a function that returns
+    # IBranch.target.
+
     implements(IPrimaryContext)
 
     def __init__(self, branch):

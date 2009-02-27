@@ -24,6 +24,9 @@ class IBranchTarget(Interface):
     branches, and a person contains 'junk' branches.
     """
 
+    # XXX: JonathanLange 2009-02-27 spec=package-branches: Add __eq__ and
+    # __ne__ to the interface.
+
     name = Attribute("The name of the target.")
 
     def getNamespace(owner):

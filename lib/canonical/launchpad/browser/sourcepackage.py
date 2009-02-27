@@ -275,9 +275,15 @@ class SourcePackageBranchesView(BranchListingView):
 
     # XXX: "By most interesting" search doesn't work at all
 
-    # XXX: No menu for this page, there should be.
+    # XXX: No menu for this page, there should be. And the menu should just
+    # have register a branch.
 
     # XXX: No link back to this page from branches
+
+    # XXX: Show me at the bottom I can see previous/next series or: [dapper]
+    # [edgy] feisty [gutsy] [hardy]
+
+    # XXX: Clicking on Code tab for branch takes me to personal branch
 
     @cachedproperty
     def branch_count(self):
