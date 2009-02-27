@@ -22,7 +22,7 @@ from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.traversing.interfaces import ITraversable, IPathAdapter
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
