@@ -90,8 +90,9 @@ a simple text node.
   ...
   Guilherme Salgado
 
-But it's possible to define a custom HTML unmarshaller for a particular object
-and field type. Here's a simple unmarshaller that serves some hard-coded HTML.
+But it's possible to define a custom HTML renderer for a particular
+object and field type. Here's a simple renderer that bolds whatever
+value it's given.
 
   >>> from zope import component
   >>> from zope.interface import implementer
@@ -102,21 +103,21 @@ and field type. Here's a simple unmarshaller that serves some hard-coded HTML.
 
   >>> @component.adapter(IPerson, IText, WebServiceLayer)
   ... @implementer(IFieldHTMLRenderer)
-  ... def dummy_unmarshaller(context, field, request):
-  ...     """Create a simple unmarshaller that bolds the original string."""
-  ...     def internal_func(value):
+  ... def dummy_renderer(context, field, request):
+  ...     """Create a simple renderer that bolds the original string."""
+  ...     def render(value):
   ...         return "<b>%s</b>" % value.encode("utf-8")
-  ...     return internal_func
+  ...     return render
 
-Register the unmarshaller as the IFieldHTMLRenderer adapter for an
+Register the renderer as the IFieldHTMLRenderer adapter for an
 IText field of an IPerson entry...
 
   >>> from zope.component import getGlobalSiteManager
   >>> manager = getGlobalSiteManager()
-  >>> manager.registerAdapter(dummy_unmarshaller)
+  >>> manager.registerAdapter(dummy_renderer)
 
 ...and the XHTML representation of an IPerson will be the result of
-calling a dummy_unmarshaller object.
+calling a dummy_renderer object.
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
@@ -149,10 +150,10 @@ It will not be used for non-text fields of IPerson.
   2005-06-06 08:59:51.596025+00:00
 
 Before we continue, here's some cleanup code to remove the custom
-unmarshaller we just defined.
+renderer we just defined.
 
   >>> from zope.component import getGlobalSiteManager
-  >>> ignored = getGlobalSiteManager().unregisterAdapter(dummy_unmarshaller)
+  >>> ignored = getGlobalSiteManager().unregisterAdapter(dummy_renderer)
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
@@ -164,17 +165,17 @@ unmarshaller we just defined.
 
 It's also possible to define a custom HTML representation of one
 particular field, by registering a view on the field. This code
-creates a custom unmarshaller for IPerson.display_name, by registering
+creates a custom renderer for IPerson.display_name, by registering
 a view on IPerson called "display_name".
 
-  >>> manager.registerAdapter(dummy_unmarshaller, name='display_name')
+  >>> manager.registerAdapter(dummy_renderer, name='display_name')
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
   <b>Guilherme Salgado</b>
 
-Unlike what happened when we registered an unmarshaller for
+Unlike what happened when we registered an renderer for
 IPerson/IText, other IText fields of IPerson are not affected.
 
   >>> print webservice.get('/~salgado/name', 'application/xhtml+xml')
@@ -195,7 +196,7 @@ representations of that entry's fields.
 Before we continue, here's some code to unregister the view.
 
   >>> ignored = getGlobalSiteManager().unregisterAdapter(
-  ...      dummy_unmarshaller, name='display_name')
+  ...      dummy_renderer, name='display_name')
 
   >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
