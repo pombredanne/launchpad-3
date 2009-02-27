@@ -749,7 +749,7 @@ def setUpGlobs(test):
     # If a unicode URL is opened by the test browswer, later navigation
     # raises ValueError exceptions in /usr/lib/python2.4/Cookie.py
     test.globs['canonical_url'] = safe_canonical_url
-    test.globs['factory'] = FactoryWrapper(LaunchpadObjectFactory())
+    test.globs['factory'] = LaunchpadObjectFactory()
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class
