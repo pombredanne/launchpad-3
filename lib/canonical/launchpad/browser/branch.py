@@ -123,10 +123,7 @@ class BranchPrimaryContext:
     implements(IPrimaryContext)
 
     def __init__(self, branch):
-        if branch.product is not None:
-            self.context = branch.product
-        else:
-            self.context = branch.owner
+        self.context = branch.target.context
 
 
 class BranchHierarchy(Hierarchy):

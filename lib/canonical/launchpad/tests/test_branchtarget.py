@@ -10,6 +10,7 @@ from canonical.launchpad.database.branchtarget import (
     PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing import DatabaseFunctionalLayer
 
 
@@ -102,6 +103,26 @@ class TestProductBranchTarget(TestCaseWithFactory):
         product = self.factory.makeProduct()
         target = ProductBranchTarget(product)
         self.assertEqual(product, target.context)
+
+
+class TestPrimaryContext(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_package_branch(self):
+        branch = self.factory.makePackageBranch()
+        self.assertEqual(
+            branch.target.context, IPrimaryContext(branch).context)
+
+    def test_personal_branch(self):
+        branch = self.factory.makePersonalBranch()
+        self.assertEqual(
+            branch.target.context, IPrimaryContext(branch).context)
+
+    def test_product_branch(self):
+        branch = self.factory.makeProductBranch()
+        self.assertEqual(
+            branch.target.context, IPrimaryContext(branch).context)
 
 
 def test_suite():
