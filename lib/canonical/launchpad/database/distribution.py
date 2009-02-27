@@ -11,7 +11,7 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, ForeignKey, SQLRelatedJoin, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Join, SQL
+from storm.locals import Desc, In, Join, SQL
 from storm.store import Store
 
 from canonical.archivepublisher.debversion import Version
@@ -23,6 +23,7 @@ from canonical.database.sqlbase import (
     quote, quote_like, SQLBase, sqlvalues, cursor)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from canonical.launchpad.components.storm_operators import FTQ, Match, RANK
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
@@ -1000,20 +1001,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def searchBinaryPackagesFTI(self, package_name):
         """See `IDistribution`."""
-        from storm.expr import CompoundOper, NamedFunc
-        from storm.locals import (In, Desc)
-        class FTQ(NamedFunc):
-            __slots__ = ()
-            name = "FTQ"
-
-        class RANK(NamedFunc):
-            __slots__ = ()
-            name = "RANK"
-
-        class Match(CompoundOper):
-            __slots__ = ()
-            oper = "@@"
-
         search_vector_column = DistroSeriesPackageCache.fti
         query_function = FTQ(package_name)
         rank = RANK(search_vector_column, query_function)
