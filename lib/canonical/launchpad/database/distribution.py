@@ -44,6 +44,8 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseries import DistroSeries
+from canonical.launchpad.database.distroseriespackagecache import (
+    DistroSeriesPackageCache)
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -998,41 +1000,48 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def searchBinaryPackagesFTI(self, package_name):
         """See `IDistribution`."""
-        # I tried hard to get this to work in Storm, but after a whole
-        # day hacking at it in the Brazilian heat and being beaten back at
-        # every turn by Storm, I gave up.
+        from storm.expr import CompoundOper, NamedFunc
+        from storm.locals import (In, Desc)
+        class FTQ(NamedFunc):
+            __slots__ = ()
+            name = "FTQ"
 
-        order_constant = "rank(DistroSeriesPackageCache.fti, ftq(%s))" % (
-            sqlvalues(package_name))
+        class RANK(NamedFunc):
+            __slots__ = ()
+            name = "RANK"
 
-        results = DistributionSourcePackageCache.select("""
-            DistroSeries.distribution = %s AND
-            DistroSeries.releasestatus != %s AND
-            BinaryPackageRelease.binarypackagename = BinaryPackageName.id AND
-            DistroArchSeries.distroseries = DistroSeries.id AND
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = SourcePackageRelease.id AND
-            DistributionSourcePackageCache.sourcepackagename =
-                SourcePackageRelease.sourcepackagename AND
-            DistroSeriesPackageCache.binarypackagename =
-                BinaryPackageName.id AND
-            DistroSeriesPackageCache.archive IN %s AND
-            DistroSeriesPackageCache.fti @@ ftq(%s)
-            """ % (sqlvalues(self, DistroSeriesStatus.OBSOLETE,
-                             self.all_distro_archive_ids, package_name)),
-            clauseTables=[
-                'SourcePackageRelease', 'DistroSeries',
-                'BinaryPackageRelease', 'BinaryPackageName',
-                'DistroArchSeries', 'BinaryPackagePublishingHistory',
-                'Build', 'DistroSeriesPackageCache',
-                ],
-            distinct=True,
-            selectAlso=order_constant,
-            orderBy=[SQLConstant(order_constant + " DESC")])
+        class Match(CompoundOper):
+            __slots__ = ()
+            oper = "@@"
+
+        search_vector_column = DistroSeriesPackageCache.fti
+        query_function = FTQ(package_name)
+        rank = RANK(search_vector_column, query_function)
+
+        where_spec = (
+            DistroSeries.distribution == self,
+            DistroSeries.status != DistroSeriesStatus.OBSOLETE,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            DistroArchSeries.distroseries == DistroSeries.id,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.build == Build.id,
+            BinaryPackageRelease.binarypackagenameID ==
+                DistroSeriesPackageCache.binarypackagenameID,
+            Build.sourcepackagerelease == SourcePackageRelease.id,
+            DistributionSourcePackageCache.sourcepackagename ==
+                SourcePackageName.id,
+            SourcePackageRelease.sourcepackagename == SourcePackageName.id,
+            In(DistroSeriesPackageCache.archiveID, self.all_distro_archive_ids),
+            Match(search_vector_column, query_function)
+            )
+
+        select_spec = (DistributionSourcePackageCache, rank)
+        store = Store.of(self)
+        results = store.find(select_spec, where_spec)
+        results.order_by(Desc(rank)).config(distinct=True)
 
         return results
 
