@@ -2406,7 +2406,8 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
-        return Archive.selectOneBy(owner=self, purpose=ArchivePurpose.PPA)
+        return Archive.selectOneBy(
+            owner=self, purpose=ArchivePurpose.PPA, name='ppa')
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

@@ -149,6 +149,7 @@ COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attache
 COMMENT ON COLUMN Bug.number_of_duplicates IS 'The number of bugs marked as duplicates of this bug, populated by a trigger after setting the duplicateof of bugs.';
 COMMENT ON COLUMN Bug.message_count IS 'The number of messages (currently just comments) on this bugbug, maintained by the set_bug_message_count_t trigger.';
 COMMENT ON COLUMN Bug.users_affected_count IS 'The number of users affected by this bug, maintained by the set_bug_users_affected_count_t trigger.';
+COMMENT ON COLUMN Bug.hotness IS 'The relevance of this bug. This value is computed periodically using bug_affects_person and other bug values.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -208,6 +209,8 @@ COMMENT ON COLUMN BugTask.date_triaged IS 'The date when this bug transitioned t
 COMMENT ON COLUMN BugTask.date_fix_committed IS 'The date when this bug transitioned to a status >= FIXCOMMITTED.';
 COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitioned to a FIXRELEASED status.';
 COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
+COMMENT ON COLUMN BugTask.date_milestone_set IS 'The date when this bug was targed to the milestone that is currently set.';
+COMMENT ON COLUMN BugTask.hotness_rank IS 'The hotness bin in which this bugtask appears, as a value from the BugTaskHotnessRank enumeration.';
 
 
 -- BugNotification
@@ -681,6 +684,9 @@ product series branch.';
 COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
 series, as set by the user.  If this is not set, then import_branch is
 considered to be the product series branch';
+COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'At what
+level the import of translations from a branch in codehosting will happen:
+None, POT files only, POT and PO files. See also the corresponding Enum.';
 
 -- ProductSeriesCodeImport
 
@@ -1874,6 +1880,8 @@ COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were buil
 COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
 COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
 COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archive.';
+COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days before superseded or deleted binary files are expired in the librarian, or zero for never.';
+COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
 
 -- ArchiveAuthToken
 
