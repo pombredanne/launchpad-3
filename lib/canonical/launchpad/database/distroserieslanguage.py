@@ -228,6 +228,9 @@ class DummyDistroSeriesLanguage(RosettaStats):
     def untranslatedPercentage(self, language=None):
         return 100.0
 
+    def updateStatistics(self, ztm=None):
+        return
+
 
 class DistroSeriesLanguageSet:
     """See `IDistroSeriesLanguageSet`.

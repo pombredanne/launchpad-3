@@ -676,7 +676,7 @@ class POFile(SQLBase, POFileMixIn):
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return query
 
-    def updateStatistics(self, ztm=None):
+    def updateStatistics(self):
         """See `IPOFile`."""
         # make sure all the data is in the db
         flush_database_updates()
@@ -1111,7 +1111,7 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return (0, 0, 0, )
 
-    def updateStatistics(self, ztm=None):
+    def updateStatistics(self):
         """See `IPOFile`."""
         raise NotImplementedError
 

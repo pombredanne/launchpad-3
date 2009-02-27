@@ -21,7 +21,7 @@ class RosettaStats(object):
             return False
         return True
 
-    def updateStatistics(self, ztm=None):
+    def updateStatistics(self):
         """See IRosettaStats."""
         # this method should be overridden by the objects that inherit from
         # this class
