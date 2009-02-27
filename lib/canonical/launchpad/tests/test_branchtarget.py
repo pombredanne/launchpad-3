@@ -20,15 +20,15 @@ class TestPackageBranchTarget(TestCaseWithFactory):
     def test_name(self):
         # The name of a package context is distro/series/sourcepackage
         sourcepackage = self.factory.makeSourcePackage()
-        context = PackageBranchTarget(sourcepackage)
-        self.assertEqual(sourcepackage.path, context.name)
+        target = PackageBranchTarget(sourcepackage)
+        self.assertEqual(sourcepackage.path, target.name)
 
     def test_getNamespace(self):
         """Get namespace produces the correct namespace."""
         person = self.factory.makePerson()
         sourcepackage = self.factory.makeSourcePackage()
-        context = PackageBranchTarget(sourcepackage)
-        namespace = context.getNamespace(person)
+        target = PackageBranchTarget(sourcepackage)
+        namespace = target.getNamespace(person)
         self.assertEqual(person, namespace.owner)
         self.assertEqual(sourcepackage, namespace.sourcepackage)
 
@@ -37,6 +37,12 @@ class TestPackageBranchTarget(TestCaseWithFactory):
         target = IBranchTarget(package)
         self.assertIsInstance(target, PackageBranchTarget)
 
+    def test_context(self):
+        # IBranchTarget.context is the original object.
+        package = self.factory.makeSourcePackage()
+        target = PackageBranchTarget(package)
+        self.assertEqual(package, target.context)
+
 
 class TestPersonBranchTarget(TestCaseWithFactory):
 
@@ -44,14 +50,14 @@ class TestPersonBranchTarget(TestCaseWithFactory):
 
     def test_name(self):
         # The name of a junk context is '+junk'.
-        context = PersonBranchTarget(self.factory.makePerson())
-        self.assertEqual('+junk', context.name)
+        target = PersonBranchTarget(self.factory.makePerson())
+        self.assertEqual('+junk', target.name)
 
     def test_getNamespace(self):
         """Get namespace produces the correct namespace."""
         person = self.factory.makePerson()
-        context = PersonBranchTarget(self.factory.makePerson())
-        namespace = context.getNamespace(person)
+        target = PersonBranchTarget(self.factory.makePerson())
+        namespace = target.getNamespace(person)
         self.assertEqual(namespace.owner, person)
         self.assertRaises(AttributeError, lambda: namespace.product)
         self.assertRaises(AttributeError, lambda: namespace.sourcepackage)
@@ -61,6 +67,12 @@ class TestPersonBranchTarget(TestCaseWithFactory):
         target = IBranchTarget(person)
         self.assertIsInstance(target, PersonBranchTarget)
 
+    def test_context(self):
+        # IBranchTarget.context is the original object.
+        person = self.factory.makePerson()
+        target = PersonBranchTarget(person)
+        self.assertEqual(person, target.context)
+
 
 class TestProductBranchTarget(TestCaseWithFactory):
 
@@ -68,15 +80,15 @@ class TestProductBranchTarget(TestCaseWithFactory):
 
     def test_name(self):
         product = self.factory.makeProduct()
-        context = ProductBranchTarget(product)
-        self.assertEqual(product.name, context.name)
+        target = ProductBranchTarget(product)
+        self.assertEqual(product.name, target.name)
 
     def test_getNamespace(self):
         """Get namespace produces the correct namespace."""
         product = self.factory.makeProduct()
         person = self.factory.makePerson()
-        context = ProductBranchTarget(product)
-        namespace = context.getNamespace(person)
+        target = ProductBranchTarget(product)
+        namespace = target.getNamespace(person)
         self.assertEqual(namespace.product, product)
         self.assertEqual(namespace.owner, person)
 
@@ -84,6 +96,12 @@ class TestProductBranchTarget(TestCaseWithFactory):
         product = self.factory.makeProduct()
         target = IBranchTarget(product)
         self.assertIsInstance(target, ProductBranchTarget)
+
+    def test_context(self):
+        # IBranchTarget.context is the original object.
+        product = self.factory.makeProduct()
+        target = ProductBranchTarget(product)
+        self.assertEqual(product, target.context)
 
 
 def test_suite():

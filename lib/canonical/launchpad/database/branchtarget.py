@@ -25,6 +25,11 @@ class PackageBranchTarget:
         """See `IBranchTarget`."""
         return self.sourcepackage.path
 
+    @property
+    def context(self):
+        """See `IBranchTarget`."""
+        return self.sourcepackage
+
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
         from canonical.launchpad.database.branchnamespace import (
@@ -40,6 +45,11 @@ class PersonBranchTarget:
     def __init__(self, person):
         self.person = person
 
+    @property
+    def context(self):
+        """See `IBranchTarget`."""
+        return self.person
+
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
         from canonical.launchpad.database.branchnamespace import (
@@ -52,6 +62,11 @@ class ProductBranchTarget:
 
     def __init__(self, product):
         self.product = product
+
+    @property
+    def context(self):
+        """See `IBranchTarget`."""
+        return self.product
 
     @property
     def name(self):

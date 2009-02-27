@@ -24,6 +24,7 @@ class IBranchTarget(Interface):
     branches, and a person contains 'junk' branches.
     """
 
+    context = Attribute("The original object")
     name = Attribute("The name of the target.")
 
     def getNamespace(owner):
