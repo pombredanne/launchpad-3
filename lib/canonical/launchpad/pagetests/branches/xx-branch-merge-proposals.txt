@@ -727,3 +727,12 @@ If no diff is present, nothing is shown.
     >>> logout()
     >>> print get_review_diff()
     None
+
+If the review diff is empty, then we say it is empty.
+
+    >>> login('admin@canonical.com')
+    >>> bmp.review_diff = StaticDiff.acquireFromText('c', 'd', '')
+    >>> logout()
+    >>> print extract_text(get_review_diff())
+    Review Diff
+    Empty
