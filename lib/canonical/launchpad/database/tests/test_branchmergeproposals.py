@@ -1025,7 +1025,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         self.assertEqual([job], list(MergeProposalCreatedJob.iterReady()))
 
     def test_iterReady_excludes_branches_with_no_revisions(self):
-        """Skip Jobs with a hosted source branch that needs mirroring."""
+        """Skip Jobs with a source branch that has no revisions."""
         # Suppress events to avoid creating a MergeProposalCreatedJob early.
         bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
         bmp.source_branch.requestMirror()
