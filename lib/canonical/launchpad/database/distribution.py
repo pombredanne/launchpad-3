@@ -967,13 +967,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # results will only see DSPs
         return DecoratedResultSet(dsp_caches, result_to_dsp)
 
-    def searchBinaryPackages(self, package_name, exact_match=False):
-        """See `IDistribution`."""
-        store = Store.of(self)
-
-        # Return results only in active distroseries.
-        find_spec = (
-            DistributionSourcePackageCache,
+    @property
+    def _binaryPackageSearchClause(self):
+        """Return a Storm match clause for binary package searches."""
+        # This matches all DistributionSourcePackageCache rows that have
+        # a source package that generated the BinaryPackageName that
+        # we're searching for.
+        return (
             DistroSeries.distribution == self,
             DistroSeries.status != DistroSeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
@@ -986,7 +986,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             Build.sourcepackagerelease == SourcePackageRelease.id,
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
-                SourcePackageName.id)
+                SourcePackageName.id,
+            In(
+                DistroSeriesPackageCache.archiveID,
+                self.all_distro_archive_ids))
+
+    def searchBinaryPackages(self, package_name, exact_match=False):
+        """See `IDistribution`."""
+        store = Store.of(self)
+
+        find_spec = self._binaryPackageSearchClause
+        select_spec = (DistributionSourcePackageCache,)
 
         if exact_match:
             match_clause = (BinaryPackageName.name == package_name,)
@@ -995,7 +1005,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 BinaryPackageName.name.like("%%%s%%" % package_name.lower()),)
 
         result_set = store.find(
-            *(find_spec + match_clause)).config(distinct=True)
+            *(select_spec + find_spec + match_clause)).config(distinct=True)
 
         return result_set
 
@@ -1005,27 +1015,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         query_function = FTQ(package_name)
         rank = RANK(search_vector_column, query_function)
 
-        where_spec = (
-            DistroSeries.distribution == self,
-            DistroSeries.status != DistroSeriesStatus.OBSOLETE,
-            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
-            DistroArchSeries.distroseries == DistroSeries.id,
-            BinaryPackagePublishingHistory.distroarchseries ==
-                DistroArchSeries.id,
-            BinaryPackagePublishingHistory.binarypackagerelease ==
-                BinaryPackageRelease.id,
-            BinaryPackageRelease.build == Build.id,
+        extra_clauses = (
             BinaryPackageRelease.binarypackagenameID ==
                 DistroSeriesPackageCache.binarypackagenameID,
-            Build.sourcepackagerelease == SourcePackageRelease.id,
-            DistributionSourcePackageCache.sourcepackagename ==
-                SourcePackageName.id,
-            SourcePackageRelease.sourcepackagename == SourcePackageName.id,
-            In(
-                DistroSeriesPackageCache.archiveID,
-                self.all_distro_archive_ids),
             Match(search_vector_column, query_function)
             )
+        where_spec = (self._binaryPackageSearchClause + extra_clauses)
 
         select_spec = (DistributionSourcePackageCache, rank)
         store = Store.of(self)
