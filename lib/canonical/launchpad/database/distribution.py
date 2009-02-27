@@ -1021,7 +1021,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistributionSourcePackageCache.sourcepackagename ==
                 SourcePackageName.id,
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
-            In(DistroSeriesPackageCache.archiveID, self.all_distro_archive_ids),
+            In(
+                DistroSeriesPackageCache.archiveID,
+                self.all_distro_archive_ids),
             Match(search_vector_column, query_function)
             )
 
