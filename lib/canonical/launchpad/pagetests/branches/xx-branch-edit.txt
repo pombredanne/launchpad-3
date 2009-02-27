@@ -96,7 +96,6 @@ To change the branch status, the +edit page is also used:
 The form displays the branch current status.
 
     >>> print_radio_button_field(browser.contents, 'lifecycle_status')
-    ( ) New
     (*) Experimental
     ( ) Development
     ( ) Mature

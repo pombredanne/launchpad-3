@@ -39,7 +39,7 @@ Branch URLs are not valid for hosted branches.
     ...         print extract_text(row)
     >>> print_details_table(browser)
     Project: Redfish (Unspecified)
-    Status: New
+    Status: Development
     Update this branch:
         bzr push lp://dev/~name12/redfish/hosted-branch
 
@@ -73,7 +73,7 @@ Branch URLs are required for mirrored branches.
 
     >>> print_details_table(browser)
     Project: Redfish (Unspecified)
-    Status: New
+    Status: Development
     Location: http://example.com/mirrored-branch
     Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
@@ -96,7 +96,7 @@ A remote branch may have a URL, but doesn't have to.
     >>> browser.getControl('Register Branch').click()
     >>> print_details_table(browser)
     Project: Redfish (Unspecified)
-    Status: New
+    Status: Development
     Location: http://example.com/remote-branch
 
 
@@ -132,7 +132,7 @@ has been stripped.
 
     >>> user_browser.getControl('Name').value = 'main'
     >>> user_browser.getControl('Title').value = 'Gnome Panel Applets Mainline'
-    >>> user_browser.getControl('Development').click()
+    >>> user_browser.getControl('Experimental').click()
     >>> user_browser.getControl('Summary').value = (
     ...     'Main branch of development for GNOME Panel Applets.')
     >>> user_browser.getControl('Register Branch').click()

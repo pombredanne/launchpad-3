@@ -240,6 +240,19 @@ tracker don't break the run for all bug trackers.
     Initializing DB for bugs: [u'42'].
     ERROR Unable to set remote_product for 'fooix': Didn't find bug 42.
 
+AssertionErrors are also handled.
+
+    >>> class RaisesAssertionErrorExternalBugTracker(FakeExternalBugTracker):
+    ...     def initializeRemoteBugDB(self, bug_ids):
+    ...         assert True == False, "True isn't False!"
+
+    >>> updater.external_bugtracker_to_return = (
+    ...     RaisesAssertionErrorExternalBugTracker)
+    >>> updater.updateByBugTrackerType(BugTrackerType.RT)
+    INFO  1 projects using RT needing updating.
+    DEBUG Trying to update fooix
+    ERROR Unable to set remote_product for 'fooix': True isn't False!
+
 
 == update-remote-product.py ==
 

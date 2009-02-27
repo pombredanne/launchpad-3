@@ -162,27 +162,42 @@ And another helper function to set the private flag on a PPA:
     ...     admin_browser.getControl(name="field.buildd_secret").value = "x"
     ...     admin_browser.getControl("Save").click()
 
-We will also amend some packages so that they belong to "cprov" and will
-appear in his +packages page.  There are two "iceweasel" packages in the
-sample data that will do nicely:
+Create some new source packages, source1 and source2, both created by cprov
+so that they appear in his +packages page.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ISourcePackageNameSet)
-    >>> from canonical.launchpad.database.sourcepackagerelease import (
-    ...     SourcePackageRelease)
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+
     >>> login("foo.bar@canonical.com")
-    >>> iceweasel = getUtility(ISourcePackageNameSet)['iceweasel']
-    >>> packages = SourcePackageRelease.selectBy(sourcepackagename=iceweasel)
-    >>> packages.count()
-    2
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> for package in packages:
-    ...     package.creator = cprov
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> source1 = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='source1',
+    ...     archive=cprov.archive)
+    >>> source1.sourcepackagerelease.creator=cprov
+    >>> source1_sabdfl = source1.copyTo(
+    ...     source1.distroseries, source1.pocket, sabdfl.archive)
+    >>> source2 = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='source2',
+    ...     archive=nopriv.archive)
+    >>> source2.sourcepackagerelease.creator=cprov
+
     >>> flush_database_updates()
     >>> logout()
+
+"source1" is now published in cprov and sabdfl's PPA.  "source2" is only
+published in no-priv's PPA.
 
 Make user_browser a known user that does not conflict with "no-priv":
 
@@ -195,8 +210,10 @@ the PPA section:
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
+    source2 PPA for No Privileges Person - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
 Now, let's make the PPA for "No Privileges Person" private:
 
@@ -210,15 +227,15 @@ The logged-in user's case:
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
 The not logged-in (anonymous) user's case:
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
 However no-priv himself and any Launchpad Administrator can still see
 both packages:
@@ -226,45 +243,47 @@ both packages:
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(nopriv_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
+    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
-    iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
+    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
-Let's make sabdfl's archive private and check the page again.
+Let's make sabdfl's archive private and view the page again.
 
     >>> set_private("sabdfl")
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
-    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
-Notice that this iceweasel package in sabdfl's PPA is still appearing
+Notice that the source1 package in sabdfl's PPA is still appearing
 because it is also published in some non-private archives, which
 override the private nature of sabdfl's archive.
 
-The two other archives are cprov's PPA and the primary archive.  Let's
-make cprov's archive private.
+Let's make cprov's archive private:
 
     >>> set_private("cprov")
 
-It still shows up:
+It will now disppear from the listings because it's not published in any
+public archives.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
 
-Now we'll unpublish it in the primary archive.
+Now we'll publish it in the primary archive.
 
     >>> login("foo.bar@canonical.com")
     >>> from canonical.launchpad.interfaces import (
@@ -272,31 +291,42 @@ Now we'll unpublish it in the primary archive.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> primary = getUtility(IArchiveSet).getByDistroPurpose(ubuntu,
     ...     ArchivePurpose.PRIMARY)
-    >>> [iceweasel_pub] = primary.getPublishedSources(
-    ...     name='iceweasel', exact_match=True)
-    >>> discard = iceweasel_pub.supersede()
+    >>> source1_ubuntu = source1.copyTo(
+    ...     source1.distroseries, source1.pocket, primary)
+    >>> source1_ubuntu.secure_record.setPublished()
     >>> flush_database_updates()
     >>> logout()
 
-Now that the packages are not publicly published anywhere, +related-software
-will not show them.
+This makes the package appear in the listings again because the primary
+archive is public.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
-However they will still be available to "no-priv" and administrators as
-applicable:
+Even after the package is superseded, the package remains visibile in
+the listings.
 
-    >>> nopriv_browser.open("http://launchpad.dev/~cprov/+related-software")
-    >>> print_ppa_rows(nopriv_browser)
+    >>> login("foo.bar@canonical.com")
+    >>> discard = source1_ubuntu.supersede()
+    >>> flush_database_updates()
+    >>> logout()
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
-    >>> print_ppa_rows(admin_browser)
-    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
+    >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
+    >>> print_ppa_rows(user_browser)
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
+    >>> print_ppa_rows(anon_browser)
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
 
 == Packages deleted from a PPA ==
@@ -310,15 +340,17 @@ First list the packages in the PPA.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
-    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
+    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
-Then delete the 'iceweasel' package.
+Then delete the 'source2' package.
 
     >>> admin_browser.open(
-    ...     "http://launchpad.dev/~sabdfl/+archive/ppa/+delete-packages")
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+delete-packages")
     >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['31']
+    ...    name='field.selected_sources').value = ['%s' % source2.id]
     >>> admin_browser.getControl(
     ...     "Deletion comment").value = "Bug 184490"
     >>> admin_browser.getControl("Request Deletion").click()
@@ -327,7 +359,7 @@ Then delete the 'iceweasel' package.
     >>> for msg in messages:
     ...     print msg
     Source and binaries deleted by Foo Bar request:
-    iceweasel 1.0 in breezy-autotest
+    source2 666 in breezy-autotest
     Deletion comment: Bug 184490
 
     >>> def print_ppa_packages(contents):
@@ -339,11 +371,13 @@ Then delete the 'iceweasel' package.
     ...         print extract_text(empty_section)
     >>> print_ppa_packages(admin_browser.contents)
 
-Now re-list the PPA's packages, 'iceweasel' was deleted but still
+Now re-list the PPA's packages, 'source2' was deleted but still
 appears.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
-    iceweasel   Private PPA for Mark Shuttleworth - Ubuntu Warty 1.0
-        2006-04-11 None - -
+    source1 Private PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+        ...ago None - -
+    source2 Private PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+        ...ago None - -
 
