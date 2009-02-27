@@ -120,7 +120,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         quoted comment being replied to.
         """
         if self.reply_to:
-            comment = '"%s"' % self.reply_to.getMessage()
+            comment = '"%s"' % self.reply_to.message_body
         else:
             comment = ''
         return {'comment': comment}

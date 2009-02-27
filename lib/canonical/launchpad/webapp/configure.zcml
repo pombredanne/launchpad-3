@@ -369,6 +369,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.diff.IPreviewDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.ICodeImport"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
@@ -670,6 +677,13 @@
         permission="zope.Public"
         class="canonical.launchpad.webapp.dbpolicy.WhichDbView"
         layer="canonical.launchpad.layers.PageTestLayer"
+        />
+
+    <!-- Create a namespace to render the form of any LaunchpadFormView-->
+    <view
+        name="form" type="*"
+        provides="zope.traversing.interfaces.ITraversable" for="*"
+        factory="canonical.launchpad.webapp.namespace.FormNamespaceView"
         />
 
 </configure>

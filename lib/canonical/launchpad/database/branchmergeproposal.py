@@ -7,28 +7,22 @@ __metaclass__ = type
 __all__ = [
     'BranchMergeProposal',
     'BranchMergeProposalGetter',
-    'BranchMergeProposalJob',
+    'CreateMergeProposalJob',
     'is_valid_transition',
-    'MergeProposalCreatedJob',
     ]
 
 from email.Utils import make_msgid
 
 from lazr.delegates import delegates
-import simplejson
 from storm.expr import And
 from storm.store import Store
-from storm.base import Storm
-import transaction
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import classProvides, implements
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from storm.expr import Desc, Join, LeftJoin
-from storm.locals import Int, Reference, Unicode
-from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+from storm.locals import Int, Reference
+from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -40,28 +34,31 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.codereviewvote import (
     CodeReviewVoteReference)
-from canonical.launchpad.database.diff import Diff, PreviewDiff, StaticDiff
+from canonical.launchpad.database.diff import Diff, PreviewDiff
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.message import (
-    Message, MessageChunk)
+    Message, MessageChunk, MessageJob, MessageJobAction)
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
-from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
+from canonical.launchpad.interfaces.branch import (
+    IBranchNavigationMenu, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
-    IMergeProposalCreatedJob, UserNotBranchReviewer, WrongBranchMergeProposal)
+    IBranchMergeProposal, IBranchMergeProposalGetter, ICreateMergeProposalJob,
+    ICreateMergeProposalJobSource, UserNotBranchReviewer,
+    WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.mailout.branch import RecipientReason
-from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-        DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 VALID_TRANSITION_GRAPH = {
@@ -214,11 +211,22 @@ class BranchMergeProposal(SQLBase):
         return CodeReviewComment.selectBy(branch_merge_proposal=self.id)
 
     def getComment(self, id):
-        """See `IBranchMergeProposal`."""
+        """See `IBranchMergeProposal`.
+
+        This function can raise WrongBranchMergeProposal."""
         comment = CodeReviewComment.get(id)
         if comment.branch_merge_proposal != self:
             raise WrongBranchMergeProposal
         return comment
+
+    def getVoteReference(self, id):
+        """See `IBranchMergeProposal`.
+
+        This function can raise WrongBranchMergeProposal."""
+        vote = CodeReviewVoteReference.get(id)
+        if vote.branch_merge_proposal != self:
+            raise WrongBranchMergeProposal
+        return vote
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -478,11 +486,6 @@ class BranchMergeProposal(SQLBase):
         # Delete the related CodeReviewComments.
         for comment in self.all_comments:
             comment.destroySelf()
-        # Delete all jobs referring to the BranchMergeProposal, whether
-        # or not they have completed.
-        for job in BranchMergeProposalJob.selectBy(
-            branch_merge_proposal=self.id):
-            job.destroySelf()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):
@@ -629,6 +632,7 @@ class BranchMergeProposal(SQLBase):
         self.preview_diff.update(
             diff_content, diff_stat, source_revision_id, target_revision_id,
             dependent_revision_id, conflicts)
+        return self.preview_diff
 
 
 class BranchMergeProposalGetter:
@@ -674,7 +678,7 @@ class BranchMergeProposalGetter:
         # see both the source and target branches.  Here we need to use
         # a similar query to branches.
         lp_admins = getUtility(ILaunchpadCelebrities).admin
-        if visible_by_user is not None and visible_by_user.inTeam(lp_admins):
+        if user_has_special_branch_access(visible_by_user):
             return query
 
         if len(query) > 0:
@@ -696,6 +700,31 @@ class BranchMergeProposalGetter:
         return ('%sBranchMergeProposal.source_branch in (%s) '
                 ' AND BranchMergeProposal.target_branch in (%s)'
                 % (query, private_subquery, private_subquery))
+
+    @staticmethod
+    def getVotesForProposals(proposals):
+        """See `IBranchMergeProposalGetter`."""
+        if len(proposals) == 0:
+            return {}
+        ids = [proposal.id for proposal in proposals]
+        store = Store.of(proposals[0])
+        result = dict([(proposal, []) for proposal in proposals])
+        # Make sure that the Person and the review comment are loaded in the
+        # storm cache as the reviewer is displayed in a title attribute on the
+        # merge proposal listings page, and the message is needed to get to
+        # the actual vote for that person.
+        tables = [
+            CodeReviewVoteReference,
+            Join(Person, CodeReviewVoteReference.reviewerID == Person.id),
+            LeftJoin(
+                CodeReviewComment,
+                CodeReviewVoteReference.commentID == CodeReviewComment.id)]
+        results = store.using(*tables).find(
+            (CodeReviewVoteReference, Person, CodeReviewComment),
+            CodeReviewVoteReference.branch_merge_proposalID.is_in(ids))
+        for reference, person, comment in results:
+            result[reference.branch_merge_proposal].append(reference)
+        return result
 
     @staticmethod
     def getVoteSummariesForProposals(proposals):
@@ -739,92 +768,6 @@ class BranchMergeProposalGetter:
                 comment_counts.get(proposal.id, 0))
             summary.update(vote_counts.get(proposal.id, {}))
         return result
-
-
-class BranchMergeProposalJobType(DBEnumeratedType):
-    """Values that ICodeImportJob.state can take."""
-
-    MERGE_PROPOSAL_CREATED = DBItem(0, """
-        Merge proposal created
-
-        This job generates the review diff for a BranchMergeProposal if
-        needed, then sends mail to all interested parties.
-        """)
-
-
-class BranchMergeProposalJob(Storm):
-    """Base class for jobs related to branch merge proposals."""
-
-    implements(IBranchMergeProposalJob)
-
-    __storm_table__ = 'BranchMergeProposalJob'
-
-    id = Int(primary=True)
-
-    jobID = Int('job')
-    job = Reference(jobID, Job.id)
-
-    branch_merge_proposalID = Int('branch_merge_proposal', allow_none=False)
-    branch_merge_proposal = Reference(
-        branch_merge_proposalID, BranchMergeProposal.id)
-
-    job_type = EnumCol(enum=BranchMergeProposalJobType, notNull=True)
-
-    _json_data = Unicode('json_data')
-
-    @property
-    def metadata(self):
-        return simplejson.loads(self._json_data)
-
-    def __init__(self, branch_merge_proposal, job_type, metadata):
-        """Constructor.
-
-        :param branch_merge_proposal: The proposal this job relates to.
-        :param job_type: The BranchMergeProposalJobType of this job.
-        :param metadata: The type-specific variables, as a JSON-compatible
-            dict.
-        """
-        Storm.__init__(self)
-        json_data = simplejson.dumps(metadata)
-        self.job = Job()
-        self.branch_merge_proposal = branch_merge_proposal
-        self.job_type = job_type
-        # XXX AaronBentley 2009-01-29 bug=322819: This should be a bytestring,
-        # but the DB representation is unicode.
-        self._json_data = json_data.decode('utf-8')
-
-    def sync(self):
-        store = Store.of(self)
-        store.flush()
-        store.autoreload(self)
-
-    def destroySelf(self):
-        Store.of(self).remove(self)
-
-    @classmethod
-    def selectBy(klass, **kwargs):
-        """Return selected instances of this class.
-
-        At least one pair of keyword arguments must be supplied.
-        foo=bar is interpreted as "select all instances of
-        BranchMergeProposalJob whose property "foo" is equal to "bar".
-        """
-        assert len(kwargs) > 0
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(klass, **kwargs)
-
-    @classmethod
-    def get(klass, key):
-        """Return the instance of this class whose key is supplied.
-
-        :raises: SQLObjectNotFound
-        """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        instance = store.get(klass, key)
-        if instance is None:
-            raise SQLObjectNotFound(
-                'No occurrence of %s has key %s' % (klass.__name__, key))
-        return instance
 
 
 class BranchMergeProposalQueryBuilder:
@@ -889,81 +832,51 @@ class BranchMergeProposalQueryBuilder:
         return query
 
 
-class BranchMergeProposalJobDerived(object):
+class CreateMergeProposalJob(object):
+    """See `ICreateMergeProposalJob` and `ICreateMergeProposalJobSource`."""
 
-    """Intermediate class for deriving from BranchMergeProposalJob."""
-    delegates(IBranchMergeProposalJob)
+    classProvides(ICreateMergeProposalJobSource)
 
-    def __init__(self, job):
-        self.context = job
+    delegates(IMessageJob)
 
-    def __eq__(self, job):
-        return (self.__class__ is job.__class__ and self.job == job.job)
+    class_action = MessageJobAction.CREATE_MERGE_PROPOSAL
 
-    def __ne__(self, job):
-        return not (self == job)
+    implements(ICreateMergeProposalJob)
+
+    def __init__(self, context):
+        """Create an instance of CreateMergeProposalJob.
+
+        :param context: a MessageJob.
+        """
+        self.context = context
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.context == other.context)
+
+    @classmethod
+    def create(klass, message_bytes):
+        """See `ICreateMergeProposalJobSource`."""
+        context = MessageJob(
+            message_bytes, MessageJobAction.CREATE_MERGE_PROPOSAL)
+        return klass(context)
 
     @classmethod
     def iterReady(klass):
         """Iterate through all ready BranchMergeProposalJobs."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.find(
-            (BranchMergeProposalJob),
-            And(BranchMergeProposalJob.job_type == klass.class_job_type,
-                BranchMergeProposalJob.job == Job.id,
+            (MessageJob),
+            And(MessageJob.action == klass.class_action,
+                MessageJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs)))
         return (klass(job) for job in jobs)
 
-
-class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
-    """See `IMergeProposalCreatedJob`."""
-
-    implements(IMergeProposalCreatedJob)
-
-    class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
-
-    @classmethod
-    def create(klass, bmp):
-        """See `IMergeProposalCreationJob`."""
-        job = BranchMergeProposalJob(
-            bmp, klass.class_job_type, {})
-        return klass(job)
-
     def run(self):
-        """See `IMergeProposalCreationJob`."""
-        if self.branch_merge_proposal.review_diff is None:
-            self.branch_merge_proposal.review_diff = self._makeReviewDiff()
-            transaction.commit()
-        mailer = BMPMailer.forCreation(
-            self.branch_merge_proposal, self.branch_merge_proposal.registrant)
-        mailer.sendAll()
-        return self.branch_merge_proposal.review_diff
-
-    def _makeReviewDiff(self):
-        """Return a StaticDiff to be used as a review diff."""
-        cleanups = []
-        def get_branch(branch):
-            bzr_branch = branch.getBzrBranch()
-            bzr_branch.lock_read()
-            cleanups.append(bzr_branch.unlock)
-            return bzr_branch
-        try:
-            bzr_source = get_branch(self.branch_merge_proposal.source_branch)
-            bzr_target = get_branch(self.branch_merge_proposal.target_branch)
-            lca, source_revision = self._findRevisions(
-                bzr_source, bzr_target)
-            diff = StaticDiff.acquire(
-                lca, source_revision, bzr_source.repository)
-        finally:
-            for cleanup in reversed(cleanups):
-                cleanup()
-        return diff
-
-    @staticmethod
-    def _findRevisions(bzr_source, bzr_target):
-        """Return the revisions to use for a review diff."""
-        source_revision = bzr_source.last_revision()
-        target_revision = bzr_target.last_revision()
-        graph = bzr_target.repository.get_graph(bzr_source.repository)
-        lca = graph.find_unique_lca(source_revision, target_revision)
-        return lca, source_revision
+        """See `ICreateMergeProposalJob`."""
+        # Avoid circular import
+        from canonical.launchpad.mail.codehandler import CodeHandler
+        from canonical.launchpad.mail.incoming import authenticateEmail
+        message = self.getMessage()
+        authenticateEmail(message)
+        return CodeHandler().processMergeProposal(message)

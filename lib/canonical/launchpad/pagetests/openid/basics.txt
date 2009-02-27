@@ -152,10 +152,8 @@ to the consumer, completing the OpenID request:
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.assoc_handle:...
-    openid.claimed_id:http://openid.launchpad.dev/+id/sabdfl_oid
     openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
-    openid.mode:id_res
-    openid.ns:http://specs.openid.net/auth/2.0
+    openid.mode:id_res...
     openid.op_endpoint:http://openid.launchpad.dev/+openid
     openid.response_nonce:...
     openid.return_to:http://launchpad.dev/+openid-consumer
@@ -181,8 +179,7 @@ This can be seen using the existing browser session:
     http://launchpad.dev/+openid-consumer?...
     >>> print sabdfl_browser.contents
     Consumer received GET
-    openid.mode:cancel
-    openid.ns:http://specs.openid.net/auth/2.0
+    openid.mode:cancel...
     <BLANKLINE>
 
 
@@ -331,8 +328,7 @@ Interactive mode:
     http://launchpad.dev/+openid-consumer?...
     >>> print sabdfl_browser.contents
     Consumer received GET
-    openid.mode:cancel
-    openid.ns:http://specs.openid.net/auth/2.0
+    openid.mode:cancel...
 
 
 == Invalid identities ==
@@ -374,7 +370,7 @@ Really bad requests might trigger a protocol error
     >>> sabdfl_browser.handleErrors = True
     >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print sabdfl_browser.contents
-    error:No decoder for mode 'whoops'
+    error:... mode 'whoops'
     mode:error
     <BLANKLINE>
 
@@ -388,6 +384,6 @@ If there is a valid return_to, then the consumer gets notified.
     >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print sabdfl_browser.contents
     Consumer received GET
-    openid.error:No decoder for mode 'whoops'
+    openid.error:... mode 'whoops'
     openid.mode:error
     <BLANKLINE>

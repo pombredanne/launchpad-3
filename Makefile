@@ -191,14 +191,7 @@ pull_branches: support_files
 	# mirrored area.
 	$(PYTHON) cronscripts/supermirror-pull.py upload
 
-rewritemap:
-	# Build rewrite map that maps friendly branch names to IDs. Necessary
-	# for http access to branches and for the branch scanner.
-	mkdir -p $(CODEHOSTING_ROOT)/config
-	$(PYTHON) cronscripts/supermirror_rewritemap.py \
-		$(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
-
-scan_branches: rewritemap
+scan_branches:
 	# Scan branches from the filesystem into the database.
 	$(PYTHON) cronscripts/branch-scanner.py
 
@@ -328,6 +321,6 @@ tags:
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop	\
 	start run ftest_build ftest_inplace test_build test_inplace	\
 	pagetests check check_merge schema default launchpad.pot	\
-	check_launchpad_on_merge check_merge_ui pull rewritemap scan	\
+	check_launchpad_on_merge check_merge_ui pull scan		\
 	sync_branches check_loggerhead_on_merge reload-apache		\
 	check_launchpad_storm_on_merge

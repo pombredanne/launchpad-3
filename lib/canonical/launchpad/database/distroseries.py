@@ -18,14 +18,12 @@ from sqlobject import (
     SQLObjectNotFound, SQLRelatedJoin)
 
 from storm.locals import SQL, Join
-from storm.store import Store
 
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -56,7 +54,8 @@ from canonical.launchpad.database.distroseries_translations_copy import (
     copy_active_translations)
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
-from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.milestone import (
+    HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
@@ -104,12 +103,12 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, IStoreSelector, MAIN_STORE, SLAVE_FLAVOR,
+    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasTranslationImportsMixin,
+                   HasTranslationImportsMixin, HasMilestonesMixin,
                    StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
@@ -197,19 +196,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         DistroArchSeries.distroseries = %s AND
         DistroArchSeries.supports_virtualized = True
         """ % sqlvalues(self), orderBy='architecturetag')
-
-    @property
-    def all_milestones(self):
-        """See IDistroSeries."""
-        return Milestone.selectBy(
-            distroseries=self, orderBy=['-dateexpected', 'name'])
-
-    @property
-    def milestones(self):
-        """See `IDistroSeries`."""
-        return Milestone.selectBy(
-            distroseries=self, visible=True,
-            orderBy=['-dateexpected', 'name'])
 
     @property
     def parent(self):
@@ -313,6 +299,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
+
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.distroseries == self)
 
     def canUploadToPocket(self, pocket):
         """See `IDistroSeries`."""
@@ -1671,9 +1661,19 @@ class DistroSeriesSet:
 
     def translatables(self):
         """See `IDistroSeriesSet`."""
-        return DistroSeries.select(
-            "POTemplate.distroseries=DistroSeries.id",
-            clauseTables=['POTemplate'], distinct=True)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        # Join POTemplate distinctly to only get entries with available
+        # translations.
+        result_set = store.using((DistroSeries, POTemplate)).find(
+            DistroSeries,
+            DistroSeries.hide_all_translations == False,
+            DistroSeries.id == POTemplate.distroseriesID
+            ).config(distinct=True)
+        # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
+        # because ResultSet reports a wrong count() when using DISTINCT. Also
+        # ResultSet does not implement __len__(), which would make it more
+        # like a sequence.
+        return list(result_set)
 
     def findByName(self, name):
         """See `IDistroSeriesSet`."""

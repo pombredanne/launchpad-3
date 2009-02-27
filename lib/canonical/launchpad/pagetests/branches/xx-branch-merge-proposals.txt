@@ -68,23 +68,6 @@ Registering the merge proposal takes the user to the new merge proposal.
 An email notification is emitted when the merge proposal is created.
 
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> from canonical.launchpad.database.branchmergeproposal import (
-    ...     MergeProposalCreatedJob,)
-    >>> login('admin@canonical.com')
-    >>> from canonical.launchpad.database.diff import StaticDiff
-    >>> review_diff = StaticDiff.acquireFromText('x', 'y', 'z')
-    >>> transaction.commit()
-    >>> def do_notifications():
-    ...     for job in ready_jobs():
-    ...         # Avoid accessing "lp-mirrored:" URL.
-    ...         if job.branch_merge_proposal.review_diff is None:
-    ...             job.branch_merge_proposal.review_diff = review_diff
-    ...         job.context.job.start()
-    ...         _unused_diff = job.run()
-    ...         job.context.job.complete()
-    >>> ready_jobs = MergeProposalCreatedJob.iterReady
-    >>> do_notifications()
-    >>> logout()
     >>> [notification] = pop_notifications()
     >>> print notification['Subject']
     [Merge] lp://dev/~name12/gnome-terminal/klingon into
@@ -134,10 +117,9 @@ shown.
     ~name12/gnome-terminal/main - view proposal details
     Needs review
 
-Delete pending job.
+Consume notification.
 
-    >>> [job,] = list(ready_jobs())
-    >>> job.destroySelf()
+    >>> [_unused] = pop_notifications()
 
 
 == Landing Candidates ==
@@ -192,7 +174,8 @@ branches, and the current status.
     >>> print_summary(sample_browser)
     Status: Needs review
     Proposed by: Sample Person ...
-    Target branch: lp://dev/~name12/firefox/main
+    Proposed branch: lp://dev/~sabdfl/firefox/release-0.9
+    Merge into: lp://dev/~name12/firefox/main
 
 The summary of the revisions that are in the source branch but not
 yet in the target branch are also shown.
@@ -204,9 +187,9 @@ yet in the target branch are also shown.
       Import of Mozilla Firefox 0.9
     >>> firefox_merge_url = sample_browser.url
 
-Delete pending jobs.
+Consume notification.
 
-    >>> _unused = [job.destroySelf() for job in ready_jobs()]
+    >>> [_unused] = pop_notifications()
 
 
 == Deleting merge proposals ==
@@ -260,7 +243,8 @@ The status of the merge proposal is updated to "Needs review".
     >>> print_summary(sample_browser)
     Status: Needs review
     Proposed ...
-    Target branch: lp://dev/~name12/gnome-terminal/main
+    Proposed branch: lp://dev/~name12/gnome-terminal/klingon
+    Merge into: lp://dev/~name12/gnome-terminal/main
 
 Additional reviews can be requested.
 
@@ -311,6 +295,7 @@ Only the last request is listed, showing the last review type.
     Reviewer          Review Type    Date Requested    Status
     Sample Person                                      Pending [Review]
     Mark Shuttleworth second         ... ago           Pending
+    Review via email: mp+1@code.launchpad.dev
                                                  Request another review
 
 
@@ -479,9 +464,6 @@ This takes the user to the resubmission page.
 Emails are sent out to say the the old proposal was superseded, and that the
 new proposal has been created.
 
-    >>> login('admin@canonical.com')
-    >>> do_notifications()
-    >>> logout()
     >>> notifications = pop_notifications()
     >>> len(notifications)
     2
@@ -501,7 +483,8 @@ a link back to the superseded proposal.
     >>> print_summary(sample_browser)
     Status: Needs review
     Proposed by: Sample Person ...
-    Target branch: lp://dev/~name12/gnome-terminal/main
+    Proposed branch: lp://dev/~name12/gnome-terminal/scanned
+    Merge into: lp://dev/~name12/gnome-terminal/main
 
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'superseded-proposal'))
@@ -701,6 +684,8 @@ they'll get a 404.
 
 Create merge proposal with a review diff, and go to its index page.
 
+    >>> import transaction
+    >>> from canonical.launchpad.database.diff import StaticDiff
     >>> login('admin@canonical.com')
     >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff'
     ...     u'\u1010'.encode('utf-8'))
@@ -714,7 +699,7 @@ Create merge proposal with a review diff, and go to its index page.
 
 The text of the review diff is in the page.
     >>> print repr(extract_text(get_review_diff()))
-    u'Review Diff\nFake Diff\u1010'
+    u'Review Diff\nDownload diff\n1\nFake Diff\u1010'
 
 If no diff is present, nothing is shown.
     >>> login('admin@canonical.com')

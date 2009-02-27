@@ -24,8 +24,12 @@ records to disk, including configuration and indexes.
     True
     >>> cprov_archive.authorized_size
     1024
-    >>> cprov_archive.whiteboard
-    u'It is not my fault.'
+    >>> print cprov_archive.whiteboard
+    It is not my fault.
+    >>> print cprov_archive.signing_key
+    None
+    >>> print cprov_archive.signing_key_fingerprint
+    None
     >>> cprov_archive.private
     False
     >>> cprov_archive.require_virtualized
@@ -871,6 +875,14 @@ The status filter can also be a sequence of status.
     >>> cprov_archive.getSourcesForDeletion(
     ...      name='ice', status=irrelevant_status).count()
     1
+
+The series filter can be used to return only sources from a certain
+series:
+
+    >>> cprov_archive.getSourcesForDeletion(distroseries=warty).count()
+    2
+    >>> cprov_archive.getSourcesForDeletion(distroseries=hoary).count()
+    0
 
 The source publication is only excluded from 'deletion list' when its
 binary is also DELETED.
@@ -2146,7 +2158,7 @@ As with syncSources() you need to have edit permission on the archive.
     Traceback (most recent call last):
     ...
     Unauthorized...
-    
+
 Login as sabdfl to continue.
 
     >>> login("mark@hbd.com")
