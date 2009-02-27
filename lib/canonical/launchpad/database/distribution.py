@@ -1043,7 +1043,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         results = store.find(select_spec, where_spec)
         results.order_by(Desc(rank)).config(distinct=True)
 
-        return results
+        def result_to_dspc(result):
+            cache, rank = result
+            return cache
+
+        # Return the decorated result set so the consumer of these
+        # results will only see DSPCs
+        return DecoratedResultSet(results, result_to_dspc)
 
     def guessPackageNames(self, pkgname):
         """See `IDistribution`"""
