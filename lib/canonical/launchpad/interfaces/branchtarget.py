@@ -14,18 +14,31 @@ __all__ = [
     'IBranchTarget',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute
+
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 
-class IBranchTarget(Interface):
+class IBranchTarget(IPrimaryContext):
     """A target of branches.
 
     A product contains branches, a source package on a distroseries contains
     branches, and a person contains 'junk' branches.
     """
 
-    context = Attribute("The original object")
     name = Attribute("The name of the target.")
+
+    def __eq__(other):
+        """Is this target the same as another target?
+
+        Generally implemented in terms of `IPrimaryContext.context`.
+        """
+
+    def __ne__(other):
+        """Is this target not the same as another target?
+
+        Generally implemented in terms of `IPrimaryContext.context`.
+        """
 
     def getNamespace(owner):
         """Return a namespace for this target and the specified owner."""

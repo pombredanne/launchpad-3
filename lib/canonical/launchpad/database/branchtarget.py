@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'branch_to_target',
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
@@ -14,7 +15,21 @@ from zope.interface import implements
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 
 
-class PackageBranchTarget:
+def branch_to_target(branch):
+    """Adapt an IBranch to an IBranchTarget."""
+    return branch.target
+
+
+class _BaseBranchTarget:
+
+    def __eq__(self, other):
+        return self.context == other.context
+
+    def __ne__(self, other):
+        return self.context != other.context
+
+
+class PackageBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
 
     def __init__(self, sourcepackage):
@@ -37,7 +52,7 @@ class PackageBranchTarget:
         return PackageNamespace(owner, self.sourcepackage)
 
 
-class PersonBranchTarget:
+class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
 
     name = '+junk'
@@ -57,7 +72,7 @@ class PersonBranchTarget:
         return PersonalNamespace(owner)
 
 
-class ProductBranchTarget:
+class ProductBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
 
     def __init__(self, product):

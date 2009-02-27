@@ -24,6 +24,11 @@ class TestPackageBranchTarget(TestCaseWithFactory):
         target = PackageBranchTarget(sourcepackage)
         self.assertEqual(sourcepackage.path, target.name)
 
+    def test_provides_IPrimaryContext(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        target = PackageBranchTarget(sourcepackage)
+        self.assertProvides(target, IPrimaryContext)
+
     def test_getNamespace(self):
         """Get namespace produces the correct namespace."""
         person = self.factory.makePerson()
@@ -53,6 +58,11 @@ class TestPersonBranchTarget(TestCaseWithFactory):
         # The name of a junk context is '+junk'.
         target = PersonBranchTarget(self.factory.makePerson())
         self.assertEqual('+junk', target.name)
+
+    def test_provides_IPrimaryContext(self):
+        person = self.factory.makePerson()
+        target = PackageBranchTarget(person)
+        self.assertProvides(target, IPrimaryContext)
 
     def test_getNamespace(self):
         """Get namespace produces the correct namespace."""
@@ -84,6 +94,11 @@ class TestProductBranchTarget(TestCaseWithFactory):
         target = ProductBranchTarget(product)
         self.assertEqual(product.name, target.name)
 
+    def test_provides_IPrimaryContext(self):
+        product = self.factory.makeProduct()
+        target = PackageBranchTarget(product)
+        self.assertProvides(target, IPrimaryContext)
+
     def test_getNamespace(self):
         """Get namespace produces the correct namespace."""
         product = self.factory.makeProduct()
@@ -111,18 +126,15 @@ class TestPrimaryContext(TestCaseWithFactory):
 
     def test_package_branch(self):
         branch = self.factory.makePackageBranch()
-        self.assertEqual(
-            branch.target.context, IPrimaryContext(branch).context)
+        self.assertEqual(branch.target, IPrimaryContext(branch))
 
     def test_personal_branch(self):
         branch = self.factory.makePersonalBranch()
-        self.assertEqual(
-            branch.target.context, IPrimaryContext(branch).context)
+        self.assertEqual(branch.target, IPrimaryContext(branch))
 
     def test_product_branch(self):
         branch = self.factory.makeProductBranch()
-        self.assertEqual(
-            branch.target.context, IPrimaryContext(branch).context)
+        self.assertEqual(branch.target, IPrimaryContext(branch))
 
 
 def test_suite():
