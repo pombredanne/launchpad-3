@@ -227,9 +227,9 @@ class WebServiceLayer(IDefaultBrowserLayer):
 class IJSONRequestCache(Interface):
     """A cache of objects exposed as URLs or JSON representations."""
 
-    links = Attribute("Objects whose links need to be exposed.");
+    links = Attribute("Objects whose links need to be exposed.")
     objects = Attribute("Objects whose JSON representations need "
-                        "to be exposed.");
+                        "to be exposed.")
 
 
 class IByteStorage(Interface):

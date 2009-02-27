@@ -919,7 +919,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
             if media_type == self.JSON_TYPE:
                 repr_name, repr_value = self._unmarshallField(name, field)
             elif media_type == self.XHTML_TYPE:
-                repr_name, repr_value = self.unmarshallFieldToHTML(name, field)
+                repr_name, repr_value = self.unmarshallFieldToHTML(
+                    name, field)
             else:
                 raise AssertionError((
                         "Cannot create data structure for media type %s"
