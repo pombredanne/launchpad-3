@@ -131,12 +131,13 @@ class GenericBranchCollection:
     def relatedTo(self, person):
         """See `IBranchCollection`."""
         return self._filterBy(
-            [Or(Branch.owner == person,
-                Branch.registrant == person,
-                BranchSubscription.person == person)],
-            [LeftJoin(
-                BranchSubscription,
-                BranchSubscription.branch == Branch.id)])
+            [Branch.id.is_in(
+                Union(
+                    Select(Branch.id, Branch.owner == person),
+                    Select(Branch.id, Branch.registrant == person),
+                    Select(Branch.id,
+                           And(BranchSubscription.person == person,
+                               BranchSubscription.branch == Branch.id))))])
 
     def _getExactMatch(self, search_term):
         """Return the exact branch that 'search_term' matches, or None."""
