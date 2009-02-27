@@ -25,3 +25,9 @@ This takes us to the branch listing for that source package
     >>> print browser.title
     Branches in distro series foo
 
+Since there are no branches, there is no branch listing table:
+
+    >>> print find_tag_by_id(browser.contents, 'branchtable')
+    None
+
+XXX: Add tests to show that the summary says something nice and wonderful.
