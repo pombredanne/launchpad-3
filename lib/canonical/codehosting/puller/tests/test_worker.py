@@ -66,9 +66,11 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         # get_vfs_format_classes for a returns the underlying format classes
         # of the branch, repo and bzrdir, even if the branch is a
         # RemoteBranch.
-        self.transport_server = server.SmartTCPServer_for_testing
         vfs_branch = self.make_branch('.')
-        remote_branch = bzrlib.branch.Branch.open(self.get_url('.'))
+        smart_server = server.SmartTCPServer_for_testing()
+        smart_server.setUp(self.get_vfs_only_server())
+        self.addCleanup(smart_server.tearDown)
+        remote_branch = bzrlib.branch.Branch.open(smart_server.get_url())
         # Check that our set up worked: remote_branch is Remote and
         # source_branch is not.
         self.assertIsInstance(remote_branch, RemoteBranch)

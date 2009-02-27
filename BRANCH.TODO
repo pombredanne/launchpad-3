@@ -2,3 +2,13 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+Tests with errors:
+   canonical.codehosting.tests.test_bzrutils.TestGetBranchStackedOnURL.testGetBranchStackedOnUrlUnstackable(RemoteBzrDirFormat-default)
+   canonical.codehosting.tests.test_bzrutils.TestGetBranchStackedOnURL.testGetBranchStackedOnUrlUnstackable(RemoteBzrDirFormat-v2)
+   canonical.codehosting.puller.tests.test_acceptance.TestBranchPuller.test_mirror_hosted_loom_branch
+
+Tests with failures:
+   canonical.codehosting.tests.test_acceptance.AcceptanceTests.test_can_push_loom_branch(sftp)
+   canonical.codehosting.tests.test_acceptance.AcceptanceTests.test_can_push_loom_branch(bzr+ssh)
+
