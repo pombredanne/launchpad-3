@@ -1107,7 +1107,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return naked_distribution.newSeries(
             version="%s.0" % self.getUniqueInteger(),
             name=name,
-            displayname=self.getUniqueString(),
+            displayname=name,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
