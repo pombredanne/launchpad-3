@@ -34,7 +34,8 @@ from zope.testing import doctest
 
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import (
+    LaunchpadObjectFactory, with_anonymous_login)
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
@@ -714,6 +715,19 @@ def stop():
         sys.stdout = old_stdout
 
 
+class FactoryWrapper:
+
+    def __init__(self, factory):
+        self.factory = factory
+
+    def __getattr__(self, name):
+        value = getattr(self.__dict__['factory'], name)
+        if callable(value):
+            return with_anonymous_login(value)
+        else:
+            return value
+
+
 def setUpGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['http'] = UnstickyCookieHTTPCaller()
@@ -735,7 +749,7 @@ def setUpGlobs(test):
     # If a unicode URL is opened by the test browswer, later navigation
     # raises ValueError exceptions in /usr/lib/python2.4/Cookie.py
     test.globs['canonical_url'] = safe_canonical_url
-    test.globs['factory'] = LaunchpadObjectFactory()
+    test.globs['factory'] = FactoryWrapper(LaunchpadObjectFactory())
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class
