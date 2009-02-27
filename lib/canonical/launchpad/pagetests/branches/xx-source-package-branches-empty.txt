@@ -1,0 +1,19 @@
+= Empty source package branch listings =
+
+When you look at an empty source package branch listing, you see some nice,
+helpful text.
+
+Let's demonstrate this by making a source package with no branches and
+browsing to it.
+
+    >>> login(ANONYMOUS)
+    >>> source_package = factory.makeSourcePackage()
+    >>> source_package_url = canonical_url(source_package, rootsite='code')
+    >>> logout()
+
+This takes us to the branch listing for that source package
+
+    >>> browser.open(source_package_url)
+    >>> print browser.title
+    ''
+
