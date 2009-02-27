@@ -423,6 +423,8 @@ class TestCodeHandler(TestCaseWithFactory):
         """processMergeProposal creates a merge proposal and comment."""
         message, file_alias, source, target = (
             self.factory.makeMergeDirectiveEmail())
+        # Add some revisions so the proposal is ready.
+        self.factory.makeRevisionsForBranch(source, count=1)
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
         pop_notifications()
