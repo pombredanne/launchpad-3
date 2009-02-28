@@ -18,7 +18,7 @@ import mimetypes
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     IProductRelease, IProductReleaseFileAddForm)

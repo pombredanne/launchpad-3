@@ -15,12 +15,12 @@ from time import time
 
 from BeautifulSoup import BeautifulSoup
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.publisher.interfaces import BadRequest
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.security.proxy import isinstance as zisinstance
+from z3c.ptcompat import ViewPageTemplateFile
 
 from openid.extensions import pape
 from openid.message import registerNamespaceAlias

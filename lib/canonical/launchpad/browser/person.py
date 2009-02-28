@@ -101,7 +101,6 @@ from textwrap import dedent
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
 from zope.interface import implements, Interface
 from zope.interface.exceptions import Invalid
@@ -114,6 +113,7 @@ from zope.schema.vocabulary import (
     SimpleTerm, SimpleVocabulary, getVocabularyRegistry)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
 from lazr.delegates import delegates

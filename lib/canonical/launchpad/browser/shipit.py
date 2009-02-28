@@ -31,7 +31,7 @@ from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.formlib import form
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty

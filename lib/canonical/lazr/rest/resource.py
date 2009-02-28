@@ -42,7 +42,6 @@ from zope.event import notify
 from zope.publisher.http import init_status_codes, status_reasons
 from zope.interface import implements, implementedBy, providedBy
 from zope.interface.interfaces import IInterface
-from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFieldsInOrder
@@ -50,6 +49,8 @@ from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IChoice, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
+from z3c.ptcompat import PageTemplateFile
+
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:

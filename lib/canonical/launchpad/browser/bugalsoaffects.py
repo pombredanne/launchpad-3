@@ -10,12 +10,12 @@ from textwrap import dedent
 
 from zope.app.form.browser import DropdownWidget, TextWidget
 from zope.app.form.interfaces import MissingInputError, WidgetsError
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _

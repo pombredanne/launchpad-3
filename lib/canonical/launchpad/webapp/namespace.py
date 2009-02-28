@@ -1,8 +1,9 @@
 from zope.app.pagetemplate.viewpagetemplatefile import (
-    ViewPageTemplateFile, BoundPageTemplate)
+    BoundPageTemplate)
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import TraversalError
 from zope.traversing.namespace import view
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.webapp.launchpadform import LaunchpadFormView
 
