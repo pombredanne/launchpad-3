@@ -120,17 +120,24 @@
 
   <div id="review-diff" tal:condition="context/review_diff">
   <h2>Review Diff</h2>
-  <div class="boardComment attachment">
-    <div class="boardCommentDetails filename"
-         tal:define="attachment context/review_diff/diff/diff_text">
-      <a tal:attributes="href attachment/getURL">
-        <img src="/@@/download"/>
-        Download diff
-      </a>
-    </div>
-    <div class="boardCommentBody attachmentBody">
-      <tal:diff replace="structure view/review_diff/fmt:diff" />
-    </div>
+  <div class="boardComment attachment"
+       tal:define="attachment context/review_diff/diff/diff_text">
+    <tal:real-diff condition="attachment">
+      <div class="boardCommentDetails filename">
+        <a tal:attributes="href attachment/getURL">
+          <img src="/@@/download"/>
+          Download diff
+        </a>
+      </div>
+      <div class="boardCommentBody attachmentBody">
+        <tal:diff replace="structure view/review_diff/fmt:diff" />
+      </div>
+    </tal:real-diff>
+    <tal:empty-diff condition="not: attachment">
+      <div class="boardCommentBody attachmentBody">
+        <em>Empty</em>
+      </div>
+    </tal:empty-diff>
   </div>
   </div>
 

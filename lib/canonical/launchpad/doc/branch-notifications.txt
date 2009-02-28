@@ -479,7 +479,7 @@ something like this:
     ...  'algorithm in the mail wrapper to make sure that the line ' \
     ...  'is not too long'
     >>> from canonical.launchpad.interfaces import BranchLifecycleStatus
-    >>> branch.lifecycle_status = BranchLifecycleStatus.DEVELOPMENT
+    >>> branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
     >>> updated_fields = ['name','title','summary','url','whiteboard','lifecycle_status']
     >>> notify(SQLObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
@@ -494,7 +494,7 @@ something like this:
         Name: main => new-name
         Title: Mozilla Firefox Mainline => New title
         Branch URL: http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0 => http://example.com/foo
-        Status: New => Development
+        Status: Development => Experimental
     <BLANKLINE>
     Summary changed to:
     <BLANKLINE>

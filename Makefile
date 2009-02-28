@@ -42,11 +42,13 @@ default: inplace
 
 schema: build clean_codehosting
 	$(MAKE) -C database/schema
-	$(PYTHON) ./utilities/make-dummy-hosted-branches
 	$(RM) -r /var/tmp/fatsam
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
+
+hosted_branches:
+	$(PYTHON) ./utilities/make-dummy-hosted-branches
 
 $(WADL_FILE): $(BZR_VERSION_INFO)
 	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py > $@
@@ -171,7 +173,7 @@ start-gdb: inplace stop support_files
 		-r librarian,google-webservice -C $(CONFFILE) \
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: inplace stop
+run_all: inplace stop hosted_branches
 	$(RM) thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
@@ -323,4 +325,4 @@ tags:
 	pagetests check check_merge schema default launchpad.pot	\
 	check_launchpad_on_merge check_merge_ui pull scan		\
 	sync_branches check_loggerhead_on_merge reload-apache		\
-	check_launchpad_storm_on_merge
+	check_launchpad_storm_on_merge hosted_branches

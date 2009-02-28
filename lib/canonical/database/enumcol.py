@@ -33,7 +33,7 @@ class DBEnumVariable(Variable):
             return self._enum.items[value]
         else:
             if not zope_isinstance(value, DBItem):
-                raise TypeError("Not a DBItem: %r" % type(value))
+                raise TypeError("Not a DBItem: %r" % (value,))
             if self._enum != value.enum:
                 raise TypeError("DBItem from wrong type, %r != %r" % (
                         self._enum.name, value.enum.name))
