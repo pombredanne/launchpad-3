@@ -250,7 +250,7 @@ class BuilddManager(service.Service):
     def slaveDone(self, slave):
         """Mark slave as done for this cycle.
 
-        Where all active slaves were processed, call `finishCycle`.
+        When all active slaves were processed, call `finishCycle`.
         """
         self.remaining_slaves.remove(slave)
 

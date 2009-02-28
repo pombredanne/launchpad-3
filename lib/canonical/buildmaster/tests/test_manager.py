@@ -78,7 +78,7 @@ class TestRecordingSlaves(TrialTestCase):
         # Resume isn't requested in a just-instantiated RecordingSlave.
         self.assertFalse(self.slave.resume_requested)
 
-        # When resume is called, it returns the success truple and mark
+        # When resume is called, it returns the success list and mark
         # the slave for resuming.
         self.assertEqual(['', '', os.EX_OK], self.slave.resume())
         self.assertTrue(self.slave.resume_requested)
@@ -172,7 +172,8 @@ class TestBuilddManager(TrialTestCase):
         self.manager = TestingBuilddManager()
         self.manager.logger = BufferLogger()
 
-        # We will use an intrumented BuilddManager.
+        # We will use an instrumented BuilddManager instance for tests in
+        # this context.
 
         # Stop cyclic execution and record the end of the cycle.
         self.stopped = False
@@ -284,16 +285,16 @@ class TestBuilddManager(TrialTestCase):
         Builders will be marked as failed if the following responses
         categories are received.
 
-         * Legitimate slave failures: when the response is a tuple with 2
+         * Legitimate slave failures: when the response is a list with 2
            elements but the first element ('status') do not correspond to
            the expected 'success' result. See `buildd_success_result_map`.
 
          * Unexpected (code) failures: when the given 'method' is unknown
-           or the response isn't a 2-element tuple or Failure instance.
+           or the response isn't a 2-element list or Failure instance.
 
         Communication failures (an twisted `Failure` instance) will simply
         cause the builder to be reset, a `ResetDispatchResult` object is
-        returned. In other words, network failires are ignored in this
+        returned. In other words, network failures are ignored in this
         stage, broken builders will be identified and marked as so
         during 'scan()' stage.
 
@@ -301,7 +302,7 @@ class TestBuilddManager(TrialTestCase):
         """
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
 
-        # Successful legitimented response, None is returned.
+        # Successful legitimated response, None is returned.
         successful_response = [
             buildd_success_result_map.get('ensurepresent'), 'cool builder']
         result = self.manager.checkDispatch(
