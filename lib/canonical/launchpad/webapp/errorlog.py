@@ -477,6 +477,7 @@ class ErrorReportingUtility:
 
             if request:
                 request.oopsid = oopsid
+                request.oops = entry
 
             if self.copy_to_zlog:
                 self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
