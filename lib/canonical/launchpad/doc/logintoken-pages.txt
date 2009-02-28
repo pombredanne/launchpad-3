@@ -233,6 +233,36 @@ The user's Person, EmailAddress, and Account objects are updated.
     True
 
 
+== Creating a new ordinary account ==
+
+Unlike accounts created using OpenID, which don't have an associated Person
+(as shown in sso-workflow-register.txt), ordinary accounts will always have
+a Person entry associated with them.
+
+    >>> login_token = login_token_set.new(
+    ...     None, 'foo@debian.org', 'foo@debian.org',
+    ...     LoginTokenType.NEWACCOUNT)
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://launchpad.dev',
+    ...     PATH_INFO='/token/%s/+newaccount' % login_token.token,
+    ...     method='POST',
+    ...     form={
+    ...         'field.displayname': 'Andre Lopes',
+    ...         'field.hide_email_addresses.used': '',
+    ...         'field.password': 'test',
+    ...         'field.password_dupe': 'test',
+    ...         'field.actions.continue': 'Continue',
+    ...         })
+    >>> login(ANONYMOUS, request)
+    >>> newaccount_view = getMultiAdapter(
+    ...     (login_token, request), name="+newaccount")
+    >>> newaccount_view.initialize()
+    >>> newaccount_view.errors
+    []
+    >>> person_set.getByEmail('foo@debian.org')
+    <Person...
+
+
 == Creating a new account from an existing profile ==
 
 If a user's email address matches the email address of an unclaimed
@@ -363,7 +393,7 @@ perform the last step of the workflow for adding a GPG key.
     >>> login(ANONYMOUS, request)
     >>> validategpg_view = getMultiAdapter(
     ...     (login_token, request), name="+validategpg")
-    >>> print validategpg_view.user
+    >>> print validategpg_view.account
     None
     >>> validategpg_view.initialize()
     >>> print "\n".join(
