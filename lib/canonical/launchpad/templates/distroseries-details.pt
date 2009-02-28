@@ -27,7 +27,7 @@
           <td tal:content="context/sourcecount" />
         </tal:sources>
         <tal:no_sources condition="not: sourcecount">
-          <td colspan=2>
+          <td colspan="2">
             No sources imported or published.
           </td>
         </tal:no_sources>
