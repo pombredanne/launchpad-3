@@ -7,7 +7,9 @@ import transaction
 import unittest
 
 from twisted.internet import defer
+from twisted.internet.error import ConnectionClosed
 from twisted.internet.threads import deferToThread
+from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
@@ -52,7 +54,7 @@ class TestRecordingSlaves(TrialTestCase):
         information for later use.
         """
         self.assertEqual(
-            (True, 'Download'),
+            [True, 'Download'],
             self.slave.ensurepresent('boing', 'bar', 'baz'))
         self.assertEqual(
             [('ensurepresent', ('boing', 'bar', 'baz'))],
@@ -65,7 +67,7 @@ class TestRecordingSlaves(TrialTestCase):
         information for later use.
         """
         self.assertEqual(
-            ('BuilderStatus.BUILDING', 'boing'),
+            ['BuilderStatus.BUILDING', 'boing'],
             self.slave.build('boing', 'bar', 'baz'))
         self.assertEqual(
             [('build', ('boing', 'bar', 'baz'))],
@@ -78,7 +80,7 @@ class TestRecordingSlaves(TrialTestCase):
 
         # When resume is called, it returns the success truple and mark
         # the slave for resuming.
-        self.assertEqual(('', '', os.EX_OK), self.slave.resume())
+        self.assertEqual(['', '', os.EX_OK], self.slave.resume())
         self.assertTrue(self.slave.resume_requested)
 
         # The configuration testing command-line.
@@ -92,8 +94,8 @@ class TestRecordingSlaves(TrialTestCase):
             self.assertEqual('', err)
             self.assertEqual('foo.host', out.strip())
 
-        d = self.slave.resumeSlave()
-        d.addCallback(check_resume_success)
+        d1 = self.slave.resumeSlave()
+        d1.addCallback(check_resume_success)
 
         # Override the configuration command-line with one that will fail.
         failed_config = """
@@ -109,10 +111,10 @@ class TestRecordingSlaves(TrialTestCase):
             self.assertEqual('', out)
             config.pop('vm_resume_command')
 
-        d = self.slave.resumeSlave()
-        d.addCallback(check_resume_failure)
+        d2 = self.slave.resumeSlave()
+        d2.addCallback(check_resume_failure)
 
-        return d
+        return defer.DeferredList([d1, d2])
 
 
 class TestingXMLRPCProxy:
@@ -129,7 +131,7 @@ class TestingXMLRPCProxy:
             result = buildd_success_result_map.get(args[0])
         else:
             result = 'boing'
-        return defer.succeed((result, self.failure_info))
+        return defer.succeed([result, self.failure_info])
 
 
 class TestingResetDispatchResult(ResetDispatchResult):
@@ -155,6 +157,7 @@ class TestingFailDispatchResult(FailDispatchResult):
 
 
 class TestingBuilddManager(BuilddManager):
+    """Override the dispatch result factories """
 
     reset_result = TestingResetDispatchResult
     fail_result = TestingFailDispatchResult
@@ -238,6 +241,16 @@ class TestBuilddManager(TrialTestCase):
         events.addCallback(check_events)
         return events
 
+    def assertIsDispatchReset(self, result):
+        self.assertTrue(
+            isinstance(result, TestingResetDispatchResult),
+            'Dispatch failure did not result in a ResetBuildResult object')
+
+    def assertIsDispatchFail(self, result):
+        self.assertTrue(
+            isinstance(result, TestingFailDispatchResult),
+            'Dispatch failure did not result in a FailBuildResult object')
+
     def testCheckResume(self):
         """`BuilddManager.checkResume` is chained after resume requests.
 
@@ -250,50 +263,85 @@ class TestBuilddManager(TrialTestCase):
         """
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
 
-        successful_response = ('', '', os.EX_OK)
+        successful_response = ['', '', os.EX_OK]
         result = self.manager.checkResume(successful_response, slave)
         self.assertEqual(
             None, result, 'Successful resume checks should return None')
 
-        failed_response = ('', '', os.EX_USAGE)
+        failed_response = ['', '', os.EX_USAGE]
         result = self.manager.checkResume(failed_response, slave)
-        self.assertTrue(
-            isinstance(result, TestingResetDispatchResult),
-            'Failed resume check should return instances of ResetBuildResult')
+        self.assertIsDispatchReset(result)
         self.assertEqual(
             '<foo:http://foo.buildd:8221/> reset', repr(result))
 
     def testCheckDispatch(self):
         """`BuilddManager.checkDispatch` is chained after dispatch requests.
 
-        If the dispatch request fails it returns a `FailDispatchResult`
-        (in the test context) that will be evaluated later. On success
-        dispatching it returns None.
+        If the dispatch request fails or a unknown method is given, it
+        returns a `FailDispatchResult` (in the test context) that will
+        be evaluated later.
 
-        If an unknown 'method' is given to `checkDispatch` is raises.
+        Builders will be marked as failed if the following responses
+        categories are received.
+
+         * Legitimate slave failures: when the response is a tuple with 2
+           elements but the first element ('status') do not correspond to
+           the expected 'success' result. See `buildd_success_result_map`.
+
+         * Unexpected (code) failures: when the given 'method' is unknown
+           or the response isn't a 2-element tuple or Failure instance.
+
+        Communication failures (an twisted `Failure` instance) will simply
+        cause the builder to be reset, a `ResetDispatchResult` object is
+        returned. In other words, network failires are ignored in this
+        stage, broken builders will be identified and marked as so
+        during 'scan()' stage.
+
+        On success dispatching it returns None.
         """
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
-        successful_response = (
-            buildd_success_result_map.get('ensurepresent'), 'cool builder')
+
+        # Successful legitimented response, None is returned.
+        successful_response = [
+            buildd_success_result_map.get('ensurepresent'), 'cool builder']
         result = self.manager.checkDispatch(
             successful_response, 'ensurepresent', slave)
         self.assertEqual(
             None, result, 'Successful dispatch checks should return None')
 
-        failed_response = (False, 'uncool builder')
+        # Failed legitimated response, results in a `FailDispatchResult`.
+        failed_response = [False, 'uncool builder']
         result = self.manager.checkDispatch(
             failed_response, 'ensurepresent', slave)
-        self.assertTrue(
-            isinstance(result, TestingFailDispatchResult),
-            'Failed dispatch check should return instances of '
-            'FailBuildResult')
+        self.assertIsDispatchFail(result)
         self.assertEqual(
             '<foo:http://foo.buildd:8221/> failure (uncool builder)',
             repr(result))
 
-        self.assertRaises(
-            AssertionError, self.manager.checkDispatch, successful_response,
-            'unknown-method', slave)
+        # Twisted Failure response, results in a `ResetDispatchResult`.
+        twisted_failure = Failure(ConnectionClosed('Boom!'))
+        result = self.manager.checkDispatch(
+            twisted_failure, 'ensurepresent', slave)
+        self.assertIsDispatchReset(result)
+        self.assertEqual(
+            '<foo:http://foo.buildd:8221/> reset', repr(result))
+
+        # Unexpected response, results in a `FailDispatchResult`.
+        unexpected_response = [1, 2, 3]
+        result = self.manager.checkDispatch(
+            unexpected_response, 'build', slave)
+        self.assertIsDispatchFail(result)
+        self.assertEqual(
+            '<foo:http://foo.buildd:8221/> failure '
+            '(Unexpected response: [1, 2, 3])', repr(result))
+
+        # Unknown method was given, results in a `FailDispatchResult`
+        result = self.manager.checkDispatch(
+            successful_response, 'unknown-method', slave)
+        self.assertIsDispatchFail(result)
+        self.assertEqual(
+            '<foo:http://foo.buildd:8221/> failure '
+            '(Unknown slave method: unknown-method)', repr(result))
 
     def testDispatchBuild(self):
         """Check `dispatchBuild` in various scenarios.
