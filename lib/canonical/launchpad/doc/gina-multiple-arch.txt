@@ -36,7 +36,7 @@ Create a distribution series and an arch series for dapper:
     >>> hoary = ubuntu.getSeries("hoary")
 
     # Only the distro owner or admins can create a series.
-    >>> login('support@ubuntu.com')
+    >>> login_person(ubuntu.owner.activemembers[0])
     >>> dapper = ubuntu.newSeries("dapper", "Dapper Dragoon", "My title",
     ...                           "My summary", "My description", "5.10",
     ...                           hoary, celebs.launchpad_developers)
