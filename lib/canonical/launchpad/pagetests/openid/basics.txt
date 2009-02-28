@@ -348,11 +348,10 @@ identifier, you get a nice error page.
     ...     '(?m)^openid.user_setup_url:(.*)$', sabdfl_browser.contents
     ...     )
     >>> sabdfl_browser.open(setup_url)
-    >>> print '\n' + sabdfl_browser.contents
-    <BLANKLINE>
-    ...
+    >>> print find_main_content(sabdfl_browser.contents)
+    <div id="maincontent">...
     that is not a valid Launchpad OpenID identity URL, such as
-    <strong>http://launchpad.dev/~sabdfl</strong>
+    <strong>http://launchpad.dev/~USER</strong>
     ...
     <form action="http://launchpad.dev/+openid-consumer?openid.mode=cancel...">
     <input type="submit" value="Continue" />
