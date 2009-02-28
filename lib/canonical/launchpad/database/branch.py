@@ -1283,56 +1283,46 @@ class BranchSet:
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """See `IBranchSet`."""
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        query = ('''
-            Branch.branch_type <> %s AND
-            Branch.last_scanned IS NOT NULL %s
-            '''
-            % (quote(BranchType.IMPORTED), lifecycle_clause))
-        results = Branch.select(
-            self._generateBranchClause(query, visible_by_user),
-            orderBy=['-last_scanned', '-id'],
-            prejoins=['owner', 'product'])
+        all_branches = getUtility(IAllBranches)
+        branches = all_branches.visibleByUser(
+            visible_by_user).withLifecycleStatus(*lifecycle_statuses)
+        branches = branches.withBranchType(
+            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches()
+        branches.order_by(
+            Desc(Branch.last_scanned), Desc(Branch.id))
         if branch_count is not None:
-            results = results.limit(branch_count)
-        return results
+            branches.config(limit=branch_count)
+        return branches
 
     def getRecentlyImportedBranches(
         self, branch_count=None,
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """See `IBranchSet`."""
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        query = ('''
-            Branch.branch_type = %s AND
-            Branch.last_scanned IS NOT NULL %s
-            '''
-            % (quote(BranchType.IMPORTED), lifecycle_clause))
-        results = Branch.select(
-            self._generateBranchClause(query, visible_by_user),
-            orderBy=['-last_scanned', '-id'],
-            prejoins=['owner', 'product'])
+        all_branches = getUtility(IAllBranches)
+        branches = all_branches.visibleByUser(
+            visible_by_user).withLifecycleStatus(*lifecycle_statuses)
+        branches = branches.withBranchType(
+            BranchType.IMPORTED).scanned().getBranches()
+        branches.order_by(
+            Desc(Branch.last_scanned), Desc(Branch.id))
         if branch_count is not None:
-            results = results.limit(branch_count)
-        return results
+            branches.config(limit=branch_count)
+        return branches
 
     def getRecentlyRegisteredBranches(
         self, branch_count=None,
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """See `IBranchSet`."""
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        # Since the lifecycle_clause may or may not contain anything,
-        # we need something that is valid if the lifecycle clause starts
-        # with 'AND', so we choose true.
-        query = 'true %s' % lifecycle_clause
-        results = Branch.select(
-            self._generateBranchClause(query, visible_by_user),
-            orderBy=['-date_created', '-id'],
-            prejoins=['owner', 'product'])
+        all_branches = getUtility(IAllBranches)
+        branches = all_branches.withLifecycleStatus(
+            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches()
+        branches.order_by(
+            Desc(Branch.date_created), Desc(Branch.id))
         if branch_count is not None:
-            results = results.limit(branch_count)
-        return results
+            branches.config(limit=branch_count)
+        return branches
 
     @staticmethod
     def _getBranchVisibilitySubQuery(visible_by_user):
@@ -1383,14 +1373,6 @@ class BranchSet:
             % (query, self._getBranchVisibilitySubQuery(visible_by_user)))
 
         return clause
-
-    def _lifecycleClause(self, lifecycle_statuses):
-        lifecycle_clause = ''
-        if lifecycle_statuses:
-            lifecycle_clause = (
-                ' AND Branch.lifecycle_status in %s' %
-                quote(lifecycle_statuses))
-        return lifecycle_clause
 
     @staticmethod
     def _listingSortToOrderBy(sort_by):
@@ -1469,13 +1451,13 @@ class BranchSet:
                                     visible_by_user=None):
         """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
-        lifecycle_clause = self._lifecycleClause(
-            DEFAULT_BRANCH_STATUS_IN_LISTING)
-        query = "Branch.product = %d%s" % (product.id, lifecycle_clause)
-        return Branch.select(
-            self._generateBranchClause(query, visible_by_user),
-            limit=quantity,
-            orderBy=['-date_created', '-id'])
+        all_branches = getUtility(IAllBranches)
+        latest = all_branches.visibleByUser(visible_by_user).inProduct(
+            product).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
+        latest_branches = latest.getBranches().order_by(
+            Desc(Branch.date_created), Desc(Branch.id))
+        latest_branches.config(limit=quantity)
+        return latest_branches
 
     def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
