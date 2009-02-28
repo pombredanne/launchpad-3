@@ -230,10 +230,8 @@ proposals by their status.
 Or I can look for anything that is approved.
 
     >>> login('admin@canonical.com')
-    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.branchmergeproposal import (
     ...     BranchMergeProposalStatus)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> fixit_proposal.approveBranch(fixit_proposal.target_branch.owner, '1')
     >>> logout()
 

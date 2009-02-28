@@ -52,7 +52,7 @@ import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIDApplication, IPerson,
     IPersonSet, IShipItApplication, IWebServiceApplication,
-    IOAuthConsumerSet, NonceAlreadyUsed)
+    IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError, ClockSkew)
 import canonical.launchpad.versioninfo
 
 from canonical.launchpad.webapp.adapter import (
@@ -1291,8 +1291,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
         nonce = form.get('oauth_nonce')
         timestamp = form.get('oauth_timestamp')
         try:
-            token.ensureNonce(nonce, timestamp)
-        except NonceAlreadyUsed, e:
+            token.checkNonceAndTimestamp(nonce, timestamp)
+        except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
             raise Unauthorized('Invalid nonce/timestamp: %s' % e)
         now = datetime.now(pytz.timezone('UTC'))
         if token.permission == OAuthPermission.UNAUTHORIZED:

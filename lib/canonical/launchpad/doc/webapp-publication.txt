@@ -1072,7 +1072,6 @@ the OAuthNonce table.
     >>> test_request._publicationticks_start = 1345
     >>> publication.afterCall(test_request, None)
 
-    >>> form['oauth_timestamp'] += 500
     >>> test_request, publication = get_request_and_publication(
     ...     'api.launchpad.dev', 'GET',
     ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
@@ -1264,7 +1263,9 @@ raised, though.
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> access_token.date_expires = now - timedelta(days=1)
     >>> syncUpdate(access_token)
-    >>> test_request = LaunchpadTestRequest(form=form)
+    >>> form2 = form.copy()
+    >>> form2['oauth_nonce'] = '1764572616e48616d6d65724c61686'
+    >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Traceback (most recent call last):
     ...
@@ -1274,6 +1275,7 @@ raised, though.
 
     >>> form2 = form.copy()
     >>> form2['oauth_token'] += 'z'
+    >>> form2['oauth_nonce'] = '4572616e48616d6d65724c61686176'
     >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Traceback (most recent call last):
@@ -1293,30 +1295,58 @@ correct.
 
     >>> form2 = form.copy()
     >>> form2['oauth_signature'] += 'z'
+    >>> form2['oauth_nonce'] = '2616e48616d6d65724c61686176457'
     >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Traceback (most recent call last):
     ...
     Unauthorized: Invalid signature.
 
-Last but not least, the nonce specified in the request must either have
-not been used before (in a request with this same token) or its
-timestamp must be +/- 60 seconds of the timestamp associated with the
-OAuthNonce in our database.
+The nonce specified in the request must not have been used before in a request
+with this same token and timestamp.
 
-    >>> from canonical.launchpad.database.oauth import NONCE_TIME_WINDOW
     >>> form2 = form.copy()
-    >>> form2['oauth_timestamp'] += NONCE_TIME_WINDOW - 1
+    >>> form2['oauth_nonce'] = '6e48616d6d65724c61686176457261'
     >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Guilherme Salgado
 
-    >>> form2['oauth_timestamp'] += NONCE_TIME_WINDOW + 1
     >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Traceback (most recent call last):
     ...
-    Unauthorized: Invalid nonce/timestamp...
+    Unauthorized: Invalid nonce/timestamp: This nonce has been used already.
+
+The timestamp must not be older than TIMESTAMP_ACCEPTANCE_WINDOW from the most
+recent request for this token.
+
+    >>> from canonical.launchpad.database.oauth import (
+    ...     TIMESTAMP_ACCEPTANCE_WINDOW)
+    >>> form2 = form.copy()
+    >>> form2['oauth_timestamp'] -= (TIMESTAMP_ACCEPTANCE_WINDOW-5)
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Guilherme Salgado
+
+    >>> form2['oauth_timestamp'] -= 10
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Invalid nonce/timestamp: Timestamp too old compared ...
+
+Last but not least, the timestamp must not be too far in the future, as
+defined by TIMESTAMP_SKEW_WINDOW.
+
+    >>> from canonical.launchpad.database.oauth import (
+    ...     TIMESTAMP_SKEW_WINDOW)
+    >>> form2 = form.copy()
+    >>> form2['oauth_timestamp'] += (TIMESTAMP_SKEW_WINDOW+10)
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Invalid nonce/timestamp: Timestamp ... from bad system clock
 
 Close the bogus request that was started by the call to
 beforeTraversal, in order to ensure we leave our state sane.
