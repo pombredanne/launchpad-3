@@ -1,3 +1,7 @@
+<tal:block
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+>
 <tal:comment condition="nothing">
 The disabled link is invisble since it has display:none, and it
 only appears when devmode is on, so that tests can more easily
@@ -22,3 +26,4 @@ verify that links are disabled.
     tal:attributes="class string:menu-link-${context/name};"
     tal:content="structure context/escapedtext">Unlinked text</strong>
 </li>
+</tal:block>
