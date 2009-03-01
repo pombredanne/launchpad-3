@@ -969,8 +969,14 @@ class TeamMapView(LaunchpadView):
         """HTML which shows the map with location of the team's members."""
         return """
             <script type="text/javascript">
-                renderTeamMap(%(min_lat)s, %(max_lat)s, %(min_lng)s,
-                              %(max_lng)s, %(center_lat)s, %(center_lng)s);
+                YUI().use('node', 'lp.mapping', function(Y) {
+                    function renderMap() {
+                        Y.lp.mapping.renderTeamMap(
+                            %(min_lat)s, %(max_lat)s, %(min_lng)s,
+                            %(max_lng)s, %(center_lat)s, %(center_lng)s);
+                     }
+                     Y.on("domready", renderMap);
+                });
             </script>""" % self.bounds
 
     @property
@@ -978,7 +984,13 @@ class TeamMapView(LaunchpadView):
         """The HTML which shows a small version of the team's map."""
         return """
             <script type="text/javascript">
-                renderTeamMapSmall(%(center_lat)s, %(center_lng)s);
+                YUI().use('node', 'lp.mapping', function(Y) {
+                    function renderMap() {
+                        Y.lp.mapping.renderTeamMapSmall(
+                            %(center_lat)s, %(center_lng)s);
+                     }
+                     Y.on("domready", renderMap);
+                });
             </script>""" % self.bounds
 
 
