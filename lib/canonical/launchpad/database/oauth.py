@@ -10,13 +10,13 @@ __all__ = [
     'OAuthRequestTokenSet']
 
 import pytz
-import time
 from datetime import datetime, timedelta
 
 from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, StringCol
+from storm.expr import And
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -33,22 +33,30 @@ from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,
-    IOAuthRequestToken, IOAuthRequestTokenSet, NonceAlreadyUsed)
+    IOAuthRequestToken, IOAuthRequestTokenSet, NonceAlreadyUsed,
+    TimestampOrderingError, ClockSkew)
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, OAuthPermission, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 # How many hours should a request token be valid for?
 REQUEST_TOKEN_VALIDITY = 12
-# The OAuth Core 1.0 spec says that a nonce shall be "unique for all requests
-# with that timestamp", but this is likely to cause problems if the
-# client does request pipelining, so we use a time window (relative to
-# the timestamp of the existing OAuthNonce) to check if the nonce can be used.
-# As suggested by Robert, we use a window which is at least twice the size of
-# our hard time out. This is a safe bet since no requests should take more 
-# than one hard time out.
-NONCE_TIME_WINDOW = 60 # seconds
-
+# The OAuth Core 1.0 spec (http://oauth.net/core/1.0/#nonce) says that a
+# timestamp "MUST be equal or greater than the timestamp used in previous
+# requests," but this is likely to cause problems if the client does request
+# pipelining, so we use a time window (relative to the timestamp of the
+# existing OAuthNonce) to check if the timestamp can is acceptable. As
+# suggested by Robert, we use a window which is at least twice the size of our
+# hard time out. This is a safe bet since no requests should take more than
+# one hard time out.
+TIMESTAMP_ACCEPTANCE_WINDOW = 60 # seconds
+# If the timestamp is far in the future because of a client's clock skew,
+# it will effectively invalidate the authentication tokens when the clock is
+# corrected.  To prevent that from becoming too serious a problem, we raise an
+# exception if the timestamp is off by more than this amount from the server's
+# concept of "now".  We also reject timestamps that are too old by the same
+# amount.
+TIMESTAMP_SKEW_WINDOW = 60*60 # seconds, +/-
 
 class OAuthBase(SQLBase):
     """Base class for all OAuth database classes."""
@@ -64,6 +72,7 @@ class OAuthBase(SQLBase):
         """
         return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
+    getStore = _get_store
 
 class OAuthConsumer(OAuthBase):
     """See `IOAuthConsumer`."""
@@ -148,22 +157,37 @@ class OAuthAccessToken(OAuthBase):
         else:
             return None
 
-    def ensureNonce(self, nonce, timestamp):
+    def checkNonceAndTimestamp(self, nonce, timestamp):
         """See `IOAuthAccessToken`."""
         timestamp = float(timestamp)
-        oauth_nonce = OAuthNonce.selectOneBy(access_token=self, nonce=nonce)
+        date = datetime.fromtimestamp(timestamp, pytz.UTC)
+        # Determine if the timestamp is too far off from now.
+        skew = timedelta(seconds=TIMESTAMP_SKEW_WINDOW)
+        now = datetime.now(pytz.UTC)
+        if date < (now-skew) or date > (now+skew):
+            raise ClockSkew('Timestamp appears to come from bad system clock')
+        # Determine if the nonce was already used for this timestamp.
+        store = OAuthNonce.getStore()
+        oauth_nonce = store.find(OAuthNonce,
+                                 And(OAuthNonce.access_token==self,
+                                     OAuthNonce.nonce==nonce,
+                                     OAuthNonce.request_timestamp==date)
+                                 ).one()
         if oauth_nonce is not None:
-            # timetuple() returns the datetime as local time, so we need to
-            # subtract time.altzone from the result of time.mktime().
-            stored_timestamp = time.mktime(
-                oauth_nonce.request_timestamp.timetuple()) - time.altzone
-            if abs(stored_timestamp - timestamp) > NONCE_TIME_WINDOW:
-                raise NonceAlreadyUsed('This nonce has been used already.')
-            return oauth_nonce
-        else:
-            date = datetime.fromtimestamp(timestamp, pytz.timezone('UTC'))
-            return OAuthNonce(
-                access_token=self, nonce=nonce, request_timestamp=date)
+            raise NonceAlreadyUsed('This nonce has been used already.')
+        # Determine if the timestamp is too old compared to most recent
+        # request.
+        limit = date + timedelta(seconds=TIMESTAMP_ACCEPTANCE_WINDOW)
+        match = store.find(OAuthNonce,
+                           And(OAuthNonce.access_token==self,
+                               OAuthNonce.request_timestamp>limit)
+                           ).any()
+        if match is not None:
+            raise TimestampOrderingError(
+                'Timestamp too old compared to most recent request')
+        # Looks OK.  Give a Nonce object back.
+        return OAuthNonce(
+            access_token=self, nonce=nonce, request_timestamp=date)
 
 
 class OAuthRequestToken(OAuthBase):
