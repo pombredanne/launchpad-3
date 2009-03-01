@@ -8,10 +8,3 @@ Tests with errors:
    canonical.codehosting.tests.test_bzrutils.TestGetBranchStackedOnURL.testGetBranchStackedOnUrlUnstackable(RemoteBzrDirFormat-v2)
 
 How did these two ever work!?
-
-   canonical.codehosting.puller.tests.test_acceptance.TestBranchPuller.test_mirror_hosted_loom_branch
-
-Tests with failures:
-   canonical.codehosting.tests.test_acceptance.AcceptanceTests.test_can_push_loom_branch(sftp)
-   canonical.codehosting.tests.test_acceptance.AcceptanceTests.test_can_push_loom_branch(bzr+ssh)
-
