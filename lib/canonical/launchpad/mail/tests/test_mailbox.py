@@ -1,5 +1,4 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
-
 """Tests for mail boxes."""
 
 __metaclass__ = type
@@ -22,7 +21,7 @@ class TestDirectoryMailBox(TestCase):
         self.email_dir = tempfile.mkdtemp()
 
     def tearDown(self):
-        # delete the directory
+        # Delete the directory.
         rmtree(self.email_dir)
 
     def test_verify_interface(self):

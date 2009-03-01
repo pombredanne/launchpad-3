@@ -1,4 +1,5 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
+"""Useful helper functions used for testing."""
 
 __metaclass__ = type
 
