@@ -61,8 +61,8 @@
         </p>
 
         <tal:bugtracker-links
-            condition="product/upstream_bugtracker_links"
-            define="links product/upstream_bugtracker_links">
+            condition="view/upstream_bugtracker_links"
+            define="links view/upstream_bugtracker_links">
           <p tal:condition="links/bug_filing_url">
             If you want to report this bug on
             <tal:bug-tracker content="bugtracker/title" /> before

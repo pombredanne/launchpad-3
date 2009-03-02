@@ -68,7 +68,7 @@
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
-      factory="canonical.launchpad.browser.branch.BranchPrimaryContext"
+      factory="canonical.launchpad.database.branchtarget.branch_to_target"
       />
 
   <!-- hierarchy -->
