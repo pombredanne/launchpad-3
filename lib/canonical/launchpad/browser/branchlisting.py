@@ -18,6 +18,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductBranchesView',
     'ProductCodeIndexView',
+    'ProjectBranchesView',
     'RecentlyChangedBranchesView',
     'RecentlyImportedBranchesView',
     'RecentlyRegisteredBranchesView',
@@ -1007,3 +1008,28 @@ class ProductBranchesView(ProductBranchListingView):
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
             'sort_by': BranchListingSort.LIFECYCLE,
             }
+
+
+class ProjectBranchesView(BranchListingView):
+    """View for branch listing for a project."""
+
+    no_sort_by = (BranchListingSort.DEFAULT,)
+    extra_columns = ('author', 'product')
+
+    @property
+    def no_branch_message(self):
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
+            message = (
+                'There are branches registered for %s '
+                'but none of them match the current filter criteria '
+                'for this page. Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches registered for %s '
+                'in Launchpad today. We recommend you visit '
+                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'for more information about how you can use the Bazaar '
+                'revision control system to improve community participation '
+                'in this project group.')
+        return message % self.context.displayname
