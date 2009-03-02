@@ -1117,7 +1117,7 @@ class Archive(SQLBase):
         subscription.subscriber = subscriber
         subscription.date_expires = date_expires
         subscription.description = description
-        subscription.status = ArchiveSubscriberStatus.ACTIVE
+        subscription.status = ArchiveSubscriberStatus.CURRENT
         subscription.date_created = UTC_NOW
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(subscription)
