@@ -16,8 +16,8 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, IBranchMergeProposalGetter,
-    IBranchMergeProposalListingBatchNavigator)
+    BranchMergeProposalStatus, IBranchMergeProposal,
+    IBranchMergeProposalGetter, IBranchMergeProposalListingBatchNavigator)
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.webapp import LaunchpadView
@@ -157,3 +157,65 @@ class BranchMergeProposalListingView(LaunchpadView):
     def proposal_count(self):
         """Return the number of proposals that will be returned."""
         return self.getVisibleProposalsForUser().count()
+
+
+class PersonBMPListingView(BranchMergeProposalListingView):
+    """Base class for the proposal listings that defines the user."""
+
+    def getUserFromContext(self):
+        """Get the relevant user from the context."""
+        return self.context
+
+
+class PersonActiveReviewsView(PersonBMPListingView):
+    """Branch merge proposals that the person has submitted."""
+
+    extra_columns = ['date_review_requested', 'vote_summary']
+    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Active code reviews for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no active code reviews." % self.context.displayname
+
+
+class PersonRequestedReviewsView(PersonBMPListingView):
+    """Branch merge proposals for the person that are needing review."""
+
+    extra_columns = ['date_review_requested', 'review',]
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED,
+                     BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Code reviews requested of %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no reviews pending." % self.context.displayname
+
+    def getVisibleProposalsForUser(self):
+        """Branch merge proposals that are visible by the logged in user."""
+        return getUtility(IBranchMergeProposalGetter).getProposalsForReviewer(
+            self.context, self._queue_status, self.user)
+
+
+class PersonApprovedMergesView(PersonBMPListingView):
+    """Branch merge proposals that have been approved for the person."""
+
+    extra_columns = ['date_reviewed']
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
+
+    @property
+    def heading(self):
+        return "Approved merges for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no approved merges." % self.context.displayname
