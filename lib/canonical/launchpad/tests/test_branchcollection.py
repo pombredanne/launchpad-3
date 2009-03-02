@@ -241,6 +241,28 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             sorted([owned_branch, registered_branch, subscribed_branch]),
             sorted(related_branches.getBranches()))
 
+    def test_withBranchType(self):
+        hosted_branch1 = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED)
+        hosted_branch2 = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED)
+        mirrored_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
+        imported_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.IMPORTED)
+        branches = self.all_branches.withBranchType(
+            BranchType.HOSTED, BranchType.MIRRORED)
+        self.assertEqual(
+            set([hosted_branch1, hosted_branch2, mirrored_branch]),
+            set(branches.getBranches()))
+
+    def test_scanned(self):
+        scanned_branch = self.factory.makeAnyBranch()
+        self.factory.makeRevisionsForBranch(scanned_branch)
+        unscanned_branch = self.factory.makeAnyBranch()
+        branches = self.all_branches.scanned()
+        self.assertEqual([scanned_branch], list(branches.getBranches()))
+
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
 

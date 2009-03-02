@@ -74,12 +74,18 @@ class IBranchCollection(Interface):
         :return: An `ICountableIterator`.
         """
 
+    def scanned():
+        """Restrict the collection to branches that have been scanned."""
+
     def subscribedBy(person):
         """Restrict the collection to branches subscribed to by 'person'."""
 
     def visibleByUser(person):
         """Restrict the collection to branches that person is allowed to see.
         """
+
+    def withBranchType(*branch_types):
+        """Restrict the collection to branches with the given branch types."""
 
     def withLifecycleStatus(*statuses):
         """Restrict the collection to branches with the given statuses."""

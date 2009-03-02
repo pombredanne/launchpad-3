@@ -64,10 +64,17 @@ class RemoteProductUpdater:
                 bug_watch.bugtracker)
 
             try:
-                external_bugtracker.initializeRemoteBugDB([bug_watch.remotebug])
+                external_bugtracker.initializeRemoteBugDB(
+                    [bug_watch.remotebug])
                 remote_product = external_bugtracker.getRemoteProduct(
                     bug_watch.remotebug)
-            except (BugWatchUpdateError, BugWatchUpdateWarning), error:
+
+            # XXX 2009-02-25 gmb [bug=334449]
+            #     We shouldn't be catching AssertionErrors here. Once
+            #     bug 334449 is fixed this part of the except should be
+            #     removed.
+            except (AssertionError, BugWatchUpdateError,
+                    BugWatchUpdateWarning), error:
                 self.logger.error(
                     "Unable to set remote_product for '%s': %s" %
                     (product.name, error))
