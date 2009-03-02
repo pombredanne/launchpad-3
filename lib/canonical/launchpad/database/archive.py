@@ -35,7 +35,7 @@ from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
 from canonical.launchpad.database.archiveauthtoken import (ArchiveAuthToken)
 from canonical.launchpad.database.archivesubscriber import (
-    ArchiveSubscriber, ArchiveSubscriptionError)
+    ArchiveSubscriber)
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -52,6 +52,8 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadSource)
 from canonical.launchpad.database.teammembership import TeamParticipation
+from canonical.launchpad.interfaces.archiveauthtoken import (
+    IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
     IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
@@ -59,7 +61,7 @@ from canonical.launchpad.interfaces.archive import (
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus, IArchiveSubscriberSet)
+    ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.interfaces.component import IComponentSet
@@ -1102,17 +1104,18 @@ class Archive(SQLBase):
 
         # Second, ensure that a current subscription exists for the
         # person and archive:
-        # XXX
+        # XXX: noodles 2009-03-02 bug=336779: This can be removed once
+        # newAuthToken() is moved into IArchiveView.
         sub_set = getUtility(IArchiveSubscriberSet)
-        subscriptions_with_tokens = sub_set.getBySubscriberWithTokens(
-            person, archive=self)
-        if subscriptions_with_tokens.count() == 0:
+        subscriptions = sub_set.getBySubscriber(person, archive=self)
+        if subscriptions.count() == 0:
             raise Unauthorized(
                 "You do not have permission to access %s." % self.title)
 
         # Third, ensure that the current subscription does not already
         # have a token:
-        subscription, previous_token = subscriptions_with_tokens[0]
+        token_set = getUtility(IArchiveAuthTokenSet)
+        previous_token = token_set.getByArchiveAndPerson(self, person)
         if previous_token:
             raise ArchiveSubscriptionError(
                 "%s already has a token for %s." % (

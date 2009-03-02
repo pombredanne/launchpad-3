@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveSubscriberStatus',
+    'ArchiveSubscriptionError',
     'IArchiveSubscriber',
     'IArchiveSubscriberSet'
     ]
@@ -42,6 +43,11 @@ class ArchiveSubscriberStatus(DBEnumeratedType):
 
         The subscription was cancelled.
         """)
+
+
+class ArchiveSubscriptionError(Exception):
+    """Raised for various errors when creating and activating subscriptions.
+    """
 
 
 class IArchiveSubscriberView(Interface):

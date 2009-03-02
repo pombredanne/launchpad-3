@@ -565,7 +565,9 @@ class IArchivePublic(IHasOwner):
         :return The new `IPackageCopyRequest`
         """
 
-    # XXX
+    # XXX: noodles 2009-03-02 bug=336779: This should be moved into
+    # IArchiveView once the archive permissions are updated to grant
+    # IArchiveView to archive subscribers.
     def newAuthToken(person, token=None, date_created=None):
         """Create a new authorisation token.
 

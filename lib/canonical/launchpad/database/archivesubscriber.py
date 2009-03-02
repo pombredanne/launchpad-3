@@ -5,8 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchiveSubscriber',
-    'ArchiveSubscriptionError'
+    'ArchiveSubscriber'
     ]
 
 import pytz
@@ -22,11 +21,6 @@ from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriber)
-
-
-class ArchiveSubscriptionError(Exception):
-    """Raised for various errors when creating and activating subscriptions.
-    """
 
 
 class ArchiveSubscriber(Storm):
