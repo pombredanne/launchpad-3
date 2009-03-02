@@ -14,7 +14,8 @@ from canonical.launchpad.database.branchcollection import (
     GenericBranchCollection)
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
+from canonical.launchpad.interfaces.branch import (
+    BranchLifecycleStatus, BranchType)
 from canonical.launchpad.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
 from canonical.launchpad.interfaces.branchsubscription import (
@@ -223,6 +224,11 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # Unsubscribe the owner, to demonstrate that we show owned branches
         # even if they aren't subscribed.
         owned_branch.unsubscribe(person)
+        # Subscribe two other people to the owned branch to make sure
+        # that the BranchSubscription join is doing it right.
+        self.factory.makeBranchSubscription(branch=owned_branch)
+        self.factory.makeBranchSubscription(branch=owned_branch)
+
         registered_branch = self.factory.makeAnyBranch(
             owner=team, registrant=person)
         subscribed_branch = self.factory.makeAnyBranch()
@@ -232,8 +238,30 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             CodeReviewNotificationLevel.NOEMAIL)
         related_branches = self.all_branches.relatedTo(person)
         self.assertEqual(
-            set([owned_branch, registered_branch, subscribed_branch]),
-            set(related_branches.getBranches()))
+            sorted([owned_branch, registered_branch, subscribed_branch]),
+            sorted(related_branches.getBranches()))
+
+    def test_withBranchType(self):
+        hosted_branch1 = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED)
+        hosted_branch2 = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED)
+        mirrored_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
+        imported_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.IMPORTED)
+        branches = self.all_branches.withBranchType(
+            BranchType.HOSTED, BranchType.MIRRORED)
+        self.assertEqual(
+            set([hosted_branch1, hosted_branch2, mirrored_branch]),
+            set(branches.getBranches()))
+
+    def test_scanned(self):
+        scanned_branch = self.factory.makeAnyBranch()
+        self.factory.makeRevisionsForBranch(scanned_branch)
+        unscanned_branch = self.factory.makeAnyBranch()
+        branches = self.all_branches.scanned()
+        self.assertEqual([scanned_branch], list(branches.getBranches()))
 
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
