@@ -11,17 +11,10 @@ __all__ = [
     'IProductSeriesEditRestricted',
     'IProductSeriesPublic',
     'IProductSeriesSet',
-    'RevisionControlSystems',
-    'validate_cvs_module',
-    'validate_cvs_root',
     ]
-
-import re
 
 from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
-
-from CVS.protocol import CVSRoot, CvsRootError
 
 from canonical.config import config
 from canonical.launchpad.fields import (
@@ -39,7 +32,6 @@ from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
 from canonical.launchpad.interfaces.validation import validate_url
 
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
 
@@ -113,31 +105,6 @@ class ImportStatus(DBEnumeratedType):
         """)
 
 
-class RevisionControlSystems(DBEnumeratedType):
-    """Revision Control Systems
-
-    Bazaar brings code from a variety of upstream revision control
-    systems into bzr. This schema documents the known and supported
-    revision control systems.
-    """
-
-    CVS = DBItem(1, """
-        Concurrent Versions System
-
-        The Concurrent Version System is very widely used among
-        older open source projects, it was the first widespread
-        open source version control system in use.
-        """)
-
-    SVN = DBItem(2, """
-        Subversion
-
-        Subversion aims to address some of the shortcomings in
-        CVS, but retains the central server bottleneck inherent
-        in the CVS design.
-        """)
-
-
 class ProductSeriesNameField(ContentNameField):
 
     errormessage = _("%s is already in use by another series.")
@@ -151,37 +118,6 @@ class ProductSeriesNameField(ContentNameField):
             return self.context.product.getSeries(name)
         else:
             return self.context.getSeries(name)
-
-
-def validate_cvs_root(cvsroot):
-    try:
-        root = CVSRoot(cvsroot)
-    except CvsRootError, e:
-        raise LaunchpadValidationError(e)
-    if root.method == 'local':
-        raise LaunchpadValidationError('Local CVS roots are not allowed.')
-    if root.hostname.count('.') == 0:
-        raise LaunchpadValidationError(
-            'Please use a fully qualified host name.')
-    return True
-
-
-def validate_cvs_module(cvsmodule):
-    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
-    if not valid_module.match(cvsmodule):
-        raise LaunchpadValidationError(
-            'The CVS module contains illegal characters.')
-    if cvsmodule == 'CVS':
-        raise LaunchpadValidationError(
-            'A CVS module can not be called "CVS".')
-    return True
-
-
-def validate_cvs_branch(branch):
-    if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
-        return True
-    else:
-        raise LaunchpadValidationError('Your CVS branch name is invalid.')
 
 
 def validate_release_glob(value):
