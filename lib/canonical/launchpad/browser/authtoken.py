@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'AuthTokenSetNavigation',
     'AuthTokenView',
+    'BaseAuthTokenView',
     'NewAccountView',
     'ResetPasswordView',
     'ValidateEmailView',
@@ -39,7 +40,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, GPGKeyAlgorithm, GPGKeyNotFoundError,
     GPGVerificationError, IEmailAddressSet, IGPGHandler, IGPGKeySet,
     IGPGKeyValidationForm, IAuthToken, IAuthTokenSet, INewPersonForm,
-    IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, AuthTokenType,
+    IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, LoginTokenType,
     PersonCreationRationale, ShipItConstants, UnexpectedFormData)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 
@@ -65,10 +66,12 @@ class AuthTokenView(LaunchpadView):
     address confirmation, but that confirmation is already concluded.
     """
 
-    PAGES = {AuthTokenType.PASSWORDRECOVERY: '+resetpassword',
-             AuthTokenType.NEWACCOUNT: '+newaccount',
-             AuthTokenType.VALIDATEEMAIL: '+validateemail',
-             }
+    PAGES = {
+        LoginTokenType.NEWACCOUNT: '+newaccount',
+        LoginTokenType.NEWPROFILE: '+newaccount',
+        LoginTokenType.PASSWORDRECOVERY: '+resetpassword',
+        LoginTokenType.VALIDATEEMAIL: '+validateemail',
+        }
 
     def render(self):
         if self.context.date_consumed is None:
@@ -79,7 +82,7 @@ class AuthTokenView(LaunchpadView):
             return super(AuthTokenView, self).render()
 
 
-class BaseLoginTokenView(OpenIDMixin):
+class BaseAuthTokenView(OpenIDMixin):
     """A view class to be used by other LoginToken views."""
 
     expected_token_types = ()
@@ -168,13 +171,13 @@ class BaseLoginTokenView(OpenIDMixin):
         return True
 
 
-class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
+class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
 
     schema = IAuthToken
     field_names = ['email', 'password']
     custom_widget('password', PasswordChangeWidget)
     label = 'Reset password'
-    expected_token_types = (AuthTokenType.PASSWORDRECOVERY,)
+    expected_token_types = (LoginTokenType.PASSWORDRECOVERY,)
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
@@ -250,12 +253,12 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         self._cancel()
 
 
-class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
+class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
 
     schema = Interface
     field_names = []
-    expected_token_types = (AuthTokenType.VALIDATEEMAIL,
-                            )#AuthTokenType.VALIDATETEAMEMAIL)
+    expected_token_types = (LoginTokenType.VALIDATEEMAIL,
+                            )#LoginTokenType.VALIDATETEAMEMAIL)
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
@@ -339,7 +342,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
         return email
 
 
-class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
+class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
     """Page to create a new Launchpad account.
 
     # This is just a small test to make sure
@@ -367,7 +370,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     custom_widget('password', PasswordChangeWidget)
     label = 'Complete your registration'
     expected_token_types = (
-        AuthTokenType.NEWACCOUNT, )#LoginTokenType.NEWPROFILE)
+        LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
 
     def initialize(self):
         if self.redirectIfInvalidOrConsumedToken():

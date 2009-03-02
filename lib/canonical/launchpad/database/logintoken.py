@@ -49,6 +49,13 @@ class LoginToken(SQLBase):
 
     title = 'Launchpad Email Verification'
 
+    @property
+    def requester_account(self):
+        """See `ILoginToken`."""
+        if self.requester is None:
+            return None
+        return self.requester.account
+
     def consume(self):
         """See ILoginToken."""
         self.date_consumed = UTC_NOW
@@ -325,8 +332,7 @@ class LoginTokenSet:
         length = 20
         token = ''.join(
             [random.choice(characters) for count in range(length)])
-        reqid = getattr(requester, 'id', None)
-        return LoginToken(requesterID=reqid, requesteremail=requesteremail,
+        return LoginToken(requester=requester, requesteremail=requesteremail,
                           email=email, token=token, tokentype=tokentype,
                           created=UTC_NOW, fingerprint=fingerprint,
                           redirection_url=redirection_url)

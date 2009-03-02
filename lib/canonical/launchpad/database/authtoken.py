@@ -26,7 +26,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces.authtoken import (
-    AuthTokenType, IAuthToken, IAuthTokenSet)
+    IAuthToken, IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import (
@@ -41,7 +41,7 @@ class AuthToken(Storm):
 
     date_created = DateTime(tzinfo=pytz.utc)
     date_consumed = DateTime(tzinfo=pytz.utc)
-    tokentype = DBEnum('token_type', enum=AuthTokenType, allow_none=False)
+    tokentype = DBEnum('token_type', enum=LoginTokenType, allow_none=False)
     token = Unicode(allow_none=False)
 
     requester_id = Int('requester_id')
@@ -150,7 +150,9 @@ class AuthTokenSet:
             fingerprint=None, redirection_url=None):
         """See IAuthTokenSet."""
         assert valid_email(email)
-        if tokentype not in LoginTokenType.items:
+        if tokentype not in [LoginTokenType.PASSWORDRECOVERY,
+                             LoginTokenType.NEWACCOUNT,
+                             LoginTokenType.VALIDATEEMAIL]:
             # XXX: Guilherme Salgado, 2005-12-09:
             # Aha! According to our policy, we shouldn't raise ValueError.
             raise ValueError(

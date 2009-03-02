@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'AuthTokenType',
+    'LoginTokenType',
     'IAuthToken',
     'IAuthTokenSet',
     ]
@@ -19,8 +19,8 @@ from canonical.launchpad.fields import PasswordField
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
-class AuthTokenType(DBEnumeratedType):
-    """AuthToken type
+class LoginTokenType(DBEnumeratedType):
+    """Login token type
 
     Tokens are emailed to users in workflows that require email address
     validation, such as forgotten password recovery or account merging.
@@ -35,6 +35,13 @@ class AuthTokenType(DBEnumeratedType):
         reset it.
         """)
 
+    ACCOUNTMERGE = DBItem(2, """
+        Account Merge
+
+        User has requested that another account be merged into their
+        current one.
+        """)
+
     NEWACCOUNT = DBItem(3, """
         New Account
 
@@ -47,6 +54,57 @@ class AuthTokenType(DBEnumeratedType):
 
         A user has added more email addresses to their account and they
         need to be validated.
+        """)
+
+    VALIDATETEAMEMAIL = DBItem(5, """
+        Validate Team Email
+
+        One of the team administrators is trying to add a contact email
+        address for the team, but this address need to be validated first.
+        """)
+
+    VALIDATEGPG = DBItem(6, """
+        Validate GPG key
+
+        A user has submited a new GPG key to his account and it need to
+        be validated.
+        """)
+
+    VALIDATESIGNONLYGPG = DBItem(7, """
+        Validate a sign-only GPG key
+
+        A user has submitted a new sign-only GPG key to his account and it
+        needs to be validated.
+        """)
+
+    PROFILECLAIM = DBItem(8, """
+        Claim an unvalidated Launchpad profile
+
+        A user has found an unvalidated profile in Launchpad and is trying
+        to claim it.
+        """)
+
+    NEWPROFILE = DBItem(9, """
+        A user created a new Launchpad profile for another person.
+
+        Any Launchpad user can create new "placeholder" profiles to represent
+        people who don't use Launchpad. The person that a given profile
+        represents has to first use the token to finish the registration
+        process in order to be able to login with that profile.
+        """)
+
+    TEAMCLAIM = DBItem(10, """
+        Turn an unvalidated Launchpad profile into a team.
+
+        A user has found an unvalidated profile in Launchpad and is trying
+        to turn it into a team.
+        """)
+
+    BUGTRACKER = DBItem(11, """
+        Launchpad is authenticating itself with a remote bug tracker.
+
+        The remote bug tracker will use the LoginToken to authenticate
+        Launchpad.
         """)
 
 
@@ -68,7 +126,7 @@ class IAuthToken(Interface):
 
     tokentype = Choice(
         title=_('The type of request.'), required=True,
-        vocabulary=AuthTokenType
+        vocabulary=LoginTokenType
         )
     token = Text(
         title=_('The token (not the URL) emailed used to uniquely identify '
