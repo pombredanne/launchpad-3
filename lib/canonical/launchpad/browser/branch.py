@@ -113,26 +113,6 @@ class BranchURL:
         return '%s/%s' % (self.branch.target.name, self.branch.name)
 
 
-class BranchPrimaryContext:
-    """The primary context is the product if there is one."""
-
-    # XXX: JonathanLange 2008-12-08 spec=package-branches: Not sure what
-    # should happen to this class, given that IBranchTarget does something
-    # fairly similar.
-
-    # XXX: JonathanLange 2009-02-27 spec=package-branches: Get rid of this,
-    # and change the adapter for IPrimaryContext to be a function that returns
-    # IBranch.target.
-
-    implements(IPrimaryContext)
-
-    def __init__(self, branch):
-        if branch.product is not None:
-            self.context = branch.product
-        else:
-            self.context = branch.owner
-
-
 class BranchHierarchy(Hierarchy):
     """The hierarchy for a branch should be the product if there is one."""
 
