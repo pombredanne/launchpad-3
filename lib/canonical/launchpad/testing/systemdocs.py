@@ -150,7 +150,7 @@ class SpecialOutputChecker(doctest.OutputChecker):
 
 
 def create_view(context, name, form=None, layer=None, server_url=None,
-                method='GET', principal=None, query_string=None):
+                method='GET', principal=None, query_string=None, cookie=None):
     """Return a view based on the given arguments.
 
     :param context: The context for the view.
@@ -161,11 +161,12 @@ def create_view(context, name, form=None, layer=None, server_url=None,
     :param method: The method used in the request. Defaults to 'GET'.
     :param principal: The principal for the request, if there is one.
     :param query_string: The query string for the request.
+    :patam cookie: The HTTP_COOKIE value for the request.
     :return: The view class for the given context and the name.
     """
     request = LaunchpadTestRequest(
         form=form, SERVER_URL=server_url, QUERY_STRING=query_string,
-        method=method)
+        HTTP_COOKIE=cookie, method=method)
     if principal is not None:
         request.setPrincipal(principal)
     if layer is not None:
@@ -175,7 +176,7 @@ def create_view(context, name, form=None, layer=None, server_url=None,
 
 def create_initialized_view(context, name, form=None, layer=None,
                             server_url=None, method=None, principal=None,
-                            query_string=None):
+                            query_string=None, cookie=None):
     """Return a view that has already been initialized."""
     if method is None:
         if form is None:
@@ -184,7 +185,7 @@ def create_initialized_view(context, name, form=None, layer=None,
             method = 'POST'
     view = create_view(
         context, name, form, layer, server_url, method, principal,
-        query_string)
+        query_string, cookie)
     view.initialize()
     return view
 

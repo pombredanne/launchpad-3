@@ -8,6 +8,7 @@ __all__ = [
     'BrowserWindowDimensions',
     'IcingContribFolder',
     'EdubuntuIcingFolder',
+    'get_launchpad_views',
     'Hierarchy',
     'IcingFolder',
     'KubuntuIcingFolder',
@@ -1015,3 +1016,25 @@ class BrowserWindowDimensions(LaunchpadView):
 
     def render(self):
         return u'Thanks.'
+
+
+def get_launchpad_views(cookies):
+    """The state of optional page elements that user may choose to view.
+
+    :param cookies: The request.cookies object that contains launchpad_views.
+    :return: A dict of all the view states.
+    """
+    views = {
+        'small_maps': True,
+        }
+    cookie = cookies.get('launchpad_views', '')
+    if len(cookie) > 0:
+        pairs = cookie.split('&')
+        for pair in pairs:
+            key, value = pair.split('=')
+            if not key in views:
+                continue
+            # 'false' is the value that the browser script sets to disable a
+            # part of a page. Any other value is considered to be 'true'.
+            views[key] = value != 'false'
+    return views

@@ -72,11 +72,47 @@ Posting malformed data to the team home page raises an error.
     form fields.
 
 
+== +map-portlet ==
+
+The team profile page contain the location portlet that shows a map. The
+map requires the google GMap JavaScript to display, so the views set the
+state of the request's needs_gmap2 attribute to true if there are
+members who have set their location.
+
+    >>> team_view = create_initialized_view(ubuntu_team, '+index')
+    >>> team_view.has_visible_location
+    False
+    >>> team_view.request.needs_gmap2
+    False
+
+After a member has set his location, the map will be rendered.
+
+    >>> login_person(sample_person)
+    >>> sample_person.setLocation(
+    ...     38.81, 77.1, 'America/New_York', sample_person)
+
+    >>> team_view = create_initialized_view(ubuntu_team, '+index')
+    >>> team_view.has_visible_location
+    True
+    >>> team_view.request.needs_gmap2
+    True
+
+The small_maps key in the launchpad_views cookie can be set of the viewing
+user to 'false' to indicate that small maps are not wanted.
+
+    >>> cookie = 'launchpad_views=small_maps=false'
+    >>> team_view = create_initialized_view(
+    ...     ubuntu_team, '+index', cookie=cookie)
+    >>> team_view.request.needs_gmap2
+    False
+
+
 == +map ==
 
 A team's +map page will show a map with markers on the location of all
 members of that team.  That page also lists the local times of members.
 
+    >>> login('foo.bar@canonical.com')
     >>> context = factory.makeTeam(salgado)
     >>> len(context.mapped_participants)
     0

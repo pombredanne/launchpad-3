@@ -16,7 +16,8 @@
       them!</a><br />
     </tal:team-has-unmapped-members>
     <tal:map condition="view/mapped_participants">
-      <div id="team_map_div" style="height: 200px; border: 1px; margin-top: 4px;"></div>
+      <div id="team_map_div" class="small-map"
+        style="height: 200px; border: 1px; margin-top: 4px;"></div>
       <tal:mapscript replace="structure view/map_portlet_html" />
     </tal:map>
 
