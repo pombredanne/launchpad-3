@@ -179,7 +179,7 @@ class PersonMappingTestCase(unittest.TestCase):
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product)
         person = importer.get_person('foo')
-        # Changes where just made to two different Stores, so commit
+        # Changes were just made to two different Stores, so commit
         # to make the changes visible to the subsequent tests.
         transaction.commit()
         self.assertNotEqual(person, None)

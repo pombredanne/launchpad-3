@@ -154,6 +154,9 @@ class BasePersonVocabulary:
         if "@" in token:
             # This looks like an email token, so let's do an object
             # lookup based on that.
+            # We retrieve the email address via the main store, so 
+            # we can easily traverse to email.person to retrieve the
+            # result from the main Store as expected by our call sites.
             email = IStore(Person).find(
                 EmailAddress,
                 EmailAddress.email.lower() == token.strip().lower()).one()
