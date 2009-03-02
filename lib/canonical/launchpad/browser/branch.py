@@ -722,10 +722,7 @@ class BranchDeletionView(LaunchpadFormView):
         if self.all_permitted():
             # Since the user is going to delete the branch, we need to have
             # somewhere valid to send them next.
-
-            # XXX: JonathanLange 2009-03-03: This should probably be the
-            # canonical_url of the target itself.
-            self.next_url = canonical_url(branch.target.context)
+            self.next_url = canonical_url(branch.target)
             message = "Branch %s deleted." % branch.unique_name
             self.context.destroySelf(break_references=True)
             self.request.response.addNotification(message)
