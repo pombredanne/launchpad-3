@@ -88,7 +88,7 @@ collect result of finished jobs, everything is stored directly in
 the Launchpad DB. (simply check if it doesn't explode)
 
     >>> bm.scanActiveBuilders()
-    WARNING:root.builders.x86:Builder http://localhost:8221/ forgot about
+    WARNING:....builders.x86:Builder http://localhost:8221/ forgot about
     build i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE --
     resetting buildqueue record
 

@@ -374,11 +374,13 @@ For the RT tracker we specify a Queue in which to file a ticket.
     bug_search_url: http://.../Search/Build.html?Query=Queue = '42'
 
 SourceForge and its kin use a Group ID and an ATID to specify which
-product a bug should be filed against.
+product a bug should be filed against. These are stored as an
+ampersand-separated string and getBugFilingAndSearchLinks() expects them
+to be passed to it in that form.
 
     >>> example_sourceforge = factory.makeBugTracker(
     ...     'http://forge.example.com', BugTrackerType.SOURCEFORGE)
-    >>> links = example_sourceforge.getBugFilingAndSearchLinks(('123', '456'))
+    >>> links = example_sourceforge.getBugFilingAndSearchLinks('123&456')
     >>> print_links(links)
     bug_filing_url: http://.../tracker/?func=add&group_id=123&atid=456
     bug_search_url: http://.../search/?group_id=123&type...artifact
@@ -387,7 +389,7 @@ The URL returned by the SourceForge celebrity points to the new version
 of the SourceForge bug tracker.
 
     >>> sourceforge = getUtility(IBugTrackerSet).getByName('sf')
-    >>> links = sourceforge.getBugFilingAndSearchLinks(('123', '456'))
+    >>> links = sourceforge.getBugFilingAndSearchLinks('123&456')
     >>> print_links(links)
     bug_filing_url: http://.../tracker2/?func=add&group_id=123&atid=456
     bug_search_url: http://.../search/?group_id=123&type...artifact

@@ -41,13 +41,20 @@
     permission="zope.Public"
     />
 
+  <!-- Using permission="Public" here causes some tests to fail
+  (https://pastebin.canonical.com/13975/), so we use trusted="yes" here. -->
+  <adapter
+    factory="canonical.launchpad.database.person.person_from_account"
+    trusted="yes"
+    />
+
   <class class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.person.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.person.ITeamPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasStanding"/>
     <allow
-      interface="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
+      interface="canonical.launchpad.interfaces.person.IPersonCommAdminWriteRestricted"
       />
 
     <require
@@ -68,8 +75,8 @@
                   canonical.launchpad.interfaces.person.ITeamPublic"
       />
     <require
-      permission="launchpad.Admin"
-      set_schema="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
+      permission="launchpad.Commercial"
+      set_schema="canonical.launchpad.interfaces.person.IPersonCommAdminWriteRestricted"
       />
     <require
       permission="launchpad.Special"
@@ -125,21 +132,21 @@
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
-  <browser:editform
+  <browser:page
     name="+review"
     for="canonical.launchpad.interfaces.IPerson"
-    schema="canonical.launchpad.interfaces.IPerson"
-    label="Review person"
-    fields="name displayname password
-            personal_standing personal_standing_reason"
+    class="canonical.launchpad.browser.PersonAdministerView"
     permission="launchpad.Admin"
     template="../templates/person-review.pt"
-    >
-    <browser:widget
-      field="password"
-      class="canonical.widgets.PasswordChangeWidget"
-      />
-  </browser:editform>
+    />
+
+  <browser:page
+    name="+reviewaccount"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonAccountAdministerView"
+    permission="launchpad.Admin"
+    template="../templates/person-review.pt"
+    />
 
   <browser:page
     name="+claimteam"

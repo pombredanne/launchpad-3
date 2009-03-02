@@ -236,10 +236,7 @@ class IBugTracker(Interface):
         """Return the bug filing and search links for the tracker.
 
         :param remote_product: The name of the product on which the bug
-            is to be filed or search for. This is usually a string but
-            can also take other forms. For example, SourceForge requires
-            a GroupID and an ATID in order to be able to file a bug.
-            These are passed in as a tuple of (group_id, at_id).
+            is to be filed or search for.
         :return: A dict of the absolute URL of the bug filing form and
             the search form for `remote_product` on the remote tracker,
             in the form {'bug_filing_url': foo, 'search_url': bar}. If
