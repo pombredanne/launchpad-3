@@ -6,7 +6,7 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
-from canonical.testing import DatabaseFunctionalLayer, ZopelessAppServerLayer
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
 import transaction
 
@@ -47,7 +47,7 @@ class TestBranchJob(TestCaseWithFactory):
 class TestBranchDiffJob(TestCaseWithFactory):
     """Tests for BranchDiffJob."""
 
-    layer = ZopelessAppServerLayer
+    layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
         """Ensure that BranchDiffJob implements IBranchDiffJob."""
@@ -137,7 +137,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
 class TestRevisionMailJob(TestCaseWithFactory):
     """Tests for BranchDiffJob."""
 
-    layer = ZopelessAppServerLayer
+    layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
         """Ensure that BranchDiffJob implements IBranchDiffJob."""

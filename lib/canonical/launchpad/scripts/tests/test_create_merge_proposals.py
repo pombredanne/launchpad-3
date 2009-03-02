@@ -41,10 +41,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         self.assertEqual(1, source.landing_targets.count())
 
     def test_merge_directive_with_bundle(self):
-        self.useTempBzrHome()
-        server = get_multi_server(write_hosted=True, write_mirrored=True)
-        server.setUp()
-        self.addCleanup(server.destroy)
+        self.useBzrBranches(real_server=True)
         branch, tree = self.create_branch_and_tree()
         tree.branch.set_public_branch(branch.bzr_identity)
         tree.commit('rev1')

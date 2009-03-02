@@ -79,7 +79,6 @@ from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
 from canonical.launchpad.xmlrpc import faults
-from canonical.launchpad.xmlrpc.codehosting import BranchFileSystem
 
 
 # The directories allowed directly beneath a branch directory. These are the
@@ -151,8 +150,7 @@ def get_puller_server():
     return get_multi_server(write_mirrored=True)
 
 
-def get_multi_server(write_hosted=False, write_mirrored=False,
-                     direct_db=False):
+def get_multi_server(write_hosted=False, write_mirrored=False):
     """Get a server with access to both mirrored and hosted areas.
 
     The server wraps up two `LaunchpadInternalServer`s. One of them points to
@@ -164,10 +162,7 @@ def get_multi_server(write_hosted=False, write_mirrored=False,
     :param write_mirrored: if True, lp-mirrored URLs are writeable.
         Otherwise, they are read-only.
     """
-    if direct_db:
-        proxy = BranchFileSystem(None, None)
-    else:
-        proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     branchfs_endpoint = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
         config.codehosting.hosted_branches_root)
@@ -390,7 +385,10 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
     def setUp(self):
         super(LaunchpadInternalServer, self).setUp()
-        self._transport_dispatch.base_transport.ensure_base()
+        try:
+            self._transport_dispatch.base_transport.ensure_base()
+        except TransportNotPossible:
+            pass
 
     def destroy(self):
         """Delete the on-disk branches and tear down."""

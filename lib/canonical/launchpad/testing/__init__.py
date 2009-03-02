@@ -295,6 +295,7 @@ class TestCaseWithFactory(TestCase):
         TestCase.setUp(self)
         login(user)
         self.factory = LaunchpadObjectFactory()
+        self.real_bzr_server = False
 
     def useTempDir(self):
         """Use a temporary directory for this test."""
@@ -340,8 +341,12 @@ class TestCaseWithFactory(TestCase):
             branch_url = db_branch.getPullURL()
         else:
             branch_url = db_branch.warehouse_url
-        transaction.commit()
+        if self.real_bzr_server:
+            transaction.commit()
         transport = get_transport(branch_url)
+        if not self.real_bzr_server:
+            transport.clone('../..').ensure_base()
+            transport.clone('..').ensure_base()
         self.addCleanup(transport.delete_tree, '.')
         bzr_branch = BzrDir.create_branch_convenience(branch_url)
         return db_branch, bzr_branch.create_checkout(
@@ -397,20 +402,34 @@ class TestCaseWithFactory(TestCase):
         os.environ['BZR_HOME'] = os.getcwd()
         self.addCleanup(restore_bzr_home)
 
-    def useBzrBranches(self):
+    def useBzrBranches(self, real_server=False):
         """Prepare for using bzr branches.
 
         This sets up support for lp-hosted and lp-mirrored URLs,
         changes to a temp directory, and overrides the bzr home directory.
+
+        :param real_server: If true, use the "real" code hosting server,
+            using an xmlrpc server, etc.
         """
         from canonical.codehosting.scanner.tests.test_bzrsync import (
             FakeTransportServer)
         from bzrlib.transport import get_transport
         self.useTempBzrHome()
-        server = get_multi_server(write_hosted=True, write_mirrored=True,
-                                  direct_db=True)
-        server.setUp()
-        self.addCleanup(server.destroy)
+        self.real_bzr_server = real_server
+        if real_server:
+            server = get_multi_server(write_hosted=True, write_mirrored=True)
+            server.setUp()
+            self.addCleanup(server.destroy)
+        else:
+            os.mkdir('lp-mirrored')
+            mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
+            mirror_server.setUp()
+            self.addCleanup(mirror_server.tearDown)
+            os.mkdir('lp-hosted')
+            hosted_server = FakeTransportServer(
+                get_transport('lp-hosted'), url_prefix='lp-hosted:///')
+            hosted_server.setUp()
+            self.addCleanup(hosted_server.tearDown)
 
 
 def capture_events(callable_obj, *args, **kwargs):
