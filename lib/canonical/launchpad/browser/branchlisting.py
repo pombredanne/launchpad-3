@@ -179,7 +179,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             self._branches_for_current_batch)
         result = {}
         for series in series_resultset:
-            result.setdefault(series.series_branch.id, []).append(series)
+            result.setdefault(series.branch.id, []).append(series)
         return result
 
     def getProductSeries(self, branch):
@@ -205,7 +205,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         try:
             return self._dev_series_map[branch.product]
         except KeyError:
-            result = branch.product.development_focus.series_branch
+            result = branch.product.development_focus.branch
             self._dev_series_map[branch.product] = result
             return result
 

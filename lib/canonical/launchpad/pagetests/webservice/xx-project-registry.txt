@@ -610,7 +610,7 @@ virtual host.
     >>> foobadoo = factory.makeProductSeries(product=babadoo, name='foobadoo')
     >>> foobadoo.summary = u'Foobadoo support for Babadoo'
     >>> fooey = factory.makeAnyBranch(product=babadoo, name='fooey')
-    >>> foobadoo.user_branch = fooey
+    >>> foobadoo.branch = fooey
     >>> logout()
 
     >>> babadoo_foobadoo = webservice.get('/babadoo/foobadoo').jsonBody()

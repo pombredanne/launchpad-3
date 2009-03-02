@@ -64,7 +64,7 @@ class CodeImport(SQLBase):
     @property
     def series(self):
         """See `ICodeImport`."""
-        return ProductSeries.selectOneBy(import_branch=self.branch)
+        return ProductSeries.selectOneBy(branch=self.branch)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)

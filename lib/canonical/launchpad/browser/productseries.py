@@ -61,8 +61,8 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     @stepto('.bzr')
     def dotbzr(self):
-        if self.context.series_branch:
-            return BranchRef(self.context.series_branch)
+        if self.context.branch:
+            return BranchRef(self.context.branch)
         else:
             return None
 
@@ -547,7 +547,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
     @property
     def user_branch_visible(self):
         """Can the logged in user see the user branch."""
-        branch = self.context.user_branch
+        branch = self.context.branch
         return (branch is not None and
                 check_permission('launchpad.View', branch))
 
@@ -556,16 +556,16 @@ class ProductSeriesEditView(LaunchpadEditFormView):
 
     schema = IProductSeries
     field_names = [
-        'name', 'summary', 'status', 'user_branch', 'releasefileglob']
+        'name', 'summary', 'status', 'branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     def validate(self, data):
-        branch = data.get('user_branch')
+        branch = data.get('branch')
         if branch is not None:
             message = get_series_branch_error(self.context.product, branch)
             if message:
-                self.setFieldError('user_branch', message)
+                self.setFieldError('branch', message)
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -580,16 +580,13 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     """View to set the bazaar branch for a product series."""
 
     schema = IProductSeries
-    field_names = ['user_branch']
+    field_names = ['branch']
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    def not_import(self, action=None):
-        return self.context.import_branch is None
-
-    @action(_('Update'), name='update', condition=not_import)
+    @action(_('Update'), name='update')
     def update_action(self, action, data):
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(

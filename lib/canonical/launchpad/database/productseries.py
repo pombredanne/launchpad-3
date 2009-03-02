@@ -525,6 +525,5 @@ class ProductSeriesSet:
         branch_ids = [branch.id for branch in branches]
         return store.find(
             ProductSeries,
-            Or(In(ProductSeries.user_branchID, branch_ids),
-               In(ProductSeries.import_branchID, branch_ids))).order_by(
+            In(ProductSeries.branchID, branch_ids)).order_by(
             ProductSeries.name)

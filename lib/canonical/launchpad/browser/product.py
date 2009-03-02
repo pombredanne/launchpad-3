@@ -122,8 +122,8 @@ class ProductNavigation(
 
     @stepto('.bzr')
     def dotbzr(self):
-        if self.context.development_focus.series_branch:
-            return BranchRef(self.context.development_focus.series_branch)
+        if self.context.development_focus.branch:
+            return BranchRef(self.context.development_focus.branch)
         else:
             return None
 
@@ -1343,18 +1343,18 @@ class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product series"""
 
     schema = IProductSeries
-    field_names = ['name', 'summary', 'user_branch', 'releasefileglob']
+    field_names = ['name', 'summary', 'branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     series = None
 
     def validate(self, data):
-        branch = data.get('user_branch')
+        branch = data.get('branch')
         if branch is not None:
             message = get_series_branch_error(self.context, branch)
             if message:
-                self.setFieldError('user_branch', message)
+                self.setFieldError('branch', message)
 
     @action(_('Register Series'), name='add')
     def add_action(self, action, data):
@@ -1362,7 +1362,7 @@ class ProductAddSeriesView(LaunchpadFormView):
             owner=self.user,
             name=data['name'],
             summary=data['summary'],
-            branch=data['user_branch'])
+            branch=data['branch'])
 
     @property
     def next_url(self):
@@ -1676,7 +1676,7 @@ class ProductBranchListingView(BranchListingView):
 
     @cachedproperty
     def development_focus_branch(self):
-        dev_focus_branch = self.context.development_focus.series_branch
+        dev_focus_branch = self.context.development_focus.branch
         if dev_focus_branch is None:
             return None
         elif check_permission('launchpad.View', dev_focus_branch):
@@ -1792,14 +1792,14 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                     self.selected_lifecycle_status)
         # The series will always have at least one series, that of the
         # development focus.
-        dev_focus_branch = sorted_series[0].series_branch
+        dev_focus_branch = sorted_series[0].branch
         if not check_permission('launchpad.View', dev_focus_branch):
             dev_focus_branch = None
         result = []
         if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
         for series in sorted_series[1:]:
-            branch = series.series_branch
+            branch = series.branch
             if (branch is not None and
                 branch not in result and
                 check_permission('launchpad.View', branch) and
