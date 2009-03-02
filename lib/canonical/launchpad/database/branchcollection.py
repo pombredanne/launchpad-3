@@ -7,7 +7,7 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And, LeftJoin, Join, Select, Union
+from storm.expr import And, LeftJoin, Join, Or, Select, Union
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -194,7 +194,7 @@ class GenericBranchCollection:
 
     def scanned(self):
         """See `IBranchCollection`."""
-        return self._filterBy([], [Branch.last_scanned != None])
+        return self._filterBy([Branch.last_scanned != None])
 
     def subscribedBy(self, person):
         """See `IBranchCollection`."""
@@ -237,7 +237,7 @@ class GenericBranchCollection:
         return self._filterBy([Branch.id.is_in(visible_branches)])
 
     def withBranchType(self, *branch_types):
-        return self._filterBy([], [Branch.branch_type.is_in(branch_types)])
+        return self._filterBy([Branch.branch_type.is_in(branch_types)])
 
     def withLifecycleStatus(self, *statuses):
         """See `IBranchCollection`."""
