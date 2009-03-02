@@ -179,8 +179,7 @@ class PersonBranchFeed(BranchListingFeed):
     usedfor = IPerson
 
     def _getCollection(self):
-        # XXX: This should be ownedBy, not relatedTo.
-        return getUtility(IAllBranches).relatedTo(self.context)
+        return getUtility(IAllBranches).ownedBy(self.context)
 
 
 class RevisionFeedContentView(LaunchpadView):
