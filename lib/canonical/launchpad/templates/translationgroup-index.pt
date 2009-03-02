@@ -32,7 +32,8 @@
       </p>
       <p>
         Group owner:
-        <a tal:content="context/owner/fmt:link"
+        <a tal:content="structure context/owner/fmt:displayname"
+           tal:attributes="href context/owner/fmt:url"
            class="link" />
         <a tal:condition="context/required:launchpad.Edit" href="+reassign">
           <img src="/@@/edit" alt="Reassign" title="Change Owner" />

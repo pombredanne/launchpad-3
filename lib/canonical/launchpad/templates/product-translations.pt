@@ -122,7 +122,7 @@
             </p>
             <p>
               Otherwise, you might want to talk with
-              <a tal:content="context/owner/fmt:link">
+              <a tal:content="structure context/owner/fmt:link">
                 Foo Bar
               </a>, the project registrant, about using Launchpad for
               translations.
@@ -130,7 +130,7 @@
           </tal:not-logged-in>
           <p tal:condition="request/lp:person">
             You might want to talk with
-            <a tal:content="context/owner/fmt:link">
+            <a tal:content="structure context/owner/fmt:link">
               Foo Bar
             </a>, the project registrant, about using Launchpad for
             translations.
