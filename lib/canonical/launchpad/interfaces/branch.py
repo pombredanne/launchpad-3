@@ -1298,8 +1298,7 @@ class IBranchSet(Interface):
     def getBranchesForContext(
         context=None,
         lifecycle_statuses=None,
-        visible_by_user=None,
-        sort_by=None):
+        visible_by_user=None):
         """Branches associated with the context.
 
         :param context: If None, all possible branches are returned, otherwise
