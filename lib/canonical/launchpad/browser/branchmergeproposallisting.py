@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'BranchMergeProposalListingItem',
     'BranchMergeProposalListingView',
+    'PersonActiveReviewsView',
+    'PersonApprovedMergesView',
     ]
 
 

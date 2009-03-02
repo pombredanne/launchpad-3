@@ -6,6 +6,13 @@ __metaclass__ = type
 
 __all__ = [
     'BranchListingView',
+    'PersonBranchesMenu',
+    'PersonBranchesView',
+    'PersonCodeSummaryView',
+    'PersonOwnedBranchesView',
+    'PersonRegisteredBranchesView',
+    'PersonSubscribedBranchesView',
+    'PersonTeamBranchesView',
     'RecentlyChangedBranchesView',
     'RecentlyImportedBranchesView',
     'RecentlyRegisteredBranchesView',
