@@ -8,7 +8,7 @@
   - lp:sourcecodegen/trunk
   - lp:chameleon.core/trunk
   - lp:chameleon.zpt/trunk
-  - lp:~sidnei/z3c.pt/tales-function-namespaces
+  - lp:~sidnei/z3c.pt/tales-function-namespaces-redux
   - lp:z3c.ptcompat/trunk
 
 - Need to manually install ``lxml`` (any specific version? tested with
@@ -60,7 +60,7 @@ Running ``ec2tests``
         -b sourcecodegen=lp:sourcecodegen/trunk \
 	-b chameleon.core=lp:chameleon.core/trunk \
 	-b chameleon.zpt=lp:chameleon.zpt/trunk \
-	-b z3c.pt=lp:~sidnei/z3c.pt/tales-function-namespaces \
+	-b z3c.pt=lp:~sidnei/z3c.pt/tales-function-namespaces-redux \
 	-b z3c.ptcompat=lp:z3c.ptcompat/trunk \
 	-b pygpgme=lp:~launchpad-pqm/pygpgme/devel/ \
 	-b functest=lp:~launchpad-pqm/functest/trunk/ \
