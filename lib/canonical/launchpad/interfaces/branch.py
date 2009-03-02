@@ -506,7 +506,7 @@ class BranchURIField(URIField):
     def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
-        from canonical.launchpad.webapp.uri import URI
+        from lazr.uri import URI
 
         super(BranchURIField, self)._validate(value)
 

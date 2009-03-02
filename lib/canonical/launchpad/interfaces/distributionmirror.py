@@ -235,7 +235,7 @@ class DistroMirrorURIField(URIField):
     def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
-        from canonical.launchpad.webapp.uri import URI
+        from lazr.uri import URI
 
         super(DistroMirrorURIField, self)._validate(value)
         uri = URI(self.normalize(value))
