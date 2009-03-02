@@ -91,11 +91,15 @@
   <browser:menus
     module="canonical.launchpad.browser.person"
     classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-        PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
+        PersonSpecsMenu TeamBugsMenu TeamSpecsMenu
         PersonSetContextMenu PersonTranslationsMenu
         PersonOverviewNavigationMenu PersonEditNavigationMenu
         PersonRelatedSoftwareNavigationMenu TeamOverviewNavigationMenu"
     />
+
+  <browser:menus
+     module="canonical.launchpad.browser.branchlisting"
+     classes="PersonBranchesMenu" />
 
   <browser:url
     for="canonical.launchpad.interfaces.IPerson"
@@ -650,7 +654,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.person.PersonCodeSummaryView"
+    class="canonical.launchpad.browser.branchlisting.PersonCodeSummaryView"
     permission="zope.Public"
     facet="branches"
     name="+codesummary"
@@ -659,7 +663,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.person.PersonActiveReviewsView"
+    class="canonical.launchpad.browser.branchmergeproposallisting.PersonActiveReviewsView"
     permission="zope.Public"
     facet="branches"
     name="+activereviews"
@@ -668,7 +672,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.person.PersonRequestedReviewsView"
+    class="canonical.launchpad.browser.branchmergeproposallisting.PersonRequestedReviewsView"
     permission="zope.Public"
     facet="branches"
     name="+requestedreviews"
@@ -677,7 +681,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.person.PersonApprovedMergesView"
+    class="canonical.launchpad.browser.branchmergeproposallisting.PersonApprovedMergesView"
     permission="zope.Public"
     facet="branches"
     name="+approvedmerges"
