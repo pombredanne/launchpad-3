@@ -168,23 +168,27 @@ class BugTracker(SQLBase):
 
     _filing_url_patterns = {
         BugTrackerType.BUGZILLA: (
-            "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"),
+            "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
+            "&short_desc=%(summary)s&long_desc=%(description)s"),
         BugTrackerType.MANTIS: "%(base_url)s/bug_report_advanced_page.php",
         BugTrackerType.PHPPROJECT: "%(base_url)s/report.php",
         BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=item",
         BugTrackerType.RT: (
-            "%(base_url)s/Ticket/Create.html?Queue=%(remote_product)s"),
+            "%(base_url)s/Ticket/Create.html?Queue=%(remote_product)s"
+            "&Subject=%(summary)s&Content=%(description)s"),
         BugTrackerType.SAVANE: (
             "%(base_url)s/bugs/?func=additem&group=%(remote_product)s"),
         BugTrackerType.SOURCEFORGE: (
             "%(base_url)s/%(tracker)s/?func=add&"
-                "group_id=%(group_id)s&atid=%(at_id)s"),
+            "group_id=%(group_id)s&atid=%(at_id)s"
+            "&summary=%(summary)s&details=%(description)s"),
         BugTrackerType.TRAC: "%(base_url)s/newticket",
         }
 
     _search_url_patterns = {
         BugTrackerType.BUGZILLA: (
-            "%(base_url)s/query.cgi?product=%(remote_product)s"),
+            "%(base_url)s/query.cgi?product=%(remote_product)s"
+            "&short_desc=%(summary)s"),
         BugTrackerType.DEBBUGS: (
             "%(base_url)s/cgi-bin/pkgreport.cgi?package=%(remote_product)s"),
         BugTrackerType.MANTIS: "%(base_url)s/view_all_bug_page.php",
@@ -192,12 +196,12 @@ class BugTracker(SQLBase):
         BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=search",
         BugTrackerType.RT: (
             "%(base_url)s/Search/Build.html?Query=Queue = "
-                "'%(remote_product)s'"),
+            "'%(remote_product)s' AND Subject LIKE '%(summary)s'"),
         BugTrackerType.SAVANE: (
             "%(base_url)s/bugs/?func=search&group=%(remote_product)s"),
         BugTrackerType.SOURCEFORGE: (
-            "%(base_url)s/search/?group_id=%(group_id)s&"
-                "type_of_search=artifact"),
+            "%(base_url)s/search/?group_id=%(group_id)s"
+            "&some_word=%(summary)s&type_of_search=artifact"),
         BugTrackerType.TRAC: "%(base_url)s/search?ticket=on",
         }
 
