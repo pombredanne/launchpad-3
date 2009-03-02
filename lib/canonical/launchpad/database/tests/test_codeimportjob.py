@@ -557,6 +557,11 @@ class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
         import_job = self.factory.makeCodeImportJob(code_import)
         # ICodeImportJob does not allow setting 'state', so we must
         # use removeSecurityProxy.
+        # XXX: StuartBishop 20090302 - This test is creating invalid
+        # CodeImportJob instances here - the object cannot be flushed
+        # to the database as database constraints are violated.
+        # This is a problem, as flushing can happen implicitly by Storm,
+        # so minor changes to this test can make it explode.
         removeSecurityProxy(import_job).state = CodeImportJobState.RUNNING
         self.assertFailure(
             "The CodeImportJob associated with %s is "

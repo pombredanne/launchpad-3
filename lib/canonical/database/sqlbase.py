@@ -167,7 +167,8 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     def __init__(self, *args, **kwargs):
         """Extended version of the SQLObjectBase constructor.
         
-        We we force use of the use of the master Store.
+        We we force use of the the master Store.
+
         We refetch any parameters from different stores from the
         correct master Store.
         """
@@ -178,10 +179,11 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # are passed in. We need to refetch these objects from the correct
         # master Store if necessary so the foreign key references can be
         # constructed.
-        # We probably want to remove this code - there are enough
-        # other places developers have to be aware of the replication
-        # set boundaries. Why should Person(..., account=an_account)
-        # work but some_person.account = an_account fail?
+        # XXX StuartBishop 2009-03-02 bug=336867: We probably want to remove
+        # this code - there are enough other places developers have to be
+        # aware of the replication # set boundaries. Why should
+        # Person(..., account=an_account) work but
+        # some_person.account = an_account fail?
         for key, argument in kwargs.items():
             argument = removeSecurityProxy(argument)
             if not isinstance(argument, Storm):

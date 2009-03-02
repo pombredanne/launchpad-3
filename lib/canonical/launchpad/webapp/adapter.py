@@ -258,7 +258,7 @@ class LaunchpadDatabase(Postgres):
         try:
             realm, flavor = self._uri.database.split('-')
         except ValueError:
-            assert False, (
+            raise AssertionError(
                 'DB connection uri %s does not match realm-flavor format'
                 % repr(self._uri.database))
 

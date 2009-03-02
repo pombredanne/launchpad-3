@@ -30,6 +30,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IMasterObject
 from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
@@ -209,7 +210,8 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
     @action(_('Continue'), name='confirm')
     def confirm_action(self, action, data):
         email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
-        person = getUtility(IPersonSet).get(email.personID)
+        person = IMasterObject(email.person)
+
         # The user is not yet logged in, but we need to set some
         # things on his new account, so we need to remove the security
         # proxy from it.
@@ -326,7 +328,7 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
             removeSecurityProxy(emailaddress).personID))
         #      end of evil code.
 
-        if person is not None:
+        if naked_person is not None:
             # Suspended accounts cannot reset their password.
             reason = ('Your password cannot be reset because your account '
                       'is suspended.')
@@ -354,7 +356,7 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
                 naked_person.validateAndEnsurePreferredEmail(
                     removeSecurityProxy(emailaddress))
 
-            self.next_url = canonical_url(person)
+            self.next_url = canonical_url(naked_person)
 
         self.context.consume()
 
@@ -738,8 +740,10 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
         if self.email is not None:
-            person = removeSecurityProxy(getUtility(IPersonSet).get(
-                removeSecurityProxy(self.email).personID))
+            # Better spelt as IMasterObject(self.email.person), but that
+            # issues an unnecessary database call.
+            person = getUtility(IPersonSet).get(
+                removeSecurityProxy(self.email).personID)
             if person.is_valid_person:
                 self.addError(_(
                     'The email address ${email} is already registered.',
@@ -854,9 +858,9 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
                 password=password, passwordEncrypted=True,
                 hide_email_addresses=hide_email_addresses)
             notify(ObjectCreatedEvent(person))
-            account = person.account
             person.validateAndEnsurePreferredEmail(email)
-            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+            account = getUtility(IAccountSet).get(person.accountID)
+            removeSecurityProxy(account).status = AccountStatus.ACTIVE
 
         notify(ObjectCreatedEvent(account))
         notify(ObjectCreatedEvent(email))
