@@ -214,7 +214,8 @@ class BugTracker(SQLBase):
         else:
             return False
 
-    def getBugFilingAndSearchLinks(self, remote_product):
+    def getBugFilingAndSearchLinks(self, remote_product, summary=None,
+                                   description=None):
         """See `IBugTracker`."""
         bugtracker_urls = {'bug_filing_url': None, 'bug_search_url': None}
 
@@ -236,6 +237,14 @@ class BugTracker(SQLBase):
         # Make sure that we don't put > 1 '/' in returned URLs.
         base_url = self.baseurl.rstrip('/')
 
+        # If summary or description are None, convert them to empty
+        # strings to that we don't try to pass anything to the upstream
+        # bug tracker.
+        if summary is None:
+            summary = ''
+        if description is None:
+            description = ''
+
         if self.bugtrackertype == BugTrackerType.SOURCEFORGE:
             # SourceForge bug trackers use a group ID and an ATID to
             # file a bug, rather than a product name. remote_product
@@ -256,12 +265,16 @@ class BugTracker(SQLBase):
                 'tracker': quote(tracker),
                 'group_id': quote(group_id),
                 'at_id': quote(at_id),
+                'summary': summary,
+                'description': description,
                 }
 
         else:
             url_components = {
                 'base_url': base_url,
                 'remote_product': quote(remote_product),
+                'summary': summary,
+                'description': description,
                 }
 
         if bug_filing_pattern is not None:
