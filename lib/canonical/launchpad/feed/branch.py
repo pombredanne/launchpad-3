@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007, 2009 Canonical Ltd.  All rights reserved.
 
 """Branch feed (syndication) views."""
 
@@ -14,6 +14,8 @@ __all__ = [
     'ProjectRevisionFeed',
     ]
 
+from storm.locals import Asc, Desc
+
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
@@ -23,18 +25,17 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.browser import BranchView
 from canonical.launchpad.interfaces.branch import (
-    BranchListingSort, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet)
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.revision import IRevisionSet
-from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadView, urlappend, urlparse)
+from canonical.launchpad.webapp import canonical_url, LaunchpadView, urlparse
 
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
-from canonical.lazr.interfaces import (
-    IFeedPerson)
+from canonical.lazr.interfaces import IFeedPerson
 
 
 class BranchFeedEntry(FeedEntry):
@@ -128,6 +129,10 @@ class BranchListingFeed(BranchFeedBase):
         """See `IFeed`."""
         return "Branches for %s" % self.context.displayname
 
+    def _getCollection(self):
+        """Return the collection that `BranchListingFeed_getRawItems` uses."""
+        raise NotImplementedError(self._getCollection)
+
     def _getRawItems(self):
         """See `BranchFeedBase._getRawItems`.
 
@@ -136,11 +141,18 @@ class BranchListingFeed(BranchFeedBase):
 
         Only `self.quantity` revisions are returned.
         """
-        branch_query = getUtility(IBranchSet).getBranchesForContext(
-            context=self.context, visible_by_user=None,
-            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
-        return list(branch_query[:self.quantity])
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.product import Product
+        collection = self._getCollection().visibleByUser(
+            None).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
+        branches = collection.getBranches()
+        branches.order_by(
+            Desc(Branch.date_last_modified),
+            Asc(Product.name),
+            Desc(Branch.lifecycle_status),
+            Asc(Branch.name))
+        branches.config(limit=self.quantity)
+        return list(branches)
 
 
 class ProductBranchFeed(BranchListingFeed):
@@ -148,17 +160,26 @@ class ProductBranchFeed(BranchListingFeed):
 
     usedfor = IProduct
 
+    def _getCollection(self):
+        return getUtility(IAllBranches).inProduct(self.context)
+
 
 class ProjectBranchFeed(BranchListingFeed):
     """Feed for all branches on a product."""
 
     usedfor = IProject
 
+    def _getCollection(self):
+        return getUtility(IAllBranches).inProject(self.context)
+
 
 class PersonBranchFeed(BranchListingFeed):
     """Feed for a person's branches."""
 
     usedfor = IPerson
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).ownedBy(self.context)
 
 
 class RevisionFeedContentView(LaunchpadView):

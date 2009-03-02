@@ -38,7 +38,7 @@ configuration that uses the UBUNTU_SHOP creation rationale:
     ...     trust_root='http://launchpad.dev/',
     ...     displayname='The Ubuntu Store from Canonical',
     ...     description="For the Ubuntu Store, you need a Launchpad account "
-    ...                 "so  we can remember your order details and keep in "
+    ...                 "so we can remember your order details and keep in "
     ...                 "touch with you about your orders.",
     ...     creation_rationale=PersonCreationRationale.OWNER_CREATED_UBUNTU_SHOP)
     >>> logout()
@@ -123,11 +123,11 @@ directed back to the original site:
 The creation rationale has been set correctly:
 
     >>> login('new-user@example.com')
-    >>> person = getUtility(IPersonSet).getByEmail('new-user@example.com')
+    >>> from canonical.launchpad.interfaces.account import IAccountSet
+    >>> account = getUtility(IAccountSet).getByEmail('new-user@example.com')
     >>> expected_claimed_id = (
-    ...     'http://openid.launchpad.dev/+id/' +
-    ...     person.account.openid_identifier)
-    >>> print person.creation_rationale.name
+    ...     'http://openid.launchpad.dev/+id/' + account.openid_identifier)
+    >>> print account.creation_rationale.name
     OWNER_CREATED_UBUNTU_SHOP
     >>> logout()
 
@@ -138,6 +138,15 @@ And the response matches the new OpenID:
     success
     >>> info.endpoint.claimed_id == expected_claimed_id
     True
+
+Since this account was created using OpenID, we will not create an entry in
+the Person table for it -- it will only be created when the user logs into
+Launchpad.
+
+    >>> login('new-user@example.com')
+    >>> print getUtility(IPersonSet).getByAccount(account)
+    None
+    >>> logout()
 
 
 == Cleanup ==
