@@ -170,7 +170,9 @@ class BugTracker(SQLBase):
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s&long_desc=%(description)s"),
-        BugTrackerType.MANTIS: "%(base_url)s/bug_report_advanced_page.php",
+        BugTrackerType.MANTIS: (
+            "%(base_url)s/bug_report_advanced_page.php"
+            "?summary=%(summary)s&description=%(description)s"),
         BugTrackerType.PHPPROJECT: (
             "%(base_url)s/report.php"
             "?in[sdesc]=%(summary)s&in[ldesc]=%(description)s"),

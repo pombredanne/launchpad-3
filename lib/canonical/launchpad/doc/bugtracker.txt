@@ -447,12 +447,16 @@ include it.
     bug_filing_url: http://.../issue?@template=item&title=Foo&@note=Bar
     bug_search_url: http://.../issue?@template=search&@search_text=Foo
 
+Mantis tends to ignore query string parameters passed to the search
+form, so we don't try.
+
     >>> example_mantis = factory.makeBugTracker(
     ...     'http://mantis.example.com', BugTrackerType.MANTIS)
-    >>> links = example_mantis.getBugFilingAndSearchLinks('testproduct')
+    >>> links = example_mantis.getBugFilingAndSearchLinks(
+    ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
-    bug_filing_url: http://mantis.example.com/bug_report_advanced_page.php
-    bug_search_url: http://mantis.example.com/view_all_bug_page.php
+    bug_filing_url: .../bug_report_advanced_page.php?summary=Foo&description=Bar
+    bug_search_url: .../view_all_bug_page.php
 
 The EMAILADDRESS BugTrackerType is a special case and returns None for
 both filing and searching URLs.
