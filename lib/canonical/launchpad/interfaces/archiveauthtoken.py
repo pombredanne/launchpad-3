@@ -70,3 +70,11 @@ class IArchiveAuthTokenSet(Interface):
         :param token: The token text for the token.
         :return An object conforming to IArchiveAuthToken
         """
+
+    def getByArchiveAndPerson(archive, person):
+        """Retrieve an active token for the given archive and person.
+
+        :param archive: The archive to which the token corresponds.
+        :param person: The person to which the token corresponds.
+        :return An object conforming to IArchiveAuthToken or None.
+        """

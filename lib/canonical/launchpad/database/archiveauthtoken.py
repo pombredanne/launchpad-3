@@ -64,3 +64,12 @@ class ArchiveAuthTokenSet:
         return store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.token == token).one()
+
+    def getByArchiveAndPerson(self, archive, person):
+        """See `IArchiveAuthTokenSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            ArchiveAuthToken,
+            ArchiveAuthToken.archive == archive,
+            ArchiveAuthToken.person == person,
+            ArchiveAuthToken.date_deactivated == None).one()

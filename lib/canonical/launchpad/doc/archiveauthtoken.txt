@@ -124,6 +124,12 @@ And retrieve the token by id and by token data:
     >>> print token_set.getByToken(u"testtoken").person.name
     name12
 
+Tokens can also be retreived by archive and person:
+
+    >>> print token_set.getByArchiveAndPerson(
+    ...     new_token.archive, new_token.person).token
+    testtoken
+
 
 == Amending Tokens ==
 
@@ -149,3 +155,11 @@ We can do this as an admin too:
 
     >>> login("admin@canonical.com")
     >>> new_token.deactivate()
+
+The IArchiveAuthTokenSet.getByArchiveAndPerson() method will not return
+tokens that have been deactivated:
+
+    >>> print token_set.getByArchiveAndPerson(
+    ...     new_token.archive, new_token.person)
+    None
+
