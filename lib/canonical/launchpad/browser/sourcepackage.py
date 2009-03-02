@@ -278,12 +278,20 @@ class SourcePackageBranchesView(BranchListingView):
     # XXX: No menu for this page, there should be. And the menu should just
     # have register a branch.
 
-    # XXX: No link back to this page from branches
+    # XXX: No link back to this page from branches, other than code tab
 
     # XXX: Show me at the bottom I can see previous/next series or: [dapper]
     # [edgy] feisty [gutsy] [hardy]
 
     # XXX: Clicking on Code tab for branch takes me to personal branch
+
+    # XXX: move this to branch listing
+
+    # XXX: breadcrumbs / top nav bar is wrong
+
+    # XXX: deleting a branch takes it back to the person branch listing
+
+    # XXX: no message when there are no branches
 
     @cachedproperty
     def branch_count(self):
