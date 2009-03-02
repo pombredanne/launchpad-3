@@ -778,7 +778,7 @@ class ProductBranchListingView(BranchListingView):
 
     @cachedproperty
     def development_focus_branch(self):
-        dev_focus_branch = self.context.development_focus.series_branch
+        dev_focus_branch = self.context.development_focus.branch
         if dev_focus_branch is None:
             return None
         elif check_permission('launchpad.View', dev_focus_branch):
@@ -894,14 +894,14 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                     self.selected_lifecycle_status)
         # The series will always have at least one series, that of the
         # development focus.
-        dev_focus_branch = sorted_series[0].series_branch
+        dev_focus_branch = sorted_series[0].branch
         if not check_permission('launchpad.View', dev_focus_branch):
             dev_focus_branch = None
         result = []
         if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
         for series in sorted_series[1:]:
-            branch = series.series_branch
+            branch = series.branch
             if (branch is not None and
                 branch not in result and
                 check_permission('launchpad.View', branch) and
