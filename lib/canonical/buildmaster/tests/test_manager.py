@@ -286,13 +286,13 @@ class TestBuilddManager(TrialTestCase):
         categories are received.
 
          * Legitimate slave failures: when the response is a list with 2
-           elements but the first element ('status') do not correspond to
+           elements but the first element ('status') does not correspond to
            the expected 'success' result. See `buildd_success_result_map`.
 
          * Unexpected (code) failures: when the given 'method' is unknown
            or the response isn't a 2-element list or Failure instance.
 
-        Communication failures (an twisted `Failure` instance) will simply
+        Communication failures (a twisted `Failure` instance) will simply
         cause the builder to be reset, a `ResetDispatchResult` object is
         returned. In other words, network failures are ignored in this
         stage, broken builders will be identified and marked as so
@@ -302,7 +302,7 @@ class TestBuilddManager(TrialTestCase):
         """
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
 
-        # Successful legitimated response, None is returned.
+        # Successful legitimate response, None is returned.
         successful_response = [
             buildd_success_result_map.get('ensurepresent'), 'cool builder']
         result = self.manager.checkDispatch(
@@ -310,7 +310,7 @@ class TestBuilddManager(TrialTestCase):
         self.assertEqual(
             None, result, 'Successful dispatch checks should return None')
 
-        # Failed legitimated response, results in a `FailDispatchResult`.
+        # Failed legitimate response, results in a `FailDispatchResult`.
         failed_response = [False, 'uncool builder']
         result = self.manager.checkDispatch(
             failed_response, 'ensurepresent', slave)

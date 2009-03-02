@@ -51,8 +51,8 @@ class FakeZTM:
 class QueryWithTimeoutProtocol(xmlrpc.QueryProtocol, TimeoutMixin):
     """XMLRPC query protocol with a configurable timeout.
 
-    XMLRPC queries using this protocol will be inconditionally closed
-    when the timeout is ellapsed. The timeout is fetched from the context
+    XMLRPC queries using this protocol will be unconditionally closed
+    when the timeout is elapsed. The timeout is fetched from the context
     Launchpad configuration file (`config.builddmaster.socket_timeout`).
     """
     def connectionMade(self):
@@ -61,7 +61,7 @@ class QueryWithTimeoutProtocol(xmlrpc.QueryProtocol, TimeoutMixin):
 
 
 class QueryFactoryWithTimeout(xmlrpc._QueryFactory):
-    """XMLRPC client facory with timeout support."""
+    """XMLRPC client factory with timeout support."""
     # Make this factory quiet.
     noisy = False
     # Use the protocol with timeout support.
@@ -250,7 +250,7 @@ class BuilddManager(service.Service):
     def slaveDone(self, slave):
         """Mark slave as done for this cycle.
 
-        When all active slaves were processed, call `finishCycle`.
+        When all active slaves are processed, call `finishCycle`.
         """
         self.remaining_slaves.remove(slave)
 
@@ -369,7 +369,7 @@ class BuilddManager(service.Service):
     def checkDispatch(self, response, method, slave):
         """Verify the results of a slave xmlrpc call.
 
-        If it failed and it compromises the slave return a corresponding
+        If it failed and it compromises the slave then return a corresponding
         `FailDispatchResult`, if it was a communication failure, simply
         reset the slave by returning a `ResetDispatchResult`.
 
@@ -377,6 +377,13 @@ class BuilddManager(service.Service):
         """
         self.logger.debug(
             '%s response for "%s": %s' % (slave, method, response))
+
+        if isinstance(response, Failure):
+            self.logger.warn(
+                '%s communication failed (%s)' %
+                (slave, response.getErrorMessage()))
+            self.slaveDone(slave)
+            return self.reset_result(slave)
 
         if isinstance(response, list) and len(response) == 2 :
             if method in buildd_success_result_map.keys():
@@ -387,12 +394,6 @@ class BuilddManager(service.Service):
                     return None
             else:
                 info = 'Unknown slave method: %s' % method
-        elif isinstance(response, Failure):
-            self.logger.warn(
-                '%s communication failed (%s)' %
-                (slave, response.getErrorMessage()))
-            self.slaveDone(slave)
-            return self.reset_result(slave)
         else:
             info = 'Unexpected response: %s' % repr(response)
 
