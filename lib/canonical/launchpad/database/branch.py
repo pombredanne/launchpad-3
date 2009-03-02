@@ -155,6 +155,11 @@ class Branch(SQLBase):
         return IBranchTarget(target)
 
     @property
+    def namespace(self):
+        """See `IBranch`."""
+        return self.target.getNamespace(self.owner)
+
+    @property
     def distribution(self):
         """See `IBranch`."""
         if self.distroseries is None:

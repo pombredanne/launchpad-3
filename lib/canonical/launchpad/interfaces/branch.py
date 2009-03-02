@@ -738,6 +738,9 @@ class IBranch(IHasOwner):
 
     target = Attribute("The target of this branch, as an `IBranchTarget`.")
 
+    namespace = Attribute(
+        "The namespace of this branch, as an `IBranchNamespace`.")
+
     # Product attributes
     # ReferenceChoice is Interface rather than IProduct as IProduct imports
     # IBranch and we'd get import errors.  IPerson does a similar trick.
