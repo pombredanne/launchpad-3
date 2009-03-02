@@ -13,6 +13,7 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
 def branch_to_target(branch):
@@ -112,3 +113,8 @@ class ProductBranchTarget(_BaseBranchTarget):
         from canonical.launchpad.database.branchnamespace import (
             ProductNamespace)
         return ProductNamespace(owner, self.product)
+
+
+def get_canonical_url_data_for_target(branch_target):
+    """Return the `ICanonicalUrlData` for an `IBranchTarget`."""
+    return ICanonicalUrlData(branch_target.context)

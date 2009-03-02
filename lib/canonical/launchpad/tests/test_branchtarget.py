@@ -10,6 +10,7 @@ from canonical.launchpad.database.branchtarget import (
     PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -22,6 +23,12 @@ class BaseBranchTargetTests:
     def test_context(self):
         # IBranchTarget.context is the original object.
         self.assertEqual(self.original, self.target.context)
+
+    def test_canonical_url(self):
+        # The canonical URL of a branch target is the canonical url of its
+        # context.
+        self.assertEqual(
+            canonical_url(self.original), canonical_url(self.target))
 
 
 class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
