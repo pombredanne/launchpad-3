@@ -383,6 +383,10 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
             scheme, authserver, LAUNCHPAD_SERVICES)
         self._transport_dispatch = BranchTransportDispatch(branch_transport)
 
+    def setUp(self):
+        super(LaunchpadInternalServer, self).setUp()
+        self._transport_dispatch.base_transport.ensure_base()
+
     def destroy(self):
         """Delete the on-disk branches and tear down."""
         self._transport_dispatch.base_transport.delete_tree('.')

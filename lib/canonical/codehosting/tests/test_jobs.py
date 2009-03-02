@@ -53,7 +53,7 @@ class TestJobRunner(TestCaseWithFactory):
 
     def test_runJob_generates_diff(self):
         """Ensure that a diff is actually generated in this environment."""
-        self.useBzrBranches()
+        self.useBzrBranches(real_server=True)
         branch, tree = self.create_branch_and_tree()
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
