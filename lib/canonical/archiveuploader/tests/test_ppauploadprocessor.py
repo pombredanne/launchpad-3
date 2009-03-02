@@ -256,6 +256,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         queue_root = self.uploadprocessor.last_processed_upload.queue_root
+        self.assertEqual(queue_root.archive, self.name16.archive)
         self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
         self.assertEqual(queue_root.distroseries.name, "breezy")
 
@@ -386,6 +387,17 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # non-restricted librarian as the PPA is not private.
         [queue_item] = queue_items
         self.checkFilesRestrictedInLibrarian(queue_item, False)
+
+    def testNamedPPABinaryUploads(self):
+        """Check the usual binary upload life-cycle for named PPAs."""
+        # Source upload.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        queue_root = self.uploadprocessor.last_processed_upload.queue_root
+        self.assertEqual(queue_root.archive, self.name16.archive)
+        self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
+        self.assertEqual(queue_root.distroseries.name, "breezy")
 
     def testPPACopiedSources(self):
         """Check PPA binary uploads for copied sources."""
