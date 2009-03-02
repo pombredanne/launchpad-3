@@ -13,16 +13,14 @@ from canonical.launchpad.interfaces.codereviewcomment import (
 from canonical.launchpad.testing import (
     ANONYMOUS, login, login_person, TestCaseWithFactory)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
-# XXX: Get rid of LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 _default = object()
 
 class TestProposalVoteSummary(TestCaseWithFactory):
     """The vote summary shows a summary of the current votes."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an admin so we don't have to worry about launchpad.Edit
