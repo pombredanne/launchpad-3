@@ -121,10 +121,16 @@ class LocationWidget(BrowserWidget, InputWidget):
             show_marker=self.show_marker)
         return """
             <script type="text/javascript">
-                renderLargeMap(
-                    %(center_lat)s, %(center_lng)s, %(displayname)s,
-                    '%(name)s', '%(logo_html)s', '%(lat_name)s',
-                    '%(lng_name)s', '%(tz_name)s', %(zoom)s, %(show_marker)s);
+                YUI().use('node', 'lp.mapping', function(Y) {
+                    function renderMap() {
+                        Y.lp.mapping.renderPersonMap(
+                            %(center_lat)s, %(center_lng)s, %(displayname)s,
+                            '%(name)s', '%(logo_html)s', '%(lat_name)s',
+                            '%(lng_name)s', '%(tz_name)s', %(zoom)s,
+                            %(show_marker)s);
+                     }
+                     Y.on("domready", renderMap);
+                });
             </script>
             """ % replacements
 

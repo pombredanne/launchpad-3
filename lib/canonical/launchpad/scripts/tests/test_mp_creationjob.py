@@ -28,6 +28,8 @@ class TestDiffBMPs(TestCaseWithFactory):
         source_tree.pull(target_tree.branch)
         source_tree.bzrdir.root_transport.put_bytes('foo', 'foo\nbar\n')
         source_tree.commit('added bar')
+        # Add a fake revisions so the proposal is ready.
+        self.factory.makeRevisionsForBranch(source, count=1)
         bmp = BranchMergeProposal(
             source_branch=source, target_branch=target,
             registrant=source.owner)

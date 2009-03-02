@@ -41,7 +41,8 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.processor import ProcessorFamilySet
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces import IMasterStore
-from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.account import (
+    AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
 from canonical.launchpad.interfaces.branchmergequeue import (
@@ -219,6 +220,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             pocket)
         return location
 
+    def makeAccount(self, displayname, status=AccountStatus.ACTIVE,
+                    rationale=AccountCreationRationale.UNKNOWN):
+        """Create and return a new Account."""
+        account = getUtility(IAccountSet).new(rationale, displayname)
+        removeSecurityProxy(account).status = status
+        return account
+
     def makePerson(self, *args, **kwargs):
         """As makePersonNoCommit, except with an implicit transaction commit.
 
@@ -359,13 +367,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         self._stuff_preferredemail_cache(person)
         return person
 
-    def makeEmail(self, address, person, email_status=None):
+    def makeEmail(self, address, person, account=None, email_status=None):
         """Create a new email address for a person.
 
         :param address: The email address to create.
         :type address: string
         :param person: The person to assign the email address to.
         :type person: `IPerson`
+        :param account: The account to assign the email address to.  Will use
+            the given person's account if None is provided.
+        :type person: `IAccount`
         :param email_status: The default status of the email address,
             if given.  If not given, `EmailAddressStatus.VALIDATED`
             will be used.
@@ -375,8 +386,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if email_status is None:
             email_status = EmailAddressStatus.VALIDATED
+        if account is None:
+            account = person.account
         return getUtility(IEmailAddressSet).new(
-            address, person, email_status, person.account)
+            address, person, email_status, account)
 
     def makeTeam(self, owner, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
