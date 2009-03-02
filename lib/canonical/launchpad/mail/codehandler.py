@@ -445,6 +445,7 @@ class CodeHandler:
             mp_source = self._getNewBranch(
                 BranchType.HOSTED, md.source_branch, target,
                 submitter)
+        transaction.commit()
         assert mp_source.branch_type == BranchType.HOSTED
         try:
             bzr_branch = Branch.open(mp_source.getPullURL())
@@ -453,10 +454,10 @@ class CodeHandler:
             transport = get_transport(
                 mp_source.getPullURL(),
                 possible_transports=[bzr_target.bzrdir.root_transport])
-            transport.clone('../..').ensure_base()
-            transport.clone('..').ensure_base()
             bzrdir = bzr_target.bzrdir.clone_on_transport(transport)
             bzr_branch = bzrdir.open_branch()
+        # Don't attempt to use public-facing urls.
+        md.target_branch = target.warehouse_url
         md.install_revisions(bzr_branch.repository)
         bzr_branch.pull(bzr_branch, stop_revision=md.revision_id)
         mp_source.requestMirror()

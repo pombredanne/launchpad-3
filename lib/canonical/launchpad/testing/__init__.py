@@ -5,11 +5,12 @@ import os, shutil, tempfile, unittest
 
 from storm.store import Store
 
+import transaction
 import zope.event
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
-from canonical.codehosting.vfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
@@ -328,9 +329,9 @@ class TestCaseWithFactory(TestCase):
             branch_url = db_branch.getPullURL()
         else:
             branch_url = db_branch.warehouse_url
+        transaction.commit()
         transport = get_transport(branch_url)
-        transport.clone('../..').ensure_base()
-        transport.clone('..').ensure_base()
+        self.addCleanup(transport.delete_tree, '.')
         bzr_branch = BzrDir.create_branch_convenience(branch_url)
         return db_branch, bzr_branch.create_checkout(
             tree_location, lightweight=True)
@@ -342,9 +343,8 @@ class TestCaseWithFactory(TestCase):
         This always uses the configured mirrored area, ignoring whatever
         server might be providing lp-mirrored: urls.
         """
-        return os.path.join(
-            config.codehosting.internal_branch_by_id_root,
-            branch_id_to_path(branch.id))
+        base = config.codehosting.internal_branch_by_id_root
+        return os.path.join(base, branch_id_to_path(branch.id))
 
     def createMirroredBranchAndTree(self):
         """Create a database branch, bzr branch and bzr checkout.
@@ -386,25 +386,33 @@ class TestCaseWithFactory(TestCase):
         os.environ['BZR_HOME'] = os.getcwd()
         self.addCleanup(restore_bzr_home)
 
-    def useBzrBranches(self):
+    def useBzrBranches(self, real_server=False):
         """Prepare for using bzr branches.
 
         This sets up support for lp-hosted and lp-mirrored URLs,
         changes to a temp directory, and overrides the bzr home directory.
+
+        :param real_server: If true, use the "real" code hosting server,
+            using an xmlrpc server, etc.
         """
         from canonical.codehosting.scanner.tests.test_bzrsync import (
             FakeTransportServer)
         from bzrlib.transport import get_transport
         self.useTempBzrHome()
-        os.mkdir('lp-mirrored')
-        mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
-        mirror_server.setUp()
-        self.addCleanup(mirror_server.tearDown)
-        os.mkdir('lp-hosted')
-        hosted_server = FakeTransportServer(
-            get_transport('lp-hosted'), url_prefix='lp-hosted:///')
-        hosted_server.setUp()
-        self.addCleanup(hosted_server.tearDown)
+        if real_server:
+            server = get_multi_server(write_hosted=True, write_mirrored=True)
+            server.setUp()
+            self.addCleanup(server.destroy)
+        else:
+            os.mkdir('lp-mirrored')
+            mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
+            mirror_server.setUp()
+            self.addCleanup(mirror_server.tearDown)
+            os.mkdir('lp-hosted')
+            hosted_server = FakeTransportServer(
+                get_transport('lp-hosted'), url_prefix='lp-hosted:///')
+            hosted_server.setUp()
+            self.addCleanup(hosted_server.tearDown)
 
 
 def capture_events(callable_obj, *args, **kwargs):

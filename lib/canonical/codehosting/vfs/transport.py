@@ -73,6 +73,10 @@ class _MultiServer(Server):
         for server in self._servers:
             server.setUp()
 
+    def destroy(self):
+        for server in reversed(self._servers):
+            server.destroy()
+
     def tearDown(self):
         for server in reversed(self._servers):
             server.tearDown()
