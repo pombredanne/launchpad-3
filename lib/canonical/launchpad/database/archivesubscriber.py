@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchiveSubscriber'
+    'ArchiveSubscriber',
     ]
 
 import pytz

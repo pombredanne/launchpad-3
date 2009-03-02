@@ -33,7 +33,7 @@ from canonical.launchpad.components.tokens import (
     create_unique_token_for_table)
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
-from canonical.launchpad.database.archiveauthtoken import (ArchiveAuthToken)
+from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
 from canonical.launchpad.database.archivesubscriber import (
     ArchiveSubscriber)
 from canonical.launchpad.database.build import Build

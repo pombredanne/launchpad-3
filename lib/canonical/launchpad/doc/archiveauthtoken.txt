@@ -68,7 +68,7 @@ So deactivate the old token so that we can create a new token:
 
 We can also specify our own token for testing purposes:
 
-    >>> new_token = cprov.archive.newAuthToken(name12, u'testtoken')
+    >>> new_token = cprov.archive.newAuthToken(name12, u"testtoken")
 
 The new token is returned and reflects the data:
 
