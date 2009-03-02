@@ -48,6 +48,13 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertIsInstance(self.target, PackageBranchTarget)
 
+    def test_components(self):
+        target = IBranchTarget(self.original)
+        self.assertEqual(
+            [self.original.distribution, self.original.distroseries,
+             self.original],
+            list(target.components))
+
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -73,6 +80,10 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertIsInstance(target, PersonBranchTarget)
 
+    def test_components(self):
+        target = IBranchTarget(self.original)
+        self.assertEqual([self.original], list(target.components))
+
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -96,6 +107,10 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
     def test_adapter(self):
         target = IBranchTarget(self.original)
         self.assertIsInstance(target, ProductBranchTarget)
+
+    def test_components(self):
+        target = IBranchTarget(self.original)
+        self.assertEqual([self.original], list(target.components))
 
 
 class TestPrimaryContext(TestCaseWithFactory):

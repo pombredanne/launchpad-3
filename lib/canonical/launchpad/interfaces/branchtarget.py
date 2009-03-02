@@ -26,10 +26,12 @@ class IBranchTarget(IPrimaryContext):
     branches, and a person contains 'junk' branches.
     """
 
-    # XXX: JonathanLange 2009-02-27 spec=package-branches: Add __eq__ and
-    # __ne__ to the interface.
-
     name = Attribute("The name of the target.")
+
+    components = Attribute(
+        "An iterable of the objects that make up this branch target, from "
+        "most-general to most-specific. In a URL, these would normally "
+        "appear from left to right.")
 
     def __eq__(other):
         """Is this target the same as another target?

@@ -41,6 +41,15 @@ class PackageBranchTarget(_BaseBranchTarget):
         return self.sourcepackage.path
 
     @property
+    def components(self):
+        """See `IBranchTarget`."""
+        return [
+            self.sourcepackage.distribution,
+            self.sourcepackage.distroseries,
+            self.sourcepackage,
+            ]
+
+    @property
     def context(self):
         """See `IBranchTarget`."""
         return self.sourcepackage
@@ -61,6 +70,11 @@ class PersonBranchTarget(_BaseBranchTarget):
         self.person = person
 
     @property
+    def components(self):
+        """See `IBranchTarget`."""
+        return [self.person]
+
+    @property
     def context(self):
         """See `IBranchTarget`."""
         return self.person
@@ -77,6 +91,11 @@ class ProductBranchTarget(_BaseBranchTarget):
 
     def __init__(self, product):
         self.product = product
+
+    @property
+    def components(self):
+        """See `IBranchTarget`."""
+        return [self.product]
 
     @property
     def context(self):
