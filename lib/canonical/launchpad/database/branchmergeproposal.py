@@ -964,6 +964,9 @@ class BranchMergeProposalJobDerived(object):
                 BranchMergeProposalJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs),
                 BranchMergeProposal.source_branch == Branch.id,
+                # A proposal isn't considered ready if it has no revisions,
+                # or if it is hosted but pending a mirror.
+                Branch.revision_count > 0,
                 Or(Branch.next_mirror_time == None,
                    Branch.branch_type != BranchType.HOSTED)
                 ))

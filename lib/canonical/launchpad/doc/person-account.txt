@@ -11,7 +11,7 @@ process. Matsubara's account was created during a code import.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     AccountStatus, IPersonSet, IPerson, IEmailAddressSet)
+    ...     IPersonSet, IEmailAddressSet)
 
     >>> emailset = getUtility(IEmailAddressSet)
     >>> emailaddress = emailset.getByEmail('matsubara@async.com.br')
@@ -54,12 +54,13 @@ as arguments.
 
 An error is raised if activateAccount() is called on a team.
 
-    # It should not be possible to login as a team.
-    >>> login('support@ubuntu.com')
-
     >>> personset = getUtility(IPersonSet)
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> ubuntu_team.activateAccount(
+
+    # It's only the person (in this case, team) himself that is authorized to
+    # call activateAccount(), but it's obviously not possible to login as a
+    # team, so we have to remove the security proxy here.
+    >>> removeSecurityProxy(ubuntu_team).activateAccount(
     ...     comment="test", password='ok', preferred_email=emailaddress)
     Traceback (most recent call last):
     ...
@@ -261,9 +262,10 @@ The account name is fixed if it was altered when it was deactivated.
 
 An error is raised if reactivateAccount() is called on a team.
 
-    # It should not be possible to login as a team.
-    >>> login('support@ubuntu.com')
-    >>> ubuntu_team.reactivateAccount(
+    # It's only the person (in this case, team) himself that is authorized to
+    # call reactivateAccount(), but it's obviously not possible to login as a
+    # team, so we have to remove the security proxy here.
+    >>> removeSecurityProxy(ubuntu_team).reactivateAccount(
     ...     comment="test", password='ok', preferred_email=emailaddress)
     Traceback (most recent call last):
     ...
