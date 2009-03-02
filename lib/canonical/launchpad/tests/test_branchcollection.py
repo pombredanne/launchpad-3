@@ -14,7 +14,8 @@ from canonical.launchpad.database.branchcollection import (
     GenericBranchCollection)
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
+from canonical.launchpad.interfaces.branch import (
+    BranchLifecycleStatus, BranchType)
 from canonical.launchpad.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
 from canonical.launchpad.interfaces.branchsubscription import (
@@ -239,6 +240,28 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.assertEqual(
             sorted([owned_branch, registered_branch, subscribed_branch]),
             sorted(related_branches.getBranches()))
+
+    def test_withBranchType(self):
+        hosted_branch1 = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED)
+        hosted_branch2 = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED)
+        mirrored_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
+        imported_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.IMPORTED)
+        branches = self.all_branches.withBranchType(
+            BranchType.HOSTED, BranchType.MIRRORED)
+        self.assertEqual(
+            set([hosted_branch1, hosted_branch2, mirrored_branch]),
+            set(branches.getBranches()))
+
+    def test_scanned(self):
+        scanned_branch = self.factory.makeAnyBranch()
+        self.factory.makeRevisionsForBranch(scanned_branch)
+        unscanned_branch = self.factory.makeAnyBranch()
+        branches = self.all_branches.scanned()
+        self.assertEqual([scanned_branch], list(branches.getBranches()))
 
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):

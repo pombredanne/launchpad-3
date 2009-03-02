@@ -15,7 +15,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.database.openidserver import (
     OpenIDAuthorization, OpenIDAuthorizationSet)
-from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.account import Account
 from canonical.launchpad.ftests._login import login
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.adapter import StoreSelector
@@ -56,7 +56,7 @@ class OpenIDAuthorizationSet__with_SlaveStore_TestCase(unittest.TestCase):
         # back from the slave store.
         transaction.commit()
         slave_store = StoreSelector.get(MAIN_STORE, SLAVE_FLAVOR)
-        self.person = slave_store.get(Person, person.id)
+        self.account = slave_store.get(Account, person.account.id)
 
     def test_authorize_works_with_person_loaded_from_the_slave_store(self):
         """OpenIDAuthorization always use the master store.
@@ -66,10 +66,10 @@ class OpenIDAuthorizationSet__with_SlaveStore_TestCase(unittest.TestCase):
         """
         authorization_set = OpenIDAuthorizationSet()
         trust_root = 'http://launchpad.dev'
-        authorization_set.authorize(self.person, trust_root, None)
+        authorization_set.authorize(self.account, trust_root, None)
 
         self.failUnless(
-            authorization_set.isAuthorized(self.person, trust_root, None),
+            authorization_set.isAuthorized(self.account, trust_root, None),
             'Pre-authorization failed')
 
 

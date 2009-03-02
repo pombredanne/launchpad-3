@@ -19,7 +19,7 @@ from twisted.application import service
 from twisted.internet import reactor, utils, defer
 from twisted.internet.threads import deferToThread
 from twisted.protocols.policies import TimeoutMixin
-from twisted.web.xmlrpc import Proxy, _QueryFactory, QueryProtocol
+from twisted.web import xmlrpc
 
 from zope.component import getUtility
 from zope.security.management import endInteraction, newInteraction
@@ -46,7 +46,7 @@ class FakeZTM:
         pass
 
 
-class QueryWithTimeoutProtocol(QueryProtocol, TimeoutMixin):
+class QueryWithTimeoutProtocol(xmlrpc.QueryProtocol, TimeoutMixin):
     """XMLRPC query protocol with a configurable timeout."""
 
     def connectionMade(self):
@@ -54,7 +54,7 @@ class QueryWithTimeoutProtocol(QueryProtocol, TimeoutMixin):
         self.setTimeout(config.builddmaster.socket_timeout)
 
 
-class QueryFactoryWithTimeout(_QueryFactory):
+class QueryFactoryWithTimeout(xmlrpc._QueryFactory):
     """XMLRPC client facory with timeout support."""
     protocol = QueryWithTimeoutProtocol
 
@@ -409,7 +409,7 @@ class BuilddManager(service.Service):
 
         Uses a protocol with timeout support, See QueryFactoryWithTimeout.
         """
-        proxy = Proxy(str(urlappend(slave.url, 'rpc')))
+        proxy = xmlrpc.Proxy(str(urlappend(slave.url, 'rpc')))
         proxy.queryFactory = QueryFactoryWithTimeout
         return proxy
 

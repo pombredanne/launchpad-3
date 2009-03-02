@@ -156,7 +156,7 @@ class TestBranchView(unittest.TestCase):
                 'url': 'http://example.com',
                 'title': 'Branch Title',
                 'summary': '',
-                'lifecycle_status': BranchLifecycleStatus.NEW,
+                'lifecycle_status': BranchLifecycleStatus.DEVELOPMENT,
                 'whiteboard': '',
                 'owner': arbitrary_person,
                 'author': arbitrary_person,

@@ -16,11 +16,12 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference
 
 
 class AccountStatus(DBEnumeratedType):
@@ -57,7 +58,7 @@ INACTIVE_ACCOUNT_STATUSES = [
 
 class AccountCreationRationale(DBEnumeratedType):
     """The rationale for the creation of a given account.
-    
+
     These statuses are seeded from PersonCreationRationale, as our
     initial accounts where split from the Person table. A number of the
     creation rationales only make sense in this historical context (eg.
@@ -181,44 +182,58 @@ class IAccountPublic(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
 
     displayname = StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-                description=_("Your name as you would like it displayed."))
+        title=_('Display Name'), required=True, readonly=False,
+        description=_("Your name as you would like it displayed."))
 
     status = Choice(
         title=_("The status of this account"), required=True,
         readonly=False, vocabulary=AccountStatus)
 
+    is_valid = Bool(
+        title=_("True if this account is active and has a valid email."),
+        required=True, readonly=True)
+
+    # We should use schema=IEmailAddress here, but we can't because that would
+    # cause circular dependencies.
+    preferredemail = Reference(
+        title=_("Preferred email address"),
+        description=_("The preferred email address for this person. "
+                      "The one we'll use to communicate with them."),
+        readonly=True, required=False, schema=Interface)
+
 
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
     date_created = Datetime(
-            title=_('Date Created'), required=True, readonly=True)
+        title=_('Date Created'), required=True, readonly=True)
 
     creation_rationale = Choice(
-            title=_("Rationale for this account's creation."), required=True,
-            readonly=True, values=AccountCreationRationale.items)
-
+        title=_("Rationale for this account's creation."), required=True,
+        readonly=True, values=AccountCreationRationale.items)
 
     date_status_set = Datetime(
-            title=_('Date status last modified.'),
-            required=True, readonly=False)
+        title=_('Date status last modified.'),
+        required=True, readonly=False)
 
     status_comment = Text(
         title=_("Why are you deactivating your account?"),
         required=False, readonly=False)
 
     openid_identifier = TextLine(
-            title=_("Key used to generate opaque OpenID identities."),
-            readonly=True, required=True)
+        title=_("Key used to generate opaque OpenID identities."),
+        readonly=True, required=True)
 
     # XXX sinzui 2008-09-04 bug=264783:
     # Remove this attribute.
     new_openid_identifier = TextLine(
-            title=_("Key used to generate New opaque OpenID identities."),
-            readonly=True, required=True)
+        title=_("Key used to generate New opaque OpenID identities."),
+        readonly=True, required=True)
 
     password = PasswordField(
-            title=_("Password."), readonly=False, required=True)
+        title=_("Password."), readonly=False, required=True)
+
+    def createPerson(self, rationale):
+        """Create and return a new `IPerson` associated with this account."""
 
 
 class IAccount(IAccountPublic, IAccountPrivate):
@@ -232,7 +247,7 @@ class IAccountSet(Interface):
             password=None, password_is_encrypted=False):
         """Create a new `IAccount`.
 
-        :param rationale: An `AccountStatus` value.
+        :param rationale: An `AccountCreationRationale` value.
         :param displayname: The user's display name.
         :param openid_mnemonic: The human-readable component in the account's
             openid_identifier.
@@ -242,6 +257,20 @@ class IAccountSet(Interface):
             If False, the password will be encrypted automatically.
 
         :return: The newly created `IAccount` provider.
+        """
+
+    def get(id):
+        """Return the `IAccount` with the given id.
+
+        Return None if it doesn't exist.
+        """
+
+    def createAccountAndEmail(email, rationale, displayname, password,
+                              password_is_encrypted=False):
+        """Create and return both a new `IAccount` and `IEmailAddress`.
+
+        The account will be in the ACTIVE state, with the email address set as
+        its preferred email address.
         """
 
     def getByEmail(email):
