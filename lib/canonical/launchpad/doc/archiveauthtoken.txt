@@ -10,38 +10,41 @@ See also ArchiveSubscriber.txt.
 
 == Creating new tokens ==
 
-New tokens are created using IArchive.newAuthToken()
+New tokens are created using IArchive.newAuthToken(). Users create their own
+tokens for an archive, but this is only possible if there is already a valid
+subscription for the user for that archive.
 
-Operations with tokens are security protected, so to start with we'll log
-in as an unprivileged user.
+First, try to create a token for someone else:
 
     >>> login("no-priv@canonical.com")
-
-We can create a new token for name12 to access cprov's PPA like this:
-
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> name12 = getUtility(IPersonSet).getByName("name12")
 
-    >>> new_token = cprov.archive.newAuthToken(name12, u"testtoken")
+    >>> new_token = cprov.archive.newAuthToken(name12)
     Traceback (most recent call last):
     ...
-    Unauthorized:...
+    Unauthorized: You cannot create tokens for Sample Person.
 
-That failed because only people who have launchpad.Append (basically, upload
-access) on the context archive are allowed to create tokens.
-
-Users cannot create their own access tokens either.  Log in as name12:
+Next, login as name12 and try to create a token for ourselves, even
+though we do not yet have a subscription:
 
     >>> login("test@canonical.com")
-    >>> new_token = cprov.archive.newAuthToken(name12, u"testtoken")
+    >>> new_token = cprov.archive.newAuthToken(name12)
     Traceback (most recent call last):
     ...
-    Unauthorized:...
+    Unauthorized: You do not have permission to access PPA for
+    Celso Providelo.
 
-If we log in as cprov it will work:
+Create a subscription for name12 to cprov's archive:
 
     >>> login("celso.providelo@canonical.com")
+    >>> subscription_to_cprov_archive = cprov.archive.newSubscription(
+    ...     name12, cprov)
+    >>> login("test@canonical.com")
+
+Now try again to create a token as name12 - this time it works:
+
     >>> token_with_random_string = cprov.archive.newAuthToken(name12)
 
 By default the tokens are 20 characters long.
@@ -49,9 +52,23 @@ By default the tokens are 20 characters long.
     >>> print len(token_with_random_string.token)
     20
 
+It is not possible to create a second token when one already exists:
+
+    >>> new_token = cprov.archive.newAuthToken(name12)
+    Traceback (most recent call last):
+    ...
+    ArchiveSubscriptionError: Sample Person already has a token for
+    PPA for Celso Providelo.
+
+So deactivate the old token so that we can create a new token:
+
+    >>> login("celso.providelo@canonical.com")
+    >>> token_with_random_string.deactivate()
+    >>> login("test@canonical.com")
+
 We can also specify our own token for testing purposes:
 
-    >>> new_token = cprov.archive.newAuthToken(name12, u"testtoken")
+    >>> new_token = cprov.archive.newAuthToken(name12, u'testtoken')
 
 The new token is returned and reflects the data:
 

@@ -565,6 +565,18 @@ class IArchivePublic(IHasOwner):
         :return The new `IPackageCopyRequest`
         """
 
+    # XXX
+    def newAuthToken(person, token=None, date_created=None):
+        """Create a new authorisation token.
+
+        :param person: An IPerson whom this token is for
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given
+        :param date_created: Optional, defaults to now
+
+        :return: A new IArchiveAuthToken
+        """
+
 
 class IArchiveView(Interface):
     """Archive interface for operations restricted by view privilege."""
@@ -758,17 +770,6 @@ class IArchiveAppend(Interface):
         :raises PocketNotFound: if the pocket name is invalid
         :raises DistroSeriesNotFound: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
-        """
-
-    def newAuthToken(person, token=None, date_created=None):
-        """Create a new authorisation token.
-
-        :param person: An IPerson whom this token is for
-        :param token: Optional unicode text to use as the token. One will be
-            generated if not given
-        :param date_created: Optional, defaults to now
-
-        :return: A new IArchiveAuthToken
         """
 
     def newSubscription(subscriber, registrant, date_expires=None,

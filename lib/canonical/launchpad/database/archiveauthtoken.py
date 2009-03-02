@@ -5,12 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchiveAuthToken',
+    'ArchiveAuthToken'
     ]
 
 import pytz
 
-from storm.locals import DateTime, Int, RawStr, Reference, Storm, Unicode
+from storm.locals import DateTime, Int, Reference, Storm, Unicode
 
 from zope.component import getUtility
 from zope.interface import implements
