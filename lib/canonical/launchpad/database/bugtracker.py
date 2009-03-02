@@ -171,7 +171,9 @@ class BugTracker(SQLBase):
             "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s&long_desc=%(description)s"),
         BugTrackerType.MANTIS: "%(base_url)s/bug_report_advanced_page.php",
-        BugTrackerType.PHPPROJECT: "%(base_url)s/report.php",
+        BugTrackerType.PHPPROJECT: (
+            "%(base_url)s/report.php"
+            "?in[sdesc]=%(summary)s&in[ldesc]=%(description)s"),
         BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=item",
         BugTrackerType.RT: (
             "%(base_url)s/Ticket/Create.html?Queue=%(remote_product)s"
@@ -180,8 +182,7 @@ class BugTracker(SQLBase):
             "%(base_url)s/bugs/?func=additem&group=%(remote_product)s"),
         BugTrackerType.SOURCEFORGE: (
             "%(base_url)s/%(tracker)s/?func=add&"
-            "group_id=%(group_id)s&atid=%(at_id)s"
-            "&summary=%(summary)s&details=%(description)s"),
+            "group_id=%(group_id)s&atid=%(at_id)s"),
         BugTrackerType.TRAC: "%(base_url)s/newticket",
         }
 
@@ -192,8 +193,10 @@ class BugTracker(SQLBase):
         BugTrackerType.DEBBUGS: (
             "%(base_url)s/cgi-bin/pkgreport.cgi?package=%(remote_product)s"),
         BugTrackerType.MANTIS: "%(base_url)s/view_all_bug_page.php",
-        BugTrackerType.PHPPROJECT: "%(base_url)s/search.php",
-        BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=search",
+        BugTrackerType.PHPPROJECT: (
+            "%(base_url)s/search.php?search_for=%(summary)s"),
+        BugTrackerType.ROUNDUP: (
+            "%(base_url)s/issue?@template=search&@search_text=%(summary)s"),
         BugTrackerType.RT: (
             "%(base_url)s/Search/Build.html?Query=Queue = "
             "'%(remote_product)s' AND Subject LIKE '%(summary)s'"),
@@ -202,7 +205,7 @@ class BugTracker(SQLBase):
         BugTrackerType.SOURCEFORGE: (
             "%(base_url)s/search/?group_id=%(group_id)s"
             "&some_word=%(summary)s&type_of_search=artifact"),
-        BugTrackerType.TRAC: "%(base_url)s/search?ticket=on",
+        BugTrackerType.TRAC: "%(base_url)s/search?ticket=on&q=%(summary)s",
         }
 
     @property
