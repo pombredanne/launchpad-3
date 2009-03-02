@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'ImportStatus',
     'IProductSeries',
     'IProductSeriesEditRestricted',
     'IProductSeriesPublic',
@@ -267,6 +266,15 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
 
+    import_branch = Choice(
+        title=_('Import Branch'),
+        vocabulary='Branch',
+        description=_("The Bazaar branch for this series imported from "
+                      "upstream version control. Note that there may be "
+                      "many branches associated with a given series, such "
+                      "as the branches of individual tarball releases. "
+                      "This branch is the real upstream code, mapped into "
+                      "Bazaar from CVS or SVN."))
     # where are the tarballs released from this branch placed?
     releasefileglob = TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,

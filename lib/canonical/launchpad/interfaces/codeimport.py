@@ -9,6 +9,7 @@ __all__ = [
     'CodeImportReviewStatus',
     'ICodeImport',
     'ICodeImportSet',
+    'RevisionControlSystems',
     ]
 
 import re
