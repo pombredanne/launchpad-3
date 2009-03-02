@@ -215,7 +215,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.sourcepackage.ISourcePackage"
-    class="canonical.launchpad.browser.sourcepackage.SourcePackageBranchesView"
+    class="canonical.launchpad.browser.branchlisting.SourcePackageBranchesView"
     permission="zope.Public"
     facet="branches"
     name="+branches"

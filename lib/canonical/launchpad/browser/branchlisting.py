@@ -22,6 +22,7 @@ __all__ = [
     'RecentlyChangedBranchesView',
     'RecentlyImportedBranchesView',
     'RecentlyRegisteredBranchesView',
+    'SourcePackageBranchesView',
     ]
 
 from datetime import datetime
@@ -1160,3 +1161,28 @@ class ProjectBranchesView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project group.')
         return message % self.context.displayname
+
+
+class SourcePackageBranchesView(BranchListingView):
+
+    # XXX: "By most interesting" search doesn't work at all
+
+    # XXX: No menu for this page, there should be. And the menu should just
+    # have register a branch.
+
+    # XXX: No link back to this page from branches, other than code tab
+
+    # XXX: Show me at the bottom I can see previous/next series or: [dapper]
+    # [edgy] feisty [gutsy] [hardy]
+
+    # XXX: Clicking on Code tab for branch takes me to personal branch
+
+    # XXX: deleting a branch takes it back to the person branch listing
+
+    # XXX: no message when there are no branches
+
+    @cachedproperty
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user).count()
