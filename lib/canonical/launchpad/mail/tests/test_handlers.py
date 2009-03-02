@@ -18,7 +18,6 @@ from zope.testing.doctest import DocTestSuite
 
 from canonical.config import config
 from canonical.codehosting.jobs import JobRunner
-from canonical.codehosting.vfs import get_multi_server
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType,
     CodeReviewNotificationLevel, CodeReviewVote, IBranchSet)

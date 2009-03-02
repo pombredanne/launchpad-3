@@ -1,4 +1,5 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0213
 
 """The Launchpad code hosting file system.
 
