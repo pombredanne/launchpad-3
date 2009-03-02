@@ -83,6 +83,7 @@ def extract_result(deferred):
     successes = []
     deferred.addCallbacks(successes.append, failures.append)
     if len(failures) == 1:
+        #print deferred._debugInfo._getDebugTracebacks()
         failures[0].raiseException()
     elif len(successes) == 1:
         return successes[0]

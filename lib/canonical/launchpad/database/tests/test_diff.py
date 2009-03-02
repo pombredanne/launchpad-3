@@ -8,7 +8,7 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, ZopelessAppServerLayer)
 import transaction
 
 from canonical.launchpad.database.diff import Diff, StaticDiff
@@ -31,7 +31,7 @@ class TestDiff(TestCaseWithFactory):
 class TestStaticDiff(TestCaseWithFactory):
     """Test that StaticDiff objects work."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessAppServerLayer
 
     def test_providesInterface(self):
         verifyObject(IStaticDiff, StaticDiff())

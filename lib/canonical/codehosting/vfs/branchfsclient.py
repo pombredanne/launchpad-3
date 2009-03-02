@@ -122,9 +122,11 @@ class BranchFileSystemClient:
         try:
             return defer.succeed(self._getFromCache(path))
         except NotInCache:
-            deferred = defer.maybeDeferred(
-                self._branchfs_endpoint.callRemote,
+
+            result = self._branchfs_endpoint.callRemote(
                 'translatePath', self._user_id, path)
+            print result
+            deferred = defer.succeed(result)
             deferred.addCallback(self._addToCache, path)
             return deferred
 

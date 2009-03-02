@@ -56,7 +56,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
 
     def test_run_revision_ids(self):
         """Ensure that run calculates revision ids."""
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.commit('First commit', rev_id='rev1')
         job = BranchDiffJob.create(branch, '0', '1')
@@ -66,7 +66,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
 
     def test_run_diff_content(self):
         """Ensure that run generates expected diff."""
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         open('file', 'wb').write('foo\n')
         tree.add('file')
@@ -84,7 +84,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
 
     def test_run_is_idempotent(self):
         """Ensure running an equivalent job emits the same diff."""
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.commit('First commit')
         job1 = BranchDiffJob.create(branch, '0', '1')
@@ -99,7 +99,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
         This diff contains an add of a file called hello.txt, with contents
         "Hello World\n".
         """
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         first_revision = 'rev-1'
         tree_transport = tree.bzrdir.root_transport
@@ -188,7 +188,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
 
     def test_perform_diff_performs_diff(self):
         """Ensure that a diff is generated when perform_diff is True."""
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.bzrdir.root_transport.put_bytes('foo', 'bar\n')
         tree.add('foo')
@@ -200,7 +200,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
 
     def test_perform_diff_ignored_for_revno_0(self):
         """For the null revision, no diff is generated."""
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         job = RevisionMailJob.create(
             branch, 0, 'from@example.com', 'hello', True, 'subject')

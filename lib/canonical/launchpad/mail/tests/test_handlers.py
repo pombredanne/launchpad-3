@@ -609,7 +609,7 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_processMergeDirectiveWithBundle(self):
         """When a bundle is provided, it can generate a new branch."""
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.branch.set_public_branch(branch.bzr_identity)
         tree.commit('rev1')
@@ -639,7 +639,7 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_processMergeDirectiveWithBundleExistingBranch(self):
         """A bundle can update an existing branch."""
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         branch, tree = self.create_branch_and_tree('target')
         tree.branch.set_public_branch(branch.bzr_identity)
         tree.commit('rev1')
