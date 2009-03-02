@@ -19,7 +19,7 @@ from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView, BranchView)
-from canonical.launchpad.browser.person import PersonBranchesView
+from canonical.launchpad.browser.branchlisting import PersonBranchesView
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, IBranchSet, IPersonSet, IProductSet)
