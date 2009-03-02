@@ -174,7 +174,9 @@ class BugTracker(SQLBase):
         BugTrackerType.PHPPROJECT: (
             "%(base_url)s/report.php"
             "?in[sdesc]=%(summary)s&in[ldesc]=%(description)s"),
-        BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=item",
+        BugTrackerType.ROUNDUP: (
+            "%(base_url)s/issue?@template=item&title=%(summary)s"
+            "&@note=%(description)s"),
         BugTrackerType.RT: (
             "%(base_url)s/Ticket/Create.html?Queue=%(remote_product)s"
             "&Subject=%(summary)s&Content=%(description)s"),

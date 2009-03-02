@@ -444,7 +444,7 @@ include it.
     >>> links = example_roundup.getBugFilingAndSearchLinks(
     ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
-    bug_filing_url: http://.../issue?@template=item
+    bug_filing_url: http://.../issue?@template=item&title=Foo&@note=Bar
     bug_search_url: http://.../issue?@template=search&@search_text=Foo
 
     >>> example_mantis = factory.makeBugTracker(
