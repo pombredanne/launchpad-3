@@ -1175,8 +1175,6 @@ class SourcePackageBranchesView(BranchListingView):
     # XXX: Show me at the bottom I can see previous/next series or: [dapper]
     # [edgy] feisty [gutsy] [hardy]
 
-    # XXX: deleting a branch takes it back to the person branch listing
-
     # XXX: no message when there are no branches
 
     @cachedproperty
