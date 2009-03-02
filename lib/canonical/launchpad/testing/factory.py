@@ -306,8 +306,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if email_address_status == EmailAddressStatus.PREFERRED:
             person.validateAndEnsurePreferredEmail(email)
             from canonical.launchpad.database.account import Account
-            account = IMasterStore(Account).find(
-                Account, id=person.accountID).one()
+            account = IMasterStore(Account).get(
+                Account, person.accountID)
             account.status = AccountStatus.ACTIVE
 
         email.status = email_address_status

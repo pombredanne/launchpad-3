@@ -288,8 +288,7 @@ class Person(
             return password.password
 
     def _set_password(self, value):
-        account = IMasterStore(Account).find(
-            Account, id=self.accountID).one()
+        account = IMasterStore(Account).get(Account, self.accountID)
         assert account is not None, 'No account for this Person.'
         account.password = value
 
@@ -2177,7 +2176,7 @@ class Person(
         # until we rewrite this 'icky mess.
         preferred_email = IMasterStore(EmailAddress).find(
             EmailAddress,
-            EmailAddress.personID ==self.id,
+            EmailAddress.personID == self.id,
             EmailAddress.status == EmailAddressStatus.PREFERRED).one()
         
         # This email is already validated and is this person's preferred
@@ -2803,7 +2802,7 @@ class PersonSet:
         # optimal for production as it requires two database lookups,
         # but is required by much of the test suite.
         email_address = IStore(EmailAddress).find(
-            EmailAddress, EmailAddress.email == email).one()
+            EmailAddress, email=email).one()
         if email_address is None:
             return None
         else:
