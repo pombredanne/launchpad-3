@@ -41,7 +41,7 @@ class LoginToken(SQLBase):
     email = StringCol(dbName='email', notNull=True)
     token = StringCol(dbName='token', unique=True)
     tokentype = EnumCol(dbName='tokentype', notNull=True, enum=LoginTokenType)
-    created = UtcDateTimeCol(dbName='created', notNull=True)
+    date_created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False,
                             default=None)
     date_consumed = UtcDateTimeCol(default=None)
@@ -136,29 +136,12 @@ class LoginToken(SQLBase):
         subject = 'Launchpad: Confirm your OpenPGP Key'
         self._send_email(from_name, subject, text)
 
-    def sendPasswordResetNeutralEmail(self):
-        """See ILoginToken."""
-        template = get_email_template('forgottenpassword-neutral.txt')
-        from_name = "Login Service"
-        message = template % dict(token_url=canonical_url(self))
-        subject = "Login Service: Forgotten Password"
-        self._send_email(from_name, subject, message)
-
-    def sendNewUserNeutralEmail(self):
-        """See ILoginToken."""
-        template = get_email_template('newuser-email-neutral.txt')
-        message = template % dict(token_url=canonical_url(self))
-
-        from_name = "Launchpad"
-        subject = "Login Service: Finish your registration"
-        self._send_email(from_name, subject, message)
-
     def sendPasswordResetEmail(self):
         """See ILoginToken."""
         template = get_email_template('forgottenpassword.txt')
-        from_name = "Login Service"
+        from_name = "Launchpad"
         message = template % dict(token_url=canonical_url(self))
-        subject = "Login Service: Forgotten Password"
+        subject = "Launchpad: Forgotten Password"
         self._send_email(from_name, subject, message)
 
     def sendNewUserEmail(self):
