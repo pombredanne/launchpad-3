@@ -118,8 +118,9 @@ class BranchHierarchy(Hierarchy):
 
     def items(self):
         """See `Hierarchy`."""
-        obj = IPrimaryContext(self.context).context
-        return self._breadcrumbs([(obj, canonical_url(obj))])
+        return self._breadcrumbs(
+            (obj, canonical_url(obj))
+            for obj in self.context.target.components)
 
 
 class BranchBadges(HasBadgeBase):

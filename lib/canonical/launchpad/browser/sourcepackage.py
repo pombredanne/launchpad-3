@@ -287,8 +287,6 @@ class SourcePackageBranchesView(BranchListingView):
 
     # XXX: move this to branch listing
 
-    # XXX: breadcrumbs / top nav bar is wrong
-
     # XXX: deleting a branch takes it back to the person branch listing
 
     # XXX: no message when there are no branches
