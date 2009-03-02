@@ -29,6 +29,7 @@ permitted_database_imports = text_lines_to_set("""
     canonical.archivepublisher.domination
     canonical.archivepublisher.deathrow
     canonical.codehosting.inmemory
+    canonical.launchpad.browser.branchlisting
     canonical.launchpad.feed.branch
     canonical.launchpad.vocabularies.dbobjects
     canonical.launchpad.validators.person
