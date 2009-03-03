@@ -9,12 +9,13 @@ import unittest
 from zope.event import notify
 from zope.interface import implements, providedBy
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.testing import LaunchpadFunctionalLayer
 
 

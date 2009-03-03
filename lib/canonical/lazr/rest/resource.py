@@ -50,6 +50,9 @@ from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IChoice, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
+
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
@@ -62,7 +65,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, ILaunchBag)
 from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,

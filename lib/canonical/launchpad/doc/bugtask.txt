@@ -811,7 +811,7 @@ later on the interaction between privacy and teams (see the section
 entitled _Privacy and Team Awareness_):
 
     >>> from canonical.launchpad.interfaces import IBug
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 

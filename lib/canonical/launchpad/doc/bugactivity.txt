@@ -24,7 +24,7 @@ are simple little functions.
     ...     BugPackageInfestation, BugProductInfestation)
     >>> from canonical.launchpad.interfaces import (
     ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugTaskSet)
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> user = getUtility(ILaunchBag).user
 
 
@@ -88,7 +88,7 @@ are simple little functions.
 
 == Source package assignment edited ==
 
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> edit_fields = [
     ...     "distribution", "sourcepackagename", "milestone", "status",

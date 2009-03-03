@@ -420,7 +420,7 @@ Resubscribe our test user.
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> login('test@canonical.com')
     >>> before_modification = Snapshot(branch, providing=IBranch)

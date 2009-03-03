@@ -236,7 +236,7 @@ milestone and the new one are notified.
     ...     IBugSet, IPersonSet, IProductSet)
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from zope.event import notify
     >>> from zope.interface import providedBy
     >>> firefox = getUtility(IProductSet).getByName('firefox')

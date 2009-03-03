@@ -96,7 +96,7 @@ If we edit the title and description of the question, a notification
 will be sent.
 
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from zope.interface import providedBy
 
     >>> login('no-priv@canonical.com')

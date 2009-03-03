@@ -23,10 +23,13 @@ from storm.expr import And, LeftJoin
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
+
 from zope.component import getUtility, queryAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.security.proxy import removeSecurityProxy
+
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -51,7 +54,6 @@ from canonical.launchpad.interfaces.mailinglist import (
     MailingListStatus, PURGE_STATES, PostedMessageStatus, UnsafeToPurge)
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 
 

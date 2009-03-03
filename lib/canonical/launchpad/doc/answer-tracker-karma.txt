@@ -152,7 +152,7 @@ We do not grant karma for status change made outside of workflow:
 
     >>> from zope.interface import providedBy
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> old_question = Snapshot(
     ...     firefox_question, providing=providedBy(firefox_question))
     >>> login('test@canonical.com')

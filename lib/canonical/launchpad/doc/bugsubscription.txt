@@ -380,7 +380,7 @@ subscribers.
     >>> from zope.event import notify
 
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IBug
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())

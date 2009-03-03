@@ -36,6 +36,8 @@ from zope.interface import implements, providedBy, Interface
 from zope.schema import Bool, Choice
 from zope.security.interfaces import Unauthorized
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
@@ -62,7 +64,6 @@ from canonical.launchpad.webapp import (
     custom_widget, redirection, stepthrough, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.lazr import EnumeratedType, Item
 

@@ -7,7 +7,7 @@ of changes to the bug status:
     >>> from zope.interface import providedBy
     >>> from canonical.launchpad.interfaces import BugTaskStatus, IPersonSet
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bugtask = get_bugtask_linked_to_question()

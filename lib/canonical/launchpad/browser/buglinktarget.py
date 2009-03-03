@@ -14,13 +14,14 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad import _
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (IBugLinkForm, IUnlinkBugsForm)
 
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView)
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.widgets import LabeledMultiCheckBoxWidget

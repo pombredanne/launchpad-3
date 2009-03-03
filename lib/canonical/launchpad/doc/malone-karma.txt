@@ -35,7 +35,7 @@ Create a bug:
 
 Change the title of a bug:
 
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IBug
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.title = "Better Title"

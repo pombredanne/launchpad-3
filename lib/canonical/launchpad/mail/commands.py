@@ -12,6 +12,8 @@ from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.schema import ValidationError
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad.interfaces import (
         BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
         IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
@@ -30,7 +32,6 @@ from canonical.launchpad.mail.helpers import (
     get_error_message, get_person_or_team)
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 def normalize_arguments(string_args):

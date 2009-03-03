@@ -141,7 +141,7 @@ We must use setPrivate:
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import (
     ...     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> old_state = Snapshot(firefox_crashes, providing=IBug)
     >>> firefox_crashes.setPrivate(True, current_user())

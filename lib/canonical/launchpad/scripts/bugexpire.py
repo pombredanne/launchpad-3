@@ -13,6 +13,8 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.config import config
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
@@ -20,7 +22,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class BugJanitor:

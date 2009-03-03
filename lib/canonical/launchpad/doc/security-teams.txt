@@ -220,7 +220,7 @@ contact for thunderbird to see how this works.
     >>> from zope.event import notify
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IUpstreamBugTask
 
     >>> old_state = Snapshot(bug_in_evolution, providing=IUpstreamBugTask)

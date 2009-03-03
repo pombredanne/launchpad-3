@@ -24,12 +24,13 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.browser import (
     CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
     IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.menu import escape
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.event import SQLObjectModifiedEvent
 
 

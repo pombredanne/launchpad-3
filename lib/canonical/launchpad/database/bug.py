@@ -31,6 +31,8 @@ from sqlobject import SQLObjectNotFound
 from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
 from storm.store import Store
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -90,7 +92,6 @@ from canonical.launchpad.event.sqlobjectevent import (
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 # XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested

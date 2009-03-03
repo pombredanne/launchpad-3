@@ -117,7 +117,7 @@ when a subscriber to the new package is already subscribed to the bug:
 
     >>> import transaction
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> from canonical.launchpad.mail import stub
 

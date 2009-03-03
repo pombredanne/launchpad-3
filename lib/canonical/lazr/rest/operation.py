@@ -13,9 +13,10 @@ from zope.schema.interfaces import (
     IField, RequiredMissing, ValidationError, WrongType)
 from zope.security.proxy import isinstance as zope_isinstance
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.lazr.interfaces import (
     ICollection, IFieldMarshaller, IResourceGETOperation,

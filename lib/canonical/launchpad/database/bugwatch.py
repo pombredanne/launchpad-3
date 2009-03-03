@@ -19,6 +19,8 @@ from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
 from storm.expr import Not
 from storm.store import Store
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -34,7 +36,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend, urlsplit
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
 
 

@@ -214,7 +214,7 @@ task Fixed, and assigns himself to it.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BugTaskStatus, IDistroBugTask)
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> bugtask_before_modification = Snapshot(
     ...     firefox_crashes_in_debian, providing=IDistroBugTask)
@@ -342,7 +342,7 @@ this document:
 
 When a bug is marked as a duplicate, its subscribers are notified.
 
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> bug_two_unmodified = Snapshot(bug_two, providing=IBug)

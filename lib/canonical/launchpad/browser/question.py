@@ -40,6 +40,8 @@ from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 import zope.security
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
@@ -61,7 +63,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets import LaunchpadRadioWidget, TokensTextWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget

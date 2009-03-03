@@ -62,6 +62,8 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
@@ -121,7 +123,6 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
