@@ -17,7 +17,7 @@ import os
 import shutil
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
+from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.osutils import pumpfile
@@ -59,7 +59,8 @@ class BazaarBranchStore:
         try:
             bzr_dir = BzrDir.open(self._getMirrorURL(db_branch_id))
         except NotBranchError:
-            return BzrDir.create_standalone_workingtree(target_path)
+            return BzrDir.create_standalone_workingtree(
+                target_path, format_registry.get('1.9-rich-root')())
         bzr_dir.sprout(target_path)
         return BzrDir.open(target_path).open_workingtree()
 
@@ -71,7 +72,8 @@ class BazaarBranchStore:
         try:
             branch_to = Branch.open(target_url)
         except NotBranchError:
-            branch_to = BzrDir.create_branch_and_repo(target_url)
+            branch_to = BzrDir.create_branch_and_repo(
+                target_url, format=format_registry.get('1.9-rich-root')())
         branch_to.pull(branch_from)
 
 
@@ -412,4 +414,8 @@ class CSCVSImportWorker(ImportWorker):
 
 
 class GitImportWorker(ImportWorker):
-    pass
+    def _doImport(self):
+        bazaar_tree = self.getBazaarWorkingTree()
+        bazaar_tree.branch.pull(Branch.open(self.source_details.git_repo_url))
+        self.bazaar_branch_store.push(
+            self.source_details.branch_id, bazaar_tree)

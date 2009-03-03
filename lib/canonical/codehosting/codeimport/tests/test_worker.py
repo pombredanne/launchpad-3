@@ -14,6 +14,7 @@ import unittest
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NoSuchFile
+from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
 from bzrlib.urlutils import local_path_to_url
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
@@ -471,8 +472,11 @@ class TestActualImportMixin:
         # tests subclass bzrlib's TestCaseInTempdir, so the directory will be
         # restored at the end of the test.
         os.chdir(tree_dir)
-        foreign_tree = worker.foreign_tree_store.fetch(
-            worker.source_details, tree_dir)
+        if getattr(worker, 'foreign_tree_store', None) is not None:
+            foreign_tree = worker.foreign_tree_store.fetch(
+                worker.source_details, tree_dir)
+        else:
+            foreign_tree = None
         self.commitInForeignTree(foreign_tree)
 
         # Run the same worker again.
@@ -598,31 +602,22 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
 
     def commitInForeignTree(self, foreign_tree):
         """Change the foreign tree, generating exactly one commit."""
-        svn_url = foreign_tree.remote_url
-        client = pysvn.Client()
-        client.checkout(svn_url, 'working_tree')
-        file = open('working_tree/newfile', 'w')
-        file.write('No real content\n')
-        file.close()
-        client.add('working_tree/newfile')
-        client.checkin('working_tree', 'Add a file', recurse=True)
-        shutil.rmtree('working_tree')
+        builder = GitBranchBuilder()
+        builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
+        builder.finish()
 
     def makeSourceDetails(self, repository_path, branch_name, files):
         """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
         """
-        from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
         os.mkdir("gitbranch")
         os.chdir("gitbranch")
         run_git('init')
         builder = GitBranchBuilder()
-        print files
         for filename, contents in files:
             builder.set_file(filename, contents, False)
         builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
+        builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
         builder.finish()
-
-        print repr(local_path_to_url('.'))
 
         return self.factory.makeCodeImportSourceDetails(
             rcstype='git', git_repo_url=local_path_to_url('.'))
