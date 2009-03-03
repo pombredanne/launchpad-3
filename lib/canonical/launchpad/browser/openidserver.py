@@ -39,8 +39,8 @@ from canonical.launchpad.components.openidserver import (
 from canonical.launchpad.interfaces.account import IAccountSet, AccountStatus
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, PersonVisibility)
-from canonical.launchpad.interfaces.logintoken import (
-    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, IOpenIDAuthorizationSet, IOpenIDRPConfigSet,
@@ -713,8 +713,8 @@ class LoginServiceLoginView(LoginServiceBaseView):
                     "confirmed. We sent an email to that address with "
                     "instructions on how to confirm that it belongs to you.",
                     mapping=dict(email=email)))
-                self.token = getUtility(ILoginTokenSet).new(
-                    person, email, email, LoginTokenType.VALIDATEEMAIL)
+                self.token = getUtility(IAuthTokenSet).new(
+                    person.account, email, email, LoginTokenType.VALIDATEEMAIL)
                 self.token.sendEmailValidationRequest(
                     self.request.getApplicationURL())
                 self.saveRequestInSession('token' + self.token.token)
@@ -748,11 +748,11 @@ class LoginServiceLoginView(LoginServiceBaseView):
             raise UnexpectedFormData("Unknown action.")
 
     def process_registration(self, email):
-        logintokenset = getUtility(ILoginTokenSet)
-        self.token = logintokenset.new(
+        authtokenset = getUtility(IAuthTokenSet)
+        self.token = authtokenset.new(
             requester=None, requesteremail=None, email=email,
             tokentype=LoginTokenType.NEWACCOUNT)
-        self.token.sendNewUserNeutralEmail()
+        self.token.sendNewUserEmail()
         self.saveRequestInSession('token' + self.token.token)
         self.email_heading = 'Registration mail sent'
         self.email_reason = 'to confirm your address.'
@@ -764,10 +764,10 @@ class LoginServiceLoginView(LoginServiceBaseView):
         # personless accounts.  The correct fix is to use AuthToken, which
         # takes an account rather than a person.
         person = None
-        logintokenset = getUtility(ILoginTokenSet)
-        self.token = logintokenset.new(
+        authtokenset = getUtility(IAuthTokenSet)
+        self.token = authtokenset.new(
             person, email, email, LoginTokenType.PASSWORDRECOVERY)
-        self.token.sendPasswordResetNeutralEmail()
+        self.token.sendPasswordResetEmail()
         self.saveRequestInSession('token' + self.token.token)
         self.email_heading = 'Forgotten your password?'
         self.email_reason = 'with instructions on resetting your password.'

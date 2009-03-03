@@ -71,6 +71,13 @@
         classes="AuthTokenSetNavigation"
         />
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IAuthTokenSet"
+        path_expression="string:token"
+        parent_utility="canonical.launchpad.interfaces.IOpenIDApplication"
+        />
+
+
 </facet>
 
 </configure>

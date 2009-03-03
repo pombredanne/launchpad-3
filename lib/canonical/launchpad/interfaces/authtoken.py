@@ -222,7 +222,7 @@ class IAuthTokenSet(Interface):
         """Delete all AuthToken entries with the given email, requester and
         type."""
 
-    def new(requester, requesteremail, email, tokentype, fingerprint=None,
+    def new(requester, requesteremail, email, tokentype,
             redirection_url=None):
         """Create a new AuthToken object. Parameters must be:
         requester: a Person object or None (in case of a new account)

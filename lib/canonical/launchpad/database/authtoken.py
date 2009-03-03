@@ -14,6 +14,7 @@ from storm.base import Storm
 from storm.expr import And
 from storm.properties import Int, Unicode, DateTime
 from storm.references import Proxy, Reference
+from storm.store import Store
 
 from canonical.config import config
 
@@ -37,6 +38,18 @@ class AuthToken(Storm):
     implements(IAuthToken)
     __storm_table__ = 'authtoken'
 
+    def __init__(self, account, requesteremail, email, tokentype,
+                 redirection_url=None):
+        self.requester_account = account
+        self.requesteremail = requesteremail
+        self.email = email
+
+        self.tokentype = tokentype
+        characters = u'0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
+        length = 20
+        self.token = u''.join(
+            [random.choice(characters) for count in range(length)])
+        self.redirection_url = redirection_url
     id = Int(primary=True)
 
     date_created = DateTime(tzinfo=pytz.utc)
@@ -44,7 +57,7 @@ class AuthToken(Storm):
     tokentype = DBEnum('token_type', enum=LoginTokenType, allow_none=False)
     token = Unicode(allow_none=False)
 
-    requester_id = Int('requester_id')
+    requester_id = Int('requester')
     requester_account = Reference(
         requester_id, 'canonical.launchpad.database.account.Account.id')
     requester = Proxy(
@@ -65,7 +78,8 @@ class AuthToken(Storm):
         result = Store.of(self).find(
             AuthToken, email=self.email, tokentype=self.tokentype,
             requester_id=self.requester_id, date_consumed=None)
-        result.set(date_consumed=UTC_NOW)
+        for token in result:
+            token.date_consumed = UTC_NOW
 
     def _send_email(self, from_name, subject, message, headers=None):
         """Send an email to this token's email address."""
@@ -147,7 +161,7 @@ class AuthTokenSet:
         self.searchByEmailRequesterAndType(email, requester, type).delete()
 
     def new(self, requester, requesteremail, email, tokentype,
-            fingerprint=None, redirection_url=None):
+            redirection_url=None):
         """See IAuthTokenSet."""
         assert valid_email(email)
         if tokentype not in [LoginTokenType.PASSWORDRECOVERY,
@@ -158,15 +172,9 @@ class AuthTokenSet:
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
 
-        characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
-        length = 20
-        token = ''.join(
-            [random.choice(characters) for count in range(length)])
-        reqid = getattr(requester, 'id', None)
-        token = AuthToken(requester_account=requester,
+        token = AuthToken(account=requester,
                           requesteremail=requesteremail,
-                          email=email, token=token, tokentype=tokentype,
-                          created=UTC_NOW, fingerprint=fingerprint,
+                          email=email, tokentype=tokentype,
                           redirection_url=redirection_url)
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
