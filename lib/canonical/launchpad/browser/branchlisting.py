@@ -1166,14 +1166,14 @@ class ProjectBranchesView(BranchListingView):
 
 class SourcePackageBranchesView(BranchListingView):
 
-    # XXX: "By most interesting" search doesn't work at all
-
     # XXX: JonathanLange 2009-03-03 spec=package-branches: This page has no
     # menu yet -- do we need one?
 
     # XXX: JonathanLange 2009-03-03 spec=package-branches: Add a link to
     # register a branch. This requires there to be a package branch
     # registration page.
+
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
 
     @cachedproperty
     def branch_count(self):
