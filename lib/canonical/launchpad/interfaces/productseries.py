@@ -123,18 +123,26 @@ class RevisionControlSystems(DBEnumeratedType):
 
     CVS = DBItem(1, """
         Concurrent Versions System
+
+        blah
         """)
 
     SVN = DBItem(2, """
         Subversion
+
+        blah
         """)
 
     BZR_SVN = DBItem(3, """
         Subversion via bzr-svn
+
+        blah
         """)
 
     GIT = DBItem(4, """
         Git
+
+        blah
         """)
 
 
