@@ -21,6 +21,7 @@ from zope.component import getUtility
 from zope.publisher.interfaces import BadRequest
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.security import management
+from zope.security.proxy import removeSecurityProxy
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.extensions import pape
@@ -250,6 +251,7 @@ class OpenIDMixin:
         """
         assert self.account is not None, (
             'Must be logged in to calculate sreg items')
+
         # Collect registration values
         values = {}
         values['fullname'] = self.account.displayname

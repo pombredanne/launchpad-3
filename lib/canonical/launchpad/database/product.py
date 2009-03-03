@@ -966,7 +966,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         store = Store.of(self)
         return store.find(
             BugWatch,
-            And(self == BugTask.product,
+            And(BugTask.product == self.id,
                 BugTask.bugwatch == BugWatch.id,
                 BugWatch.bugtracker == self.getExternalBugTracker()))
 
