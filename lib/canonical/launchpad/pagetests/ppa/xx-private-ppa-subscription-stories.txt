@@ -134,8 +134,7 @@ And a notification about the new subscriber is also displayed.
 
 Given a subscription for Celso's private PPA
 
-When Joe visits his profile (Chat with beuno)
-And clicks on the 'Private software subscriptions' link
+When Joe visits his private archive subscriptions page:
 
     >>> joe_browser = setupBrowser(auth="Basic joe@example.com:test")
     >>> joe_browser.open(
