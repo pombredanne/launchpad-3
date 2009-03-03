@@ -123,30 +123,18 @@ class RevisionControlSystems(DBEnumeratedType):
 
     CVS = DBItem(1, """
         Concurrent Versions System
-
-        The Concurrent Version System is very widely used among
-        older open source projects, it was the first widespread
-        open source version control system in use.
         """)
 
     SVN = DBItem(2, """
         Subversion
-
-        Subversion aims to address some of the shortcomings in
-        CVS, but retains the central server bottleneck inherent
-        in the CVS design.
         """)
 
     BZR_SVN = DBItem(3, """
         Subversion via bzr-svn
-
-        XXX.
         """)
 
     GIT = DBItem(4, """
         Git
-
-        XXX.
         """)
 
 

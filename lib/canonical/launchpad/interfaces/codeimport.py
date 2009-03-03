@@ -118,7 +118,8 @@ class ICodeImport(Interface):
 
     git_repo_url = URIField(title=_("Git URL"), required=False,
         description=_(
-            "XXX."),
+            "The URL of the git repository.  The MASTER branch will be "
+            "imported."),
         allowed_schemes=["git"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
