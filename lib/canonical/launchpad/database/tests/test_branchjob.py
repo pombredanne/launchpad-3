@@ -11,7 +11,9 @@ from sqlobject import SQLObjectNotFound
 import transaction
 
 from canonical.launchpad.database.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, RevisionMailJob)
+    BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
+    RevisionMailJob)
+from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.interfaces import (
@@ -232,6 +234,46 @@ class TestRevisionMailJob(TestCaseWithFactory):
         job.job.start()
         job.job.complete()
         self.assertEqual([], list(RevisionMailJob.iterReady()))
+
+
+class TestRevisionsAddedJob(TestCaseWithFactory):
+    """Tests for RevisionsAddedJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_create(self):
+        branch = self.factory.makeBranch()
+        job = RevisionsAddedJob.create(branch, 'rev1', 'rev2')
+        self.assertEqual('rev1', job.last_scanned_id)
+        self.assertEqual('rev2', job.last_revision_id)
+        self.assertEqual(branch, job.branch)
+
+    def updateDBRevisions(self, branch, bzr_branch, revision_ids):
+        for bzr_revision in bzr_branch.repository.get_revisions(revision_ids):
+            revision = RevisionSet().newFromBazaarRevision(bzr_revision)
+            revno = bzr_branch.revision_id_to_revno(revision.revision_id)
+            branch.createBranchRevision(revno, revision)
+
+
+    def test_iterAddedMainline(self):
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.lock_write()
+        try:
+            tree.commit('rev1', rev_id='rev1')
+            tree.commit('rev2', rev_id='rev2')
+            tree.commit('rev3', rev_id='rev3')
+            import transaction; transaction.commit()
+            self.layer.switchDbUser('branchscanner')
+            self.updateDBRevisions(
+                branch, tree.branch, ['rev1', 'rev2', 'rev3'])
+        finally:
+            tree.unlock()
+        job = RevisionsAddedJob.create(branch, 'rev1', 'rev2')
+        job.bzr_branch.lock_write()
+        self.addCleanup(job.bzr_branch.unlock)
+        [(revision, info)] = list(job.iterAddedMainline())
+        self.assertEqual(2, info.revno)
 
 
 def test_suite():

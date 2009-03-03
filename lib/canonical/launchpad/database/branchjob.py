@@ -1,7 +1,8 @@
 # Copyright 2004-2005, 2009 Canonical Ltd.  All rights reserved.
 __all__ = [
-    'RevisionMailJob',
     'BranchJob',
+    'RevisionsAddedJob'
+    'RevisionMailJob',
 ]
 
 from bzrlib.revisionspec import RevisionSpec
@@ -39,6 +40,12 @@ class BranchJobType(DBEnumeratedType):
         Revision Mail
 
         This job runs against a branch to send emails about revisions.
+        """)
+
+    REVISIONS_ADDED_MAIL = DBItem(2, """
+        Revisions Added Mail
+
+        This job runs against a branch to send emails about added revisions.
         """)
 
 
@@ -80,17 +87,20 @@ class BranchJob(SQLBase):
         self.job.destroySelf()
 
 
-class BranchDiffJob(object):
-    """A Job that calculates the a diff related to a Branch."""
-
-    implements(IBranchDiffJob)
-
-    classProvides(IBranchDiffJobSource)
+class BranchJobDerived(object):
 
     delegates(IBranchJob)
 
     def __init__(self, branch_job):
         self.context = branch_job
+
+
+class BranchDiffJob(BranchJobDerived):
+    """A Job that calculates the a diff related to a Branch."""
+
+    implements(IBranchDiffJob)
+
+    classProvides(IBranchDiffJobSource)
 
     @classmethod
     def create(klass, branch, from_revision_spec, to_revision_spec):
@@ -216,24 +226,55 @@ class RevisionMailJob(BranchDiffJob):
         self.getMailer().sendAll()
 
 
-class RevisionsAddedJob(BranchJob):
+class RevisionsAddedJob(BranchJobDerived):
 
     @classmethod
     def create(klass, branch, last_scanned_id, last_revision_id):
-        metadata = {'last_scanned_id': last_revision_id}
+        metadata = {'last_scanned_id': last_scanned_id,
+                    'last_revision_id': last_revision_id}
+        branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
+        return RevisionsAddedJob(branch_job)
 
-    @staticmethod
-    def iter_revision_revno(bzr_branch, branch_revisions):
+    def __init__(self, context):
+        super(RevisionsAddedJob, self).__init__(context)
+        self._bzr_branch = None
+
+    @property
+    def bzr_branch(self):
+        if self._bzr_branch is None:
+            self._bzr_branch = self.branch.getBzrBranch()
+        return self._bzr_branch
+
+    @property
+    def last_scanned_id(self):
+        return self.metadata['last_scanned_id']
+
+    @property
+    def last_revision_id(self):
+        return self.metadata['last_revision_id']
+
+    def iterAddedMainline(self):
+        """Iterate through revisions added to the mainline."""
+        graph = self.bzr_branch.repository.get_graph()
+        added_revisions = graph.find_difference(
+            self.last_scanned_id, self.last_revision_id)[1]
+        branch_revisions = self.branch.getMainlineBranchRevisions(
+            added_revisions)
         for branch_revisions_chunk in iter_list_chunks(
             list(branch_revisions), 1000):
             revision_ids = [branch_revision.revision.revision_id
                 for branch_revision in branch_revisions_chunk]
-            revisions = bzr_branch.repository.get_revisions(revision_ids)
+            revisions = self.bzr_branch.repository.get_revisions(revision_ids)
             for revision, branch_revision in zip(
                 revisions, branch_revisions_chunk):
-                yield revision, branch_revision.sequence
+                if (self.bzr_branch.get_rev_id(branch_revision.sequence) !=
+                    branch_revision.revision.revision_id):
+                    continue
+                info = RevisionInfo.from_revision_id(revision.revision_id,
+                    branch_revision.sequence)
+                yield revision, info
 
-    def run()
+    def run(self):
         diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
                        BranchSubscriptionNotificationLevel.FULL)
         subscriptions = self.db_branch.getSubscriptionsByLevel(diff_levels)
@@ -247,25 +288,18 @@ class RevisionsAddedJob(BranchJob):
         else:
             generate_diffs = False
 
-        bzr_branch = self.branch.getBzrBranch()
-        bzr_branch.lock_read()
+        self.bzr_branch.lock_read()
         try:
-            graph = bzr_branch.repository.get_graph()
-            added_revisions = graph.find_difference
-                (last_scanned_id, last_revision_id)[1]
-            branch_revisions = self.branch.getMainlineBranchRevisions(
-                added_revisions)
-            for revision, revno in self.iter_revision_revno(branch_revisions):
-                assert revno is not None
+            for revision, info in self.iterAddedMainline():
+                assert info.revno is not None
                 mailer = self.getMailerForRevision(
-                    bzr_branch, revision, revno, generate_diffs)
+                    revision, info, generate_diffs)
                 mailer.sendAll()
         finally:
-            bzr_branch.unlock()
+            self.bzr_branch.unlock()
 
-    def getMailerForRevision(self, bzr_branch, revision, revno,
-                             generate_diffs):
-        message = get_revision_message(bzr_branch, revision, revno)
+    def getMailerForRevision(self, revision, info, generate_diffs):
+        message = get_revision_message(info)
         # Use the first (non blank) line of the commit message
         # as part of the subject, limiting it to 100 characters
         # if it is longer.
@@ -280,14 +314,14 @@ class RevisionsAddedJob(BranchJob):
                 offset = SUBJECT_COMMIT_MESSAGE_LENGTH - 3
                 first_line = first_line[:offset] + '...'
         subject = '[Branch %s] Rev %s: %s' % (
-            self.db_branch.unique_name, revno, first_line)
+            self.branch.unique_name, info.revno, first_line)
         if generate_diffs:
             if revision.parent_ids > 0:
                 parent_id = revision.parents_ids[0]
             else:
                 parent_id = NULL_REVISION
             diff = StaticDiff.acquire(parent_id, revision.revision_id,
-                                      bzr_branch.repository)
+                                      info.branch.repository)
             transaction.commit()
             diff_text = diff.diff.text
         else:
@@ -296,20 +330,26 @@ class RevisionsAddedJob(BranchJob):
             self.branch, revno, self.from_address, message, diff_text,
             subject)
 
+    @staticmethod
+    def get_revision_message(info):
+        """Return the log message for this RevisionInfo
 
-def get_revision_message(bzr_branch, bzr_revision, revno):
-    """Return the log message for `bzr_revision` on `bzr_branch`.
+        :return: The log message entered for this revision.
+        """
+        outf = StringIO()
+        lf = log_formatter('long', to_file=outf)
+        show_log(info.bzr_branch,
+                 lf,
+                 start_revision=info,
+                 end_revision=info,
+                 verbose=True)
+        return outf.getvalue()
 
-    :param bzr_branch: A `bzrlib.branch.Branch` object.
-    :param bzr_revision: A Bazaar `Revision` object.
-    :return: The commit message entered for `bzr_revision`.
+
+def iter_list_chunks(a_list, size):
+    """Iterate over `a_list` in chunks of size `size`.
+
+    I'm amazed this isn't in itertools (mwhudson).
     """
-    outf = StringIO()
-    lf = log_formatter('long', to_file=outf)
-    rev_id = bzr_revision.revision_id
-    show_log(bzr_branch,
-             lf,
-             start_revision=revno,
-             end_revision=revno,
-             verbose=True)
-    return outf.getvalue()
+    for i in range(0, len(a_list), size):
+        yield a_list[i:i+size]

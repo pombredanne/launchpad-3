@@ -40,8 +40,7 @@ from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.codehosting.jobs import JobRunner
 from canonical.codehosting.scanner.bzrsync import (
-    BranchMergeDetectionHandler, BzrSync, get_revision_message,
-    InvalidStackedBranchURL)
+    BranchMergeDetectionHandler, BzrSync, InvalidStackedBranchURL)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
 

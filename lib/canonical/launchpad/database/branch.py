@@ -564,7 +564,7 @@ class Branch(SQLBase):
         return Store.of(self).find(
             BranchRevision,
             BranchRevision.branch == self,
-            BranchRevision.sequence != None
+            BranchRevision.sequence != None,
             BranchRevision.revision == Revision.id,
             Revision.revision_id.is_in(revision_ids))
 

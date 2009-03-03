@@ -223,18 +223,6 @@ class BranchMailer:
                 body=contents, perform_diff=False, subject=None)
             self.pending_emails.append(job)
 
-    def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
-        """Generate an email for a revision for later sending.
-
-        :param bzr_branch: The branch being scanned.
-        :param bzr_revision: The revision that we are sending the email about.
-            This is assumed to be in the main-line history of the branch. (Not
-            just the ancestry).
-        :param sequence: The revision number of `bzr_revision`.
-        """
-        if (not self.initial_scan
-            and self.subscribers_want_notification):
-
     def sendRevisionNotificationEmails(self, bzr_history):
         """Send out the pending emails.
 
@@ -340,13 +328,6 @@ class WarehouseBranchPolicy(BranchPolicy):
         return urlutils.join(branch.base, url), True
 
 
-def iter_list_chunks(a_list, size):
-    """Iterate over `a_list` in chunks of size `size`.
-
-    I'm amazed this isn't in itertools (mwhudson).
-    """
-    for i in range(0, len(a_list), size):
-        yield a_list[i:i+size]
 
 
 class BzrSync:
