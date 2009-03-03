@@ -116,22 +116,31 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         """Process any POSTed subscription activations."""
         super(PersonArchiveSubscriptionsView, self).initialize()
 
-        # We only need to do more if the request was POSTed:
-        if self.request.method != "POST":
-            return
+        if self.request.method == "POST":
+            self.processSubscriptionActivation()
 
-        # Just for clarity:
-        def rediretToSelf():
+    def processSubscriptionActivation(self):
+        """Process any posted data that activates a subscription."""
+        # Just for clarity, define a redirectToSelf() helper.
+        def redirectToSelf():
             self.request.response.redirect(self.request.getURL())
 
+        # NOTE: as there isn't any form input to validate, but just simple
+        # buttons, any bad data here should only be the result of either
+        # (1) users fiddling with form post data, or (2) timing issues between
+        # subscription expiries/cancellations and activations, so in all
+        # cases below, we just redirect to a normal GET request in the event
+        # of bad data.
+
+        # Check first for a valid archive_id in the post data - if none
+        # is found simply redirect to a normal GET request.
         archive_id = self.request.form.get('archive_id')
         if archive_id is None or type(archive_id) != int:
-            # There is no input validation as it's a simple button,
-            # so just continue normally.
             redirectToSelf()
             return
 
-        # Grab the corresponding archive:
+        # Next, try to grab the corresponding archive. Again, if none
+        # is found, redirect to a normal GET request.
         try:
             archive = getUtility(IArchiveSet).get(
                 self.request.form["archive_id"])
@@ -145,35 +154,33 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         # particular archive, as well as any token that already
         # exists:
         sub_set = getUtility(IArchiveSubscriberSet)
-        subscriptions_with_token = sub_set.getBySubscriber(
+        subscriptions_with_token = sub_set.getBySubscriberWithTokens(
             self.context,
-            archive=archive,
-            return_tokens=True
-        )
+            archive=archive)
 
         if subscriptions_with_token.count() == 0:
-            # The user does not have a subscription, so no token.
-            rediretToSelf() # Return an Unauthorized instead?
+            # The user does not have a current subscription, so no token.
+            rediretToSelf()
             return
 
         # Note: there may be multiple subscriptions for a user (through
         # teams), but there should only ever be one token generated.
         subscription, token = subscriptions_with_token[0]
-        if token:
-            # Generate a new token and notify the user.
-            # TODO:
-            pass
-        else:
+        if token is None:
             token = archive.newAuthToken(self.context)
             # Message the user and redirect:
+            self.request.response.addNotification(structured(
+                "Your subscription to '%s' has been activated. "
+                "Please update your private_ppa_sources.list as "
+                "displayed below." % archive.title))
             redirectToSelf()
 
     @property
     def subscriptions_with_tokens(self):
         """Return all the persons archive subscriptions with the token
         for each."""
-        return getUtility(IArchiveSubscriberSet).getBySubscriber(
-            self.context, return_tokens=True)
+        return getUtility(IArchiveSubscriberSet).getBySubscriberWithTokens(
+            self.context)
 
     @cachedproperty
     def has_subscriptions(self):

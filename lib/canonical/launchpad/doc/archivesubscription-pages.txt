@@ -193,10 +193,67 @@ generate a token for that archive:
     >>> view = create_initialized_view(
     ...     spiv,
     ...     name="+archivesubscriptions",
+    ...     server_url=
+    ...         "https://launchpad.dev/~cprov/+archivesubscriptions",
     ...     method="post",
     ...     form={"archive_id": sabdfl.archive.id})
+
+The view redirects to itself after activating the subscription:
+
+    >>> view.request.response.getStatus()
+    302
+    >>> print view.request.response.getHeader('location')
+    https://launchpad.dev/~cprov/+archivesubscriptions
+
+And the subscription has been activated:
 
     >>> print_subscriptions_with_tokens()
     Private PPA for Mark Shuttleworth       spiv's still my friend   Token
     Private PPA for Celso Providelo         spiv's my friend         None
+
+The user will also see a notification of the subscription activation:
+
+    >>> for notification in view.request.notifications:
+    ...     print notification.message
+    Your subscription to 'Private PPA for Mark Shuttleworth' has been
+    activated. Please update your private_ppa_sources.list as displayed
+    below.
+
+If a user fiddles with the POST data and sends a bad archive_id or an
+archive_id corresponding to an archive to which the user is not subscribed
+then the view simply redirects to a GET request without doing anything:
+
+To ensure no tokens have been created, we'll count the number of tokens
+before and after the bad requests:
+
+    >>> from storm.store import Store
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> store = Store.of(ubuntu)
+    >>> from canonical.launchpad.database.archiveauthtoken import (
+    ...     ArchiveAuthToken)
+    >>> store.find(ArchiveAuthToken).count()
+    1
+
+Now do the bad requests, ensuring a 302 is issued each time:
+
+    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
+    ...     method="post", form={"archive_id": "abcd"})
+    >>> view.request.response.getStatus()
+    302
+    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
+    ...     method="post", form={"archive_id": "99999"})
+    >>> view.request.response.getStatus()
+    302
+    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
+    ...     method="post", form={"archive_id": str(ubuntu.main_archive.id)})
+    >>> view.request.response.getStatus()
+    302
+
+After all the bad requests, the number of tokens in the database should
+remain unchange:
+
+    >>> store.find(ArchiveAuthToken).count()
+    1
 
