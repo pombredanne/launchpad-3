@@ -119,6 +119,21 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         if self.request.method == "POST":
             self.processSubscriptionActivation()
 
+    @property
+    def subscriptions_with_tokens(self):
+        """Return all the persons archive subscriptions with the token
+        for each."""
+        return getUtility(IArchiveSubscriberSet).getBySubscriberWithTokens(
+            self.context)
+
+    @cachedproperty
+    def has_subscriptions(self):
+        """Return whether this person has any subscriptions."""
+        # XXX noodles 20090224 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return getUtility(IArchiveSubscriberSet).getBySubscriber(
+            self.context).count() > 0
+
     def processSubscriptionActivation(self):
         """Process any posted data that activates a subscription."""
         # Just for clarity, define a redirectToSelf() helper.
@@ -175,18 +190,4 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
                 "displayed below." % archive.title))
             redirectToSelf()
 
-    @property
-    def subscriptions_with_tokens(self):
-        """Return all the persons archive subscriptions with the token
-        for each."""
-        return getUtility(IArchiveSubscriberSet).getBySubscriberWithTokens(
-            self.context)
-
-    @cachedproperty
-    def has_subscriptions(self):
-        """Return whether this person has any subscriptions."""
-        # XXX noodles 20090224 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return getUtility(IArchiveSubscriberSet).getBySubscriber(
-            self.context).count() > 0
 

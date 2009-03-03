@@ -243,6 +243,10 @@ Now do the bad requests, ensuring a 302 is issued each time:
     >>> view.request.response.getStatus()
     302
     >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
+    ...     method="post", form={"archive_wrong": "abcd"})
+    >>> view.request.response.getStatus()
+    302
+    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
     ...     method="post", form={"archive_id": "99999"})
     >>> view.request.response.getStatus()
     302
