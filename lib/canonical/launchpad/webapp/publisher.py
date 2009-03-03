@@ -36,6 +36,7 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.security.checker import ProxyFactory, NamesChecker
+from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.layers import (
@@ -382,6 +383,30 @@ def canonical_url_iterator(obj):
     for urldata in canonical_urldata_iterator(obj):
         if urldata.inside is not None:
             yield urldata.inside
+
+
+class CanonicalAbsoluteURL:
+    """A bridge between Zope's IAbsoluteURL and Launchpad's canonical_url."""
+    implements(IAbsoluteURL)
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __unicode__():
+        """Returns the URL as a unicode string."""
+        raise NotImplementedError()
+
+    def __str__():
+        """Returns an ASCII string with all unicode characters url quoted."""
+        raise NotImplementedError()
+
+    def __repr__():
+        """Get a string representation """
+        raise NotImplementedError()
+
+    def __call__(self):
+        return canonical_url(self.context, self.request)
 
 
 def canonical_url(

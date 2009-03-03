@@ -25,6 +25,13 @@
     </class>
 
     <adapter
+        for="zope.interface.Interface
+             zope.publisher.interfaces.http.IHTTPRequest"
+        provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+        factory="canonical.launchpad.webapp.publisher.CanonicalAbsoluteURL"
+        />
+
+    <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
