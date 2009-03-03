@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Login token interfaces."""
@@ -171,14 +171,6 @@ class IAuthToken(Interface):
         as consumed.
         """
 
-    def destroySelf():
-        """Remove this LoginToken from the database.
-
-        We need this because once the token is used (either when registering a
-        new user, validating an email address or reseting a password), we have
-        to delete it so nobody can use that token again.
-        """
-
     def sendEmailValidationRequest(appurl):
         """Send an email message with a magic URL to validate self.email."""
 
@@ -204,11 +196,11 @@ class IAuthTokenSet(Interface):
         Return the default value if there's no such AuthToken.
         """
 
-    def searchByEmailRequesterAndType(email, requester, type, consumed=None):
-        """Return all AuthTokens for the given email, requester and type.
+    def searchByEmailAccountAndType(email, account, type, consumed=None):
+        """Return all AuthTokens for the given email, account and type.
 
         :param email: The email address to search for.
-        :param requester: The Account object representing the requester
+        :param account: The Account object representing the requester
             to search for.
         :param type: The AuthTokenType to search for.
         :param consumed: A flag indicating whether to return consumed tokens.
@@ -218,9 +210,9 @@ class IAuthTokenSet(Interface):
             returned.
         """
 
-    def deleteByEmailRequesterAndType(email, requester, type):
-        """Delete all AuthToken entries with the given email, requester and
-        type."""
+    def deleteByEmailAccountAndType(email, account, type):
+        """Delete all AuthToken entries with the given email,
+        requester account and type."""
 
     def new(requester, requesteremail, email, tokentype,
             redirection_url=None):

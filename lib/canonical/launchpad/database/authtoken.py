@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -135,12 +135,11 @@ class AuthTokenSet:
             return default
         return token
 
-    def searchByEmailRequesterAndType(self, email, requester, type,
-                                      consumed=None):
+    def searchByEmailAccountAndType(self, email, account, type, consumed=None):
         """See IAuthTokenSet."""
         conditions = [
             AuthToken.email == email,
-            AuthToken.requester_account == requester,
+            AuthToken.requester_account == account,
             AuthToken.tokentype == type
             ]
 
@@ -158,9 +157,9 @@ class AuthTokenSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         return store.find(AuthToken, *conditions)
 
-    def deleteByEmailRequesterAndType(self, email, requester, type):
+    def deleteByEmailAccountAndType(self, email, account, type):
         """See IAuthTokenSet."""
-        self.searchByEmailRequesterAndType(email, requester, type).delete()
+        self.searchByEmailRequesterAndType(email, account, type).delete()
 
     def new(self, requester, requesteremail, email, tokentype,
             redirection_url=None):

@@ -30,6 +30,14 @@ class ILoginToken(IAuthToken):
         required=False,
         )
 
+    def destroySelf():
+        """Remove this LoginToken from the database.
+
+        We need this because once the token is used (either when registering a
+        new user, validating an email address or reseting a password), we have
+        to delete it so nobody can use that token again.
+        """
+
     def sendGPGValidationRequest(key):
         """Send an email message with a magic URL to confirm the OpenPGP key.
         If fingerprint is set, send the message encrypted.
