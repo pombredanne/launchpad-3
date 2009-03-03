@@ -10,9 +10,14 @@ __metaclass__ = type
 __all__ = [
     'IAllBranches',
     'IBranchCollection',
+    'InvalidFilter',
     ]
 
 from zope.interface import Interface
+
+
+class InvalidFilter(Exception):
+    """Raised when an `IBranchCollection` cannot apply the given filter."""
 
 
 class IBranchCollection(Interface):

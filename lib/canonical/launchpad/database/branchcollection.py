@@ -26,7 +26,8 @@ from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.branch import (
     IBranchSet, user_has_special_branch_access)
-from canonical.launchpad.interfaces.branchcollection import IBranchCollection
+from canonical.launchpad.interfaces.branchcollection import (
+    IBranchCollection, InvalidFilter)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -103,8 +104,9 @@ class GenericBranchCollection:
 
     def _getBranchIdQuery(self):
         """Return a Storm 'Select' for the branch IDs in this collection."""
-        # getBranches() returns a decorated set, so we get at the underlying
-        # set so we can get at the private and juicy _get_select.
+        # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
+        # decorated set, so we get at the underlying set so we can get at the
+        # private and juicy _get_select.
         select = self.getBranches().result_set._get_select()
         select.columns = (Branch.id,)
         return select
@@ -306,3 +308,11 @@ class VisibleBranchCollection(GenericBranchCollection):
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
         return self.store.find(BranchMergeProposal, expressions)
+
+    def visibleByUser(self, person):
+        """See `IBranchCollection`."""
+        if person == self._user:
+            return self
+        raise InvalidFilter(
+            "Cannot filter for branches visible by user %r, already "
+            "filtering for %r" % (person, self._user))
