@@ -162,14 +162,18 @@ private archives:
     >>> view = create_initialized_view(sabdfl, name="+archivesubscriptions")
     >>> view.has_subscriptions
     False
+    >>> view.has_active_subscriptions
+    False
 
-But spiv is subscribed to a number of archives:
+But spiv is subscribed to a number of archives, but none have been activated:
 
     >>> spiv = getUtility(IPersonSet).getByName('spiv')
     >>> login("andrew.bennetts@ubuntulinux.com")
     >>> view = create_initialized_view(spiv, name="+archivesubscriptions")
     >>> view.has_subscriptions
     True
+    >>> view.has_active_subscriptions
+    False
 
 The subscriptions_with_tokens property returns all the current archive
 subscriptions for the person, with a corresponding token for each:
@@ -196,7 +200,7 @@ generate a token for that archive:
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archivesubscriptions",
     ...     method="post",
-    ...     form={"archive_id": sabdfl.archive.id})
+    ...     form={"archive_id": str(sabdfl.archive.id)})
 
 The view redirects to itself after activating the subscription:
 
@@ -210,6 +214,11 @@ And the subscription has been activated:
     >>> print_subscriptions_with_tokens()
     Private PPA for Mark Shuttleworth       spiv's still my friend   Token
     Private PPA for Celso Providelo         spiv's my friend         None
+
+    >>> view.has_subscriptions
+    True
+    >>> view.has_active_subscriptions
+    True
 
 The user will also see a notification of the subscription activation:
 

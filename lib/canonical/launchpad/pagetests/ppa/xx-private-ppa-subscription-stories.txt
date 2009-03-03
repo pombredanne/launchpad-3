@@ -149,9 +149,31 @@ Then a list of Joe's current subscriptions is displayed
 
 And the private_sources.list file is not displayed.
 
+    >>> print find_tag_by_id(joe_browser.contents, 'sources_list')
+    None
+
 When Andrew clicks on the 'Activate subscription' button for Celso's PPA
-Then the sources.list snippet is updated to include a line for Celso's PPA
+
+    >>> joe_browser.getControl(
+    ...     name="field.actions.activate_archive_9").click()
+
+Then the list of Joe's current subscriptions no longer includes an
+Activate button:
+
+    >>> print_subscriptions_for_person(joe_browser.contents)
+    Archive                             Subscription description
+    Private PPA for Celso Providelo     Joe is my friend
+
+And the sources.list snippet is updated to include a line for Celso's PPA
+
+    >>> sources_list = find_tag_by_id(joe_browser.contents, 'sources_list')
+    >>> print(extract_text(sources_list))
+    Custom private_ppa_sources.list for Joe Smith
+    # Personal subscriptions for private PPAs
+    # Private PPA for Celso Providelo
+
 And a notification is displayed on the screen
+
 
 === Scenario 2: A user activates a team subscription ===
 

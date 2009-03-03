@@ -112,7 +112,7 @@ explanation if they try to view their archive subscriptions:
 
     >>> explanation = find_main_content(cprov_browser.contents).find('p')
     >>> print extract_text(explanation)
-    You do not have any subscriptions to private archives...
+    You do not have any current subscriptions to private archives...
 
 First, create a subscription for Joe Smith to sabdfl's archive also, so that
 Joe has multiple subscriptions:

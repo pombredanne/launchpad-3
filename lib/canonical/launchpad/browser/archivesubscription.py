@@ -11,6 +11,8 @@ __all__ = [
 
 import datetime
 
+from sqlobject import SQLObjectNotFound
+
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -119,20 +121,29 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         if self.request.method == "POST":
             self.processSubscriptionActivation()
 
-    @property
+    @cachedproperty
     def subscriptions_with_tokens(self):
         """Return all the persons archive subscriptions with the token
         for each."""
-        return getUtility(IArchiveSubscriberSet).getBySubscriberWithTokens(
+        result= getUtility(IArchiveSubscriberSet).getBySubscriberWithTokens(
             self.context)
+        # Force the result to be executed by converting it to a list so
+        # we can cache the results:
+        return list(result)
+
+    @property
+    def has_subscriptions(self):
+        """Return whether this person has any current subscriptions."""
+        return len(self.subscriptions_with_tokens) > 0
 
     @cachedproperty
-    def has_subscriptions(self):
-        """Return whether this person has any subscriptions."""
-        # XXX noodles 20090224 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return getUtility(IArchiveSubscriberSet).getBySubscriber(
-            self.context).count() > 0
+    def has_active_subscriptions(self):
+        """Return whether this person has any current subscriptions that
+        they have activated."""
+        # Collect all the tokens the persons subscriptions.
+        tokens = [token for subscr, token in self.subscriptions_with_tokens
+                     if token]
+        return len(tokens) > 0
 
     def processSubscriptionActivation(self):
         """Process any posted data that activates a subscription."""
@@ -150,19 +161,24 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         # Check first for a valid archive_id in the post data - if none
         # is found simply redirect to a normal GET request.
         archive_id = self.request.form.get('archive_id')
-        if archive_id is None or type(archive_id) != int:
+        if archive_id:
+            try:
+                archive_id = int(archive_id)
+            except ValueError:
+                redirectToSelf()
+                return
+        else:
             redirectToSelf()
             return
 
         # Next, try to grab the corresponding archive. Again, if none
         # is found, redirect to a normal GET request.
         try:
-            archive = getUtility(IArchiveSet).get(
-                self.request.form["archive_id"])
+            archive = getUtility(IArchiveSet).get(archive_id)
         except SQLObjectNotFound:
             # Just ignore as it should only happen if the user
             # is fiddling with POST params.
-            rediretToSelf()
+            redirectToSelf()
             return
 
         # Grab the current user's subscriptions for this
@@ -175,7 +191,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
 
         if subscriptions_with_token.count() == 0:
             # The user does not have a current subscription, so no token.
-            rediretToSelf()
+            redirectToSelf()
             return
 
         # Note: there may be multiple subscriptions for a user (through
