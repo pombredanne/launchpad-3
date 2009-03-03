@@ -1175,8 +1175,6 @@ class SourcePackageBranchesView(BranchListingView):
     # register a branch. This requires there to be a package branch
     # registration page.
 
-    # XXX: "Nearby branches" area.
-
     @cachedproperty
     def branch_count(self):
         """The number of total branches the user can see."""
