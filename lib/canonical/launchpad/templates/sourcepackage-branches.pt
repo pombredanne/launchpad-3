@@ -26,11 +26,11 @@
     <tal:series-link repeat="link view/series_links">
       <span class="branch-series-link">
         <a tal:condition="link/linked"
-           tal:attributes="href link/series/fmt:url"
-           tal:content="link/series/name">
+           tal:attributes="href link/package/fmt:url"
+           tal:content="link/series_name">
         </a>
         <tal:not-linked tal:condition="not: link/linked"
-                        tal:replace="link/series/name" />
+                        tal:replace="link/series_name" />
       </span>
     </tal:series-link>
   </div>

@@ -85,19 +85,23 @@ class TestSourcePackageBranchesView(TestCaseWithFactory):
         # There are some links at the bottom of the page to other
         # distroseries.
         distro = self.factory.makeDistribution()
-        series_one = self.factory.makeDistroRelease(
-            distribution=distro, version="1.0")
-        series_two = self.factory.makeDistroRelease(
-            distribution=distro, version="2.0")
-        series_three = self.factory.makeDistroRelease(
-            distribution=distro, version="3.0")
-        package = self.factory.makeSourcePackage(distroseries=series_two)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        packages = {}
+        for version in ("1.0", "2.0", "3.0"):
+            series = self.factory.makeDistroRelease(
+                distribution=distro, version=version)
+            package = self.factory.makeSourcePackage(
+                distroseries=series, sourcepackagename=sourcepackagename)
+            packages[version] = package
         request = LaunchpadTestRequest()
-        view = SourcePackageBranchesView(package, request)
+        view = SourcePackageBranchesView(packages["2.0"], request)
         self.assertEqual(
-            [dict(series=series_one, linked=True),
-             dict(series=series_two, linked=False),
-             dict(series=series_three, linked=True)],
+            [dict(series_name=packages["1.0"].distroseries.name,
+                  package=packages["1.0"], linked=True),
+             dict(series_name=packages["2.0"].distroseries.name,
+                  package=packages["2.0"], linked=False),
+             dict(series_name=packages["3.0"].distroseries.name,
+                  package=packages["3.0"], linked=True)],
             list(view.series_links))
 
 

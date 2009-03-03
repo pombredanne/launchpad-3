@@ -45,6 +45,7 @@ from canonical.launchpad.browser.feeds import (
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
 from canonical.launchpad.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces import (
     IBugBranchSet,
     IProductSeriesSet,
@@ -1191,7 +1192,11 @@ class SourcePackageBranchesView(BranchListingView):
     def series_links(self):
         """Links to other series in the same distro as the package."""
         our_series = self.context.distroseries
+        our_sourcepackagename = self.context.sourcepackagename
         # We want oldest on the left, and 'serieses' normally yields the
         # newest first.
         for series in reversed(self.context.distribution.serieses):
-            yield dict(series=series, linked=(series != our_series))
+            yield dict(
+                series_name=series.name,
+                package=SourcePackage(our_sourcepackagename, series),
+                linked=(series != our_series))
