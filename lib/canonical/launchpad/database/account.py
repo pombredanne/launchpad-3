@@ -20,7 +20,7 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces import IMasterObject, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -118,13 +118,14 @@ class Account(SQLBase):
         assert self.preferredemail is not None, (
             "Can't create a Person for an account which has no email.")
         store = Store.of(self)
-        assert store.find(Person, account=self).one() is None, (
+        assert IMasterStore(Person).find(
+            Person, accountID=self.id).one() is None, (
             "Can't create a Person for an account which already has one.")
         name = generate_nick(self.preferredemail.email)
         person = PersonSet()._newPerson(
             name, self.displayname, hide_email_addresses=True,
             rationale=rationale, account=self)
-        self.preferredemail.person = person
+        IMasterObject(self.preferredemail).personID = person.id
         return person
 
 
