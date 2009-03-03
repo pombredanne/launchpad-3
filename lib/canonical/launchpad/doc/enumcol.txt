@@ -76,12 +76,12 @@ You cannot use integers or strings as EnumCol values:
     >>> t.foo = 2
     Traceback (most recent call last):
     ...
-    TypeError: Not a DBItem: <type 'int'>
+    TypeError: Not a DBItem: 2
 
     >>> t.foo = "TWO"
     Traceback (most recent call last):
     ...
-    TypeError: Not a DBItem: <type 'str'>
+    TypeError: Not a DBItem: 'TWO'
 
 You can of course use items from FooType.
 
