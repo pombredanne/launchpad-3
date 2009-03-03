@@ -143,7 +143,7 @@ PPA.
     >>> from canonical.launchpad.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from canonical.launchpad.interfaces.publishing import (
-    ...     PackagePublishingPocket, PackagePublishingStatus)
+    ...     PackagePublishingStatus)
     >>> from canonical.launchpad.interfaces.build import BuildStatus
 
     >>> test_publisher = SoyuzTestPublisher()
@@ -412,7 +412,6 @@ The 'PPA' builder category is also available in BuilderSetView as a
 We change the sampledata to create a pending build in for the 386
 processor queue in the PPA category.
 
-    >>> from canonical.launchpad.interfaces import BuildStatus
     >>> login('foo.bar@canonical.com')
 
     >>> any_failed_build = cprov.archive.getBuildRecords(

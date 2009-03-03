@@ -6,8 +6,6 @@ Build records can be looked up in different contexts, they are:
  * `DistroSeries`;
  * `Archive`.
 
-Amoungst other the are not yet exposed in the API.
-
 The method used for looking Build up is 'getBuildRecords' and it
 accepts the following optional arguments:
 
