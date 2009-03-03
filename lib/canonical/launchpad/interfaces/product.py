@@ -484,10 +484,6 @@ class IProductPublic(
             description=_(
                 "The ID of this project on its remote bug tracker.")))
 
-    upstream_bugtracker_links = Attribute(
-        "The URLs of bug filing and search forms on this project's upstream "
-        "bug tracker")
-
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
                                   current_datetime=None):

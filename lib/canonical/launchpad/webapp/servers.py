@@ -52,7 +52,7 @@ import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIDApplication, IPerson,
     IPersonSet, IShipItApplication, IWebServiceApplication,
-    IOAuthConsumerSet, NonceAlreadyUsed)
+    IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError, ClockSkew)
 import canonical.launchpad.versioninfo
 
 from canonical.launchpad.webapp.adapter import (
@@ -1291,8 +1291,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
         nonce = form.get('oauth_nonce')
         timestamp = form.get('oauth_timestamp')
         try:
-            token.ensureNonce(nonce, timestamp)
-        except NonceAlreadyUsed, e:
+            token.checkNonceAndTimestamp(nonce, timestamp)
+        except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
             raise Unauthorized('Invalid nonce/timestamp: %s' % e)
         now = datetime.now(pytz.timezone('UTC'))
         if token.permission == OAuthPermission.UNAUTHORIZED:
@@ -1305,7 +1305,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
             # Everything is fine, let's return the principal.
             pass
         principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            token.person.id, access_level=token.permission,
+            token.person.account.id, access_level=token.permission,
             scope=token.context)
 
         # Make sure the principal is a member of the beta test team.
@@ -1318,8 +1318,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
                 webservice_beta_team_name)
             person = IPerson(principal)
             if not person.inTeam(webservice_beta_team):
-                raise Unauthorized(person.name +
-                                   " is not a member of the beta test team.")
+                raise Unauthorized(
+                    person.name + " is not a member of the beta test team.")
         return principal
 
 
@@ -1427,6 +1427,20 @@ class IdPublication(LaunchpadBrowserPublication):
 
     root_object_interface = IOpenIDApplication
 
+    def getPrincipal(self, request):
+        """Return the authenticated principal for this request.
+
+        This is only necessary because, unlike in LaunchpadBrowserPublication,
+        here we want principals representing personless accounts to be
+        returned, so that personless accounts can use our OpenID server.
+        """
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = auth_utility.authenticate(request)
+        if principal is None:
+            principal = auth_utility.unauthenticatedPrincipal()
+            assert principal is not None, "Missing unauthenticated principal."
+        return principal
+
 
 class IdBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.IdLayer)
@@ -1434,7 +1448,7 @@ class IdBrowserRequest(LaunchpadBrowserRequest):
 
 # XXX sinzui 2008-09-04 bug=264783:
 # Remove OpenIDPublication and OpenIDBrowserRequest.
-class OpenIDPublication(LaunchpadBrowserPublication):
+class OpenIDPublication(IdPublication):
     """The publication used for old OpenID requests."""
 
     root_object_interface = IOpenIDApplication
