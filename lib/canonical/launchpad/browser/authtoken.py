@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 import urllib
-import pytz
 import cgi
 
 from zope.lifecycleevent import ObjectCreatedEvent
@@ -31,15 +30,16 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView)
 
 from canonical.launchpad.browser.openidserver import OpenIDMixin
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet,
-    IAuthToken, IAuthTokenSet, INewPersonForm,
-    IOpenIDRPConfigSet, IPerson, IPersonSet, LoginTokenType,
-    PersonCreationRationale, ShipItConstants, UnexpectedFormData)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
-
-
-UTC = pytz.timezone('UTC')
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthToken, IAuthTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
+from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
+from canonical.launchpad.interfaces.person import (
+    INewPersonForm, IPerson, IPersonSet, PersonCreationRationale)
+from canonical.launchpad.interfaces.shipit import ShipItConstants
 
 
 class AuthTokenSetNavigation(GetitemNavigation):

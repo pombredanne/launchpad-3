@@ -4,8 +4,6 @@
 __metaclass__ = type
 __all__ = ['LoginToken', 'LoginTokenSet']
 
-import random
-
 from zope.interface import implements
 from zope.component import getUtility
 
