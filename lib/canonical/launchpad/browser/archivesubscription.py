@@ -121,7 +121,8 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
     def subscriptions_with_tokens(self):
         """Return all the persons archive subscriptions with the token
         for each."""
-        return getUtility(IArchiveSubscriberSet).getBySubscriberWithTokens(
+        subscriber_set = getUtility(IArchiveSubscriberSet)
+        return subscriber_set.getBySubscriberWithActiveToken(
             self.context)
 
     @cachedproperty
@@ -171,10 +172,10 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         # Grab the current user's subscriptions for this
         # particular archive, as well as any token that already
         # exists:
-        sub_set = getUtility(IArchiveSubscriberSet)
-        subscriptions_with_token = sub_set.getBySubscriberWithTokens(
-            self.context,
-            archive=archive)
+        subscriber_set = getUtility(IArchiveSubscriberSet)
+        subscriptions_with_token = \
+            subscriber_set.getBySubscriberWithActiveToken(
+                self.context, archive=archive)
 
         if subscriptions_with_token.count() == 0:
             # The user does not have a current subscription, so no token.
