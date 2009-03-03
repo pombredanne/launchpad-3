@@ -23,6 +23,7 @@ __all__ = [
     'IServiceRootResource',
     'ITopLevelEntryLink',
     'IUnmarshallingDoesntNeedValue',
+    'IWebBrowserInitiatedRequest',
     'LAZR_WEBSERVICE_NAME',
     'LAZR_WEBSERVICE_NS',
     'WebServiceLayer',
@@ -288,4 +289,14 @@ class IUnmarshallingDoesntNeedValue(Interface):
     Most marshallers transform the value they're given, but some work
     entirely on the field name. If they use this marker interface
     we'll save time because we won't have to calculate the value.
+    """
+
+
+class IWebBrowserInitiatedRequest(Interface):
+    """A marker interface for requests initiated by a web browser.
+
+    Web browsers are broken in subtle ways that interact in complex
+    ways with the parts of HTTP used in web services. It's useful to
+    know when a request was initiated by a web browser so that
+    responses can be tweaked for their benefit.
     """
