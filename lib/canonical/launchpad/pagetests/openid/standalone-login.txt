@@ -8,7 +8,7 @@ there from an OpenID RP) to login, so that they can see/change their details.
     This is the Launchpad login service utilizing OpenID technology.
     ...
     If you want to change any of your account's details, you can do so by
-    logging in using the form below.
+    logging in using the form beside.
     ...
 
     >>> browser.getControl(name='field.email').value = 'mark@hbd.com'

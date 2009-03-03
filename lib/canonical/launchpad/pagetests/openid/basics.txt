@@ -20,7 +20,7 @@ an informative message is displayed as per the OpenID spec.
     those run by Canonical and Ubuntu.
     To learn more about using this service, please review the instructions.
     If you want to change any of your account's details, you can do so by
-    logging in using the form below.
+    logging in using the form beside.
     What is your e-mail address?
     Do you have a Launchpad password?
     ...

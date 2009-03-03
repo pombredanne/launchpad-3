@@ -30,6 +30,9 @@ When the person is logged in and points his browser to openid.launchpad.dev,
 he will also see a list containing up to 10 sites in which he authenticated
 recently, using the OpenID service.
 
+    # Pretend the user authenticated to an OpenID relying party.
+    >>> import pytz
+    >>> from datetime import datetime
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.openidserver import (
@@ -37,14 +40,15 @@ recently, using the OpenID service.
     >>> login(ANONYMOUS)
     >>> summary = getUtility(IOpenIDRPSummarySet).record(
     ...     getUtility(IPersonSet).getByName('sabdfl').account,
-    ...     'http://example.com/')
+    ...     'http://example.com/',
+    ...     date_used=datetime(2009, 01, 01, tzinfo=pytz.UTC))
     >>> logout()
 
     >>> browser.reload()
     >>> print extract_text(find_tag_by_id(browser.contents, 'visited-sites'))
     Sites you last authenticated to
     Site                 First authenticated  Last authenticated
-    http://example.com/  2009-03-02           2009-03-02     
+    http://example.com/  2009-01-01           2009-01-01
 
 
 == Editing User Details ==
