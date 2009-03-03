@@ -63,6 +63,17 @@ The user can edit their details from this page:
     >>> print browser.title
     Welcome sabdfl
 
+Including their password:
+
+    >>> browser.getLink("edit").click()
+    >>> browser.getLink("Change your password").click()
+    >>> browser.getControl("Current password:").value = "test"
+    >>> browser.getControl("New password:").value = "test2"
+    >>> browser.getControl("Retype the password:").value = "test2"
+    >>> browser.getControl("Change").click()
+    >>> print browser.url
+    http://openid.launchpad.dev/
+
 
 == Logging Out ==
 
@@ -74,3 +85,15 @@ From the Home page, the user can also log out:
     http://openid.launchpad.dev/
     >>> print browser.title
     Launchpad Login Service
+
+
+== Logging back in with new password ==
+
+To log back in the user will have to use their new password:
+
+    >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.password').value = 'test2'
+    >>> browser.getControl('Continue').click()
+
+    >>> print browser.title
+    Welcome sabdfl

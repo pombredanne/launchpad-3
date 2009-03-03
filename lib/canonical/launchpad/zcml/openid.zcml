@@ -74,6 +74,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IOpenIDApplication"
+        name="+change-password"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.openidaccount.AccountPasswordEditview"
+        template="../templates/openid-account-change-password.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
         layer="canonical.launchpad.layers.OpenIDLayer"
         class="canonical.launchpad.browser.openidserver.PreAuthorizeRPView"
         name="+pre-authorize-rp"

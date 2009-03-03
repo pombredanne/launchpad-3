@@ -835,10 +835,12 @@ object_translations = ContextDisplayName('Translation templates for %s')
 
 oops = 'Oops!'
 
-openid_default = 'OpenID Endpoint'
+openid_account_change_password = 'Change your password'
 
 def openid_account_edit(context, view):
     return smartquote("%s's details") % view.account.displayname
+
+openid_default = 'OpenID Endpoint'
 
 def openid_index(context, view):
     return 'Welcome %s' % view.account.displayname
