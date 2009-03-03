@@ -317,18 +317,18 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         the LoginToken (self.context) used is consumed, so nobody can use
         it again.
         """
-        emailset = getUtility(IEmailAddressSet)
-        emailaddress = emailset.getByEmail(self.context.email)
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(
+            self.context.email)
+        person_id = removeSecurityProxy(emailaddress).personID
+        if person_id is not None:
+            # XXX: Guilherme Salgado 2006-09-27 bug=62674:
+            # It should be possible to do the login before this and avoid
+            # this hack. In case the user doesn't want to be logged in
+            # automatically we can log him out after doing what we want.
+            naked_person = removeSecurityProxy(getUtility(IPersonSet).get(
+                person_id))
+            #      end of evil code.
 
-        # XXX: Guilherme Salgado 2006-09-27 bug=62674:
-        # It should be possible to do the login before this and avoid
-        # this hack. In case the user doesn't want to be logged in
-        # automatically we can log him out after doing what we want.
-        naked_person = removeSecurityProxy(getUtility(IPersonSet).get(
-            removeSecurityProxy(emailaddress).personID))
-        #      end of evil code.
-
-        if naked_person is not None:
             # Suspended accounts cannot reset their password.
             reason = ('Your password cannot be reset because your account '
                       'is suspended.')
