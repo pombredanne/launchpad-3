@@ -19,5 +19,6 @@ CASE
     ELSE false
 END);
 
+CREATE UNIQUE INDEX codeimport__git_repo_url__idx ON CodeImport USING btree (git_repo_url) WHERE (git_repo_url is NOT NULL);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 87, 0);
