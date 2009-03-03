@@ -1,0 +1,52 @@
+= Discover the assigned milestones from a BugTask search =
+
+The function get_assigned_milestones_from_bugtasks() accepts a result
+set that yields BugTasks. It attempt to efficiently find all the
+distinct milestones assigned to those BugTasks. Typically this should
+be called with the results from calling IHasBugs.searchTasks() or
+IBugTaskSet.search().
+
+    >>> from canonical.launchpad.database.milestone import (
+    ...     get_assigned_milestones_from_bugtasks)
+    >>> from canonical.launchpad.interfaces.bugtask import (
+    ...     BugTaskSearchParams, IBugTaskSet)
+
+    >>> person = factory.makePerson()
+    >>> login(person.preferredemail.email)
+
+    >>> milestone = factory.makeMilestone()
+
+    >>> bugtask = factory.makeBugTask(target=milestone.product)
+    >>> bugtask.milestone = milestone
+    >>> bugtask.subscribe(person, person)
+    <BugSubscription ...>
+
+The results of a search for all bug tasks related to a person can be
+passed to get_assigned_milestones_from_bugtasks() to discover all the
+milestones used.
+
+    >>> bugtasks = getUtility(IBugTaskSet).search(
+    ...     BugTaskSearchParams(person, assignee=person),
+    ...     BugTaskSearchParams(person, subscriber=person),
+    ...     BugTaskSearchParams(person, owner=person, bug_reporter=person),
+    ...     BugTaskSearchParams(person, bug_commenter=person))
+
+    >>> milestones = get_assigned_milestones_from_bugtasks(bugtasks)
+
+    >>> milestones
+    [<Milestone ...>]
+    >>> len(milestones)
+    1
+    >>> milestone in milestones
+    True
+
+Because get_assigned_milestones_from_bugtasks() attempts to be
+efficient, by customising the result set passed in, it rejects
+attempts to pass in lists of bug tasks.
+
+    >>> milestones = get_assigned_milestones_from_bugtasks(
+    ...     list(bugtasks))
+    Traceback (most recent call last):
+    ...
+    AssertionError: result_set must be an instance of
+      storm.store.ResultSet or storm.sqlobject.SQLObjectResultSet
