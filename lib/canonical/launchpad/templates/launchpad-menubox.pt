@@ -8,12 +8,12 @@
 >
   <ul>
     <tal:block repeat="link view/contextmenuitems">
-      <li tal:content="structure link/@@+link">
+      <li tal:replace="structure link/@@+link">
         Link
       </li>
     </tal:block>
     <tal:block repeat="link view/applicationmenuitems">
-      <li tal:content="structure link/@@+link">
+      <li tal:replace="structure link/@@+link">
         Link
       </li>
     </tal:block>
