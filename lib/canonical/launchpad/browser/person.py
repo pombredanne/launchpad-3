@@ -161,8 +161,7 @@ from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit,
     TranslationRelicensingAgreementOptions)
 
-from canonical.launchpad.browser.bugtask import (
-    BugListingBatchNavigator, BugTaskSearchListingView)
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
@@ -2027,14 +2026,17 @@ class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
 
-    def search(self, extra_params=None):
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
         """Return the open bugs related to a person.
 
         :param extra_params: A dict that provides search params added to
             the search criteria taken from the request. Params in
             `extra_params` take precedence over request params.
         """
-        context = self.context
+        if context is None:
+            context = self.context
+
         params = self.buildSearchParams(extra_params=extra_params)
         subscriber_params = copy.copy(params)
         subscriber_params.subscriber = context
@@ -2054,12 +2056,9 @@ class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
         if commenter_params.bug_commenter is None:
             commenter_params.bug_commenter = context
 
-        tasks = self.context.searchTasks(
+        return context.searchTasks(
             assignee_params, subscriber_params, owner_params,
             commenter_params)
-        return BugListingBatchNavigator(
-            tasks, self.request, columns_to_show=self.columns_to_show,
-            size=config.malone.buglist_batch_size)
 
     def getSearchPageHeading(self):
         return "Bugs related to %s" % self.context.displayname
@@ -2081,10 +2080,20 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
 
-    def search(self):
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
         """Return the open bugs assigned to a person."""
-        return BugTaskSearchListingView.search(
-            self, extra_params={'assignee': self.context})
+        if context is None:
+            context = self.context
+
+        if extra_params is None:
+            extra_params = dict()
+        else:
+            extra_params = dict(extra_params)
+        extra_params['assignee'] = context
+
+        sup = super(PersonAssignedBugTaskSearchListingView, self)
+        return sup.searchUnbatched(searchtext, context, extra_params)
 
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
@@ -2122,10 +2131,20 @@ class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
 
-    def search(self):
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
         """Return the open bugs commented on by a person."""
-        return BugTaskSearchListingView.search(
-            self, extra_params={'bug_commenter': self.context})
+        if context is None:
+            context = self.context
+
+        if extra_params is None:
+            extra_params = dict()
+        else:
+            extra_params = dict(extra_params)
+        extra_params['bug_commenter'] = context
+
+        sup = super(PersonCommentedBugTaskSearchListingView, self)
+        return sup.searchUnbatched(searchtext, context, extra_params)
 
     def getSearchPageHeading(self):
         """The header for the search page."""
