@@ -22,6 +22,7 @@
   </tal:has-branches>
 
   <div class="related" id="branch-series-links">
+    <h2>Branches in other series</h2>
     <tal:series-link repeat="link view/series_links">
       <span class="branch-series-link">
         <a tal:condition="link/linked"
