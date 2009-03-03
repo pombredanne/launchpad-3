@@ -25,7 +25,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct, IProject,
     IProjectSeries, IProjectSet, ISearchableByQuestionOwner,
-    IStructuralSubscriptionTarget, ImportStatus, NotFoundError,
+    IStructuralSubscriptionTarget,NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     SprintSpecificationStatus, TranslationPermission)
@@ -471,21 +471,6 @@ class ProjectSet:
 
     def forReview(self):
         return Project.select("reviewed IS FALSE")
-
-    def forSyncReview(self):
-        query = """Product.project=Project.id AND
-                   Product.reviewed IS TRUE AND
-                   Product.active IS TRUE AND
-                   Product.id=ProductSeries.product AND
-                   ProductSeries.importstatus IS NOT NULL AND
-                   ProductSeries.importstatus <> %s
-                   """ % sqlvalues(ImportStatus.SYNCING)
-        clauseTables = ['Project', 'Product', 'ProductSeries']
-        results = []
-        for project in Project.select(query, clauseTables=clauseTables):
-            if project not in results:
-                results.append(project)
-        return results
 
     def search(self, text=None, soyuz=None,
                      rosetta=None, malone=None,

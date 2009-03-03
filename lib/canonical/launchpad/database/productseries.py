@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from sqlobject import (
-    IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from storm.expr import In, Or
 from warnings import warn
 from zope.component import getUtility
@@ -40,10 +40,10 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces import (
     IHasTranslationTemplates, IProductSeries, IProductSeriesSet,
-    IStructuralSubscriptionTarget, ImportStatus, NotFoundError, PackagingType,
-    RevisionControlSystems, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationGoalStatus,
-    SpecificationImplementationStatus, SpecificationSort)
+    IStructuralSubscriptionTarget, NotFoundError, PackagingType,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationGoalStatus, SpecificationImplementationStatus,
+    SpecificationSort)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -73,29 +73,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         storm_validator=validate_public_person, notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
-    importstatus = EnumCol(dbName='importstatus', notNull=False,
-        schema=ImportStatus, default=None)
-    rcstype = EnumCol(dbName='rcstype', enum=RevisionControlSystems,
-        notNull=False, default=None)
-    cvsroot = StringCol(default=None)
-    cvsmodule = StringCol(default=None)
-    cvsbranch = StringCol(default=None)
     # where are the tarballs released from this branch placed?
-    cvstarfileurl = StringCol(default=None)
-    svnrepository = StringCol(default=None)
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
-    # key dates on the road to import happiness
-    dateautotested = UtcDateTimeCol(default=None)
-    datestarted = UtcDateTimeCol(default=None)
-    datefinished = UtcDateTimeCol(default=None)
-    dateprocessapproved = UtcDateTimeCol(default=None)
-    datesyncapproved = UtcDateTimeCol(default=None)
-    # controlling the freshness of an import
-    syncinterval = IntervalCol(default=None)
-    datelastsynced = UtcDateTimeCol(default=None)
-    datepublishedsync = UtcDateTimeCol(
-        dbName='date_published_sync', default=None)
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
@@ -503,21 +483,6 @@ class ProductSeriesSet:
         return """productseries.id IN
             (SELECT productseries.id FROM productseries, product, project
              WHERE %s) AND productseries.product = product.id""" % query
-
-    def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
-        """See IProductSeriesSet."""
-        result = ProductSeries.selectOneBy(
-            cvsroot=cvsroot, cvsmodule=cvsmodule, cvsbranch=cvsbranch)
-        if result is None:
-            return default
-        return result
-
-    def getBySVNDetails(self, svnrepository, default=None):
-        """See IProductSeriesSet."""
-        result = ProductSeries.selectOneBy(svnrepository=svnrepository)
-        if result is None:
-            return default
-        return result
 
     def getSeriesForBranches(self, branches):
         """See `IProductSeriesSet`."""

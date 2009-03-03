@@ -101,6 +101,7 @@ If a branch is marked private it will not be displayed.  The Landscape
 developers team has two branches which are both private.
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.database.branch import Branch
     >>> from canonical.launchpad.interfaces.branch import IBranchSet
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
@@ -108,7 +109,7 @@ developers team has two branches which are both private.
     >>> landscape_team = person_set.getByName('landscape-developers')
     >>> test_user = person_set.getByEmail('test@canonical.com')
     >>> branches = getUtility(IBranchSet).getBranchesForContext(
-    ...     landscape_team, visible_by_user=test_user)
+    ...     landscape_team, visible_by_user=test_user).order_by(Branch.id)
     >>> for branch in branches:
     ...     branch = removeSecurityProxy(branch)
     ...     print branch.unique_name, branch.private
