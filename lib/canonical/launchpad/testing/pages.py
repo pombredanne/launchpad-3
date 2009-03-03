@@ -34,8 +34,7 @@ from zope.testing import doctest
 
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
-from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, with_anonymous_login)
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
@@ -715,19 +714,6 @@ def stop():
         pdb.set_trace()
     finally:
         sys.stdout = old_stdout
-
-
-class FactoryWrapper:
-
-    def __init__(self, factory):
-        self.factory = factory
-
-    def __getattr__(self, name):
-        value = getattr(self.__dict__['factory'], name)
-        if callable(value):
-            return with_anonymous_login(value)
-        else:
-            return value
 
 
 def setUpGlobs(test):
