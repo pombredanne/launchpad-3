@@ -288,9 +288,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # bad distribution name.
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find distribution 'BADNAME'\n"
-            "Further error processing not "
-            "possible because of a critical previous error.")
+            "Could not find PPA named 'BADNAME' for 'name16'\n"
+            "Further error processing not possible because of a "
+            "critical previous error.")
 
     def testPPAPublisherOverrides(self):
         """Check that PPA components override to main at publishing time,
@@ -466,7 +466,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find PPA for 'spiv'\n"
+            "Could not find PPA named 'ppa' for 'spiv'\n"
             "Further error processing not "
             "possible because of a critical previous error.")
 
@@ -654,7 +654,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA for Celso Providelo only supports uploads to 'ubuntu'\n"
+            "Could not find PPA named 'ubuntutest' for 'cprov'\n"
             "Further error processing not possible because of a "
             "critical previous error.")
 
@@ -676,7 +676,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA upload path must start with '~'.\n"
+            "Could not find distribution 'biscuit'\n"
             "Further error "
             "processing not possible because of a critical previous error.")
 
