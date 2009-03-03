@@ -29,8 +29,9 @@ import re
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.interface import implements, alsoProvides
-from zope.component import getUtility
+from zope.interface import alsoProvides, implementer, implements
+from zope.component import adapter, getUtility
+from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
@@ -71,7 +72,7 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, AccountStatus, IAccountSet,
+    AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
@@ -2405,7 +2406,8 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
-        return Archive.selectOneBy(owner=self, purpose=ArchivePurpose.PPA)
+        return Archive.selectOneBy(
+            owner=self, purpose=ArchivePurpose.PPA, name='ppa')
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -3836,3 +3838,15 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
 
     finally:
         random.setstate(random_state)
+
+
+@adapter(IAccount)
+@implementer(IPerson)
+def person_from_account(account):
+    """Adapt an IAccount into an IPerson."""
+    # The IAccount interface does not publish the account.person reference.
+    naked_account = removeSecurityProxy(account)
+    person = ProxyFactory(naked_account.person)
+    if person is None:
+        raise ComponentLookupError
+    return person

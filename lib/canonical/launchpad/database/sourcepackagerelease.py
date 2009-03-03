@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces.packagediff import (
     PackageDiffAlreadyRequested)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingStatus, active_publishing_status)
+    PackagePublishingStatus)
 from canonical.launchpad.interfaces.sourcepackage import (
     SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
@@ -265,12 +265,8 @@ class SourcePackageRelease(SQLBase):
     @property
     def published_archives(self):
         """See `ISourcePacakgeRelease`."""
-        archives = set()
-        publishings = self.publishings.prejoin(['archive'])
-        for pub in publishings:
-            if pub.status in active_publishing_status:
-                archives.add(pub.archive)
-
+        archives = set(
+            pub.archive for pub in self.publishings.prejoin(['archive']))
         return sorted(archives, key=operator.attrgetter('id'))
 
     def addFile(self, file):
