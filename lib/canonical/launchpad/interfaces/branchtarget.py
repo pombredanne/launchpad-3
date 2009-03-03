@@ -12,11 +12,18 @@ on. If the branch is a junk branch, then the target is the branch owner.
 __metaclass__ = type
 __all__ = [
     'IBranchTarget',
+    'IHasBranchTarget',
     ]
 
-from zope.interface import Attribute
+from zope.interface import Attribute, Interface
 
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
+
+
+class IHasBranchTarget(Interface):
+    """A thing that has a branch target."""
+
+    target = Attribute("The branch target, as an `IBranchTarget`.")
 
 
 class IBranchTarget(IPrimaryContext):

@@ -74,6 +74,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
@@ -82,8 +83,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, IPrimaryContext)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.branch import TargetBranchWidget
@@ -120,7 +120,7 @@ class BranchHierarchy(Hierarchy):
         """See `Hierarchy`."""
         return self._breadcrumbs(
             (obj, canonical_url(obj))
-            for obj in self.context.target.components)
+            for obj in IHasBranchTarget(self.context).target.components)
 
 
 class BranchBadges(HasBadgeBase):

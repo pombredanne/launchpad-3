@@ -22,12 +22,13 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     BugBranchStatus, IBugBranch, IBugBranchSet, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.validators.person import validate_public_person
 
 
 class BugBranch(SQLBase):
     """See canonical.launchpad.interfaces.IBugBranch."""
-    implements(IBugBranch)
+    implements(IBugBranch, IHasBranchTarget)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     bug = ForeignKey(dbName="bug", foreignKey="Bug", notNull=True)
@@ -41,6 +42,11 @@ class BugBranch(SQLBase):
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
+
+    @property
+    def target(self):
+        """See `IHasBranchTarget`."""
+        return self.branch.target
 
     @property
     def bug_task(self):
