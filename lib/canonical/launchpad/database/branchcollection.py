@@ -72,6 +72,11 @@ class GenericBranchCollection:
             self._store, self._branch_filter_expressions + list(expressions),
             self._tables + tables)
 
+    def _getBranchIdQuery(self):
+        select = self.getBranches().result_set._get_select()
+        select.columns = (Branch.id,)
+        return select
+
     def getBranches(self):
         """See `IBranchCollection`."""
         results = self.store.using(*(self._tables)).find(
@@ -83,8 +88,8 @@ class GenericBranchCollection:
 
     def getMergeProposals(self, statuses=None):
         """See `IBranchCollection`."""
-        branch_ids = self.getBranches().values(Branch.id)
-        expression = BranchMergeProposal.source_branchID.is_in(branch_ids)
+        expression = BranchMergeProposal.source_branchID.is_in(
+            self._getBranchIdQuery())
         if statuses is not None:
             expression = And(
                 BranchMergeProposal.queue_status.is_in(statuses),
