@@ -83,14 +83,13 @@ class LoginToken(SQLBase):
             from_address, to_address, subject, message,
             headers=headers, bulk=False)
 
-    def sendEmailValidationRequest(self, appurl):
+    def sendEmailValidationRequest(self):
         """See ILoginToken."""
         template = get_email_template('validate-email.txt')
-        replacements = {'longstring': self.token,
+        replacements = {'token_url': canonical_url(self),
                         'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
-                        'toaddress': self.email,
-                        'appurl': appurl}
+                        'toaddress': self.email}
         message = template % replacements
         subject = "Launchpad: Validate your email address"
         self._send_email("Launchpad Email Validator", subject, message)

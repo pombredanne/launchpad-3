@@ -227,7 +227,6 @@ class LoginOrRegister:
                 "The password provided contains non-ASCII characters.")
             return
 
-        appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal.person is None:
@@ -259,7 +258,7 @@ class LoginOrRegister:
                     ) % email
                 token = getUtility(ILoginTokenSet).new(
                     person, email, email, LoginTokenType.VALIDATEEMAIL)
-                token.sendEmailValidationRequest(appurl)
+                token.sendEmailValidationRequest()
                 return
             if person.is_valid_person:
                 logInPrincipal(self.request, principal, email)

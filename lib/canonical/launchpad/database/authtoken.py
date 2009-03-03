@@ -91,14 +91,13 @@ class AuthToken(Storm):
             from_address, to_address, subject, message,
             headers=headers, bulk=False)
 
-    def sendEmailValidationRequest(self, appurl):
+    def sendEmailValidationRequest(self):
         """See ILoginToken."""
         template = get_email_template('validate-email-neutral.txt')
-        replacements = {'longstring': self.token,
-                        'requester': self.requester_account.displayname,
+        replacements = {'requester': self.requester_account.displayname,
                         'requesteremail': self.requesteremail,
                         'toaddress': self.email,
-                        'appurl': appurl}
+                        'token_url': canonical_url(self)}
         message = template % replacements
         subject = "Login Service: Validate your email address"
         self._send_email("Login Service Email Validator", subject, message)

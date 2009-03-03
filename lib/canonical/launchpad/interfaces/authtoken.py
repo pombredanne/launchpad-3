@@ -171,7 +171,7 @@ class IAuthToken(Interface):
         as consumed.
         """
 
-    def sendEmailValidationRequest(appurl):
+    def sendEmailValidationRequest():
         """Send an email message with a magic URL to validate self.email."""
 
     def sendPasswordResetEmail():

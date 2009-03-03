@@ -716,8 +716,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
                     mapping=dict(email=email)))
                 self.token = getUtility(IAuthTokenSet).new(
                     person.account, email, email, LoginTokenType.VALIDATEEMAIL)
-                self.token.sendEmailValidationRequest(
-                    self.request.getApplicationURL())
+                self.token.sendEmailValidationRequest()
                 self.saveRequestInSession('token' + self.token.token)
 
             if not person.is_valid_person:
