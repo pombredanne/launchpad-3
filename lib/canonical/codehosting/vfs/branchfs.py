@@ -386,7 +386,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     def setUp(self):
         super(LaunchpadInternalServer, self).setUp()
         try:
-            self._transport_dispatch.base_transport.ensure_base()
+            ensure_base(self._transport_dispatch.base_transport)
         except TransportNotPossible:
             pass
 
