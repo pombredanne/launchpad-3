@@ -36,6 +36,10 @@
       table.listing table tfoot td, table.listing table td {
         border: none;
       }
+      thead {vertical-align: bottom;}
+      th, td {vertical-align: baseline;}
+      th {text-align: right;}
+      thead th, tr.thead th {text-align: center;}
       #nonfooter {position: relative; min-height: 100%;}
       * html #nonfooter {height: 100%;}
       #footer {
