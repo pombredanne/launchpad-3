@@ -19,7 +19,9 @@ from twisted.application import service
 from twisted.internet import reactor, utils, defer
 from twisted.internet.threads import deferToThread
 from twisted.protocols.policies import TimeoutMixin
-from twisted.web.xmlrpc import Proxy, _QueryFactory, QueryProtocol
+from twisted.python import log
+from twisted.python.failure import Failure
+from twisted.web import xmlrpc
 
 from zope.component import getUtility
 from zope.security.management import endInteraction, newInteraction
@@ -46,16 +48,23 @@ class FakeZTM:
         pass
 
 
-class QueryWithTimeoutProtocol(QueryProtocol, TimeoutMixin):
-    """XMLRPC query protocol with a configurable timeout."""
+class QueryWithTimeoutProtocol(xmlrpc.QueryProtocol, TimeoutMixin):
+    """XMLRPC query protocol with a configurable timeout.
 
+    XMLRPC queries using this protocol will be unconditionally closed
+    when the timeout is elapsed. The timeout is fetched from the context
+    Launchpad configuration file (`config.builddmaster.socket_timeout`).
+    """
     def connectionMade(self):
-        QueryProtocol.connectionMade(self)
+        xmlrpc.QueryProtocol.connectionMade(self)
         self.setTimeout(config.builddmaster.socket_timeout)
 
 
-class QueryFactoryWithTimeout(_QueryFactory):
-    """XMLRPC client facory with timeout support."""
+class QueryFactoryWithTimeout(xmlrpc._QueryFactory):
+    """XMLRPC client factory with timeout support."""
+    # Make this factory quiet.
+    noisy = False
+    # Use the protocol with timeout support.
     protocol = QueryWithTimeoutProtocol
 
 
@@ -85,13 +94,13 @@ class RecordingSlave:
         """Download files needed for the build."""
         self.calls.append(('ensurepresent', args))
         result = buildd_success_result_map.get('ensurepresent')
-        return (result, 'Download')
+        return [result, 'Download']
 
     def build(self, *args):
         """Perform the build."""
         self.calls.append(('build', args))
         result = buildd_success_result_map.get('build')
-        return (result, args[0])
+        return [result, args[0]]
 
     def resume(self):
         """Record the request to resume the builder..
@@ -101,7 +110,7 @@ class RecordingSlave:
         :return: a (stdout, stderr, subprocess exitcode) triple
         """
         self.resume_requested = True
-        return ('', '', 0)
+        return ['', '', 0]
 
     def resumeSlave(self):
         """Resume the builder in a asynchronous fashion.
@@ -197,19 +206,23 @@ class BuilddManager(service.Service):
         self.logger = self._setupLogger()
 
     def _setupLogger(self):
-        """Setup a 'slave-scanner' logger
+        """Setup a 'slave-scanner' logger that redirects to twisted.
 
         It is going to be used locally and within the thread running
         the scan() method.
+
         Make it less verbose to avoid messing too much with the old code.
         """
         level = logging.INFO
         logger = logging.getLogger('slave-scanner')
-        logger.setLevel(level)
-        channel = logging.StreamHandler()
+
+        # Redirect the output to the twisted log module.
+        channel = logging.StreamHandler(log.StdioOnnaStick())
         channel.setLevel(level)
-        channel.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
+        channel.setFormatter(logging.Formatter('%(message)s'))
+
         logger.addHandler(channel)
+        logger.setLevel(level)
         return logger
 
     def startService(self):
@@ -235,9 +248,15 @@ class BuilddManager(service.Service):
         reactor.callLater(5, self.startService)
 
     def slaveDone(self, slave):
-        """Mark slave as done for this cycle."""
-        self.logger.info('%r marked as done.' % slave)
+        """Mark slave as done for this cycle.
+
+        When all active slaves are processed, call `finishCycle`.
+        """
         self.remaining_slaves.remove(slave)
+
+        self.logger.info(
+            '%r marked as done. [%d]' % (slave, len(self.remaining_slaves)))
+
         if len(self.remaining_slaves) == 0:
             self.finishCycle()
 
@@ -342,23 +361,44 @@ class BuilddManager(service.Service):
         if code == os.EX_OK:
             return None
 
+        self.logger.error(
+            '%s resume failure:\nOUT: %s\nErr: %s' % (slave, out, err))
         self.slaveDone(slave)
         return self.reset_result(slave)
 
     def checkDispatch(self, response, method, slave):
         """Verify the results of a slave xmlrpc call.
 
-        If it failed returns a corresponding `FailDispatchResult`.
+        If it failed and it compromises the slave then return a corresponding
+        `FailDispatchResult`, if it was a communication failure, simply
+        reset the slave by returning a `ResetDispatchResult`.
+
         Otherwise dispatch the next call if there are any and return None.
         """
-        assert method in buildd_success_result_map.keys(), (
-            'Unknown slave method %s' % method)
-        result = buildd_success_result_map.get(method)
+        self.logger.debug(
+            '%s response for "%s": %s' % (slave, method, response))
 
-        status, info = response
-        if status == result:
-            self._mayDispatch(slave)
-            return None
+        if isinstance(response, Failure):
+            self.logger.warn(
+                '%s communication failed (%s)' %
+                (slave, response.getErrorMessage()))
+            self.slaveDone(slave)
+            return self.reset_result(slave)
+
+        if isinstance(response, list) and len(response) == 2 :
+            if method in buildd_success_result_map.keys():
+                expected_status = buildd_success_result_map.get(method)
+                status, info = response
+                if status == expected_status:
+                    self._mayDispatch(slave)
+                    return None
+            else:
+                info = 'Unknown slave method: %s' % method
+        else:
+            info = 'Unexpected response: %s' % repr(response)
+
+        self.logger.error(
+            '%s failed to dispatch (%s)' % (slave, info))
 
         self.slaveDone(slave)
         return self.fail_result(slave, info)
@@ -378,7 +418,7 @@ class BuilddManager(service.Service):
                 # The buildd slave needs to be reset before we can dispatch
                 # builds to it.
                 d = slave.resumeSlave()
-                d.addCallback(self.checkResume, slave)
+                d.addBoth(self.checkResume, slave)
             else:
                 # Buildd slave is clean, we can dispatch a build to it
                 # straightaway.
@@ -409,7 +449,7 @@ class BuilddManager(service.Service):
 
         Uses a protocol with timeout support, See QueryFactoryWithTimeout.
         """
-        proxy = Proxy(str(urlappend(slave.url, 'rpc')))
+        proxy = xmlrpc.Proxy(str(urlappend(slave.url, 'rpc')))
         proxy.queryFactory = QueryFactoryWithTimeout
         return proxy
 
@@ -428,8 +468,8 @@ class BuilddManager(service.Service):
         proxy = self._getProxyForSlave(slave)
         method, args = slave.calls.pop(0)
         d = proxy.callRemote(method, *args)
-        d.addCallback(self.checkDispatch, method, slave)
+        d.addBoth(self.checkDispatch, method, slave)
 
         # Store another active event.
         self._deferreds.append(d)
-        self.logger.info('%s -> %s(%s)' % (slave, method, args))
+        self.logger.debug('%s -> %s(%s)' % (slave, method, args))

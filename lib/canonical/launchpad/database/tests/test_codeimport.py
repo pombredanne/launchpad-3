@@ -18,8 +18,8 @@ from canonical.launchpad.database.codeimportjob import (
     CodeImportJob, CodeImportJobSet)
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
-    CodeImportReviewStatus, ICodeImportSet, IPersonSet,
-    RevisionControlSystems)
+    CodeImportReviewStatus, ICodeImportSet, IPersonSet)
+from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
