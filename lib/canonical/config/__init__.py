@@ -19,6 +19,14 @@ import ZConfig
 from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
 
+
+__all__ = [
+    'DatabaseConfig',
+    'dbconfig',
+    'config',
+    ]
+
+
 # The config to use can be specified in one of these files.
 CONFIG_LOOKUP_FILES = ['/etc/launchpad/config']
 if os.environ.get('HOME'):
@@ -359,6 +367,9 @@ class DatabaseConfig:
 
     def setConfigSection(self, section_name):
         self._config_section = section_name
+
+    def getSectionName(self):
+        return self._config_section
 
     def _getConfigSections(self):
         """Returns a list of sections to search for database configuration.

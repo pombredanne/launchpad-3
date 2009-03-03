@@ -846,9 +846,10 @@ class MasterUnavailable(Exception):
     """A master (writable replica) database was requested but not available.
     """
 
-
 MAIN_STORE = 'main' # The main database.
 AUTH_STORE = 'auth' # The authentication database.
+
+ALL_STORES = frozenset([MAIN_STORE, AUTH_STORE])
 
 DEFAULT_FLAVOR = 'default' # Default flavor for current state.
 MASTER_FLAVOR = 'master' # The master database.

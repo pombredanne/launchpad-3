@@ -107,7 +107,7 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
 from canonical.launchpad.webapp.adapter import StoreSelector
-from canonical.launchpad.webapp.interfaces import MASTER_FLAVOR
+from canonical.launchpad.webapp.interfaces import ALL_STORES, MASTER_FLAVOR
 
 SPACE = ' '
 
@@ -144,12 +144,16 @@ def default_master_store(func):
     However, if we then read it back the default Store has to be used.
     """
     def with_default_master_store(*args, **kw):
-        current_flavor = StoreSelector.getDefaultFlavor()
+        current_flavors = {}
+        for store in ALL_STORES:
+            current_flavors[store] = StoreSelector.getDefaultFlavor(store)
         try:
-            StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+            for store in ALL_STORES:
+                StoreSelector.setDefaultFlavor(store, MASTER_FLAVOR)
             return func(*args, **kw)
         finally:
-            StoreSelector.setDefaultFlavor(current_flavor)
+            for store in ALL_STORES:
+                StoreSelector.setDefaultFlavor(store, current_flavors[store])
     return with_default_master_store
 
 
