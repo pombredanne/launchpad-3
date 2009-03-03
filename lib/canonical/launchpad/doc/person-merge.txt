@@ -111,9 +111,12 @@ transferred to Sample Person.
     # a person's preferred email.
     >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     EmailAddressStatus)
-    >>> email = marilize.preferredemail
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> email = IMasterObject(marilize.preferredemail)
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> email.destroySelf()
+    >>> import transaction
+    >>> transaction.commit()
 
     >>> personset.merge(marilize, sample)
 

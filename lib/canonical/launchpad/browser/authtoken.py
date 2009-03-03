@@ -18,6 +18,7 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import Interface
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.launchpad import _
@@ -202,8 +203,8 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
             # It should be possible to do the login before this and avoid
             # this hack. In case the user doesn't want to be logged in
             # automatically we can log him out after doing what we want.
-            from zope.security.proxy import removeSecurityProxy
-            naked_person = removeSecurityProxy(person)
+            naked_person = removeSecurityProxy(
+                getUtility(IPersonSet).get(person.id))
             #      end of evil code.
 
             # Suspended accounts cannot reset their password.
@@ -231,7 +232,7 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
                 naked_person.validateAndEnsurePreferredEmail(
                     removeSecurityProxy(emailaddress))
 
-            self.next_url = canonical_url(person)
+            self.next_url = canonical_url(naked_person)
 
         self.context.consume()
 
@@ -391,10 +392,15 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
 
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
-        if self.email is not None and self.email.person.is_valid_person:
-            self.addError(_(
-                'The email address ${email} is already registered.',
-                mapping=dict(email=self.context.email)))
+        if self.email is not None:
+            # Better spelt as IMasterObject(self.email.person), but that
+            # issues an unnecessary database call.
+            person = getUtility(IPersonSet).get(
+                removeSecurityProxy(self.email).personID)
+            if person.is_valid_person:
+                self.addError(_(
+                    'The email address ${email} is already registered.',
+                    mapping=dict(email=self.context.email)))
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
@@ -406,12 +412,12 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
         If everything went ok, we consume the LoginToken (self.context), so
         nobody can use it again.
         """
-        from zope.security.proxy import removeSecurityProxy
         if self.email is not None:
             # This is a placeholder profile automatically created by one of
             # our scripts, let's just confirm its email address and set a
             # password.
-            person = self.email.person
+            person = getUtility(IPersonSet).get(
+                removeSecurityProxy(self.email).personID)
             assert not person.is_valid_person, (
                 'Account %s has already been claimed and this should '
                 'have been caught by the validate() method.' % person.name)
@@ -492,7 +498,6 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
         Also fire ObjectCreatedEvents for both the newly created Person
         and EmailAddress.
         """
-        from zope.security.proxy import removeSecurityProxy
         rationale = self._getCreationRationale()
         if self.has_openid_request:
             person = None
@@ -505,9 +510,9 @@ class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
                 password=password, passwordEncrypted=True,
                 hide_email_addresses=hide_email_addresses)
             notify(ObjectCreatedEvent(person))
-            account = person.account
             person.validateAndEnsurePreferredEmail(email)
-            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+            account = getUtility(IAccountSet).get(person.accountID)
+            removeSecurityProxy(account).status = AccountStatus.ACTIVE
 
         notify(ObjectCreatedEvent(account))
         notify(ObjectCreatedEvent(email))

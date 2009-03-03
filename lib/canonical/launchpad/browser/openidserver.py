@@ -250,6 +250,7 @@ class OpenIDMixin:
         """
         assert self.account is not None, (
             'Must be logged in to calculate sreg items')
+
         # Collect registration values
         values = {}
         values['fullname'] = self.account.displayname

@@ -19,10 +19,12 @@ import pytz
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import alsoProvides, directlyProvides
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IMasterObject
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp import (
@@ -39,7 +41,7 @@ from canonical.launchpad.interfaces import (
     ITeam, LoginTokenType)
 
 
-UTC = pytz.timezone('UTC')
+UTC = pytz.UTC
 
 
 class LoginTokenSetNavigation(GetitemNavigation):
@@ -97,6 +99,8 @@ class ClaimProfileView(BaseAuthTokenView, LaunchpadFormView):
     @action(_('Continue'), name='confirm')
     def confirm_action(self, action, data):
         email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
+        person = IMasterObject(email.person)
+
         # The user is not yet logged in, but we need to set some
         # things on his new account, so we need to remove the security
         # proxy from it.
@@ -104,17 +108,18 @@ class ClaimProfileView(BaseAuthTokenView, LaunchpadFormView):
         # We should be able to login with this person and set the
         # password, to avoid removing the security proxy, but it didn't
         # work, so I'm leaving this hack for now.
-        from zope.security.proxy import removeSecurityProxy
-        naked_person = removeSecurityProxy(email.person)
+        naked_person = removeSecurityProxy(person)
         naked_person.displayname = data['displayname']
         naked_person.hide_email_addresses = data['hide_email_addresses']
+
+        naked_email = removeSecurityProxy(email)
 
         naked_person.activateAccount(
             comment="Activated by claim profile.",
             password=data['password'],
-            preferred_email=email)
+            preferred_email=naked_email)
         self.context.consume()
-        self.logInPrincipalByEmail(removeSecurityProxy(email).email)
+        self.logInPrincipalByEmail(naked_email.email)
         self.request.response.addInfoNotification(_(
             "Profile claimed successfully"))
 
@@ -137,13 +142,10 @@ class ClaimTeamView(
 
     def initialize(self):
         if not self.redirectIfInvalidOrConsumedToken():
-            self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
-                self.context.email).person
+            self.claimed_profile = getUtility(IPersonSet).getByEmail(
+                self.context.email)
             # Let's pretend the claimed profile provides ITeam while we
             # render/process this page, so that it behaves like a team.
-            # Use a local import as we don't want removeSecurityProxy used
-            # anywhere else.
-            from zope.security.proxy import removeSecurityProxy
             directlyProvides(removeSecurityProxy(self.claimed_profile), ITeam)
         super(ClaimTeamView, self).initialize()
 
@@ -164,7 +166,6 @@ class ClaimTeamView(
         # which means to edit it we need to be logged in as the person we
         # just converted into a team.  Of course, we can't do that, so we'll
         # have to remove its security proxy before we update it.
-        from zope.security.proxy import removeSecurityProxy
         self.updateContextFromData(
             data, context=removeSecurityProxy(self.claimed_profile))
         self.next_url = canonical_url(self.claimed_profile)
@@ -307,7 +308,6 @@ class ValidateGPGKeyView(BaseAuthTokenView, LaunchpadFormView):
         emails = chain(requester.validatedemails, [requester.preferredemail])
         # Must remove the security proxy because the user may not be logged in
         # and thus won't be allowed to view the requester's email addresses.
-        from zope.security.proxy import removeSecurityProxy
         emails = [
             removeSecurityProxy(email).email.lower() for email in emails]
 
@@ -395,7 +395,6 @@ class ValidateGPGKeyView(BaseAuthTokenView, LaunchpadFormView):
         return key
 
 
-
 class ValidateTeamEmailView(ValidateEmailView):
     expected_token_types = (LoginTokenType.VALIDATETEAMEMAIL,)
 
@@ -447,15 +446,12 @@ class MergePeopleView(BaseAuthTokenView, LaunchpadView):
         # dupe account, so we can assign it to him.
         requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
-        email = emailset.getByEmail(self.context.email)
-        # EmailAddress.{person,status} are readonly fields, so we need to
-        # remove the security proxy before changing them.
-        from zope.security.proxy import removeSecurityProxy
+        email = removeSecurityProxy(emailset.getByEmail(self.context.email))
         # As a person can have at most one preferred email, ensure
         # that this new email does not have the PREFERRED status.
-        removeSecurityProxy(email).status = EmailAddressStatus.NEW
-        removeSecurityProxy(email).person = requester.id
-        email.account = requester.account
+        email.status = EmailAddressStatus.NEW
+        email.personID = requester.id
+        email.accountID = requester.accountID
         requester.validateAndEnsurePreferredEmail(email)
 
         # Need to flush all changes we made, so subsequent queries we make

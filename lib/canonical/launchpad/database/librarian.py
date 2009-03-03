@@ -12,7 +12,8 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet)
+    ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet,
+    IMasterStore)
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient)
 from canonical.database.sqlbase import SQLBase
@@ -170,7 +171,10 @@ class LibraryFileAliasSet(object):
         else:
             client = getUtility(ILibrarianClient)
         fid = client.addFile(name, size, file, contentType, expires, debugID)
-        return LibraryFileAlias.get(fid)
+        lfa = IMasterStore(LibraryFileAlias).find(
+            LibraryFileAlias, LibraryFileAlias.id == fid).one()
+        assert lfa is not None, "client.addFile didn't!"
+        return lfa
 
     def __getitem__(self, key):
         """See ILibraryFileAliasSet.__getitem__"""
