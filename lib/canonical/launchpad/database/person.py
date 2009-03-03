@@ -2443,8 +2443,18 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
+        return self.getPPAByName('ppa')
+
+    @property
+    def ppas(self):
+        """See `IPerson`."""
+        return Archive.selectBy(
+            owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
+
+    def getPPAByName(self, name):
+        """See `IPerson`."""
         return Archive.selectOneBy(
-            owner=self, purpose=ArchivePurpose.PPA, name='ppa')
+            owner=self, purpose=ArchivePurpose.PPA, name=name)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
