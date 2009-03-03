@@ -116,6 +116,16 @@ class ICodeImport(Interface):
         allow_fragment=False, # Fragment makes no sense in Subversion.
         trailing_slash=False) # See http://launchpad.net/bugs/56357.
 
+    git_repo_url = URIField(title=_("Git URL"), required=False,
+        description=_(
+            "XXX."),
+        allowed_schemes=["git"],
+        allow_userinfo=False, # Only anonymous access is supported.
+        allow_port=True,
+        allow_query=False,    # Query makes no sense in Subversion.
+        allow_fragment=False, # Fragment makes no sense in Subversion.
+        trailing_slash=False) # See http://launchpad.net/bugs/56357.
+
     cvs_root = TextLine(title=_("Repository"), required=False,
         constraint=validate_cvs_root,
         description=_("The CVSROOT. "

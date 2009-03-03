@@ -137,6 +137,18 @@ class RevisionControlSystems(DBEnumeratedType):
         in the CVS design.
         """)
 
+    BZR_SVN = DBItem(3, """
+        Subversion via bzr-svn
+
+        XXX.
+        """)
+
+    GIT = DBItem(4, """
+        Git
+
+        XXX.
+        """)
+
 
 class ProductSeriesNameField(ContentNameField):
 
