@@ -124,6 +124,8 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
+from canonical.launchpad.database.milestone import (
+    get_assigned_milestones_from_bugtasks)
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
@@ -2020,7 +2022,21 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         return self.getBugSubscriberPackageSearchURL()
 
 
-class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
+class RelevantMilestonesMixin:
+    """Mixin to narrow the milestone list to only relevant milestones."""
+
+    def getMilestoneWidgetValues(self):
+        """Return data used to render the milestone checkboxes."""
+        milestones = get_assigned_milestones_from_bugtasks(
+            self.searchUnbatched())
+        for milestone in milestones:
+            yield dict(title=(milestone.title or milestone.id),
+                       value=milestone.id, checked=False)
+
+
+class PersonRelatedBugsView(RelevantMilestonesMixin,
+                            BugTaskSearchListingView,
+                            FeedsMixin):
     """All bugs related to someone."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
@@ -2074,7 +2090,8 @@ class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
         return canonical_url(self.context) + "/+bugs"
 
 
-class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
+class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                             BugTaskSearchListingView):
     """All bugs assigned to someone."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
@@ -2125,7 +2142,8 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
         return canonical_url(self.context) + "/+assignedbugs"
 
 
-class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
+class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                              BugTaskSearchListingView):
     """All bugs commented on by a Person."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
