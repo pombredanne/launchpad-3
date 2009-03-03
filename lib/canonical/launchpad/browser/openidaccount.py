@@ -13,7 +13,6 @@ from canonical.launchpad.webapp import action, LaunchpadEditFormView
 class AccountEditView(LaunchpadEditFormView):
     """Edit account details."""
 
-    label = "Edit details"
     schema = IAccount
     field_names = ["displayname"]
     next_url = '/'

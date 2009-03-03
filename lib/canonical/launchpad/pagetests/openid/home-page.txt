@@ -10,7 +10,7 @@ is presented with a login form:
     This is the Launchpad login service
     ...
     If you want to change any of your account's details, you can do so
-    by logging in using the form below.
+    by logging in using the form beside.
     ...
 
 However, if the user is logged in, they are presented with some
@@ -24,6 +24,29 @@ information about their account.
     Welcome Mark Shuttleworth
 
 
+== Previously Visited Sites ==
+
+When the person is logged in and points his browser to openid.launchpad.dev,
+he will also see a list containing up to 10 sites in which he authenticated
+recently, using the OpenID service.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.openidserver import (
+    ...     IOpenIDRPSummarySet)
+    >>> login(ANONYMOUS)
+    >>> summary = getUtility(IOpenIDRPSummarySet).record(
+    ...     getUtility(IPersonSet).getByName('sabdfl').account,
+    ...     'http://example.com/')
+    >>> logout()
+
+    >>> browser.reload()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'visited-sites'))
+    Sites you last authenticated to
+    Site                 First authenticated  Last authenticated
+    http://example.com/  2009-03-02           2009-03-02     
+
+
 == Editing User Details ==
 
 The user can edit their details from this page:
@@ -35,12 +58,6 @@ The user can edit their details from this page:
     http://openid.launchpad.dev/
     >>> print browser.title
     Welcome sabdfl
-
-
-== Previously Visited Sites ==
-
-XXX Fill in some code here.  Need to get OpenID code to properly
-register authorisations first.
 
 
 == Logging Out ==
