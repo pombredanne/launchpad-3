@@ -75,7 +75,8 @@ from a store other than the correct Master.
 
     >>> auth_slave = ISlaveStore(Account)
     >>> t = transaction.begin()
-    >>> account = auth_slave.get(Account, 1)
+    >>> account = auth_slave.find(
+    ...     Account, openid_identifier='sabdfl_oid').one()
     >>> account.displayname = 'Cannot change'
     >>> transaction.commit()
     Traceback (most recent call last):
@@ -83,7 +84,8 @@ from a store other than the correct Master.
     InternalError: transaction is read-only
 
     >>> t = transaction.begin()
-    >>> account = auth_slave.get(Account, 1)
+    >>> account = auth_slave.find(
+    ...     Account, openid_identifier='sabdfl_oid').one()
     >>> IMasterObject(account).displayname = 'Can change'
     >>> transaction.commit()
 
