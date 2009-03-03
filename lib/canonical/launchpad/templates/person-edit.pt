@@ -16,32 +16,27 @@
       <div metal:use-macro="context/@@launchpad_form/form">
 
         <metal:other_input fill-slot="extra_bottom">
-          <tal:hidden 
-            replace="structure
-              view/i_know_this_is_an_openid_security_issue_input|nothing" />
+          <tal:hidden
+            replace="structure view/i_know_this_is_an_openid_security_issue_input|nothing" />
         </metal:other_input>
       </div>
 
       <h2 style="margin-top: 2em;">Other actions</h2>
       <ul style="list-style-type:none; padding-left:1.5em;">
         <li
-          tal:content="
-          structure context/menu:overview/editlanguages/render">
+          tal:content="structure context/menu:overview/editlanguages/render">
           Set your preferred language
         </li>
         <li
-          tal:content="
-          structure context/menu:overview/editwikinames/render">
+          tal:content="structure context/menu:overview/editwikinames/render">
           Edit your wiki names
         </li>
         <li
-          tal:content="
-          structure context/menu:overview/editircnicknames/render">
+          tal:content="structure context/menu:overview/editircnicknames/render">
           Edit your IRC contact names
         </li>
         <li
-          tal:content="
-          structure context/menu:overview/editjabberids/render">
+          tal:content="structure context/menu:overview/editjabberids/render">
           Edit your Jabber contact names
         </li>
       </ul>
