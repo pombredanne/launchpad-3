@@ -191,7 +191,7 @@ to which the provided subscriber belongs:
 Finally, many callsites of getBySubscriber() will be interested not only
 in each subscription of the subscriber, but also the generated
 ArchiveAuthToken for each subscription of the subscriber. These can
-be returned as well using the the getBySubscriberWithTokens():
+be returned as well using the the getBySubscriberWithActiveToken():
 
 First create a token for joesmith's subscription for cprov's archive:
 
@@ -207,8 +207,8 @@ Now print out all subscriptions with their tokens for joesmith:
     ...             token_text = "None"
     ...         print subscription.archive.title
     ...         print token_text
-    >>> print_subscriptions_with_tokens(sub_set.getBySubscriberWithTokens(
-    ...     joesmith))
+    >>> print_subscriptions_with_tokens(
+    ...     sub_set.getBySubscriberWithActiveToken(joesmith))
     PPA for Celso Providelo            test_token
     PPA for Mark Shuttleworth          None
 
@@ -219,8 +219,8 @@ subscription:
     >>> joesmith_token.deactivate()
     >>> login("joe@example.com")
 
-    >>> print_subscriptions_with_tokens(sub_set.getBySubscriberWithTokens(
-    ...    joesmith))
+    >>> print_subscriptions_with_tokens(
+    ... sub_set.getBySubscriberWithActiveToken(joesmith))
     PPA for Celso Providelo            None
     PPA for Mark Shuttleworth          None
 

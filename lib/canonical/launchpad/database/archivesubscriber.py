@@ -90,8 +90,7 @@ class ArchiveSubscriberSet:
                     subscriber)),
             *extra_exprs).order_by(Desc(ArchiveSubscriber.date_created))
 
-    def getBySubscriberWithTokens(self, subscriber, archive=None,
-        current_only=True):
+    def getBySubscriberWithActiveToken(self, subscriber, archive=None):
         """See `IArchiveSubscriberSet`."""
 
         # We need a left join with ArchiveSubscriber as
@@ -109,7 +108,7 @@ class ArchiveSubscriberSet:
         # Grab the extra Storm expressions, for this query,
         # depending on the params:
         extra_exprs = self._getExprsForSubscriptionQueries(
-            archive, current_only)
+            archive)
 
         store = Store.of(subscriber)
         return store.using(*origin).find(

@@ -33,7 +33,7 @@ though we do not yet have a subscription:
     >>> new_token = cprov.archive.newAuthToken(name12)
     Traceback (most recent call last):
     ...
-    Unauthorized: You do not have permission to access PPA for
+    Unauthorized: You do not have a subscription for PPA for
     Celso Providelo.
 
 Create a subscription for name12 to cprov's archive:
@@ -126,7 +126,7 @@ And retrieve the token by id and by token data:
 
 Tokens can also be retreived by archive and person:
 
-    >>> print token_set.getByArchiveAndPerson(
+    >>> print token_set.getActiveTokenForArchiveAndPerson(
     ...     new_token.archive, new_token.person).token
     testtoken
 
@@ -156,10 +156,10 @@ We can do this as an admin too:
     >>> login("admin@canonical.com")
     >>> new_token.deactivate()
 
-The IArchiveAuthTokenSet.getByArchiveAndPerson() method will not return
-tokens that have been deactivated:
+The IArchiveAuthTokenSet.getActiveTokenForArchiveAndPerson() method will
+not return tokens that have been deactivated:
 
-    >>> print token_set.getByArchiveAndPerson(
+    >>> print token_set.getActiveTokenForArchiveAndPerson(
     ...     new_token.archive, new_token.person)
     None
 

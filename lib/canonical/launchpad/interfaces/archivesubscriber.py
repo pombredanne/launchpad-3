@@ -127,14 +127,16 @@ class IArchiveSubscriberSet(Interface):
             By default the tokens are not included in the resultset.
         """
 
-    def getBySubscriberWithTokens(subscriber, archive=None,
-        current_only=True):
+    def getBySubscriberWithActiveToken(subscriber, archive=None):
         """Return all the subscriptions for a person with the correspending
         token for each subscription.
 
-        This method takes exactly the same params as getBySubscriber().
+        :param subscriber: An `IPerson` for whom to return all
+            `ArchiveSubscriber` records.
+        :param archive: An optional `IArchive` which restricts
+            the results to that particular archive.
         :return: a storm `ResultSet` of
-            (`IArchiveSubscriber`, `IArchiveAuthToken`) tuples.
+            (`IArchiveSubscriber`, `IArchiveAuthToken` or None) tuples.
         """
 
     def getByArchive(archive, current_only=True):
