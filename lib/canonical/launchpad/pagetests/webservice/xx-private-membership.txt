@@ -57,3 +57,81 @@ But a user with the proper permissions can see the private super team.
     1
     >>> print super_teams['entries'][0]['self_link']
     http://api.launchpad.dev/beta/~myteam
+
+
+= Changing team visibility =
+
+New teams when created have public visibility.  That attribute can be
+changed by admins and commercial admins but not by regular users.
+
+    >>> # Create a webservice object for commercial-admins.
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> login(ANONYMOUS)
+    >>> commercial_admin = getUtility(IPersonSet).getByName(
+    ...     'commercial-admins').activemembers[0]
+    >>> logout()
+    >>> comm_webservice = webservice_for_person(
+    ...     commercial_admin, permission=OAuthPermission.WRITE_PRIVATE)
+
+    >>> print comm_webservice.named_post(
+    ...    "/people", "newTeam", {},
+    ...    name='my-new-team', display_name="My New Team")
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../~my-new-team
+    ...
+    >>> team = webservice.get('/~my-new-team').jsonBody()
+    >>> print team['self_link']
+    http://api.launchpad.dev/.../~my-new-team
+    >>> print team['visibility']
+    Public
+
+A commercial admin may change the visibility.  There is no helper
+method to do it, but it can be changed via a patch.
+
+    >>> import simplejson
+    >>> def modify_team(team, representation, method, service):
+    ...     "A helper function to send a PUT or PATCH request to a team."
+    ...     headers = {'Content-type': 'application/json'}
+    ...     return service(team, method,
+    ...                    simplejson.dumps(representation),
+    ...                    headers)
+
+    >>> print modify_team('~my-new-team', {'visibility' : 'Private Membership'},
+    ...     'PATCH', comm_webservice)
+    HTTP/1.1 209 Content Returned
+    ...
+    Content-Type: application/json
+    ...
+    <BLANKLINE>
+    {...}
+
+    >>> team = webservice.get('/~my-new-team').jsonBody()
+    >>> print team['visibility']
+    Private Membership
+
+As an admin, Salgado can also change the team's visibility.
+
+    >>> print modify_team('~my-new-team', {'visibility' : 'Public'},
+    ...     'PATCH', webservice)
+    HTTP/1.1 209 Content Returned
+    ...
+    Content-Type: application/json
+    ...
+    <BLANKLINE>
+    {...}
+
+    >>> team = webservice.get('/~my-new-team').jsonBody()
+    >>> print team['visibility']
+    Public
+
+An unprivileged user is not able to change the visibility.
+
+    >>> print modify_team('~my-new-team', {'visibility' : 'Private Membership'},
+    ...     'PATCH', user_webservice)
+    HTTP/1.1 401 Unauthorized
+    ...

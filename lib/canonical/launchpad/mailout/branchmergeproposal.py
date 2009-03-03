@@ -6,17 +6,23 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.mail import get_msgid
-from canonical.launchpad.interfaces import CodeReviewNotificationLevel
+from canonical.launchpad.interfaces import (
+    CodeReviewNotificationLevel, IMergeProposalCreatedJobSource)
 from canonical.launchpad.mailout.branch import BranchMailer, RecipientReason
 from canonical.launchpad.webapp import canonical_url
 
 
 def send_merge_proposal_created_notifications(merge_proposal, event):
-    """Notify branch subscribers when merge proposals are created."""
-    BMPMailer.forCreation(merge_proposal, merge_proposal.registrant).sendAll()
+    """Notify branch subscribers when merge proposals are created.
+
+    This action is deferred to MergeProposalCreatedJob, so that a diff can be
+    generated first.
+    """
+    getUtility(IMergeProposalCreatedJobSource).create(merge_proposal)
 
 
 def send_merge_proposal_modified_notifications(merge_proposal, event):
@@ -118,10 +124,16 @@ class BMPMailer(BranchMailer):
         """Return a mailer for a request to review a BranchMergeProposal."""
         from_address = klass._format_user_address(from_user)
         recipients = {reason.subscriber: reason}
+        comment = None
+        if (merge_proposal.root_comment is not None and
+            (merge_proposal.root_comment.message.owner ==
+             merge_proposal.registrant)):
+            comment = merge_proposal.root_comment
         return klass(
             'Request to review proposed merge of %(source_branch)s into '
             '%(target_branch)s', 'review-requested.txt', recipients,
-            merge_proposal, from_address, message_id=get_msgid())
+            merge_proposal, from_address, message_id=get_msgid(),
+            comment=comment, review_diff=merge_proposal.review_diff)
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""

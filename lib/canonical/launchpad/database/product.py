@@ -21,6 +21,7 @@ from sqlobject import (
     SQLObjectNotFound, AND)
 from storm.expr import And
 from storm.locals import Unicode
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -39,6 +40,7 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugtracker import BugTracker
+from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.commercialsubscription import (
     CommercialSubscription)
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -46,7 +48,8 @@ from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.milestone import (
+    HasMilestonesMixin, Milestone)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
@@ -155,7 +158,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
-              HasAliasMixin, StructuralSubscriptionTargetMixin):
+              HasAliasMixin, StructuralSubscriptionTargetMixin,
+              HasMilestonesMixin):
 
     """A Product."""
 
@@ -230,19 +234,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
 
-    @property
-    def upstream_bugtracker_links(self):
-        """Return the upstream bugtracker links for this project.
-
-        :return: A dict of the bug filing URL and the search URL as
-            returned by `BugTracker.getBugFilingAndSearchLinks()`. If
-            self.bugtracker is None, return None.
-        """
-        if not self.bugtracker:
-            return None
-        else:
-            return self.bugtracker.getBugFilingAndSearchLinks(
-                self.remote_product)
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.product == self)
 
     @property
     def official_anything(self):
@@ -568,18 +562,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
-
-    @property
-    def all_milestones(self):
-        """See `IProduct`."""
-        return Milestone.selectBy(
-            product=self, orderBy=['-dateexpected', 'name'])
-
-    @property
-    def milestones(self):
-        """See `IProduct`."""
-        return Milestone.selectBy(
-            product=self, visible=True, orderBy=['-dateexpected', 'name'])
 
     @property
     def sourcepackages(self):
@@ -977,6 +959,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             user.inTeam(celebs.admin) or
             user.inTeam(self.owner))
 
+    def getLinkedBugWatches(self):
+        """See `IProduct`."""
+        store = Store.of(self)
+        return store.find(
+            BugWatch,
+            And(self == BugTask.product,
+                BugTask.bugwatch == BugWatch.id,
+                BugWatch.bugtracker == self.getExternalBugTracker()))
+
 
 class ProductSet:
     implements(IProductSet)
@@ -1293,3 +1284,13 @@ class ProductSet:
                 BugTracker.bugtrackertype == bugtracker_type,
                 ])
         return store.find(Product, And(*conditions))
+
+    def getSFLinkedProductsWithNoneRemoteProduct(self):
+        """See `IProductSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        conditions = And(
+            Product.remote_product == None,
+            Product.sourceforgeproject != None)
+
+        return store.find(Product, conditions)
+

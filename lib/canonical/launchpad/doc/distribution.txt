@@ -105,6 +105,16 @@ You can list development distroseriess:
     ...     print devdist.name
     hoary
 
+You can use the has_published_binaries property to find out if the
+distribution has any binaries on disk.  This is useful when searching for
+packages and you need to tailor any user messages about what types of packages
+are available.
+
+    >>> ubuntu.has_published_binaries
+    True
+
+    >>> gentoo.has_published_binaries
+    False
 
 == Guessing package names ==
 

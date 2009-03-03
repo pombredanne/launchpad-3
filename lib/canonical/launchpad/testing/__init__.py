@@ -1,7 +1,13 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
-import os, shutil, tempfile, unittest
+__metaclass__ = type
+
+from pprint import pformat
+import os
+import shutil
+import tempfile
+import unittest
 
 from storm.store import Store
 
@@ -183,6 +189,13 @@ class TestCase(unittest.TestCase):
         """Assert that 'needle' is not in 'haystack'."""
         self.assertFalse(
             needle in haystack, '%r in %r' % (needle, haystack))
+
+    def assertContentEqual(self, iter1, iter2):
+        """Assert that 'iter1' has the same content as 'iter2'."""
+        list1 = sorted(iter1)
+        list2 = sorted(iter2)
+        self.assertEqual(
+            list1, list2, '%s != %s' % (pformat(list1), pformat(list2)))
 
     def assertRaises(self, excClass, callableObj, *args, **kwargs):
         """Assert that a callable raises a particular exception.
@@ -410,8 +423,6 @@ class TestCaseWithFactory(TestCase):
 def capture_events(callable_obj, *args, **kwargs):
     """Capture the events emitted by a callable.
 
-    :param event_type: The type of event that notification is expected
-        for.
     :param callable_obj: The callable to call.
     :param *args: The arguments to pass to the callable.
     :param **kwargs: The keyword arguments to pass to the callable.
@@ -428,3 +439,28 @@ def capture_events(callable_obj, *args, **kwargs):
         return result, events
     finally:
         zope.event.subscribers[:] = old_subscribers
+
+
+def get_lsb_information():
+    """Returns a dictionary with the LSB host information.
+
+    Code stolen form /usr/bin/lsb-release
+    """
+    distinfo = {}
+    if os.path.exists('/etc/lsb-release'):
+        for line in open('/etc/lsb-release'):
+            line = line.strip()
+            if not line:
+                continue
+            # Skip invalid lines
+            if not '=' in line:
+                continue
+            var, arg = line.split('=', 1)
+            if var.startswith('DISTRIB_'):
+                var = var[8:]
+                if arg.startswith('"') and arg.endswith('"'):
+                    arg = arg[1:-1]
+                distinfo[var] = arg
+
+    return distinfo
+
