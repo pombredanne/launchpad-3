@@ -1167,13 +1167,17 @@ class SourcePackageBranchesView(BranchListingView):
 
     # XXX: "By most interesting" search doesn't work at all
 
-    # XXX: No menu for this page, there should be. And the menu should just
-    # have register a branch.
+    # XXX: JonathanLange 2009-03-03 spec=package-branches: This page has no
+    # menu yet -- do we need one?
 
-    # XXX: No link back to this page from branches, other than code tab
+    # XXX: JonathanLange 2009-03-03 spec=package-branches: Add a link to
+    # register a branch. This requires there to be a package branch
+    # registration page.
 
-    # XXX: Show me at the bottom I can see previous/next series or: [dapper]
-    # [edgy] feisty [gutsy] [hardy]
+    # XXX: "Nearby branches" area.
+
+    # XXX: Show me at the bottom I can see previous/next series or:
+    # [dapper] [edgy] feisty [gutsy] [hardy]
 
     # XXX: no message when there are no branches
 
