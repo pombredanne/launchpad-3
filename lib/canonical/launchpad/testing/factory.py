@@ -57,7 +57,8 @@ from canonical.launchpad.interfaces.codeimportmachine import (
     CodeImportMachineState, ICodeImportMachineSet)
 from canonical.launchpad.interfaces.codeimportresult import (
     CodeImportResultStatus, ICodeImportResultSet)
-from canonical.launchpad.interfaces.codeimport import CodeImportReviewStatus
+from canonical.launchpad.interfaces.codeimport import (
+    CodeImportReviewStatus, RevisionControlSystems)
 from canonical.launchpad.interfaces.country import ICountrySet
 from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionSet)
@@ -82,8 +83,7 @@ from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, License)
-from canonical.launchpad.interfaces.productseries import (
-    IProductSeries, RevisionControlSystems)
+from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.project import IProjectSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.revision import IRevisionSet
