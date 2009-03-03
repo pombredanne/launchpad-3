@@ -1,5 +1,8 @@
 SET client_min_messages=ERROR;
 /*
+Migrate columns from ProductRelease to Milestone.
+The migrated columns are indicated below, marked with a *
+
     Column     |            Type             |
 ---------------+-----------------------------+--------------------------------
  id            | integer                     | not null default nextval(
@@ -30,8 +33,6 @@ SUMMARY OF CHANGES:
         NOTNULL constraint on ProductRelease.milestone
 */
 
-
-BEGIN;
 
 -- ProductReleases are only unique on the version and productseries,
 -- which causes a problem when merging them with Milestones, which
@@ -96,11 +97,6 @@ WHERE Milestone.name = lower(ProductRelease.version)
 ALTER TABLE ProductRelease
 ALTER COLUMN milestone SET NOT NULL;
 
--- The version and productseries columns are going away, and there is no point
--- in ensuring that they are unique.
-ALTER TABLE ProductRelease
-DROP constraint productrelease_productseries_version_key;
-
 ALTER TABLE ProductRelease
 DROP COLUMN version;
 
@@ -113,6 +109,8 @@ DROP COLUMN summary;
 ALTER TABLE ProductRelease
 DROP COLUMN productseries;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+-- Debloat
+CLUSTER ProductRelease USING productrelease_pkey;
+CLUSTER MileStone USING milestone_pkey;
 
-COMMIT;
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 24, 0);
