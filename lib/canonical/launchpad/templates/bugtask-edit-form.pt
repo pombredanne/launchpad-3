@@ -124,7 +124,7 @@
 
       <tal:upstreamtask
           condition="python:context.product"
-          define="omit_required default;
+          define="omit_required python:True;
                   error python:view.getFieldError('product')">
         <tr>
           <td colspan="2">
