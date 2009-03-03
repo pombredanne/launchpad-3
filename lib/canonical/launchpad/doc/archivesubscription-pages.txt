@@ -162,18 +162,14 @@ private archives:
     >>> view = create_initialized_view(sabdfl, name="+archivesubscriptions")
     >>> view.has_subscriptions
     False
-    >>> view.has_active_subscriptions
-    False
 
-But spiv is subscribed to a number of archives, but none have been activated:
+But spiv is subscribed to a number of archives:
 
     >>> spiv = getUtility(IPersonSet).getByName('spiv')
     >>> login("andrew.bennetts@ubuntulinux.com")
     >>> view = create_initialized_view(spiv, name="+archivesubscriptions")
     >>> view.has_subscriptions
     True
-    >>> view.has_active_subscriptions
-    False
 
 The subscriptions_with_tokens property returns all the current archive
 subscriptions for the person, with a corresponding token for each:
@@ -216,8 +212,6 @@ And the subscription has been activated:
     Private PPA for Celso Providelo         spiv's my friend         None
 
     >>> view.has_subscriptions
-    True
-    >>> view.has_active_subscriptions
     True
 
 The user will also see a notification of the subscription activation:

@@ -110,40 +110,27 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for managing a persons archive subscriptions."""
 
-    def redirectToSelf(self):
-        """As a function for readability."""
-        self.request.response.redirect(self.request.getURL())
-
     def initialize(self):
-        """Process any POSTed subscription activations."""
+        """Check for any POSTed subscription activations."""
         super(PersonArchiveSubscriptionsView, self).initialize()
 
         if self.request.method == "POST":
             self.processSubscriptionActivation()
 
-    @cachedproperty
+    @property
     def subscriptions_with_tokens(self):
         """Return all the persons archive subscriptions with the token
         for each."""
-        result= getUtility(IArchiveSubscriberSet).getBySubscriberWithTokens(
+        return getUtility(IArchiveSubscriberSet).getBySubscriberWithTokens(
             self.context)
-        # Force the result to be executed by converting it to a list so
-        # we can cache the results:
-        return list(result)
-
-    @property
-    def has_subscriptions(self):
-        """Return whether this person has any current subscriptions."""
-        return len(self.subscriptions_with_tokens) > 0
 
     @cachedproperty
-    def has_active_subscriptions(self):
-        """Return whether this person has any current subscriptions that
-        they have activated."""
-        # Collect all the tokens the persons subscriptions.
-        tokens = [token for subscr, token in self.subscriptions_with_tokens
-                     if token]
-        return len(tokens) > 0
+    def has_subscriptions(self):
+        """Return whether this person has any subscriptions."""
+        # XXX noodles 20090224 bug=246200: use bool() when it gets fixed
+        # in storm.
+        return getUtility(
+            IArchiveSubscriberSet).getBySubscriber(self.context).count() > 0
 
     def processSubscriptionActivation(self):
         """Process any posted data that activates a subscription."""
