@@ -1177,11 +1177,6 @@ class SourcePackageBranchesView(BranchListingView):
 
     # XXX: "Nearby branches" area.
 
-    # XXX: Show me at the bottom I can see previous/next series or:
-    # [dapper] [edgy] feisty [gutsy] [hardy]
-
-    # XXX: no message when there are no branches
-
     @cachedproperty
     def branch_count(self):
         """The number of total branches the user can see."""
