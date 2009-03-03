@@ -733,7 +733,8 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
             return None
         else:
             return target.bugtracker.getBugFilingAndSearchLinks(
-                target.remote_product)
+                target.remote_product, self.context.bug.title,
+                self.context.bug.description)
 
 
 class BugTrackerCreationStep(AlsoAffectsStep):
