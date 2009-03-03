@@ -383,7 +383,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.product.ProductActiveReviewsView"
+    class="canonical.launchpad.browser.branchmergeproposallisting.ProductActiveReviewsView"
     permission="zope.Public"
     facet="branches"
     name="+activereviews"
@@ -392,7 +392,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.product.ProductApprovedMergesView"
+    class="canonical.launchpad.browser.branchmergeproposallisting.ProductApprovedMergesView"
     permission="zope.Public"
     facet="branches"
     name="+approvedmerges"

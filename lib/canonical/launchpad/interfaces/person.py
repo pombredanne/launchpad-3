@@ -760,6 +760,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                   description=_("The Archive owned by this person, his PPA."),
                   schema=Interface)) # Really IArchive, see archive.py
 
+    ppas = Attribute(
+        "List of PPAs owned by this person or team ordered by name.")
+
     entitlements = Attribute("List of Entitlements for this person or team.")
 
     structural_subscriptions = Attribute(
@@ -1194,6 +1197,15 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                 themself is making the request.
 
         :return: True if the user was subscribed, false if they weren't.
+        """
+
+    def getPPAByName(name):
+        """Return a PPA with the given name if it exists or None.
+
+        :param name: A string with the exact name of the ppa being looked up.
+
+        :return: an `IArchive` record corresponding to the PPA or None if it
+            was not found.
         """
 
 

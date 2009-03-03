@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Tests for Branches."""
 
@@ -35,11 +35,10 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
     ANONYMOUS, login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces import (
-    BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
-    CannotDeleteBranch, CodeReviewNotificationLevel, CreateBugParams,
-    IBranchSet, IBugSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
-    ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
-    SpecificationDefinitionStatus)
+    BranchSubscriptionNotificationLevel, BranchType, CannotDeleteBranch,
+    CodeReviewNotificationLevel, CreateBugParams, IBranchSet, IBugSet,
+    ILaunchpadCelebrities, IPersonSet, IProductSet, ISpecificationSet,
+    InvalidBranchMergeProposal, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
@@ -1145,87 +1144,6 @@ class TestBranchLifecycleStatus(TestCaseWithFactory):
                       BranchLifecycleStatus.ABANDONED):
             self.checkStatusAfterUpdate(
                 state, BranchLifecycleStatus.DEVELOPMENT)
-
-
-class BranchSorting(TestCase):
-    """Test cases for the sort_by option of BranchSet getBranch* methods."""
-
-    layer = LaunchpadZopelessLayer
-
-    def createPersonWithTwoBranches(self):
-        """Create a person and two branches that belong to that person."""
-        new_person, email = getUtility(IPersonSet).createPersonAndEmail(
-            "test@example.com",
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-
-        branch_set = getUtility(IBranchSet)
-        branch_a = branch_set.new(
-            BranchType.MIRRORED, "a", new_person, new_person, None,
-            "http://bzr.example.com/a")
-        branch_b = branch_set.new(
-            BranchType.MIRRORED, "b", new_person, new_person, None,
-            "http://bzr.example.com/b")
-
-        return new_person, branch_a, branch_b
-
-    def assertEqualByID(self, first, second):
-        """Compare two lists of database objects by id."""
-        # XXX: 2007-10-22 MichaelHudson bug=154016: This is only needed
-        # because getBranchesForContext queries the BranchWithSortKeys table
-        # and we want to compare the results with objects from the Branch
-        # table.  This method can be removed when we can get rid of
-        # BranchWithSortKeys.
-        self.assertEqual([a.id for a in first], [b.id for b in second])
-
-    def xmas(self, year):
-        """Create a UTC datetime for Christmas of the given year."""
-        return datetime(year=year, month=12, day=25, tzinfo=UTC)
-
-    def test_sortByRecentChanges(self):
-        """Test the MOST/LEAST_RECENTLY_CHANGED_FIRST options."""
-        new_person, modified_in_2005, modified_in_2006 = (
-            self.createPersonWithTwoBranches())
-
-        modified_in_2005.date_last_modified = self.xmas(2005)
-        modified_in_2006.date_last_modified = self.xmas(2006)
-
-        syncUpdate(modified_in_2005)
-        syncUpdate(modified_in_2006)
-
-        getBranchesForContext = getUtility(IBranchSet).getBranchesForContext
-        self.assertEqualByID(
-            getBranchesForContext(
-                new_person,
-                sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST),
-            [modified_in_2006, modified_in_2005])
-        self.assertEqualByID(
-            getBranchesForContext(
-                new_person,
-                sort_by=BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST),
-            [modified_in_2005, modified_in_2006])
-
-    def test_sortByAge(self):
-        """Test the NEWEST_FIRST and OLDEST_FIRST options."""
-        new_person, created_in_2005, created_in_2006 = (
-            self.createPersonWithTwoBranches())
-
-        # In the normal course of things date_created is not writable and so
-        # we have to use removeSecurityProxy() here.
-        removeSecurityProxy(created_in_2005).date_created = self.xmas(2005)
-        removeSecurityProxy(created_in_2006).date_created = self.xmas(2006)
-
-        syncUpdate(created_in_2005)
-        syncUpdate(created_in_2006)
-
-        getBranchesForContext = getUtility(IBranchSet).getBranchesForContext
-        self.assertEqualByID(
-            getBranchesForContext(
-                new_person, sort_by=BranchListingSort.NEWEST_FIRST),
-            [created_in_2006, created_in_2005])
-        self.assertEqualByID(
-            getBranchesForContext(
-                new_person, sort_by=BranchListingSort.OLDEST_FIRST),
-            [created_in_2005, created_in_2006])
 
 
 class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
