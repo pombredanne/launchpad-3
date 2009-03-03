@@ -113,12 +113,13 @@ class CodeImportSourceDetails:
     """
 
     def __init__(self, branch_id, rcstype, svn_branch_url=None, cvs_root=None,
-                 cvs_module=None):
+                 cvs_module=None, git_repo_url=None):
         self.branch_id = branch_id
         self.rcstype = rcstype
         self.svn_branch_url = svn_branch_url
         self.cvs_root = cvs_root
         self.cvs_module = cvs_module
+        self.git_repo_url = git_repo_url
 
     @classmethod
     def fromArguments(cls, arguments):
@@ -127,14 +128,17 @@ class CodeImportSourceDetails:
         rcstype = arguments.pop(0)
         if rcstype == 'svn':
             [svn_branch_url] = arguments
-            cvs_root = cvs_module = None
+            cvs_root = cvs_module = git_repo_url = None
         elif rcstype == 'cvs':
-            svn_branch_url = None
+            svn_branch_url = git_repo_url = None
             [cvs_root, cvs_module] = arguments
+        elif rcstype == 'git':
+            cvs_root = cvs_module = svn_branch_url = None
+            [git_repo_url] = arguments
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module, git_repo_url)
 
     @classmethod
     def fromCodeImport(cls, code_import):
@@ -142,17 +146,21 @@ class CodeImportSourceDetails:
         if code_import.rcs_type == RevisionControlSystems.SVN:
             rcstype = 'svn'
             svn_branch_url = str(code_import.svn_branch_url)
-            cvs_root = cvs_module = None
+            cvs_root = cvs_module = git_repo_url = None
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             rcstype = 'cvs'
-            svn_branch_url = None
+            svn_branch_url = git_repo_url = None
             cvs_root = str(code_import.cvs_root)
             cvs_module = str(code_import.cvs_module)
+        elif code_import.rcs_type == RevisionControlSystems.GIT:
+            rcstype = 'git'
+            svn_branch_url = cvs_root = cvs_module =None
+            git_repo_url = code_import.git_repo_url
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(
             code_import.branch.id, rcstype, svn_branch_url,
-            cvs_root, cvs_module)
+            cvs_root, cvs_module, git_repo_url)
 
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
@@ -163,6 +171,8 @@ class CodeImportSourceDetails:
         elif self.rcstype == 'cvs':
             result.append(self.cvs_root)
             result.append(self.cvs_module)
+        elif self.rcstype == 'git':
+            result.append(self.git_repo_url)
         else:
             raise AssertionError("Unknown rcstype %r." % self.rcstype)
         return result
@@ -399,3 +409,7 @@ class CSCVSImportWorker(ImportWorker):
             self.source_details.branch_id, bazaar_tree)
         self.foreign_tree_store.archive(
             self.source_details, foreign_tree)
+
+
+class GitImportWorker(ImportWorker):
+    pass

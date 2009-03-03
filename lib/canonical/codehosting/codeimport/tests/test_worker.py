@@ -14,14 +14,16 @@ import unittest
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NoSuchFile
+from bzrlib.urlutils import local_path_to_url
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting.codeimport.worker import (
-    BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, ImportWorker,
-    get_default_bazaar_branch_store, get_default_foreign_tree_store)
+    BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, GitImportWorker,
+    ImportWorker, get_default_bazaar_branch_store,
+    get_default_foreign_tree_store)
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
     CVSServer, SubversionServer)
 from canonical.codehosting.tests.helpers import (
@@ -581,6 +583,49 @@ class TestSubversionImport(WorkerTest, CSCVSActualImportMixin):
         svn_branch_url = svn_server.makeBranch(branch_name, files)
         return self.factory.makeCodeImportSourceDetails(
             rcstype='svn', svn_branch_url=svn_branch_url)
+
+
+class TestGitImport(WorkerTest, TestActualImportMixin):
+
+    def setUp(self):
+        super(TestGitImport, self).setUp()
+        self.setUpImport()
+
+    def makeImportWorker(self):
+        """Make a new `ImportWorker`."""
+        return GitImportWorker(
+            self.source_details, self.bazaar_store, logging.getLogger())
+
+    def commitInForeignTree(self, foreign_tree):
+        """Change the foreign tree, generating exactly one commit."""
+        svn_url = foreign_tree.remote_url
+        client = pysvn.Client()
+        client.checkout(svn_url, 'working_tree')
+        file = open('working_tree/newfile', 'w')
+        file.write('No real content\n')
+        file.close()
+        client.add('working_tree/newfile')
+        client.checkin('working_tree', 'Add a file', recurse=True)
+        shutil.rmtree('working_tree')
+
+    def makeSourceDetails(self, repository_path, branch_name, files):
+        """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
+        """
+        from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
+        os.mkdir("gitbranch")
+        os.chdir("gitbranch")
+        run_git('init')
+        builder = GitBranchBuilder()
+        print files
+        for filename, contents in files:
+            builder.set_file(filename, contents, False)
+        builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
+        builder.finish()
+
+        print repr(local_path_to_url('.'))
+
+        return self.factory.makeCodeImportSourceDetails(
+            rcstype='git', git_repo_url=local_path_to_url('.'))
 
 
 def test_suite():
