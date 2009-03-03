@@ -8,11 +8,11 @@ import unittest
 
 from storm.expr import Asc, Desc
 
-from canonical.launchpad.browser.branchlisting import BranchListingView
+from canonical.launchpad.browser.branchlisting import (
+    BranchListingSort, BranchListingView)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.person import Owner
 from canonical.launchpad.database.product import Product
-from canonical.launchpad.interfaces.branch import BranchListingSort
 from canonical.launchpad.testing import TestCase
 
 
