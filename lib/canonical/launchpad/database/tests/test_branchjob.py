@@ -243,7 +243,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_create(self):
         branch = self.factory.makeBranch()
-        job = RevisionsAddedJob.create(branch, 'rev1', 'rev2')
+        job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
         self.assertEqual('rev1', job.last_scanned_id)
         self.assertEqual('rev2', job.last_revision_id)
         self.assertEqual(branch, job.branch)
@@ -253,7 +253,6 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             revision = RevisionSet().newFromBazaarRevision(bzr_revision)
             revno = bzr_branch.revision_id_to_revno(revision.revision_id)
             branch.createBranchRevision(revno, revision)
-
 
     def test_iterAddedMainline(self):
         self.useBzrBranches()
@@ -269,11 +268,49 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                 branch, tree.branch, ['rev1', 'rev2', 'rev3'])
         finally:
             tree.unlock()
-        job = RevisionsAddedJob.create(branch, 'rev1', 'rev2')
+        job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
         job.bzr_branch.lock_write()
         self.addCleanup(job.bzr_branch.unlock)
-        [(revision, info)] = list(job.iterAddedMainline())
-        self.assertEqual(2, info.revno)
+        [(revision, revno)] = list(job.iterAddedMainline())
+        self.assertEqual(2, revno)
+
+    def test_getRevisionMessage(self):
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.lock_write()
+        self.addCleanup(tree.unlock)
+        tree.commit(
+            'rev1', rev_id='rev1', timestamp=1000, timezone=0,
+            committer='J. Random Hacker <jrandom@example.org>')
+        job = RevisionsAddedJob.create(branch, 'rev1', 'rev1', '')
+        message = job.get_revision_message('rev1', 1)
+        self.assertEqual(
+        '------------------------------------------------------------\n'
+        'revno: 1\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: branch11\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev1\n', message)
+
+    def test_getMailerForRevision(self):
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        branch.subscribe(branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL)
+        tree.lock_write()
+        self.addCleanup(tree.unlock)
+        tree.commit('rev1', rev_id='rev1')
+        revision = tree.branch.repository.get_revision('rev1')
+        job = RevisionsAddedJob.create(branch, 'rev1', 'rev1', '')
+        mailer = job.getMailerForRevision(revision, 1, True)
+        subject = mailer.generateEmail(
+            branch.registrant.preferredemail.email, branch.registrant).subject
+        self.assertEqual(
+            '[Branch ~person-name9/product-name4/branch11] Rev 1: rev1',
+            subject)
 
 
 def test_suite():

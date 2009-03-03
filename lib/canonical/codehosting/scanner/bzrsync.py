@@ -40,8 +40,6 @@ from canonical.launchpad.webapp.uri import URI
 
 
 UTC = pytz.timezone('UTC')
-# Use at most the first 100 characters of the commit message.
-SUBJECT_COMMIT_MESSAGE_LENGTH = 100
 
 
 class BadLineInBugsProperty(Exception):
