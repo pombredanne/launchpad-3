@@ -22,7 +22,6 @@ from sqlobject import (
 from storm.store import Store
 from storm.expr import And, Join
 from storm.locals import Unicode
-from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 

@@ -111,8 +111,8 @@ class ProductReleaseAddView(LaunchpadFormView):
                     __name__='keep_milestone_active',
                     title=_("Keep the milestone active."),
                     description=_(
-                        "Only select this if bugs or blueprints still need to "
-                        "be targeted to this product release&rsquo;s "
+                        "Only select this if bugs or blueprints still need "
+                        "to be targeted to this product release&rsquo;s "
                         "milestone.")),
                 render_context=self.render_context)
 

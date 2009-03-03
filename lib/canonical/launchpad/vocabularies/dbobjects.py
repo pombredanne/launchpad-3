@@ -83,11 +83,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
-    Account, Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch,
-    Component, Country, Distribution, DistroArchSeries, DistroSeries,
-    EmailAddress, FeaturedProject, KarmaCategory, Language, LanguagePack,
-    MailingList, Milestone, Person, PillarName, POTemplate,
-    Processor, ProcessorFamily,
+    Account, Archive, Bounty, Branch, Bug, BugTracker, BugWatch, Component,
+    Country, Distribution, DistroArchSeries, DistroSeries, EmailAddress,
+    FeaturedProject, KarmaCategory, Language, LanguagePack, MailingList,
+    Milestone, Person, PillarName, POTemplate, Processor, ProcessorFamily,
     Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
     Specification, Sprint, TranslationGroup, TranslationMessage)
 
