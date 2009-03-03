@@ -19,8 +19,9 @@ follows:
        tokens of the same type and for the same email address.
 
     >>> from canonical.launchpad.database.person import Person
+    >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
     >>> from canonical.launchpad.interfaces.logintoken import (
-    ...     ILoginTokenSet, LoginTokenType)
+    ...     ILoginTokenSet)
     >>> from canonical.launchpad.mail import stub
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> import transaction

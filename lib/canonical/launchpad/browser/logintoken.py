@@ -14,24 +14,17 @@ __all__ = [
     ]
 
 from itertools import chain
-import urllib
 import pytz
-import cgi
 
-from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
-from zope.event import notify
-from zope.interface import alsoProvides, directlyProvides, Interface
+from zope.interface import alsoProvides, directlyProvides
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import (
-    IAlwaysSubmittedWidget, IPlacelessLoginSource)
-from canonical.launchpad.webapp.login import logInPrincipal
+from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
@@ -42,10 +35,8 @@ from canonical.launchpad.browser.team import HasRenewalPolicyMixin
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, GPGKeyAlgorithm, GPGKeyNotFoundError,
     GPGVerificationError, IEmailAddressSet, IGPGHandler, IGPGKeySet,
-    IGPGKeyValidationForm, ILoginToken, ILoginTokenSet, INewPersonForm,
-    IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, LoginTokenType,
-    PersonCreationRationale, ShipItConstants, UnexpectedFormData)
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+    IGPGKeyValidationForm, ILoginTokenSet, IPerson, IPersonSet,
+    ITeam, LoginTokenType)
 
 
 UTC = pytz.timezone('UTC')

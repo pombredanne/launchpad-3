@@ -11,16 +11,13 @@ from zope.component import getUtility
 
 import pytz
 from storm.base import Storm
-from storm.expr import And
 from storm.properties import Int, Unicode, DateTime
 from storm.references import Reference
 from storm.store import Store
 
 from canonical.config import config
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import DBEnum
 
 from canonical.launchpad.webapp import canonical_url
@@ -41,6 +38,7 @@ class AuthToken(Storm):
 
     def __init__(self, account, requesteremail, email, tokentype,
                  redirection_url=None):
+        super(AuthToken, self).__init__()
         self.requester_account = account
         self.requesteremail = requesteremail
         self.email = email
@@ -131,10 +129,11 @@ class AuthTokenSet:
 
     def get(self, id, default=None):
         """See IAuthTokenSet."""
-        try:
-            return LoginToken.get(id)
-        except SQLObjectNotFound:
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        token = store.get(AuthToken, id)
+        if token is None:
             return default
+        return token
 
     def searchByEmailRequesterAndType(self, email, requester, type,
                                       consumed=None):

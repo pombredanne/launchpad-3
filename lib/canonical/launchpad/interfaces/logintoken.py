@@ -9,15 +9,13 @@ __all__ = [
     'ILoginToken',
     'ILoginTokenSet',
     'IGPGKeyValidationForm',
-    'LoginTokenType',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine
+from zope.schema import Text
 from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PasswordField
-from canonical.launchpad.interfaces.authtoken import LoginTokenType, IAuthToken
+from canonical.launchpad.interfaces.authtoken import IAuthToken
 
 
 class ILoginToken(IAuthToken):
