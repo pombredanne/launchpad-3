@@ -25,13 +25,16 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import alsoProvides, directlyProvides, Interface
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IMasterObject
+from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
-from canonical.launchpad.webapp.login import logInPerson
+from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
@@ -46,10 +49,10 @@ from canonical.launchpad.interfaces import (
     IGPGKeyValidationForm, ILoginToken, ILoginTokenSet, INewPersonForm,
     IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, LoginTokenType,
     PersonCreationRationale, ShipItConstants, UnexpectedFormData)
-from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 
 
-UTC = pytz.timezone('UTC')
+UTC = pytz.UTC
 
 
 class LoginTokenSetNavigation(GetitemNavigation):
@@ -122,11 +125,20 @@ class BaseLoginTokenView(OpenIDMixin):
         self.successfullyProcessed = True
         self.request.response.addInfoNotification(message)
 
-    def logInPersonByEmail(self, email):
-        """Login the person with the given email address."""
+    def logInPrincipalByEmail(self, email):
+        """Login the principal with the given email address."""
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        logInPerson(self.request, principal, email)
+        logInPrincipal(self.request, principal, email)
+
+    @property
+    def has_openid_request(self):
+        """Return True if there's an OpenID request in the user's session."""
+        try:
+            self.restoreRequestFromSession('token' + self.context.token)
+        except UnexpectedFormData:
+            return False
+        return True
 
     def maybeCompleteOpenIDRequest(self):
         """Respond to a pending OpenID request if one is found.
@@ -137,10 +149,7 @@ class BaseLoginTokenView(OpenIDMixin):
 
         If no OpenID request is found, None is returned.
         """
-        try:
-            self.restoreRequestFromSession('token' + self.context.token)
-        except UnexpectedFormData:
-            # There is no OpenIDRequest in the session
+        if not self.has_openid_request:
             return None
         self.next_url = None
         return self.renderOpenIDResponse(self.createPositiveResponse())
@@ -201,6 +210,8 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
     @action(_('Continue'), name='confirm')
     def confirm_action(self, action, data):
         email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
+        person = IMasterObject(email.person)
+
         # The user is not yet logged in, but we need to set some
         # things on his new account, so we need to remove the security
         # proxy from it.
@@ -208,17 +219,18 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
         # We should be able to login with this person and set the
         # password, to avoid removing the security proxy, but it didn't
         # work, so I'm leaving this hack for now.
-        from zope.security.proxy import removeSecurityProxy
-        naked_person = removeSecurityProxy(email.person)
+        naked_person = removeSecurityProxy(person)
         naked_person.displayname = data['displayname']
         naked_person.hide_email_addresses = data['hide_email_addresses']
+
+        naked_email = removeSecurityProxy(email)
 
         naked_person.activateAccount(
             comment="Activated by claim profile.",
             password=data['password'],
-            preferred_email=email)
+            preferred_email=naked_email)
         self.context.consume()
-        self.logInPersonByEmail(removeSecurityProxy(email).email)
+        self.logInPrincipalByEmail(naked_email.email)
         self.request.response.addInfoNotification(_(
             "Profile claimed successfully"))
 
@@ -241,13 +253,10 @@ class ClaimTeamView(
 
     def initialize(self):
         if not self.redirectIfInvalidOrConsumedToken():
-            self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
-                self.context.email).person
+            self.claimed_profile = getUtility(IPersonSet).getByEmail(
+                self.context.email)
             # Let's pretend the claimed profile provides ITeam while we
             # render/process this page, so that it behaves like a team.
-            # Use a local import as we don't want removeSecurityProxy used
-            # anywhere else.
-            from zope.security.proxy import removeSecurityProxy
             directlyProvides(removeSecurityProxy(self.claimed_profile), ITeam)
         super(ClaimTeamView, self).initialize()
 
@@ -268,7 +277,6 @@ class ClaimTeamView(
         # which means to edit it we need to be logged in as the person we
         # just converted into a team.  Of course, we can't do that, so we'll
         # have to remove its security proxy before we update it.
-        from zope.security.proxy import removeSecurityProxy
         self.updateContextFromData(
             data, context=removeSecurityProxy(self.claimed_profile))
         self.next_url = canonical_url(self.claimed_profile)
@@ -309,51 +317,51 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         the LoginToken (self.context) used is consumed, so nobody can use
         it again.
         """
-        emailset = getUtility(IEmailAddressSet)
-        emailaddress = emailset.getByEmail(self.context.email)
-        person = emailaddress.person
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(
+            self.context.email)
+        person_id = removeSecurityProxy(emailaddress).personID
+        if person_id is not None:
+            # XXX: Guilherme Salgado 2006-09-27 bug=62674:
+            # It should be possible to do the login before this and avoid
+            # this hack. In case the user doesn't want to be logged in
+            # automatically we can log him out after doing what we want.
+            naked_person = removeSecurityProxy(getUtility(IPersonSet).get(
+                person_id))
+            #      end of evil code.
 
-        # XXX: Guilherme Salgado 2006-09-27 bug=62674:
-        # It should be possible to do the login before this and avoid
-        # this hack. In case the user doesn't want to be logged in
-        # automatically we can log him out after doing what we want.
-        # XXX: Steve Alexander 2005-03-18:
-        #      Local import, because I don't want this import copied
-        #      elsewhere! This code is to be removed when the
-        #      UpgradeToBusinessClass specification is implemented.
-        from zope.security.proxy import removeSecurityProxy
-        naked_person = removeSecurityProxy(person)
-        #      end of evil code.
+            # Suspended accounts cannot reset their password.
+            reason = ('Your password cannot be reset because your account '
+                      'is suspended.')
 
-        # Suspended accounts cannot reset their password.
-        reason = ('Your password cannot be reset because your account '
-            'is suspended.')
-        if self.accountWasSuspended(naked_person, reason):
-            return
-        # Reset password can be used to reactivate a deactivated account.
-        elif naked_person.account.status == AccountStatus.DEACTIVATED:
-            naked_person.reactivateAccount(
-                comment="User reactivated the account using reset password.",
-                password=data['password'],
-                preferred_email=emailaddress)
-            self.request.response.addInfoNotification(
-                _('Welcome back to Launchpad.'))
-        else:
-            naked_person.password = data.get('password')
+            if self.accountWasSuspended(naked_person, reason):
+                return
 
-        # Make sure this person has a preferred email address.
-        if naked_person.preferredemail != emailaddress:
-            # Must remove the security proxy of the email address because the
-            # user is not logged in at this point and we may need to change
-            # its status.
-            naked_person.validateAndEnsurePreferredEmail(
-                removeSecurityProxy(emailaddress))
+            # Reset password can be used to reactivate a deactivated account.
+            elif naked_person.account.status == AccountStatus.DEACTIVATED:
+                naked_person.reactivateAccount(
+                    comment=
+                        "User reactivated the account using reset password.",
+                    password=data['password'],
+                    preferred_email=emailaddress)
+                self.request.response.addInfoNotification(
+                    _('Welcome back to Launchpad.'))
+            else:
+                naked_person.password = data.get('password')
+
+            # Make sure this person has a preferred email address.
+            if naked_person.preferredemail != emailaddress:
+                # Must remove the security proxy of the email address because
+                # the user is not logged in at this point and we may need to
+                # change its status.
+                naked_person.validateAndEnsurePreferredEmail(
+                    removeSecurityProxy(emailaddress))
+
+            self.next_url = canonical_url(naked_person)
 
         self.context.consume()
 
-        self.logInPersonByEmail(self.context.email)
+        self.logInPrincipalByEmail(self.context.email)
 
-        self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
             _('Your password has been reset successfully.'))
 
@@ -495,7 +503,6 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
         emails = chain(requester.validatedemails, [requester.preferredemail])
         # Must remove the security proxy because the user may not be logged in
         # and thus won't be allowed to view the requester's email addresses.
-        from zope.security.proxy import removeSecurityProxy
         emails = [
             removeSecurityProxy(email).email.lower() for email in emails]
 
@@ -713,11 +720,16 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     # Use a method to set self.next_url rather than a property because we
     # want to override self.next_url in a subclass of this.
     def setNextUrl(self):
+        if self.has_openid_request:
+            # For OpenID requests we don't use self.next_url, so don't even
+            # bother setting it.
+            return
+
         if self.context.redirection_url:
             self.next_url = self.context.redirection_url
-        elif self.user is not None:
+        elif self.account is not None:
             # User is logged in, redirect to his home page.
-            self.next_url = canonical_url(self.user)
+            self.next_url = canonical_url(IPerson(self.account))
         elif self.created_person is not None:
             # User is not logged in, redirect to the created person's home
             # page.
@@ -727,10 +739,15 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
 
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
-        if self.email is not None and self.email.person.is_valid_person:
-            self.addError(_(
-                'The email address ${email} is already registered.',
-                mapping=dict(email=self.context.email)))
+        if self.email is not None:
+            # Better spelt as IMasterObject(self.email.person), but that
+            # issues an unnecessary database call.
+            person = getUtility(IPersonSet).get(
+                removeSecurityProxy(self.email).personID)
+            if person.is_valid_person:
+                self.addError(_(
+                    'The email address ${email} is already registered.',
+                    mapping=dict(email=self.context.email)))
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
@@ -742,12 +759,12 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         If everything went ok, we consume the LoginToken (self.context), so
         nobody can use it again.
         """
-        from zope.security.proxy import removeSecurityProxy
         if self.email is not None:
             # This is a placeholder profile automatically created by one of
             # our scripts, let's just confirm its email address and set a
             # password.
-            person = self.email.person
+            person = getUtility(IPersonSet).get(
+                removeSecurityProxy(self.email).personID)
             assert not person.is_valid_person, (
                 'Account %s has already been claimed and this should '
                 'have been caught by the validate() method.' % person.name)
@@ -774,15 +791,13 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             naked_person.creation_rationale = self._getCreationRationale()
             naked_person.creation_comment = None
         else:
-            person, email = self._createPersonAndEmail(
+            account, person, email = self._createAccountPersonAndEmail(
                 data['displayname'], data['hide_email_addresses'],
                 data['password'])
-            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
-            person.validateAndEnsurePreferredEmail(email)
 
-        self.created_person = person
         self.context.consume()
-        self.logInPersonByEmail(removeSecurityProxy(email).email)
+        self.logInPrincipalByEmail(removeSecurityProxy(email).email)
+        self.created_person = person
         self.request.response.addInfoNotification(_(
             "Registration completed successfully"))
         self.setNextUrl()
@@ -798,16 +813,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         then use that, otherwise uses
         PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
         """
-        try:
-            self.restoreRequestFromSession('token' + self.context.token)
-        except UnexpectedFormData:
-            # There is no OpenIDRequest in the session, so we'll try to infer
-            # the creation rationale from the token's redirection_url.
-            rationale = self.urls_and_rationales.get(
-                self.context.redirection_url)
-            if rationale is None:
-                rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
-        else:
+        if self.has_openid_request:
             rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
                 self.openid_request.trust_root)
             if rpconfig is not None:
@@ -815,11 +821,23 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             else:
                 rationale = (
                     PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
+        else:
+            # There is no OpenIDRequest in the session, so we'll try to infer
+            # the creation rationale from the token's redirection_url.
+            rationale = self.urls_and_rationales.get(
+                self.context.redirection_url)
+            if rationale is None:
+                rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
         return rationale
 
-    def _createPersonAndEmail(
+    def _createAccountPersonAndEmail(
             self, displayname, hide_email_addresses, password):
-        """Create and return a new Person and EmailAddress.
+        """Create and return a new Account, Person and EmailAddress.
+
+        This method will always create an Account (in the ACTIVE state) and
+        an EmailAddress as the account's preferred one.  However, if the
+        registration process was not started through OpenID, we'll create also
+        a Person.
 
         Use the given arguments and the email address stored in the
         LoginToken (our context).
@@ -827,15 +845,26 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         Also fire ObjectCreatedEvents for both the newly created Person
         and EmailAddress.
         """
+        from zope.security.proxy import removeSecurityProxy
         rationale = self._getCreationRationale()
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-            self.context.email, rationale, displayname=displayname,
-            password=password, passwordEncrypted=True,
-            hide_email_addresses=hide_email_addresses)
+        if self.has_openid_request:
+            person = None
+            account, email = getUtility(IAccountSet).createAccountAndEmail(
+                self.context.email, rationale, displayname,
+                password, password_is_encrypted=True)
+        else:
+            person, email = getUtility(IPersonSet).createPersonAndEmail(
+                self.context.email, rationale, displayname=displayname,
+                password=password, passwordEncrypted=True,
+                hide_email_addresses=hide_email_addresses)
+            notify(ObjectCreatedEvent(person))
+            person.validateAndEnsurePreferredEmail(email)
+            account = getUtility(IAccountSet).get(person.accountID)
+            removeSecurityProxy(account).status = AccountStatus.ACTIVE
 
-        notify(ObjectCreatedEvent(person))
+        notify(ObjectCreatedEvent(account))
         notify(ObjectCreatedEvent(email))
-        return person, email
+        return account, person, email
 
 
 class MergePeopleView(BaseLoginTokenView, LaunchpadView):
@@ -881,15 +910,12 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         # dupe account, so we can assign it to him.
         requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
-        email = emailset.getByEmail(self.context.email)
-        # EmailAddress.{person,status} are readonly fields, so we need to
-        # remove the security proxy before changing them.
-        from zope.security.proxy import removeSecurityProxy
+        email = removeSecurityProxy(emailset.getByEmail(self.context.email))
         # As a person can have at most one preferred email, ensure
         # that this new email does not have the PREFERRED status.
-        removeSecurityProxy(email).status = EmailAddressStatus.NEW
-        removeSecurityProxy(email).person = requester.id
-        email.account = requester.account
+        email.status = EmailAddressStatus.NEW
+        email.personID = requester.id
+        email.accountID = requester.accountID
         requester.validateAndEnsurePreferredEmail(email)
 
         # Need to flush all changes we made, so subsequent queries we make

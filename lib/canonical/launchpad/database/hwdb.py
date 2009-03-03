@@ -64,7 +64,8 @@ from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 
 # The vendor name assigned to new, unknown vendor IDs. See
 # HWDeviceSet.create().
@@ -248,11 +249,10 @@ class HWSubmissionSet:
                                 EmailAddressStatus.PREFERRED), (
             'Invalid email status for setting ownership of an HWDB '
             'submission: %s' % email.status.title)
-        person = email.person
         submissions =  HWSubmission.selectBy(
             raw_emailaddress=email.email, owner=None)
         for submission in submissions:
-            submission.owner = person
+            submission.ownerID = email.personID
 
     def getByStatus(self, status, user=None):
         """See `IHWSubmissionSet`."""
@@ -316,7 +316,13 @@ class HWSubmissionSet:
         # DISTINCT clause.
         result_set.config(distinct=True)
         result_set.order_by(HWSubmission.id)
-        return result_set
+        # The Storm implementation of ResultSet.count() is incorrect if
+        # the select query uses the distinct directive (see bug #217644).
+        # DecoratedResultSet solves this problem by modifying the query
+        # to count only the records appearing in a subquery.
+        # We don't actually need to transform the results, which is why
+        # the second argument is a no-op.
+        return DecoratedResultSet(result_set, lambda result: result)
 
 
 class HWSystemFingerprint(SQLBase):

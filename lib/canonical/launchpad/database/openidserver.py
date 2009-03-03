@@ -30,6 +30,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, IOpenIDAuthorization,
@@ -62,38 +63,33 @@ class OpenIDAuthorization(SQLBase):
     date_expires = UtcDateTimeCol(notNull=True)
     trust_root = StringCol(notNull=True)
 
-    # IOpenIDAuthorization.person is deprecated
-    @property
-    def person(self):
-        return Store.of(self).find(Person, account=self.account).one()
-
-    @property
-    def personID(self):
-        return self.person.id
-
 
 class OpenIDAuthorizationSet:
     implements(IOpenIDAuthorizationSet)
 
-    def isAuthorized(self, person, trust_root, client_id):
-        """See IOpenIDAuthorizationSet."""
-        return  OpenIDAuthorization.select("""
-            account = %s
-            AND trust_root = %s
-            AND date_expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-            AND (client_id IS NULL OR client_id = %s)
-            """ % sqlvalues(person.accountID, trust_root, client_id)
-            ).count() > 0
+    def isAuthorized(self, account, trust_root, client_id):
+        """See IOpenIDAuthorizationSet.
+        
+        The use of the master Store is forced to avoid replication
+        race conditions.
+        """
+        return IMasterStore(OpenIDAuthorization).find(
+            OpenIDAuthorization,
+            # Use account.id here just incase it is from a different Store.
+            OpenIDAuthorization.accountID == account.id,
+            OpenIDAuthorization.trust_root == trust_root,
+            OpenIDAuthorization.date_expires >= UTC_NOW,
+            Or(
+                OpenIDAuthorization.client_id == None,
+                OpenIDAuthorization.client_id == client_id)).count() > 0
 
-    def authorize(self, person, trust_root, expires, client_id=None):
+    def authorize(self, account, trust_root, expires, client_id=None):
         """See IOpenIDAuthorizationSet."""
         if expires is None:
             expires = NEVER_EXPIRES
 
-        assert not person.isTeam(), 'Attempting to authorize a team.'
-
         existing = OpenIDAuthorization.selectOneBy(
-                accountID=person.accountID,
+                accountID=account.id,
                 trust_root=trust_root,
                 client_id=client_id
                 )
@@ -102,10 +98,10 @@ class OpenIDAuthorizationSet:
             existing.date_expires = expires
         else:
             # Even though OpenIDAuthorizationSet always uses the master
-            # store, it's likely that the person can come from the slave.
+            # store, it's likely that the account can come from the slave.
             # That's why we are using the ID to create the reference.
             OpenIDAuthorization(
-                    accountID=person.accountID, trust_root=trust_root,
+                    accountID=account.id, trust_root=trust_root,
                     date_expires=expires, client_id=client_id
                     )
 
@@ -284,7 +280,7 @@ class OpenIDRPSummarySet:
         summaries = OpenIDRPSummary.select("""
             account != %s
             AND openid_identifier = %s
-            """ % sqlvalues(account.id, identifier))
+            """ % sqlvalues(account, identifier))
         if summaries.count() > 0:
             raise AssertionError(
                 'More than 1 account has the OpenID identifier of %s.' %

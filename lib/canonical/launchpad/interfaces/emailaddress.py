@@ -90,8 +90,9 @@ class IEmailAddress(IHasOwner):
     account = Object(title=_('Account'), schema=IAccount, required=False)
     accountID = Int(title=_('AccountID'), required=False, readonly=True)
     person = exported(
-        Reference(title=_('Person'), required=True, readonly=True,
+        Reference(title=_('Person'), required=False, readonly=False,
                   schema=Interface))
+    personID = Int(title=_('PersonID'), required=False, readonly=True)
 
     rdf_sha1 = TextLine(
         title=_("RDF-ready SHA-1 Hash"),

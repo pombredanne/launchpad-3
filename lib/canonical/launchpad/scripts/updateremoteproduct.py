@@ -8,7 +8,7 @@ __all__ = ['RemoteProductUpdater']
 from zope.component import getUtility
 
 from canonical.launchpad.components.externalbugtracker import (
-    get_external_bugtracker)
+    BugWatchUpdateError, BugWatchUpdateWarning, get_external_bugtracker)
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, SINGLE_PRODUCT_BUGTRACKERTYPES)
 from canonical.launchpad.interfaces.product import IProductSet
@@ -62,8 +62,24 @@ class RemoteProductUpdater:
                 continue
             external_bugtracker = self._getExternalBugTracker(
                 bug_watch.bugtracker)
-            remote_product = external_bugtracker.getRemoteProduct(
-                bug_watch.remotebug)
+
+            try:
+                external_bugtracker.initializeRemoteBugDB(
+                    [bug_watch.remotebug])
+                remote_product = external_bugtracker.getRemoteProduct(
+                    bug_watch.remotebug)
+
+            # XXX 2009-02-25 gmb [bug=334449]
+            #     We shouldn't be catching AssertionErrors here. Once
+            #     bug 334449 is fixed this part of the except should be
+            #     removed.
+            except (AssertionError, BugWatchUpdateError,
+                    BugWatchUpdateWarning), error:
+                self.logger.error(
+                    "Unable to set remote_product for '%s': %s" %
+                    (product.name, error))
+                continue
+
             self.logger.info("Setting remote_product for %s to %r" % (
                 product.name, remote_product))
             product.remote_product = remote_product

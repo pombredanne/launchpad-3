@@ -10,6 +10,9 @@ import random
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.references import Reference
+from storm.store import Store
+
 from sqlobject import ForeignKey, StringCol
 from sqlobject.sqlbuilder import OR
 
@@ -17,11 +20,14 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.interfaces import IMasterObject, IStore
 from canonical.launchpad.interfaces.account import (
-        AccountCreationRationale, AccountStatus,
-        IAccount, IAccountSet)
+    AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
+from canonical.launchpad.interfaces import IStore, IMasterStore
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -35,41 +41,57 @@ class Account(SQLBase):
     displayname = StringCol(dbName='displayname', notNull=True)
 
     creation_rationale = EnumCol(
-            dbName='creation_rationale', schema=AccountCreationRationale,
-            notNull=True)
+        dbName='creation_rationale', schema=AccountCreationRationale,
+        notNull=True)
     status = EnumCol(
-            enum=AccountStatus, default=AccountStatus.NOACCOUNT,
-            notNull=True)
+        enum=AccountStatus, default=AccountStatus.NOACCOUNT, notNull=True)
     date_status_set = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     status_comment = StringCol(dbName='status_comment', default=None)
 
     openid_identifier = StringCol(
-            dbName='openid_identifier', notNull=True, default=DEFAULT)
+        dbName='openid_identifier', notNull=True, default=DEFAULT)
 
     # XXX sinzui 2008-09-04 bug=264783:
     # Remove this attribute, in the DB, drop openid_identifier, then
     # rename new_openid_identifier => openid_identifier.
     new_openid_identifier = StringCol(
-            dbName='old_openid_identifier', notNull=False, default=DEFAULT)
+        dbName='old_openid_identifier', notNull=False, default=DEFAULT)
+
+    person = Reference("id", "Person.account", on_remote=True)
+
+    @property
+    def preferredemail(self):
+        """See `IAccount`."""
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        return Store.of(self).find(
+            EmailAddress, account=self,
+            status=EmailAddressStatus.PREFERRED).one()
 
     # The password is actually stored in a separate table for security
     # reasons, so use a property to hide this implementation detail.
     def _get_password(self):
-        password = AccountPassword.selectOneBy(account=self)
+        # We have to force the switch to the auth store, because the
+        # AccountPassword table is not visible via the main store
+        # for security reasons.
+        password = IStore(AccountPassword).find(
+            AccountPassword, accountID=self.id).one()
         if password is None:
             return None
         else:
             return password.password
 
     def _set_password(self, value):
-        password = AccountPassword.selectOneBy(account=self)
+        # Making a modification, so we explicitly use the auth store master.
+        store = IMasterStore(AccountPassword)
+        password = store.find(
+            AccountPassword, accountID=self.id).one()
 
         if value is not None and password is None:
             # There is currently no AccountPassword record and we need one.
-            AccountPassword(account=self, password=value)
+            AccountPassword(accountID=self.id, password=value)
         elif value is None and password is not None:
             # There is an AccountPassword record that needs removing.
-            AccountPassword.delete(password.id)
+            store.remove(password)
         elif value is not None:
             # There is an AccountPassword record that needs updating.
             password.password = value
@@ -80,6 +102,31 @@ class Account(SQLBase):
             assert False, "This should not be reachable."
 
     password = property(_get_password, _set_password)
+
+    @property
+    def is_valid(self):
+        """See `IAccount`."""
+        if self.status != AccountStatus.ACTIVE:
+            return False
+        return self.preferredemail is not None
+
+    def createPerson(self, rationale):
+        """See `IAccount`."""
+        # Need a local import because of circular dependencies.
+        from canonical.launchpad.database.person import (
+            generate_nick, Person, PersonSet)
+        assert self.preferredemail is not None, (
+            "Can't create a Person for an account which has no email.")
+        store = Store.of(self)
+        assert IMasterStore(Person).find(
+            Person, accountID=self.id).one() is None, (
+            "Can't create a Person for an account which already has one.")
+        name = generate_nick(self.preferredemail.email)
+        person = PersonSet()._newPerson(
+            name, self.displayname, hide_email_addresses=True,
+            rationale=rationale, account=self)
+        IMasterObject(self.preferredemail).personID = person.id
+        return person
 
 
 class AccountSet:
@@ -109,6 +156,25 @@ class AccountSet:
 
         return account
 
+    def get(self, id):
+        """See `IAccountSet`."""
+        return IStore(Account).get(Account, id)
+
+    def createAccountAndEmail(self, email, rationale, displayname, password,
+                              password_is_encrypted=False):
+        """See `IAccountSet`."""
+        from canonical.launchpad.database.person import generate_nick
+        openid_mnemonic = generate_nick(email)
+        # Convert the PersonCreationRationale to an AccountCreationRationale.
+        account_rationale = getattr(AccountCreationRationale, rationale.name)
+        account = self.new(
+            account_rationale, displayname, openid_mnemonic,
+            password=password, password_is_encrypted=password_is_encrypted)
+        account.status = AccountStatus.ACTIVE
+        email = getUtility(IEmailAddressSet).new(
+            email, status=EmailAddressStatus.PREFERRED, account=account)
+        return account, email
+
     def getByEmail(self, email):
         """See `IAccountSet`."""
         return Account.selectOne('''
@@ -131,7 +197,8 @@ class AccountSet:
     def createOpenIDIdentifier(self, mnemonic):
         """See `IAccountSet`.
 
-        The random component of the identifier is a number betwee 000 and 999.
+        The random component of the identifier is a number between 000 and
+        999.
         """
         assert isinstance(mnemonic, (str, unicode)) and mnemonic is not '', (
             'The mnemonic must be a non-empty string.')
@@ -163,6 +230,6 @@ class AccountPassword(SQLBase):
     AccountPassword table only needs to be known by this module.
     """
     account = ForeignKey(
-            dbName='account', foreignKey='Account', alternateID=True)
+        dbName='account', foreignKey='Account', alternateID=True)
     password = StringCol(dbName='password', notNull=True)
 
