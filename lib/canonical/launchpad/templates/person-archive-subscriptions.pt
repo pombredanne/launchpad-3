@@ -14,7 +14,7 @@
   <div metal:fill-slot="main">
 
     <h1 tal:content="CONTEXTS/fmt:pagetitle">
-      Manage archive subscriptions.
+      Private archive subscriptions for Joe Smith
     </h1>
   <tal:has_subscriptions condition="view/has_subscriptions">
     <div id="current_subscriptions">

@@ -117,21 +117,36 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         if self.request.method == "POST":
             self.processSubscriptionActivation()
 
-    @property
+    @cachedproperty
     def subscriptions_with_tokens(self):
         """Return all the persons archive subscriptions with the token
         for each."""
         subscriber_set = getUtility(IArchiveSubscriberSet)
-        return subscriber_set.getBySubscriberWithActiveToken(
-            self.context)
+        # Force the query to be executed so we can cache the result
+        # and use it in other methods.
+        return list(subscriber_set.getBySubscriberWithActiveToken(
+            self.context))
+        # TODO: add current_only=False back in to include expired
+        # subscriptions.
 
     @cachedproperty
+    def active_subscriptions_with_tokens(self):
+        """Return the active subscriptions, each with it's token.
+
+        The result is formatted as a list of dicts to make the TALS code
+        cleaner.
+        """
+        return [
+            {"subscription": subscription, "token": token}
+                for subscription, token in self.subscriptions_with_tokens
+                    if token is not None]
+
+    # TODO: add has_active_subscriptions for use in template.
+    # Update template to use dict version (so no python required)
+    @property
     def has_subscriptions(self):
         """Return whether this person has any subscriptions."""
-        # XXX noodles 20090224 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return getUtility(
-            IArchiveSubscriberSet).getBySubscriber(self.context).count() > 0
+        return len(self.subscriptions_with_tokens) > 0
 
     def processSubscriptionActivation(self):
         """Process any posted data that activates a subscription."""

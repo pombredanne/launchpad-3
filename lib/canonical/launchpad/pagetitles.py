@@ -135,7 +135,7 @@ archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
 
 archive_index = ContextTitle('%s')
 
-archive_subscribers = ContextTitle('Manage subscriptions for %s')
+archive_subscribers = ContextTitle('Private archive subscriptions for %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 

@@ -222,6 +222,13 @@ The user will also see a notification of the subscription activation:
     activated. Please update your private_ppa_sources.list as displayed
     below.
 
+The PersonArchiveSubscriptionsView also provides an 
+active_subscriptions_with_tokens property:
+
+    >>> for subs_with_token in view.active_subscriptions_with_tokens:
+    ...     print subs_with_token['subscription'].archive.title
+    Private PPA for Mark Shuttleworth
+
 If a user fiddles with the POST data and sends a bad archive_id or an
 archive_id corresponding to an archive to which the user is not subscribed
 then the view simply redirects to a GET request without doing anything:
