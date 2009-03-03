@@ -19,13 +19,15 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.components.tokens import (
+    create_unique_token_for_table)
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
     LoginTokenType)
+from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -328,10 +330,7 @@ class LoginTokenSet:
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
 
-        characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
-        length = 20
-        token = ''.join(
-            [random.choice(characters) for count in range(length)])
+        token = create_unique_token_for_table(20, LoginToken.token)
         return LoginToken(requester=requester, requesteremail=requesteremail,
                           email=email, token=token, tokentype=tokentype,
                           created=UTC_NOW, fingerprint=fingerprint,

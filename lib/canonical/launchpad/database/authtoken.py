@@ -20,14 +20,16 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.components.tokens import (
+    create_unique_token_for_table)
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -44,11 +46,9 @@ class AuthToken(Storm):
         self.email = email
 
         self.tokentype = tokentype
-        characters = u'0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
-        length = 20
-        self.token = u''.join(
-            [random.choice(characters) for count in range(length)])
+        self.token = create_unique_token_for_table(20, AuthToken.token)
         self.redirection_url = redirection_url
+
     id = Int(primary=True)
 
     date_created = DateTime(tzinfo=pytz.utc)
