@@ -13,7 +13,7 @@ import pytz
 from storm.base import Storm
 from storm.expr import And
 from storm.properties import Int, Unicode, DateTime
-from storm.references import Proxy, Reference
+from storm.references import Reference
 from storm.store import Store
 
 from canonical.config import config
@@ -28,6 +28,7 @@ from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import (
@@ -60,8 +61,6 @@ class AuthToken(Storm):
     requester_id = Int('requester')
     requester_account = Reference(
         requester_id, 'canonical.launchpad.database.account.Account.id')
-    requester = Proxy(
-        requester_account, 'canonical.launchpad.database.account.Account.person')
     requesteremail = Unicode('requester_email')
 
     email = Unicode(allow_none=False)
@@ -70,6 +69,10 @@ class AuthToken(Storm):
     password = '' # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
+
+    @property
+    def requester(self):
+        return IPerson(self.requester_account)
 
     def consume(self):
         """See ILoginToken."""

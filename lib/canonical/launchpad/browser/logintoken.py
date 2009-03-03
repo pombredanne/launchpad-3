@@ -408,7 +408,9 @@ class ValidateGPGKeyView(BaseAuthTokenView, LaunchpadFormView):
 class ValidateTeamEmailView(ValidateEmailView):
     expected_token_types = (LoginTokenType.VALIDATETEAMEMAIL,)
 
-    # XXX: need to make continue_action do the right thing.
+    def markEmailAsValid(self, email):
+        """See `ValidateEmailView`"""
+        self.context.requester.setContactAddress(email)
 
 
 class MergePeopleView(BaseAuthTokenView, LaunchpadView):

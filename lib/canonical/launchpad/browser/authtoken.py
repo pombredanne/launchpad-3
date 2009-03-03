@@ -257,8 +257,7 @@ class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
 
     schema = Interface
     field_names = []
-    expected_token_types = (LoginTokenType.VALIDATEEMAIL,
-                            )#LoginTokenType.VALIDATETEAMEMAIL)
+    expected_token_types = (LoginTokenType.VALIDATEEMAIL,)
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
@@ -314,17 +313,9 @@ class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
         any) and this becomes the team's contact address.
         """
         self.next_url = canonical_url(self.context.requester)
-        email = self._ensureEmail()
-        requester = self.context.requester
 
-        if self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
-            requester.setContactAddress(email)
-        elif self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
-            requester.validateAndEnsurePreferredEmail(email)
-        else:
-            raise AssertionError(
-                "We don't know how to process this token (%s) and this error "
-                "should've been caught earlier" % self.context.tokentype)
+        email = self._ensureEmail()
+        self.markEmailAsValid(email)
 
         self.context.consume()
         self.request.response.addInfoNotification(
@@ -340,6 +331,10 @@ class ValidateEmailView(BaseAuthTokenView, LaunchpadFormView):
         if email is None:
             email = emailset.new(self.context.email, self.context.requester)
         return email
+
+    def markEmailAsValid(self, email):
+        """Mark the given email address as valid."""
+        self.context.requester.validateAndEnsurePreferredEmail(email)
 
 
 class NewAccountView(BaseAuthTokenView, LaunchpadFormView):
