@@ -36,6 +36,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.gpg import IGPGKey
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
@@ -566,7 +567,7 @@ class IArchivePublic(IHasOwner):
         """
 
 
-class IArchiveView(Interface):
+class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
 
     buildd_secret = TextLine(
