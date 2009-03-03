@@ -473,10 +473,11 @@ However, it is possible to obtain a bug search URL for Debbugs-using
 products.
 
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
-    >>> links = debbugs.getBugFilingAndSearchLinks('testproduct')
+    >>> links = debbugs.getBugFilingAndSearchLinks(
+    ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
     bug_filing_url: None
-    bug_search_url: http://.../cgi-bin/pkgreport.cgi?package=testproduct
+    bug_search_url: .../search.cgi?phrase=Foo...&attribute_value=testproduct
 
 You can pass None for the summary and description parameters. It will be
 converted to an empty string before it's passed to the remote bug tracker.
@@ -487,13 +488,14 @@ converted to an empty string before it's passed to the remote bug tracker.
     bug_filing_url: ...?product=test&short_desc=&long_desc=
     bug_search_url: ...?product=test&short_desc=
 
-The remote_product values passed to getBugFilingAndSearchLinks() are
-URL-encoded to ensure that the returned URL is valid.
+The remote_product, summary and description values are URL-encoded to ensure
+that the returned URL is valid.
 
-    >>> links = mozilla_bugzilla.getBugFilingAndSearchLinks('@testproduct&')
+    >>> links = mozilla_bugzilla.getBugFilingAndSearchLinks(
+    ...     remote_product='@test&', summary="%&", description="()")
     >>> print_links(links)
-    bug_filing_url: ...?product=%40testproduct%26&short_desc=&long_desc=
-    bug_search_url: ...?product=%40testproduct%26&short_desc=
+    bug_filing_url: ...?product=%40test%26&short_desc=%25%26&long_desc=%28%29
+    bug_search_url: ...?product=%40test%26&short_desc=%25%26
 
 
 == BugTracker.multi_product ==

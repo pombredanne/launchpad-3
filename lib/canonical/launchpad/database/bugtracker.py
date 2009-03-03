@@ -195,7 +195,9 @@ class BugTracker(SQLBase):
             "%(base_url)s/query.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s"),
         BugTrackerType.DEBBUGS: (
-            "%(base_url)s/cgi-bin/pkgreport.cgi?package=%(remote_product)s"),
+            "%(base_url)s/cgi-bin/search.cgi?phrase=%(summary)s"
+            "&attribute_field=package&attribute_operator=STROREQ"
+            "&attribute_value=%(remote_product)s"),
         BugTrackerType.MANTIS: "%(base_url)s/view_all_bug_page.php",
         BugTrackerType.PHPPROJECT: (
             "%(base_url)s/search.php?search_for=%(summary)s"),
@@ -276,16 +278,16 @@ class BugTracker(SQLBase):
                 'tracker': quote(tracker),
                 'group_id': quote(group_id),
                 'at_id': quote(at_id),
-                'summary': summary,
-                'description': description,
+                'summary': quote(summary),
+                'description': quote(description),
                 }
 
         else:
             url_components = {
                 'base_url': base_url,
                 'remote_product': quote(remote_product),
-                'summary': summary,
-                'description': description,
+                'summary': quote(summary),
+                'description': quote(description),
                 }
 
         if bug_filing_pattern is not None:
