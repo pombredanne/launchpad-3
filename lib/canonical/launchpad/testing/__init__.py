@@ -326,17 +326,23 @@ class TestCaseWithFactory(TestCase):
         return browser
 
     def create_branch_and_tree(self, tree_location='.', product=None,
-                               hosted=False):
+                               hosted=False, db_branch=None):
         """Create a database branch, bzr branch and bzr checkout.
 
+        :param tree_location: The path on disk to create the tree at.
+        :param product: The product to associate with the branch.
+        :param hosted: If True, create in the hosted area.  Otherwise, create
+            in the mirrored area.
+        :param db_branch: If supplied, the database branch to use.
         :return: a `Branch` and a workingtree.
         """
         from bzrlib.bzrdir import BzrDir
         from bzrlib.transport import get_transport
-        if product is None:
-            db_branch = self.factory.makeAnyBranch()
-        else:
-            db_branch = self.factory.makeProductBranch(product)
+        if db_branch is None:
+            if product is None:
+                db_branch = self.factory.makeAnyBranch()
+            else:
+                db_branch = self.factory.makeProductBranch(product)
         if hosted:
             branch_url = db_branch.getPullURL()
         else:

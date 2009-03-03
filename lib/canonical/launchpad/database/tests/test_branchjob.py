@@ -277,6 +277,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
     def test_getRevisionMessage(self):
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
+        tree.branch.nick = 'nicholas'
         tree.lock_write()
         self.addCleanup(tree.unlock)
         tree.commit(
@@ -288,14 +289,18 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         '------------------------------------------------------------\n'
         'revno: 1\n'
         'committer: J. Random Hacker <jrandom@example.org>\n'
-        'branch nick: branch11\n'
+        'branch nick: nicholas\n'
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
         'message:\n'
         '  rev1\n', message)
 
     def test_getMailerForRevision(self):
         self.useBzrBranches()
-        branch, tree = self.create_branch_and_tree()
+        jrandom = self.factory.makePerson(name='jrandom')
+        product = self.factory.makeProduct(name='foo')
+        branch = self.factory.makeProductBranch(
+            name='bar', product=product, owner=jrandom)
+        branch, tree = self.create_branch_and_tree(db_branch=branch)
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
@@ -309,8 +314,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         subject = mailer.generateEmail(
             branch.registrant.preferredemail.email, branch.registrant).subject
         self.assertEqual(
-            '[Branch ~person-name9/product-name4/branch11] Rev 1: rev1',
-            subject)
+            '[Branch ~jrandom/foo/bar] Rev 1: rev1', subject)
 
 
 def test_suite():
