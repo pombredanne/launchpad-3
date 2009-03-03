@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
+from bzrlib import errors as bzr_errors
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
 import transaction
@@ -13,6 +14,7 @@ import transaction
 from canonical.launchpad.database.branchjob import (
     BranchDiffJob, BranchJob, BranchJobType, RevisionsAddedJob,
     RevisionMailJob)
+from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
@@ -250,12 +252,22 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def updateDBRevisions(self, branch, bzr_branch, revision_ids):
         for bzr_revision in bzr_branch.repository.get_revisions(revision_ids):
-            revision = RevisionSet().newFromBazaarRevision(bzr_revision)
-            revno = bzr_branch.revision_id_to_revno(revision.revision_id)
+            existing = branch.getBranchRevision(
+                revision_id=bzr_revision.revision_id)
+            if existing is None:
+                revision = RevisionSet().newFromBazaarRevision(bzr_revision)
+            else:
+                revision = RevisionSet().getByRevisionId(
+                    bzr_revision.revision_id)
+            try:
+                revno = bzr_branch.revision_id_to_revno(revision.revision_id)
+            except bzr_errors.NoSuchRevision:
+                revno = None
+            if existing is not None:
+                BranchRevision.delete(existing.id)
             branch.createBranchRevision(revno, revision)
 
-    def test_iterAddedMainline(self):
-        self.useBzrBranches()
+    def create3CommitsBranch(self):
         branch, tree = self.create_branch_and_tree()
         tree.lock_write()
         try:
@@ -268,11 +280,29 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                 branch, tree.branch, ['rev1', 'rev2', 'rev3'])
         finally:
             tree.unlock()
+        return branch, tree
+
+    def test_iterAddedMainline(self):
+        self.useBzrBranches()
+        branch, tree = self.create3CommitsBranch()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
         job.bzr_branch.lock_write()
         self.addCleanup(job.bzr_branch.unlock)
         [(revision, revno)] = list(job.iterAddedMainline())
         self.assertEqual(2, revno)
+
+    def test_iterAddedNonMainline(self):
+        self.useBzrBranches()
+        branch, tree = self.create3CommitsBranch()
+        tree.pull(tree.branch, overwrite=True, stop_revision='rev2')
+        tree.add_parent_tree_id('rev3')
+        tree.commit('rev3a', rev_id='rev3a')
+        self.updateDBRevisions(branch, tree.branch, ['rev3', 'rev3a'])
+        job = RevisionsAddedJob.create(branch, 'rev1', 'rev3', '')
+        job.bzr_branch.lock_write()
+        self.addCleanup(job.bzr_branch.unlock)
+        out = [x.revision_id for x, y in job.iterAddedMainline()]
+        self.assertEqual(['rev2'], out)
 
     def makeBranchWithCommit(self):
         jrandom = self.factory.makePerson(name='jrandom')
