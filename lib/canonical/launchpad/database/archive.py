@@ -1106,16 +1106,17 @@ class Archive(SQLBase):
         # person and archive:
         # XXX: noodles 2009-03-02 bug=336779: This can be removed once
         # newAuthToken() is moved into IArchiveView.
-        sub_set = getUtility(IArchiveSubscriberSet)
-        subscriptions = sub_set.getBySubscriber(person, archive=self)
+        subscription_set = getUtility(IArchiveSubscriberSet)
+        subscriptions = subscription_set.getBySubscriber(person, archive=self)
         if subscriptions.count() == 0:
             raise Unauthorized(
-                "You do not have permission to access %s." % self.title)
+                "You do not have a subscription for %s." % self.title)
 
         # Third, ensure that the current subscription does not already
         # have a token:
         token_set = getUtility(IArchiveAuthTokenSet)
-        previous_token = token_set.getByArchiveAndPerson(self, person)
+        previous_token = token_set.getActiveTokenForArchiveAndPerson(
+            self, person)
         if previous_token:
             raise ArchiveSubscriptionError(
                 "%s already has a token for %s." % (

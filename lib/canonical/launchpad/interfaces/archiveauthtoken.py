@@ -71,7 +71,7 @@ class IArchiveAuthTokenSet(Interface):
         :return An object conforming to IArchiveAuthToken
         """
 
-    def getByArchiveAndPerson(archive, person):
+    def getActiveTokenForArchiveAndPerson(archive, person):
         """Retrieve an active token for the given archive and person.
 
         :param archive: The archive to which the token corresponds.
