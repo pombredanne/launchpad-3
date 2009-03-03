@@ -7,23 +7,19 @@ __all__ = [
     'Milestone',
     'MilestoneSet',
     'ProjectMilestone',
-    'get_assigned_milestones_from_bugtasks',
     ]
 
 import datetime
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     AND, BoolCol, DateCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.locals import And, In, Store
-from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
+from storm.locals import And, Store
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.sorting import expand_numbers
 from canonical.launchpad.database.bugtarget import HasBugsBase
-from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -55,36 +51,6 @@ def milestone_sort_key(milestone):
     else:
         date = milestone.dateexpected
     return (date, expand_numbers(milestone.name))
-
-
-def get_assigned_milestones_from_bugtasks(result_set):
-    """Returns all the distinct milestones for the given bug tasks.
-
-    :param result_set: A result set yielding BugTask objects,
-        typically the result of calling something.searchTasks().
-    """
-    # Unwrap SQLObjectResultSet; we want the Storm result set.
-    if ISQLObjectResultSet.providedBy(result_set):
-        result_set = removeSecurityProxy(result_set)._result_set
-    # Check that we have a Storm result set before we start doing
-    # things with it.
-    assert IResultSet.providedBy(result_set), (
-        "result_set must be an instance of storm.store.ResultSet "
-        "or storm.sqlobject.SQLObjectResultSet")
-    # Remove ordering and make distinct.
-    result_set = result_set.order_by().config(distinct=True)
-    # Get milestone IDs.
-    milestone_ids = [
-        milestone_id for milestone_id in (
-            result_set.values(BugTask.milestoneID))
-        if milestone_id is not None]
-    # Query for milestones.
-    if len(milestone_ids) == 0:
-        return []
-    else:
-        milestones = result_set._store.find(
-            Milestone, In(Milestone.id, milestone_ids))
-        return sorted(milestones, key=milestone_sort_key, reverse=True)
 
 
 class HasMilestonesMixin:

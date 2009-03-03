@@ -24,16 +24,17 @@ from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from storm.expr import And, Alias, AutoTables, Join, LeftJoin, SQL
-
+from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, SQL
 from storm.sqlobject import SQLObjectResultSet
+from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 
 import pytz
 
 from zope.component import getUtility
 from zope.interface import implements, alsoProvides
 from zope.interface.interfaces import IMethod
-from zope.security.proxy import isinstance as zope_isinstance
+from zope.security.proxy import (
+    isinstance as zope_isinstance, removeSecurityProxy)
 
 from canonical.config import config
 
@@ -1729,6 +1730,33 @@ class BugTaskSet:
         bugtasks = SQLObjectResultSet(BugTask, orderBy=orderby,
                                       prepared_result_set=result)
         return bugtasks
+
+    def getAssignedMilestonesFromSearch(self, search_results):
+        """See `IBugTaskSet`."""
+        # Unwrap SQLObjectResultSet; we want the Storm result set.
+        if ISQLObjectResultSet.providedBy(search_results):
+            search_results = removeSecurityProxy(search_results)._result_set
+        # Check that we have a Storm result set before we start doing
+        # things with it.
+        assert IResultSet.providedBy(search_results), (
+            "search_results must provide IResultSet or ISQLObjectResultSet")
+        # Remove ordering and make distinct.
+        search_results = search_results.order_by().config(distinct=True)
+        # Get milestone IDs.
+        milestone_ids = [
+            milestone_id for milestone_id in (
+                search_results.values(BugTask.milestoneID))
+            if milestone_id is not None]
+        # Query for milestones.
+        if len(milestone_ids) == 0:
+            return []
+        else:
+            # Import here because of cyclic references.
+            from canonical.launchpad.database.milestone import (
+                Milestone, milestone_sort_key)
+            milestones = search_results._store.find(
+                Milestone, In(Milestone.id, milestone_ids))
+            return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,

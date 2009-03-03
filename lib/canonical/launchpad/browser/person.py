@@ -124,8 +124,6 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
-from canonical.launchpad.database.milestone import (
-    get_assigned_milestones_from_bugtasks)
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
@@ -2027,7 +2025,7 @@ class RelevantMilestonesMixin:
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""
-        milestones = get_assigned_milestones_from_bugtasks(
+        milestones = getUtility(IBugTaskSet).getAssignedMilestonesFromSearch(
             self.searchUnbatched())
         for milestone in milestones:
             yield dict(title=(milestone.title or milestone.id),
