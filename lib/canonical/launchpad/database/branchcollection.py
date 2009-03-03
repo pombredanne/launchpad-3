@@ -231,7 +231,32 @@ class GenericBranchCollection:
         if (person == LAUNCHPAD_SERVICES or
             user_has_special_branch_access(person)):
             return self
+        return VisibleBranchCollection(
+            person, self._store, self._branch_filter_expressions,
+            self._tables, self._exclude_from_search)
+
+    def withBranchType(self, *branch_types):
+        return self._filterBy([Branch.branch_type.is_in(branch_types)])
+
+    def withLifecycleStatus(self, *statuses):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.lifecycle_status.is_in(statuses)])
+
+
+class VisibleBranchCollection(GenericBranchCollection):
+    """A branch collection that has special logic for visibility."""
+
+    def __init__(self, user, store=None, branch_filter_expressions=None,
+                 tables=None, exclude_from_search=None):
+        super(VisibleBranchCollection, self).__init__(
+            store=None, branch_filter_expressions=None,
+            tables=None, exclude_from_search=None)
+        self._user = user
+        self._user_visibility_expression = self._getVisibilityExpression()
+
+    def _getVisibilityExpression(self):
         # Everyone can see public branches.
+        person = self._user
         public_branches = Select(Branch.id, Branch.private == False)
 
         if person is None:
@@ -257,11 +282,27 @@ class GenericBranchCollection:
                                TeamParticipation.teamID,
                            TeamParticipation.person == person,
                            Branch.private == True)))
-        return self._filterBy([Branch.id.is_in(visible_branches)])
+        return visible_branches
 
-    def withBranchType(self, *branch_types):
-        return self._filterBy([Branch.branch_type.is_in(branch_types)])
-
-    def withLifecycleStatus(self, *statuses):
+    def getBranches(self):
         """See `IBranchCollection`."""
-        return self._filterBy([Branch.lifecycle_status.is_in(statuses)])
+        expressions = self._branch_filter_expressions + [
+            Branch.id.is_in(self._user_visibility_expression)]
+        results = self.store.using(*(self._tables)).find(Branch, *expressions)
+        def identity(x):
+            return x
+        # Decorate the result set to work around bug 217644.
+        return DecoratedResultSet(results, identity)
+
+    def getMergeProposals(self, statuses=None):
+        """See `IBranchCollection`."""
+        expressions = [
+            BranchMergeProposal.source_branchID.is_in(
+                self._getBranchIdQuery()),
+            BranchMergeProposal.target_branchID.is_in(
+                self._getVisibilityExpression()),
+            ]
+        if statuses is not None:
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(statuses))
+        return self.store.find(BranchMergeProposal, expressions)

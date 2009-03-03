@@ -273,9 +273,11 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         remove_all_sample_data_branches()
-        self.public_branch = self.factory.makeAnyBranch()
-        self.private_branch1 = self.factory.makeAnyBranch(private=True)
-        self.private_branch2 = self.factory.makeAnyBranch(private=True)
+        self.public_branch = self.factory.makeAnyBranch(name='public')
+        self.private_branch1 = self.factory.makeAnyBranch(
+            private=True, name='private1')
+        self.private_branch2 = self.factory.makeAnyBranch(
+            private=True, name='private2')
         self.all_branches = getUtility(IAllBranches)
 
     def test_all_branches(self):
@@ -312,7 +314,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # teams, as well as public branches.
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(team_owner)
-        private_branch = self.factory.makeAnyBranch(owner=team, private=True)
+        private_branch = self.factory.makeAnyBranch(
+            owner=team, private=True, name='team')
         branches = self.all_branches.visibleByUser(team_owner)
         self.assertEqual(
             set([self.public_branch, private_branch]),
@@ -423,6 +426,15 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         collection = self.all_branches.inProduct(product)
         proposals = collection.getMergeProposals()
         self.assertEqual([mp1], list(proposals))
+
+    def test_target_branch_private(self):
+        # The target branch must be in the branch collection, as must the
+        # source branch.
+        mp1 = self.factory.makeBranchMergeProposal()
+        removeSecurityProxy(mp1.target_branch).private = True
+        collection = self.all_branches.visibleByUser(None)
+        proposals = collection.getMergeProposals()
+        self.assertEqual([], list(proposals))
 
     def test_status_restriction(self):
         mp1 = self.factory.makeBranchMergeProposal(
