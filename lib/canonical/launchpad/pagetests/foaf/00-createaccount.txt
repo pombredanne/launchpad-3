@@ -88,6 +88,8 @@ to create a new account.
     >>> salgado = PersonSet().getByName('salgado')
     >>> email = EmailAddressSet().new(
     ...   'foobarino@baz.com.br', salgado, EmailAddressStatus.VALIDATED)
+    >>> import transaction
+    >>> transaction.commit()
     >>> [email.email for email in salgado.validatedemails]
     [u'foobarino@baz.com.br']
 

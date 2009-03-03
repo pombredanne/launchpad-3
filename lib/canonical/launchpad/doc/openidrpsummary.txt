@@ -68,6 +68,7 @@ IOpenIDRPConfig entry.
     ...     IOpenIDRPConfigSet)
     >>> shop = getUtility(IOpenIDRPConfigSet).new(
     ...     'https://shop.canonical.com/', 'The Shop', 'For our fans.')
+    >>> transaction.commit()
     >>> print_openid_rp_summaries(
     ...     rp_summary_set.getByIdentifier(
     ...         'http://openid.launchpad.dev/+id/no-priv_oid', True))
@@ -260,15 +261,17 @@ database does not have a constraint to guard against this.
 
     >>> from canonical.database.sqlbase import cursor
 
-    # Create an integrity error in the data by assigning No Privileges
-    # Person's openid_identifier to Sample Person.
-    >>> cur = cursor()
-    >>> cur.execute("""
+    >>> # Create an integrity error in the data by assigning No Privileges
+    >>> # Person's openid_identifier to Sample Person.
+    >>> from canonical.launchpad.interfaces import IMasterStore
+    >>> from canonical.launchpad.database.openidserver import OpenIDRPSummary
+    >>> store = IMasterStore(OpenIDRPSummary)
+    >>> store.execute("""
     ...     INSERT INTO OpenIDRPSummary (
     ...         account, openid_identifier, trust_root)
     ...     VALUES(121, 'http://openid.launchpad.dev/+id/knightsOfNi',
     ...            'an-irrelevant-trust-root')
-    ...     """)
+    ...     """, noresult=True)
 
     >>> rp_summary_set.record(no_priv_account, 'an-irrelevant-trust-root')
     Traceback (most recent call last):
