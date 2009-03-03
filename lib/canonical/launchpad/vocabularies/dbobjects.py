@@ -93,6 +93,7 @@ from canonical.launchpad.database import (
 
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
@@ -154,7 +155,12 @@ class BasePersonVocabulary:
         if "@" in token:
             # This looks like an email token, so let's do an object
             # lookup based on that.
-            email = getUtility(IEmailAddressSet).getByEmail(token)
+            # We retrieve the email address via the main store, so 
+            # we can easily traverse to email.person to retrieve the
+            # result from the main Store as expected by our call sites.
+            email = IStore(Person).find(
+                EmailAddress,
+                EmailAddress.email.lower() == token.strip().lower()).one()
             if email is None:
                 raise LookupError(token)
             return self.toTerm(email.person)

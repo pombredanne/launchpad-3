@@ -30,6 +30,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, IOpenIDAuthorization,
@@ -67,14 +68,20 @@ class OpenIDAuthorizationSet:
     implements(IOpenIDAuthorizationSet)
 
     def isAuthorized(self, account, trust_root, client_id):
-        """See IOpenIDAuthorizationSet."""
-        return  OpenIDAuthorization.select("""
-            account = %s
-            AND trust_root = %s
-            AND date_expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-            AND (client_id IS NULL OR client_id = %s)
-            """ % sqlvalues(account, trust_root, client_id)
-            ).count() > 0
+        """See IOpenIDAuthorizationSet.
+        
+        The use of the master Store is forced to avoid replication
+        race conditions.
+        """
+        return IMasterStore(OpenIDAuthorization).find(
+            OpenIDAuthorization,
+            # Use account.id here just incase it is from a different Store.
+            OpenIDAuthorization.accountID == account.id,
+            OpenIDAuthorization.trust_root == trust_root,
+            OpenIDAuthorization.date_expires >= UTC_NOW,
+            Or(
+                OpenIDAuthorization.client_id == None,
+                OpenIDAuthorization.client_id == client_id)).count() > 0
 
     def authorize(self, account, trust_root, expires, client_id=None):
         """See IOpenIDAuthorizationSet."""

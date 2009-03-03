@@ -27,8 +27,8 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    AppServerLayer, DatabaseLayer, FunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
+    AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -354,6 +354,9 @@ special = {
     'old-testing.txt': LayeredDocFileSuite(
             '../doc/old-testing.txt', layer=FunctionalLayer
             ),
+
+    'autodecorate.txt':
+        LayeredDocFileSuite('../doc/autodecorate.txt', layer=BaseLayer),
 
     'remove-upstream-translations-script.txt': LayeredDocFileSuite(
             '../doc/remove-upstream-translations-script.txt',
@@ -896,6 +899,12 @@ special = {
         '../doc/filebug-data-parser.txt'),
     'product-update-remote-product.txt': LayeredDocFileSuite(
             '../doc/product-update-remote-product.txt',
+            setUp=updateRemoteProductSetup,
+            tearDown=updateRemoteProductTeardown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'product-update-remote-product-script.txt': LayeredDocFileSuite(
+            '../doc/product-update-remote-product-script.txt',
             setUp=updateRemoteProductSetup,
             tearDown=updateRemoteProductTeardown,
             layer=LaunchpadZopelessLayer
