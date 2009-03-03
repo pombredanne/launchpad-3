@@ -254,6 +254,8 @@ class OpenIDMixin:
 
         # Collect registration values
         values = {}
+        values['fullname'] = self.account.displayname
+        values['email'] = self.account.preferredemail.email
         person = IPerson(self.account, None)
         if person is not None:
             values['nickname'] = person.name
