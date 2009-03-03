@@ -1,0 +1,62 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+  >
+<body>
+
+  <div metal:fill-slot="main">
+
+    <h1 tal:content="CONTEXTS/fmt:pagetitle">
+      Manage archive subscriptions.
+    </h1>
+  <tal:has_subscriptions condition="view/has_subscriptions">
+    <div id="current_subscriptions">
+      <h2>Current subscriptions</h2>
+      <p>All the private archives for which you have
+         a subscription are displayed below.
+      </p>
+      <table summary="CONTEXTS/fmt:pagetitle" id="archive-subscriptions">
+        <thead>
+          <tr class="archive-subscription-row">
+            <th>Archive</th><th>Subscription description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="subscription_with_token view/subscriptions_with_tokens"
+              class="archive-subscription-row">
+            <tal:subscription_and_token
+                define="subscription python:subscription_with_token[0];
+                        token python:subscription_with_token[1]">
+            <td tal:content="subscription/archive/title">Private PPA for Celso
+            </td>
+            <td tal:content="subscription/description">Allow Team X access.
+            </td>
+            <td tal:condition="not: token"
+                tal:define="archive_id subscription/archive/id">
+              <form method="post" action="">
+                <input type="hidden" name="archive_id"
+                    tal:attributes="value string:${archive_id}"/>
+                <input type="submit" value="Activate"
+                    tal:attributes="name string:field.actions.activate_archive_${archive_id}"/>
+              </form>
+            </td>
+            </tal:subscription_and_token>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </tal:has_subscriptions>
+  <tal:has_no_subscriptions condition="not: view/has_subscriptions">
+    <p>You do not have any current subscriptions to private archives.
+    </p>
+  </tal:has_no_subscriptions>
+  </div>
+</body>
+</html>

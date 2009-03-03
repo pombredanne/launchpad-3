@@ -10,7 +10,7 @@ __all__ = [
 
 import pytz
 
-from storm.locals import DateTime, Int, RawStr, Reference, Storm, Unicode
+from storm.locals import DateTime, Int, Reference, Storm, Unicode
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -64,3 +64,12 @@ class ArchiveAuthTokenSet:
         return store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.token == token).one()
+
+    def getActiveTokenForArchiveAndPerson(self, archive, person):
+        """See `IArchiveAuthTokenSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            ArchiveAuthToken,
+            ArchiveAuthToken.archive == archive,
+            ArchiveAuthToken.person == person,
+            ArchiveAuthToken.date_deactivated == None).one()

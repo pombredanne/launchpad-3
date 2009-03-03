@@ -177,6 +177,17 @@
       />
   </browser:pages>
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.Append"
+    class="canonical.launchpad.browser.archivesubscription.ArchiveSubscribersView">
+    <browser:page
+      name="+subscriptions"
+      facet="overview"
+      template="../templates/archive-subscribers.pt"
+      />
+  </browser:pages>
+
 
   <!-- ArchiveSet -->
   <class class="canonical.launchpad.database.ArchiveSet">
