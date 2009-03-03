@@ -15,6 +15,7 @@
             tal:content="view/title">
         My Title</th>
     </tr>
+    </thead>
     <tbody>
     <div tal:omit-tag="python:True" tal:repeat="bug view/getPublicRawItems">
       <tr tal:repeat="bugtask bug/bugtasks">
