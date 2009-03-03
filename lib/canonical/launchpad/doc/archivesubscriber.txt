@@ -188,37 +188,40 @@ to which the provided subscriber belongs:
     PPA for Celso Providelo        subscription for joesmith
     PPA for Mark Shuttleworth      Access for cprov team
 
-This can be overridden by explicitly not including team subscriptions when
-calling getBySubscriber():
-
-    >>> for subscription in sub_set.getBySubscriber(joesmith,
-    ...     include_team_subscriptions=False):
-    ...     print subscription.archive.title
-    ...     print subscription.description
-    PPA for Celso Providelo        subscription for joesmith
-
 Finally, many callsites of getBySubscriber() will be interested not only
 in each subscription of the subscriber, but also the generated
 ArchiveAuthToken for each subscription of the subscriber. These can
-be returned as well using the optional return_tokens param:
+be returned as well using the the getBySubscriberWithTokens():
 
 First create a token for joesmith's subscription for cprov's archive:
 
-    >>> login("celso.providelo@canonical.com")
-    >>> ignore = cprov.archive.newAuthToken(joesmith, u"test_token")
-    >>> login("joe@example.com")
+    >>> joesmith_token = cprov.archive.newAuthToken(joesmith, u"test_token")
 
 Now print out all subscriptions with their tokens for joesmith:
 
-    >>> for subscription, token in sub_set.getBySubscriber(joesmith,
-    ...     return_tokens=True):
-    ...     if token:
-    ...         token_text = token.token
-    ...     else:
-    ...         token_text = "None"
-    ...     print subscription.archive.title
-    ...     print token_text
+    >>> def print_subscriptions_with_tokens(subs_with_tokens):
+    ...     for subscription, token in subs_with_tokens:
+    ...         if token:
+    ...             token_text = token.token
+    ...         else:
+    ...             token_text = "None"
+    ...         print subscription.archive.title
+    ...         print token_text
+    >>> print_subscriptions_with_tokens(sub_set.getBySubscriberWithTokens(
+    ...     joesmith))
     PPA for Celso Providelo            test_token
+    PPA for Mark Shuttleworth          None
+
+Deactivated tokens are not included with the returned token for a
+subscription:
+
+    >>> login("celso.providelo@canonical.com")
+    >>> joesmith_token.deactivate()
+    >>> login("joe@example.com")
+
+    >>> print_subscriptions_with_tokens(sub_set.getBySubscriberWithTokens(
+    ...    joesmith))
+    PPA for Celso Providelo            None
     PPA for Mark Shuttleworth          None
 
 == Amending Subscriptions ==

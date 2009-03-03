@@ -104,12 +104,6 @@ class BranchLifecycleStatus(DBEnumeratedType):
     code in the branch.
     """
 
-    NEW = DBItem(1, """
-        New
-
-        Has just been created.
-        """)
-
     EXPERIMENTAL = DBItem(10, """
         Experimental
 
@@ -374,7 +368,6 @@ class UICreatableBranchType(EnumeratedType):
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
-    BranchLifecycleStatus.NEW,
     BranchLifecycleStatus.EXPERIMENTAL,
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
@@ -776,7 +769,7 @@ class IBranch(IHasOwner):
     lifecycle_status = exported(
         Choice(
             title=_('Status'), vocabulary=BranchLifecycleStatus,
-            default=BranchLifecycleStatus.NEW))
+            default=BranchLifecycleStatus.DEVELOPMENT))
 
     # Mirroring attributes. For more information about how these all relate to
     # each other, look at
@@ -799,17 +792,22 @@ class IBranch(IHasOwner):
         required=False)
 
     # Scanning attributes
-    last_scanned = Datetime(
-        title=_("Last time this branch was successfully scanned."),
-        required=False)
-    last_scanned_id = Text(
-        title=_("Last scanned revision ID"), required=False,
-        description=_("The head revision ID of the branch when last "
-                      "successfully scanned."))
-    revision_count = Int(
-        title=_("Revision count"),
-        description=_("The revision number of the tip of the branch.")
-        )
+    last_scanned = exported(
+        Datetime(
+            title=_("Last time this branch was successfully scanned."),
+            required=False, readonly=True))
+    last_scanned_id = exported(
+        TextLine(
+            title=_("Last scanned revision ID"),
+            required=False, readonly=True,
+            description=_("The head revision ID of the branch when last "
+                          "successfully scanned.")))
+
+    revision_count = exported(
+        Int(
+            title=_("Revision count"), readonly=True,
+            description=_("The revision number of the tip of the branch.")
+            ))
 
     stacked_on = Attribute('Stacked-on branch')
 
@@ -1169,7 +1167,8 @@ class IBranchSet(Interface):
         """
 
     def new(branch_type, name, registrant, owner, product=None, url=None,
-            title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            title=None,
+            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
             summary=None, whiteboard=None, date_created=None,
             distroseries=None, sourcepackagename=None):
         """Create a new branch.
@@ -1385,7 +1384,7 @@ class BranchLifecycleStatusFilter(EnumeratedType):
     use_template(BranchLifecycleStatus)
 
     sort_order = (
-        'CURRENT', 'ALL', 'NEW', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
+        'CURRENT', 'ALL', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
         'MERGED', 'ABANDONED')
 
     CURRENT = Item("""

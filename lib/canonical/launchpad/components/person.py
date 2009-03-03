@@ -12,6 +12,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 def personFromPrincipal(principal):
     """Adapt ILaunchpadPrincipal to IPerson."""
     if ILaunchpadPrincipal.providedBy(principal):
+        if principal.person is None:
+            raise ComponentLookupError
         return principal.person
     else:
         # This is not actually necessary when this is used as an adapter

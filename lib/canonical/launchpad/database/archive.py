@@ -18,6 +18,7 @@ from storm.locals import Count, Join
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.archiveuploader.utils import re_issource, re_isadeb
@@ -51,6 +52,8 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadSource)
 from canonical.launchpad.database.teammembership import TeamParticipation
+from canonical.launchpad.interfaces.archiveauthtoken import (
+    IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
     IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
@@ -58,7 +61,7 @@ from canonical.launchpad.interfaces.archive import (
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus)
+    ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.interfaces.component import IComponentSet
@@ -74,6 +77,7 @@ from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
     CannotCopy, check_copy, do_copy)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -1090,6 +1094,35 @@ class Archive(SQLBase):
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
+
+        # First, users can only create tokens for themselves, or more
+        # generally, for users they can edit:
+        if not check_permission('launchpad.Edit', person):
+            raise Unauthorized(
+                "You cannot create tokens for %s." % (
+                    person.displayname))
+
+        # Second, ensure that a current subscription exists for the
+        # person and archive:
+        # XXX: noodles 2009-03-02 bug=336779: This can be removed once
+        # newAuthToken() is moved into IArchiveView.
+        sub_set = getUtility(IArchiveSubscriberSet)
+        subscriptions = sub_set.getBySubscriber(person, archive=self)
+        if subscriptions.count() == 0:
+            raise Unauthorized(
+                "You do not have permission to access %s." % self.title)
+
+        # Third, ensure that the current subscription does not already
+        # have a token:
+        token_set = getUtility(IArchiveAuthTokenSet)
+        previous_token = token_set.getByArchiveAndPerson(self, person)
+        if previous_token:
+            raise ArchiveSubscriptionError(
+                "%s already has a token for %s." % (
+                    person.displayname,
+                    self.title))
+
+        # Now onto the actual token creation:
         if token is None:
             token = create_unique_token_for_table(20, ArchiveAuthToken.token)
         archive_auth_token = ArchiveAuthToken()
@@ -1221,6 +1254,14 @@ class ArchiveSet:
                 raise AssertionError(
                     "archive '%s' exists already in '%s'." %
                     (name, distribution.name))
+        else:
+            archive = Archive.selectOneBy(
+                owner=owner, distribution=distribution, name=name,
+                purpose=ArchivePurpose.PPA)
+            if archive is not None:
+                raise AssertionError(
+                    "Person '%s' already has a PPA named '%s'." %
+                    (owner.name, name))
 
         return Archive(
             owner=owner, distribution=distribution, name=name,

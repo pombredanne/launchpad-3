@@ -689,9 +689,11 @@ def webservice_for_person(person, consumer_key='launchpad-library',
                           context=None):
     """Return a valid WebServiceCaller for the person.
 
-    Ues this method to create a way to test the webservice that doesn't depend
+    Use this method to create a way to test the webservice that doesn't depend
     on sample data.
     """
+    if person.is_team:
+        raise AssertionError('This cannot be used with teams.')
     login(ANONYMOUS)
     oacs = getUtility(IOAuthConsumerSet)
     consumer = oacs.getByKey(consumer_key)
