@@ -24,17 +24,16 @@ from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 class AuthToken(Storm):
     implements(IAuthToken)
-    __storm_table__ = 'authtoken'
+    __storm_table__ = 'AuthToken'
 
     def __init__(self, account, requesteremail, email, tokentype,
                  redirection_url=None):
@@ -55,9 +54,10 @@ class AuthToken(Storm):
     tokentype = DBEnum('token_type', enum=LoginTokenType, allow_none=False)
     token = Unicode(allow_none=False)
 
-    requester_id = Int('requester')
+    requester_account_id = Int('requester')
     requester_account = Reference(
-        requester_id, 'canonical.launchpad.database.account.Account.id')
+        requester_account_id,
+        'canonical.launchpad.database.account.Account.id')
     requesteremail = Unicode('requester_email')
 
     email = Unicode(allow_none=False)
@@ -77,7 +77,8 @@ class AuthToken(Storm):
 
         result = Store.of(self).find(
             AuthToken, email=self.email, tokentype=self.tokentype,
-            requester_id=self.requester_id, date_consumed=None)
+            requester_account_id=self.requester_account_id,
+            date_consumed=None)
         for token in result:
             token.date_consumed = UTC_NOW
 
@@ -128,7 +129,7 @@ class AuthTokenSet:
 
     def get(self, id, default=None):
         """See IAuthTokenSet."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(AuthToken)
         token = store.get(AuthToken, id)
         if token is None:
             return default
@@ -173,18 +174,21 @@ class AuthTokenSet:
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
 
+        if requester is not None:
+            requester = IMasterObject(requester)
+
         token = AuthToken(account=requester,
                           requesteremail=requesteremail,
                           email=email, tokentype=tokentype,
                           redirection_url=redirection_url)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(AuthToken)
         store.add(token)
         return token
 
     def __getitem__(self, tokentext):
         """See IAuthTokenSet."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(AuthToken)
         token = store.find(AuthToken, token=tokentext).one()
         if token is None:
             raise NotFoundError(tokentext)
