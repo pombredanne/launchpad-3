@@ -1184,7 +1184,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.View')
     def mugshots(self):
         target = '+mugshots'
-        text = 'Show group photo'
+        text = 'Show member photos'
         return Link(target, text, icon='people')
 
     def polls(self):
