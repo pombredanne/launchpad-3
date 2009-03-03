@@ -338,13 +338,12 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         else:
             naked_account.password = data.get('password')
 
-        person = emailaddress.person
+        person = IMasterObject(emailaddress.person, None)
         # Make sure this person has a preferred email address.
         if person is not None and person.preferredemail != emailaddress:
             # Must remove the security proxy of the email address because
             # the user is not logged in at this point and we may need to
             # change its status.
-            person = IMasterObject(person)
             removeSecurityProxy(person).validateAndEnsurePreferredEmail(
                 removeSecurityProxy(emailaddress))
 
