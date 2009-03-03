@@ -1186,3 +1186,12 @@ class SourcePackageBranchesView(BranchListingView):
         """The number of total branches the user can see."""
         return getUtility(IBranchSet).getBranchesForContext(
             context=self.context, visible_by_user=self.user).count()
+
+    @property
+    def series_links(self):
+        """Links to other series in the same distro as the package."""
+        our_series = self.context.distroseries
+        # We want oldest on the left, and 'serieses' normally yields the
+        # newest first.
+        for series in reversed(self.context.distribution.serieses):
+            yield dict(series=series, linked=(series != our_series))

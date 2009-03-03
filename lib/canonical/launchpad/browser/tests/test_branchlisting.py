@@ -9,11 +9,13 @@ import unittest
 from storm.expr import Asc, Desc
 
 from canonical.launchpad.browser.branchlisting import (
-    BranchListingSort, BranchListingView)
+    BranchListingSort, BranchListingView, SourcePackageBranchesView)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.person import Owner
 from canonical.launchpad.database.product import Product
-from canonical.launchpad.testing import TestCase
+from canonical.launchpad.testing import TestCase, TestCaseWithFactory
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 class TestListingToSortOrder(TestCase):
@@ -73,6 +75,30 @@ class TestListingToSortOrder(TestCase):
         self.assertSortsEqual(
             [Asc(Branch.date_created)] + self.DEFAULT_BRANCH_LISTING_SORT,
             registrant_order)
+
+
+class TestSourcePackageBranchesView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_distroseries_links(self):
+        # There are some links at the bottom of the page to other
+        # distroseries.
+        distro = self.factory.makeDistribution()
+        series_one = self.factory.makeDistroRelease(
+            distribution=distro, version="1.0")
+        series_two = self.factory.makeDistroRelease(
+            distribution=distro, version="2.0")
+        series_three = self.factory.makeDistroRelease(
+            distribution=distro, version="3.0")
+        package = self.factory.makeSourcePackage(distroseries=series_two)
+        request = LaunchpadTestRequest()
+        view = SourcePackageBranchesView(package, request)
+        self.assertEqual(
+            [dict(series=series_one, linked=True),
+             dict(series=series_two, linked=False),
+             dict(series=series_three, linked=True)],
+            list(view.series_links))
 
 
 def test_suite():
