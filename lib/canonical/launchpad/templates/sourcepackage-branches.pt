@@ -21,6 +21,19 @@
     <tal:branchlisting content="structure branches/@@+branch-listing" />
   </tal:has-branches>
 
+  <div class="related" id="branch-series-links">
+    <tal:series-link repeat="link view/series_links">
+      <span class="branch-series-link">
+        <a tal:condition="link/linked"
+           tal:attributes="href link/series/fmt:url"
+           tal:content="link/series/name">
+        </a>
+        <tal:not-linked tal:condition="not: link/linked"
+                        tal:replace="link/series/name" />
+      </span>
+    </tal:series-link>
+  </div>
+
 </div>
 
 </body>
