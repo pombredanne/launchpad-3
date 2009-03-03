@@ -259,23 +259,16 @@ class ImportWorker:
     # Where the Bazaar working tree will be stored.
     BZR_WORKING_TREE_PATH = 'bzr_working_tree'
 
-    # Where the foreign working tree will be stored.
-    FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
-
-    def __init__(self, source_details, foreign_tree_store,
-                 bazaar_branch_store, logger):
+    def __init__(self, source_details, bazaar_branch_store, logger):
         """Construct an `ImportWorker`.
 
         :param source_details: A `CodeImportSourceDetails` object.
-        :param foreign_tree_store: A `ForeignTreeStore`. The import worker
-            uses this to fetch and store foreign branches.
         :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
             uses this to fetch and store the Bazaar branches that are created
             and updated during the import process.
         :param logger: A `Logger` to pass to cscvs.
         """
         self.source_details = source_details
-        self.foreign_tree_store = foreign_tree_store
         self.bazaar_branch_store = bazaar_branch_store
         self._logger = logger
 
@@ -285,6 +278,64 @@ class ImportWorker:
             shutil.rmtree(self.BZR_WORKING_TREE_PATH)
         return self.bazaar_branch_store.pull(
             self.source_details.branch_id, self.BZR_WORKING_TREE_PATH)
+
+    def getWorkingDirectory(self):
+        """The directory we should change to and store all scratch files in.
+        """
+        base = config.codeimportworker.working_directory_root
+        dirname = 'worker-for-branch-%s' % self.source_details.branch_id
+        return os.path.join(base, dirname)
+
+    def run(self):
+        """Run the code import job.
+
+        This is the primary public interface to the `ImportWorker`. This
+        method:
+
+         1. Retrieves an up-to-date foreign tree to import.
+         2. Gets the Bazaar branch to import into.
+         3. Imports the foreign tree into the Bazaar branch. If we've
+            already imported this before, we synchronize the imported Bazaar
+            branch with the latest changes to the foreign tree.
+         4. Publishes the newly-updated Bazaar branch, making it available to
+            Launchpad users.
+         5. Archives the foreign tree, so that we can update it quickly next
+            time.
+        """
+        working_directory = self.getWorkingDirectory()
+        if os.path.exists(working_directory):
+            shutil.rmtree(working_directory)
+        os.makedirs(working_directory)
+        os.chdir(working_directory)
+        try:
+            self._doImport()
+        finally:
+            shutil.rmtree(working_directory)
+
+    def _doImport(self):
+        raise NotImplementedError()
+
+
+class CSCVSImportWorker(ImportWorker):
+
+    # Where the foreign working tree will be stored.
+    FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
+
+    def __init__(self, source_details, foreign_tree_store,
+                 bazaar_branch_store, logger):
+        """Construct a `CSCVSImportWorker`.
+
+        :param source_details: A `CodeImportSourceDetails` object.
+        :param foreign_tree_store: A `ForeignTreeStore`. The import worker
+            uses this to fetch and store foreign branches.
+        :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
+            uses this to fetch and store the Bazaar branches that are created
+            and updated during the import process.
+        :param logger: A `Logger` to pass to cscvs.
+        """
+        ImportWorker.__init__(self, source_details, bazaar_branch_store, logger)
+        self.foreign_tree_store = foreign_tree_store
+
 
     def getForeignTree(self):
         """Return the foreign branch object that we are importing from.
@@ -340,45 +391,11 @@ class ImportWorker:
                        flags, revisions, bazpath]
         totla.totla(config, self._logger, config.args, SCM.tree(source_dir))
 
-    def getWorkingDirectory(self):
-        """The directory we should change to and store all scratch files in.
-        """
-        base = config.codeimportworker.working_directory_root
-        dirname = 'worker-for-branch-%s' % self.source_details.branch_id
-        return os.path.join(base, dirname)
-
-    def run(self):
-        """Run the code import job.
-
-        This is the primary public interface to the `ImportWorker`. This
-        method:
-
-         1. Retrieves an up-to-date foreign tree to import.
-         2. Gets the Bazaar branch to import into.
-         3. Imports the foreign tree into the Bazaar branch. If we've
-            already imported this before, we synchronize the imported Bazaar
-            branch with the latest changes to the foreign tree.
-         4. Publishes the newly-updated Bazaar branch, making it available to
-            Launchpad users.
-         5. Archives the foreign tree, so that we can update it quickly next
-            time.
-        """
-        working_directory = self.getWorkingDirectory()
-        if os.path.exists(working_directory):
-            shutil.rmtree(working_directory)
-        os.makedirs(working_directory)
-        os.chdir(working_directory)
-        try:
-            foreign_tree = self.getForeignTree()
-            bazaar_tree = self.getBazaarWorkingTree()
-            self.importToBazaar(foreign_tree, bazaar_tree)
-            self.bazaar_branch_store.push(
-                self.source_details.branch_id, bazaar_tree)
-            self.foreign_tree_store.archive(
-                self.source_details, foreign_tree)
-        finally:
-            shutil.rmtree(working_directory)
-
-
-class CSCVSImportWorker(ImportWorker):
-    pass
+    def _doImport(self):
+        foreign_tree = self.getForeignTree()
+        bazaar_tree = self.getBazaarWorkingTree()
+        self.importToBazaar(foreign_tree, bazaar_tree)
+        self.bazaar_branch_store.push(
+            self.source_details.branch_id, bazaar_tree)
+        self.foreign_tree_store.archive(
+            self.source_details, foreign_tree)

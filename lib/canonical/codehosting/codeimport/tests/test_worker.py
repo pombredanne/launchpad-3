@@ -320,8 +320,7 @@ class TestWorkerCore(WorkerTest):
     def makeImportWorker(self):
         """Make an ImportWorker that only uses fake branches."""
         return ImportWorker(
-            self.source_details, FakeForeignTreeStore(),
-            self.makeBazaarBranchStore(),
+            self.source_details, self.makeBazaarBranchStore(),
             logging.getLogger("silent"))
 
     def test_construct(self):
@@ -346,14 +345,28 @@ class TestWorkerCore(WorkerTest):
             os.path.abspath(worker.BZR_WORKING_TREE_PATH),
             os.path.abspath(bzr_working_tree.basedir))
 
+
+class TestCSCVSWorker(WorkerTest):
+    """Tests for methods specific to CSCVSImportWorker."""
+
+    def setUp(self):
+        WorkerTest.setUp(self)
+        self.source_details = self.factory.makeCodeImportSourceDetails()
+
+    def makeImportWorker(self):
+        """Make an ImportWorker that only uses fake branches."""
+        return CSCVSImportWorker(
+            self.source_details, FakeForeignTreeStore(),
+            None, logging.getLogger("silent"))
+
     def test_getForeignTree(self):
         # getForeignTree returns an object that represents the 'foreign'
         # branch (i.e. a CVS or Subversion branch).
         worker = self.makeImportWorker()
-        branch = worker.getForeignTree()
+        working_tree = worker.getForeignTree()
         self.assertIsSameRealPath(
             os.path.abspath(worker.FOREIGN_WORKING_TREE_PATH),
-            branch.local_path)
+            working_tree.local_path)
 
 
 def clean_up_default_stores_for_import(source_details):
