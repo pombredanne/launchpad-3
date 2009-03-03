@@ -26,9 +26,10 @@ __all__ = [
 
 from datetime import datetime
 
+from storm.expr import Asc, Desc
 import pytz
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, Interface
 from zope.formlib import form
 from zope.schema import Choice
 
@@ -50,9 +51,9 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranchSet)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    BranchListingSort, BranchPersonSearchContext,
-    BranchPersonSearchRestriction, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchBatchNavigator, IBranchListingFilter, IBranchSet)
+    BranchPersonSearchContext, BranchPersonSearchRestriction,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchBatchNavigator,
+    IBranchSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
@@ -64,6 +65,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.lazr.enum import EnumeratedType, Item
 from canonical.widgets import LaunchpadDropdownWidget
 from lazr.delegates import delegates
 
@@ -136,6 +138,90 @@ class BranchListingItem(BranchBadges):
     def revision_codebrowse_link(self):
         return self.context.codebrowse_url(
             'revision', str(self.context.revision_count))
+
+
+class BranchListingSort(EnumeratedType):
+    """Choices for how to sort branch listings."""
+
+    # XXX: MichaelHudson 2007-10-17 bug=153891: We allow sorting on quantities
+    # that are not visible in the listing!
+
+    DEFAULT = Item("""
+        by most interesting
+
+        Sort branches by the default ordering for the view.
+        """)
+
+    PRODUCT = Item("""
+        by project name
+
+        Sort branches by name of the project the branch is for.
+        """)
+
+    LIFECYCLE = Item("""
+        by lifecycle status
+
+        Sort branches by the lifecycle status.
+        """)
+
+    NAME = Item("""
+        by branch name
+
+        Sort branches by the display name of the registrant.
+        """)
+
+    REGISTRANT = Item("""
+        by registrant name
+
+        Sort branches by the display name of the registrant.
+        """)
+
+    MOST_RECENTLY_CHANGED_FIRST = Item("""
+        most recently changed first
+
+        Sort branches from the most recently to the least recently
+        changed.
+        """)
+
+    LEAST_RECENTLY_CHANGED_FIRST = Item("""
+        least recently changed first
+
+        Sort branches from the least recently to the most recently
+        changed.
+        """)
+
+    NEWEST_FIRST = Item("""
+        newest first
+
+        Sort branches from newest to oldest.
+        """)
+
+    OLDEST_FIRST = Item("""
+        oldest first
+
+        Sort branches from oldest to newest.
+        """)
+
+
+class IBranchListingFilter(Interface):
+    """The schema for the branch listing filtering/ordering form."""
+
+    # Stats and status attributes
+    lifecycle = Choice(
+        title=_('Lifecycle Filter'), vocabulary=BranchLifecycleStatusFilter,
+        default=BranchLifecycleStatusFilter.CURRENT,
+        description=_(
+        "The author's assessment of the branch's maturity. "
+        " Mature: recommend for production use."
+        " Development: useful work that is expected to be merged eventually."
+        " Experimental: not recommended for merging yet, and maybe ever."
+        " Merged: integrated into mainline, of historical interest only."
+        " Abandoned: no longer considered relevant by the author."
+        " New: unspecified maturity."))
+
+    sort_by = Choice(
+        title=_('ordered by'), vocabulary=BranchListingSort,
+        default=BranchListingSort.LIFECYCLE)
 
 
 class BranchListingBatchNavigator(TableBatchNavigator):
@@ -346,9 +432,9 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
 
         :param lifecycle_status: A filter of the branch's lifecycle status.
         """
-        return getUtility(IBranchSet).getBranchesForContext(
-            self.branch_search_context, lifecycle_status, self.user,
-            self.sort_by)
+        branches = getUtility(IBranchSet).getBranchesForContext(
+            self.branch_search_context, lifecycle_status, self.user)
+        return branches.order_by(self._listingSortToOrderBy(self.sort_by))
 
     @property
     def no_branch_message(self):
@@ -420,6 +506,46 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             return widget.getInputValue()
         else:
             return None
+
+    @staticmethod
+    def _listingSortToOrderBy(sort_by):
+        """Compute a value to pass as orderBy to Branch.select().
+
+        :param sort_by: an item from the BranchListingSort enumeration.
+        """
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.person import Owner
+        from canonical.launchpad.database.product import Product
+
+        DEFAULT_BRANCH_LISTING_SORT = [
+            BranchListingSort.PRODUCT,
+            BranchListingSort.LIFECYCLE,
+            BranchListingSort.REGISTRANT,
+            BranchListingSort.NAME,
+            ]
+
+        LISTING_SORT_TO_COLUMN = {
+            BranchListingSort.PRODUCT: (Asc, Product.name),
+            BranchListingSort.LIFECYCLE: (Desc, Branch.lifecycle_status),
+            BranchListingSort.NAME: (Asc, Branch.name),
+            BranchListingSort.REGISTRANT: (Asc, Owner.name),
+            BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: (
+                Desc, Branch.date_last_modified),
+            BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: (
+                Asc, Branch.date_last_modified),
+            BranchListingSort.NEWEST_FIRST: (Desc, Branch.date_created),
+            BranchListingSort.OLDEST_FIRST: (Asc, Branch.date_created),
+            }
+
+        order_by = map(
+            LISTING_SORT_TO_COLUMN.get, DEFAULT_BRANCH_LISTING_SORT)
+
+        if sort_by is not None:
+            direction, column = LISTING_SORT_TO_COLUMN[sort_by]
+            order_by = (
+                [(direction, column)] +
+                [sort for sort in order_by if sort[1] is not column])
+        return [direction(column) for direction, column in order_by]
 
     def setUpWidgets(self, context=None):
         """Set up the 'sort_by' widget with only the applicable choices."""
@@ -915,8 +1041,9 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         series_branches = self._getSeriesBranches()
         branch_query = getUtility(IBranchSet).getBranchesForContext(
             context=self.context, visible_by_user=self.user,
-            lifecycle_statuses=self.selected_lifecycle_status,
-            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
+            lifecycle_statuses=self.selected_lifecycle_status)
+        branch_query.order_by(self._listingSortToOrderBy(
+            BranchListingSort.MOST_RECENTLY_CHANGED_FIRST))
         # We don't want the initial branch listing to be batched, so only get
         # the batch size - the number of series_branches.
         batch_size = config.launchpad.branchlisting_batch_size
