@@ -349,7 +349,8 @@ class DatabaseConfig:
     """
     _config_section = None
     _db_config_attrs = frozenset([
-        'dbuser', 'main_master', 'main_slave', 'auth_master', 'auth_slave',
+        'dbuser', 'auth_dbuser',
+        'main_master', 'main_slave', 'auth_master', 'auth_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
         'isolation_level', 'randomise_select_results',
         'soft_request_timeout'])
