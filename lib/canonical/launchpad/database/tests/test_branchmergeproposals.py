@@ -988,6 +988,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         """Ready jobs should be listed."""
         # Suppress events to avoid creating a MergeProposalCreatedJob early.
         bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         job = MergeProposalCreatedJob.create(bmp)
         job.job.sync()
         job.context.sync()
@@ -1014,6 +1015,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         """Skip Jobs with a hosted source branch that needs mirroring."""
         source_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED)
+        self.factory.makeRevisionsForBranch(source_branch, count=1)
         # Suppress events to avoid creating a MergeProposalCreatedJob early.
         bmp = capture_events(
             self.factory.makeBranchMergeProposal,
@@ -1021,6 +1023,16 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         bmp.source_branch.requestMirror()
         job = MergeProposalCreatedJob.create(bmp)
         self.assertEqual([job], list(MergeProposalCreatedJob.iterReady()))
+
+    def test_iterReady_excludes_branches_with_no_revisions(self):
+        """Skip Jobs with a source branch that has no revisions."""
+        # Suppress events to avoid creating a MergeProposalCreatedJob early.
+        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
+        bmp.source_branch.requestMirror()
+        self.assertEqual(0, bmp.source_branch.revision_count)
+        job = MergeProposalCreatedJob.create(bmp)
+        self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
+
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""

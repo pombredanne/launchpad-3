@@ -209,6 +209,7 @@ COMMENT ON COLUMN BugTask.date_triaged IS 'The date when this bug transitioned t
 COMMENT ON COLUMN BugTask.date_fix_committed IS 'The date when this bug transitioned to a status >= FIXCOMMITTED.';
 COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitioned to a FIXRELEASED status.';
 COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
+COMMENT ON COLUMN BugTask.date_milestone_set IS 'The date when this bug was targed to the milestone that is currently set.';
 COMMENT ON COLUMN BugTask.hotness_rank IS 'The hotness bin in which this bugtask appears, as a value from the BugTaskHotnessRank enumeration.';
 
 
@@ -275,7 +276,6 @@ COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker en
 COMMENT ON COLUMN BugTracker.version IS 'The version of the bug tracker software being used.';
 COMMENT ON COLUMN BugTracker.block_comment_pushing IS 'Whether to block pushing comments to the bug tracker. Having a value of false means that we will push the comments if the bug tracker supports it.';
 COMMENT ON COLUMN BugTracker.has_lp_plugin IS 'Whether we have confirmed that the Launchpad plugin was installed on the bug tracker, the last time checkwatches was run.';
-COMMENT ON COLUMN BugTracker.active IS 'Indicates if we should perform automated actions, like fetching remote statuses, against this bug tracker. For example, to stop checking a broken bug tracker or when bug watches point to a private bug tracker. The summary and/or contact details can be used to explain when a bug tracker is disabled.';
 
 -- BugTrackerAlias
 

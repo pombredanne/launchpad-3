@@ -679,4 +679,19 @@
         layer="canonical.launchpad.layers.PageTestLayer"
         />
 
+    <class class="canonical.launchpad.webapp.vocabulary.CountableIterator">
+      <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
+    <class class="canonical.launchpad.webapp.vocabulary.BatchedCountableIterator">
+      <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
+    <!-- Create a namespace to render the form of any LaunchpadFormView-->
+    <view
+        name="form" type="*"
+        provides="zope.traversing.interfaces.ITraversable" for="*"
+        factory="canonical.launchpad.webapp.namespace.FormNamespaceView"
+        />
+
 </configure>

@@ -128,7 +128,7 @@ class BMPMailer(BranchMailer):
         if (merge_proposal.root_comment is not None and
             (merge_proposal.root_comment.message.owner ==
              merge_proposal.registrant)):
-            comment=merge_proposal.root_comment
+            comment = merge_proposal.root_comment
         return klass(
             'Request to review proposed merge of %(source_branch)s into '
             '%(target_branch)s', 'review-requested.txt', recipients,
