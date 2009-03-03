@@ -492,8 +492,11 @@ class TestActualImportMixin:
         self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
 
 
+class CSCVSActualImportMixin(TestActualImportMixin):
+    pass
 
-class TestCVSImport(WorkerTest, TestActualImportMixin):
+
+class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
     """Tests for the worker importing and syncing a CVS module."""
 
     def setUp(self):
@@ -522,7 +525,7 @@ class TestCVSImport(WorkerTest, TestActualImportMixin):
             rcstype='cvs', cvs_root=cvs_server.getRoot(), cvs_module='trunk')
 
 
-class TestSubversionImport(WorkerTest, TestActualImportMixin):
+class TestSubversionImport(WorkerTest, CSCVSActualImportMixin):
     """Tests for the worker importing and syncing a Subversion branch."""
 
     def setUp(self):
