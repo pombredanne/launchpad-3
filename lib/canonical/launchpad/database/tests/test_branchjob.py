@@ -274,15 +274,27 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         [(revision, revno)] = list(job.iterAddedMainline())
         self.assertEqual(2, revno)
 
-    def test_getRevisionMessage(self):
-        self.useBzrBranches()
-        branch, tree = self.create_branch_and_tree()
+    def makeBranchWithCommit(self):
+        jrandom = self.factory.makePerson(name='jrandom')
+        product = self.factory.makeProduct(name='foo')
+        branch = self.factory.makeProductBranch(
+            name='bar', product=product, owner=jrandom)
+        branch.subscribe(branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL)
+        branch, tree = self.create_branch_and_tree(db_branch=branch)
         tree.branch.nick = 'nicholas'
         tree.lock_write()
         self.addCleanup(tree.unlock)
         tree.commit(
             'rev1', rev_id='rev1', timestamp=1000, timezone=0,
             committer='J. Random Hacker <jrandom@example.org>')
+        return branch, tree
+
+    def test_getRevisionMessage(self):
+        self.useBzrBranches()
+        branch, tree = self.makeBranchWithCommit()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev1', '')
         message = job.get_revision_message('rev1', 1)
         self.assertEqual(
@@ -296,18 +308,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_getMailerForRevision(self):
         self.useBzrBranches()
-        jrandom = self.factory.makePerson(name='jrandom')
-        product = self.factory.makeProduct(name='foo')
-        branch = self.factory.makeProductBranch(
-            name='bar', product=product, owner=jrandom)
-        branch, tree = self.create_branch_and_tree(db_branch=branch)
-        branch.subscribe(branch.registrant,
-            BranchSubscriptionNotificationLevel.FULL,
-            BranchSubscriptionDiffSize.WHOLEDIFF,
-            CodeReviewNotificationLevel.FULL)
-        tree.lock_write()
-        self.addCleanup(tree.unlock)
-        tree.commit('rev1', rev_id='rev1')
+        branch, tree = self.makeBranchWithCommit()
         revision = tree.branch.repository.get_revision('rev1')
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev1', '')
         mailer = job.getMailerForRevision(revision, 1, True)
