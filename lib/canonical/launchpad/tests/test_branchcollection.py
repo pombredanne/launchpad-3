@@ -436,6 +436,26 @@ class TestBranchMergeProposals(TestCaseWithFactory):
              BranchMergeProposalStatus.NEEDS_REVIEW])
         self.assertEqual(set([mp1, mp2]), set(proposals))
 
+    def test_status_restriction_with_product_filter(self):
+        # getMergeProposals returns the merge proposals with a particular
+        # status that are _inside_ the branch collection. mp1 is in the
+        # product with NEEDS_REVIEW, mp2 is outside of the product and mp3 has
+        # an excluded status.
+        mp1 = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        mp2 = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        product = mp1.source_branch.product
+        branch1 = self.factory.makeProductBranch(product=product)
+        branch2 = self.factory.makeProductBranch(product=product)
+        mp3 = self.factory.makeBranchMergeProposal(
+            target_branch=branch1, source_branch=branch2,
+            set_state=BranchMergeProposalStatus.CODE_APPROVED)
+        collection = self.all_branches.inProduct(product)
+        proposals = collection.getMergeProposals(
+            [BranchMergeProposalStatus.NEEDS_REVIEW])
+        self.assertEqual([mp1], list(proposals))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

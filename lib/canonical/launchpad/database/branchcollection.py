@@ -86,7 +86,9 @@ class GenericBranchCollection:
         branch_ids = self.getBranches().values(Branch.id)
         expression = BranchMergeProposal.source_branchID.is_in(branch_ids)
         if statuses is not None:
-            expression = And(BranchMergeProposal.queue_status.is_in(statuses))
+            expression = And(
+                BranchMergeProposal.queue_status.is_in(statuses),
+                expression)
         return self.store.find(BranchMergeProposal, expression)
 
     def inProduct(self, product):
