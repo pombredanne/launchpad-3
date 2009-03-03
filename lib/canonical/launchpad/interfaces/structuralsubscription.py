@@ -193,7 +193,7 @@ class IStructuralSubscriptionTarget(Interface):
 class IStructuralSubscriptionForm(Interface):
     """Schema for the structural subscription form."""
     subscribe_me = Bool(
-        title=u"I want to subscribe to notifications.",
+        title=u"I want to receive these notifications by e-mail.",
         required=False)
 
 

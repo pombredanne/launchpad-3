@@ -42,11 +42,13 @@ default: inplace
 
 schema: build clean_codehosting
 	$(MAKE) -C database/schema
-	$(PYTHON) ./utilities/make-dummy-hosted-branches
 	$(RM) -r /var/tmp/fatsam
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
+
+hosted_branches:
+	$(PYTHON) ./utilities/make-dummy-hosted-branches
 
 $(WADL_FILE): $(BZR_VERSION_INFO)
 	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py > $@
@@ -171,7 +173,7 @@ start-gdb: inplace stop support_files
 		-r librarian,google-webservice -C $(CONFFILE) \
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: inplace stop
+run_all: inplace stop hosted_branches
 	$(RM) thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
@@ -191,14 +193,7 @@ pull_branches: support_files
 	# mirrored area.
 	$(PYTHON) cronscripts/supermirror-pull.py upload
 
-rewritemap:
-	# Build rewrite map that maps friendly branch names to IDs. Necessary
-	# for http access to branches and for the branch scanner.
-	mkdir -p $(CODEHOSTING_ROOT)/config
-	$(PYTHON) cronscripts/supermirror_rewritemap.py \
-		$(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
-
-scan_branches: rewritemap
+scan_branches:
 	# Scan branches from the filesystem into the database.
 	$(PYTHON) cronscripts/branch-scanner.py
 
@@ -328,6 +323,6 @@ tags:
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop	\
 	start run ftest_build ftest_inplace test_build test_inplace	\
 	pagetests check check_merge schema default launchpad.pot	\
-	check_launchpad_on_merge check_merge_ui pull rewritemap scan	\
+	check_launchpad_on_merge check_merge_ui pull scan		\
 	sync_branches check_loggerhead_on_merge reload-apache		\
-	check_launchpad_storm_on_merge
+	check_launchpad_storm_on_merge hosted_branches

@@ -32,7 +32,8 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IRevisionSet)
 from canonical.launchpad.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet,
-    IRevisionMailJobSource, RepositoryFormat)
+    RepositoryFormat)
+from canonical.launchpad.interfaces.branchjob import IRevisionMailJobSource
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.testing import (

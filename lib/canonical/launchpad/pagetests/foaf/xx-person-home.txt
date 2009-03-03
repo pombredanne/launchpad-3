@@ -55,6 +55,34 @@ But Foo Bar can:
     ...
 
 
+== Open ID link ==
+
+When a person visits his or her own page, they'll see their OpenID login URL.
+
+    >>> user_browser.open('http://launchpad.dev/~no-priv')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'openid-info'))
+    OpenID login: http://launchpad.dev/~no-priv ...
+
+The URL is followed by a helpful link.
+
+    >>> print user_browser.getLink('(What\xe2\x80\x99s\xc2\xa0this?)').url
+    https://help.launchpad.net/OpenID
+
+However, when the user visits someone else's page, they see no such URL.
+
+    >>> user_browser.open('http://launchpad.dev/~salgado')
+    >>> print find_tag_by_id(user_browser.contents, 'openid-info')
+    None
+
+And there is no helpful link.
+
+    >>> print user_browser.getLink(u"What&#8217;s\xa0this?").url
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+
 == Jabber IDs ==
 
 A person's jabber IDs are only show to authenticated users.

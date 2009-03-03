@@ -13,6 +13,7 @@ __all__ = [
     'ProductSeriesLinkBranchFromCodeView',
     'ProductSeriesNavigation',
     'ProductSeriesOverviewMenu',
+    'ProductSeriesOverviewNavigationMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
@@ -227,6 +228,15 @@ class ProductSeriesTranslationsMenuMixIn:
     def imports(self):
         text = 'Import queue'
         return Link('+imports', text)
+
+
+class ProductSeriesOverviewNavigationMenu(NavigationMenu):
+    """Overview navigation menus for `IProductSeries` objects."""
+    # Suppress the ProductOverviewNavigationMenu from showing on series,
+    # release, and milestone pages.
+    usedfor = IProductSeries
+    facet = 'overview'
+    links = ()
 
 
 class ProductSeriesTranslationsMenu(NavigationMenu,

@@ -8,7 +8,7 @@
   <class class="canonical.launchpad.database.Branch">
     <require
         permission="launchpad.View"
-        attributes="id branch_type name title summary url whiteboard container
+        attributes="id branch_type name title summary url whiteboard target
                     mirror_status_message private registrant owner author
                     reviewer code_reviewer product unique_name
                     displayname sort_key lifecycle_status last_mirrored
@@ -68,7 +68,7 @@
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
-      factory="canonical.launchpad.browser.branch.BranchPrimaryContext"
+      factory="canonical.launchpad.database.branchtarget.branch_to_target"
       />
 
   <!-- hierarchy -->
@@ -337,6 +337,12 @@
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />
   </securedutility>
 
+  <securedutility
+      class="canonical.launchpad.database.branch.BranchCloud"
+      provides="canonical.launchpad.interfaces.branch.IBranchCloud" >
+    <allow interface="canonical.launchpad.interfaces.branch.IBranchCloud" />
+  </securedutility>
+
   <subscriber
       for="canonical.launchpad.interfaces.IBranch
            canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
@@ -346,29 +352,4 @@
       <allow attributes="getReason branch mail_header recipient max_diff_lines"
       />
   </class>
-  <class class="canonical.launchpad.database.branch.BranchJob">
-    <allow interface="canonical.launchpad.interfaces.branch.IBranchJob" />
-  </class>
-  <class class="canonical.launchpad.database.branch.BranchDiffJob">
-    <allow interface="canonical.launchpad.interfaces.branch.IBranchDiffJob" />
-    <allow interface="canonical.launchpad.interfaces.branch.IBranchJob" />
-  </class>
-  <securedutility
-      component="canonical.launchpad.database.branch.BranchDiffJob"
-      provides="canonical.launchpad.interfaces.branch.IBranchDiffJobSource" >
-    <allow
-     interface="canonical.launchpad.interfaces.branch.IBranchDiffJobSource" />
-  </securedutility>
-  <class class="canonical.launchpad.database.branch.RevisionMailJob">
-    <allow interface="canonical.launchpad.interfaces.branch.IRevisionMailJob"
-    />
-    <allow interface="canonical.launchpad.interfaces.branch.IBranchJob" />
-  </class>
-  <securedutility
-      component="canonical.launchpad.database.branch.RevisionMailJob"
-      provides="canonical.launchpad.interfaces.branch.IRevisionMailJobSource" >
-    <allow
-     interface="canonical.launchpad.interfaces.branch.IRevisionMailJobSource"
-    />
-  </securedutility>
 </configure>

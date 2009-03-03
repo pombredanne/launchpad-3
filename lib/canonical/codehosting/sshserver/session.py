@@ -84,7 +84,12 @@ class PatchedSSHSession(session.SSHSession, object):
         # necessary. See http://twistedmatrix.com/trac/ticket/2754.
         transport = getattr(self.client, 'transport', None)
         if transport is not None:
-            transport.resumeProducing()
+            # For SFTP connections, 'transport' is actually a _DummyTransport
+            # instance. Neither _DummyTransport nor the protocol it wraps
+            # (filetransfer.FileTransferServer) support pausing.
+            resumeProducing = getattr(transport, 'resumeProducing', None)
+            if resumeProducing is not None:
+                resumeProducing()
 
 
 class ForbiddenCommand(Exception):

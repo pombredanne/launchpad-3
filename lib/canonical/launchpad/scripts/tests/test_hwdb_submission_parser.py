@@ -822,6 +822,19 @@ class TestHWDBSubmissionParser(TestCase):
               'command': 'hdparm -t /dev/sda'}],
             'Invalid parsing result for measurement question')
 
+    def testContext(self):
+        """The content of the <context> node is currently not processed.
+
+        Instead, a log warning is issued.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Test of <context> parsing'
+        node = etree.fromstring('<context/>')
+        parser._parseContext(node)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'Submission contains unprocessed <context> data.')
+
     def testMainParser(self):
         """Test SubmissionParser.parseMainSections
 
@@ -1275,15 +1288,39 @@ class TestHWDBSubmissionParser(TestCase):
             in a log string that matches (a)
         (c) result, which is supposed to contain an object representing
             the result of parsing a submission, is None.
+        (d) the log level is ERROR.
 
-        If all three criteria match, assertErrormessage does not raise any
+        If all four criteria match, assertErrormessage does not raise any
         exception.
         """
         expected_message = ('Parsing submission %s: %s'
                             % (submission_key, log_message))
-        last_log_messages = []
         for r in self.handler.records:
             if r.levelno != logging.ERROR:
+                continue
+            candidate = r.getMessage()
+            if candidate == expected_message:
+                return
+        raise AssertionError('No log message found: %s' % expected_message)
+
+    def assertWarningMessage(self, submission_key, log_message):
+        """Search for message in the log entries for submission_key.
+
+        assertErrorMessage requires that
+        (a) a log message starts with "Parsing submisson <submission_key>:"
+        (b) the error message passed as the parameter message appears
+            in a log string that matches (a)
+        (c) result, which is supposed to contain an object representing
+            the result of parsing a submission, is None.
+        (d) the log level is WARNING.
+
+        If all four criteria match, assertWarningMessage does not raise any
+        exception.
+        """
+        expected_message = ('Parsing submission %s: %s'
+                            % (submission_key, log_message))
+        for r in self.handler.records:
+            if r.levelno != logging.WARNING:
                 continue
             candidate = r.getMessage()
             if candidate == expected_message:

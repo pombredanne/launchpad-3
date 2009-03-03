@@ -27,10 +27,6 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from canonical.launchpad.interfaces.milestone import (
     IHasMilestones, IMilestone, IMilestoneSet, IProjectMilestone)
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.webapp.interfaces import NotFoundError

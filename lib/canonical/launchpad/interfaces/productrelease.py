@@ -112,7 +112,12 @@ class ProductReleaseVersionField(ContentNameField):
         else:
             productseries = self.context.productseries
         releaseset = getUtility(IProductReleaseSet)
-        return releaseset.getBySeriesAndVersion(productseries, version)
+        release = releaseset.getBySeriesAndVersion(productseries, version)
+        if release == self.context:
+            # A ProductRelease may edit itself; do not report that another
+            # ProductRelease exists with the same version.
+            return None
+        return release
 
 
 class IProductReleaseFileEditRestricted(Interface):
@@ -233,7 +238,7 @@ class IProductReleasePublic(Interface):
             description= u'The specific version number assigned to this '
             'release. Letters and numbers are acceptable, for releases like '
             '"1.2rc3".',
-            readonly=True, constraint=sane_version)
+            constraint=sane_version)
         )
 
     owner = exported(

@@ -103,7 +103,7 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, IStoreSelector, MAIN_STORE, SLAVE_FLAVOR,
+    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)
 
 
@@ -1661,9 +1661,19 @@ class DistroSeriesSet:
 
     def translatables(self):
         """See `IDistroSeriesSet`."""
-        return DistroSeries.select(
-            "POTemplate.distroseries=DistroSeries.id",
-            clauseTables=['POTemplate'], distinct=True)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        # Join POTemplate distinctly to only get entries with available
+        # translations.
+        result_set = store.using((DistroSeries, POTemplate)).find(
+            DistroSeries,
+            DistroSeries.hide_all_translations == False,
+            DistroSeries.id == POTemplate.distroseriesID
+            ).config(distinct=True)
+        # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
+        # because ResultSet reports a wrong count() when using DISTINCT. Also
+        # ResultSet does not implement __len__(), which would make it more
+        # like a sequence.
+        return list(result_set)
 
     def findByName(self, name):
         """See `IDistroSeriesSet`."""

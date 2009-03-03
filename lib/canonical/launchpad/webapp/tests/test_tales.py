@@ -1,7 +1,7 @@
 # Copyright 2004, 2009 Canonical Ltd.  All rights reserved.
 """tales.py doctests."""
 
-import transaction
+from textwrap import dedent
 import unittest
 
 from storm.store import Store
@@ -9,8 +9,11 @@ from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctestunit import DocTestSuite
 
 from canonical.launchpad.ftests import test_tales
-from canonical.launchpad.testing import login, TestCaseWithFactory
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.launchpad.testing import login, TestCase, TestCaseWithFactory
+from canonical.launchpad.testing.pages import find_tags_by_class
+from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 def test_requestapi():
@@ -188,6 +191,54 @@ def test_break_long_words():
     """
 
 
+class TestDiffFormatter(TestCase):
+    """Test the string formtter fmt:diff."""
+    layer = DatabaseFunctionalLayer
+
+    def test_emptyString(self):
+        # An empty string gives an empty string.
+        self.assertEqual(
+            '', FormattersAPI('').format_diff())
+
+    def test_almostEmptyString(self):
+        # White space doesn't count as empty, and is formtted.
+        self.assertEqual(
+            '<table class="diff"><tr><td class="line-no">1</td>'
+            '<td class="text"> </td></tr></table>',
+            FormattersAPI(' ').format_diff())
+
+    def test_cssClasses(self):
+        # Different parts of the diff have different css classes.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,6 +2435,8 @@
+                 def format_diff(self):
+            -        removed this line
+            +        added this line
+            ########
+            # A merge directive comment.
+            ''')
+        html = FormattersAPI(diff).format_diff()
+        line_numbers = find_tags_by_class(html, 'line-no')
+        self.assertEqual(
+            ['1','2','3','4','5','6','7','8','9'],
+            [tag.renderContents() for tag in line_numbers])
+        text = find_tags_by_class(html, 'text')
+        self.assertEqual(
+            ['diff-file text',
+             'diff-header text',
+             'diff-header text',
+             'diff-chunk text',
+             'text',
+             'diff-removed text',
+             'diff-added text',
+             'diff-comment text',
+             'diff-comment text'],
+            [str(tag['class']) for tag in text])
+
+
 class TestPreviewDiffFormatter(TestCaseWithFactory):
     """Test the PreviewDiffFormatterAPI class."""
 
@@ -247,7 +298,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # If there is no diff, there is no link.
         preview = self._createPreviewDiff(10, 0, 0)
         self.assertEqual(
-            '<a href="%s" title="" class="clean-diff">10 lines</a>'
+            '<a href="%s" title="" class="clean-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
@@ -255,7 +307,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # If there is no diff, there is no link.
         preview = self._createPreviewDiff(10, 4, 0)
         self.assertEqual(
-            '<a href="%s" title="4 added" class="clean-diff">10 lines</a>'
+            '<a href="%s" title="4 added" class="clean-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
@@ -263,7 +316,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # If there is no diff, there is no link.
         preview = self._createPreviewDiff(10, 0, 4)
         self.assertEqual(
-            '<a href="%s" title="4 removed" class="clean-diff">10 lines</a>'
+            '<a href="%s" title="4 removed" class="clean-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
@@ -272,15 +326,18 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         preview = self._createPreviewDiff(10, 6, 4)
         self.assertEqual(
             '<a href="%s" title="6 added, 4 removed" class="clean-diff">'
-            '10 lines</a>' % preview.diff_text.getURL(),
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
+            % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
     def test_fmt_simple_conflicts(self):
         # If there is no diff, there is no link.
         preview = self._createPreviewDiff(10, 2, 3, u'conflicts')
         self.assertEqual(
-            '<a href="%s" title="CONFLICTS, 2 added, 3 removed" class="conflicts-diff">'
-            '10 lines</a>' % preview.diff_text.getURL(),
+            '<a href="%s" title="CONFLICTS, 2 added, 3 removed" '
+            'class="conflicts-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
+            % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
     def test_fmt_stale_empty_diff(self):
@@ -295,7 +352,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         preview = self._createStalePreviewDiff(500, 89, 340)
         self.assertEqual(
             '<a href="%s" title="Stale, 89 added, 340 removed" '
-            'class="stale-diff">500 lines</a>' % preview.diff_text.getURL(),
+            'class="stale-diff"><img src="/@@/download"/>&nbsp;500 lines</a>'
+            % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
     def test_fmt_stale_non_empty_diff_with_conflicts(self):
@@ -303,7 +361,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         preview = self._createStalePreviewDiff(500, 89, 340, u'conflicts')
         self.assertEqual(
             '<a href="%s" title="CONFLICTS, Stale, 89 added, 340 removed" '
-            'class="stale-diff">500 lines</a>' % preview.diff_text.getURL(),
+            'class="stale-diff"><img src="/@@/download"/>&nbsp;500 lines</a>'
+            % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
 

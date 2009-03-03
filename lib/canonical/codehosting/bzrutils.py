@@ -11,17 +11,14 @@ __all__ = [
     'ensure_base',
     'get_branch_stacked_on_url',
     'HttpAsLocalTransport',
-    'ProgressUIFactory',
     ]
 
 from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib import config
 from bzrlib.errors import NoSuchFile, NotStacked, UnstackableBranchFormat
-from bzrlib.progress import ProgressBarStack
 from bzrlib.remote import RemoteBzrDir
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
-from bzrlib.ui import SilentUIFactory
 
 from canonical.launchpad.webapp.uri import URI
 
@@ -147,22 +144,3 @@ class DenyingServer:
         raise AssertionError(
             "Creation of transport for %r is currently forbidden" % url)
 
-
-class ProgressUIFactory(SilentUIFactory):
-    """A UI Factory that installs a progress bar of your choice."""
-
-    def __init__(self, progress_bar_factory):
-        """Construct a ProgressUIFactory.
-
-        :param progress_bar_factory: A callable that returns a
-            ProgressBar.  It must take up to 8 arguments.
-        """
-        super(ProgressUIFactory, self).__init__()
-        self._progress_bar_factory = progress_bar_factory
-
-    def nested_progress_bar(self):
-        """See `bzrlib.ui.UIFactory.nested_progress_bar`."""
-        if self._progress_bar_stack is None:
-            self._progress_bar_stack = ProgressBarStack(
-                klass=self._progress_bar_factory)
-        return self._progress_bar_stack.get_nested()

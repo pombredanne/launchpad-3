@@ -1,7 +1,13 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
-import os, shutil, tempfile, unittest
+__metaclass__ = type
+
+from pprint import pformat
+import os
+import shutil
+import tempfile
+import unittest
 
 from storm.store import Store
 
@@ -9,7 +15,7 @@ import zope.event
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
@@ -184,6 +190,13 @@ class TestCase(unittest.TestCase):
         self.assertFalse(
             needle in haystack, '%r in %r' % (needle, haystack))
 
+    def assertContentEqual(self, iter1, iter2):
+        """Assert that 'iter1' has the same content as 'iter2'."""
+        list1 = sorted(iter1)
+        list2 = sorted(iter2)
+        self.assertEqual(
+            list1, list2, '%s != %s' % (pformat(list1), pformat(list2)))
+
     def assertRaises(self, excClass, callableObj, *args, **kwargs):
         """Assert that a callable raises a particular exception.
 
@@ -312,19 +325,28 @@ class TestCaseWithFactory(TestCase):
             browser.open(url)
         return browser
 
-    def create_branch_and_tree(self, tree_location='.'):
+    def create_branch_and_tree(self, tree_location='.', product=None,
+                               hosted=False):
         """Create a database branch, bzr branch and bzr checkout.
 
         :return: a `Branch` and a workingtree.
         """
         from bzrlib.bzrdir import BzrDir
         from bzrlib.transport import get_transport
-        db_branch = self.factory.makeAnyBranch()
-        transport = get_transport(db_branch.warehouse_url)
+        if product is None:
+            db_branch = self.factory.makeAnyBranch()
+        else:
+            db_branch = self.factory.makeProductBranch(product)
+        if hosted:
+            branch_url = db_branch.getPullURL()
+        else:
+            branch_url = db_branch.warehouse_url
+        transport = get_transport(branch_url)
         transport.clone('../..').ensure_base()
         transport.clone('..').ensure_base()
-        bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
-        return db_branch, bzr_branch.create_checkout(tree_location)
+        bzr_branch = BzrDir.create_branch_convenience(branch_url)
+        return db_branch, bzr_branch.create_checkout(
+            tree_location, lightweight=True)
 
     @staticmethod
     def getMirroredPath(branch):
@@ -378,21 +400,29 @@ class TestCaseWithFactory(TestCase):
         self.addCleanup(restore_bzr_home)
 
     def useBzrBranches(self):
-        """Prepare for using bzr branches."""
+        """Prepare for using bzr branches.
+
+        This sets up support for lp-hosted and lp-mirrored URLs,
+        changes to a temp directory, and overrides the bzr home directory.
+        """
         from canonical.codehosting.scanner.tests.test_bzrsync import (
             FakeTransportServer)
         from bzrlib.transport import get_transport
         self.useTempBzrHome()
-        server = FakeTransportServer(get_transport('.'))
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        os.mkdir('lp-mirrored')
+        mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
+        mirror_server.setUp()
+        self.addCleanup(mirror_server.tearDown)
+        os.mkdir('lp-hosted')
+        hosted_server = FakeTransportServer(
+            get_transport('lp-hosted'), url_prefix='lp-hosted:///')
+        hosted_server.setUp()
+        self.addCleanup(hosted_server.tearDown)
 
 
 def capture_events(callable_obj, *args, **kwargs):
     """Capture the events emitted by a callable.
 
-    :param event_type: The type of event that notification is expected
-        for.
     :param callable_obj: The callable to call.
     :param *args: The arguments to pass to the callable.
     :param **kwargs: The keyword arguments to pass to the callable.
@@ -409,3 +439,28 @@ def capture_events(callable_obj, *args, **kwargs):
         return result, events
     finally:
         zope.event.subscribers[:] = old_subscribers
+
+
+def get_lsb_information():
+    """Returns a dictionary with the LSB host information.
+
+    Code stolen form /usr/bin/lsb-release
+    """
+    distinfo = {}
+    if os.path.exists('/etc/lsb-release'):
+        for line in open('/etc/lsb-release'):
+            line = line.strip()
+            if not line:
+                continue
+            # Skip invalid lines
+            if not '=' in line:
+                continue
+            var, arg = line.split('=', 1)
+            if var.startswith('DISTRIB_'):
+                var = var[8:]
+                if arg.startswith('"') and arg.endswith('"'):
+                    arg = arg[1:-1]
+                distinfo[var] = arg
+
+    return distinfo
+

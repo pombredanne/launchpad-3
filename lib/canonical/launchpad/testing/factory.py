@@ -20,6 +20,7 @@ from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
+import os.path
 
 import pytz
 from zope.component import getUtility
@@ -31,8 +32,10 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.processor import ProcessorFamilySet
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.account import (
+    AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
 from canonical.launchpad.interfaces.branchmergequeue import (
@@ -64,6 +67,8 @@ from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.hwdb import (
+    HWSubmissionFormat, IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.mailinglist import (
@@ -185,6 +190,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             pocket)
         return location
 
+    def makeAccount(self, displayname, status=AccountStatus.ACTIVE,
+                    rationale=AccountCreationRationale.UNKNOWN):
+        """Create and return a new Account."""
+        account = getUtility(IAccountSet).new(rationale, displayname)
+        removeSecurityProxy(account).status = status
+        return account
+            
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, hide_email_addresses=False,
                    displayname=None, time_zone=None, latitude=None,
@@ -292,13 +304,16 @@ class LaunchpadObjectFactory(ObjectFactory):
                                          person.account)
         return person
 
-    def makeEmail(self, address, person, email_status=None):
+    def makeEmail(self, address, person, account=None, email_status=None):
         """Create a new email address for a person.
 
         :param address: The email address to create.
         :type address: string
         :param person: The person to assign the email address to.
         :type person: `IPerson`
+        :param account: The account to assign the email address to.  Will use
+            the given person's account if None is provided.
+        :type person: `IAccount`
         :param email_status: The default status of the email address,
             if given.  If not given, `EmailAddressStatus.VALIDATED`
             will be used.
@@ -308,8 +323,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if email_status is None:
             email_status = EmailAddressStatus.VALIDATED
+        if account is None:
+            account = person.account
         return getUtility(IEmailAddressSet).new(
-            address, person, email_status, person.account)
+            address, person, email_status, account)
 
     def makeTeam(self, owner, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
@@ -369,7 +386,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeProduct(self, name=None, project=None, displayname=None,
                     licenses=None, owner=None, registrant=None,
-                    title=None, summary=None):
+                    title=None, summary=None, official_malone=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -386,7 +403,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if summary is None:
             summary = self.getUniqueString('summary')
-        return getUtility(IProductSet).createProduct(
+        product = getUtility(IProductSet).createProduct(
             owner,
             name,
             displayname,
@@ -396,6 +413,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             licenses=licenses,
             project=project,
             registrant=registrant)
+        if official_malone is not None:
+            product.official_malone = official_malone
+        return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
                           summary=None):
@@ -556,18 +576,22 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
                                 product=None, review_diff=None,
-                                initial_comment=None):
+                                initial_comment=None, source_branch=None):
         """Create a proposal to merge based on anonymous branches."""
         if not product:
             product = _DEFAULT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
+            if source_branch is not None:
+                product = source_branch.product
             target_branch = self.makeBranch(product=product)
-        product = target_branch.product
+        if product == _DEFAULT:
+            product = target_branch.product
         if registrant is None:
             registrant = self.makePerson()
-        source_branch = self.makeBranch(product=product)
+        if source_branch is None:
+            source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch,
             review_diff=review_diff, initial_comment=initial_comment)
@@ -1105,6 +1129,23 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
 
+    def makeDistroArchSeries(self, distroseries=None,
+                             architecturetag='powerpc', processorfamily=None,
+                             official=True, owner=None,
+                             supports_virtualized=False):
+        """Create a new distroarchseries"""
+
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        if processorfamily is None:
+            processorfamily = ProcessorFamilySet().getByName('powerpc')
+        if owner is None:
+            owner = self.makePerson()
+
+        return distroseries.newArch(
+            architecturetag, processorfamily, official, owner,
+            supports_virtualized)
+
     def _makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
         """Create and return a new arbitrary archive.
@@ -1298,6 +1339,19 @@ class LaunchpadObjectFactory(ObjectFactory):
                 msg.attach(attachment)
         return msg
 
+    def makeBundleMergeDirectiveEmail(self, source_branch, target_branch):
+        """Create a merge directive email from two bzr branches."""
+        from bzrlib.merge_directive import MergeDirective2
+        md = MergeDirective2.from_objects(
+            source_branch.repository, source_branch.last_revision(),
+            public_branch=source_branch.get_public_branch(),
+            target_branch=target_branch.warehouse_url,
+            local_target_branch=target_branch.warehouse_url, time=0,
+            timezone=0)
+        return self.makeSignedMessage(
+            body='My body', subject='My subject',
+            attachment_contents=''.join(md.to_lines()))
+
     def makeMergeDirective(self, source_branch=None, target_branch=None,
         source_branch_url=None, target_branch_url=None):
         """Return a bzr merge directive object.
@@ -1349,3 +1403,33 @@ class LaunchpadObjectFactory(ObjectFactory):
         file_alias = getUtility(ILibraryFileAliasSet).create(
             '*', len(message_string), StringIO(message_string), '*')
         return message, file_alias, source_branch, target_branch
+
+    def makeHWSubmission(self, date_created=None, submission_key=None,
+                         emailaddress=u'test@canonical.com',
+                         distroarchseries=None, private=False,
+                         contactable=False, system=None,
+                         submission_data=None):
+        """Create a new HWSubmission."""
+        if date_created is None:
+            date_created = datetime.now(pytz.UTC)
+        if submission_key is None:
+            submission_key = self.getUniqueString('submission-key')
+        if distroarchseries is None:
+            distroarchseries = self.makeDistroArchSeries()
+        if system is None:
+            system = self.getUniqueString('system-fingerprint')
+        if submission_data is None:
+            sample_data_path = os.path.join(
+                config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+                'tests', 'simple_valid_hwdb_submission.xml')
+            submission_data = open(sample_data_path).read()
+        filename = self.getUniqueString('submission-file')
+        filesize = len(submission_data)
+        raw_submission = StringIO(submission_data)
+        format = HWSubmissionFormat.VERSION_1
+        submission_set = getUtility(IHWSubmissionSet)
+
+        return submission_set.createSubmission(
+            date_created, format, private, contactable,
+            submission_key, emailaddress, distroarchseries,
+            raw_submission, filename, filesize, system)

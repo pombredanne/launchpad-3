@@ -20,8 +20,9 @@ from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
     StringCol)
 from storm.store import Store
-from storm.expr import Join
+from storm.expr import And, Join
 from storm.locals import Unicode
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -39,6 +40,8 @@ from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.bugtracker import BugTracker
+from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.commercialsubscription import (
     CommercialSubscription)
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -68,7 +71,7 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces.branch import (
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    DEFAULT_BRANCH_STATUS_IN_LISTING)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
@@ -92,6 +95,8 @@ from canonical.launchpad.interfaces.specification import (
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
 
 def get_license_status(license_approved, license_reviewed, licenses):
     """Decide the license status for an `IProduct`.
@@ -233,18 +238,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
         return (Milestone.product == self)
-
-    @property
-    def upstream_bug_filing_url(self):
-        """Return the URL of the upstream bug filing form for this project.
-
-        Return None if self.bugtracker is None or self.remote_product is
-        None and self.bugtracker is a multi-product bugtracker.
-        """
-        if not self.bugtracker:
-            return None
-        else:
-            return self.bugtracker.getBugFilingLink(self.remote_product)
 
     @property
     def official_anything(self):
@@ -947,7 +940,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
 
-    def getMergeProposals(self, status=None):
+    def getMergeProposals(self, status=None, visible_by_user=None):
         """See `IProduct`."""
         if not status:
             status = (
@@ -956,7 +949,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
         return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self, status)
+            self, status, visible_by_user=visible_by_user)
 
 
     def userCanEdit(self, user):
@@ -968,6 +961,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             user.inTeam(celebs.registry_experts) or
             user.inTeam(celebs.admin) or
             user.inTeam(self.owner))
+
+    def getLinkedBugWatches(self):
+        """See `IProduct`."""
+        store = Store.of(self)
+        return store.find(
+            BugWatch,
+            And(self == BugTask.product,
+                BugTask.bugwatch == BugWatch.id,
+                BugWatch.bugtracker == self.getExternalBugTracker()))
 
 
 class ProductSet:
@@ -1031,16 +1033,6 @@ class ProductSet:
         if num_products is not None:
             results = results.limit(num_products)
         return results
-
-    def getProductsWithUserDevelopmentBranches(self):
-        """See `IProductSet`."""
-        return Product.select('''
-            Product.active and
-            Product.development_focus = ProductSeries.id and
-            ProductSeries.user_branch = Branch.id and
-            Branch.branch_type in %s
-            ''' % quote((BranchType.HOSTED, BranchType.MIRRORED)),
-            orderBy='name', clauseTables=['ProductSeries', 'Branch'])
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
@@ -1284,3 +1276,24 @@ class ProductSet:
 
     def count_codified(self):
         return self.stats.value('products_with_branches')
+
+    def getProductsWithNoneRemoteProduct(self, bugtracker_type=None):
+        """See `IProductSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        conditions = [Product.remote_product == None]
+        if bugtracker_type is not None:
+            conditions.extend([
+                Product.bugtracker == BugTracker.id,
+                BugTracker.bugtrackertype == bugtracker_type,
+                ])
+        return store.find(Product, And(*conditions))
+
+    def getSFLinkedProductsWithNoneRemoteProduct(self):
+        """See `IProductSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        conditions = And(
+            Product.remote_product == None,
+            Product.sourceforgeproject != None)
+
+        return store.find(Product, conditions)
+

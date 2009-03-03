@@ -10,21 +10,18 @@ __all__ = [
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
     'EmailToPersonView',
-    'PersonActiveReviewsView',
+    'PersonAccountAdministerView',
+    'PersonAdministerView',
     'PersonAddView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
-    'PersonApprovedMergesView',
     'PersonAssignedBugTaskSearchListingView',
-    'PersonBranchesMenu',
-    'PersonBranchesView',
     'PersonBrandingView',
     'PersonBreadcrumbBuilder',
     'PersonBugsMenu',
     'PersonChangePasswordView',
     'PersonClaimView',
     'PersonCodeOfConductEditView',
-    'PersonCodeSummaryView',
     'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
     'PersonEditEmailsView',
@@ -43,10 +40,8 @@ __all__ = [
     'PersonNavigation',
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
-    'PersonOwnedBranchesView',
     'PersonRdfView',
     'PersonRdfContentsView',
-    'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
     'PersonRelatedSoftwareView',
     'PersonSearchQuestionsView',
@@ -56,8 +51,6 @@ __all__ = [
     'PersonSpecsMenu',
     'PersonSpecWorkloadView',
     'PersonSpecWorkloadTableView',
-    'PersonSubscribedBranchesView',
-    'PersonTeamBranchesView',
     'PersonTranslationView',
     'PersonTranslationRelicensingView',
     'PersonView',
@@ -131,14 +124,14 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.archive import traverse_named_ppa
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
+from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort, BranchPersonSearchContext,
-    BranchPersonSearchRestriction, BugTaskSearchParams, BugTaskStatus,
-    CannotUnsubscribe, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
-    EmailAddressStatus, GPGKeyNotFoundError, IBranchSet, ICountry,
-    IEmailAddress, IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
-    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet,
-    INewPerson, IOAuthConsumerSet, IOpenLaunchBag, IPasswordEncryptor,
+    AccountStatus, BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
+    GPGKeyNotFoundError, ICountry, IEmailAddress, IEmailAddressSet,
+    IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet,
+    ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
+    IOAuthConsumerSet, IOpenLaunchBag, IPasswordEncryptor,
     IPerson, IPersonChangePassword, IPersonClaim, IPersonSet,
     IPOFileTranslatorSet, IPollSet, IPollSubset, IRequestPreferredLanguages,
     ISSHKeySet, ISignedCodeOfConductSet, ITeam, ITeamMembership,
@@ -152,8 +145,6 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
-from canonical.launchpad.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.launchpad import (
     INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
@@ -172,9 +163,6 @@ from canonical.launchpad.interfaces.translationrelicensingagreement import (
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
-from canonical.launchpad.browser.branchlisting import BranchListingView
-from canonical.launchpad.browser.branchmergeproposallisting import (
-    BranchMergeProposalListingView)
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
@@ -333,10 +321,20 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepto('+archive')
     def traverse_archive(self):
+
         if self.request.stepstogo:
-            # If the URL has a PPA name in it, use that.
+            # If the URL has something that could be a PPA name in it,
+            # use that, but just in case it fails, keep a copy
+            # of the traversal stack so we can try using the default
+            # archive afterwards:
+            traversal_stack = self.request.getTraversalStack()
             ppa_name = self.request.stepstogo.consume()
-            return traverse_named_ppa(self.context.name, ppa_name)
+
+            try:
+                return traverse_named_ppa(self.context.name, ppa_name)
+            except NotFoundError:
+                self.request.setTraversalStack(traversal_stack)
+                # and simply continue below...
 
         # Otherwise try to get the default PPA and if it exists redirect
         # to the new-style URL, if it doesn't, return None (to trigger a
@@ -679,134 +677,6 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class PersonBranchCountMixin:
-    """A mixin class for person branch listings."""
-
-    @cachedproperty
-    def total_branch_count(self):
-        """Return the number of branches related to the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            self.context, visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def registered_branch_count(self):
-        """Return the number of branches registered by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.REGISTERED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def owned_branch_count(self):
-        """Return the number of branches owned by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.OWNED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def subscribed_branch_count(self):
-        """Return the number of branches subscribed to by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @property
-    def user_in_context_team(self):
-        if self.user is None:
-            return False
-        return self.user.inTeam(self.context)
-
-    @cachedproperty
-    def active_review_count(self):
-        """Return the number of active reviews for the user."""
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
-        return query.count()
-
-    @cachedproperty
-    def approved_merge_count(self):
-        """Return the number of active reviews for the user."""
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
-            self.user)
-        return query.count()
-
-    @cachedproperty
-    def requested_review_count(self):
-        """Return the number of active reviews for the user."""
-        utility = getUtility(IBranchMergeProposalGetter)
-        query = utility.getProposalsForReviewer(
-            self.context, [
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.NEEDS_REVIEW],
-            self.user)
-        return query.count()
-
-
-class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
-
-    usedfor = IPerson
-    facet = 'branches'
-    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'approved_merges', 'requested_reviews']
-
-    def all_related(self):
-        return Link(canonical_url(self.context, rootsite='code'),
-                    'Related branches')
-
-    def owned(self):
-        return Link('+ownedbranches', 'owned')
-
-    def registered(self):
-        return Link('+registeredbranches', 'registered')
-
-    def subscribed(self):
-        return Link('+subscribedbranches', 'subscribed')
-
-    def active_reviews(self):
-        if self.active_review_count == 1:
-            text = 'active proposal'
-        else:
-            text = 'active proposals'
-        if self.user == self.context:
-            summary = 'Proposals I have submitted'
-        else:
-            summary = 'Proposals %s has submitted' % self.context.displayname
-        return Link('+activereviews', text, summary=summary)
-
-    def approved_merges(self):
-        if self.approved_merge_count == 1:
-            text = 'approved merge'
-        else:
-            text = 'approved merges'
-        return Link('+approvedmerges', text)
-
-    def addbranch(self):
-        if self.user is None:
-            enabled = False
-        else:
-            enabled = self.user.inTeam(self.context)
-        text = 'Register branch'
-        return Link('+addbranch', text, icon='add', enabled=enabled)
-
-    def requested_reviews(self):
-        if self.requested_review_count == 1:
-            text = 'requested review'
-        else:
-            text = 'requested reviews'
-        if self.user == self.context:
-            summary = 'Proposals I am reviewing'
-        else:
-            summary = 'Proposals %s is reviewing' % self.context.displayname
-        return Link('+requestedreviews', text, summary=summary)
-
-
 class PersonBugsMenu(ApplicationMenu):
 
     usedfor = IPerson
@@ -1080,7 +950,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+editsshkeys'
         text = 'Update SSH keys'
         summary = (
-            'Used if %s stores code on the Supermirror' %
+            'Used if %s stores code on Launchpad' %
             self.context.browsername)
         return Link(target, text, summary, icon='edit')
 
@@ -1088,7 +958,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def editpgpkeys(self):
         target = '+editpgpkeys'
         text = 'Update OpenPGP keys'
-        summary = 'Used for the Supermirror, and when maintaining packages'
+        summary = 'Used when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -1761,6 +1631,104 @@ class PersonRdfContentsView:
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class PersonAdministerView(LaunchpadEditFormView):
+    """Administer an `IPerson`."""
+    schema = IPerson
+    label = "Review person"
+    field_names = [
+        'name', 'displayname',
+        'personal_standing', 'personal_standing_reason']
+    custom_widget(
+        'personal_standing_reason', TextAreaWidget, height=5, width=60)
+
+    @property
+    def is_viewing_person(self):
+        """Is the view showing an `IPerson`?
+
+        `PersonAdministerView` and `PersonAccountAdministerView` share a
+        template. It needs to know what the context is.
+        """
+        return True
+
+    @property
+    def next_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.context)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Update the IPerson."""
+        self.updateContextFromData(data)
+
+
+class PersonAccountAdministerView(LaunchpadEditFormView):
+    """Administer an `IAccount` belonging to an `IPerson`."""
+    schema = IAccount
+    label = "Review person's account"
+    field_names = [
+        'displayname', 'password', 'status', 'status_comment']
+    custom_widget(
+        'status_comment', TextAreaWidget, height=5, width=60)
+    custom_widget('password', PasswordChangeWidget)
+
+    def __init__(self, context, request):
+        """See `LaunchpadEditFormView`."""
+        super(PersonAccountAdministerView, self).__init__(context, request)
+        # Only the IPerson can be traversed to, so it provides the IAccount.
+        self.person = self.context
+        self.context = self.context.account
+
+    @property
+    def is_viewing_person(self):
+        """Is the view showing an `IPerson`?
+
+        `PersonAdministerView` and `PersonAccountAdministerView` share a
+        template. It needs to know what the context is.
+        """
+        return False
+
+    @property
+    def email_addresses(self):
+        """A list of the user's preferred and validated email addresses."""
+        emails = sorted(
+            email.email for email in self.person.validatedemails)
+        if self.person.preferredemail is not None:
+            emails.insert(0, self.person.preferredemail.email)
+        return emails
+
+    @property
+    def next_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.person)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.person)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Update the IAccount."""
+        if (data['status'] == AccountStatus.SUSPENDED
+            and self.context.status != AccountStatus.SUSPENDED):
+            # Setting the password to a clear value makes it impossible to
+            # login. The preferred email address is removed to ensure no
+            # email is sent to the user.
+            data['password'] = 'invalid'
+            self.person.setPreferredEmail(None)
+        if (data['status'] == AccountStatus.ACTIVE
+            and self.context.status != AccountStatus.ACTIVE):
+            self.request.response.addNoticeNotification(
+                u'The user is reactivated. He must use the '
+                u'"forgot password" to log in.')
+        self.updateContextFromData(data)
 
 
 def userIsActiveTeamMember(team):
@@ -2878,7 +2846,13 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                renderPersonMapSmall(%(center_lat)s, %(center_lng)s);
+                YUI().use('node', 'lp.mapping', function(Y) {
+                    function renderMap() {
+                        Y.lp.mapping.renderPersonMapSmall(
+                            %(center_lat)s, %(center_lng)s);
+                     }
+                     Y.on("domready", renderMap);
+                });
             </script>""" % replacements
 
     @property
@@ -3533,7 +3507,7 @@ class PersonEditView(BasePersonEditView):
             len(self.unknown_trust_roots_user_logged_in) > 0
             and not bypass_check):
             # Warn the user that they might shoot themselves in the foot.
-            self.setFieldError('name', structured(dedent("""
+            self.setFieldError('name', structured(dedent('''
             <div class="inline-warning">
               <p>Changing your name will change your
                   public OpenID identifier. This means that you might be
@@ -3550,7 +3524,7 @@ class PersonEditView(BasePersonEditView):
               <p>If you click 'Save' again, we will rename your account
                  anyway.
               </p>
-            </div>"""),
+            </div>'''),
              ", ".join(self.unknown_trust_roots_user_logged_in)))
             self.i_know_this_is_an_openid_security_issue_input = dedent("""\
                 <input type="hidden"
@@ -4569,39 +4543,6 @@ class PersonAnswersMenu(ApplicationMenu):
         return Link('+subscribedquestions', text, summary, icon='question')
 
 
-class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
-    """View for branch listing for a person."""
-
-    no_sort_by = (BranchListingSort.DEFAULT,)
-    heading_template = 'Bazaar branches related to %(displayname)s'
-
-
-class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
-    """View for branch listing for a person's registered branches."""
-
-    heading_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
-
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.REGISTERED)
-
-
-class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
-    """View for branch listing for a person's owned branches."""
-
-    heading_template = 'Bazaar branches owned by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
-
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.OWNED)
-
-
 class SourcePackageReleaseWithStats:
     """An ISourcePackageRelease, with extra stats added."""
 
@@ -4882,32 +4823,6 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
         self.batch = list(self.batchnav.currentBatch())
 
 
-class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
-    """View for branch listing for a person's subscribed branches."""
-
-    heading_template = 'Bazaar branches subscribed to by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT,)
-
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.SUBSCRIBED)
-
-
-class PersonTeamBranchesView(LaunchpadView):
-    """View for team branches portlet."""
-
-    @cachedproperty
-    def teams_with_branches(self):
-        def team_has_branches(team):
-            branches = getUtility(IBranchSet).getBranchesForContext(
-                team, visible_by_user=self.user)
-            return branches.count() > 0
-        return [team for team in self.context.teams_participated_in
-                if team_has_branches(team) and team != self.context]
-
-
 class PersonOAuthTokensView(LaunchpadView):
     """Where users can see/revoke their non-expired access tokens."""
 
@@ -4950,83 +4865,6 @@ class PersonOAuthTokensView(LaunchpadView):
             self.request.response.addInfoNotification(
                 "Couldn't find authorization given to %s. Maybe it has been "
                 "revoked already?" % consumer.key)
-
-
-class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
-    """A view to render the code page summary for a person."""
-
-    __used_for__ = IPerson
-
-    @property
-    def show_summary(self):
-        """Right now we show the summary if the person has branches.
-
-        When we add support for reviews commented on, we'll want to add
-        support for showing the summary even if there are no branches.
-        """
-        return self.total_branch_count or self.requested_review_count
-
-
-class PersonBMPListingView(BranchMergeProposalListingView):
-    """Base class for the proposal listings that defines the user."""
-
-    def getUserFromContext(self):
-        """Get the relevant user from the context."""
-        return self.context
-
-
-class PersonActiveReviewsView(PersonBMPListingView):
-    """Branch merge proposals that the person has submitted."""
-
-    extra_columns = ['date_review_requested', 'vote_summary']
-    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
-
-    @property
-    def heading(self):
-        return "Active code reviews for %s" % self.context.displayname
-
-    @property
-    def no_proposal_message(self):
-        """Shown when there is no table to show."""
-        return "%s has no active code reviews." % self.context.displayname
-
-
-class PersonRequestedReviewsView(PersonBMPListingView):
-    """Branch merge proposals for the person that are needing review."""
-
-    extra_columns = ['date_review_requested', 'review',]
-    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED,
-                     BranchMergeProposalStatus.NEEDS_REVIEW]
-
-    @property
-    def heading(self):
-        return "Code reviews requested of %s" % self.context.displayname
-
-    @property
-    def no_proposal_message(self):
-        """Shown when there is no table to show."""
-        return "%s has no reviews pending." % self.context.displayname
-
-    def getVisibleProposalsForUser(self):
-        """Branch merge proposals that are visible by the logged in user."""
-        return getUtility(IBranchMergeProposalGetter).getProposalsForReviewer(
-            self.context, self._queue_status, self.user)
-
-
-class PersonApprovedMergesView(PersonBMPListingView):
-    """Branch merge proposals that have been approved for the person."""
-
-    extra_columns = ['date_reviewed']
-    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
-
-    @property
-    def heading(self):
-        return "Approved merges for %s" % self.context.displayname
-
-    @property
-    def no_proposal_message(self):
-        """Shown when there is no table to show."""
-        return "%s has no approved merges." % self.context.displayname
 
 
 class PersonLocationForm(Interface):

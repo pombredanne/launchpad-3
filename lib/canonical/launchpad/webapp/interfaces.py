@@ -100,11 +100,11 @@ class IAuthorization(Interface):
         on the adapted object.  Otherwise returns False.
         """
 
-    def checkAuthenticated(user):
-        """Returns True if the user has that permission on the adapted
+    def checkAccountAuthenticated(account):
+        """Returns True if the account has that permission on the adapted
         object.  Otherwise returns False.
 
-        The argument `user` is the person who is authenticated.
+        The argument `account` is the account who is authenticated.
         """
 
 
@@ -405,6 +405,9 @@ class IBasicLaunchpadRequest(Interface):
     traversed_objects = Attribute(
         'List of traversed objects.  This is appended to during traversal.')
 
+    query_string_params = Attribute(
+        'A dictionary of the query string parameters.')
+
     def getNearest(*some_interfaces):
         """Searches for the last traversed object to implement one of
         the given interfaces.
@@ -625,6 +628,8 @@ class ILaunchpadPrincipal(IPrincipal):
     access_level = Choice(
         title=_("The level of access this principal has."),
         vocabulary=AccessLevel, default=AccessLevel.WRITE_PRIVATE)
+
+    account = Attribute("The IAccount the principal represents.")
 
     person = Attribute("The IPerson the principal represents.")
 

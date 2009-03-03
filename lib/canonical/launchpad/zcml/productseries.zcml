@@ -40,6 +40,7 @@
         module="canonical.launchpad.browser.productseries"
         classes="ProductSeriesFacets ProductSeriesOverviewMenu
                  ProductSeriesBugsMenu
+                 ProductSeriesOverviewNavigationMenu
                  ProductSeriesSpecificationsMenu
                  ProductSeriesTranslationsMenu"
         />
@@ -200,6 +201,15 @@
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"
       />
+
+    <browser:page
+        name="+addrelease"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        class="canonical.launchpad.browser.ProductReleaseAddView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/productrelease-add.pt"
+    />
 
     <browser:page
       name="+addmilestone"

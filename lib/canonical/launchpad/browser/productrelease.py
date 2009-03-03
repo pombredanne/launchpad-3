@@ -60,7 +60,7 @@ class ProductReleaseContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def add_file(self):
         text = 'Add download file'
-        return Link('+adddownloadfile', text, icon='edit')
+        return Link('+adddownloadfile', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
@@ -84,7 +84,6 @@ class ProductReleaseAddView(LaunchpadFormView):
     """
 
     schema = IProductRelease
-    label = "Register a release"
     field_names = [
         'datereleased',
         'release_notes',
@@ -117,7 +116,7 @@ class ProductReleaseAddView(LaunchpadFormView):
                         "milestone.")),
                 render_context=self.render_context)
 
-    @action(_('Publish release'))
+    @action(_('Publish release'), name='publish')
     def publishRelease(self, action, data):
         """Publish product release for this milestone."""
         newrelease = self.context.createProductRelease(
@@ -135,12 +134,20 @@ class ProductReleaseAddView(LaunchpadFormView):
         self.next_url = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Register a new %s release' % self.context.product.name
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class ProductReleaseEditView(LaunchpadEditFormView):
     """Edit view for ProductRelease objects"""
 
     schema = IProductRelease
-    label = "Edit project release details"
     field_names = [
         "datereleased",
         "release_notes",
@@ -151,10 +158,19 @@ class ProductReleaseEditView(LaunchpadEditFormView):
     custom_widget('release_notes', TextAreaWidget, height=7, width=62)
     custom_widget('changelog', TextAreaWidget, height=7, width=62)
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit %s release details' % self.context.title
+
     @action('Change', name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class ProductReleaseRdfView(object):
@@ -191,6 +207,11 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     schema = IProductReleaseFileAddForm
 
     custom_widget('description', TextWidget, width=62)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Add a download file to %s' % self.context.title
 
     @action('Upload', name='add')
     def add_action(self, action, data):
@@ -236,6 +257,10 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
         self.next_url = canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
     """View for ProductRelease overview."""
@@ -252,20 +277,24 @@ class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
 
 class ProductReleaseDeleteView(LaunchpadFormView):
     """A view for deleting an `IProductRelease`."""
-    label = 'Delete release'
     schema = IProductRelease
     field_names = []
 
-    def canBeDeleted(self, action=None):
-        """Can this release be deleted?
+    @property
+    def label(self):
+        """The form label."""
+        return 'Delete %s' % self.context.title
 
-        Only releases which have no files associated with it can be deleted.
-        """
-        return self.context.files.count() == 0
-
-    @action('Yes, Delete it', name='delete', condition=canBeDeleted)
+    @action('Delete this Release', name='delete')
     def add_action(self, action, data):
+        for release_file in self.context.files:
+            release_file.destroySelf()
         self.request.response.addInfoNotification(
             "Release %s deleted." % self.context.version)
         self.next_url = canonical_url(self.context.productseries)
         self.context.destroySelf()
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
