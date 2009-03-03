@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BazaarBranchStore',
+    'CSCVSImportWorker',
     'CodeImportSourceDetails',
     'ForeignTreeStore',
     'ImportWorker',
@@ -377,3 +378,7 @@ class ImportWorker:
                 self.source_details, foreign_tree)
         finally:
             shutil.rmtree(working_directory)
+
+
+class CSCVSImportWorker(ImportWorker):
+    pass

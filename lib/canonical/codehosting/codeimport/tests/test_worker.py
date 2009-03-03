@@ -20,7 +20,7 @@ from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting.codeimport.worker import (
-    BazaarBranchStore, ForeignTreeStore, ImportWorker,
+    BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, ImportWorker,
     get_default_bazaar_branch_store, get_default_foreign_tree_store)
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
     CVSServer, SubversionServer)
@@ -387,19 +387,24 @@ class TestActualImportMixin:
     def setUpImport(self):
         """Set up the objects required for an import.
 
-        This means a BazaarBranchStore, ForeignTreeStore, CodeImport and
-        a CodeImportJob.
+        This means a BazaarBranchStore, CodeImport and a CodeImportJob.
         """
         repository_path = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(repository_path))
 
         self.bazaar_store = BazaarBranchStore(
             self.get_transport('bazaar_store'))
-        self.foreign_store = ForeignTreeStore(
-            self.get_transport('foreign_store'))
 
         self.source_details = self.makeSourceDetails(
             repository_path, 'trunk', [('README', 'Original contents')])
+
+    def makeImportWorker(self):
+        """Make a new `ImportWorker`.
+
+        Override this in your subclass.
+        """
+        raise NotImplementedError(
+            "Override this with a VCS-specific implementation.")
 
     def commitInForeignTree(self, foreign_tree):
         """Commit a single revision to `foreign_tree`.
@@ -416,12 +421,6 @@ class TestActualImportMixin:
         """
         raise NotImplementedError(
             "Override this with a VCS-specific implementation.")
-
-    def makeImportWorker(self):
-        """Make a new `ImportWorker`."""
-        return ImportWorker(
-            self.source_details, self.foreign_store, self.bazaar_store,
-            logging.getLogger())
 
     def getBazaarWorkingTree(self, worker):
         """Get the Bazaar tree 'worker' stored into its BazaarBranchStore."""
@@ -493,7 +492,22 @@ class TestActualImportMixin:
 
 
 class CSCVSActualImportMixin(TestActualImportMixin):
-    pass
+
+    def setUpImport(self):
+        """Set up the objects required for an import.
+
+        This sets up a ForeignTreeStore in addition to what
+        TestActualImportMixin.setUpImport does.
+        """
+        TestActualImportMixin.setUpImport(self)
+        self.foreign_store = ForeignTreeStore(
+            self.get_transport('foreign_store'))
+
+    def makeImportWorker(self):
+        """Make a new `ImportWorker`."""
+        return CSCVSImportWorker(
+            self.source_details, self.foreign_store, self.bazaar_store,
+            logging.getLogger())
 
 
 class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
