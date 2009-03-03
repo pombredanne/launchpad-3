@@ -841,6 +841,17 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
             attachment_contents=None, force_transfer_encoding=False,
             email_address=None, fingerprint=None):
+        """Return an ISignedMessage.
+
+        :param msgid: An rfc2822 message-id.
+        :param body: The body of the message.
+        :param attachment_contents: The contents of an attachment.
+        :param force_transfer_encoding: If True, ensure a transfer encoding is
+            used.
+        :param email_address: The address the mail is from.
+        :param fingerprint: The fingerprint of the gpg key to sign with.
+            If not supplied, the message is unsigned.
+        """
         mail = SignedMessage()
         if email_address is None:
             person = self.makePerson()
@@ -1346,7 +1357,13 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBundleMergeDirectiveEmail(self, source_branch, target_branch,
                                       fingerprint=None):
-        """Create a merge directive email from two bzr branches."""
+        """Create a merge directive email from two bzr branches.
+
+        :param source_branch: The source branch for the merge directive.
+        :param target_branch: The target branch for the merge directive.
+        :param fingerprint: The fingerprint of the gpg key to sign with.
+            If not supplied, the message is unsigned.
+        """
         from bzrlib.merge_directive import MergeDirective2
         md = MergeDirective2.from_objects(
             source_branch.repository, source_branch.last_revision(),
@@ -1398,6 +1415,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         """Create an email with a merge directive attached.
 
         :param body: The message body to use for the email.
+        :param fingerprint: The fingerprint of the gpg key to sign with.
+            If not supplied, the message is unsigned.
         :return: message, file_alias, source_branch, target_branch
         """
         target_branch = self.makeProductBranch()
