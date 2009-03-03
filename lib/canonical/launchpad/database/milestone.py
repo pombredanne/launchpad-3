@@ -7,19 +7,25 @@ __all__ = [
     'Milestone',
     'MilestoneSet',
     'ProjectMilestone',
+    'get_assigned_milestones_from_bugtasks',
     ]
 
 import datetime
 from zope.interface import implements
+from zope.security.proxy import (
+    isinstance as zope_isinstance, removeSecurityProxy)
 
 from sqlobject import (
     AND, BoolCol, DateCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.locals import And, Store
+from storm.locals import And, In, Store
+from storm.sqlobject import SQLObjectResultSet
+from storm.store import ResultSet
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.sorting import expand_numbers
 from canonical.launchpad.database.bugtarget import HasBugsBase
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
@@ -31,29 +37,56 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
+FUTURE_NONE = datetime.date(datetime.MAXYEAR, 1, 1)
+
+
+def milestone_sort_key(milestone):
+    """Enable sorting by the Milestone dateexpected and name."""
+    if milestone.dateexpected is None:
+        # A datetime.datetime object cannot be compared with None.
+        # Milestones with dateexpected=None are sorted as being
+        # way in the future.
+        date = FUTURE_NONE
+    elif isinstance(milestone.dateexpected, datetime.datetime):
+        # XXX: EdwinGrubbs 2009-02-06 bug=326384:
+        # The Milestone.dateexpected should be changed into a date column,
+        # since the class defines the field as a DateCol, so that a list
+        # of milestones can't have some dateexpected attributes that are
+        # datetimes and others that are dates, which can't be compared.
+        date = milestone.dateexpected.date()
+    else:
+        date = milestone.dateexpected
+    return (date, expand_numbers(milestone.name))
+
+
+def get_assigned_milestones_from_bugtasks(result_set):
+    """Returns all the distinct milestones for the given bug tasks.
+
+    :param result_set: A result set yielding BugTask objects,
+        typically the result of calling something.searchTasks().
+    """
+    permitted_types = (ResultSet, SQLObjectResultSet)
+    assert zope_isinstance(result_set, permitted_types), (
+        "result_set must be an instance of storm.store.ResultSet "
+        "or storm.sqlobject.SQLObjectResultSet")
+    # Unwrap SQLObjectResultSet; we want the Storm result set.
+    if zope_isinstance(result_set, SQLObjectResultSet):
+        result_set = removeSecurityProxy(result_set)._result_set
+    # Remove ordering and make distinct.
+    result_set = result_set.order_by().config(distinct=True)
+    # Get milestone IDs.
+    milestone_ids = [
+        milestone_id for milestone_id in (
+            result_set.values(BugTask.milestoneID))
+        if milestone_id is not None]
+    # Query for milestones.
+    milestones = Store.of(result_set).find(
+        Milestone, In(Milestone.id, milestone_ids))
+    return sorted(milestones, key=milestone_sort_key, reverse=True)
+
+
 class HasMilestonesMixin:
     implements(IHasMilestones)
-
-    _FUTURE_NONE = datetime.date(datetime.MAXYEAR, 1, 1)
-
-    @classmethod
-    def milestone_sort_key(cls, milestone):
-        """Enable sorting by the Milestone dateexpected and name."""
-        if milestone.dateexpected is None:
-            # A datetime.datetime object cannot be compared with None.
-            # Milestones with dateexpected=None are sorted as being
-            # way in the future.
-            date = cls._FUTURE_NONE
-        elif isinstance(milestone.dateexpected, datetime.datetime):
-            # XXX: EdwinGrubbs 2009-02-06 bug=326384:
-            # The Milestone.dateexpected should be changed into a date column,
-            # since the class defines the field as a DateCol, so that a list
-            # of milestones can't have some dateexpected attributes that are
-            # datetimes and others that are dates, which can't be compared.
-            date = milestone.dateexpected.date()
-        else:
-            date = milestone.dateexpected
-        return (date, expand_numbers(milestone.name))
 
     def _getMilestoneCondition(self):
         """Provides condition for milestones and all_milestones properties.
@@ -70,7 +103,7 @@ class HasMilestonesMixin:
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone, self._getMilestoneCondition())
-        return sorted(result, key=self.milestone_sort_key, reverse=True)
+        return sorted(result, key=milestone_sort_key, reverse=True)
 
     @property
     def milestones(self):
@@ -79,7 +112,7 @@ class HasMilestonesMixin:
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
                                 Milestone.visible == True))
-        return sorted(result, key=self.milestone_sort_key, reverse=True)
+        return sorted(result, key=milestone_sort_key, reverse=True)
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
