@@ -165,11 +165,11 @@ def get_multi_server(write_hosted=False, write_mirrored=False):
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     branchfs_endpoint = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
-        config.codehosting.hosted_branches_root)
+        config.codehosting.hosted_branches_root, mkdir=True)
     if not write_hosted:
         hosted_transport = get_readonly_transport(hosted_transport)
     mirrored_transport = get_chrooted_transport(
-        config.codehosting.mirrored_branches_root)
+        config.codehosting.mirrored_branches_root, mkdir=True)
     if not write_mirrored:
         mirrored_transport = get_readonly_transport(mirrored_transport)
     hosted_server = LaunchpadInternalServer(
@@ -386,7 +386,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     def setUp(self):
         super(LaunchpadInternalServer, self).setUp()
         try:
-            ensure_base(self._transport_dispatch.base_transport)
+            self._transport_dispatch.base_transport.ensure_base()
         except TransportNotPossible:
             pass
 
