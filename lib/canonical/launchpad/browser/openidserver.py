@@ -748,8 +748,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
             raise UnexpectedFormData("Unknown action.")
 
     def process_registration(self, email):
-        authtokenset = getUtility(IAuthTokenSet)
-        self.token = authtokenset.new(
+        self.token = getUtility(IAuthTokenSet).new(
             requester=None, requesteremail=None, email=email,
             tokentype=LoginTokenType.NEWACCOUNT)
         self.token.sendNewUserEmail()
@@ -759,14 +758,9 @@ class LoginServiceLoginView(LoginServiceBaseView):
         return self.email_sent_template()
 
     def process_password_recovery(self, email):
-        # XXX: salgado, 2009-02-20: This (person = None) is a quick hack to
-        # make it possible for us to use LoginToken to reset the passwords of
-        # personless accounts.  The correct fix is to use AuthToken, which
-        # takes an account rather than a person.
-        person = None
-        authtokenset = getUtility(IAuthTokenSet)
-        self.token = authtokenset.new(
-            person, email, email, LoginTokenType.PASSWORDRECOVERY)
+        account = getUtility(IAccountSet).getByEmail(email)
+        self.token = getUtility(IAuthTokenSet).new(
+            account, email, email, LoginTokenType.PASSWORDRECOVERY)
         self.token.sendPasswordResetEmail()
         self.saveRequestInSession('token' + self.token.token)
         self.email_heading = 'Forgotten your password?'

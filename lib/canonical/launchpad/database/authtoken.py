@@ -23,8 +23,8 @@ from canonical.launchpad.components.tokens import (
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)
-from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import canonical_url
@@ -39,12 +39,13 @@ class AuthToken(Storm):
     def __init__(self, account, requesteremail, email, tokentype,
                  redirection_url=None):
         super(AuthToken, self).__init__()
+        self.token = create_unique_token_for_table(20, AuthToken.token)
+        self.tokentype = tokentype
+
         self.requester_account = account
         self.requesteremail = requesteremail
         self.email = email
 
-        self.tokentype = tokentype
-        self.token = create_unique_token_for_table(20, AuthToken.token)
         self.redirection_url = redirection_url
 
     id = Int(primary=True)
@@ -68,7 +69,7 @@ class AuthToken(Storm):
 
     @property
     def requester(self):
-        return IPerson(self.requester_account)
+        return IPerson(self.requester_account, None)
 
     def consume(self):
         """See ILoginToken."""

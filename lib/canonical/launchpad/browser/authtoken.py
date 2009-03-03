@@ -196,7 +196,7 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
         """
         emailaddress = getUtility(IEmailAddressSet).getByEmail(
             self.context.email)
-        person = emailaddress.person
+        person = self.context.requester
         if person is not None:
             # XXX: Guilherme Salgado 2006-09-27 bug=62674:
             # It should be possible to do the login before this and avoid
