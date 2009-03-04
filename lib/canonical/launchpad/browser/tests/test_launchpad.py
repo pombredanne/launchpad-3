@@ -104,8 +104,6 @@ class TestBranchTraversal(TestCaseWithFactory):
         series = self.factory.makeProductSeries()
         self.assertNotFound('%s/%s' % (series.product.name, series.name))
 
-    # urljoin -> urlappend
-
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
