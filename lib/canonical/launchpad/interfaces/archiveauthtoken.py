@@ -10,7 +10,7 @@ __all__ = [
     'IArchiveAuthTokenSet',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from zope.schema import Datetime, Int, TextLine
 
 from canonical.launchpad import _
