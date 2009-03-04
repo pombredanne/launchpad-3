@@ -74,7 +74,6 @@ class LoginTokenView(AuthTokenView):
 
 
 class ClaimProfileView(BaseAuthTokenView, LaunchpadFormView):
-
     schema = IPerson
     field_names = ['displayname', 'hide_email_addresses', 'password']
     custom_widget('password', PasswordChangeWidget)

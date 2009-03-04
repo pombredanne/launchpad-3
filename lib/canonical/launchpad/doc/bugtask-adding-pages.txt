@@ -616,8 +616,9 @@ We'll link a product to an upstream bug tracker to demonstrate this.
     ...     for key in sorted(links_dict):
     ...         print "%s: %s" % (key, links_dict[key])
 
-upstream_bugtracker_links is a dict of `bug_filing_url` and
-`bug_search_url`.
+upstream_bugtracker_links is a dict of `bug_filing_url` and `bug_search_url`.
+The bug filing link includes the summary and description of the bug; the
+search link includes the summary only.
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'frobnitz',
@@ -626,8 +627,9 @@ upstream_bugtracker_links is a dict of `bug_filing_url` and
     ...     firefox_task, '+choose-affected-product', form)
 
     >>> print_links(add_task_view.upstream_bugtracker_links)
-    bug_filing_url: http://example.com/enter_bug.cgi?product=foo
-    bug_search_url: http://example.com/query.cgi?product=foo
+    bug_filing_url:
+    ...?product=foo&short_desc=Reflow%20...&long_desc=Malone%20...
+    bug_search_url: ...query.cgi?product=foo&short_desc=Reflow%20problems...
 
 If the product's `bugtracker` isn't specified its
 `upstream_bugtracker_links` property will be None.
@@ -658,4 +660,4 @@ bug trackers will always be a usable URL.
 
     >>> print_links(add_task_view.upstream_bugtracker_links)
     bug_filing_url: http://trac.example.com/newticket
-    bug_search_url: http://trac.example.com/search?ticket=on
+    bug_search_url: http://trac.example.com/search?ticket=on&q=Reflow%20...

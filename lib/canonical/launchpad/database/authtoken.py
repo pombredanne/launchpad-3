@@ -165,14 +165,19 @@ class AuthTokenSet:
         assert valid_email(email)
         if tokentype not in [LoginTokenType.PASSWORDRECOVERY,
                              LoginTokenType.NEWACCOUNT,
-                             LoginTokenType.VALIDATEEMAIL]:
+                             LoginTokenType.VALIDATEEMAIL,
+                             LoginTokenType.NEWPERSONLESSACCOUNT]:
             # XXX: Guilherme Salgado, 2005-12-09:
             # Aha! According to our policy, we shouldn't raise ValueError.
             raise ValueError(
-                "tokentype is not an item of LoginTokenType: %s" % tokentype)
+                "tokentype is not a valid AuthToken type: %s" %
+                tokentype.name)
 
         if requester is not None:
             requester = IMasterObject(requester)
+
+        if isinstance(redirection_url, str):
+            redirection_url = unicode(redirection_url)
 
         token = AuthToken(account=requester,
                           requesteremail=requesteremail,

@@ -84,6 +84,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.person import IPerson
@@ -596,7 +597,7 @@ class IBranchNavigationMenu(Interface):
     """A marker interface to indicate the need to show the branch menu."""
 
 
-class IBranch(IHasOwner):
+class IBranch(IHasOwner, IHasBranchTarget):
     """A Bazaar branch."""
     # Mark branches as exported entries for the Launchpad API.
     export_as_webservice_entry()
@@ -736,7 +737,8 @@ class IBranch(IHasOwner):
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
-    target = Attribute("The target of this branch, as an `IBranchTarget`.")
+    namespace = Attribute(
+        "The namespace of this branch, as an `IBranchNamespace`.")
 
     # Product attributes
     # ReferenceChoice is Interface rather than IProduct as IProduct imports

@@ -367,6 +367,7 @@ class ILaunchBag(Interface):
     bug = Attribute('IBug, or None')
     bugtask = Attribute('IBugTask, or None')
 
+    account = Attribute('Currently authenticated IAccount, or None')
     user = Attribute('Currently authenticated IPerson, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
