@@ -671,7 +671,6 @@ class BzrSync:
                 self.db_branch, self.db_branch.last_scanned_id,
                 bzr_branch.last_revision(),
                 config.canonical.noreply_from_address)
-            job.run()
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""

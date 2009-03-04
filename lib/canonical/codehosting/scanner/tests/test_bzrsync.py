@@ -33,7 +33,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet,
     RepositoryFormat)
-from canonical.launchpad.interfaces.branchjob import IRevisionMailJobSource
+from canonical.launchpad.interfaces.branchjob import (
+    IRevisionMailJobSource, IRevisionsAddedJobSource)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.testing import (
@@ -708,6 +709,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         author = self.factory.getUniqueString()
         self.commitRevision('second', committer=author)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        JobRunner.fromReady(getUtility(IRevisionsAddedJobSource)).runAll()
         JobRunner.fromReady(getUtility(IRevisionMailJobSource)).runAll()
         self.assertEqual(len(stub.test_emails), 2)
         [recommit_email, uncommit_email] = stub.test_emails
