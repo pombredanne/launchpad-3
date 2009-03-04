@@ -64,7 +64,7 @@ class TestBranchTraversal(TestCaseWithFactory):
     def test_product_alias(self):
         # Traversing to /+branch/<product> redirects to the page for the
         # branch that is the development focus branch for that product.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeProductBranch()
         product = removeSecurityProxy(branch.product)
         product.development_focus.user_branch = branch
         self.assertRedirects(product.name, canonical_url(branch))
@@ -85,7 +85,27 @@ class TestBranchTraversal(TestCaseWithFactory):
         path = urljoin(branch.unique_name, '+edit')
         self.assertRedirects(path, canonical_url(branch, view_name='+edit'))
 
-    # XXX: product series
+    def test_product_series_redirect(self):
+        # Traversing to /+branch/<product>/<series> redirects to the branch
+        # for that series, if there is one.
+        branch = self.factory.makeProductBranch()
+        product = branch.product
+        series = self.factory.makeProductSeries(product=product)
+        removeSecurityProxy(series).user_branch = branch
+        self.assertRedirects(
+            '%s/%s' % (product.name, series.name), canonical_url(branch))
+
+    def test_nonexistent_product_series(self):
+        # /+branch/<product>/<series> generates a 404 if there is no such
+        # series.
+        product = self.factory.makeProduct()
+        self.assertNotFound('%s/nonexistent' % product.name)
+
+    def test_no_branch_for_series(self):
+        series = self.factory.makeProductSeries()
+        self.assertNotFound('%s/%s' % (series.product.name, series.name))
+
+    # urljoin -> urlappend
 
 
 def test_suite():

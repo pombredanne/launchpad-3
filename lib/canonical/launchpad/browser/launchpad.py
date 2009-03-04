@@ -99,7 +99,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.url import urlparse, urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.launchpad.xmlrpc.faults import NoBranchForSeries
+from canonical.launchpad.xmlrpc.faults import NoBranchForSeries, NoSuchSeries
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -591,7 +591,7 @@ class LaunchpadRootNavigation(Navigation):
         path = '/'.join(self.request.stepstogo)
         try:
             branch_data = getUtility(IBranchSet).getByLPPath(path)
-        except NoBranchForSeries:
+        except (NoBranchForSeries, NoSuchSeries):
             raise NotFoundError
         branch, trailing, series = branch_data
         if branch is None:
