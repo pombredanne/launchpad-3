@@ -45,11 +45,6 @@ class BaseDatabasePolicy:
     def __init__(self, request):
         self.request = request
 
-    def setGlobalDefaultFlavor(self, flavor):
-        """Set the default flavor for all Stores."""
-        for store in ALL_STORES:
-            da.StoreSelector.setDefaultFlavor(store, flavor)
-
     def afterCall(self):
         """See `IDatabasePolicy`.
 
@@ -58,7 +53,7 @@ class BaseDatabasePolicy:
         selected the next request. However, changing the default store in
         the middle of a pagetest can break things.
         """
-        self.setGlobalDefaultFlavor(DEFAULT_FLAVOR)
+        da.StoreSelector.setGlobalDefaultFlavor(DEFAULT_FLAVOR)
         da.StoreSelector.setConfigSectionName(None)
         da.StoreSelector.setAllowedStores(None)
 
@@ -71,7 +66,7 @@ class MasterDatabasePolicy(BaseDatabasePolicy):
     """
     def beforeTraversal(self):
         """See `IDatabasePolicy`."""
-        self.setGlobalDefaultFlavor(MASTER_FLAVOR)
+        da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
 
 
 class SlaveDatabasePolicy(BaseDatabasePolicy):
@@ -81,7 +76,7 @@ class SlaveDatabasePolicy(BaseDatabasePolicy):
     """
     def beforeTraversal(self):
         """See `IDatabasePolicy`."""
-        self.setGlobalDefaultFlavor(SLAVE_FLAVOR)
+        da.StoreSelector.setGlobalDefaultFlavor(SLAVE_FLAVOR)
 
 
 class LaunchpadDatabasePolicy(BaseDatabasePolicy):
@@ -101,7 +96,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
         # If this is a Retry attempt, force use of the master database.
         if getattr(self.request, '_retry_count', 0) > 0:
-            self.setGlobalDefaultFlavor(MASTER_FLAVOR)
+            da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
 
         # Select if the DEFAULT_FLAVOR Store will be the master or a
         # slave. We select slave if this is a readonly request, and
@@ -117,7 +112,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                 # configured threshold. This reduces replication oddities
                 # noticed by users, as well as reducing load on the
                 # slave allowing it to catch up quicker.
-                self.setGlobalDefaultFlavor(MASTER_FLAVOR)
+                da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
             else:
                 session_data = ISession(self.request)['lp.dbpolicy']
                 last_write = session_data.get('last_write', None)
@@ -129,11 +124,11 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                 else:
                     recently = timedelta(minutes=2) + lag
                 if last_write is None or last_write < now - recently:
-                    self.setGlobalDefaultFlavor(SLAVE_FLAVOR)
+                    da.StoreSelector.setGlobalDefaultFlavor(SLAVE_FLAVOR)
                 else:
-                    self.setGlobalDefaultFlavor(MASTER_FLAVOR)
+                    da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
         else:
-            self.setGlobalDefaultFlavor(MASTER_FLAVOR)
+            da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
 
     def afterCall(self):
         """Cleanup.

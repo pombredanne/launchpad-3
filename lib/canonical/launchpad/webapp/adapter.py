@@ -36,8 +36,8 @@ from canonical.lazr.utils import safe_hasattr
 from canonical.launchpad.interfaces import (
     IMasterObject, IMasterStore, ISlaveStore, IStore)
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, AUTH_STORE, DEFAULT_FLAVOR, MAIN_STORE,
-    MASTER_FLAVOR, SLAVE_FLAVOR)
+    ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
+    MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
 
 
@@ -265,30 +265,30 @@ class LaunchpadDatabase(Postgres):
         assert realm in ('main', 'auth'), 'Unknown realm %s' % realm
         assert flavor in ('master', 'slave'), 'Unknown flavor %s' % flavor
 
-        dbconfig = DatabaseConfig()
-        dbconfig.setConfigSection(config_section)
+        my_dbconfig = DatabaseConfig()
+        my_dbconfig.setConfigSection(config_section)
 
         # We set self._dsn here rather than in __init__ so when the Store
         # is reconnected it pays attention to any config changes.
         config_entry = '%s_%s' % (realm, flavor)
-        connection_string = getattr(dbconfig, config_entry)
+        connection_string = getattr(my_dbconfig, config_entry)
         assert 'user=' not in connection_string, (
                 "Database username should not be specified in "
                 "connection string (%s)." % connection_string)
 
         # Try to lookup dbuser using the $realm_dbuser key. If this fails,
         # fallback to the dbuser key.
-        dbuser = getattr(dbconfig, '%s_dbuser' % realm, dbconfig.dbuser)
+        dbuser = getattr(my_dbconfig, '%s_dbuser' % realm, my_dbconfig.dbuser)
 
         self._dsn = "%s user=%s" % (connection_string, dbuser)
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
 
-        if dbconfig.isolation_level is None:
+        if my_dbconfig.isolation_level is None:
             isolation_level = ISOLATION_LEVEL_SERIALIZABLE
         else:
-            isolation_level = isolation_level_map[dbconfig.isolation_level]
+            isolation_level = isolation_level_map[my_dbconfig.isolation_level]
         raw_connection.set_isolation_level(isolation_level)
 
         # Set read only mode for the session.
@@ -445,6 +445,14 @@ class StoreSelector:
             _local.store_default_flavor[name] = flavor
 
     @staticmethod
+    def setGlobalDefaultFlavor(flavor):
+        """Change what the DEFAULT_FLAVOR is for the current thread
+        for all Stores.
+        """
+        for store in ALL_STORES:
+            StoreSelector.setDefaultFlavor(store, flavor)
+
+    @staticmethod
     def getDefaultFlavor(name):
         """Get the DEFAULT_FLAVOR for the current thread."""
         try:
@@ -454,10 +462,18 @@ class StoreSelector:
 
     @staticmethod
     def setConfigSectionName(section):
+        """Change the section in the config file used to lookup database
+        connection details.
+
+        Pass None to reset to the default.
+        """
         _local.store_dbconfig_section = section
 
     @staticmethod
     def getConfigSectionName():
+        """Return the section in the config file to use to lookup
+        database connection details.
+        """
         try:
             return _local.store_dbconfig_section or dbconfig.getSectionName()
         except AttributeError:
@@ -465,10 +481,19 @@ class StoreSelector:
 
     @staticmethod
     def setAllowedStores(allowed_stores):
+        """Specify which Stores may be accessed. Attempting to retrieve
+        Stores not on this whitelist will raise a DisallowedStoreError.
+
+        allowed_stores is a list of (store, flavor) tuples, such as
+        [(MAIN_STORE, SLAVE_FLAVOR), (AUTH_STORE, SLAVE_FLAVOR)].
+
+        Pass None to allow access to all Stores.
+        """
         _local.allowed_stores = allowed_stores
 
     @staticmethod
     def getAllowedStores():
+        """Return the Store whitelist, as per `setAllowedStores`."""
         return getattr(_local, 'allowed_stores', None)
 
     @staticmethod

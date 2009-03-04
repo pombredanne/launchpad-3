@@ -369,6 +369,8 @@ class DatabaseConfig:
         self._config_section = section_name
 
     def getSectionName(self):
+        """The name of the config file section this DatabaseConfig references.
+        """
         return self._config_section
 
     def _getConfigSections(self):
