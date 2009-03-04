@@ -58,6 +58,11 @@
          <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20Private%20PPA%20to%20your%20Ubuntu%20repositories"
           >adding a private PPA to your Ubuntu repositories</a> for more details.
       </p>
+      <tal:comment condition="nothing">
+        No extra spacing is important in the 'pre' content below
+        to avoid lots of blank lines as well as allow users to
+        copy'n'paste it.
+      </tal:comment>
       <pre id="sources-list-entries">
 # Personal subscriptions for private PPAs
 <tal:subscriptions repeat="subs_with_token view/active_subscriptions_with_tokens"><tal:defines define="subscription subs_with_token/subscription;token subs_with_token/token;archive_url token/archive_url;series_name token/archive/distribution/currentseries/name">
