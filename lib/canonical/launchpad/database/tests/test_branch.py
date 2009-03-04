@@ -42,7 +42,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace, InvalidNamespace)
+    get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
@@ -1363,6 +1363,50 @@ class TestCodebrowseURL(TestCaseWithFactory):
         self.assertEqual(
             'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
             branch.codebrowse_url('a', 'b'))
+
+
+class TestBranchNamespace(TestCaseWithFactory):
+    """Tests for `IBranch.namespace`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertNamespaceEqual(self, namespace_one, namespace_two):
+        """Assert that `namespace_one` equals `namespace_two`."""
+        namespace_one = removeSecurityProxy(namespace_one)
+        namespace_two = removeSecurityProxy(namespace_two)
+        self.assertEqual(namespace_one.__class__, namespace_two.__class__)
+        self.assertEqual(namespace_one.owner, namespace_two.owner)
+        self.assertEqual(
+            getattr(namespace_one, 'sourcepackage', None),
+            getattr(namespace_two, 'sourcepackage', None))
+        self.assertEqual(
+            getattr(namespace_one, 'product', None),
+            getattr(namespace_two, 'product', None))
+
+    def test_namespace_personal(self):
+        # The namespace attribute of a personal branch points to the namespace
+        # that corresponds to ~owner/+junk.
+        branch = self.factory.makePersonalBranch()
+        namespace = getUtility(IBranchNamespaceSet).get(person=branch.owner)
+        self.assertNamespaceEqual(namespace, branch.namespace)
+
+    def test_namespace_package(self):
+        # The namespace attribute of a package branch points to the namespace
+        # that corresponds to
+        # ~owner/distribution/distroseries/sourcepackagename.
+        branch = self.factory.makePackageBranch()
+        namespace = getUtility(IBranchNamespaceSet).get(
+            person=branch.owner, distroseries=branch.distroseries,
+            sourcepackagename=branch.sourcepackagename)
+        self.assertNamespaceEqual(namespace, branch.namespace)
+
+    def test_namespace_product(self):
+        # The namespace attribute of a product branch points to the namespace
+        # that corresponds to ~owner/product.
+        branch = self.factory.makeProductBranch()
+        namespace = getUtility(IBranchNamespaceSet).get(
+            person=branch.owner, product=branch.product)
+        self.assertNamespaceEqual(namespace, branch.namespace)
 
 
 def test_suite():

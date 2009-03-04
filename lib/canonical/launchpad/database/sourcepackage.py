@@ -150,6 +150,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
 
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, self.path)
+
     def _get_ubuntu(self):
         # XXX: kiko 2006-03-20: Ideally, it would be possible to just do
         # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

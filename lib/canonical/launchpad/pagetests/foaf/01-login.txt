@@ -47,8 +47,12 @@ Users with suspended accounts cannot log into Launchpad.
     ...     email='bad-user@canonical.com',
     ...     name='bad-user',
     ...     password='test')
-    >>> bad_user.account.status = AccountStatus.SUSPENDED
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
     >>> logout()
+
+    >>> import transaction
+    >>> transaction.commit()
 
 Bad User has a suspended account. He discovers that his account is disabled
 when he visits his profile page.
