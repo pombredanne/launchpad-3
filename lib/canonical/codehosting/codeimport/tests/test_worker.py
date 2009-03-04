@@ -62,7 +62,7 @@ class WorkerTest(TestCaseWithTransport):
 
     def makeTemporaryDirectory(self):
         directory = tempfile.mkdtemp()
-        self.addCleanup(lambda: shutil.rmtree(directory))
+        self.addCleanup(shutil.rmtree, directory)
         return directory
 
 
@@ -404,14 +404,10 @@ class TestActualImportMixin:
 
         This means a BazaarBranchStore, CodeImport and a CodeImportJob.
         """
-        repository_path = tempfile.mkdtemp()
-        self.addCleanup(lambda: shutil.rmtree(repository_path))
-
         self.bazaar_store = BazaarBranchStore(
             self.get_transport('bazaar_store'))
-
         self.source_details = self.makeSourceDetails(
-            repository_path, 'trunk', [('README', 'Original contents')])
+            'trunk', [('README', 'Original contents')])
 
     def makeImportWorker(self):
         """Make a new `ImportWorker`.
@@ -429,7 +425,7 @@ class TestActualImportMixin:
         raise NotImplementedError(
             "Override this with a VCS-specific implementation.")
 
-    def makeSourceDetails(self, repository_path, module_name, files):
+    def makeSourceDetails(self, module_name, files):
         """Make a `CodeImportSourceDetails` that points to a real repository.
 
         Override this in your subclass.
@@ -471,7 +467,7 @@ class TestActualImportMixin:
         # tests subclass bzrlib's TestCaseInTempdir, so the directory will be
         # restored at the end of the test.
         os.chdir(tree_dir)
-        if getattr(worker, 'foreign_tree_store', None) is not None:
+        if isinstance(worker, CSCVSImportWorker):
             foreign_tree = worker.foreign_tree_store.fetch(
                 worker.source_details, tree_dir)
         else:
@@ -544,10 +540,10 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
               'New content')])
         foreign_tree.commit()
 
-    def makeSourceDetails(self, repository_path, module_name, files):
+    def makeSourceDetails(self, module_name, files):
         """Make a CVS `CodeImportSourceDetails` pointing at a real CVS repo.
         """
-        cvs_server = CVSServer(repository_path)
+        cvs_server = CVSServer(self.makeTemporaryDirectory())
         cvs_server.setUp()
         self.addCleanup(cvs_server.tearDown)
 
@@ -576,10 +572,10 @@ class TestSubversionImport(WorkerTest, CSCVSActualImportMixin):
         client.checkin('working_tree', 'Add a file', recurse=True)
         shutil.rmtree('working_tree')
 
-    def makeSourceDetails(self, repository_path, branch_name, files):
+    def makeSourceDetails(self, branch_name, files):
         """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
         """
-        svn_server = SubversionServer(repository_path)
+        svn_server = SubversionServer(self.makeTemporaryDirectory())
         svn_server.setUp()
         self.addCleanup(svn_server.tearDown)
 
@@ -608,10 +604,10 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
         finally:
             os.chdir(wd)
 
-    def makeSourceDetails(self, repository_path, branch_name, files):
+    def makeSourceDetails(self, branch_name, files):
         """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.
         """
-        self.repository_path = tempfile.mkdtemp()
+        self.repository_path = self.makeTemporaryDirectory()
         wd = os.getcwd()
         try:
             os.chdir(self.repository_path)
@@ -619,6 +615,8 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
             builder = GitBranchBuilder()
             for filename, contents in files:
                 builder.set_file(filename, contents, False)
+            # We have to commit twice to satisfy the obscure needs of the
+            # other tests.
             builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
             builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
             builder.finish()
