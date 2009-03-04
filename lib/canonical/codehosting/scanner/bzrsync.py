@@ -10,13 +10,11 @@ __all__ = [
     ]
 
 import logging
-from StringIO import StringIO
 import urlparse
 
 import pytz
 from zope.component import getUtility
 from bzrlib.branch import BzrBranchFormat4
-from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
@@ -35,8 +33,6 @@ from canonical.launchpad.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
-from canonical.launchpad.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.webapp.uri import URI
 

@@ -242,7 +242,8 @@ class RevisionsAddedJob(BranchJobDerived):
     class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
 
     @classmethod
-    def create(klass, branch, last_scanned_id, last_revision_id, from_address):
+    def create(klass, branch, last_scanned_id, last_revision_id,
+               from_address):
         metadata = {'last_scanned_id': last_scanned_id,
                     'last_revision_id': last_revision_id,
                     'from_address': from_address}

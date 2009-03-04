@@ -58,6 +58,5 @@ class JobRunner(object):
             except LeaseHeld:
                 self.incomplete_jobs.append(job)
             except Exception:
-                raise
                 info = sys.exc_info()
                 errorlog.globalErrorUtility.raising(info)

@@ -283,7 +283,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             tree.commit('rev1', rev_id='rev1')
             tree.commit('rev2', rev_id='rev2')
             tree.commit('rev3', rev_id='rev3')
-            import transaction; transaction.commit()
+            transaction.commit()
             self.layer.switchDbUser('branchscanner')
             self.updateDBRevisions(
                 branch, tree.branch, ['rev1', 'rev2', 'rev3'])
