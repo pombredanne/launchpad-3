@@ -454,15 +454,23 @@ watches, the getModifiedRemoteBugs() method won't be called.
     []
 
 The method that determines which remote bug IDs need to be updated is
-_getRemoteIdsToCheck(), which returns the IDs as a list.
+_getRemoteIdsToCheck(), which returns a dict containing three lists:
+
+ * all_remote_ids: The list of all remote IDs to be checked for this run.
+ * remote_ids_to_check: The subset of all_remote_ids that need to be checked.
+ * unmodified_remote_ids: The subset of all_remote_ids that haven't changed
+   on the remote server and so don't need to be checked.
 
     >>> external_bugtracker =  CheckModifiedExternalBugTracker(
     ...     'http://example.com/')
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime())
-    >>> print sorted(ids)
-    [u'1', u'2', u'3', u'4']
+    >>> for key in sorted(ids):
+    ...     print "%s: %s" % (key, sorted(ids[key]))
+    all_remote_ids: [u'1', u'2', u'3', u'4']
+    remote_ids_to_check: [u'1', u'2', u'3', u'4']
+    unmodified_remote_ids: []
 
 updateBugWatches() calls _getRemoteIdsToCheck() and passes its results
 to the ExternalBugTracker's initializeRemoteBugDB() method.
@@ -495,7 +503,7 @@ will then be passed on to initializeRemoteBugDB().
     ...     external_bugtracker.getCurrentDBTime())
     last_checked: 2007-03-17 15:...:...
 
-    >>> print sorted(ids)
+    >>> print sorted(ids['remote_ids_to_check'])
     [u'1', u'4']
 
     >>> bug_watch_updater.updateBugWatches(
@@ -596,28 +604,34 @@ possible.
     ...         return []
 
     >>> external_bugtracker = DummyExternalBugTracker('http://example.com')
-    >>> bug_watch_updater._getRemoteIdsToCheck(
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
+    >>> print sorted(ids['remote_ids_to_check'])
     []
+
+    >>> print sorted(ids['unmodified_remote_ids'])
+    [u'1', u'2', u'3', u'4']
 
     >>> comment_message = factory.makeMessage(
     ...     "A test message", "That hasn't been pushed",
     ...     owner=sample_person)
     >>> bug_message = bug_watches[-1].addComment(None, comment_message)
 
-    >>> bug_watch_updater._getRemoteIdsToCheck(
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
+    >>> print sorted(ids['remote_ids_to_check'])
     [u'4']
 
 Once the comment has been pushed it will no longer appear in the list of
 IDs to be updated.
 
     >>> bug_message.remote_comment_id = '1'
-    >>> bug_watch_updater._getRemoteIdsToCheck(
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
+    >>> print sorted(ids['remote_ids_to_check'])
     []
 
 
