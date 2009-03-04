@@ -23,6 +23,7 @@
 <body>
 <div metal:fill-slot="main" class="pillar"
   tal:define="overview_menu context/menu:overview">
+
   <div class="actions" style="float:right;">
     <tal:edit
       define="link overview_menu/edit"
@@ -66,6 +67,8 @@
       <tal:description replace="context/subscriptionpolicy/description" />
     </div>
   </div>
+
+  <div tal:content="structure context/@@+portlet-related-projects" />
 
   <div id="your-involvement" class="portlet">
     <h2>Your involvement</h2>
@@ -176,28 +179,51 @@
   <div tal:content="structure context/@@+portlet-contact-details" />
 
   <div id="mailing-lists" class="portlet">
-    <h2>Mailing list:</h2>
+    <h2>Mailing list</h2>
 
     <div class="portletBody portletContent">
       <div
         tal:define="archive_url view/archive_url"
         tal:condition="archive_url">
-        <br /><a id="mailing-list-archive"
+        <strong>Policy:</strong>
+        You must be a team member to subscribed to the team mailing list.
+        <br />
+        <strong>Email:</strong>
+        <tal:email replace="context/mailing_list/address"
+          >team@example.com</tal:email>
+
+        <br /><img src="/@@/mail" alt="email" /> <a id="mailing-list-archive"
                 tal:attributes="href archive_url">Mailing list archive</a>
-        <br /><a id="mailing-list-subscribers"
+        <br /><img src="/@@/team" alt="team" /> <a id="mailing-list-subscribers"
                 tal:attributes="href context/fmt:url/+mailing-list-subscribers"
                 >Mailing list subscribers</a>
       </div>
       <div>
         <tal:moderate_mailing_list
           define="link overview_menu/moderate_mailing_list"
-          condition="link/enabled"
-          replace="structure link/render" />
-        &nbsp;&nbsp;
+          condition="link/enabled">
+          <a
+            tal:attributes="href link/url;
+                            title link/summary"
+            tal:content="link/escapedtext">action</a>&nbsp;<a
+            tal:attributes="href link/url;
+                            title link/summary"><img
+            tal:attributes="src string:/@@/${link/icon};
+                            alt link/summary" /></a>
+        </tal:moderate_mailing_list>
+        &nbsp;
         <tal:configure_mailing_list
           define="link overview_menu/configure_mailing_list"
-          condition="link/enabled"
-          replace="structure link/render" />
+          condition="link/enabled">
+          <a
+            tal:attributes="href link/url;
+                            title link/summary"
+            tal:content="link/escapedtext">action</a>&nbsp;<a
+            tal:attributes="href link/url;
+                            title link/summary"><img
+            tal:attributes="src string:/@@/${link/icon};
+                            alt link/summary" /></a>
+        </tal:configure_mailing_list>
       </div>
     </div>
   </div>
@@ -214,21 +240,25 @@
       </tal:private_membership>
       <tal:private_membership condition="can_view_membership">
         <tal:active content="context/all_member_count" />
-          active members<br />
-        <tal:proposed define="proposed_member_count context/proposed_member_count"
-                      condition="proposed_member_count">
-          <tal:proposed_count content="proposed_member_count" />
-          proposed members<br />
-        </tal:proposed>
+          <a tal:attributes="href string:${context/fmt:url/+members}#active"
+            >active members</a><br />
         <tal:invited define="invited_member_count context/invited_member_count"
                      condition="invited_member_count">
           <tal:invited_count content="context/invited_member_count" />
-          invited members<br />
+          <a tal:attributes="href string:${context/fmt:url/+members}#invited"
+            >invited members</a><br />
         </tal:invited>
+        <tal:proposed define="proposed_member_count context/proposed_member_count"
+                      condition="proposed_member_count">
+          <tal:proposed_count content="proposed_member_count" />
+          <a tal:attributes="href string:${context/fmt:url/+members}#proposed"
+            >proposed members</a><br />
+        </tal:proposed>
         <tal:inactive define="inactive_member_count context/inactive_member_count"
                      condition="inactive_member_count">
           <tal:inactive_count content="context/inactive_member_count" />
-          inactive members<br />
+          <a tal:attributes="href string:${context/fmt:url/+members}#former"
+            >inactive members</a><br />
         </tal:inactive>
       </tal:private_membership>
     </div>
@@ -261,8 +291,8 @@
     <div tal:condition="context/@@+restricted-membership/userCanViewMembership">
       <div class="portlet" id="recently-approved"
            tal:condition="view/recently_approved_members">
-        <h3>Recently approved</h3>
-        <ul>
+        <h3 style="color:black; font-weight:bold">Recently approved:</h3>
+        <ul style="margin-top: 0px;">
           <li class="person"
               tal:repeat="person view/recently_approved_members">
             <a tal:attributes="href person/fmt:url"
@@ -275,8 +305,8 @@
     <div tal:condition="context/@@+restricted-membership/userCanViewMembership">
       <div class="portlet" id="recently-applied"
            tal:condition="view/recently_proposed_members">
-        <h3>Recently applied</h3>
-        <ul>
+        <h3 style="color:black; font-weight:bold">Recently applied:</h3>
+        <ul style="margin-top: 0px;">
           <li class="person"
               tal:repeat="person view/recently_proposed_members">
             <a tal:attributes="href person/fmt:url"
@@ -288,33 +318,26 @@
     </div>
   </div>
 
-  <div tal:content="structure context/@@+portlet-related-projects" />
-
-  <div class="portlet" id="subteam-of">
+  <div class="portlet" id="subteam-of"
+    tal:condition="context/super_teams">
     <h2>Subteam of</h2>
 
-    <p tal:condition="not:context/super_teams">
+    <p>
       &#8220;<span tal:replace="context/browsername"/>&#8221;
-      itself is not a member of any other team.
+      is a member of these teams:
     </p>
-
-    <tal:block condition="context/super_teams">
-      <p>
-        &#8220;<span tal:replace="context/browsername"/>&#8221;
-        is a member of these teams:
-      </p>
-      <ul>
-        <li tal:repeat="team context/super_teams">
-          <tal:block replace="structure team/fmt:link" />
-        </li>
-      </ul>
-    </tal:block>
+    <ul>
+      <li tal:repeat="team context/super_teams">
+        <tal:block replace="structure team/fmt:link" />
+      </li>
+    </ul>
 
     <p>
       <tal:memberships
         define="link overview_menu/memberships"
         condition="link/enabled"
         replace="structure link/render" />
+      &nbsp;
       <tal:received_invitations
         define="link overview_menu/received_invitations"
         condition="link/enabled"

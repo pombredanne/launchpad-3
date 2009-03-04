@@ -832,13 +832,13 @@ class CommonMenuLinks:
         target = '+related-software'
         text = 'List assigned packages'
         summary = 'Packages assigned to %s' % self.context.browsername
-        return Link(target, text, summary, icon='packages')
+        return Link(target, text, summary, icon='package-source')
 
     def related_projects(self):
         target = '+related-software#projects'
         text = 'List related projects'
         summary = 'Projects %s is involved with' % self.context.browsername
-        return Link(target, text, summary, icon='packages')
+        return Link(target, text, summary, icon='product')
 
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
@@ -1161,7 +1161,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def map(self):
         target = '+map'
         text = 'Show map and time zones'
-        return Link(target, text, icon='team')
+        return Link(target, text, icon='meeting')
 
     def add_my_teams(self):
         target = '+add-my-teams'
@@ -4610,6 +4610,11 @@ class PersonRelatedSoftwareView(LaunchpadView):
     def related_projects_count(self):
         """The number of project owned or driven by this person."""
         return self._related_projects().count()
+
+    @property
+    def has_more_related_projects(self):
+        """Does this person have more than five related projects?"""
+        return self.related_projects_count > 5
 
     @property
     def too_many_related_projects_found(self):

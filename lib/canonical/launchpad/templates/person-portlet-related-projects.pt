@@ -5,7 +5,7 @@
   omit-tag="">
 
 <div class="portlet" id="portlet-related-projects"
-     tal:define="link context/menu:overview/map"
+     tal:define="overview_menu context/menu:overview"
      tal:condition="view/first_five_related_projects">
 
   <h2>Related projects</h2>
@@ -24,21 +24,12 @@
       </tr>
     </tbody>
   </table>
-  <p>
+  <p tal:condition="view/has_more_related_projects">
     <a href="+projects">
-      &raquo; See all projects <span tal:replace="context/title">Foo Bar</span>
+      &raquo; See all <tal:count replace="view/related_projects_count" />
+      projects <tal:person replace="context/title">Foo Bar</tal:person>
       is involved with
     </a>
-  </p>
-  <p tal:condition="context/isTeam">
-    <tal:common_packages
-      define="link overview_menu/common_packages"
-      condition="link/enabled"
-      replace="structure link/render" />
-    <tal:related_projects
-      define="link overview_menu/related_projects"
-      condition="link/enabled"
-      replace="structure link/render" />
   </p>
 </div>
 </tal:root>
