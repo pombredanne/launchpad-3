@@ -583,6 +583,11 @@ class LaunchpadRootNavigation(Navigation):
 
     @stepto('+branch')
     def redirect_branch(self):
+        """Redirect /+branch/<foo> to the branch named 'foo'.
+
+        'foo' can be the unique name of the branch, or any of the aliases for
+        the branch.
+        """
         path = '/'.join(self.request.stepstogo)
         try:
             branch_data = getUtility(IBranchSet).getByLPPath(path)
@@ -591,7 +596,10 @@ class LaunchpadRootNavigation(Navigation):
         branch, trailing, series = branch_data
         if branch is None:
             raise NotFoundError
-        return self.redirectSubTree(canonical_url(branch))
+        url = canonical_url(branch)
+        if trailing is not None:
+            url = urlappend(url, trailing)
+        return self.redirectSubTree(url)
 
     stepto_utilities = {
         '+announcements': IAnnouncementSet,

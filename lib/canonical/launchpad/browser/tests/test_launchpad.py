@@ -30,9 +30,9 @@ class TestBranchTraversal(TestCaseWithFactory):
     def assertNotFound(self, path):
         self.assertRaises(NotFound, self.traverse, path)
 
-    def assertRedirects(self, segments, obj):
+    def assertRedirects(self, segments, url):
         redirection = self.traverse(segments)
-        self.assertEqual(canonical_url(obj), redirection.target)
+        self.assertEqual(url, redirection.target)
 
     def traverse(self, path):
         """Traverse to 'segments' using a 'LaunchpadRootNavigation' object.
@@ -53,7 +53,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         # Traversing to /+branch/<unique_name> redirects to the page for that
         # branch.
         branch = self.factory.makeAnyBranch()
-        self.assertRedirects(branch.unique_name, branch)
+        self.assertRedirects(branch.unique_name, canonical_url(branch))
 
     def test_no_such_unique_name(self):
         # Traversing to /+branch/<unique_name> where 'unique_name' is for a
@@ -67,7 +67,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         product = removeSecurityProxy(branch.product)
         product.development_focus.user_branch = branch
-        self.assertRedirects(product.name, branch)
+        self.assertRedirects(product.name, canonical_url(branch))
 
     def test_nonexistent_product(self):
         # Traversing to /+branch/<no-such-product> generates a 404.
@@ -77,6 +77,15 @@ class TestBranchTraversal(TestCaseWithFactory):
         # Traversing to a product without a development focus generates a 404.
         product = self.factory.makeProduct()
         self.assertNotFound(product.name)
+
+    def test_trailing_path_redirect(self):
+        # If there are any trailing path segments after the branch identifier,
+        # these stick around at the redirected URL.
+        branch = self.factory.makeAnyBranch()
+        path = urljoin(branch.unique_name, '+edit')
+        self.assertRedirects(path, canonical_url(branch, view_name='+edit'))
+
+    # XXX: product series
 
 
 def test_suite():
