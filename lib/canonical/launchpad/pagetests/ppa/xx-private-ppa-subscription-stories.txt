@@ -170,7 +170,7 @@ And the sources.list snippet is updated to include a line for Celso's PPA
     Custom private_ppa_sources.list for Joe Smith
     # Personal subscriptions for private PPAs
     # Private PPA for Celso Providelo
-    deb http://private-ppa.launchpad.dev/cprov/ppa/ubuntu
+    deb http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
 And a notification is displayed on the screen
 

@@ -26,7 +26,7 @@
 # Personal subscriptions for private PPAs
 <tal:subscriptions repeat="subs_with_token view/active_subscriptions_with_tokens">
 # <tal:repo-comment content="subs_with_token/subscription/archive/title"/>
-deb <tal:repo-url content="subs_with_token/subscription/archive/archive_url" /></tal:subscriptions>
+deb <tal:repo-url content="subs_with_token/token/archive_url" /> <tal:distroseries content="subs_with_token/token/archive/distribution/currentseries/name" /> main</tal:subscriptions>
       </code></pre>
     </div>
     <div id="current_subscriptions">
