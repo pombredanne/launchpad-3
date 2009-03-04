@@ -52,6 +52,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 from canonical.lazr.enum import BaseItem
+from canonical.lazr.interfaces.fields import IReferenceChoice
 
 # XXX leonardr 2008-01-25 bug=185958:
 # BatchNavigator and event code should be moved into lazr.
@@ -68,7 +69,6 @@ from canonical.lazr.interfaces import (
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
 from canonical.lazr.interfaces.fields import ICollectionField
-from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -372,16 +372,8 @@ class HTTPResource:
         object as its value. But an IChoice field might also have a
         vocabulary drawn from the set of data model objects.
         """
-        if IObject.providedBy(field):
-            return True
-        if IChoice.providedBy(field):
-            # Find out whether the field's vocabulary is made of
-            # database objects (which correspond to resources that
-            # need to be linked to) or regular objects (which can
-            # be serialized to JSON).
-            field = field.bind(self.context)
-            return isinstance(field.vocabulary, SQLObjectVocabularyBase)
-        return False
+        return (IObject.providedBy(field)
+                or IReferenceChoice.providedBy(field))
 
     def _parseContentDispositionHeader(self, value):
         """Parse a Content-Disposition header.
