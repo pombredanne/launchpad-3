@@ -147,7 +147,18 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
                 for subs_with_token in self.subscriptions_with_tokens
                     if subs_with_token["token"] is not None]
 
-    # Update template to use dict version (so no python required)
+    @cachedproperty
+    def pending_subscriptions(self):
+        """Return the pending subscriptions for this user.
+
+        This is all subscriptions for the user, for which they do not have
+        an active token.
+        """
+        return [
+            subs_with_token["subscription"]
+                for subs_with_token in self.subscriptions_with_tokens
+                    if subs_with_token["token"] is None]
+
     @property
     def has_subscriptions(self):
         """Return whether this person has any subscriptions."""
@@ -157,6 +168,11 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
     def has_active_subscriptions(self):
         """Return whether this person has active subscriptions."""
         return len(self.active_subscriptions_with_tokens) > 0
+
+    @property
+    def has_pending_subscriptions(self):
+        """Return whether this person has pending subscriptions."""
+        return len(self.pending_subscriptions) > 0
 
     def processSubscriptionActivation(self):
         """Process any posted data that activates a subscription."""
@@ -215,8 +231,8 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
             # Message the user and redirect:
             self.request.response.addNotification(structured(
                 "Your subscription to '%s' has been activated. "
-                "Please update your private_ppa_sources.list as "
-                "displayed below." % archive.title))
+                "Please update your custom sources.list as "
+                "described below." % archive.title))
             redirectToSelf()
 
 

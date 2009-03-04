@@ -172,6 +172,8 @@ But spiv is subscribed to a number of archives:
     True
     >>> view.has_active_subscriptions
     False
+    >>> view.has_pending_subscriptions
+    True
 
 The subscriptions_with_tokens property returns all the current archive
 subscriptions for the person, with a corresponding token for each:
@@ -219,14 +221,15 @@ And the subscription has been activated:
     True
     >>> view.has_active_subscriptions
     True
+    >>> view.has_pending_subscriptions
+    True
 
 The user will also see a notification of the subscription activation:
 
     >>> for notification in view.request.notifications:
     ...     print notification.message
     Your subscription to 'Private PPA for Mark Shuttleworth' has been
-    activated. Please update your private_ppa_sources.list as displayed
-    below.
+    activated. Please update your custom sources.list as described below.
 
 The PersonArchiveSubscriptionsView also provides an 
 active_subscriptions_with_tokens property:
@@ -236,6 +239,19 @@ active_subscriptions_with_tokens property:
     ...     if subs_with_token['token'] is not None:
     ...         print "Token"
     Private PPA for Mark Shuttleworth              Token
+
+Activate the second subscription and then verify that there are no more
+pending subscriptions:
+
+    >>> view = create_initialized_view(
+    ...     spiv,
+    ...     name="+archivesubscriptions",
+    ...     server_url=
+    ...         "https://launchpad.dev/~cprov/+archivesubscriptions",
+    ...     method="post",
+    ...     form={"archive_id": str(cprov.archive.id)})
+    >>> view.has_pending_subscriptions
+    False
 
 If a user fiddles with the POST data and sends a bad archive_id or an
 archive_id corresponding to an archive to which the user is not subscribed
@@ -252,7 +268,7 @@ before and after the bad requests:
     >>> from canonical.launchpad.database.archiveauthtoken import (
     ...     ArchiveAuthToken)
     >>> store.find(ArchiveAuthToken).count()
-    1
+    2
 
 Now do the bad requests, ensuring a 302 is issued each time:
 
@@ -277,5 +293,5 @@ After all the bad requests, the number of tokens in the database should
 remain unchange:
 
     >>> store.find(ArchiveAuthToken).count()
-    1
+    2
 

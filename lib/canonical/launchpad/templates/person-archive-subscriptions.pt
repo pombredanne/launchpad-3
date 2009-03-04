@@ -17,6 +17,37 @@
       Private archive subscriptions for Joe Smith
     </h1>
   <tal:has_subscriptions condition="view/has_subscriptions">
+    <div id="pending_subscriptions" tal:condition="view/has_pending_subscriptions">
+      <h2>Pending subscriptions</h2>
+      <p>You have been added as a subscriber of the following Private PPAs.
+         If you wish to download software from these PPAs, please activate
+         your subscription.
+      </p>
+      <table summary="CONTEXTS/fmt:pagetitle" id="pending-archive-subscriptions">
+        <thead>
+          <tr class="pending-archive-subscription-row">
+            <th>Archive</th><th>Subscription description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="subscription view/pending_subscriptions"
+              class="pending-archive-subscription-row">
+            <td tal:content="subscription/archive/title">Private PPA for Celso
+            </td>
+            <td tal:content="subscription/description">Allow Team X access.
+            </td>
+            <td tal:define="archive_id subscription/archive/id">
+              <form method="post" action="">
+                <input type="hidden" name="archive_id"
+                    tal:attributes="value string:${archive_id}"/>
+                <input type="submit" value="Activate"
+                    tal:attributes="name string:field.actions.activate_archive_${archive_id}"/>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <div id="sources_list" tal:condition="view/has_active_subscriptions">
       <h2>Custom sources.list entries</h2>
       <p>The following sources.list entries will enable you to download
@@ -36,14 +67,14 @@ deb-src <tal:repo-url content="archive_url" /> <tal:distroseries content="series
       </pre>
     </div>
     <div id="current_subscriptions">
-      <h2>Current subscriptions</h2>
+      <h2>Subscriptions</h2>
       <p>All the private archives for which you have
          a subscription are displayed below.
       </p>
       <table summary="CONTEXTS/fmt:pagetitle" id="archive-subscriptions">
         <thead>
           <tr class="archive-subscription-row">
-            <th>Archive</th><th>Subscription description</th>
+            <th>Archive</th><th>Subscription description</th><th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -56,14 +87,9 @@ deb-src <tal:repo-url content="archive_url" /> <tal:distroseries content="series
             </td>
             <td tal:content="subscription/description">Allow Team X access.
             </td>
-            <td tal:condition="not: token"
-                tal:define="archive_id subscription/archive/id">
-              <form method="post" action="">
-                <input type="hidden" name="archive_id"
-                    tal:attributes="value string:${archive_id}"/>
-                <input type="submit" value="Activate"
-                    tal:attributes="name string:field.actions.activate_archive_${archive_id}"/>
-              </form>
+            <td>
+                <tal:active condition="token">Active</tal:active>
+                <tal:pending condition="not: token">Pending</tal:pending>
             </td>
             </tal:subscription_and_token>
           </tr>

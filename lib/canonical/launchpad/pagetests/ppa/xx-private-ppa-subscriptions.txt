@@ -83,15 +83,11 @@ form:
     ...     name='field.description').value = "Brad can access for a while."
     >>> cprov_browser.getControl(name="field.actions.add").click()
 
-Create a helper function to print subscriptions:
+Once the subscription has been added, it will display in the table:
 
-    >>> def print_subscriptions_for_archive(contents):
-    ...     subscriptions = find_tags_by_class(contents,
-    ...                                        'archive_subscriber_row')
-    ...     for subscription in subscriptions:
-    ...         print extract_text(subscription)
-
-    >>> print_subscriptions_for_archive(cprov_browser.contents)
+    >>> for row in find_tags_by_class(cprov_browser.contents,
+    ...                               'archive_subscriber_row'):
+    ...     print extract_text(row)
     Name                Expires     Comment
     Brad Smith          2200-08-01  Brad can access for a while.
     Joe Smith                       Joe is my friend
@@ -126,28 +122,16 @@ Joe has multiple subscriptions:
     ...     name='field.description').value = "Joe is also my friend"
     >>> sabdfl_browser.getControl(name="field.actions.add").click()
 
-Next create a helper function for printing the archive subscriptions
-of a person:
-
-    >>> def print_subscriptions_for_person(contents):
-    ...     subscriptions = find_tags_by_class(contents,
-    ...                                        'archive-subscription-row')
-    ...     for subscription in subscriptions:
-    ...         print extract_text(subscription)
-    ...         button = subscription.find(
-    ...             'input', value="Activate")
-    ...         if button:
-    ...             print "Activate"
-
 A person who is subscribed to multiple archives will see all the archives
-listed:
+listed in the current subscriptions area:
 
     >>> joe_browser = setupBrowser(auth="Basic joe@example.com:test")
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
-    >>> print_subscriptions_for_person(joe_browser.contents)
-    Archive                            Subscription description
-    Private PPA for Mark Shuttleworth  Joe is also my friend     Activate
-    Private PPA for Celso Providelo    Joe is my friend          Activate
-
+    >>> for row in find_tags_by_class(joe_browser.contents,
+    ...                               'archive-subscription-row'):
+    ...     print extract_text(row)
+    Archive                            Subscription description  Status
+    Private PPA for Mark Shuttleworth  Joe is also my friend     Pending
+    Private PPA for Celso Providelo    Joe is my friend          Pending
 
