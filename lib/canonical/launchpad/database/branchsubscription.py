@@ -16,13 +16,14 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     CodeReviewNotificationLevel, IBranchSubscription)
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.validators.person import validate_public_person
 
 
 class BranchSubscription(SQLBase):
     """A relationship between a person and a branch."""
 
-    implements(IBranchSubscription, IBranchNavigationMenu)
+    implements(IBranchSubscription, IBranchNavigationMenu, IHasBranchTarget)
 
     _table = 'BranchSubscription'
 
@@ -36,3 +37,8 @@ class BranchSubscription(SQLBase):
                              notNull=False, default=DEFAULT)
     review_level = EnumCol(enum=CodeReviewNotificationLevel,
                                  notNull=True, default=DEFAULT)
+
+    @property
+    def target(self):
+        """See `IHasBranchTarget`."""
+        return self.branch.target

@@ -185,6 +185,13 @@ class UserAttributeCache:
 
     _no_user = object()
     _user = _no_user
+    _account = _no_user
+
+    @property
+    def account(self):
+        if self._account is self._no_user:
+            self._account = getUtility(ILaunchBag).account
+        return self._account
 
     @property
     def user(self):
