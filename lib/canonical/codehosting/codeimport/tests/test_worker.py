@@ -15,7 +15,6 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NoSuchFile
 from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
-from bzrlib.urlutils import local_path_to_url
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
