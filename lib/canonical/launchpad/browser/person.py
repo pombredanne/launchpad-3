@@ -2141,7 +2141,8 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
         return canonical_url(self.context) + "/+commentedbugs"
 
 
-class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
+class ReportedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                       BugTaskSearchListingView):
     """All bugs reported by someone."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
