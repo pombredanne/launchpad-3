@@ -93,12 +93,13 @@ from canonical.launchpad.webapp import (
     canonical_url, custom_widget)
 from canonical.launchpad.webapp.interfaces import (
     IBreadcrumbBuilder, ILaunchBag, ILaunchpadRoot, INavigationMenu,
-    POSTToNonCanonicalURL)
+    NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.url import urlparse, urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.xmlrpc.faults import NoBranchForSeries
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -583,7 +584,13 @@ class LaunchpadRootNavigation(Navigation):
     @stepto('+branch')
     def redirect_branch(self):
         path = '/'.join(self.request.stepstogo)
-        branch = getUtility(IBranchSet).getByUniqueName(path)
+        try:
+            branch_data = getUtility(IBranchSet).getByLPPath(path)
+        except NoBranchForSeries:
+            raise NotFoundError
+        branch, trailing, series = branch_data
+        if branch is None:
+            raise NotFoundError
         return self.redirectSubTree(canonical_url(branch))
 
     stepto_utilities = {

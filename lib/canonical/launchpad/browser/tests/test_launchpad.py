@@ -8,6 +8,9 @@ import unittest
 
 from bzrlib.urlutils import join as urljoin
 
+from zope.publisher.interfaces import NotFound
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.browser.launchpad import LaunchpadRootNavigation
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
@@ -23,6 +26,9 @@ class TestBranchTraversal(TestCaseWithFactory):
     """
 
     layer = DatabaseFunctionalLayer
+
+    def assertNotFound(self, path):
+        self.assertRaises(NotFound, self.traverse, path)
 
     def assertRedirects(self, segments, obj):
         redirection = self.traverse(segments)
@@ -44,10 +50,33 @@ class TestBranchTraversal(TestCaseWithFactory):
         return traverser.publishTraverse(request, '+branch')
 
     def test_unique_name_traversal(self):
-        # Traversing to +/branch/<unique_name> redirects to the page for that
+        # Traversing to /+branch/<unique_name> redirects to the page for that
         # branch.
         branch = self.factory.makeAnyBranch()
         self.assertRedirects(branch.unique_name, branch)
+
+    def test_no_such_unique_name(self):
+        # Traversing to /+branch/<unique_name> where 'unique_name' is for a
+        # branch that doesn't exist will generate a 404.
+        branch = self.factory.makeAnyBranch()
+        self.assertNotFound(branch.unique_name + 'wibble')
+
+    def test_product_alias(self):
+        # Traversing to /+branch/<product> redirects to the page for the
+        # branch that is the development focus branch for that product.
+        branch = self.factory.makeAnyBranch()
+        product = removeSecurityProxy(branch.product)
+        product.development_focus.user_branch = branch
+        self.assertRedirects(product.name, branch)
+
+    def test_nonexistent_product(self):
+        # Traversing to /+branch/<no-such-product> generates a 404.
+        self.assertNotFound('non-existent')
+
+    def test_product_without_dev_focus(self):
+        # Traversing to a product without a development focus generates a 404.
+        product = self.factory.makeProduct()
+        self.assertNotFound(product.name)
 
 
 def test_suite():
