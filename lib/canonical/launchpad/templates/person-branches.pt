@@ -27,7 +27,7 @@
 
   <h1 tal:content="view/heading">Bazaar branches</h1>
 
-  <div id="no-branch-message" tal:condition="not: view/total_branch_count">
+  <div id="no-branch-message" tal:condition="not: view/has_branches">
     <p>
       There are no branches related to
       <tal:user replace="context/displayname"/> today.
@@ -36,7 +36,7 @@
 
   <tal:summary replace="structure context/@@+codesummary"/>
 
-  <tal:has-branches condition="view/total_branch_count">
+  <tal:has-branches condition="view/has_branches">
 
     <tal:branchlisting
         content="structure branches/@@+branch-listing" />
