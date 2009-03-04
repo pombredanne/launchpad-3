@@ -71,6 +71,7 @@ from lazr.delegates import delegates
 
 
 def get_plural_text(count, singular, plural):
+    """Return 'singular' if 'count' is 1, 'plural' otherwise."""
     if count == 1:
         return singular
     else:
@@ -620,6 +621,7 @@ class PersonBranchCountMixin:
 
     @cachedproperty
     def total_branch_count(self):
+        # XXX: Axe this?
         """Return the number of branches related to the person."""
         query = getUtility(IBranchSet).getBranchesForContext(
             self.context, visible_by_user=self.user)
@@ -689,27 +691,32 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch',
+    links = ['registered', 'owned', 'subscribed', 'addbranch',
              'active_reviews', 'approved_merges', 'requested_reviews']
 
-    def all_related(self):
-        return Link(canonical_url(self.context, rootsite='code'),
-                    'Related branches')
-
     def owned(self):
-        return Link('+ownedbranches', 'owned')
+        return Link(
+            canonical_url(self.context, rootsite='code'),
+            get_plural_text(
+                self.owned_branch_count, 'owned branch', 'owned branches'))
 
     def registered(self):
-        return Link('+registeredbranches', 'registered')
+        return Link(
+            '+registeredbranches',
+            get_plural_text(
+                self.registered_branch_count,
+                'registered branch', 'registered branches'))
 
     def subscribed(self):
-        return Link('+subscribedbranches', 'subscribed')
+        return Link(
+            '+subscribedbranches',
+            get_plural_text(
+                self.subscribed_branch_count,
+                'subscribed branch', 'subscribed branches'))
 
     def active_reviews(self):
-        if self.active_review_count == 1:
-            text = 'active proposal'
-        else:
-            text = 'active proposals'
+        text = get_plural_text(
+            self.active_review_count, 'active proposal', 'active proposals')
         if self.user == self.context:
             summary = 'Proposals I have submitted'
         else:
@@ -717,10 +724,8 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
         return Link('+activereviews', text, summary=summary)
 
     def approved_merges(self):
-        if self.approved_merge_count == 1:
-            text = 'approved merge'
-        else:
-            text = 'approved merges'
+        text = get_plural_text(
+            self.approved_merge_count, 'approved merge', 'approved merges')
         return Link('+approvedmerges', text)
 
     def addbranch(self):
@@ -732,10 +737,9 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
         return Link('+addbranch', text, icon='add', enabled=enabled)
 
     def requested_reviews(self):
-        if self.requested_review_count == 1:
-            text = 'requested review'
-        else:
-            text = 'requested reviews'
+        text = get_plural_text(
+            self.requested_review_count,
+            'requested review', 'requested reviews')
         if self.user == self.context:
             summary = 'Proposals I am reviewing'
         else:
