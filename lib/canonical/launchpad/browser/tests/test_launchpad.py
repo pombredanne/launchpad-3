@@ -6,8 +6,6 @@ __metaclass__ = type
 
 import unittest
 
-from bzrlib.urlutils import join as urljoin
-
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
@@ -16,6 +14,7 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.url import urlappend
 
 
 class TestBranchTraversal(TestCaseWithFactory):
@@ -43,7 +42,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         :param segments: A list of path segments.
         :return: The object found.
         """
-        request = LaunchpadTestRequest(PATH_INFO=urljoin('/+branch', path))
+        request = LaunchpadTestRequest(PATH_INFO=urlappend('/+branch', path))
         segments = reversed(path.split('/'))
         request.setTraversalStack(segments)
         traverser = LaunchpadRootNavigation(None, request=request)
@@ -82,7 +81,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         # If there are any trailing path segments after the branch identifier,
         # these stick around at the redirected URL.
         branch = self.factory.makeAnyBranch()
-        path = urljoin(branch.unique_name, '+edit')
+        path = urlappend(branch.unique_name, '+edit')
         self.assertRedirects(path, canonical_url(branch, view_name='+edit'))
 
     def test_product_series_redirect(self):
