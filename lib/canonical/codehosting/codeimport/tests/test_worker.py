@@ -22,8 +22,8 @@ from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting.codeimport.worker import (
-    BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, GitImportWorker,
-    ImportWorker, get_default_bazaar_branch_store,
+    BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, ImportWorker,
+    PullingImportWorker, get_default_bazaar_branch_store,
     get_default_foreign_tree_store)
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
     CVSServer, SubversionServer)
@@ -597,30 +597,38 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
 
     def makeImportWorker(self):
         """Make a new `ImportWorker`."""
-        return GitImportWorker(
+        return PullingImportWorker(
             self.source_details, self.bazaar_store, logging.getLogger())
 
     def commitInForeignTree(self, foreign_tree):
         """Change the foreign tree, generating exactly one commit."""
-        builder = GitBranchBuilder()
-        builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
-        builder.finish()
+        wd = os.getcwd()
+        os.chdir(self.repository_path)
+        try:
+            run_git('commit', '-m', 'dsadas')
+        finally:
+            os.chdir(wd)
 
     def makeSourceDetails(self, repository_path, branch_name, files):
         """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
         """
-        os.mkdir("gitbranch")
-        os.chdir("gitbranch")
-        run_git('init')
-        builder = GitBranchBuilder()
-        for filename, contents in files:
-            builder.set_file(filename, contents, False)
-        builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
-        builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
-        builder.finish()
+        self.repository_path = tempfile.mkdtemp()
+        wd = os.getcwd()
+        try:
+            os.chdir(self.repository_path)
+            run_git('init')
+            builder = GitBranchBuilder()
+            for filename, contents in files:
+                builder.set_file(filename, contents, False)
+            builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
+            builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
+            builder.finish()
+        finally:
+            os.chdir(wd)
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git', git_repo_url=local_path_to_url('.'))
+            rcstype='git',
+            git_repo_url=local_path_to_url(self.repository_path))
 
 
 def test_suite():

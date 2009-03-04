@@ -329,6 +329,11 @@ class ImportWorker:
 
 
 class CSCVSImportWorker(ImportWorker):
+    """An ImportWorker for imports that use CSCVS.
+
+    As well as invoking cscvs to do the import, this class also needs to
+    manage a foreign working tree.
+    """
 
     # Where the foreign working tree will be stored.
     FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
@@ -413,9 +418,13 @@ class CSCVSImportWorker(ImportWorker):
             self.source_details, foreign_tree)
 
 
-class GitImportWorker(ImportWorker):
+class PullingImportWorker(ImportWorker):
+    """An import worker for imports that can be done by a bzr plugin."""
+
     def _doImport(self):
         bazaar_tree = self.getBazaarWorkingTree()
-        bazaar_tree.branch.pull(Branch.open(self.source_details.git_repo_url))
+        bazaar_tree.branch.pull(
+            Branch.open(self.source_details.git_repo_url),
+            overwrite=True)
         self.bazaar_branch_store.push(
             self.source_details.branch_id, bazaar_tree)
