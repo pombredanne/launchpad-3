@@ -12,7 +12,6 @@ from storm.store import Store
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.database.authtoken import AuthToken
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)

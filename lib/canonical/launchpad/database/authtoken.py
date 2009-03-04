@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = ['AuthToken', 'AuthTokenSet']
 
 from zope.interface import implements
-from zope.component import getUtility
 
 import pytz
 from storm.base import Storm
@@ -133,7 +132,8 @@ class AuthTokenSet:
             return default
         return token
 
-    def searchByEmailAccountAndType(self, email, account, type, consumed=None):
+    def searchByEmailAccountAndType(self, email, account, type,
+                                    consumed=None):
         """See IAuthTokenSet."""
         conditions = [
             AuthToken.email == email,
