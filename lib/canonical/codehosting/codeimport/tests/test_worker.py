@@ -117,7 +117,7 @@ class TestBazaarBranchStore(WorkerTest):
         # In addition. the remote branch has been upgraded as well.
         new_branch = Branch.open(target_url)
         self.assertEqual(
-            default_format, new_branch.bzrdir._format)
+            default_format.get_branch_format(), new_branch._format)
 
     def test_pushTwiceThenPull(self):
         # We can push up a branch to the store twice and then pull it from the
