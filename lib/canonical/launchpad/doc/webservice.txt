@@ -799,7 +799,7 @@ a named factory operation for creating a new cookbook.
     ...             author_name, title, cuisine)
     ...         self.request.response.setStatus(201)
     ...         self.request.response.setHeader(
-    ...             "Location", canonical_url(cookbook))
+    ...             "Location", absoluteURL(cookbook, self.request))
     ...         return cookbook
 
     >>> from canonical.lazr.interfaces import IResourcePOSTOperation
@@ -854,11 +854,32 @@ root of the object tree.
     ...    ILaunchpadApplication)
     >>> from canonical.lazr.interfaces import IServiceRootResource
     >>> from canonical.lazr.rest import ServiceRootResource
+    >>> from zope.traversing.browser.interfaces import IAbsoluteURL
     >>> class IMyWebServiceApplication(ILaunchpadApplication,
     ...                                IServiceRootResource):
     ...     """Marker interface for the web service."""
+
     >>> class MyServiceRootResource(ServiceRootResource):
-    ...     implements(IMyWebServiceApplication)
+    ...     implements(IMyWebServiceApplication, IAbsoluteURL)
+
+It's the responsibility of each web service to provide an
+implementation of IAbsoluteURL for their service root resource.
+
+    >>> class DummyAbsoluteURL:
+    ...     "A dummy implementation of IAbsoluteURL for the service root."
+    ...     implements(IAbsoluteURL)
+    ...     def __init__(self, *objects):
+    ...         pass
+    ...
+    ...     def __str__(self):
+    ...         return "http://api.launchpad.dev/beta/"
+    ...
+    ...     __call__ = __str__
+
+    >>> provideAdapter(DummyAbsoluteURL,
+    ...     [MyServiceRootResource, IDefaultBrowserLayer], IAbsoluteURL)
+
+
     >>> register_navigation(RootNavigation, IMyWebServiceApplication)
 
     >>> from canonical.launchpad.webapp.servers import WebServicePublication
@@ -923,15 +944,14 @@ top-level collections of authors, cookbooks, and dishes. It's the
     >>> representation["dishes_collection_link"]
     u'http://api.launchpad.dev/beta/dishes'
 
-The standard canonical_url() function can be used to generate URLs to
+The standard absoluteURL() function can be used to generate URLs to
 content objects published on the web service. It works for the web
-service root also.
+service root, so long as you've given it an IAbsoluteURL
+implementation.
 
-    >>> from canonical.launchpad.webapp import canonical_url
-    >>> ICanonicalUrlData.providedBy(app)
-    True
-    >>> canonical_url(app)
-    u'http://api.launchpad.dev/beta/'
+    >>> from zope.traversing.browser import absoluteURL
+    >>> absoluteURL(app, request)
+    'http://api.launchpad.dev/beta/'
 
 
 === WADL documents ===
