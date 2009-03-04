@@ -129,6 +129,37 @@ class TestBranchGetRevision(TestCaseWithFactory):
                           sequence=1, revision_id=rev1.revision_id)
 
 
+class TestGetMainlineBranchRevisions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getMainlineBranchRevisions(self):
+        """Only gets the mainline revisions, ignoring the others."""
+        branch = self.factory.makeBranch()
+        self.factory.makeBranchRevision(branch, 'rev1', 1)
+        self.factory.makeBranchRevision(branch, 'rev2', 2)
+        self.factory.makeBranchRevision(branch, 'rev2b', None)
+        result_set = branch.getMainlineBranchRevisions(
+            ['rev1', 'rev2', 'rev3'])
+        revid_set = set(
+            branch_revision.revision.revision_id for
+            branch_revision in result_set)
+        self.assertEqual(set(['rev1', 'rev2']), revid_set)
+
+    def test_getMainlineBranchRevisionsWrongBranch(self):
+        """Only gets the revisions for this branch, ignoring the others."""
+        branch = self.factory.makeBranch()
+        other_branch = self.factory.makeBranch()
+        self.factory.makeBranchRevision(branch, 'rev1', 1)
+        self.factory.makeBranchRevision(other_branch, 'rev1b', 2)
+        result_set = branch.getMainlineBranchRevisions(
+            ['rev1', 'rev1b'])
+        revid_set = set(
+            branch_revision.revision.revision_id for
+            branch_revision in result_set)
+        self.assertEqual(set(['rev1']), revid_set)
+
+
 class TestBranch(TestCaseWithFactory):
     """Test basic properties about Launchpad database branches."""
 
