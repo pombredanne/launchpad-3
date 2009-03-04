@@ -6,7 +6,7 @@
 
 <facet facet="overview">
 
-    <!-- LoginToken -->
+    <!-- AuthToken -->
     <class class="canonical.launchpad.database.authtoken.AuthToken">
         <require
             permission="zope.Public"

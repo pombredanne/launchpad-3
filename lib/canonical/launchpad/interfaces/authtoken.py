@@ -222,22 +222,19 @@ class IAuthTokenSet(Interface):
         """Delete all AuthToken entries with the given email,
         requester account and type."""
 
-    def new(requester, requesteremail, email, tokentype,
-            redirection_url=None):
-        """Create a new AuthToken object. Parameters must be:
-        requester: a Person object or None (in case of a new account)
+    def new(requester, requesteremail, email, tokentype, redirection_url):
+        """Create a new AuthToken object.
 
-        requesteremail: the email address used to login on the system. Can
-                        also be None in case of a new account
-
-        email: the email address that this request will be sent to.
-        It should be previously validated by valid_email()
-
-        tokentype: the type of the request, according to AuthTokenType.
-
-        fingerprint: The OpenPGP key fingerprint used to retrieve key
-        information from the key server if necessary. This can be None if
-        not required to process the 'request' in question.
+        :param requester: a Person object or None (in case of a new
+            account)
+        :param requesteremail: the email address used to login on the
+            system. Can also be None in case of a new account
+        :param email: the email address that this request will be sent
+            to.  It should be previously validated by valid_email()
+        :param tokentype: the type of the request, according to
+            LoginTokenType.
+        :param redirection_url: the URL the user will be forwarded to
+            after consuming the token.  May be None.
         """
 
     def __getitem__(id):

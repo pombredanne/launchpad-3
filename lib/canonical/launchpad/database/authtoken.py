@@ -35,7 +35,7 @@ class AuthToken(Storm):
     __storm_table__ = 'AuthToken'
 
     def __init__(self, account, requesteremail, email, tokentype,
-                 redirection_url=None):
+                 redirection_url):
         super(AuthToken, self).__init__()
         self.token = create_unique_token_for_table(20, AuthToken.token)
         self.tokentype = tokentype
@@ -160,7 +160,7 @@ class AuthTokenSet:
         self.searchByEmailAccountAndType(email, account, type).remove()
 
     def new(self, requester, requesteremail, email, tokentype,
-            redirection_url=None):
+            redirection_url):
         """See IAuthTokenSet."""
         assert valid_email(email)
         if tokentype not in [LoginTokenType.PASSWORDRECOVERY,

@@ -31,10 +31,10 @@ class AuthTokenTests(TestCaseWithFactory):
 
         token1 = getUtility(IAuthTokenSet).new(
             account, u"requester@example.net", u"newemail@example.net",
-            token_type)
+            token_type, None)
         token2 = getUtility(IAuthTokenSet).new(
             account, u"requester@example.net", u"newemail@example.net",
-            token_type)
+            token_type, None)
         Store.of(token1).flush()
         self.assertNotEqual(token1, token2)
 
@@ -50,7 +50,7 @@ class AuthTokenTests(TestCaseWithFactory):
             u"Test Account", status=AccountStatus.ACTIVE)
         token = getUtility(IAuthTokenSet).new(
             account, u"requester@example.net", u"newemail@example.net",
-            LoginTokenType.VALIDATEEMAIL)
+            LoginTokenType.VALIDATEEMAIL, None)
         token.sendEmailValidationRequest()
         transaction.commit()
 
@@ -66,7 +66,7 @@ class AuthTokenTests(TestCaseWithFactory):
             u"Test Account", status=AccountStatus.ACTIVE)
         token = getUtility(IAuthTokenSet).new(
             account, u"requester@example.net", u"newemail@example.net",
-            LoginTokenType.PASSWORDRECOVERY)
+            LoginTokenType.PASSWORDRECOVERY, None)
         token.sendPasswordResetEmail()
         transaction.commit()
 
@@ -80,7 +80,7 @@ class AuthTokenTests(TestCaseWithFactory):
     def test_sendNewUserEmail(self):
         token = getUtility(IAuthTokenSet).new(
             None, u"requester@example.net", u"newemail@example.net",
-            LoginTokenType.NEWACCOUNT)
+            LoginTokenType.NEWACCOUNT, None)
         token.sendNewUserEmail()
         transaction.commit()
 
@@ -101,7 +101,7 @@ class AuthTokenSetTests(TestCaseWithFactory):
         authtokenset = getUtility(IAuthTokenSet)
         token = authtokenset.new(
             None, u"requester@example.net", u"newemail@example.net",
-            LoginTokenType.NEWACCOUNT)
+            LoginTokenType.NEWACCOUNT, None)
         Store.of(token).flush()
 
         self.assertEqual(authtokenset.get(token.id), token)
@@ -113,11 +113,11 @@ class AuthTokenSetTests(TestCaseWithFactory):
         authtokenset = getUtility(IAuthTokenSet)
         token1 = authtokenset.new(
             account, u"requester@example.net", u"newemail@example.net",
-            LoginTokenType.VALIDATEEMAIL)
+            LoginTokenType.VALIDATEEMAIL, None)
         token1.consume()
         token2 = authtokenset.new(
             account, u"otheremail@example.net", u"newemail@example.net",
-            LoginTokenType.VALIDATEEMAIL)
+            LoginTokenType.VALIDATEEMAIL, None)
 
         result = authtokenset.searchByEmailAccountAndType(
             u"newemail@example.net", account, LoginTokenType.VALIDATEEMAIL)
@@ -155,10 +155,10 @@ class AuthTokenSetTests(TestCaseWithFactory):
         authtokenset = getUtility(IAuthTokenSet)
         token1 = authtokenset.new(
             account, u"requester@example.net", u"newemail@example.net",
-            LoginTokenType.VALIDATEEMAIL)
+            LoginTokenType.VALIDATEEMAIL, None)
         token2 = authtokenset.new(
             account, u"otheremail@example.net", u"newemail@example.net",
-            LoginTokenType.VALIDATEEMAIL)
+            LoginTokenType.VALIDATEEMAIL, None)
         store = Store.of(token1)
 
         authtokenset.deleteByEmailAccountAndType(
