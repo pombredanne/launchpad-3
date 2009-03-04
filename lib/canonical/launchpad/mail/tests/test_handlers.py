@@ -11,6 +11,7 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib import errors as bzr_errors
 from bzrlib.transport import get_transport
 from zope.component import getUtility
+from zope.interface import directlyProvides, directlyProvidedBy
 from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctest import DocTestSuite
@@ -24,8 +25,9 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.database.branchmergeproposal import (
-    CreateMergeProposalJob)
-from canonical.launchpad.interfaces.mail import EmailProcessingError
+    CreateMergeProposalJob, MergeProposalCreatedJob)
+from canonical.launchpad.interfaces.mail import (
+    EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
     CodeReviewEmailCommandExecutionContext,
@@ -40,7 +42,10 @@ from canonical.launchpad.testing import (
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.launchpad.webapp.interaction import get_current_principal
+from canonical.testing import (
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer,
+    ZopelessAppServerLayer)
 
 
 class TestGetCodeEmailCommands(TestCase):
@@ -109,7 +114,7 @@ class TestGetCodeEmailCommands(TestCase):
 class TestCodeHandler(TestCaseWithFactory):
     """Test the code email hander."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessAppServerLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
@@ -420,14 +425,23 @@ class TestCodeHandler(TestCaseWithFactory):
         """processMergeProposal creates a merge proposal and comment."""
         message, file_alias, source, target = (
             self.factory.makeMergeDirectiveEmail())
+        # Add some revisions so the proposal is ready.
+        self.factory.makeRevisionsForBranch(source, count=1)
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
+        pop_notifications()
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source, bmp.source_branch)
         self.assertEqual(target, bmp.target_branch)
         self.assertEqual('booga', bmp.review_diff.diff.text)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
+        # No emails are sent.
+        messages = pop_notifications()
+        self.assertEqual(0, len(messages))
+        # Only a job created.
+        runner = JobRunner.fromReady(MergeProposalCreatedJob)
+        self.assertEqual(1, len(list(runner.jobs)))
         transaction.commit()
 
     def test_processMergeProposalEmptyMessage(self):
@@ -447,6 +461,46 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(0, bmp.all_comments.count())
         transaction.commit()
 
+    def disabled_test_processMergeDirectiveEmailNeedsGPG(self):
+        """process creates a merge proposal from a merge directive email."""
+        message, file_alias, source, target = (
+            self.factory.makeMergeDirectiveEmail())
+        # Ensure the message is stored in the librarian.
+        # mail.incoming.handleMail also explicitly does this.
+        transaction.commit()
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        # In order to fake a non-gpg signed email, we say that the current
+        # principal direcly provides IWeaklyAuthenticatePrincipal, which is
+        # what the surrounding code does.
+        cur_principal = get_current_principal()
+        directlyProvides(
+            cur_principal, directlyProvidedBy(cur_principal),
+            IWeaklyAuthenticatedPrincipal)
+        code_handler.process(message, 'merge@code.launchpad.net', file_alias)
+
+        notification = pop_notifications()[0]
+        self.assertEqual('Submit Request Failure', notification['subject'])
+        # The returned message is a multipart message, the first part is
+        # the message, and the second is the original message.
+        message, original = notification.get_payload()
+        self.assertEqual(dedent("""\
+        An error occurred while processing a mail you sent to Launchpad's email
+        interface.
+
+
+        Error message:
+
+        All emails to merge@code.launchpad.net must be signed with your OpenPGP
+        key.
+
+
+        -- 
+        For more information about using Launchpad by e-mail, see
+        https://help.launchpad.net/EmailInterface
+        or send an email to help@launchpad.net"""),
+                                message.get_payload(decode=True))
+
     def test_processWithMergeDirectiveEmail(self):
         """process creates a merge proposal from a merge directive email."""
         message, file_alias, source, target = (
@@ -460,7 +514,53 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler.process(message, 'merge@code.launchpad.net', file_alias)
         JobRunner.fromReady(CreateMergeProposalJob).runAll()
         self.assertEqual(target, source.landing_targets[0].target_branch)
-        # ensure the DB operations violate no constraints.
+        # Ensure the DB operations violate no constraints.
+        transaction.commit()
+
+    def test_processMergeProposalReviewerRequested(self):
+        # The commands in the merge proposal are parsed.
+        eric = self.factory.makePerson(name="eric")
+        message, file_alias, source_branch, target_branch = (
+            self.factory.makeMergeDirectiveEmail(body=dedent("""\
+                This is the comment.
+
+                  reviewer eric
+                """)))
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        pop_notifications()
+        bmp, comment = code_handler.processMergeProposal(message)
+        pending_reviews = list(bmp.votes)
+        self.assertEqual(1, len(pending_reviews))
+        self.assertEqual(eric, pending_reviews[0].reviewer)
+        # No emails are sent.
+        messages = pop_notifications()
+        self.assertEqual(0, len(messages))
+        # Ensure the DB operations violate no constraints.
+        transaction.commit()
+
+    def test_processMergeProposalDefaultReviewer(self):
+        # If no reviewer was requested in the comment body, then the default
+        # reviewer of the target branch is used.
+        message, file_alias, source_branch, target_branch = (
+            self.factory.makeMergeDirectiveEmail(body=dedent("""\
+                This is the comment.
+                """)))
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        pop_notifications()
+        bmp, comment = code_handler.processMergeProposal(message)
+        # If no reviewer is specified, then the default reviewer of the target
+        # branch is requested to review.
+        pending_reviews = list(bmp.votes)
+        self.assertEqual(1, len(pending_reviews))
+        self.assertEqual(
+            target_branch.code_reviewer,
+            pending_reviews[0].reviewer)
+        # No emails are sent.
+        messages = pop_notifications()
+        self.assertEqual(0, len(messages))
+        # Ensure the DB operations violate no constraints.
         transaction.commit()
 
     def test_processMergeProposalExists(self):
@@ -509,7 +609,7 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_processMergeDirectiveWithBundle(self):
         """When a bundle is provided, it can generate a new branch."""
-        self.useBzrBranches()
+        self.useBzrBranches(real_server=True)
         branch, tree = self.create_branch_and_tree()
         tree.branch.set_public_branch(branch.bzr_identity)
         tree.commit('rev1')
@@ -534,14 +634,12 @@ class TestCodeHandler(TestCaseWithFactory):
     def mirror(self, db_branch, bzr_branch):
         # Ensure the directories containing the mirror branch exist.
         transport = get_transport(db_branch.warehouse_url)
-        transport.clone('../..').ensure_base()
-        transport.clone('..').ensure_base()
         lp_mirror = BzrDir.create_branch_convenience(db_branch.warehouse_url)
         lp_mirror.pull(bzr_branch)
 
     def test_processMergeDirectiveWithBundleExistingBranch(self):
         """A bundle can update an existing branch."""
-        self.useBzrBranches()
+        self.useBzrBranches(real_server=True)
         branch, tree = self.create_branch_and_tree('target')
         tree.branch.set_public_branch(branch.bzr_identity)
         tree.commit('rev1')

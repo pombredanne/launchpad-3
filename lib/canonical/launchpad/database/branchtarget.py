@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'branch_to_target',
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
@@ -12,9 +13,24 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
-class PackageBranchTarget:
+def branch_to_target(branch):
+    """Adapt an IBranch to an IBranchTarget."""
+    return branch.target
+
+
+class _BaseBranchTarget:
+
+    def __eq__(self, other):
+        return self.context == other.context
+
+    def __ne__(self, other):
+        return self.context != other.context
+
+
+class PackageBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
 
     def __init__(self, sourcepackage):
@@ -25,6 +41,20 @@ class PackageBranchTarget:
         """See `IBranchTarget`."""
         return self.sourcepackage.path
 
+    @property
+    def components(self):
+        """See `IBranchTarget`."""
+        return [
+            self.sourcepackage.distribution,
+            self.sourcepackage.distroseries,
+            self.sourcepackage,
+            ]
+
+    @property
+    def context(self):
+        """See `IBranchTarget`."""
+        return self.sourcepackage
+
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
         from canonical.launchpad.database.branchnamespace import (
@@ -32,13 +62,23 @@ class PackageBranchTarget:
         return PackageNamespace(owner, self.sourcepackage)
 
 
-class PersonBranchTarget:
+class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
 
     name = '+junk'
 
     def __init__(self, person):
         self.person = person
+
+    @property
+    def components(self):
+        """See `IBranchTarget`."""
+        return [self.person]
+
+    @property
+    def context(self):
+        """See `IBranchTarget`."""
+        return self.person
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
@@ -47,11 +87,21 @@ class PersonBranchTarget:
         return PersonalNamespace(owner)
 
 
-class ProductBranchTarget:
+class ProductBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
 
     def __init__(self, product):
         self.product = product
+
+    @property
+    def components(self):
+        """See `IBranchTarget`."""
+        return [self.product]
+
+    @property
+    def context(self):
+        """See `IBranchTarget`."""
+        return self.product
 
     @property
     def name(self):
@@ -63,3 +113,8 @@ class ProductBranchTarget:
         from canonical.launchpad.database.branchnamespace import (
             ProductNamespace)
         return ProductNamespace(owner, self.product)
+
+
+def get_canonical_url_data_for_target(branch_target):
+    """Return the `ICanonicalUrlData` for an `IBranchTarget`."""
+    return ICanonicalUrlData(branch_target.context)

@@ -46,7 +46,6 @@
         permission="zope.Public"
         name="+index"
         class="canonical.launchpad.browser.openiddiscovery.OpenIDApplicationIndexView"
-        template="../templates/openid-index.pt"
         />
 
     <browser:page
@@ -55,7 +54,6 @@
         permission="zope.Public"
         name="+index"
         class="canonical.launchpad.browser.openiddiscovery.OpenIDApplicationIndexView"
-        template="../templates/openid-index.pt"
         />
 
     <browser:page
@@ -64,6 +62,22 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.openiddiscovery.OpenIDApplicationIndexView"
         attribute="xrds"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        name="+edit"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.openidaccount.AccountEditView"
+        template="../templates/openid-account-edit.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        name="+change-password"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.openidaccount.AccountPasswordEditview"
+        template="../templates/openid-account-change-password.pt"
         />
 
     <browser:page
@@ -160,6 +174,14 @@
         permission="zope.Public"
         name="+login-register"
         class="canonical.launchpad.browser.openidserver.LoginServiceLoginView"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        permission="zope.Public"
+        name="+standalone-login"
+        class="canonical.launchpad.browser.openidserver.LoginServiceStandaloneLoginView"
+        template="../templates/loginservice-standalone-login.pt"
         />
 
     <class class="canonical.launchpad.database.OpenIDAuthorization">
@@ -280,6 +302,12 @@
         class="canonical.launchpad.testing.openidhelpers.ConsumerView"
         layer="canonical.launchpad.layers.PageTestLayer"
         />
+
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="loginservice_macros"
+        template="../templates/loginservice-macros.pt" />
 
 </configure>
 
