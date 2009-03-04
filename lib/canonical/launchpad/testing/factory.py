@@ -192,11 +192,12 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeAccount(self, displayname, email=None, password=None,
                     status=AccountStatus.ACTIVE,
-                    rationale=AccountCreationRationale.UNKNOWN):
+                    rationale=AccountCreationRationale.UNKNOWN,
+                    commit=True):
         """Create and return a new Account.
 
-        Implicitly commit at the end so that the newly created objects can be
-        seen in other stores as well.
+        If commit is True, we do a transaction.commit() at the end so that the
+        newly created objects can be seen in other stores as well.
         """
         account = getUtility(IAccountSet).new(
             rationale, displayname, password=password)
@@ -206,8 +207,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         email = self.makeEmail(
             email, person=None, account=account,
             email_status=EmailAddressStatus.PREFERRED)
-        import transaction
-        transaction.commit()
+        if commit:
+            import transaction
+            transaction.commit()
         return account
             
     def makePerson(self, email=None, name=None, password=None,
