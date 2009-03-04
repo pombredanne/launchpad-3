@@ -23,6 +23,7 @@ from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
     LoginTokenType)
+from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import canonical_url
@@ -54,7 +55,7 @@ class LoginToken(SQLBase):
         """See `ILoginToken`."""
         if self.requester is None:
             return None
-        return self.requester.account
+        return IMasterObject(self.requester.account)
 
     def consume(self):
         """See ILoginToken."""

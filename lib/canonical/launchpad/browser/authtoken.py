@@ -206,7 +206,7 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
         if self.accountWasSuspended(account, reason):
             return
 
-        naked_account = removeSecurityProxy(IMasterObject(account))
+        naked_account = removeSecurityProxy(account)
         # Reset password can be used to reactivate a deactivated account.
         if account.status == AccountStatus.DEACTIVATED:
             naked_account.reactivate(
