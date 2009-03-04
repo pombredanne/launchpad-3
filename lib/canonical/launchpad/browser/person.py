@@ -2161,7 +2161,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         # Specify both owner and bug_reporter to try to prevent the same
         # bug (but different tasks) being displayed.
         extra_params['owner'] = context
-        extra_params['bug_commenter'] = context
+        extra_params['bug_reporter'] = context
 
         sup = super(PersonReportedBugTaskSearchListingView, self)
         return sup.searchUnbatched(searchtext, context, extra_params)

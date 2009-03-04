@@ -7,6 +7,7 @@ __all__ = [
     'Milestone',
     'MilestoneSet',
     'ProjectMilestone',
+    'milestone_sort_key',
     ]
 
 import datetime
