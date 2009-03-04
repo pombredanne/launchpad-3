@@ -911,7 +911,8 @@ class TeamMapView(LaunchpadView):
     def initialize(self):
         # Tell our main-template to include Google's gmap2 javascript so that
         # we can render the map.
-        self.request.needs_gmap2 = True
+        if len(self.mapped_participants) > 0:
+            self.request.needs_gmap2 = True
 
     @cachedproperty
     def mapped_participants(self):
@@ -969,8 +970,14 @@ class TeamMapView(LaunchpadView):
         """HTML which shows the map with location of the team's members."""
         return """
             <script type="text/javascript">
-                renderTeamMap(%(min_lat)s, %(max_lat)s, %(min_lng)s,
-                              %(max_lng)s, %(center_lat)s, %(center_lng)s);
+                YUI().use('node', 'lp.mapping', function(Y) {
+                    function renderMap() {
+                        Y.lp.mapping.renderTeamMap(
+                            %(min_lat)s, %(max_lat)s, %(min_lng)s,
+                            %(max_lng)s, %(center_lat)s, %(center_lng)s);
+                     }
+                     Y.on("domready", renderMap);
+                });
             </script>""" % self.bounds
 
     @property
@@ -978,7 +985,13 @@ class TeamMapView(LaunchpadView):
         """The HTML which shows a small version of the team's map."""
         return """
             <script type="text/javascript">
-                renderTeamMapSmall(%(center_lat)s, %(center_lng)s);
+                YUI().use('node', 'lp.mapping', function(Y) {
+                    function renderMap() {
+                        Y.lp.mapping.renderTeamMapSmall(
+                            %(center_lat)s, %(center_lng)s);
+                     }
+                     Y.on("domready", renderMap);
+                });
             </script>""" % self.bounds
 
 
