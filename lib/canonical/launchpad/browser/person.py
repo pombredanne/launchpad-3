@@ -44,6 +44,7 @@ __all__ = [
     'PersonRdfContentsView',
     'PersonRelatedBugsView',
     'PersonRelatedSoftwareView',
+    'PersonReportedBugTaskSearchListingView',
     'PersonSearchQuestionsView',
     'PersonSetContextMenu',
     'PersonSetNavigation',
@@ -56,7 +57,6 @@ __all__ = [
     'PersonView',
     'PersonVouchersView',
     'RedirectToEditLanguagesView',
-    'ReportedBugTaskSearchListingView',
     'RestrictedMembershipsPersonView',
     'SearchAnsweredQuestionsView',
     'SearchAssignedQuestionsView',
@@ -2141,8 +2141,8 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
         return canonical_url(self.context) + "/+commentedbugs"
 
 
-class ReportedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                       BugTaskSearchListingView):
+class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                             BugTaskSearchListingView):
     """All bugs reported by someone."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
@@ -2163,7 +2163,7 @@ class ReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['owner'] = context
         extra_params['bug_commenter'] = context
 
-        sup = super(ReportedBugTaskSearchListingView, self)
+        sup = super(PersonReportedBugTaskSearchListingView, self)
         return sup.searchUnbatched(searchtext, context, extra_params)
 
     def getSearchPageHeading(self):

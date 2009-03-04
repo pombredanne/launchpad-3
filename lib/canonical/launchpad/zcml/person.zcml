@@ -522,7 +522,7 @@
     name="+reportedbugs"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
-    class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
+    class="canonical.launchpad.browser.PersonReportedBugTaskSearchListingView"
     permission="zope.Public"
     template="../templates/buglisting-embedded-advanced-search.pt"
     />
