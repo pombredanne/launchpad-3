@@ -13,6 +13,7 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
 def branch_to_target(branch):
@@ -41,6 +42,15 @@ class PackageBranchTarget(_BaseBranchTarget):
         return self.sourcepackage.path
 
     @property
+    def components(self):
+        """See `IBranchTarget`."""
+        return [
+            self.sourcepackage.distribution,
+            self.sourcepackage.distroseries,
+            self.sourcepackage,
+            ]
+
+    @property
     def context(self):
         """See `IBranchTarget`."""
         return self.sourcepackage
@@ -61,6 +71,11 @@ class PersonBranchTarget(_BaseBranchTarget):
         self.person = person
 
     @property
+    def components(self):
+        """See `IBranchTarget`."""
+        return [self.person]
+
+    @property
     def context(self):
         """See `IBranchTarget`."""
         return self.person
@@ -79,6 +94,11 @@ class ProductBranchTarget(_BaseBranchTarget):
         self.product = product
 
     @property
+    def components(self):
+        """See `IBranchTarget`."""
+        return [self.product]
+
+    @property
     def context(self):
         """See `IBranchTarget`."""
         return self.product
@@ -93,3 +113,8 @@ class ProductBranchTarget(_BaseBranchTarget):
         from canonical.launchpad.database.branchnamespace import (
             ProductNamespace)
         return ProductNamespace(owner, self.product)
+
+
+def get_canonical_url_data_for_target(branch_target):
+    """Return the `ICanonicalUrlData` for an `IBranchTarget`."""
+    return ICanonicalUrlData(branch_target.context)

@@ -6,7 +6,6 @@
 
   <!-- Archive -->
   <class class="canonical.launchpad.database.Archive">
-    <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.archive.IArchivePublic"/>
     <require
       permission="launchpad.View"

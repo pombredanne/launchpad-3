@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'LoginServiceStandaloneLoginView',
     'OpenIDMixin',
     ]
 
@@ -20,8 +21,6 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.publisher.interfaces import BadRequest
 from zope.session.interfaces import ISession, IClientIdManager
-from zope.security import management
-from zope.security.proxy import removeSecurityProxy
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.extensions import pape
@@ -50,7 +49,7 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadPrincipal, IPlacelessLoginSource, UnexpectedFormData)
+    IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
     logInPrincipal, logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured
@@ -103,28 +102,6 @@ class OpenIDMixin:
         # the account has no Person associated with.
         raise AttributeError(
             'Cannot use self.user here; use self.account instead')
-
-    @property
-    def account(self):
-        """The account of the logged in user or None if not authenticated."""
-        interaction = management.queryInteraction()
-        if interaction is None:
-            return None
-        principals = [
-            participation.principal
-            for participation in list(interaction.participations)
-            if participation.principal is not None
-            ]
-        if not principals:
-            return None
-        elif len(principals) > 1:
-            raise ValueError('Too many principals')
-        else:
-            principal = principals[0]
-            if ILaunchpadPrincipal.providedBy(principal):
-                return principal.account
-            else:
-                return None
 
     @property
     def user_identity_url(self):
@@ -210,14 +187,6 @@ class OpenIDMixin:
         now = time()
         self._sweep(now, session)
         session[key] = (now, query)
-
-    def trashRequestInSession(self, key):
-        """Remove the OpenIDRequest from the session using the given key."""
-        session = self.getSession()
-        try:
-            del session[key]
-        except KeyError:
-            pass
 
     @property
     def sreg_field_names(self):
@@ -425,12 +394,12 @@ class OpenIDMixin:
 class OpenIDView(OpenIDMixin, LaunchpadView):
     """An OpenID Provider endpoint for Launchpad.
 
-    This class implemnts an OpenID endpoint using the python-openid
+    This class implements an OpenID endpoint using the python-openid
     library.  In addition to the normal modes of operation, it also
     implements the OpenID 2.0 identifier select mode.
     """
 
-    default_template = ViewPageTemplateFile("../templates/openid-index.pt")
+    default_template = ViewPageTemplateFile("../templates/openid-default.pt")
     invalid_identity_template = ViewPageTemplateFile(
         "../templates/openid-invalid-identity.pt")
 
@@ -561,17 +530,6 @@ class LoginServiceBaseView(OpenIDMixin, LaunchpadFormView):
             raise UnexpectedFormData("No OpenID request.")
         self.restoreRequestFromSession('nonce' + self.nonce)
 
-    def trashRequest(self):
-        """Remove the OpenID request from the session."""
-        # XXX: jamesh 2007-06-22
-        # Removing the OpenID request from the session leads to an
-        # UnexpectedFormData exception if the user hits back and
-        # submits the form again.  Not deleting the request allows
-        # this behaviour (although a well designed RP will then
-        # complain about an unexpected OpenID response ...).
-
-        #self.trashRequestInSession('nonce' + self.nonce)
-
     @property
     def rpconfig(self):
         """Return a dictionary of information about the relying party.
@@ -607,12 +565,10 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         if self.account is None:
             return LoginServiceLoginView(
                 self.context, self.request, self.nonce)()
-        self.trashRequest()
         return self.renderOpenIDResponse(self.createPositiveResponse())
 
     @action("Not Now", name='deny')
     def deny_action(self, action, data):
-        self.trashRequest()
         return self.renderOpenIDResponse(self.createFailedResponse())
 
     @action("I'm Someone Else", name='logout')
@@ -627,25 +583,21 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
             self.context, self.request, self.nonce)()
 
 
-class LoginServiceLoginView(LoginServiceBaseView):
+class LoginServiceMixinLoginView:
 
     schema = ILoginServiceLoginForm
-    template = ViewPageTemplateFile("../templates/loginservice-login.pt")
-    custom_widget('action', LaunchpadRadioWidget)
-
     email_sent_template = ViewPageTemplateFile(
         "../templates/loginservice-email-sent.pt")
+    redirection_url = None
 
     @property
     def initial_values(self):
-        values = super(LoginServiceLoginView, self).initial_values
-        if self.account:
-            values['email'] = self.account.preferredemail.email
+        values = super(LoginServiceMixinLoginView, self).initial_values
         values['action'] = 'login'
         return values
 
     def setUpWidgets(self):
-        super(LoginServiceLoginView, self).setUpWidgets()
+        super(LoginServiceMixinLoginView, self).setUpWidgets()
         # Dissect the action radio button group into three buttons.
         soup = BeautifulSoup(self.widgets['action']())
         [login, createaccount, resetpassword] = soup.findAll('label')
@@ -716,7 +668,8 @@ class LoginServiceLoginView(LoginServiceBaseView):
                     "instructions on how to confirm that it belongs to you.",
                     mapping=dict(email=email)))
                 self.token = getUtility(ILoginTokenSet).new(
-                    person, email, email, LoginTokenType.VALIDATEEMAIL)
+                    person, email, email, LoginTokenType.VALIDATEEMAIL,
+                    redirection_url=self.redirection_url)
                 self.token.sendEmailValidationRequest(
                     self.request.getApplicationURL())
                 self.saveRequestInSession('token' + self.token.token)
@@ -732,16 +685,19 @@ class LoginServiceLoginView(LoginServiceBaseView):
             self.addError(_("Incorrect password for the provided "
                             "email address."))
 
+    def doLogin(self, email):
+        loginsource = getUtility(IPlacelessLoginSource)
+        principal = loginsource.getPrincipalByLogin(email)
+        logInPrincipal(self.request, principal, email)
+        # Update the attribute holding the cached user.
+        self._account = principal.account
+
     @action('Continue', name='continue')
     def continue_action(self, action, data):
         email = data['email']
         action = data['action']
-        self.trashRequest()
         if action == 'login':
-            loginsource = getUtility(IPlacelessLoginSource)
-            principal = loginsource.getPrincipalByLogin(email)
-            logInPrincipal(self.request, principal, email)
-            return self.renderOpenIDResponse(self.createPositiveResponse())
+            return self.doLogin(email)
         elif action == 'resetpassword':
             return self.process_password_recovery(email)
         elif action == 'createaccount':
@@ -753,7 +709,8 @@ class LoginServiceLoginView(LoginServiceBaseView):
         logintokenset = getUtility(ILoginTokenSet)
         self.token = logintokenset.new(
             requester=None, requesteremail=None, email=email,
-            tokentype=LoginTokenType.NEWACCOUNT)
+            tokentype=LoginTokenType.NEWPERSONLESSACCOUNT,
+            redirection_url=self.redirection_url)
         self.token.sendNewUserNeutralEmail()
         self.saveRequestInSession('token' + self.token.token)
         self.email_heading = 'Registration mail sent'
@@ -768,12 +725,53 @@ class LoginServiceLoginView(LoginServiceBaseView):
         person = None
         logintokenset = getUtility(ILoginTokenSet)
         self.token = logintokenset.new(
-            person, email, email, LoginTokenType.PASSWORDRECOVERY)
+            person, email, email, LoginTokenType.PASSWORDRECOVERY,
+            redirection_url=self.redirection_url)
         self.token.sendPasswordResetNeutralEmail()
         self.saveRequestInSession('token' + self.token.token)
         self.email_heading = 'Forgotten your password?'
         self.email_reason = 'with instructions on resetting your password.'
         return self.email_sent_template()
+
+
+class LoginServiceLoginView(LoginServiceMixinLoginView, LoginServiceBaseView):
+
+    template = ViewPageTemplateFile("../templates/loginservice-login.pt")
+    custom_widget('action', LaunchpadRadioWidget)
+
+    @property
+    def initial_values(self):
+        values = super(LoginServiceLoginView, self).initial_values
+        if self.account:
+            values['email'] = self.account.preferredemail.email
+        return values
+
+    def doLogin(self, email):
+        super(LoginServiceLoginView, self).doLogin(email)
+        return self.renderOpenIDResponse(self.createPositiveResponse())
+
+
+
+class LoginServiceStandaloneLoginView(LoginServiceMixinLoginView,
+                                      LaunchpadFormView):
+    """A stand alone login form for users to log into the SSO site without an
+    OpenID request.
+    """
+    custom_widget('action', LaunchpadRadioWidget)
+    template = ViewPageTemplateFile(
+        "../templates/loginservice-standalone-login.pt")
+
+    @property
+    def redirection_url(self):
+        return self.request.getApplicationURL()
+
+    def saveRequestInSession(self, key):
+        """Do nothing as we have no OpenID request."""
+        pass
+
+    def doLogin(self, email):
+        super(LoginServiceStandaloneLoginView, self).doLogin(email)
+        self.next_url = '/'
 
 
 class ProtocolErrorView(LaunchpadView):
