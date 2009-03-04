@@ -18,7 +18,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import And, Asc, Count, Desc, Join, Max, Or, Select
+from storm.expr import And, Count, Desc, Join, Max, Or, Select
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
@@ -49,15 +49,11 @@ from canonical.launchpad.interfaces.branch import (
     BadBranchSearchContext, BranchCreationForbidden,
     BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
-    BranchFormat, BranchLifecycleStatus, BranchListingSort,
-    BranchMergeControlStatus,
-    BranchPersonSearchRestriction,
-    BranchType, BranchTypeError,
-    CannotDeleteBranch,
-    ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchPersonSearchContext, IBranchSet,
-    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
-    RepositoryFormat)
+    BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
+    BranchPersonSearchRestriction, BranchType, BranchTypeError,
+    CannotDeleteBranch, ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch, IBranchPersonSearchContext, IBranchSet, MAXIMUM_MIRROR_FAILURES,
+    MIRROR_TIME_INCREMENT, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, NoSuchBranch,
     user_has_special_branch_access)
@@ -75,6 +71,7 @@ from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.interfaces.product import NoSuchProduct
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
@@ -156,6 +153,11 @@ class Branch(SQLBase):
         else:
             target = self.product
         return IBranchTarget(target)
+
+    @property
+    def namespace(self):
+        """See `IBranch`."""
+        return self.target.getNamespace(self.owner)
 
     @property
     def distribution(self):
@@ -1374,45 +1376,6 @@ class BranchSet:
 
         return clause
 
-    @staticmethod
-    def _listingSortToOrderBy(sort_by):
-        """Compute a value to pass as orderBy to Branch.select().
-
-        :param sort_by: an item from the BranchListingSort enumeration.
-        """
-        from canonical.launchpad.database.person import Owner
-        from canonical.launchpad.database.product import Product
-
-        DEFAULT_BRANCH_LISTING_SORT = [
-            BranchListingSort.PRODUCT,
-            BranchListingSort.LIFECYCLE,
-            BranchListingSort.REGISTRANT,
-            BranchListingSort.NAME,
-            ]
-
-        LISTING_SORT_TO_COLUMN = {
-            BranchListingSort.PRODUCT: (Asc, Product.name),
-            BranchListingSort.LIFECYCLE: (Desc, Branch.lifecycle_status),
-            BranchListingSort.NAME: (Asc, Branch.name),
-            BranchListingSort.REGISTRANT: (Asc, Owner.name),
-            BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: (
-                Desc, Branch.date_last_modified),
-            BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: (
-                Asc, Branch.date_last_modified),
-            BranchListingSort.NEWEST_FIRST: (Desc, Branch.date_created),
-            BranchListingSort.OLDEST_FIRST: (Asc, Branch.date_created),
-            }
-
-        order_by = map(
-            LISTING_SORT_TO_COLUMN.get, DEFAULT_BRANCH_LISTING_SORT)
-
-        if sort_by is not None:
-            direction, column = LISTING_SORT_TO_COLUMN[sort_by]
-            order_by = (
-                [(direction, column)] +
-                [sort for sort in order_by if sort[1] is not column])
-        return [direction(column) for direction, column in order_by]
-
     def _filter_by_context(self, context, branches):
         if context is None:
             return branches
@@ -1422,6 +1385,8 @@ class BranchSet:
             return branches.inProject(context)
         elif IPerson.providedBy(context):
             return branches.relatedTo(context)
+        elif ISourcePackage.providedBy(context):
+            return branches.inSourcePackage(context)
         elif IBranchPersonSearchContext.providedBy(context):
             restriction = context.restriction
             person = context.person
@@ -1435,17 +1400,18 @@ class BranchSet:
                 return branches.subscribedBy(person)
             else:
                 raise BadBranchSearchContext(context)
+        else:
+            raise BadBranchSearchContext(context)
 
     def getBranchesForContext(self, context=None, lifecycle_statuses=None,
-                              visible_by_user=None, sort_by=None):
+                              visible_by_user=None):
         """See `IBranchSet`."""
         all_branches = getUtility(IAllBranches)
         branches = self._filter_by_context(context, all_branches)
         if lifecycle_statuses:
             branches = branches.withLifecycleStatus(*lifecycle_statuses)
         branches = branches.visibleByUser(visible_by_user)
-        return branches.getBranches().order_by(
-            self._listingSortToOrderBy(sort_by))
+        return branches.getBranches()
 
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):

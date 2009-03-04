@@ -108,6 +108,14 @@ class LoginTokenType(DBEnumeratedType):
         Launchpad.
         """)
 
+    NEWPERSONLESSACCOUNT = DBItem(12, """
+        New Personless Account
+
+        A new personless account is being setup. They need to verify their
+        email address before we allow them to set a password and log in.  At
+        the end, this account will not have a Person associated with.
+        """)
+
 
 class ILoginToken(Interface):
     """The object that stores one time tokens used for validating email

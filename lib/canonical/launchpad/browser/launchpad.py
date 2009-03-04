@@ -52,6 +52,7 @@ from canonical.launchpad.interfaces.announcement import IAnnouncementSet
 from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
+from canonical.launchpad.interfaces.branch import IBranchSet
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
@@ -92,12 +93,13 @@ from canonical.launchpad.webapp import (
     canonical_url, custom_widget)
 from canonical.launchpad.webapp.interfaces import (
     IBreadcrumbBuilder, ILaunchBag, ILaunchpadRoot, INavigationMenu,
-    POSTToNonCanonicalURL)
+    NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from lazr.uri import URI
 from canonical.launchpad.webapp.url import urlparse, urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.xmlrpc.faults import NoBranchForSeries, NoSuchSeries
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -578,6 +580,26 @@ class LaunchpadRootNavigation(Navigation):
         """Redirect /feedback to help.launchpad.net/Feedback site."""
         return self.redirectSubTree(
             'https://help.launchpad.net/Feedback', status=301)
+
+    @stepto('+branch')
+    def redirect_branch(self):
+        """Redirect /+branch/<foo> to the branch named 'foo'.
+
+        'foo' can be the unique name of the branch, or any of the aliases for
+        the branch.
+        """
+        path = '/'.join(self.request.stepstogo)
+        try:
+            branch_data = getUtility(IBranchSet).getByLPPath(path)
+        except (NoBranchForSeries, NoSuchSeries):
+            raise NotFoundError
+        branch, trailing, series = branch_data
+        if branch is None:
+            raise NotFoundError
+        url = canonical_url(branch)
+        if trailing is not None:
+            url = urlappend(url, trailing)
+        return self.redirectSubTree(url)
 
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
