@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'BranchListingView',
     'PersonBranchesMenu',
-    'PersonBranchesView',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
     'PersonRegisteredBranchesView',
@@ -70,6 +69,14 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.enum import EnumeratedType, Item
 from canonical.widgets import LaunchpadDropdownWidget
 from lazr.delegates import delegates
+
+
+def get_plural_text(count, singular, plural):
+    """Return 'singular' if 'count' is 1, 'plural' otherwise."""
+    if count == 1:
+        return singular
+    else:
+        return plural
 
 
 class BranchListingItem(BranchBadges):
@@ -614,11 +621,12 @@ class PersonBranchCountMixin:
     """A mixin class for person branch listings."""
 
     @cachedproperty
-    def total_branch_count(self):
-        """Return the number of branches related to the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            self.context, visible_by_user=self.user)
-        return query.count()
+    def has_branches(self):
+        """Does this person have branches that the logged in user can see?"""
+        return bool(
+            self.owned_branch_count +
+            self.registered_branch_count +
+            self.subscribed_branch_count)
 
     @cachedproperty
     def registered_branch_count(self):
@@ -684,27 +692,32 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch',
+    links = ['registered', 'owned', 'subscribed', 'addbranch',
              'active_reviews', 'approved_merges', 'requested_reviews']
 
-    def all_related(self):
-        return Link(canonical_url(self.context, rootsite='code'),
-                    'Related branches')
-
     def owned(self):
-        return Link('+ownedbranches', 'owned')
+        return Link(
+            canonical_url(self.context, rootsite='code'),
+            get_plural_text(
+                self.owned_branch_count, 'owned branch', 'owned branches'))
 
     def registered(self):
-        return Link('+registeredbranches', 'registered')
+        return Link(
+            '+registeredbranches',
+            get_plural_text(
+                self.registered_branch_count,
+                'registered branch', 'registered branches'))
 
     def subscribed(self):
-        return Link('+subscribedbranches', 'subscribed')
+        return Link(
+            '+subscribedbranches',
+            get_plural_text(
+                self.subscribed_branch_count,
+                'subscribed branch', 'subscribed branches'))
 
     def active_reviews(self):
-        if self.active_review_count == 1:
-            text = 'active proposal'
-        else:
-            text = 'active proposals'
+        text = get_plural_text(
+            self.active_review_count, 'active proposal', 'active proposals')
         if self.user == self.context:
             summary = 'Proposals I have submitted'
         else:
@@ -712,10 +725,8 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
         return Link('+activereviews', text, summary=summary)
 
     def approved_merges(self):
-        if self.approved_merge_count == 1:
-            text = 'approved merge'
-        else:
-            text = 'approved merges'
+        text = get_plural_text(
+            self.approved_merge_count, 'approved merge', 'approved merges')
         return Link('+approvedmerges', text)
 
     def addbranch(self):
@@ -727,22 +738,14 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
         return Link('+addbranch', text, icon='add', enabled=enabled)
 
     def requested_reviews(self):
-        if self.requested_review_count == 1:
-            text = 'requested review'
-        else:
-            text = 'requested reviews'
+        text = get_plural_text(
+            self.requested_review_count,
+            'requested review', 'requested reviews')
         if self.user == self.context:
             summary = 'Proposals I am reviewing'
         else:
             summary = 'Proposals %s is reviewing' % self.context.displayname
         return Link('+requestedreviews', text, summary=summary)
-
-
-class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
-    """View for branch listing for a person."""
-
-    no_sort_by = (BranchListingSort.DEFAULT,)
-    heading_template = 'Bazaar branches related to %(displayname)s'
 
 
 class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
@@ -809,7 +812,7 @@ class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
         When we add support for reviews commented on, we'll want to add
         support for showing the summary even if there are no branches.
         """
-        return self.total_branch_count or self.requested_review_count
+        return self.has_branches or self.requested_review_count
 
 
 class ProductReviewCountMixin:
@@ -1081,36 +1084,26 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         """Is there a branch assigned as development focus?"""
         return self.development_focus_branch is not None
 
-    def _getPluralText(self, count, singular, plural):
-        if count == 1:
-            return singular
-        else:
-            return plural
-
     @property
     def branch_text(self):
-        return self._getPluralText(
-            self.branch_count, _('branch'), _('branches'))
+        return get_plural_text(self.branch_count, _('branch'), _('branches'))
 
     @property
     def person_text(self):
-        return self._getPluralText(
+        return get_plural_text(
             self.person_owner_count, _('person'), _('people'))
 
     @property
     def team_text(self):
-        return self._getPluralText(
-            self.team_owner_count, _('team'), _('teams'))
+        return get_plural_text(self.team_owner_count, _('team'), _('teams'))
 
     @property
     def commit_text(self):
-        return self._getPluralText(
-            self.commit_count, _('commit'), _('commits'))
+        return get_plural_text(self.commit_count, _('commit'), _('commits'))
 
     @property
     def committer_text(self):
-        return self._getPluralText(
-            self.committer_count, _('person'), _('people'))
+        return get_plural_text(self.committer_count, _('person'), _('people'))
 
 
 class ProductBranchesView(ProductBranchListingView):
