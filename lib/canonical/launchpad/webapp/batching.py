@@ -4,7 +4,7 @@ __metaclass__ = type
 
 from zope.component import adapts
 from zope.interface import implements
-from lazr.batchnavigator import batching
+import lazr.batchnavigator
 from zope.interface.common.sequence import IFiniteSequence
 from storm.zope.interfaces import IResultSet # and ISQLObjectResultSet
 
@@ -51,7 +51,7 @@ class LowerBatchNavigationView(UpperBatchNavigationView):
         return u""
 
 
-class BatchNavigator(batching.BatchNavigator):
+class BatchNavigator(lazr.batchnavigator.BatchNavigator):
 
     @property
     def default_batch_size(self):
