@@ -123,8 +123,7 @@ class AuthToken(Storm):
 class AuthTokenSet:
     implements(IAuthTokenSet)
 
-    def __init__(self):
-        self.title = 'Launchpad e-mail address confirmation'
+    title = 'Launchpad e-mail address confirmation'
 
     def get(self, id, default=None):
         """See IAuthTokenSet."""
@@ -153,12 +152,12 @@ class AuthTokenSet:
 
         # It's important to always use the MASTER_FLAVOR store here
         # because we don't want replication lag to cause a 404 error.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(AuthToken)
         return store.find(AuthToken, *conditions)
 
     def deleteByEmailAccountAndType(self, email, account, type):
         """See IAuthTokenSet."""
-        self.searchByEmailRequesterAndType(email, account, type).delete()
+        self.searchByEmailAccountAndType(email, account, type).remove()
 
     def new(self, requester, requesteremail, email, tokentype,
             redirection_url=None):

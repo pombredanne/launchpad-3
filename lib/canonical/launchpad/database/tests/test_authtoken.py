@@ -7,6 +7,7 @@ __metaclass__ = type
 import email
 import unittest
 
+from storm.exceptions import LostObjectError
 from storm.store import Store
 import transaction
 from zope.component import getUtility
@@ -23,25 +24,6 @@ from canonical.testing import DatabaseFunctionalLayer
 class AuthTokenTests(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def test_create(self):
-        account = self.factory.makeAccount(
-            u"Test Account", status=AccountStatus.ACTIVE)
-        # This could be any supported token type
-        token_type = LoginTokenType.VALIDATEEMAIL
-
-        token = getUtility(IAuthTokenSet).new(
-            account, u"requester@example.net", u"newemail@example.net",
-            token_type, u"http://redirection-url")
-
-        self.assertProvides(token, IAuthToken)
-        self.assertIsInstance(token.token, unicode)
-        self.assertEqual(token.tokentype, token_type)
-        self.assertEqual(token.requester_account, account)
-        self.assertEqual(token.requesteremail, u"requester@example.net")
-        self.assertEqual(token.email, u"newemail@example.net")
-        self.assertEqual(token.date_consumed, None)
-        self.assertEqual(token.redirection_url, u"http://redirection-url")
 
     def test_consume(self):
         account = self.factory.makeAccount(
@@ -114,6 +96,97 @@ class AuthTokenTests(TestCaseWithFactory):
 class AuthTokenSetTests(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_get(self):
+        # Test get() and __getitem__() methods of AuthTokenSet.
+        authtokenset = getUtility(IAuthTokenSet)
+        token = authtokenset.new(
+            None, u"requester@example.net", u"newemail@example.net",
+            LoginTokenType.NEWACCOUNT)
+        Store.of(token).flush()
+
+        self.assertEqual(authtokenset.get(token.id), token)
+        self.assertEqual(authtokenset[token.token], token)
+
+    def test_searchByEmailAccountAndType(self):
+        account = self.factory.makeAccount(
+            u"Test Account", status=AccountStatus.ACTIVE)
+        authtokenset = getUtility(IAuthTokenSet)
+        token1 = authtokenset.new(
+            account, u"requester@example.net", u"newemail@example.net",
+            LoginTokenType.VALIDATEEMAIL)
+        token1.consume()
+        token2 = authtokenset.new(
+            account, u"otheremail@example.net", u"newemail@example.net",
+            LoginTokenType.VALIDATEEMAIL)
+
+        result = authtokenset.searchByEmailAccountAndType(
+            u"newemail@example.net", account, LoginTokenType.VALIDATEEMAIL)
+        self.assertContentEqual(result, [token1, token2])
+
+        # The consumed argument lets us filter the returned tokens.
+        result = authtokenset.searchByEmailAccountAndType(
+            u"newemail@example.net", account, LoginTokenType.VALIDATEEMAIL,
+            consumed=False)
+        self.assertContentEqual(result, [token2])
+
+        result = authtokenset.searchByEmailAccountAndType(
+            u"newemail@example.net", account, LoginTokenType.VALIDATEEMAIL,
+            consumed=True)
+        self.assertContentEqual(result, [token1])
+
+        # No tokens found if email, account or token type don't match.
+        result = authtokenset.searchByEmailAccountAndType(
+            u"otheremail@example.net", account, LoginTokenType.VALIDATEEMAIL)
+        self.assertEqual(result.count(), 0)
+
+        account2 = self.factory.makeAccount(
+            u"Test Account 2", status=AccountStatus.ACTIVE)
+        result = authtokenset.searchByEmailAccountAndType(
+            u"newemail@example.net", account2, LoginTokenType.VALIDATEEMAIL)
+        self.assertEqual(result.count(), 0)
+
+        result = authtokenset.searchByEmailAccountAndType(
+            u"newemail@example.net", account, LoginTokenType.PASSWORDRECOVERY)
+        self.assertEqual(result.count(), 0)
+
+    def test_deleteByEmailAccountAndType(self):
+        account = self.factory.makeAccount(
+            u"Test Account", status=AccountStatus.ACTIVE)
+        authtokenset = getUtility(IAuthTokenSet)
+        token1 = authtokenset.new(
+            account, u"requester@example.net", u"newemail@example.net",
+            LoginTokenType.VALIDATEEMAIL)
+        token2 = authtokenset.new(
+            account, u"otheremail@example.net", u"newemail@example.net",
+            LoginTokenType.VALIDATEEMAIL)
+        store = Store.of(token1)
+
+        authtokenset.deleteByEmailAccountAndType(
+            u"newemail@example.net", account, LoginTokenType.VALIDATEEMAIL)
+
+        self.assertRaises(LostObjectError, store.reload, token1)
+        self.assertRaises(LostObjectError, store.reload, token2)
+
+    def test_new(self):
+        account = self.factory.makeAccount(
+            u"Test Account", status=AccountStatus.ACTIVE)
+        # This could be any supported token type
+        token_type = LoginTokenType.VALIDATEEMAIL
+
+        token = getUtility(IAuthTokenSet).new(
+            account, u"requester@example.net", u"newemail@example.net",
+            token_type, u"http://redirection-url")
+
+        self.assertProvides(token, IAuthToken)
+        self.assertIsInstance(token.token, unicode)
+        self.assertEqual(token.tokentype, token_type)
+        self.assertEqual(token.requester_account, account)
+        self.assertEqual(token.requesteremail, u"requester@example.net")
+        self.assertEqual(token.email, u"newemail@example.net")
+        self.assertEqual(token.date_consumed, None)
+        self.assertEqual(token.redirection_url, u"http://redirection-url")
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
