@@ -1798,45 +1798,6 @@ class PersonSpecFeedbackView(HasSpecificationsView):
         return self.context.specifications(filter=filter)
 
 
-class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
-    """All bugs reported by someone."""
-
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-
-    def search(self):
-        # Specify both owner and bug_reporter to try to prevent the same
-        # bug (but different tasks) being displayed.
-        return BugTaskSearchListingView.search(
-            self,
-            extra_params=dict(owner=self.context, bug_reporter=self.context))
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs reported by %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs Reported by %s: Advanced Search" % (
-            self.context.displayname)
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs reported by %s" % self.context.displayname
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+reportedbugs"
-
-    def shouldShowReporterWidget(self):
-        """Should the reporter widget be shown on the advanced search page?"""
-        return False
-
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
-        return False
-
-
 class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug subscriber."""
 
@@ -2178,6 +2139,45 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+commentedbugs"
+
+
+class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs reported by someone."""
+
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
+
+    def search(self):
+        # Specify both owner and bug_reporter to try to prevent the same
+        # bug (but different tasks) being displayed.
+        return BugTaskSearchListingView.search(
+            self,
+            extra_params=dict(owner=self.context, bug_reporter=self.context))
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs reported by %s" % self.context.displayname
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs Reported by %s: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs reported by %s" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
+        return canonical_url(self.context) + "/+reportedbugs"
+
+    def shouldShowReporterWidget(self):
+        """Should the reporter widget be shown on the advanced search page?"""
+        return False
+
+    def shouldShowTagsCombinatorWidget(self):
+        """Should the tags combinator widget show on the search page?"""
+        return False
 
 
 class PersonVouchersView(LaunchpadFormView):
