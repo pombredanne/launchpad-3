@@ -356,7 +356,7 @@ class TestCSCVSWorker(WorkerTest):
         self.source_details = self.factory.makeCodeImportSourceDetails()
 
     def makeImportWorker(self):
-        """Make an ImportWorker that only uses fake branches."""
+        """Make an ImportWorker that only uses fake foreign trees."""
         return CSCVSImportWorker(
             self.source_details, FakeForeignTreeStore(),
             None, logging.getLogger("silent"))
