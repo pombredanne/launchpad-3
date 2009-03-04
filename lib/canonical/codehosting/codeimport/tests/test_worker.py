@@ -12,6 +12,7 @@ import tempfile
 import time
 import unittest
 
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
 from bzrlib.errors import NoSuchFile
 from bzrlib.tests import TestCaseWithTransport
@@ -99,16 +100,24 @@ class TestBazaarBranchStore(WorkerTest):
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
 
-    def test_pushPullUpgradesFormat(self):
-        # After we've pushed up a branch to the store, we can then pull it
-        # from the store.
+    def test_pullUpgradesFormat(self):
+        # A branch should always be in the most up-to-date format before a pull
+        # is performed.
         store = self.makeBranchStore()
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
         tree = create_branch_with_one_revision(target_url,
             format=format_registry.get('knit')())
+        default_format = BzrDirFormat.get_default_format()
+
+        # The fetched branch is in the default format.
         new_tree = store.pull(self.arbitrary_branch_id, self.temp_dir)
         self.assertEqual(
-            BzrDirFormat.get_default_format(), new_tree.branch.bzrdir._format)
+            default_format, new_tree.branch.bzrdir._format)
+
+        # In addition. the remote branch has been upgraded as well.
+        new_branch = Branch.open(target_url)
+        self.assertEqual(
+            default_format, new_branch.bzrdir._format)
 
     def test_pushTwiceThenPull(self):
         # We can push up a branch to the store twice and then pull it from the
