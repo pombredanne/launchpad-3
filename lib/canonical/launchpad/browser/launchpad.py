@@ -52,6 +52,7 @@ from canonical.launchpad.interfaces.announcement import IAnnouncementSet
 from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
+from canonical.launchpad.interfaces.branch import IBranchSet
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
@@ -578,6 +579,12 @@ class LaunchpadRootNavigation(Navigation):
         """Redirect /feedback to help.launchpad.net/Feedback site."""
         return self.redirectSubTree(
             'https://help.launchpad.net/Feedback', status=301)
+
+    @stepto('+branch')
+    def redirect_branch(self):
+        path = '/'.join(self.request.stepstogo)
+        branch = getUtility(IBranchSet).getByUniqueName(path)
+        return self.redirectSubTree(canonical_url(branch))
 
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
