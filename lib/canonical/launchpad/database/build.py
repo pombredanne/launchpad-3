@@ -892,16 +892,8 @@ class BuildSet:
             """ % ','.join(
                 sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
-        prejoins = [
-            "sourcepackagerelease",
-            "sourcepackagerelease.sourcepackagename",
-            "buildlog",
-            "buildlog.content",
-            ]
-
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,
-                            prejoins=prejoins,
                             orderBy=orderBy)
 
     def retryDepWaiting(self, distroarchseries):
