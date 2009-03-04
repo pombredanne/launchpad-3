@@ -46,6 +46,7 @@ class BaseDatabasePolicy:
         self.request = request
 
     def setGlobalDefaultFlavor(self, flavor):
+        """Set the default flavor for all Stores."""
         for store in ALL_STORES:
             da.StoreSelector.setDefaultFlavor(store, flavor)
 

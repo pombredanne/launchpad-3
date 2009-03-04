@@ -551,4 +551,4 @@ def get_object_from_master_store(obj):
 
 def get_store_name(store):
     """Helper to retrieve the store name for a ZStorm Store."""
-    return getUtility(IZStorm)._name_index.get(store, None)
+    return getUtility(IZStorm).get_name(store)
