@@ -10,7 +10,7 @@ __all__ = [
     'IArchiveAuthTokenSet',
     ]
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, TextLine
 
 from canonical.launchpad import _
@@ -43,6 +43,10 @@ class IArchiveAuthTokenView(Interface):
         title=_("Token"), required=True, readonly=True,
         description=_("The access token to the archive for this person."))
 
+    archive_url = TextLine(
+        title=_("Archive url"), readonly=True,
+        description=_(
+            "External archive URL including basic auth for this person"))
 
 class IArchiveAuthTokenEdit(Interface):
     """Interface for Archive Auth Tokens requiring launchpad.Edit."""

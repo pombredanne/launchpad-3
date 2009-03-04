@@ -47,6 +47,12 @@ class ArchiveAuthToken(Storm):
         """See `IArchiveAuthTokenSet`."""
         self.date_deactivated = UTC_NOW
 
+    @property
+    def archive_url(self):
+        """Return a custom archive url for basic authentication."""
+        normal_url = self.archive.archive_url
+        return normal_url.replace('//', '//%s:%s@' %(
+            self.person.name, self.token))
 
 class ArchiveAuthTokenSet:
     """See `IArchiveAuthTokenSet`."""
