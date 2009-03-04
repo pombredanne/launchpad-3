@@ -13,6 +13,7 @@ __all__ = [
     'IBranchDiffJobSource',
     'IRevisionMailJob',
     'IRevisionMailJobSource',
+    'IRevisionsAddedJobSource',
     ]
 
 
@@ -90,3 +91,17 @@ class IRevisionMailJobSource(Interface):
 
     def iterReady():
         """Iterate through ready IRevisionMailJobs."""
+
+
+class IRevisionsAddedJob(Interface):
+    """A Job to send emails about revisions added to a branch."""
+
+    def run():
+        """Send the mails as specified by this job."""
+
+
+class IRevisionsAddedJobSource(Interface):
+    """A utility to create and retrieve RevisionMailJobs."""
+
+    def create(db_branch, revid_seq_pairs):
+        """Create and return a new object that implements IRevisionMailJob."""

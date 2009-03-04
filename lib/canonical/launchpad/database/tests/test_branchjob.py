@@ -250,7 +250,9 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual('rev2', job.last_revision_id)
         self.assertEqual(branch, job.branch)
 
-    def updateDBRevisions(self, branch, bzr_branch, revision_ids):
+    def updateDBRevisions(self, branch, bzr_branch, revision_ids=None):
+        if revision_ids is None:
+            revision_ids = bzr_branch.revision_history()
         for bzr_revision in bzr_branch.repository.get_revisions(revision_ids):
             existing = branch.getBranchRevision(
                 revision_id=bzr_revision.revision_id)
@@ -326,7 +328,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.useBzrBranches()
         branch, tree = self.makeBranchWithCommit()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev1', '')
-        message = job.get_revision_message('rev1', 1)
+        message = job.getRevisionMessage('rev1', 1)
         self.assertEqual(
         '------------------------------------------------------------\n'
         'revno: 1\n'
@@ -335,6 +337,102 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
         'message:\n'
         '  rev1\n', message)
+
+    def commitRevision(self, message=None, committer=None,
+                       extra_parents=None, rev_id=None,
+                       timestamp=None, timezone=None, revprops=None):
+        if message is None:
+            message = self.LOG
+        if committer is None:
+            committer = self.factory.getUniqueString()
+        if extra_parents is not None:
+            self.bzr_tree.add_pending_merge(*extra_parents)
+        self.bzr_tree.commit(
+            message, committer=committer, rev_id=rev_id,
+            timestamp=timestamp, timezone=timezone, allow_pointless=True,
+            revprops=revprops)
+
+    def test_email_format(self):
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree()
+        first_revision = 'rev-1'
+        tree.bzrdir.root_transport.put_bytes('hello.txt', 'Hello World\n')
+        tree.add('hello.txt')
+        tree.commit(
+            rev_id=first_revision, message="Log message",
+            committer="Joe Bloggs <joe@example.com>", timestamp=1000000000.0,
+            timezone=0)
+        tree.bzrdir.root_transport.put_bytes(
+            'hello.txt', 'Hello World\n\nFoo Bar\n')
+        second_revision = 'rev-2'
+        tree.commit(
+            rev_id=second_revision, message="Extended contents",
+            committer="Joe Bloggs <joe@example.com>", timestamp=1000100000.0,
+            timezone=0)
+        transaction.commit()
+        self.layer.switchDbUser('branchscanner')
+        self.updateDBRevisions(db_branch, tree.branch)
+        expected = (
+            u"-"*60 + '\n'
+            "revno: 1" '\n'
+            "committer: Joe Bloggs <joe@example.com>" '\n'
+            "branch nick: %s" '\n'
+            "timestamp: Sun 2001-09-09 01:46:40 +0000" '\n'
+            "message:" '\n'
+            "  Log message" '\n'
+            "added:" '\n'
+            "  hello.txt" '\n' % tree.branch.nick)
+        job = RevisionsAddedJob.create(db_branch, '', '', '')
+        self.assertEqual(
+            job.getRevisionMessage(first_revision, 1), expected)
+
+        expected_diff = (
+            "=== modified file 'hello.txt'" '\n'
+            "--- hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
+            "+++ hello.txt" '\t' "2001-09-10 05:33:20 +0000" '\n'
+            "@@ -1,1 +1,3 @@" '\n'
+            " Hello World" '\n'
+            "+" '\n'
+            "+Foo Bar" '\n'
+            '\n')
+        expected_message = (
+            u"-"*60 + '\n'
+            "revno: 2" '\n'
+            "committer: Joe Bloggs <joe@example.com>" '\n'
+            "branch nick: %s" '\n'
+            "timestamp: Mon 2001-09-10 05:33:20 +0000" '\n'
+            "message:" '\n'
+            "  Extended contents" '\n'
+            "modified:" '\n'
+            "  hello.txt" '\n' % tree.branch.nick)
+        tree.branch.lock_read()
+        tree.branch.unlock()
+        message = job.getRevisionMessage(second_revision, 2)
+        self.assertEqual(message, expected_message)
+
+    def test_message_encoding(self):
+        """Test handling of non-ASCII commit messages."""
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree()
+        rev_id = 'rev-1'
+        tree.commit(
+            rev_id=rev_id, message=u"Non ASCII: \xe9",
+            committer=u"Non ASCII: \xed", timestamp=1000000000.0, timezone=0)
+        transaction.commit()
+        self.layer.switchDbUser('branchscanner')
+        self.updateDBRevisions(db_branch, tree.branch)
+        job = RevisionsAddedJob.create(db_branch, '', '', '')
+        message = job.getRevisionMessage(rev_id, 1)
+        # The revision message must be a unicode object.
+        expected = (
+            u'-' * 60 + '\n'
+            u"revno: 1" '\n'
+            u"committer: Non ASCII: \xed" '\n'
+            u"branch nick: %s" '\n'
+            u"timestamp: Sun 2001-09-09 01:46:40 +0000" '\n'
+            u"message:" '\n'
+            u"  Non ASCII: \xe9" '\n' % tree.branch.nick)
+        self.assertEqual(message, expected)
 
     def test_getMailerForRevision(self):
         self.useBzrBranches()
@@ -346,6 +444,17 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             branch.registrant.preferredemail.email, branch.registrant).subject
         self.assertEqual(
             '[Branch ~jrandom/foo/bar] Rev 1: rev1', subject)
+
+    def test_only_nodiff_subscribers_means_no_diff_generated(self):
+        self.layer.switchDbUser('launchpad')
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        subscriptions = branch.getSubscriptionsByLevel(
+            [BranchSubscriptionNotificationLevel.FULL])
+        for s in subscriptions:
+            s.max_diff_lines = BranchSubscriptionDiffSize.NODIFF
+        job = RevisionsAddedJob.create(branch, '', '', '')
+        self.assertFalse(job.generateDiffs())
 
 
 def test_suite():

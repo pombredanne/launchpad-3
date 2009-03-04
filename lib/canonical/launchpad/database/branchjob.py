@@ -5,7 +5,7 @@ __all__ = [
     'RevisionMailJob',
 ]
 
-from cStringIO import StringIO
+from StringIO import StringIO
 
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
@@ -21,8 +21,11 @@ import transaction
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.codehosting import iter_list_chunks
 from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.database.job import Job
+from canonical.launchpad.interfaces import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from canonical.launchpad.interfaces.branchjob import (
     IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IRevisionMailJob,
     IRevisionMailJobSource,)
@@ -283,26 +286,27 @@ class RevisionsAddedJob(BranchJobDerived):
                     continue
                 yield revision, branch_revision.sequence
 
+    def generateDiffs(self):
+        for subscription in self.branch.subscriptions:
+            if (subscription.max_diff_lines !=
+                BranchSubscriptionDiffSize.NODIFF):
+                return True
+        else:
+            return False
+
     def run(self):
         diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
                        BranchSubscriptionNotificationLevel.FULL)
-        subscriptions = self.db_branch.getSubscriptionsByLevel(diff_levels)
-        if len(subscriptions) == 0:
+        subscriptions = self.branch.getSubscriptionsByLevel(diff_levels)
+        if not subscriptions:
             return
-        for subscription in subscriptions:
-            if (subscription.max_diff_lines !=
-                BranchSubscriptionDiffSize.NODIFF):
-                generate_diffs = True
-                break
-        else:
-            generate_diffs = False
 
         self.bzr_branch.lock_read()
         try:
             for revision, revno in self.iterAddedMainline():
-                assert info.revno is not None
+                assert revno is not None
                 mailer = self.getMailerForRevision(
-                    revision, revno, generate_diffs)
+                    revision, revno, self.generateDiffs())
                 mailer.sendAll()
         finally:
             self.bzr_branch.unlock()
@@ -314,7 +318,7 @@ class RevisionsAddedJob(BranchJobDerived):
         :param info: A RevisionInfo for the revision.
         :param generate_diffs: If true, generate a diff for the revision.
         """
-        message = self.get_revision_message(revision.revision_id, revno)
+        message = self.getRevisionMessage(revision.revision_id, revno)
         # Use the first (non blank) line of the commit message
         # as part of the subject, limiting it to 100 characters
         # if it is longer.
@@ -345,7 +349,7 @@ class RevisionsAddedJob(BranchJobDerived):
             self.branch, revno, self.from_address, message, diff_text,
             subject)
 
-    def get_revision_message(self, revision_id, revno):
+    def getRevisionMessage(self, revision_id, revno):
         """Return the log message for this RevisionInfo
 
         :return: The log message entered for this revision.
@@ -359,12 +363,3 @@ class RevisionsAddedJob(BranchJobDerived):
                  end_revision=info,
                  verbose=True)
         return outf.getvalue()
-
-
-def iter_list_chunks(a_list, size):
-    """Iterate over `a_list` in chunks of size `size`.
-
-    I'm amazed this isn't in itertools (mwhudson).
-    """
-    for i in range(0, len(a_list), size):
-        yield a_list[i:i+size]

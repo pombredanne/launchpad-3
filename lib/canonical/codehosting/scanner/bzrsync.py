@@ -22,6 +22,7 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 from bzrlib import urlutils
 
+from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -30,7 +31,8 @@ from canonical.launchpad.interfaces import (
     NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet)
-from canonical.launchpad.interfaces.branchjob import IRevisionMailJobSource
+from canonical.launchpad.interfaces.branchjob import (
+    IRevisionMailJobSource, IRevisionsAddedJobSource)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
@@ -664,9 +666,12 @@ class BzrSync:
         mainline_revids = [
             revid for (revid, sequence)
             in branchrevisions_to_insert.iteritems() if sequence is not None]
-
-        RevisionsAddedJob.create(db_branch, revid_seq_pairs)
-
+        if self.db_branch.last_scanned_id is not None:
+            job = getUtility(IRevisionsAddedJobSource).create(
+                self.db_branch, self.db_branch.last_scanned_id,
+                bzr_branch.last_revision(),
+                config.canonical.noreply_from_address)
+            job.run()
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
