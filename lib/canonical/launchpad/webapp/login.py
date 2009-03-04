@@ -232,9 +232,7 @@ class LoginOrRegister:
         principal = loginsource.getPrincipalByLogin(email)
         if principal is None or not principal.validate(password):
             self.login_error = "The email address and password do not match."
-            return
-
-        if principal.person is None:
+        elif principal.person is None:
             logInPrincipalAndMaybeCreatePerson(self.request, principal, email)
             self.redirectMinusLogin()
         elif principal.person.account_status == AccountStatus.DEACTIVATED:
@@ -249,7 +247,6 @@ class LoginOrRegister:
                 'Contact a <a href="%s">Launchpad admin</a> '
                 'about this issue.' % email_link)
         else:
-            assert principal.validate(password)
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
                 self.login_error = _(
