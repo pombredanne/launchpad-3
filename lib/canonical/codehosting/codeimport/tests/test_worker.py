@@ -105,8 +105,8 @@ class TestBazaarBranchStore(WorkerTest):
         # is performed.
         store = self.makeBranchStore()
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
-        tree = create_branch_with_one_revision(target_url,
-            format=format_registry.get('knit')())
+        knit_format = format_registry.get('knit')()
+        tree = create_branch_with_one_revision(target_url, format=knit_format)
         default_format = BzrDirFormat.get_default_format()
 
         # The fetched branch is in the default format.
