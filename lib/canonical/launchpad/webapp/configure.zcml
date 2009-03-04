@@ -526,6 +526,7 @@
     <adapter
         provides="canonical.launchpad.interfaces.IMasterObject"
         for="canonical.launchpad.interfaces.IDBObject"
+        trusted="yes"
         factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
         />
     <class class="storm.store.Store">
