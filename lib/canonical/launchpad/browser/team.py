@@ -912,7 +912,8 @@ class TeamMapView(LaunchpadView):
     def initialize(self):
         # Tell our main-template to include Google's gmap2 javascript so that
         # we can render the map.
-        self.request.needs_gmap2 = True
+        if len(self.mapped_participants) > 0:
+            self.request.needs_gmap2 = True
 
     @cachedproperty
     def mapped_participants(self):

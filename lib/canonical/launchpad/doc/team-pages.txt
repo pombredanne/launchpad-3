@@ -22,7 +22,6 @@ as well as the up to five latest members who proposed themselves.
     >>> for member in team_home.recently_approved_members:
     ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
     ...     print "%s: %s" % (member.name, membership.status.title)
-    ...            
     name20: Approved
     spiv: Approved
     limi: Approved
@@ -116,25 +115,37 @@ members of that team.  That page also lists the local times of members.
     >>> context = factory.makeTeam(salgado)
     >>> len(context.mapped_participants)
     0
-    >>> view = create_view(context, '+map')
+    >>> view = create_initialized_view(context, '+map')
     >>> view.times
     []
+
+There are no mapped member yet, so needs_gmap2 is False, so the map will
+not be rendered.
+
+    >>> view.request.needs_gmap2
+    False
+
+Once a member is mapped, needs_gmap2 is True and the map will be rendered.
+The number of times is incremented for each timezone added.
 
     >>> london_member = factory.makePerson(
     ...     latitude=51.49, longitude=-0.13, time_zone='Europe/London')
     >>> context.addMember(london_member, sabdfl)
     >>> len(context.mapped_participants)
     1
-    >>> view = create_view(context, '+map')
+    >>> view = create_initialized_view(context, '+map')
     >>> len(view.times)
     1
+
+    >>> view.request.needs_gmap2
+    True
 
     >>> brazil_member = factory.makePerson(
     ...     latitude=-23.60, longitude=-46.64, time_zone='America/Sao_Paulo')
     >>> context.addMember(brazil_member, sabdfl)
     >>> len(context.mapped_participants)
     2
-    >>> view = create_view(context, '+map')
+    >>> view = create_initialized_view(context, '+map')
     >>> len(view.times)
     2
 
