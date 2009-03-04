@@ -24,11 +24,17 @@
 <div metal:fill-slot="main" class="pillar"
   tal:define="overview_menu context/menu:overview">
 
-  <div class="actions" style="float:right;">
-    <tal:edit
-      define="link overview_menu/edit"
-      condition="link/enabled"
-      replace="structure link/render" />
+  <div class="actions" style="float:right;"
+    tal:define="link overview_menu/edit"
+    tal:condition="link/enabled">
+    <a
+      tal:attributes="href link/url;
+                      title link/summary"
+      tal:content="link/escapedtext">action</a>&nbsp;<a
+      tal:attributes="href link/url;
+                      title link/summary"><img
+      tal:attributes="src string:/@@/${link/icon};
+                      alt link/summary" /></a>
   </div>
 
   <tal:icon replace="structure context/image:mugshot" />
