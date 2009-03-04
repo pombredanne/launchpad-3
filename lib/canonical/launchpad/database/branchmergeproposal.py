@@ -58,6 +58,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, UserNotBranchReviewer, WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessageJob
@@ -126,7 +127,7 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
 class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
 
-    implements(IBranchMergeProposal, IBranchNavigationMenu)
+    implements(IBranchMergeProposal, IBranchNavigationMenu, IHasBranchTarget)
 
     _table = 'BranchMergeProposal'
     _defaultOrder = ['-date_created', 'id']
@@ -193,6 +194,11 @@ class BranchMergeProposal(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
+
+    @property
+    def target(self):
+        """See `IHasBranchTarget`."""
+        return self.source_branch.target
 
     @property
     def root_comment(self):
