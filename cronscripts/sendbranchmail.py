@@ -15,7 +15,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.codehosting.vfs import get_scanner_server
 from canonical.codehosting.jobs import JobRunner
-from canonical.launchpad.interfaces.branchjob import IRevisionMailJobSource
+from canonical.launchpad.interfaces.branchjob import (
+    IRevisionMailJobSource, IRevisionsAddedJobSource)
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
@@ -25,7 +26,9 @@ class RunRevisionMailJobs(LaunchpadCronScript):
 
     def main(self):
         globalErrorUtility.configure('sendbranchmail')
-        runner = JobRunner.fromReady(getUtility(IRevisionMailJobSource))
+        jobs = list(getUtility(IRevisionMailJobSource).iterReady())
+        jobs.extend(getUtility(IRevisionsAddedJobSource).iterReady())
+        runner = JobRunner(jobs)
         server = get_scanner_server()
         server.setUp()
         try:

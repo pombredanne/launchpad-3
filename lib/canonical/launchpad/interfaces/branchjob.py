@@ -103,5 +103,8 @@ class IRevisionsAddedJob(Interface):
 class IRevisionsAddedJobSource(Interface):
     """A utility to create and retrieve RevisionMailJobs."""
 
-    def create(db_branch, revid_seq_pairs):
+    def create(branch, last_scanned_id, last_revision_id, from_address):
         """Create and return a new object that implements IRevisionMailJob."""
+
+    def iterReady():
+        """Iterate through ready IRevisionsAddedJobSource."""

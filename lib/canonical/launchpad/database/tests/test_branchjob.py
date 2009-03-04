@@ -249,6 +249,13 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual('rev1', job.last_scanned_id)
         self.assertEqual('rev2', job.last_revision_id)
         self.assertEqual(branch, job.branch)
+        self.assertEqual(
+            BranchJobType.REVISIONS_ADDED_MAIL, job.context.job_type)
+
+    def test_iterReady(self):
+        branch = self.factory.makeBranch()
+        job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
+        self.assertEqual([job], list(RevisionsAddedJob.iterReady()))
 
     def updateDBRevisions(self, branch, bzr_branch, revision_ids=None):
         if revision_ids is None:

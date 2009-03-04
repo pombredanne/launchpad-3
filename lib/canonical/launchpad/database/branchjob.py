@@ -103,6 +103,17 @@ class BranchJobDerived(object):
     def __init__(self, branch_job):
         self.context = branch_job
 
+    @classmethod
+    def iterReady(klass):
+        """See `IRevisionMailJobSource`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        jobs = store.find(
+            (BranchJob),
+            And(BranchJob.job_type == klass.class_job_type,
+                BranchJob.job == Job.id,
+                Job.id.is_in(Job.ready_jobs)))
+        return (klass(job) for job in jobs)
+
 
 class BranchDiffJob(BranchJobDerived):
     """A Job that calculates the a diff related to a Branch."""
@@ -110,7 +121,6 @@ class BranchDiffJob(BranchJobDerived):
     implements(IBranchDiffJob)
 
     classProvides(IBranchDiffJobSource)
-
     @classmethod
     def create(klass, branch, from_revision_spec, to_revision_spec):
         """See `IBranchDiffJobSource`."""
@@ -156,6 +166,8 @@ class RevisionMailJob(BranchDiffJob):
 
     classProvides(IRevisionMailJobSource)
 
+    class_job_type = BranchJobType.REVISION_MAIL
+
     def __eq__(self, other):
         return (self.context == other.context)
 
@@ -183,17 +195,6 @@ class RevisionMailJob(BranchDiffJob):
                         to_revision_spec))
         branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
         return klass(branch_job)
-
-    @staticmethod
-    def iterReady():
-        """See `IRevisionMailJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.find(
-            (BranchJob),
-            And(BranchJob.job_type == BranchJobType.REVISION_MAIL,
-                BranchJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs)))
-        return (RevisionMailJob(job) for job in jobs)
 
     @property
     def revno(self):
@@ -236,13 +237,16 @@ class RevisionMailJob(BranchDiffJob):
 
 
 class RevisionsAddedJob(BranchJobDerived):
+    """A job for sending emails about added revisions."""
+
+    class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
 
     @classmethod
     def create(klass, branch, last_scanned_id, last_revision_id, from_address):
         metadata = {'last_scanned_id': last_scanned_id,
                     'last_revision_id': last_revision_id,
                     'from_address': from_address}
-        branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
+        branch_job = BranchJob(branch, klass.class_job_type, metadata)
         return RevisionsAddedJob(branch_job)
 
     def __init__(self, context):
@@ -287,6 +291,7 @@ class RevisionsAddedJob(BranchJobDerived):
                 yield revision, branch_revision.sequence
 
     def generateDiffs(self):
+        """Determine whether to generate diffs."""
         for subscription in self.branch.subscriptions:
             if (subscription.max_diff_lines !=
                 BranchSubscriptionDiffSize.NODIFF):
@@ -295,6 +300,7 @@ class RevisionsAddedJob(BranchJobDerived):
             return False
 
     def run(self):
+        """Send all the emails about all the added revisions."""
         diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
                        BranchSubscriptionNotificationLevel.FULL)
         subscriptions = self.branch.getSubscriptionsByLevel(diff_levels)

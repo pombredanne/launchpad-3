@@ -18,6 +18,7 @@
   <class class="canonical.launchpad.database.branchjob.RevisionsAddedJob">
     <allow interface="canonical.launchpad.interfaces.branchjob.IRevisionsAddedJob"
     />
+    <allow interface="canonical.launchpad.interfaces.branchjob.IBranchJob" />
   </class>
   <securedutility
       component="canonical.launchpad.database.branchjob.BranchDiffJob"
