@@ -31,6 +31,7 @@ from storm.locals import Int, Reference, Unicode
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
+from canonical.codehosting.vfs import get_multi_server
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -1020,7 +1021,12 @@ class CreateMergeProposalJob(object):
         from canonical.launchpad.mail.incoming import authenticateEmail
         message = self.getMessage()
         authenticateEmail(message)
-        return CodeHandler().processMergeProposal(message)
+        server = get_multi_server(write_hosted=True)
+        server.setUp()
+        try:
+            return CodeHandler().processMergeProposal(message)
+        finally:
+            server.tearDown()
 
 
 class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
