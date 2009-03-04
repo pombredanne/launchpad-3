@@ -12,7 +12,7 @@ import tempfile
 import time
 import unittest
 
-from bzrlib.bzrdir import BzrDir
+from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.errors import NoSuchFile
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
@@ -98,6 +98,17 @@ class TestBazaarBranchStore(WorkerTest):
         new_tree = store.pull(self.arbitrary_branch_id, self.temp_dir)
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
+
+    def test_pushPullUpgradesFormat(self):
+        # After we've pushed up a branch to the store, we can then pull it
+        # from the store.
+        store = self.makeBranchStore()
+        tree = create_branch_with_one_revision('original',
+            format=format_registry.get('knit')())
+        store.push(self.arbitrary_branch_id, tree)
+        new_tree = store.pull(self.arbitrary_branch_id, self.temp_dir)
+        self.assertEqual(
+            format_registry.get('default')(), tree.branch.bzrdir._format)
 
     def test_pushTwiceThenPull(self):
         # We can push up a branch to the store twice and then pull it from the
