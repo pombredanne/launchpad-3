@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'BranchListingView',
     'PersonBranchesMenu',
-    'PersonBranchesView',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
     'PersonRegisteredBranchesView',
@@ -737,13 +736,6 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
         else:
             summary = 'Proposals %s is reviewing' % self.context.displayname
         return Link('+requestedreviews', text, summary=summary)
-
-
-class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
-    """View for branch listing for a person."""
-
-    no_sort_by = (BranchListingSort.DEFAULT,)
-    heading_template = 'Bazaar branches related to %(displayname)s'
 
 
 class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
