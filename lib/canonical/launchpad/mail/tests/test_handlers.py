@@ -43,7 +43,9 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer,
+    ZopelessAppServerLayer)
 
 
 class TestGetCodeEmailCommands(TestCase):
@@ -112,7 +114,7 @@ class TestGetCodeEmailCommands(TestCase):
 class TestCodeHandler(TestCaseWithFactory):
     """Test the code email hander."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessAppServerLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
@@ -605,9 +607,9 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(notification['to'],
             message['from'])
 
-    def disabled_test_processMergeDirectiveWithBundle(self):
+    def test_processMergeDirectiveWithBundle(self):
         """When a bundle is provided, it can generate a new branch."""
-        self.useBzrBranches()
+        self.useBzrBranches(real_server=True)
         branch, tree = self.create_branch_and_tree()
         tree.branch.set_public_branch(branch.bzr_identity)
         tree.commit('rev1')
@@ -632,14 +634,12 @@ class TestCodeHandler(TestCaseWithFactory):
     def mirror(self, db_branch, bzr_branch):
         # Ensure the directories containing the mirror branch exist.
         transport = get_transport(db_branch.warehouse_url)
-        transport.clone('../..').ensure_base()
-        transport.clone('..').ensure_base()
         lp_mirror = BzrDir.create_branch_convenience(db_branch.warehouse_url)
         lp_mirror.pull(bzr_branch)
 
-    def disabled_test_processMergeDirectiveWithBundleExistingBranch(self):
+    def test_processMergeDirectiveWithBundleExistingBranch(self):
         """A bundle can update an existing branch."""
-        self.useBzrBranches()
+        self.useBzrBranches(real_server=True)
         branch, tree = self.create_branch_and_tree('target')
         tree.branch.set_public_branch(branch.bzr_identity)
         tree.commit('rev1')
