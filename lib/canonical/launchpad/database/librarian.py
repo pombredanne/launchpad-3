@@ -2,7 +2,12 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
+__all__ = [
+    'LibraryFileAlias',
+    'LibraryFileAliasSet',
+    'LibraryFileContent',
+    'LibraryFileDownloadCount',
+    'ParsedLibrarianApacheLog']
 
 from datetime import datetime, timedelta
 import pytz
@@ -10,16 +15,20 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
+from storm.locals import Date, Int, RawStr, Reference, Storm, Unicode
+
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet,
-    IMasterStore)
+    ILibraryFileDownloadCount, IMasterStore, IParsedLibrarianApacheLog)
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient)
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class LibraryFileContent(SQLBase):
@@ -187,3 +196,33 @@ class LibraryFileAliasSet(object):
             AND LibraryFileContent.sha1 = '%s'
             """ % sha1, clauseTables=['LibraryFileContent'])
 
+
+class LibraryFileDownloadCount(Storm):
+    """See `ILibraryFileDownloadCount`"""
+
+    implements(ILibraryFileDownloadCount)
+    __storm_table__ = 'LibraryFileDownloadCount'
+
+    id = Int(primary=True)
+    libraryfilealias_id = Int(name='libraryfilealias', allow_none=False)
+    libraryfilealias = Reference(libraryfilealias_id, 'LibraryFileAlias.id')
+    day = Date(allow_none=False, tzinfo=pytz.UTC)
+    count = Int(allow_none=False)
+
+
+class ParsedLibrarianApacheLog(Storm):
+    """See `IParsedLibrarianApacheLog`"""
+
+    implements(IParsedLibrarianApacheLog)
+    __storm_table__ = 'ParsedLibrarianApacheLog'
+
+    id = Int(primary=True)
+    file_name = RawStr(allow_none=False)
+    first_line = Unicode(allow_none=False)
+    bytes_read = Int(allow_none=False)
+
+    def __init__(self, file_name, first_line, bytes_read):
+        self.file_name = file_name
+        self.first_line = unicode(first_line)
+        self.bytes_read = bytes_read
+        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR).add(self)
