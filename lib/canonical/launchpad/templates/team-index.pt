@@ -75,13 +75,15 @@
       </p>
       <tal:logged-in condition="request/lp:person">
         <tal:is-owner condition="view/userIsOwner">
-          <p tal:condition="view/userIsActiveMember">
+          <span tal:condition="context/teamowner/is_team">
+            You are a member of the team which owns this team.
+          </span>
+          <span tal:condition="not: context/teamowner/is_team">
             You are the owner of this team.
-          </p>
-          <p tal:condition="not: view/userIsActiveMember">
-            You are the owner of this team,
-            but not currently an active member.
-          </p>
+          </span>
+          <span tal:condition="not: view/userIsActiveMember">
+            You are not currently an active member.
+          </span>
         </tal:is-owner>
         <tal:not-owner condition="not: view/userIsOwner">
           <p tal:condition="view/userIsActiveMember">
