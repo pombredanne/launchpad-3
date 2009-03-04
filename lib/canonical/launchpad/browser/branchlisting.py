@@ -620,14 +620,6 @@ class PersonBranchCountMixin:
     """A mixin class for person branch listings."""
 
     @cachedproperty
-    def total_branch_count(self):
-        # XXX: Axe this?
-        """Return the number of branches related to the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            self.context, visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
     def registered_branch_count(self):
         """Return the number of branches registered by the person."""
         query = getUtility(IBranchSet).getBranchesForContext(
@@ -818,7 +810,11 @@ class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
         When we add support for reviews commented on, we'll want to add
         support for showing the summary even if there are no branches.
         """
-        return self.total_branch_count or self.requested_review_count
+        total_branch_count = (
+            self.owned_branch_count +
+            self.registered_branch_count +
+            self.subscribed_branch_count)
+        return total_branch_count or self.requested_review_count
 
 
 class ProductReviewCountMixin:
