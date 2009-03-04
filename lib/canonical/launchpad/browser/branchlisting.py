@@ -70,6 +70,13 @@ from canonical.widgets import LaunchpadDropdownWidget
 from lazr.delegates import delegates
 
 
+def get_plural_text(count, singular, plural):
+    if count == 1:
+        return singular
+    else:
+        return plural
+
+
 class BranchListingItem(BranchBadges):
     """A decorated branch.
 
@@ -1079,36 +1086,26 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         """Is there a branch assigned as development focus?"""
         return self.development_focus_branch is not None
 
-    def _getPluralText(self, count, singular, plural):
-        if count == 1:
-            return singular
-        else:
-            return plural
-
     @property
     def branch_text(self):
-        return self._getPluralText(
-            self.branch_count, _('branch'), _('branches'))
+        return get_plural_text(self.branch_count, _('branch'), _('branches'))
 
     @property
     def person_text(self):
-        return self._getPluralText(
+        return get_plural_text(
             self.person_owner_count, _('person'), _('people'))
 
     @property
     def team_text(self):
-        return self._getPluralText(
-            self.team_owner_count, _('team'), _('teams'))
+        return get_plural_text(self.team_owner_count, _('team'), _('teams'))
 
     @property
     def commit_text(self):
-        return self._getPluralText(
-            self.commit_count, _('commit'), _('commits'))
+        return get_plural_text(self.commit_count, _('commit'), _('commits'))
 
     @property
     def committer_text(self):
-        return self._getPluralText(
-            self.committer_count, _('person'), _('people'))
+        return get_plural_text(self.committer_count, _('person'), _('people'))
 
 
 class ProductBranchesView(ProductBranchListingView):
