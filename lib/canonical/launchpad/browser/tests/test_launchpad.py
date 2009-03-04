@@ -101,6 +101,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         self.assertNotFound('%s/nonexistent' % product.name)
 
     def test_no_branch_for_series(self):
+        # If there's no branch for a product series, generate a 404.
         series = self.factory.makeProductSeries()
         self.assertNotFound('%s/%s' % (series.product.name, series.name))
 
