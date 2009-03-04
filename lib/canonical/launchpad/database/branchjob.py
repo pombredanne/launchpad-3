@@ -322,7 +322,7 @@ class RevisionsAddedJob(BranchJobDerived):
         """Return a BranchMailer for a revision.
 
         :param revision: A bzr revision.
-        :param info: A RevisionInfo for the revision.
+        :param revno: The revno of the revision in this branch.
         :param generate_diffs: If true, generate a diff for the revision.
         """
         message = self.getRevisionMessage(revision.revision_id, revno)
@@ -357,8 +357,10 @@ class RevisionsAddedJob(BranchJobDerived):
             subject)
 
     def getRevisionMessage(self, revision_id, revno):
-        """Return the log message for this RevisionInfo
+        """Return the log message for a revision.
 
+        :param revision_id: The revision-id of the revision.
+        :param revno: The revno of the revision in the branch.
         :return: The log message entered for this revision.
         """
         info = RevisionInfo(self.bzr_branch, revno, revision_id)
