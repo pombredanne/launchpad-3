@@ -610,7 +610,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
             os.chdir(wd)
 
     def makeSourceDetails(self, repository_path, branch_name, files):
-        """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
+        """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.
         """
         self.repository_path = tempfile.mkdtemp()
         wd = os.getcwd()
@@ -627,8 +627,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
             os.chdir(wd)
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git',
-            git_repo_url=local_path_to_url(self.repository_path))
+            rcstype='git', git_repo_url=self.repository_path)
 
 
 def test_suite():
