@@ -32,8 +32,8 @@
           <tr tal:repeat="subscription_with_token view/subscriptions_with_tokens"
               class="archive-subscription-row">
             <tal:subscription_and_token
-                define="subscription python:subscription_with_token[0];
-                        token python:subscription_with_token[1]">
+                define="subscription subscription_with_token/subscription;
+                        token subscription_with_token/token">
             <td tal:content="subscription/archive/title">Private PPA for Celso
             </td>
             <td tal:content="subscription/description">Allow Team X access.

@@ -120,14 +120,20 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
     @cachedproperty
     def subscriptions_with_tokens(self):
         """Return all the persons archive subscriptions with the token
-        for each."""
+        for each.
+
+        The result is formatted as a list of dicts to make the TALS code
+        cleaner.
+        """
         subscriber_set = getUtility(IArchiveSubscriberSet)
-        # Force the query to be executed so we can cache the result
-        # and use it in other methods.
-        return list(subscriber_set.getBySubscriberWithActiveToken(
-            self.context))
-        # TODO: add current_only=False back in to include expired
-        # subscriptions.
+        subs_with_tokens = subscriber_set.getBySubscriberWithActiveToken(
+            self.context)
+
+        # Turn the result set into a list of dicts so it can be easily
+        # accessed in TALS:
+        return [
+            {"subscription": subscription, "token": token}
+                for subscription, token in subs_with_tokens]
 
     @cachedproperty
     def active_subscriptions_with_tokens(self):
@@ -137,16 +143,20 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         cleaner.
         """
         return [
-            {"subscription": subscription, "token": token}
-                for subscription, token in self.subscriptions_with_tokens
-                    if token is not None]
+            subs_with_token
+                for subs_with_token in self.subscriptions_with_tokens
+                    if subs_with_token["token"] is not None]
 
-    # TODO: add has_active_subscriptions for use in template.
     # Update template to use dict version (so no python required)
     @property
     def has_subscriptions(self):
         """Return whether this person has any subscriptions."""
         return len(self.subscriptions_with_tokens) > 0
+
+    @property
+    def has_active_subscriptions(self):
+        """Return whether this person has active subscriptions."""
+        return len(self.active_subscriptions_with_tokens) > 0
 
     def processSubscriptionActivation(self):
         """Process any posted data that activates a subscription."""

@@ -135,7 +135,7 @@ archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
 
 archive_index = ContextTitle('%s')
 
-archive_subscribers = ContextTitle('Private archive subscriptions for %s')
+archive_subscribers = ContextTitle('Manage subscriptions for %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -871,7 +871,7 @@ people_requestmerge = 'Merge Launchpad accounts'
 people_requestmerge_multiple = 'Merge Launchpad accounts'
 
 person_archive_subscriptions = ContextDisplayName(
-    'Archive subscriptions for %s')
+    'Private archive subscriptions for %s')
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')

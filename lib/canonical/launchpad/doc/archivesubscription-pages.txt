@@ -170,12 +170,16 @@ But spiv is subscribed to a number of archives:
     >>> view = create_initialized_view(spiv, name="+archivesubscriptions")
     >>> view.has_subscriptions
     True
+    >>> view.has_active_subscriptions
+    False
 
 The subscriptions_with_tokens property returns all the current archive
 subscriptions for the person, with a corresponding token for each:
 
     >>> def print_subscriptions_with_tokens():
-    ...     for subscription, token in view.subscriptions_with_tokens:
+    ...     for subscription_and_token in view.subscriptions_with_tokens:
+    ...         subscription = subscription_and_token['subscription']
+    ...         token = subscription_and_token['token']
     ...         print subscription.archive.title
     ...         print subscription.description
     ...         token_text = "None"
@@ -213,6 +217,8 @@ And the subscription has been activated:
 
     >>> view.has_subscriptions
     True
+    >>> view.has_active_subscriptions
+    True
 
 The user will also see a notification of the subscription activation:
 
@@ -227,7 +233,9 @@ active_subscriptions_with_tokens property:
 
     >>> for subs_with_token in view.active_subscriptions_with_tokens:
     ...     print subs_with_token['subscription'].archive.title
-    Private PPA for Mark Shuttleworth
+    ...     if subs_with_token['token'] is not None:
+    ...         print "Token"
+    Private PPA for Mark Shuttleworth              Token
 
 If a user fiddles with the POST data and sends a bad archive_id or an
 archive_id corresponding to an archive to which the user is not subscribed
