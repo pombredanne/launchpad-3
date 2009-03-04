@@ -42,7 +42,7 @@ __all__ = [
     'PersonOverviewMenu',
     'PersonRdfView',
     'PersonRdfContentsView',
-    'PersonRelatedBugsView',
+    'PersonRelatedBugTaskSearchListingView',
     'PersonRelatedSoftwareView',
     'PersonReportedBugTaskSearchListingView',
     'PersonSearchQuestionsView',
@@ -1993,9 +1993,9 @@ class RelevantMilestonesMixin:
                        value=milestone.id, checked=False)
 
 
-class PersonRelatedBugsView(RelevantMilestonesMixin,
-                            BugTaskSearchListingView,
-                            FeedsMixin):
+class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                            BugTaskSearchListingView,
+                                            FeedsMixin):
     """All bugs related to someone."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",

@@ -20,7 +20,7 @@ from canonical.launchpad.webapp import canonical_url, urlparse
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
-    PersonRelatedBugsView)
+    PersonRelatedBugTaskSearchListingView)
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IBugTaskSet, IHasBugs, IMaloneApplication, IPerson)
 from canonical.lazr.feed import (
@@ -242,7 +242,8 @@ class PersonBugsFeed(BugsFeedBase):
 
     def _getRawItems(self):
         """Perform the search."""
-        delegate_view = PersonRelatedBugsView(self.context, self.request)
+        delegate_view = PersonRelatedBugTaskSearchListingView(
+            self.context, self.request)
         # Since the delegate_view derives from LaunchpadFormView the view must
         # be initialized to setup the widgets.
         delegate_view.initialize()
