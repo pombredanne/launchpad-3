@@ -1476,6 +1476,17 @@ COMMENT ON COLUMN LibraryFileAlias.expires IS 'The expiry date of this file. If 
 COMMENT ON COLUMN LibraryFileAlias.last_accessed IS 'Roughly when this file was last retrieved from the Librarian. Initially set to this item''s creation date.';
 COMMENT ON COLUMN LibraryFileAlias.date_created IS 'The timestamp when this alias was created.';
 COMMENT ON COLUMN LibraryFileAlias.restricted IS 'Is this file available only from the restricted librarian?';
+COMMENT ON COLUMN LibraryFileAlias.hits IS 'The number of times this file has been downloaded.';
+
+COMMENT ON TABLE LibraryFileDownloadCount IS 'The number of daily downloads for a given LibraryFileAlias.';
+COMMENT ON COLUMN LibraryFileDownloadCount.libraryfilealias IS 'The LibraryFileAlias.';
+COMMENT ON COLUMN LibraryFileDownloadCount.day IS 'The day of the downloads.';
+COMMENT ON COLUMN LibraryFileDownloadCount.count IS 'The number of downloads.';
+COMMENT ON COLUMN LibraryFileDownloadCount.country IS 'The country from where the download requests came from.';
+
+COMMENT ON TABLE ParsedApacheLog IS 'A parsed apache log file for librarian.';
+COMMENT ON COLUMN ParsedApacheLog.first_line IS 'The first line of this log file, smashed to ASCII. This uniquely identifies the log file, even if its filename is changed by log rotation or archival.';
+COMMENT ON COLUMN ParsedApacheLog.bytes_read IS 'The number of bytes from this log file that have been parsed.';
 
 -- SourcePackageReleaseFile
 

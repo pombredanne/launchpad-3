@@ -495,21 +495,16 @@ def get_object_from_master_store(obj):
 
     Returns the object if it already comes from the relevant master Store.
 
-    If the input is security wrapped, so is the result. Otherwise an
-    unwrapped object is returned.
+    Registered as a trusted adapter, so if the input is security wrapped,
+    so is the result. Otherwise an unwrapped object is returned.
     """
-    naked_obj = removeSecurityProxy(obj)
-    is_wrapped = naked_obj is not obj
-    master_store = IMasterStore(naked_obj)
-    if master_store is not Store.of(naked_obj):
-        naked_obj = master_store.get(naked_obj.__class__, naked_obj.id)
-        if naked_obj is None:
+    master_store = IMasterStore(obj)
+    if master_store is not Store.of(obj):
+        obj = master_store.get(obj.__class__, obj.id)
+        if obj is None:
             return None
-    alsoProvides(naked_obj, IMasterObject)
-    if is_wrapped:
-        return ProxyFactory(naked_obj)
-    else:
-        return naked_obj
+    alsoProvides(obj, IMasterObject)
+    return obj
 
 
 def get_store_name(store):
