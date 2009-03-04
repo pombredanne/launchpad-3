@@ -247,14 +247,16 @@ email address cannot not be None.
 The account can be reactivated after the password and preferred email
 address are set.
 
-    >>> foobar.account.reactivate(
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> IMasterObject(foobar.account).reactivate(
     ...     'User reactivated the account using reset password.',
     ...     password="ok",
     ...     preferred_email=foobar_preferredemail)
-    >>> foobar.account_status
+    >>> transaction.commit()  # To see the changes on other stores.
+    >>> foobar.account.status
     <DBItem AccountStatus.ACTIVE...
 
-    >>> foobar.account_status_comment
+    >>> foobar.account.status_comment
     u'User reactivated the account using reset password.'
 
 The person name is fixed if it was altered when it was deactivated.

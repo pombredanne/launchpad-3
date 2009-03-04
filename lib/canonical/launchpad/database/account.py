@@ -96,7 +96,7 @@ class Account(SQLBase):
         # XXX: salgado, 2009-02-26: Instead of doing what we do below, we
         # should just provide a hook for callsites to do other stuff that's
         # not directly related to the account itself.
-        person = IMasterStore(self.person, None)
+        person = IMasterObject(self.person, None)
         if person is not None:
             # Since we have a person associated with this account, it may be
             # used to log into Launchpad, and so it may not have a preferred
