@@ -14,6 +14,9 @@ __metaclass__ = type
 __all__ = []
 
 
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IBuild)
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
@@ -23,6 +26,8 @@ from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
 from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket)
 
 
 IBranch['product'].schema = IProduct
@@ -42,3 +47,13 @@ IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
+
+IHasBuildRecords['getBuildRecords'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['pocket'].vocabulary = PackagePublishingPocket
+IHasBuildRecords['getBuildRecords'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['build_state'].vocabulary = BuildStatus
+IHasBuildRecords['getBuildRecords'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IBuild
