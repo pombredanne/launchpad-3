@@ -228,24 +228,23 @@ done, and a password is required too. There are two preconditions before
 this method can be called on a Person: The password and the preferred
 email address cannot not be None.
 
-    >>> foobar.reactivateAccount(
+    >>> foobar.account.reactivate(
     ...     'This will raise an error.', password=None, preferred_email=None)
     Traceback (most recent call last):
      ...
-    AssertionError: User name16-deactivatedaccount cannot be reactivated
-                    without a password.
+    AssertionError: Account ... cannot be reactivated without a password.
 
-    >>> foobar.reactivateAccount(
+    >>> foobar.account.reactivate(
     ...     'This will raise an error.', password='ok', preferred_email=None)
     Traceback (most recent call last):
      ...
-    AssertionError: User name16-deactivatedaccount cannot be reactivated
-                    without a preferred email address.
+    AssertionError: Account ... cannot be reactivated without a preferred
+                    email address.
 
 The account can be reactivated after the password and preferred email
 address are set.
 
-    >>> foobar.reactivateAccount(
+    >>> foobar.account.reactivate(
     ...     'User reactivated the account using reset password.',
     ...     password="ok",
     ...     preferred_email=foobar_preferredemail)
@@ -255,21 +254,7 @@ address are set.
     >>> foobar.account_status_comment
     u'User reactivated the account using reset password.'
 
-The account name is fixed if it was altered when it was deactivated.
+The person name is fixed if it was altered when it was deactivated.
 
     >>> foobar.name
     u'name16'
-
-An error is raised if reactivateAccount() is called on a team.
-
-    # It's only the person (in this case, team) himself that is authorized to
-    # call reactivateAccount(), but it's obviously not possible to login as a
-    # team, so we have to remove the security proxy here.
-    >>> removeSecurityProxy(ubuntu_team).reactivateAccount(
-    ...     comment="test", password='ok', preferred_email=emailaddress)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Teams cannot be reactivated with this method.
-
-    >>> login(ANONYMOUS)
-
