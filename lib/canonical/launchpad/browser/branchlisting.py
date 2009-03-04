@@ -638,32 +638,20 @@ class PersonBranchCountMixin:
     @cachedproperty
     def registered_branch_count(self):
         """Return the number of branches registered by the person."""
-        # XXX: use collection
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.REGISTERED),
-            visible_by_user=self.user)
-        return query.count()
+        return getUtility(IAllBranches).visibleByUser(self.user).registeredBy(
+            self.context).count()
 
     @cachedproperty
     def owned_branch_count(self):
         """Return the number of branches owned by the person."""
-        # XXX: use collection
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.OWNED),
-            visible_by_user=self.user)
-        return query.count()
+        return getUtility(IAllBranches).visibleByUser(self.user).ownedBy(
+            self.context).count()
 
     @cachedproperty
     def subscribed_branch_count(self):
         """Return the number of branches subscribed to by the person."""
-        # XXX: use collection
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
-            visible_by_user=self.user)
-        return query.count()
+        return getUtility(IAllBranches).visibleByUser(self.user).subscribedBy(
+            self.context).count()
 
     @property
     def user_in_context_team(self):
