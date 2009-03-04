@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -21,14 +21,17 @@
 </head>
 
 <body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-latestquestions" />
-</metal:leftportlets>
-
-<div metal:fill-slot="main">
+<div metal:fill-slot="main" class="pillar"
+  tal:define="overview_menu context/menu:overview">
+  <div class="actions" style="float:right;">
+    <tal:edit
+      define="link overview_menu/edit"
+      condition="link/enabled"
+      replace="structure link/render" />
+  </div>
 
   <tal:icon replace="structure context/image:mugshot" />
+
   <h1 tal:content="context/browsername" />
 
   <div
@@ -36,183 +39,290 @@
     tal:condition="context/homepage_content"
     tal:content="structure context/homepage_content/fmt:text-to-html"
   />
+
   <div
     class="description"
     tal:content="structure context/teamdescription/fmt:text-to-html"
   />
-  <ul class="buttons" tal:define="mentorships context/team_mentorships">
-    <li tal:condition="mentorships">
-      <a href="+mentoring" title="People will mentor work for newcomers">
-        <img alt="Mentorships" src="/+icing/but-sml-mentoring.gif" />
-      </a>
-    </li>
-    <li tal:condition="not: mentorships">
-      <a href="+mentoring" title="No mentoring is yet offered for this team">
-        <img alt="Mentorships" src="/+icing/but-sml-mentoring-off.gif" />
-      </a>
-    </li>
-    <tal:not-restricted
-        condition="not: context/subscriptionpolicy/enumvalue:RESTRICTED">
-      <li tal:condition="not: view/userIsParticipant">
-        <a href="+join" title="Sign up as a member of this team">
-          <img alt="Join!" src="/+icing/but-sml-jointhisteam.gif" />
+
+  <div id="portlet-details" class="portlet">
+    <h2>summary</h2>
+
+    <div class="portletBody portletContent">
+      <strong>Team owner:</strong>
+      <a
+        tal:attributes="href context/teamowner/fmt:url"
+        tal:content="context/teamowner/browsername"
+        >sabdfl</a>
+      <br />
+      <strong>Created on:</strong>
+      <span id="created-date"
+        tal:content="context/datecreated/fmt:date" />
+      <br />
+      <strong id="subscription-policy"
+        tal:content="context/subscriptionpolicy/title">
+        Moderated Team
+      </strong>:
+      <tal:description replace="context/subscriptionpolicy/description" />
+    </div>
+  </div>
+
+  <div id="your-involvement" class="portlet">
+    <h2>Your involvement</h2>
+
+    <p tal:condition="not: request/lp:person">
+      You must <a href="+login">log in</a>
+      to join or leave this team.
+    </p>
+
+    <tal:logged-in condition="request/lp:person">
+      <tal:is-owner condition="view/userIsOwner">
+        <p>
+          <tal:team condition="context/teamowner/is_team">
+            You are a member of the team which owns this team.
+          </tal:team>
+          <tal:user condition="not: context/teamowner/is_team">
+            You are the owner of this team.
+          </tal:user>
+          <tal:wtf condition="not: view/userIsActiveMember">
+            You are not currently an active member.
+          </tal:wtf>
+        </p>
+      </tal:is-owner>
+      <tal:not-owner condition="not: view/userIsOwner">
+        <p tal:condition="view/userIsActiveMember">
+          <tal:can-leave condition="view/userCanRequestToLeave">
+            <form class="actions"
+                  name="leave"
+                  id="form.team.leave"
+                  action="+leave"
+                  method="post">
+              You are a member of this team.
+              <input type="submit" name="leave" value="Leave the Team" />
+            </form>
+          </tal:can-leave>
+        </p>
+        <p tal:condition="not: view/userIsActiveMember">
+          <tal:not-member condition="not: view/userIsParticipant">
+            You are not a member of this team.
+          </tal:not-member>
+          <tal:participant condition="view/userIsParticipant">
+            You are an indirect member of this team:
+            <br />
+            <a tal:attributes="href view/user/fmt:url"
+               tal:content="view/user/displayname">
+              Guilherme Salgado
+            </a>
+            <tal:path repeat="team view/findUserPathToTeam">
+              &rarr;
+              <a tal:attributes="href team/fmt:url"
+                 tal:content="team/displayname">
+                Launchpad Developers
+              </a>
+            </tal:path>
+          </tal:participant>
+        </p>
+      </tal:not-owner>
+      <tal:block condition="view/userIsParticipant">
+        <p tal:condition="view/team_has_mailing_list">
+          <tal:subscribed-to-list
+              condition="view/user_is_subscribed_to_list">
+            <form class="actions"
+                  name="unsubscribe"
+                  id="form.list.unsubscribe"
+                  action=""
+                  method="post">
+              You are subscribed to the team mailing list.
+              <input type="submit" name="unsubscribe" value="Unsubscribe" />
+            </form>
+          </tal:subscribed-to-list>
+          <tal:can-subscribe-to-list
+              condition="view/user_can_subscribe_to_list">
+            You are not subscribed to the team mailing list.
+            (<a href="/people/+me/+editemails">Subscribe</a>)
+          </tal:can-subscribe-to-list>
+        </p>
+      </tal:block>
+    </tal:logged-in>
+
+    <ul class="buttons" tal:define="mentorships context/team_mentorships">
+      <li tal:condition="mentorships">
+        <a href="+mentoring" title="People will mentor work for newcomers">
+          <img alt="Mentorships" src="/+icing/but-sml-mentoring.gif" />
         </a>
       </li>
-    </tal:not-restricted>
-  </ul>
-
-  <div class="section" tal:content="structure context/@@+portlet-map" />
-
-  <div class="left">
-    <tal:recent-members>
-    <div class="section">
-    <div class="portlet" id="your-involvement">
-      <h2>Your involvement</h2>
-
-      <p tal:condition="not: request/lp:person">
-        You must <a href="+login">log in</a>
-        to join or leave this team.
-      </p>
-      <tal:logged-in condition="request/lp:person">
-        <tal:is-owner condition="view/userIsOwner">
-          <span tal:condition="context/teamowner/is_team">
-            You are a member of the team which owns this team.
-          </span>
-          <span tal:condition="not: context/teamowner/is_team">
-            You are the owner of this team.
-          </span>
-          <span tal:condition="not: view/userIsActiveMember">
-            You are not currently an active member.
-          </span>
-        </tal:is-owner>
-        <tal:not-owner condition="not: view/userIsOwner">
-          <p tal:condition="view/userIsActiveMember">
-            <tal:can-leave condition="view/userCanRequestToLeave">
-              <form class="actions"
-                    name="leave"
-                    id="form.team.leave"
-                    action="+leave"
-                    method="post">
-                You are a member of this team.
-                <input type="submit" name="leave" value="Leave the Team" />
-              </form>
-            </tal:can-leave>
-          </p>
-          <p tal:condition="not: view/userIsActiveMember">
-            <tal:not-member condition="not: view/userIsParticipant">
-              You are not a member of this team.
-            </tal:not-member>
-            <tal:participant condition="view/userIsParticipant">
-              You are an indirect member of this team:
-              <br />
-              <a tal:attributes="href view/user/fmt:url"
-                 tal:content="view/user/displayname">
-                Guilherme Salgado
-              </a>
-              <tal:path repeat="team view/findUserPathToTeam">
-                &rarr;
-                <a tal:attributes="href team/fmt:url"
-                   tal:content="team/displayname">
-                  Launchpad Developers
-                </a>
-              </tal:path>
-            </tal:participant>
-          </p>
-        </tal:not-owner>
-        <tal:block condition="view/userIsParticipant">
-          <p tal:condition="view/team_has_mailing_list">
-            <tal:subscribed-to-list
-                condition="view/user_is_subscribed_to_list">
-              <form class="actions"
-                    name="unsubscribe"
-                    id="form.list.unsubscribe"
-                    action=""
-                    method="post">
-                You are subscribed to the team mailing list.
-                <input type="submit" name="unsubscribe" value="Unsubscribe" />
-              </form>
-            </tal:subscribed-to-list>
-            <tal:can-subscribe-to-list
-                condition="view/user_can_subscribe_to_list">
-              You are not subscribed to the team mailing list.
-              (<a href="/people/+me/+editemails">Subscribe</a>)
-            </tal:can-subscribe-to-list>
-          </p>
-        </tal:block>
-      </tal:logged-in>
-    </div>
-    </div>
-
-    <div tal:condition="context/@@+restricted-membership/userCanViewMembership"
-         class="section">
-    <div class="portlet" id="recently-approved"
-         tal:condition="view/recently_approved_members">
-      <h2>Recently approved</h2>
-      <ul>
-        <li class="person"
-            tal:repeat="person view/recently_approved_members">
-          <a tal:attributes="href person/fmt:url"
-            tal:content="person/unique_displayname"
-          >Foo Bar (name16)</a>
+      <li tal:condition="not: mentorships">
+        <a href="+mentoring" title="No mentoring is yet offered for this team">
+          <img alt="Mentorships" src="/+icing/but-sml-mentoring-off.gif" />
+        </a>
+      </li>
+      <tal:not-restricted
+          condition="not: context/subscriptionpolicy/enumvalue:RESTRICTED">
+        <li tal:condition="not: view/userIsParticipant">
+          <a href="+join" title="Sign up as a member of this team">
+            <img alt="Join!" src="/+icing/but-sml-jointhisteam.gif" />
+          </a>
         </li>
-      </ul>
+      </tal:not-restricted>
+    </ul>
+    <div>
+      <tal:mentorships
+        define="link overview_menu/mentorships"
+        condition="link/enabled"
+        replace="structure link/render" />
     </div>
-    </div>
-    <div tal:condition="context/@@+restricted-membership/userCanViewMembership"
-         class="section">
-    <div class="portlet" id="recently-applied"
-         tal:condition="view/recently_proposed_members">
-      <h2>Recently applied</h2>
-      <ul>
-        <li class="person"
-            tal:repeat="person view/recently_proposed_members">
-          <a tal:attributes="href person/fmt:url"
-             tal:content="person/unique_displayname"
-          >Foo Bar (name16)</a>
-        </li>
-      </ul>
-    </div>
-    </div>
-    </tal:recent-members>
-
-    <div class="section"
-         tal:content="structure context/@@+portlet-related-projects" />
-
   </div>
 
-  <div class="right">
+  <div tal:content="structure context/@@+portlet-contact-details" />
 
-    <div class="section"
-         tal:content="structure context/@@+portlet-details" />
+  <div id="mailing-lists" class="portlet">
+    <h2>Mailing list:</h2>
 
-    <div class="section"
-         tal:content="structure context/@@+portlet-contact-details" />
-
-    <div class="section">
-      <div class="portlet" id="subteam-of">
-        <h2>Subteam of</h2>
-
-        <p tal:condition="not:context/super_teams">
-          &#8220;<span tal:replace="context/browsername"/>&#8221;
-          itself is not a member of any other team.
-        </p>
-
-        <tal:block condition="context/super_teams">
-          <p>
-            &#8220;<span tal:replace="context/browsername"/>&#8221;
-            is a member of these teams:
-          </p>
-          <ul>
-            <li tal:repeat="team context/super_teams">
-              <tal:block replace="structure team/fmt:link" />
-            </li>
-          </ul>
-        </tal:block>
+    <div class="portletBody portletContent">
+      <div
+        tal:define="archive_url view/archive_url"
+        tal:condition="archive_url">
+        <br /><a id="mailing-list-archive"
+                tal:attributes="href archive_url">Mailing list archive</a>
+        <br /><a id="mailing-list-subscribers"
+                tal:attributes="href context/fmt:url/+mailing-list-subscribers"
+                >Mailing list subscribers</a>
+      </div>
+      <div>
+        <tal:moderate_mailing_list
+          define="link overview_menu/moderate_mailing_list"
+          condition="link/enabled"
+          replace="structure link/render" />
+        &nbsp;&nbsp;
+        <tal:configure_mailing_list
+          define="link overview_menu/configure_mailing_list"
+          condition="link/enabled"
+          replace="structure link/render" />
       </div>
     </div>
-
   </div>
 
-</div>
+  <div id="membership" class="portlet">
+    <h2>Members</h2>
+
+    <div id="membership-summary" class="portletBody portletContent"
+      style="margin-bottom: 1em;"
+      tal:define="can_view_membership context/@@+restricted-membership/userCanViewMembership"
+      >
+      <tal:private_membership condition="not: can_view_membership">
+        This team's membership list is private.
+      </tal:private_membership>
+      <tal:private_membership condition="can_view_membership">
+        <tal:active content="context/all_member_count" />
+          active members<br />
+        <tal:proposed define="proposed_member_count context/proposed_member_count"
+                      condition="proposed_member_count">
+          <tal:proposed_count content="proposed_member_count" />
+          proposed members<br />
+        </tal:proposed>
+        <tal:invited define="invited_member_count context/invited_member_count"
+                     condition="invited_member_count">
+          <tal:invited_count content="context/invited_member_count" />
+          invited members<br />
+        </tal:invited>
+        <tal:inactive define="inactive_member_count context/inactive_member_count"
+                     condition="inactive_member_count">
+          <tal:inactive_count content="context/inactive_member_count" />
+          inactive members<br />
+        </tal:inactive>
+      </tal:private_membership>
+    </div>
+
+    <div tal:content="structure context/@@+portlet-map" />
+
+    <div>
+      <tal:members
+        define="link overview_menu/members"
+        condition="link/enabled"
+        replace="structure link/render" />
+      <br /><tal:mugshots
+        define="link overview_menu/mugshots"
+        condition="link/enabled"
+        replace="structure link/render" />
+    </div>
+
+    <div>
+      <tal:add_my_teams
+        define="link overview_menu/add_my_teams"
+        condition="link/enabled"
+        replace="structure link/render" />
+      &nbsp;&nbsp;
+      <tal:add_member
+        define="link overview_menu/add_member"
+        condition="link/enabled"
+        replace="structure link/render" />
+    </div>
+
+    <div tal:condition="context/@@+restricted-membership/userCanViewMembership">
+      <div class="portlet" id="recently-approved"
+           tal:condition="view/recently_approved_members">
+        <h3>Recently approved</h3>
+        <ul>
+          <li class="person"
+              tal:repeat="person view/recently_approved_members">
+            <a tal:attributes="href person/fmt:url"
+              tal:content="person/unique_displayname"
+            >Foo Bar (name16)</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div tal:condition="context/@@+restricted-membership/userCanViewMembership">
+      <div class="portlet" id="recently-applied"
+           tal:condition="view/recently_proposed_members">
+        <h3>Recently applied</h3>
+        <ul>
+          <li class="person"
+              tal:repeat="person view/recently_proposed_members">
+            <a tal:attributes="href person/fmt:url"
+               tal:content="person/unique_displayname"
+            >Foo Bar (name16)</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div tal:content="structure context/@@+portlet-related-projects" />
+
+  <div class="portlet" id="subteam-of">
+    <h2>Subteam of</h2>
+
+    <p tal:condition="not:context/super_teams">
+      &#8220;<span tal:replace="context/browsername"/>&#8221;
+      itself is not a member of any other team.
+    </p>
+
+    <tal:block condition="context/super_teams">
+      <p>
+        &#8220;<span tal:replace="context/browsername"/>&#8221;
+        is a member of these teams:
+      </p>
+      <ul>
+        <li tal:repeat="team context/super_teams">
+          <tal:block replace="structure team/fmt:link" />
+        </li>
+      </ul>
+    </tal:block>
+
+    <p>
+      <tal:memberships
+        define="link overview_menu/memberships"
+        condition="link/enabled"
+        replace="structure link/render" />
+      <tal:received_invitations
+        define="link overview_menu/received_invitations"
+        condition="link/enabled"
+        replace="structure link/render" />
+    </p>
+  </div>
+
+  <div tal:replace="structure context/@@+portlet-latestquestions" />
+  </div>
 </body>
 </html>

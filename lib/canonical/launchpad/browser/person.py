@@ -1144,7 +1144,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def members(self):
         target = '+members'
         text = 'Show all members'
-        return Link(target, text, icon='people')
+        return Link(target, text, icon='team')
 
     @enabled_with_permission('launchpad.Edit')
     def received_invitations(self):
@@ -1161,7 +1161,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def map(self):
         target = '+map'
         text = 'Show map and time zones'
-        return Link(target, text)
+        return Link(target, text, icon='team')
 
     def add_my_teams(self):
         target = '+add-my-teams'
@@ -1185,7 +1185,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def mugshots(self):
         target = '+mugshots'
         text = 'Show member photos'
-        return Link(target, text, icon='people')
+        return Link(target, text, icon='team')
 
     def polls(self):
         target = '+polls'
