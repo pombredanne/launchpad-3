@@ -88,7 +88,8 @@ class BugsFeedBase(FeedBase):
         # bugs should be done in the database query.
         bugs = self._getRawItems()
         for bug in bugs:
-            assert not bug.private, "Private bugs should not be retrieved for feeds."
+            assert not bug.private, (
+                "Private bugs should not be retrieved for feeds.")
         return self._sortByDateCreated(bugs)
 
     def _getItemsWorker(self):
