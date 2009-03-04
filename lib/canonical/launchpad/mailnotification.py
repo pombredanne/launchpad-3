@@ -27,7 +27,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
+from lazr.lifecycle.interfaces import IObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     IBugTask, IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
     INotificationRecipientSet, IPersonSet, ISpecification,
@@ -809,7 +809,7 @@ def get_bug_delta(old_bug, new_bug, user):
 def notify_bug_added(bug, event):
     """Send an email notification that a bug was added.
 
-    Event must be an ISQLObjectCreatedEvent.
+    Event must be an IObjectCreatedEvent.
     """
 
     bug.addCommentNotification(bug.initial_message)
@@ -820,7 +820,7 @@ def notify_bug_modified(modified_bug, event):
     """Notify the Cc'd list that this bug has been modified.
 
     modified_bug bug must be an IBug. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     bug_delta = get_bug_delta(
         old_bug=event.object_before_modification,
@@ -898,7 +898,7 @@ def notify_bugtask_added(bugtask, event):
     somewhere else.
 
     bugtask must be in IBugTask. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     bugtask = event.object
 
@@ -917,7 +917,7 @@ def notify_bugtask_edited(modified_bugtask, event):
     on this task.
 
     modified_bugtask must be an IBugTask. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     bugtask_delta = event.object.getDelta(event.object_before_modification)
     bug_delta = BugDelta(
@@ -941,7 +941,7 @@ def notify_bug_comment_added(bugmessage, event):
     """Notify CC'd list that a message was added to this bug.
 
     bugmessage must be an IBugMessage. event must be an
-    ISQLObjectCreatedEvent. If bugmessage.bug is a duplicate the
+    IObjectCreatedEvent. If bugmessage.bug is a duplicate the
     comment will also be sent to the dup target's subscribers.
     """
     bug = bugmessage.bug
@@ -953,7 +953,7 @@ def notify_bug_watch_added(watch, event):
     """Notify CC'd list that a new watch has been added for this bug.
 
     watch must be an IBugWatch. event must be an
-    ISQLObjectCreatedEvent.
+    IObjectCreatedEvent.
     """
     bug_delta = BugDelta(
         bug=watch.bug,
@@ -969,7 +969,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
     """Notify CC'd bug subscribers that a bug watch was edited.
 
     modified_bug_watch must be an IBugWatch. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     old = event.object_before_modification
     new = event.object
@@ -990,7 +990,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
 def notify_bug_cve_added(bugcve, event):
     """Notify CC'd list that a new cve ref has been added to this bug.
 
-    bugcve must be an IBugCve. event must be an ISQLObjectCreatedEvent.
+    bugcve must be an IBugCve. event must be an IObjectCreatedEvent.
     """
     bug_delta = BugDelta(
         bug=bugcve.bug,
@@ -1004,7 +1004,7 @@ def notify_bug_cve_added(bugcve, event):
 def notify_bug_cve_deleted(bugcve, event):
     """Notify CC'd list that a cve ref has been removed from this bug.
 
-    bugcve must be an IBugCve. event must be an ISQLObjectDeletedEvent.
+    bugcve must be an IBugCve. event must be an IObjectDeletedEvent.
     """
     bug_delta = BugDelta(
         bug=bugcve.bug,
@@ -1035,7 +1035,7 @@ def notify_bug_attachment_added(bugattachment, event):
     """Notify CC'd list that a new attachment has been added.
 
     bugattachment must be an IBugAttachment. event must be an
-    ISQLObjectCreatedEvent.
+    IObjectCreatedEvent.
     """
     bug = bugattachment.bug
     bug_delta = BugDelta(
@@ -1635,8 +1635,8 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
 
     def initialize(self):
         """Create a notifcation for a linked bug status change."""
-        assert ISQLObjectModifiedEvent.providedBy(self.event), (
-            "Should only be subscribed for ISQLObjectModifiedEvent.")
+        assert IObjectModifiedEvent.providedBy(self.event), (
+            "Should only be subscribed for IObjectModifiedEvent.")
         assert IBugTask.providedBy(self.event.object), (
             "Should only be subscribed for IBugTask modification.")
         self.bugtask = self.event.object
@@ -1687,7 +1687,7 @@ def notify_specification_modified(spec, event):
     spec_delta = spec.getDelta(event.object_before_modification, event.user)
     if spec_delta is None:
         # XXX: Bjorn Tillenius 2006-03-08:
-        #      Ideally, if an ISQLObjectModifiedEvent event is generated,
+        #      Ideally, if an IObjectModifiedEvent event is generated,
         #      spec_delta shouldn't be None. I'm not confident that we
         #      have enough test yet to assert this, though.
         return

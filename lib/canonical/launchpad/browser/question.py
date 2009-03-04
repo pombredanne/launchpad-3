@@ -40,12 +40,12 @@ from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 import zope.security
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.helpers import (
     is_english_variant, preferred_or_request_languages)
 
@@ -192,7 +192,7 @@ class QuestionSubscriptionView(LaunchpadView):
                     _("You have unsubscribed from this question."))
                 modified_fields.add('subscribers')
             response.redirect(canonical_url(self.context))
-        notify(SQLObjectModifiedEvent(
+        notify(ObjectModifiedEvent(
             self.context, question_unmodified, list(modified_fields)))
 
     @property
@@ -579,7 +579,7 @@ class QuestionMakeBugView(LaunchpadFormView):
         bug = question.target.createBug(params)
         question.linkBug(bug)
         bug.subscribe(question.owner, self.user)
-        bug_added_event = SQLObjectModifiedEvent(
+        bug_added_event = ObjectModifiedEvent(
             question, unmodifed_question, ['bugs'])
         notify(bug_added_event)
         self.request.response.addNotification(

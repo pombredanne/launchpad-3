@@ -1080,18 +1080,17 @@ set.
     ...     """Print a message when triggered."""
     ...     print "You just modified a cookbook."
 
-    >>> from canonical.launchpad.event.interfaces import (
-    ...     ISQLObjectModifiedEvent)
+    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> cookbook_listener = TestEventListener(
-    ...     ICookbook, ISQLObjectModifiedEvent, modified_cookbook)
+    ...     ICookbook, IObjectModifiedEvent, modified_cookbook)
 
     >>> def modified_cookbook_set(object, event):
     ...     """Print a message when triggered."""
     ...     print "You just modified the cookbook set."
 
     >>> cookbook_set_listener = TestEventListener(
-    ...     ICookbookSet, ISQLObjectModifiedEvent, modified_cookbook_set)
+    ...     ICookbookSet, IObjectModifiedEvent, modified_cookbook_set)
 
 Here we create a new cookbook for an existing author. Because the
 operation's definition doesn't set send_modified_event to True, no

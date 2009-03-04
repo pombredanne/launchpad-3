@@ -13,10 +13,8 @@ from zope.schema.interfaces import (
     IField, RequiredMissing, ValidationError, WrongType)
 from zope.security.proxy import isinstance as zope_isinstance
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-
-from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.lazr.interfaces import (
     ICollection, IFieldMarshaller, IResourceGETOperation,
@@ -60,11 +58,10 @@ class ResourceOperation(BatchingResourceMixin):
         response = self.call(**values)
 
         if self.send_modification_event:
-            event = SQLObjectModifiedEvent(
+            event = ObjectModifiedEvent(
                 object=self.context,
                 object_before_modification=snapshot,
-                edited_fields=None,
-                user=getUtility(ILaunchBag).user)
+                edited_fields=None)
             notify(event)
         return self.encodeResult(response)
 

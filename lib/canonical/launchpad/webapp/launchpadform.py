@@ -24,6 +24,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.browser import (
     CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.webapp.interfaces import (
@@ -31,7 +32,6 @@ from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.menu import escape
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.event import SQLObjectModifiedEvent
 
 
 classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
@@ -369,7 +369,7 @@ class LaunchpadEditFormView(LaunchpadFormView):
 
         If no context is given, the view's context is used.
 
-        If any changes were made, SQLObjectModifiedEvent will be
+        If any changes were made, ObjectModifiedEvent will be
         emitted.
 
         This method should be called by an action method of the form.
@@ -386,9 +386,8 @@ class LaunchpadEditFormView(LaunchpadFormView):
         if was_changed:
             field_names = [form_field.__name__
                            for form_field in self.form_fields]
-            notify(SQLObjectModifiedEvent(context,
-                                          context_before_modification,
-                                          field_names))
+            notify(ObjectModifiedEvent(
+                context, context_before_modification, field_names))
         return was_changed
 
 

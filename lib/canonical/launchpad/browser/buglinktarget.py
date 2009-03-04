@@ -14,10 +14,10 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad import _
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (IBugLinkForm, IUnlinkBugsForm)
 
 from canonical.launchpad.webapp import (
@@ -38,7 +38,7 @@ class BugLinkView(LaunchpadFormView):
 
     @action(_('Link'))
     def linkBug(self, action, data):
-        """Link to the requested bug. Publish an SQLObjectModifiedEvent and
+        """Link to the requested bug. Publish an ObjectModifiedEvent and
         display a notification.
         """
         response = self.request.response
@@ -58,7 +58,7 @@ class BugLinkView(LaunchpadFormView):
             _(u'Added link to bug #$bugid: '
               u'\N{left double quotation mark}$title'
               u'\N{right double quotation mark}.', mapping=bug_props))
-        notify(SQLObjectModifiedEvent(
+        notify(ObjectModifiedEvent(
             self.context, target_unmodified, ['bugs']))
         self.next_url = canonical_url(self.context)
 
@@ -109,8 +109,7 @@ class BugsUnlinkView(LaunchpadFormView):
                 response.addErrorNotification(
                     _('Cannot remove link to private bug #$bugid.',
                       mapping=replacements))
-        notify(SQLObjectModifiedEvent(
-            self.context, target_unmodified, ['bugs']))
+        notify(ObjectModifiedEvent(self.context, target_unmodified, ['bugs']))
         self.next_url = canonical_url(self.context)
 
     def bugsWithPermission(self):

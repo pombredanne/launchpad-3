@@ -45,7 +45,7 @@ class BranchDelta:
         """Return a BranchDelta instance that encapsulates the changes.
 
         This method is primarily used by event subscription code to
-        determine what has changed during an SQLObjectModifiedEvent.
+        determine what has changed during an ObjectModifiedEvent.
         """
         delta = ObjectDelta(old_branch, new_branch)
         delta.recordNewValues(("summary", "whiteboard"))

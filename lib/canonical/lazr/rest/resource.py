@@ -51,6 +51,7 @@ from zope.schema.interfaces import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.lazr.enum import BaseItem
@@ -58,12 +59,10 @@ from canonical.lazr.enum import BaseItem
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url, BatchNavigator, and event code should be moved into lazr.
 from canonical.launchpad import versioninfo
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, ILaunchBag)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource,
@@ -1097,11 +1096,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         self.etags_by_media_type = {}
 
         # Send a notification event.
-        event = SQLObjectModifiedEvent(
+        event = ObjectModifiedEvent(
             object=self.entry.context,
             object_before_modification=entry_before_modification,
-            edited_fields=validated_changeset.keys(),
-            user=getUtility(ILaunchBag).user)
+            edited_fields=validated_changeset.keys())
         notify(event)
 
         # If the modification caused the entry's URL to change, tell

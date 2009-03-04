@@ -18,8 +18,8 @@ are simple little functions.
 
     >>> from zope.event import notify
     >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+    >>> from lazr.lifecycle.event import (
+    ...     ObjectCreatedEvent, ObjectModifiedEvent)
     >>> from canonical.launchpad.database import (
     ...     BugPackageInfestation, BugProductInfestation)
     >>> from canonical.launchpad.interfaces import (
@@ -39,7 +39,7 @@ are simple little functions.
     >>> bug = firefox.createBug(params)
     >>> bug.activity.count()
     0
-    >>> object_created = SQLObjectCreatedEvent(bug)
+    >>> object_created = ObjectCreatedEvent(bug)
     >>> notify(object_created)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.person == user
@@ -55,7 +55,7 @@ are simple little functions.
     >>> from canonical.launchpad.interfaces import IBug
     >>> old_state = Snapshot(bug, providing=IBug)
     >>> bug.title = "new bug title"
-    >>> bug_edited = SQLObjectModifiedEvent(
+    >>> bug_edited = ObjectModifiedEvent(
     ...     bug, old_state, ["title", "description"])
     >>> notify(bug_edited)
     >>> latest_activity = bug.activity[-1]
@@ -76,7 +76,7 @@ are simple little functions.
     >>> source_package_assignment = getUtility(IBugTaskSet).createTask(
     ...     bug=bug, sourcepackagename=mozilla_firefox,
     ...     distribution=ubuntu,owner=user)
-    >>> source_package_assignment_added = SQLObjectCreatedEvent(
+    >>> source_package_assignment_added = ObjectCreatedEvent(
     ...     source_package_assignment)
     >>> notify(source_package_assignment_added)
     >>> latest_activity = bug.activity[-1]
@@ -97,7 +97,7 @@ are simple little functions.
     ...   source_package_assignment, providing=IDistroBugTask)
     >>> source_package_assignment.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
-    >>> source_package_assignment_edited = SQLObjectModifiedEvent(
+    >>> source_package_assignment_edited = ObjectModifiedEvent(
     ...     source_package_assignment, old_source_package_assignment,
     ...     edit_fields)
     >>> notify(source_package_assignment_edited)
@@ -114,7 +114,7 @@ are simple little functions.
 
     >>> product_assignment = getUtility(IBugTaskSet).createTask(
     ...   bug=bug, product=getUtility(IProductSet)['thunderbird'], owner=user)
-    >>> product_assignment_added = SQLObjectCreatedEvent(product_assignment)
+    >>> product_assignment_added = ObjectCreatedEvent(product_assignment)
     >>> notify(product_assignment_added)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
@@ -132,7 +132,7 @@ are simple little functions.
     ...     product_assignment, providing=IUpstreamBugTask)
     >>> product_assignment.transitionToStatus(
     ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
-    >>> product_assignment_edited = SQLObjectModifiedEvent(
+    >>> product_assignment_edited = ObjectModifiedEvent(
     ...     product_assignment, old_product_assignment, edit_fields)
     >>> notify(product_assignment_edited)
     >>> latest_activity = bug.activity[-1]
@@ -154,7 +154,7 @@ are simple little functions.
     ...     verifiedbyID=user.id, lastmodified=right_now,
     ...     lastmodifiedbyID=user.id, sourcepackagerelease=14,
     ...     infestationstatus=BugInfestationStatus.AFFECTED)
-    >>> package_infesation_added = SQLObjectCreatedEvent(package_infestation)
+    >>> package_infesation_added = ObjectCreatedEvent(package_infestation)
     >>> notify(package_infesation_added)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
@@ -169,7 +169,7 @@ are simple little functions.
     >>> old_package_infestation = Snapshot(
     ...     package_infestation, names=edit_fields)
     >>> package_infestation.infestationstatus = BugInfestationStatus.VICTIMIZED
-    >>> package_infestation_edited = SQLObjectModifiedEvent(
+    >>> package_infestation_edited = ObjectModifiedEvent(
     ...     package_infestation, old_package_infestation, edit_fields)
     >>> notify(package_infestation_edited)
     >>> latest_activity = bug.activity[-1]
@@ -190,7 +190,7 @@ are simple little functions.
     ...     verifiedbyID=user.id, lastmodified=right_now,
     ...     lastmodifiedbyID=user.id, productrelease=4,
     ...     infestationstatus=BugInfestationStatus.AFFECTED)
-    >>> product_infesation_added = SQLObjectCreatedEvent(
+    >>> product_infesation_added = ObjectCreatedEvent(
     ...     product_infestation)
     >>> notify(product_infesation_added)
     >>> latest_activity = bug.activity[-1]
@@ -206,7 +206,7 @@ are simple little functions.
     >>> old_product_infestation = Snapshot(
     ...     product_infestation, names=edit_fields)
     >>> product_infestation.infestationstatus = BugInfestationStatus.UNKNOWN
-    >>> product_infestation_edited = SQLObjectModifiedEvent(
+    >>> product_infestation_edited = ObjectModifiedEvent(
     ...     product_infestation, old_product_infestation, edit_fields)
     >>> notify(product_infestation_edited)
     >>> latest_activity = bug.activity[-1]
@@ -225,7 +225,7 @@ are simple little functions.
     ...     "private", "duplicateof", "security_related"]
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.duplicateof = 1
-    >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
+    >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
     >>> notify(bug_edited)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
@@ -243,7 +243,7 @@ are simple little functions.
     ...     "security_related"]
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.duplicateof = 2
-    >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
+    >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
     >>> notify(bug_edited)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
@@ -261,7 +261,7 @@ are simple little functions.
     ...     "security_related"]
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.duplicateof = None
-    >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
+    >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
     >>> notify(bug_edited)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
@@ -289,7 +289,7 @@ First we have to create the file itself, and upload it to the Librarian:
     ...     subject="title", content="added an attachment")
     >>> attachment = getUtility(IBugAttachmentSet).create(
     ...     bug=bug, title="title", message=message, filealias=filealias)
-    >>> notify(SQLObjectCreatedEvent(attachment))
+    >>> notify(ObjectCreatedEvent(attachment))
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'bug'
@@ -312,7 +312,7 @@ First we have to create the file itself, and upload it to the Librarian:
 
     >>> firefox_task.milestone = firefox_1_0
     >>> edit_fields = ["milestone"]
-    >>> bugtask_edited = SQLObjectModifiedEvent(
+    >>> bugtask_edited = ObjectModifiedEvent(
     ...     firefox_task, old_bugtask, edit_fields, user=no_priv)
     >>> notify(bugtask_edited)
 
@@ -332,7 +332,7 @@ First we have to create the file itself, and upload it to the Librarian:
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> thumper = getUtility(IPersonSet).getByName('thumper')
     >>> bug_subscription = bug_one.subscribe(thumper, user)
-    >>> notify(SQLObjectCreatedEvent(bug_subscription))
+    >>> notify(ObjectCreatedEvent(bug_subscription))
     >>> latest_activity = bug_one.activity[-1]
     >>> latest_activity.message
     u'added subscriber Tim Penhey'

@@ -62,6 +62,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.config import config
@@ -110,8 +111,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.searchbuilder import all, any, NULL
 
 from canonical.launchpad import helpers
-
-from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
 from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
@@ -1322,7 +1321,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                 bugtask.statusexplanation = ""
 
             notify(
-                SQLObjectModifiedEvent(
+                ObjectModifiedEvent(
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))

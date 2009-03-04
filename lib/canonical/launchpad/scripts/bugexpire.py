@@ -16,7 +16,7 @@ from zope.interface import providedBy
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.config import config
-from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
+from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BugTaskStatus, ILaunchpadCelebrities, IBugTaskSet)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -87,7 +87,7 @@ class BugJanitor:
                     subject=bugtask.bug.followup_subject(),
                     content=content)
                 bugtask.statusexplanation = content
-                notify(SQLObjectModifiedEvent(
+                notify(ObjectModifiedEvent(
                     bugtask, bugtask_before_modification,
                     ['status', 'statusexplanation'], user=self.janitor))
                 # XXX sinzui 2007-08-02 bug=29744:

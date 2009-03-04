@@ -23,10 +23,10 @@ from canonical.launchpad.interfaces import (
         NotFoundError, CreateBugParams, IPillarNameSet,
         BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
         BugTaskStatus)
-from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectCreatedEvent)
-from canonical.launchpad.event.interfaces import (
-    ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
+from lazr.lifecycle.event import (
+    ObjectModifiedEvent, ObjectCreatedEvent)
+from lazr.lifecycle.interfaces import (
+    IObjectCreatedEvent, IObjectModifiedEvent)
 
 from canonical.launchpad.mail.helpers import (
     get_error_message, get_person_or_team)
@@ -136,7 +136,7 @@ class BugEmailCommand(EmailCommand):
                 msg=message, title=message.title,
                 owner=getUtility(ILaunchBag).user)
             bug = getUtility(IBugSet).createBug(params)
-            return bug, SQLObjectCreatedEvent(bug)
+            return bug, ObjectCreatedEvent(bug)
         else:
             try:
                 bugid = int(bugid)
@@ -164,7 +164,7 @@ class EditEmailCommand(EmailCommand):
         args = self.convertArguments(context)
 
         edited_fields = set()
-        if ISQLObjectModifiedEvent.providedBy(current_event):
+        if IObjectModifiedEvent.providedBy(current_event):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
@@ -176,9 +176,9 @@ class EditEmailCommand(EmailCommand):
             if getattr(context, attr_name) != attr_value:
                 self.setAttributeValue(context, attr_name, attr_value)
                 edited = True
-        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
+        if edited and not IObjectCreatedEvent.providedBy(current_event):
             edited_fields.update(args.keys())
-            current_event = SQLObjectModifiedEvent(
+            current_event = ObjectModifiedEvent(
                 context, context_snapshot, list(edited_fields))
 
         return context, current_event
@@ -218,7 +218,7 @@ class PrivateEmailCommand(EmailCommand):
 
         # Snapshot.
         edited_fields = set()
-        if ISQLObjectModifiedEvent.providedBy(current_event):
+        if IObjectModifiedEvent.providedBy(current_event):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
@@ -229,9 +229,9 @@ class PrivateEmailCommand(EmailCommand):
         edited = context.setPrivate(private, getUtility(ILaunchBag).user)
 
         # Update the current event.
-        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
+        if edited and not IObjectCreatedEvent.providedBy(current_event):
             edited_fields.add('private')
-            current_event = SQLObjectModifiedEvent(
+            current_event = ObjectModifiedEvent(
                 context, context_snapshot, list(edited_fields))
 
         return context, current_event
@@ -265,7 +265,7 @@ class SecurityEmailCommand(EmailCommand):
         # Take a snapshot.
         edited = False
         edited_fields = set()
-        if ISQLObjectModifiedEvent.providedBy(current_event):
+        if IObjectModifiedEvent.providedBy(current_event):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
@@ -284,8 +284,8 @@ class SecurityEmailCommand(EmailCommand):
             edited_fields.add('security_related')
 
         # Update the current event.
-        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
-            current_event = SQLObjectModifiedEvent(
+        if edited and not IObjectCreatedEvent.providedBy(current_event):
+            current_event = ObjectModifiedEvent(
                 context, context_snapshot, list(edited_fields))
 
         return context, current_event
@@ -323,7 +323,7 @@ class SubscribeEmailCommand(EmailCommand):
 
         else:
             bugsubscription = bug.subscribe(person, user)
-            notify(SQLObjectCreatedEvent(bugsubscription))
+            notify(ObjectCreatedEvent(bugsubscription))
 
         return bug, current_event
 
@@ -562,12 +562,12 @@ class AffectsEmailCommand(EmailCommand):
                 bugtask_before_edit = Snapshot(
                     bugtask, providing=IDistroBugTask)
                 bugtask.sourcepackagename = bug_target.sourcepackagename
-                event = SQLObjectModifiedEvent(
+                event = ObjectModifiedEvent(
                     bugtask, bugtask_before_edit, ['sourcepackagename'])
 
         if bugtask is None:
             bugtask = self._create_bug_task(bug, bug_target)
-            event = SQLObjectCreatedEvent(bugtask)
+            event = ObjectCreatedEvent(bugtask)
 
         return bugtask, event
 
