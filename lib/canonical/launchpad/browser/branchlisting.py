@@ -51,7 +51,6 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranchSet)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    BranchPersonSearchContext, BranchPersonSearchRestriction,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchBatchNavigator,
     IBranchSet)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches

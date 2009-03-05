@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BadBranchSearchContext',
     'bazaar_identity',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'branch_name_validator',
@@ -20,8 +19,6 @@ __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchMergeControlStatus',
-    'BranchPersonSearchContext',
-    'BranchPersonSearchRestriction',
     'BranchType',
     'BranchTypeError',
     'CannotDeleteBranch',
@@ -34,7 +31,6 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchNavigationMenu',
-    'IBranchPersonSearchContext',
     'IBranchSet',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
@@ -49,7 +45,7 @@ from cgi import escape
 from datetime import timedelta
 import re
 
-# ensure correct plugins are loaded
+# Ensure correct plugins are loaded. Do not delete this line.
 import canonical.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
@@ -68,7 +64,7 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
 from zope.component import getUtility
-from zope.interface import implements, Interface, Attribute
+from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Int, Choice, Text, TextLine, Datetime)
 
@@ -465,10 +461,6 @@ class NoSuchBranch(NameLookupFailed):
     """Raised when we try to load a branch that does not exist."""
 
     _message_prefix = "No such branch"
-
-
-class BadBranchSearchContext(Exception):
-    """The context is not valid for a branch search."""
 
 
 def get_blacklisted_hostnames():
@@ -1369,50 +1361,6 @@ class BranchLifecycleStatusFilter(EnumeratedType):
 
         Show all the branches.
         """)
-
-
-class BranchPersonSearchRestriction(EnumeratedType):
-    """How to further restrict the query for a branch search for people."""
-
-    REGISTERED = Item("""
-        Registered branches
-
-        Only return the branches registered by the person.
-        """)
-
-    OWNED = Item("""
-        Owned branches
-
-        Only return the branches owned by the person.
-        """)
-
-    SUBSCRIBED = Item("""
-        Subscribed branches
-
-        Only return the branches subscribed to by the person.
-        """)
-
-
-class IBranchPersonSearchContext(Interface):
-    """A `Person` with a search restriction."""
-
-    person = PublicPersonChoice(
-        title=_('Person'), required=True,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The person to restrict the branch search to."))
-
-    restriction = Choice(
-        title=_("Search restriction"), required=True,
-        vocabulary=BranchPersonSearchRestriction)
-
-
-class BranchPersonSearchContext:
-    """The simple implementation for the person search context."""
-    implements(IBranchPersonSearchContext)
-
-    def __init__(self, person, restriction):
-        self.person = person
-        self.restriction = restriction
 
 
 class IBranchCloud(Interface):
