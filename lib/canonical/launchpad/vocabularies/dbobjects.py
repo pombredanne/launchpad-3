@@ -83,7 +83,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
-    Account, Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch,
+    Account, Archive, Branch, Bounty, Bug, BugTracker, BugWatch,
     Component, Country, Distribution, DistroArchSeries, DistroSeries,
     EmailAddress, FeaturedProject, KarmaCategory, Language, LanguagePack,
     MailingList, Milestone, Person, PillarName, POTemplate,
@@ -93,6 +93,7 @@ from canonical.launchpad.database import (
 
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
@@ -105,8 +106,7 @@ from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.faq import IFAQ
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.language import ILanguage
@@ -154,7 +154,12 @@ class BasePersonVocabulary:
         if "@" in token:
             # This looks like an email token, so let's do an object
             # lookup based on that.
-            email = getUtility(IEmailAddressSet).getByEmail(token)
+            # We retrieve the email address via the main store, so 
+            # we can easily traverse to email.person to retrieve the
+            # result from the main Store as expected by our call sites.
+            email = IStore(Person).find(
+                EmailAddress,
+                EmailAddress.email.lower() == token.strip().lower()).one()
             if email is None:
                 raise LookupError(token)
             return self.toTerm(email.person)
@@ -1442,9 +1447,9 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             return self.emptySelectResults()
         if check_permission('launchpad.Commercial', user):
             product_set = getUtility(IProductSet)
-            projects = product_set.forReview(search_text=query,
-                                             licenses=[License.OTHER_PROPRIETARY],
-                                             active=True)
+            projects = product_set.forReview(
+                search_text=query, licenses=[License.OTHER_PROPRIETARY],
+                active=True)
         else:
             projects = user.getOwnedProjects(match_name=query)
             projects = self._filter_projs(projects)

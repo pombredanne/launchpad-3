@@ -277,6 +277,8 @@ possible to create a new person that will be associated with it.
 
     >>> person = fresh_account.createPerson(
     ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    >>> import transaction
+    >>> transaction.commit()
     >>> person.account == fresh_account
     True
     >>> IPerson(fresh_account) == person

@@ -892,3 +892,4 @@ class IStoreSelector(Interface):
         :raises MasterUnavailable: A master database was requested but
             it is not available.
         """
+
