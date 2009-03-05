@@ -16,7 +16,7 @@ from epydoc.markup.restructuredtext import parse_docstring
 from zope.app.zapi import getGlobalSiteManager
 from zope.component import queryAdapter
 from zope.interface.interfaces import IInterface
-from zope.schema import ValidationError, getFieldsInOrder
+from zope.schema import getFieldsInOrder
 from zope.schema.interfaces import IBytes, IChoice, IDate, IDatetime, IObject
 from zope.security.proxy import removeSecurityProxy
 from lazr.enum import IEnumeratedType

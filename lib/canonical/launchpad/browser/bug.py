@@ -558,7 +558,8 @@ class BugSecrecyEditView(BugEditViewBase):
             default=False)
         super(BugSecrecyEditView, self).setUpFields()
         self.form_fields = self.form_fields.omit('private')
-        self.form_fields = formlib.form.Fields(private_field) + self.form_fields
+        self.form_fields = (
+            formlib.form.Fields(private_field) + self.form_fields)
 
     @property
     def initial_values(self):

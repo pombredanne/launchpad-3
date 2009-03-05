@@ -71,7 +71,8 @@ class IGPGKey(IHasOwner):
             constraint=valid_fingerprint)
     active = Bool(title=_("Active"), required=True)
     displayname = Attribute("Key Display Name")
-    keyserverURL = Attribute("The URL to retrieve this key from the keyserver.")
+    keyserverURL = Attribute(
+        "The URL to retrieve this key from the keyserver.")
     can_encrypt = Bool(title=_("Key can be used for encryption"),
                        required=True)
     owner = Int(title=_('Person'), required=True, readonly=True)

@@ -14,7 +14,6 @@ __all__ = [
 
 from lazr.enum import DBEnumeratedType, DBItem
 
-from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 
 
