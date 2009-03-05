@@ -9,6 +9,7 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int, Object, Text
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.codeimport import ICodeImport
@@ -16,8 +17,6 @@ from canonical.launchpad.interfaces.codeimportmachine import \
      ICodeImportMachine
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
-from canonical.lazr import (
-    DBEnumeratedType, DBItem)
 
 
 class CodeImportResultStatus(DBEnumeratedType):

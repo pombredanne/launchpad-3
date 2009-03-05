@@ -2,11 +2,10 @@
 
 from zope.interface import Interface
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text
+from lazr.enum import EnumeratedType, Item
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
-
-from canonical.lazr import EnumeratedType, Item
 
 __metaclass__ = type
 __all__ = [

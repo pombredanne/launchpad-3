@@ -14,11 +14,11 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-
 from zope.schema import Bool, Choice, Datetime, Int
+from lazr.enum import DBEnumeratedType, DBItem
+
 from canonical.launchpad import _
 
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class BugInfestationStatus(DBEnumeratedType):

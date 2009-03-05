@@ -13,8 +13,7 @@ __all__ = [
 
 from zope.schema import Bool, Int, TextLine, Choice
 from zope.interface import Interface, Attribute
-
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasOwner

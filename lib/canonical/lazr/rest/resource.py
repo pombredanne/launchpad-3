@@ -50,7 +50,7 @@ from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IChoice, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-from canonical.lazr.enum import BaseItem
+from lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url, BatchNavigator, and event code should be moved into lazr.

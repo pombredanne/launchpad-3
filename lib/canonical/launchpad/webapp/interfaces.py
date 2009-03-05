@@ -11,9 +11,9 @@ from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from lazr.enum import DBEnumeratedType, DBItem, use_template
 
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem, use_template
 
 
 class TranslationUnavailable(Exception):

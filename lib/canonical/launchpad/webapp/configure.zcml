@@ -112,7 +112,7 @@
 
     <!-- TALES enum-value: namespace -->
     <adapter
-        for="canonical.lazr.BaseItem"
+        for="lazr.enum.BaseItem"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.EnumValueAPI"
         name="enumvalue"

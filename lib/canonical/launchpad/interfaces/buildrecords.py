@@ -14,9 +14,9 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Choice, TextLine
+from lazr.enum import DBEnumeratedType
 
 from canonical.launchpad import _
-from canonical.lazr.enum import DBEnumeratedType
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_read_operation, operation_parameters,
     operation_returns_collection_of, rename_parameters_as)
