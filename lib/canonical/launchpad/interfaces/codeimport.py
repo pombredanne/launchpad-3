@@ -9,17 +9,53 @@ __all__ = [
     'CodeImportReviewStatus',
     'ICodeImport',
     'ICodeImportSet',
+    'RevisionControlSystems',
     ]
+
+import re
 
 from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
+from CVS.protocol import CVSRoot, CvsRootError
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, URIField
-from canonical.launchpad.interfaces.productseries import (
-    validate_cvs_module, validate_cvs_root, RevisionControlSystems)
+from canonical.launchpad.validators import LaunchpadValidationError
+
+
+class RevisionControlSystems(DBEnumeratedType):
+    """Revision Control Systems
+
+    Bazaar brings code from a variety of upstream revision control
+    systems into bzr. This schema documents the known and supported
+    revision control systems.
+    """
+
+    CVS = DBItem(1, """
+        Concurrent Versions System
+
+        blah
+        """)
+
+    SVN = DBItem(2, """
+        Subversion
+
+        blah
+        """)
+
+    BZR_SVN = DBItem(3, """
+        Subversion via bzr-svn
+
+        blah
+        """)
+
+    GIT = DBItem(4, """
+        Git
+
+        blah
+        """)
 
 
 class CodeImportReviewStatus(DBEnumeratedType):
@@ -54,6 +90,37 @@ class CodeImportReviewStatus(DBEnumeratedType):
 
         The code import is failing for some reason and is no longer being
         attempted.""")
+
+
+def validate_cvs_root(cvsroot):
+    try:
+        root = CVSRoot(cvsroot)
+    except CvsRootError, e:
+        raise LaunchpadValidationError(e)
+    if root.method == 'local':
+        raise LaunchpadValidationError('Local CVS roots are not allowed.')
+    if root.hostname.count('.') == 0:
+        raise LaunchpadValidationError(
+            'Please use a fully qualified host name.')
+    return True
+
+
+def validate_cvs_module(cvsmodule):
+    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
+    if not valid_module.match(cvsmodule):
+        raise LaunchpadValidationError(
+            'The CVS module contains illegal characters.')
+    if cvsmodule == 'CVS':
+        raise LaunchpadValidationError(
+            'A CVS module can not be called "CVS".')
+    return True
+
+
+def validate_cvs_branch(branch):
+    if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
+        return True
+    else:
+        raise LaunchpadValidationError('Your CVS branch name is invalid.')
 
 
 class ICodeImport(Interface):

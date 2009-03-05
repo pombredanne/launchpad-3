@@ -31,7 +31,8 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     BranchType, CodeImportJobState, CodeImportReviewStatus, IBranchSet,
     ICodeImport, ICodeImportEventSet, ICodeImportSet, ILaunchpadCelebrities,
-    NotFoundError, RevisionControlSystems)
+    NotFoundError)
+from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
 from canonical.launchpad.mailout.codeimport import code_import_updated
 from canonical.launchpad.validators.person import validate_public_person
 
