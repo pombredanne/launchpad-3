@@ -64,7 +64,7 @@ class BazaarBranchStore:
         if bzr_dir.needs_format_conversion(
                     format=BzrDirFormat.get_default_format()):
             try:
-                get_transport(remote_url).delete_tree('backup.bzr')
+                bzr_dir.root_transport.delete_tree('backup.bzr')
             except NoSuchFile:
                 pass
             upgrade(remote_url)
