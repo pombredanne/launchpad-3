@@ -7,7 +7,7 @@ __all__ = [
 from bzrlib.revisionspec import RevisionSpec
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 from lazr.delegates import delegates
 import simplejson
 from sqlobject import ForeignKey, StringCol

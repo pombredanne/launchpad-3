@@ -26,6 +26,7 @@ __all__ = [
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
@@ -33,7 +34,6 @@ from canonical.launchpad.interfaces import IBranch, IPerson
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,

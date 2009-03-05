@@ -14,6 +14,7 @@ import re
 import rfc822
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
+from lazr.enum import enumerated_type_registry
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -34,9 +35,8 @@ from canonical.launchpad.interfaces import (
     BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
     ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.person import (
-    IPerson, IPersonSet, PersonVisibility)
+    IHasIcon, IHasLogo, IHasMugshot)
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -50,7 +50,6 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
-from canonical.lazr import enumerated_type_registry
 from canonical.lazr.canonicalurl import nearest_adapter
 
 
@@ -2461,7 +2460,8 @@ class FormattersAPI:
                 css_class = 'diff-comment text'
             else:
                 css_class = 'text'
-            result.append('<td class="%s">%s</td>' % (css_class, escape(line)))
+            result.append(
+                '<td class="%s">%s</td>' % (css_class, escape(line)))
             result.append('</tr>')
 
         result.append('</table>')

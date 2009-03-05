@@ -33,6 +33,8 @@ from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.formlib import form
 from zope.schema import Choice
+from lazr.delegates import delegates
+from lazr.enum import EnumeratedType, Item
 
 from canonical.config import config
 
@@ -67,9 +69,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.lazr.enum import EnumeratedType, Item
 from canonical.widgets import LaunchpadDropdownWidget
-from lazr.delegates import delegates
 
 
 class BranchListingItem(BranchBadges):

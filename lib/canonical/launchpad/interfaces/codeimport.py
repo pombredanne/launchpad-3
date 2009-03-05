@@ -17,8 +17,7 @@ import re
 from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 from CVS.protocol import CVSRoot, CvsRootError
-
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, URIField
