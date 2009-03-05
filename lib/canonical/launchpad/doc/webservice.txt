@@ -213,8 +213,6 @@ for these objects.
     >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
     >>> provideAdapter(BaseAbsoluteURL, [ITestDataObject, IDefaultBrowserLayer],
     ...                IAbsoluteURL)
-    >>> provideAdapter(BaseAbsoluteURL,
-    ...     [ITestDataObject, IDefaultBrowserLayer], name="absolute_url")
     >>> provideAdapter(RecipeAbsoluteURL, [IRecipe, IDefaultBrowserLayer],
     ...                IAbsoluteURL)
     >>> provideAdapter(CommentAbsoluteURL, [IComment, IDefaultBrowserLayer],
@@ -882,8 +880,6 @@ implementation of IAbsoluteURL for their service root resource.
 
     >>> provideAdapter(BaseAbsoluteURL,
     ...     [MyServiceRootResource, IDefaultBrowserLayer], IAbsoluteURL)
-    >>> provideAdapter(BaseAbsoluteURL,
-    ...     [MyServiceRootResource, IDefaultBrowserLayer], name="absolute_url")
 
     >>> register_navigation(RootNavigation, IMyWebServiceApplication)
 

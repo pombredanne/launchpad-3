@@ -1111,23 +1111,28 @@ The adapter's params property also contains the available parameters.
 Factory operations set the 201 Created status code and return the
 URL to the newly created object. The body of the response will be empty.
 
-(For canonical_url() to work, we need to register an ICanonicalUrlData
+(For the URL generation to work, we need to register an IAbsoluteURL
 adapter and set the request as the current interaction.)
 
     >>> from urllib import quote
     >>> from zope.component import provideAdapter
-    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-    >>> class BookUrlData(object):
-    ...     inside = None
-    ...     rootsite = None
+    >>> from zope.traversing.browser.interfaces import IAbsoluteURL
+    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
+    >>> class BookAbsoluteURL(object):
+    ...     """Returns a believable absolute URL for a book."""
+    ...     implements(IAbsoluteURL)
     ...
-    ...     def __init__(self, context):
+    ...     def __init__(self, context, request):
     ...         self.context = context
+    ...         self.request = request
     ...
-    ...     @property
-    ...     def path(self):
-    ...         return "books/%s" % quote(self.context.title)
-    >>> provideAdapter(BookUrlData, [IBook], ICanonicalUrlData)
+    ...     def __str__(self):
+    ...         return ("http://api.example.org/books/" +
+    ...                 quote(self.context.title))
+    ...
+    ...     __call__ = __str__
+    >>> provideAdapter(BookAbsoluteURL,
+    ...     [IBook, IHTTPApplicationRequest], IAbsoluteURL)
 
     >>> from zope.security.management import endInteraction, newInteraction
     >>> endInteraction()
