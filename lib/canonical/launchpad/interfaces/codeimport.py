@@ -36,25 +36,25 @@ class RevisionControlSystems(DBEnumeratedType):
     CVS = DBItem(1, """
         Concurrent Versions System
 
-        blah
+        Imports from CVS via CSCVS.
         """)
 
     SVN = DBItem(2, """
         Subversion
 
-        blah
+        Imports from SVN using CSCVS.
         """)
 
     BZR_SVN = DBItem(3, """
         Subversion via bzr-svn
 
-        blah
+        Imports from SVN using bzr-svn.
         """)
 
     GIT = DBItem(4, """
         Git
 
-        blah
+        Imports from Git using bzr-git.
         """)
 
 
