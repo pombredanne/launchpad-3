@@ -74,6 +74,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
@@ -82,8 +83,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, IPrimaryContext)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.branch import TargetBranchWidget
@@ -118,8 +118,9 @@ class BranchHierarchy(Hierarchy):
 
     def items(self):
         """See `Hierarchy`."""
-        obj = IPrimaryContext(self.context).context
-        return self._breadcrumbs([(obj, canonical_url(obj))])
+        return self._breadcrumbs(
+            (obj, canonical_url(obj))
+            for obj in IHasBranchTarget(self.context).target.components)
 
 
 class BranchBadges(HasBadgeBase):
@@ -720,13 +721,8 @@ class BranchDeletionView(LaunchpadFormView):
         branch = self.context
         if self.all_permitted():
             # Since the user is going to delete the branch, we need to have
-            # somewhere valid to send them next.  If the branch is junk, we
-            # send the user back to the code listing for the branch owner,
-            # otherwise we send them to the branch listing of the product.
-            if branch.product is None:
-                self.next_url = canonical_url(branch.owner)
-            else:
-                self.next_url = canonical_url(branch.product)
+            # somewhere valid to send them next.
+            self.next_url = canonical_url(branch.target)
             message = "Branch %s deleted." % branch.unique_name
             self.context.destroySelf(break_references=True)
             self.request.response.addNotification(message)

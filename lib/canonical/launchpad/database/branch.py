@@ -72,6 +72,7 @@ from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.interfaces.product import NoSuchProduct
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
@@ -153,6 +154,11 @@ class Branch(SQLBase):
         else:
             target = self.product
         return IBranchTarget(target)
+
+    @property
+    def namespace(self):
+        """See `IBranch`."""
+        return self.target.getNamespace(self.owner)
 
     @property
     def distribution(self):
@@ -1380,6 +1386,8 @@ class BranchSet:
             return branches.inProject(context)
         elif IPerson.providedBy(context):
             return branches.relatedTo(context)
+        elif ISourcePackage.providedBy(context):
+            return branches.inSourcePackage(context)
         elif IBranchPersonSearchContext.providedBy(context):
             restriction = context.restriction
             person = context.person
@@ -1393,6 +1401,8 @@ class BranchSet:
                 return branches.subscribedBy(person)
             else:
                 raise BadBranchSearchContext(context)
+        else:
+            raise BadBranchSearchContext(context)
 
     def getBranchesForContext(self, context=None, lifecycle_statuses=None,
                               visible_by_user=None):

@@ -29,6 +29,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugset import BugSetBase
+from canonical.launchpad.database.message import Message
 from canonical.launchpad.interfaces import (
     BugTrackerType, BugWatchErrorType, IBugTrackerSet, IBugWatch,
     IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
@@ -210,11 +211,14 @@ class BugWatch(SQLBase):
         store = Store.of(self)
         bug_messages = store.find(
             BugMessage,
+            BugMessage.message == Message.id,
             BugMessage.bug == self.bug,
             BugMessage.bugwatch == self,
             BugMessage.remote_comment_id == None)
 
-        return bug_messages
+        # Ordering by the id is only necessary to avoid randomness
+        # caused by identical dates, which can break tests.
+        return bug_messages.order_by(Message.datecreated, Message.id)
 
     def hasComment(self, comment_id):
         """See `IBugWatch`."""
