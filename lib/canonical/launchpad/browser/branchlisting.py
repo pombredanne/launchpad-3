@@ -428,11 +428,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         """Does the context have any branches that are visible to the user?"""
         return self._branches(None).count() > 0
 
-    @property
-    def branch_search_context(self):
-        """The context used for the branch search."""
-        return self.context
-
     def _getCollection(self):
         """Override this to say what branches will be in the listing."""
         raise NotImplementedError(self._getCollection)
@@ -662,6 +657,8 @@ class PersonBranchCountMixin:
     @cachedproperty
     def active_review_count(self):
         """Return the number of active reviews for the user."""
+        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
+        # IBranchCollection supports getMergeProposals.
         query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
             self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
         return query.count()
@@ -669,7 +666,8 @@ class PersonBranchCountMixin:
     @cachedproperty
     def approved_merge_count(self):
         """Return the number of active reviews for the user."""
-        # XXX: use collection
+        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
+        # IBranchCollection supports getMergeProposals.
         query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
             self.context, [BranchMergeProposalStatus.CODE_APPROVED],
             self.user)
@@ -678,7 +676,6 @@ class PersonBranchCountMixin:
     @cachedproperty
     def requested_review_count(self):
         """Return the number of active reviews for the user."""
-        # XXX: use collection
         utility = getUtility(IBranchMergeProposalGetter)
         query = utility.getProposalsForReviewer(
             self.context, [
@@ -757,13 +754,6 @@ class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
     def _getCollection(self):
         return getUtility(IAllBranches).registeredBy(self.context)
 
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        # XXX: what should we do with this? what does it do?
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.REGISTERED)
-
 
 class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's owned branches."""
@@ -773,12 +763,6 @@ class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
 
     def _getCollection(self):
         return getUtility(IAllBranches).ownedBy(self.context)
-
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.OWNED)
 
 
 class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
@@ -790,12 +774,6 @@ class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
     def _getCollection(self):
         return getUtility(IAllBranches).subscribedBy(self.context)
 
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.SUBSCRIBED)
-
 
 class PersonTeamBranchesView(LaunchpadView):
     """View for team branches portlet."""
@@ -803,10 +781,8 @@ class PersonTeamBranchesView(LaunchpadView):
     @cachedproperty
     def teams_with_branches(self):
         def team_has_branches(team):
-            # XXX: use collection
-            branches = getUtility(IBranchSet).getBranchesForContext(
-                team, visible_by_user=self.user)
-            return branches.count() > 0
+            return getUtility(IAllBranches).ownedBy(team).visibleByUser(
+                self.user).count() > 0
         return [team for team in self.context.teams_participated_in
                 if team_has_branches(team) and team != self.context]
 
@@ -832,7 +808,8 @@ class ProductReviewCountMixin:
     @cachedproperty
     def active_review_count(self):
         """Return the number of active reviews for the user."""
-        # XXX: use collection
+        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
+        # IBranchCollection supports getMergeProposals.
         query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
             self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
         return query.count()
@@ -840,7 +817,8 @@ class ProductReviewCountMixin:
     @cachedproperty
     def approved_merge_count(self):
         """Return the number of active reviews for the user."""
-        # XXX: use collection
+        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
+        # IBranchCollection supports getMergeProposals.
         query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
             self.context, [BranchMergeProposalStatus.CODE_APPROVED],
             self.user)
