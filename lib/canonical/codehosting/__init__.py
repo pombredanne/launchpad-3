@@ -36,7 +36,9 @@ os.environ['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
 # codehosting package.
 load_plugins([get_bzr_plugins_path()])
 
+
 def load_optional_plugin(plugin_name):
+    """Load the plugin named `plugin_name` from optionalbzrplugins/."""
     from bzrlib import plugins
     optional_plugin_dir = os.path.join(config.root, 'optionalbzrplugins')
     if optional_plugin_dir not in plugins.__path__:

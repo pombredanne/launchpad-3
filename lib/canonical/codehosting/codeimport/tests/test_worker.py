@@ -39,6 +39,7 @@ import pysvn
 
 default_format = BzrDirFormat.get_default_format()
 
+
 class WorkerTest(TestCaseWithTransport):
     """Base test case for things that test the code import worker.
 
