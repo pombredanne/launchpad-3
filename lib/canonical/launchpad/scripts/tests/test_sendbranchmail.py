@@ -41,8 +41,9 @@ class TestSendbranchmail(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
-        self.assertEqual('INFO    creating lockfile\n', stderr)
-        self.assertEqual('Ran 1 RevisionMailJobs.\n', stdout)
+        self.assertEqual('INFO    creating lockfile\n'
+                         'INFO    Ran 1 RevisionMailJobs.\n', stderr)
+        self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
 
     def test_revision_added_job(self):
@@ -56,8 +57,9 @@ class TestSendbranchmail(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
-        self.assertEqual('INFO    creating lockfile\n', stderr)
-        self.assertEqual('Ran 1 RevisionMailJobs.\n', stdout)
+        self.assertEqual('INFO    creating lockfile\n'
+                         'INFO    Ran 1 RevisionMailJobs.\n', stderr)
+        self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
 
 
