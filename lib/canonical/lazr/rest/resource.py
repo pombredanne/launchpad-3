@@ -40,8 +40,8 @@ from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope import component
 from zope.component import (
-    adapts, getAdapters, getAllUtilitiesRegisteredFor,
-    getMultiAdapter, getUtility, queryAdapter)
+    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter, 
+    getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.publisher.http import init_status_codes, status_reasons
@@ -129,8 +129,8 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
 class JSONItem:
     """JSONPublishable adapter for lazr.enum."""
-    adapts(BaseItem)
     implements(IJSONPublishable)
+    adapts(BaseItem)
 
     def __init__(self, context):
         self.context = context
@@ -1552,6 +1552,7 @@ class Collection:
 class ScopedCollection:
     """A collection associated with some parent object."""
     implements(IScopedCollection)
+    adapts(Interface, Interface)
 
     def __init__(self, context, collection):
         """Initialize the scoped collection.

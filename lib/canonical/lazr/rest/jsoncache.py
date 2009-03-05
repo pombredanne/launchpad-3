@@ -11,12 +11,14 @@ __all__ = [
 from canonical.lazr.interfaces.rest import (
     IJSONRequestCache, LAZR_WEBSERVICE_NS)
 
-from zope.component import getUtility
+from zope.component import adapts, getUtility
 from zope.interface import implements
+from zope.publisher.interfaces.browser import IBrowserRequest
 
 class JSONRequestCache:
-
+    """Default implementation for `IJSONRequestCache`."""
     implements(IJSONRequestCache)
+    adapts(IBrowserRequest)
 
     LAZR_OBJECT_JSON_CACHE = ("%s.object-json-cache"
                               % LAZR_WEBSERVICE_NS)
