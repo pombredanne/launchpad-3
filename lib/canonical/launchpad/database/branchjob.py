@@ -103,6 +103,13 @@ class BranchJobDerived(object):
     def __init__(self, branch_job):
         self.context = branch_job
 
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.context == other.context)
+
+    def __ne__(self, other):
+        return not (self == other)
+
     @classmethod
     def iterReady(klass):
         """See `IRevisionMailJobSource`."""
@@ -167,12 +174,6 @@ class RevisionMailJob(BranchDiffJob):
     classProvides(IRevisionMailJobSource)
 
     class_job_type = BranchJobType.REVISION_MAIL
-
-    def __eq__(self, other):
-        return (self.context == other.context)
-
-    def __ne__(self, other):
-        return not (self == other)
 
     @classmethod
     def create(
