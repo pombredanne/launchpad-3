@@ -108,8 +108,8 @@ developers team has two branches which are both private.
     >>> person_set = getUtility(IPersonSet)
     >>> landscape_team = person_set.getByName('landscape-developers')
     >>> test_user = person_set.getByEmail('test@canonical.com')
-    >>> branches = getUtility(IBranchSet).getBranchesForContext(
-    ...     landscape_team, visible_by_user=test_user).order_by(Branch.id)
+    >>> branches = getUtility(IAllBranches).relatedTo(landscape_team)
+    >>> branches = branches.visibleByUser(test_user).order_by(Branch.id)
     >>> for branch in branches:
     ...     branch = removeSecurityProxy(branch)
     ...     print branch.unique_name, branch.private

@@ -462,9 +462,10 @@ no longer appear in the result set.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BranchLifecycleStatus, IBranchSet)
-    >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForContext(
-    ...     context=productset.getByName('thunderbird'),
-    ...     lifecycle_statuses=None)
+    >>> from canonical.launchpad.interfaces.branchcollection import (
+    ...     IAllBranches)
+    >>> thunderbird_branches = getUtility(IAllBranches).inProduct(
+    ...     productset.getByName('thunderbird')).getBranches()
 
     # Only an owner, admin, or a bazaar expert can set the
     # branch.lifecycle_status.
