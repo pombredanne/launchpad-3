@@ -357,7 +357,7 @@ has an active mailing list.
     >>> print extract_text(
     ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
-    You are the owner of this team.
+    You are a member of the team which owns this team.
     You are subscribed to the team mailing list.
     >>> browser.getControl('Unsubscribe')
     <SubmitControl name='unsubscribe' type='submit'>
@@ -372,7 +372,7 @@ Clicking the link will unsubscribe you from the list immediately.
     >>> print extract_text(
     ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
-    You are the owner of this team.
+    You are a member of the team which owns this team.
     You are not subscribed to the team mailing list.
     (Subscribe)
 
@@ -383,7 +383,7 @@ does not show either link.
     >>> print extract_text(
     ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
-    You are the owner of this team.
+    You are a member of the team which owns this team.
 
     >>> browser.getLink('Subscribe')
     Traceback (most recent call last):
