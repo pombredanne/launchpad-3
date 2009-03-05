@@ -17,7 +17,9 @@ JSON or XHTML-fragment representation.
     ...
     Content-Type: application/json
     ...
-    "<b>Guilherme Salgado</b>"
+
+    >>> print webservice.get('/~salgado/display_name').jsonBody()
+    <b>Guilherme Salgado</b>
 
     >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
     HTTP/1.1 200 Ok
