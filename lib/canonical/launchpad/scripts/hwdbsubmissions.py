@@ -8,6 +8,7 @@ data and for the community test submissions.
 
 
 __all__ = [
+           'LibrarianServerError',
            'SubmissionParser',
            'process_pending_submissions',
           ]
@@ -15,12 +16,14 @@ __all__ = [
 
 import bz2
 from cStringIO import StringIO
+import cElementTree as etree
 from datetime import datetime, timedelta
 from logging import getLogger
 import os
 import re
 import sys
-import cElementTree as etree
+from time import sleep
+from urllib2 import HTTPError, URLError
 
 import pytz
 
@@ -81,6 +84,9 @@ DB_FORMAT_FOR_PRODUCT_ID = {
     'usb_device': '0x%04x',
     'scsi': '%-16s',
     }
+
+class LibrarianServerError(Exception):
+    """An error indicating that the Librarian server is not responding."""
 
 class SubmissionParser(object):
     """A Parser for the submissions to the hardware database."""
@@ -966,6 +972,42 @@ class SubmissionParser(object):
             return None
         return kernel_package_name
 
+    def loadRawSubmissionData(self, raw_submission):
+        """Load the raw submission data from the Librarian file."""
+        retry_delay = 1
+        # Ignoring code execution time, the loop below waits at most
+        # 2**11-1 = 2047 seconds before terminating
+        while 1:
+            try:
+                raw_submission.open()
+                submission_data = raw_submission.read()
+                raw_submission.close()
+                return submission_data
+            except URLError, error:
+                # ProcessingLoop.__call__() below must decide what to do
+                # if a download from the librarian fails:
+                # Mark a submission  as "bad", for example, if a raw data
+                # file does not exist, or terminate processing if the
+                # librarian server cannot serve the file temporarily.
+                # The latter case is indicated either by 5xx server
+                # response or by a URLError if the server is completely
+                # unreachable.
+                #
+                # We treat HTTPError with a 5xx error code ("server problem")
+                # as a reason to retry the access again, as well as
+                # generic, non-HTTP, URLErrors like "connection refused".
+                # Note that URLError is a base class of HTTPError.
+                if (isinstance(error, HTTPError) and 500 <= error.code <= 599
+                    or isinstance(error, URLError) and
+                        not isinstance(error, HTTPError)):
+                    if retry_delay <= 1024:
+                        sleep(retry_delay)
+                    else:
+                        raise LibrarianServerError(str(error))
+                else:
+                    raise
+                retry_delay *= 2
+
     def processSubmission(self, submission):
         """Process a submisson.
 
@@ -974,9 +1016,7 @@ class SubmissionParser(object):
         :param submission: An IHWSubmission instance.
         """
         raw_submission = submission.raw_submission
-        raw_submission.open()
-        submission_data = raw_submission.read()
-        raw_submission.close()
+        submission_data = self.loadRawSubmissionData(submission.raw_submission)
         # We assume that the data has been sent bzip2-compressed,
         # but this is not checked when the data is submitted.
         expanded_data = None
@@ -1807,6 +1847,15 @@ class ProcessingLoop(object):
         """See `ITunableLoop`."""
         return self.finished
 
+    def reportOops(self, error_explanation):
+        """Create an OOPS report and the OOPS ID."""
+        info = sys.exc_info()
+        properties = [('error-explanation', error_explanation)]
+        request = ScriptRequest(properties)
+        error_utility = ErrorReportingUtility()
+        error_utility.raising(info, request)
+        self.logger.error('%s (%s)' % (error_explanation, request.oopsid))
+
     def __call__(self, chunk_size):
         """Process a batch of yet unprocessed HWDB submissions."""
         # chunk_size is a float; we compare it below with an int value,
@@ -1823,6 +1872,14 @@ class ProcessingLoop(object):
         submissions = list(submissions)
         if len(submissions) < chunk_size:
             self.finished = True
+
+        # Note that we must either change the status of each submission
+        # in the loop below or we must abort the submission processing
+        # entirely: getUtility(IHWSubmissionSet).getByStatus() above
+        # returns the oldest submissions first, so if one submission
+        # would remain in the status SUBMITTED, it would be returned
+        # in the next loop run again, leading to a potentially endless
+        # loop.
         for submission in submissions:
             try:
                 parser = SubmissionParser(self.logger)
@@ -1834,18 +1891,31 @@ class ProcessingLoop(object):
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch these exceptions.
                 raise
+            except LibrarianServerError, error:
+                # LibrarianServerError is raised when several attempts to
+                # access the Librarian file resulted in a 5xx response
+                # or an URLError.
+                # In this case we can neither validate nor invalidate the
+                # submission. Moreover, the attempt to process the next
+                # submission will most likely also fail, so we should give
+                # up for now.
+
+                # This exception is raised before any data for the current
+                # submission is processed, hence we can commit submissions
+                # processed in previous runs of this loop without causing
+                # any inconsistencies.
+                self.transaction.commit()
+
+                self.reportOops(
+                    'Could not reach the Librarian while processing HWDB '
+                    'submission %s' % submission.submission_key)
+                raise
             except Exception, error:
-                info = sys.exc_info()
-                message = (
+                self.transaction.abort()
+                self.reportOops(
                     'Exception while processing HWDB submission %s'
                     % submission.submission_key)
-                properties = [('error-explanation', message)]
-                request = ScriptRequest(properties)
-                error_utility = ErrorReportingUtility()
-                error_utility.raising(info, request)
-                self.logger.error('%s (%s)' % (message, request.oopsid))
 
-                self.transaction.abort()
                 self._invalidateSubmission(submission)
                 # Ensure that this submission is marked as bad, even if
                 # further submissions in this batch raise an exception.
