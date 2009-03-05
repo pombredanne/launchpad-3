@@ -440,14 +440,20 @@ class BugWatchUpdater(object):
             set(bug_watch.remotebug for bug_watch in bug_watches
                 if bug_watch.unpushed_comments.any() is not None))
 
+        remote_ids_to_check = sorted(
+            set(remote_ids_with_comments + remote_new_ids))
+
+        # We remove any IDs that are already in remote_ids_to_check from
+        # old_ids_to_check, since we're already going to be checking
+        # them anyway.
+        old_ids_to_check = sorted(
+            set(old_ids_to_check).difference(set(remote_ids_to_check)))
+
         # We limit the number of watches we're updating by the
         # ExternalBugTracker's batch_size. In an ideal world we'd just
         # slice the bug_watches list but for the sake of testing we need
         # to ensure that the list of bug watches is ordered by remote
         # bug id before we do so.
-        remote_ids_to_check = sorted(
-            set(remote_ids_with_comments + remote_new_ids))
-
         if remotesystem.batch_size is not None:
             # If there is still room in the batch, add as many 'old' bug
             # watches as possible.
@@ -455,14 +461,13 @@ class BugWatchUpdater(object):
             if ids_to_check_count < remotesystem.batch_size:
                 slots_left = remotesystem.batch_size - ids_to_check_count
                 remote_ids_to_check = sorted(
-                    set(remote_ids_to_check +
-                    old_ids_to_check[:slots_left]))
+                    remote_ids_to_check + old_ids_to_check[:slots_left])
         else:
             # If there's no batch size specified, update everything.
             remote_ids_to_check = sorted(
-                set(remote_ids_to_check + old_ids_to_check))
+                remote_ids_to_check + old_ids_to_check)
 
-        unmodified_remote_ids = list(
+        unmodified_remote_ids = sorted(
             set(remote_old_ids).difference(set(old_ids_to_check)))
 
         all_remote_ids = remote_ids_to_check + list(unmodified_remote_ids)

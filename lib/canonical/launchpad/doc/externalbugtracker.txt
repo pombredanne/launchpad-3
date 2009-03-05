@@ -503,8 +503,11 @@ will then be passed on to initializeRemoteBugDB().
     ...     external_bugtracker.getCurrentDBTime())
     last_checked: 2007-03-17 15:...:...
 
-    >>> print sorted(ids['remote_ids_to_check'])
-    [u'1', u'4']
+    >>> for key in sorted(ids):
+    ...     print "%s: %s" % (key, sorted(ids[key]))
+    all_remote_ids: [u'1', u'2', u'3', u'4']
+    remote_ids_to_check: [u'1', u'4']
+    unmodified_remote_ids: [u'2', u'3']
 
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugtracker, bug_watches)
@@ -595,8 +598,6 @@ updated, regardless of whether they have been checked recently. This is
 to ensure that new comments are pushed to the remote bugs as soon as
 possible.
 
-    >>> from canonical.launchpad.testing.factory import (
-    ...     LaunchpadObjectFactory)
     >>> factory = LaunchpadObjectFactory()
 
     >>> class DummyExternalBugTracker(CheckModifiedExternalBugTracker):
@@ -897,3 +898,84 @@ capable of dealing with multiple remote products.
     ...     'http://example.com')
     >>> print basic_external_bugtracker.getRemoteProduct(1)
     None
+
+
+== Prioritisation of watches ==
+
+_getRemoteIdsToCheck() prioritises the IDs it returns. Bug watches which have
+comments to push or which have never been checked will always be returned in
+the remote_ids_to_check list, regardless of the batch_size of the bug tracker
+(see "Batched BugWatch Updating" in doc/checkwatches.txt).
+
+We'll create some example unchecked watches as well as some watches with
+comments to push in order to demonstrate this.
+
+    >>> class SmallBatchExternalBugTracker(TimeUnknownExternalBugTracker):
+    ...
+    ...     batch_size = 5
+    >>> external_bugtracker = SmallBatchExternalBugTracker(
+    ...     'http://example.com')
+
+    >>> unchecked_watches = [
+    ...     factory.makeBugWatch(
+    ...         remote_bug=i, bugtracker=standard_bugzilla,
+    ...         bug=example_bug, owner=sample_person)
+    ...     for i in range(5)]
+    >>> watches_with_comments = [
+    ...     factory.makeBugWatch(
+    ...         remote_bug=i, bugtracker=standard_bugzilla,
+    ...         bug=example_bug, owner=sample_person)
+    ...     for i in range(5, 8)]
+    >>> for watch in watches_with_comments:
+    ...     watch.lastchecked = some_time_ago
+    ...     bug_message = watch.addComment(
+    ...         None, factory.makeMessage(owner=sample_person))
+
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker,
+    ...     unchecked_watches + watches_with_comments,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now)
+    >>> print sorted(ids['remote_ids_to_check'])
+    [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7']
+
+Previously-checked bug watches that need updating will only be included if
+there is enough room for them in the batch. If the number of new watches plus
+the number of watches with comments is greater than the batch size old watches
+will be ignored altogether.
+
+    >>> old_watches = []
+    >>> for i in range(8, 10):
+    ...     watch = factory.makeBugWatch(
+    ...         remote_bug=i, bugtracker=standard_bugzilla,
+    ...         bug=example_bug, owner=sample_person)
+    ...     watch.lastchecked = some_time_ago
+    ...     old_watches.append(watch)
+
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker,
+    ...     unchecked_watches + watches_with_comments + old_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now)
+    >>> print sorted(ids['remote_ids_to_check'])
+    [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7']
+
+However, if there's room in the batch, the old IDs that need checking will
+also be included.
+
+    >>> external_bugtracker.batch_size = 9
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker,
+    ...     unchecked_watches + watches_with_comments + old_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now)
+    >>> print sorted(ids['remote_ids_to_check'])
+    [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8']
+
+If there's no batch_size set, all the bugs that should be checked are
+returned.
+
+    >>> external_bugtracker.batch_size = None
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker,
+    ...     unchecked_watches + watches_with_comments + old_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now)
+    >>> print sorted(ids['remote_ids_to_check'])
+    [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
