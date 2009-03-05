@@ -1401,16 +1401,6 @@ class BranchSet:
         else:
             raise BadBranchSearchContext(context)
 
-    def getBranchesForContext(self, context=None, lifecycle_statuses=None,
-                              visible_by_user=None):
-        """See `IBranchSet`."""
-        all_branches = getUtility(IAllBranches)
-        branches = self._filter_by_context(context, all_branches)
-        if lifecycle_statuses:
-            branches = branches.withLifecycleStatus(*lifecycle_statuses)
-        branches = branches.visibleByUser(visible_by_user)
-        return branches.getBranches()
-
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):
         """See `IBranchSet`."""

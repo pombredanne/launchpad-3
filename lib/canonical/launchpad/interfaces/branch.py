@@ -1295,31 +1295,6 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getBranchesForContext(
-        context=None,
-        lifecycle_statuses=None,
-        visible_by_user=None):
-        """Branches associated with the context.
-
-        :param context: If None, all possible branches are returned, otherwise
-            the results will be appropriately filtered by the type of the
-            context.
-        :type context: Something that implements IProject, IProduct, or
-            IPerson.
-        :param lifecycle_statuses: If lifecycle_statuses evaluates to False
-            then branches of any lifecycle_status are returned, otherwise
-            only branches with a lifecycle_status of one of the
-            lifecycle_statuses are returned.
-        :type lifecycle_statuses: One or more values from the
-            BranchLifecycleStatus enumeration.
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        """
-
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
         """Return the most recently created branches for the product.
 
