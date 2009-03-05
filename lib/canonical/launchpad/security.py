@@ -690,6 +690,15 @@ class EditPersonBySelf(AuthorizationBase):
         return self.obj.id == user.id
 
 
+class EditAccountBySelf(AuthorizationBase):
+    permission = 'launchpad.Special'
+    usedfor = IAccount
+
+    def checkAccountAuthenticated(self, account):
+        """A user can edit the Account who is herself."""
+        return self.obj == account
+
+
 class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
     """Restrict viewing of private memberships of teams.
 

@@ -21,6 +21,7 @@ __all__ = [
     'RecentlyChangedBranchesView',
     'RecentlyImportedBranchesView',
     'RecentlyRegisteredBranchesView',
+    'SourcePackageBranchesView',
     ]
 
 from datetime import datetime
@@ -43,6 +44,7 @@ from canonical.launchpad.browser.feeds import (
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
 from canonical.launchpad.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces import (
     IBugBranchSet,
     IProductSeriesSet,
@@ -1153,3 +1155,34 @@ class ProjectBranchesView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project group.')
         return message % self.context.displayname
+
+
+class SourcePackageBranchesView(BranchListingView):
+
+    # XXX: JonathanLange 2009-03-03 spec=package-branches: This page has no
+    # menu yet -- do we need one?
+
+    # XXX: JonathanLange 2009-03-03 spec=package-branches: Add a link to
+    # register a branch. This requires there to be a package branch
+    # registration page.
+
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
+
+    @cachedproperty
+    def branch_count(self):
+        """The number of total branches the user can see."""
+        return getUtility(IBranchSet).getBranchesForContext(
+            context=self.context, visible_by_user=self.user).count()
+
+    @property
+    def series_links(self):
+        """Links to other series in the same distro as the package."""
+        our_series = self.context.distroseries
+        our_sourcepackagename = self.context.sourcepackagename
+        # We want oldest on the left, and 'serieses' normally yields the
+        # newest first.
+        for series in reversed(self.context.distribution.serieses):
+            yield dict(
+                series_name=series.name,
+                package=SourcePackage(our_sourcepackagename, series),
+                linked=(series != our_series))
