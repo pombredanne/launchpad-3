@@ -1988,9 +1988,9 @@ class RelevantMilestonesMixin:
         """Return data used to render the milestone checkboxes."""
         milestones = getUtility(IBugTaskSet).getAssignedMilestonesFromSearch(
             self.searchUnbatched())
-        for milestone in milestones:
-            yield dict(title=(milestone.title or milestone.id),
-                       value=milestone.id, checked=False)
+        return [
+            dict(title=milestone.title, value=milestone.id, checked=False)
+            for milestone in milestones]
 
 
 class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
