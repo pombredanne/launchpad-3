@@ -1162,7 +1162,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def map(self):
         target = '+map'
         text = 'Show map and time zones'
-        return Link(target, text)
+        return Link(target, text, icon='meeting')
 
     def add_my_teams(self):
         target = '+add-my-teams'
