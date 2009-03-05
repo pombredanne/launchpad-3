@@ -649,14 +649,6 @@
         />
     </class>
 
-    <!-- the URI class -->
-    <class class="canonical.launchpad.webapp.uri.URI">
-      <allow attributes="scheme userinfo host port path query fragment
-          authority hier_part
-          __str__ __repr__ __eq__ __ne__ replace resolve append contains
-          ensureSlash ensureNoSlash" />
-    </class>
-
     <!-- Define the widget used by Choice fields that use huge vocabularies -->
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
