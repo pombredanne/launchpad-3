@@ -13,7 +13,6 @@ __all__ = [
     'PersonSubscribedBranchesView',
     'PersonTeamBranchesView',
     'ProductBranchListingView',
-    'ProductBranchOverviewView',
     'ProductBranchesMenu',
     'ProductBranchesView',
     'ProductCodeIndexView',
@@ -52,9 +51,9 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranchSet)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    BranchPersonSearchContext, BranchPersonSearchRestriction,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchBatchNavigator,
     IBranchSet)
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
@@ -428,10 +427,9 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         """Does the context have any branches that are visible to the user?"""
         return self._branches(None).count() > 0
 
-    @property
-    def branch_search_context(self):
-        """The context used for the branch search."""
-        return self.context
+    def _getCollection(self):
+        """Override this to say what branches will be in the listing."""
+        raise NotImplementedError(self._getCollection)
 
     def _branches(self, lifecycle_status):
         """Return a sequence of branches.
@@ -441,9 +439,12 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
 
         :param lifecycle_status: A filter of the branch's lifecycle status.
         """
-        branches = getUtility(IBranchSet).getBranchesForContext(
-            self.branch_search_context, lifecycle_status, self.user)
-        return branches.order_by(self._listingSortToOrderBy(self.sort_by))
+        collection = self._getCollection()
+        if lifecycle_status is not None:
+            collection = collection.withLifecycleStatus(*lifecycle_status)
+        collection = collection.visibleByUser(self.user)
+        return collection.getBranches().order_by(
+            self._listingSortToOrderBy(self.sort_by))
 
     @property
     def no_branch_message(self):
@@ -631,29 +632,20 @@ class PersonBranchCountMixin:
     @cachedproperty
     def registered_branch_count(self):
         """Return the number of branches registered by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.REGISTERED),
-            visible_by_user=self.user)
-        return query.count()
+        return getUtility(IAllBranches).visibleByUser(self.user).registeredBy(
+            self.context).count()
 
     @cachedproperty
     def owned_branch_count(self):
         """Return the number of branches owned by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.OWNED),
-            visible_by_user=self.user)
-        return query.count()
+        return getUtility(IAllBranches).visibleByUser(self.user).ownedBy(
+            self.context).count()
 
     @cachedproperty
     def subscribed_branch_count(self):
         """Return the number of branches subscribed to by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
-            visible_by_user=self.user)
-        return query.count()
+        return getUtility(IAllBranches).visibleByUser(self.user).subscribedBy(
+            self.context).count()
 
     @property
     def user_in_context_team(self):
@@ -664,6 +656,8 @@ class PersonBranchCountMixin:
     @cachedproperty
     def active_review_count(self):
         """Return the number of active reviews for the user."""
+        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
+        # IBranchCollection supports getMergeProposals.
         query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
             self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
         return query.count()
@@ -671,6 +665,8 @@ class PersonBranchCountMixin:
     @cachedproperty
     def approved_merge_count(self):
         """Return the number of active reviews for the user."""
+        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
+        # IBranchCollection supports getMergeProposals.
         query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
             self.context, [BranchMergeProposalStatus.CODE_APPROVED],
             self.user)
@@ -754,11 +750,8 @@ class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
     heading_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.REGISTERED)
+    def _getCollection(self):
+        return getUtility(IAllBranches).registeredBy(self.context)
 
 
 class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
@@ -767,11 +760,8 @@ class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
     heading_template = 'Bazaar branches owned by %(displayname)s'
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.OWNED)
+    def _getCollection(self):
+        return getUtility(IAllBranches).ownedBy(self.context)
 
 
 class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
@@ -780,11 +770,8 @@ class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
     no_sort_by = (BranchListingSort.DEFAULT,)
 
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.SUBSCRIBED)
+    def _getCollection(self):
+        return getUtility(IAllBranches).subscribedBy(self.context)
 
 
 class PersonTeamBranchesView(LaunchpadView):
@@ -793,9 +780,8 @@ class PersonTeamBranchesView(LaunchpadView):
     @cachedproperty
     def teams_with_branches(self):
         def team_has_branches(team):
-            branches = getUtility(IBranchSet).getBranchesForContext(
-                team, visible_by_user=self.user)
-            return branches.count() > 0
+            return getUtility(IAllBranches).ownedBy(team).visibleByUser(
+                self.user).count() > 0
         return [team for team in self.context.teams_participated_in
                 if team_has_branches(team) and team != self.context]
 
@@ -821,6 +807,8 @@ class ProductReviewCountMixin:
     @cachedproperty
     def active_review_count(self):
         """Return the number of active reviews for the user."""
+        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
+        # IBranchCollection supports getMergeProposals.
         query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
             self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
         return query.count()
@@ -828,6 +816,8 @@ class ProductReviewCountMixin:
     @cachedproperty
     def approved_merge_count(self):
         """Return the number of active reviews for the user."""
+        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
+        # IBranchCollection supports getMergeProposals.
         query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
             self.context, [BranchMergeProposalStatus.CODE_APPROVED],
             self.user)
@@ -882,30 +872,19 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
         return Link('/+code-imports/+new', text, icon='add', enabled=enabled)
 
 
-class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
-    """View for the product code overview."""
-
-    __used_for__ = IProduct
-
-    feed_types = (
-        ProductBranchesFeedLink,
-        )
-
-    def initialize(self):
-        self.product = self.context
-
-
 class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""
 
     show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
+    def _getCollection(self):
+        return getUtility(IAllBranches).inProduct(self.context)
+
     @cachedproperty
     def branch_count(self):
         """The number of total branches the user can see."""
-        return getUtility(IBranchSet).getBranchesForContext(
-            context=self.context, visible_by_user=self.user).count()
+        return self._getCollection().visibleByUser(self.user).count()
 
     @cachedproperty
     def development_focus_branch(self):
@@ -1044,24 +1023,19 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_branches(self):
         """Return the series branches, followed by most recently changed."""
         series_branches = self._getSeriesBranches()
-        branch_query = getUtility(IBranchSet).getBranchesForContext(
-            context=self.context, visible_by_user=self.user,
-            lifecycle_statuses=self.selected_lifecycle_status)
+        branch_query = super(ProductCodeIndexView, self)._branches(
+            self.selected_lifecycle_status)
         branch_query.order_by(self._listingSortToOrderBy(
             BranchListingSort.MOST_RECENTLY_CHANGED_FIRST))
         # We don't want the initial branch listing to be batched, so only get
         # the batch size - the number of series_branches.
         batch_size = config.launchpad.branchlisting_batch_size
         max_branches_from_query = batch_size - len(series_branches)
-        # Since series branches are actual branches, and the query
-        # returns the bastardised BranchWithSortColumns, we need to
-        # check branch ids in the following list comprehension.
-        series_branch_ids = set(branch.id for branch in series_branches)
         # We want to make sure that the series branches do not appear
         # in our branch list.
         branches = [
             branch for branch in branch_query[:max_branches_from_query]
-            if branch.id not in series_branch_ids]
+            if branch not in series_branches]
         series_branches.extend(branches)
         return series_branches
 
@@ -1138,6 +1112,9 @@ class ProjectBranchesView(BranchListingView):
     no_sort_by = (BranchListingSort.DEFAULT,)
     extra_columns = ('author', 'product')
 
+    def _getCollection(self):
+        return getUtility(IAllBranches).inProject(self.context)
+
     @property
     def no_branch_message(self):
         if (self.selected_lifecycle_status is not None
@@ -1168,11 +1145,13 @@ class SourcePackageBranchesView(BranchListingView):
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
 
+    def _getCollection(self):
+        return getUtility(IAllBranches).inSourcePackage(self.context)
+
     @cachedproperty
     def branch_count(self):
         """The number of total branches the user can see."""
-        return getUtility(IBranchSet).getBranchesForContext(
-            context=self.context, visible_by_user=self.user).count()
+        return self._getCollection().visibleByUser(self.user).count()
 
     @property
     def series_links(self):
