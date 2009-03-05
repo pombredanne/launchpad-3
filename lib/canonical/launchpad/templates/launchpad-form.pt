@@ -17,12 +17,12 @@
           enctype="multipart/form-data"
           accept-charset="UTF-8">
 
-      <div metal:define-macro="formbody">
+      <h1 tal:condition="view/label"
+          tal:content="view/label"
+          metal:define-slot="heading"
+          >Add Something</h1>
 
-        <h1 tal:condition="view/label"
-            tal:content="view/label"
-            metal:define-slot="heading"
-            >Add Something</h1>
+      <div metal:define-macro="formbody">
 
         <p metal:define-slot="extra_info" tal:replace="nothing">
           This is the description of the form.

@@ -23,12 +23,13 @@ function setupMarkDuplicateFormOverlay() {
         var mark_dupe_url = mark_dupe_links.item(0).getAttribute("href");
         var mark_dupe_form_url = mark_dupe_url + "/++form++";
         var formoverlay;
+
         function extractFormFromResponse(id, o){
             var form_content = o.responseText;
             formoverlay = new Y.lazr.FormOverlay({
                 headerContent: unescape(
                     "%3Ch2%3EMark bug report as duplicate%3C/h2%3E"),
-                form_content: form_content,
+                form_content: "Marking the bug as a duplicate will, by default, hide it from search results listings." + form_content,
                 form_submit_button: Y.Node.create(unescape(
                     '%3Cinput type="submit" value="Mark duplicate" /%3E')),
                 align: {
