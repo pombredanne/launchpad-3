@@ -449,10 +449,11 @@ bug tasks found.
 
 === Related bugs ===
 
+    >>> related_bugs_view = create_view(user, '+bugs', {'advanced': 1})
+
 A new user will have no related bugs, and therefore no related
 milestones.
 
-    >>> related_bugs_view = create_view(user, '+bugs', {'advanced': 1})
     >>> print pretty(list(related_bugs_view.searchUnbatched()))
     []
     >>> print pretty(list(related_bugs_view.getMilestoneWidgetValues()))
@@ -464,7 +465,6 @@ relevant milestones remains empty.
     >>> product = factory.makeProduct(owner=user, displayname='Coughing Bob')
     >>> milestone09 = factory.makeMilestone(product=product, name="0.9")
 
-    >>> related_bugs_view = create_view(user, '+bugs', {'advanced': 1})
     >>> print pretty(list(related_bugs_view.getMilestoneWidgetValues()))
     []
 
@@ -473,7 +473,6 @@ list of relevant milestones remains empty.
 
     >>> bug = factory.makeBug(product=product, owner=user)
 
-    >>> related_bugs_view = create_view(user, '+bugs', {'advanced': 1})
     >>> print pretty(list(related_bugs_view.searchUnbatched()))
     [<BugTask at ...>]
     >>> print pretty(list(related_bugs_view.getMilestoneWidgetValues()))
@@ -484,7 +483,6 @@ search page allow selection of a milestone.
 
     >>> bug.bugtasks[0].milestone = milestone09
 
-    >>> related_bugs_view = create_view(user, '+bugs', {'advanced': 1})
     >>> print pretty(list(related_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Milestone 0.9 for Coughing Bob',
@@ -495,10 +493,11 @@ search page allow selection of a milestone.
 
 Similar behavior is found when searching for reported bugs.
 
+    >>> reported_bugs_view = create_view(user, '+reportedbugs', {'advanced': 1})
+
 The earlier bug was reported by our user, so the assigned milestone
 will already appear.
 
-    >>> reported_bugs_view = create_view(user, '+reportedbugs', {'advanced': 1})
     >>> print pretty(list(reported_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Milestone 0.9 for Coughing Bob',
@@ -511,7 +510,6 @@ milestone appear amongst the possible options.
     >>> bug = factory.makeBug(product=product, owner=user)
     >>> bug.bugtasks[0].milestone = milestone10
 
-    >>> reported_bugs_view = create_view(user, '+reportedbugs', {'advanced': 1})
     >>> print pretty(list(reported_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Milestone 1.0 for Coughing Bob',
@@ -523,10 +521,11 @@ milestone appear amongst the possible options.
 
 === Assigned bugs ===
 
+    >>> assigned_bugs_view = create_view(user, '+assignedbugs', {'advanced': 1})
+
 No bugs have been assigned to our user, so no relevant milestones are
 found.
 
-    >>> assigned_bugs_view = create_view(user, '+assignedbugs', {'advanced': 1})
     >>> print pretty(list(assigned_bugs_view.getMilestoneWidgetValues()))
     []
 
@@ -534,7 +533,6 @@ Once a bug has been assigned, the milestone appears.
 
     >>> bug.bugtasks[0].transitionToAssignee(user)
 
-    >>> assigned_bugs_view = create_view(user, '+assignedbugs', {'advanced': 1})
     >>> print pretty(list(assigned_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Milestone 1.0 for Coughing Bob',
@@ -543,10 +541,11 @@ Once a bug has been assigned, the milestone appears.
 
 === Commented bugs ===
 
+    >>> commented_bugs_view = create_view(user, '+commentedbugs', {'advanced': 1})
+
 Our user has not commented on any bugs, so no relevant milestones are
 found.
 
-    >>> commented_bugs_view = create_view(user, '+commentedbugs', {'advanced': 1})
     >>> print pretty(list(commented_bugs_view.getMilestoneWidgetValues()))
     []
 
@@ -555,7 +554,6 @@ Once the user has commented, the related milestone does appear.
     >>> bug.newMessage(user)
     <Message at ...>
 
-    >>> commented_bugs_view = create_view(user, '+commentedbugs', {'advanced': 1})
     >>> print pretty(list(commented_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Milestone 1.0 for Coughing Bob',
@@ -564,10 +562,11 @@ Once the user has commented, the related milestone does appear.
 
 === Subscribed bugs ===
 
+    >>> subscribed_bugs_view = create_view(user, '+subscribedbugs', {'advanced': 1})
+
 Our user is not subscribed to any bugs, so no relevant milestones are
 found.
 
-    >>> subscribed_bugs_view = create_view(user, '+subscribedbugs', {'advanced': 1})
     >>> print pretty(list(subscribed_bugs_view.getMilestoneWidgetValues()))
     []
 
@@ -576,7 +575,6 @@ Once the user has subscribed, the related milestones appear.
     >>> bug.subscribe(user, user)
     <BugSubscription at ...>
 
-    >>> subscribed_bugs_view = create_view(user, '+subscribedbugs', {'advanced': 1})
     >>> print pretty(list(subscribed_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Milestone 1.0 for Coughing Bob',
