@@ -72,8 +72,10 @@ test: create
 	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
-	@ echo "* Vacuuming"
-	@ psql -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
+# XXX StuartBishop 20090304 - Disabling the vacuum step as we seem to be
+# getting buildbot hangs here. Ideally temporary.
+#	@ echo "* Vacuuming"
+#	@ psql -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
 
 # Create a launchpad_dev_template DB and load the dev sample data into it.
 # Also create a launchpad_ftest_playground DB as a copy of
@@ -91,8 +93,10 @@ dev: test
 	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
-	@ echo "* Vacuuming"
-	@ psql -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
+# XXX StuartBishop 20090304 - Disabling the vacuum step as we seem to be
+# getting buildbot hangs here. Ideally temporary.
+#	@ echo "* Vacuuming"
+#	@ psql -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
 	@ echo "* Creating ${DBNAME_DEV}"
 	@if [ "$$((`psql -l | grep -w ${DBNAME_DEV} | wc -l`))" = '1' ]; \
 	    then ${DROPDB} ${DBNAME_DEV} | grep : | cat ; \
