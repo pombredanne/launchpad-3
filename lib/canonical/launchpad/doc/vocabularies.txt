@@ -1210,12 +1210,15 @@ A person with a single and unvalidated email address can be merged.
     >>> fooperson, email = person_set.createPersonAndEmail(
     ...     'foobaz@bar.com', PersonCreationRationale.UNKNOWN,
     ...     name='foobaz', displayname='foo baz')
+    >>> import transaction
+    >>> transaction.commit()
     >>> fooperson in vocab
     True
 
 But any person without a single email address can't.
 
     >>> email.destroySelf()
+    >>> transaction.commit()
     >>> fooperson in vocab
     False
 

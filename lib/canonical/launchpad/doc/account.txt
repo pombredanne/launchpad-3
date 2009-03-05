@@ -277,6 +277,8 @@ possible to create a new person that will be associated with it.
 
     >>> person = fresh_account.createPerson(
     ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    >>> import transaction
+    >>> transaction.commit()
     >>> person.account == fresh_account
     True
     >>> IPerson(fresh_account) == person
@@ -399,6 +401,8 @@ random token for a mnemonic has been used in the past.
     ...     openid_identifier='http://id.launchpad.dev/000/non-unique',
     ...     trust_root='http://blog.org/')
 
+    >>> import transaction
+    >>> transaction.commit()
     >>> account_set.createOpenIDIdentifier('non-unique')
     Traceback (most recent call last):
      ...
