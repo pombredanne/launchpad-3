@@ -15,13 +15,13 @@ import unittest
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
 from bzrlib.errors import NoSuchFile
-from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
+from canonical.codehosting import load_optional_plugin
 from canonical.codehosting.codeimport.worker import (
     BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, ImportWorker,
     PullingImportWorker, get_default_bazaar_branch_store,
@@ -638,6 +638,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
 
     def setUp(self):
         super(TestGitImport, self).setUp()
+        load_optional_plugin('git')
         self.setUpImport()
 
     def makeImportWorker(self):
@@ -647,6 +648,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
 
     def commitInForeignTree(self, foreign_tree):
         """Change the foreign tree, generating exactly one commit."""
+        from bzrlib.plugins.git.tests import run_git
         wd = os.getcwd()
         os.chdir(self.repository_path)
         try:
@@ -657,6 +659,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
     def makeSourceDetails(self, branch_name, files):
         """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.
         """
+        from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
         self.repository_path = self.makeTemporaryDirectory()
         wd = os.getcwd()
         try:

@@ -18,6 +18,7 @@ import _pythonpath
 
 from optparse import OptionParser
 
+from canonical.codehosting import load_optional_plugin
 from canonical.codehosting.codeimport.worker import (
     CSCVSImportWorker, CodeImportSourceDetails, PullingImportWorker,
     get_default_bazaar_branch_store, get_default_foreign_tree_store)
@@ -36,6 +37,7 @@ class CodeImportWorker:
     def main(self):
         source_details = CodeImportSourceDetails.fromArguments(self.args)
         if source_details.rcstype == 'git':
+            load_optional_plugin('git')
             import_worker = PullingImportWorker(
                 source_details, get_default_bazaar_branch_store(),
                 self.logger)
