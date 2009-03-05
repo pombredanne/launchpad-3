@@ -9,6 +9,65 @@
   metal:use-macro="view/macro:page/onecolumn"
 >
   <body>
+    <metal:block fill-slot="head_epilogue">
+      <script type="text/javascript">
+YUI().use('io-base', 'node', 'lazr.formoverlay', function(Y) {
+
+/*
+ * Setup the 'Mark as duplicate' form overlay.
+ */
+function setupMarkDuplicateFormOverlay() {
+    var mark_dupe_links = Y.all('.menu-link-mark-dupe');
+    if (mark_dupe_links) {
+        // First things first, pre-load the mark-dupe form.
+        var mark_dupe_url = mark_dupe_links.item(0).getAttribute("href");
+        var mark_dupe_form_url = mark_dupe_url + "/++form++";
+        var formoverlay;
+        function extractFormFromResponse(id, o){
+            var form_content = o.responseText;
+            formoverlay = new Y.lazr.FormOverlay({
+                headerContent: "Mark bug as duplicate",
+                form_content: form_content,
+                align: {
+                    points: 
+                        [Y.WidgetPositionExt.CC, Y.WidgetPositionExt.CC]
+                },
+                visible: false,
+                zIndex: 1000
+            });
+            formoverlay.render();
+        }
+        Y.on('io:complete', extractFormFromResponse, this);
+        Y.io(mark_dupe_form_url);
+
+        mark_dupe_links.on('click', function(e){
+            // Only go ahead if we have received the form content by the
+            // time the user clicks:
+            if (formoverlay){
+                e.preventDefault();
+                formoverlay.show();
+            }
+        });
+    }
+}
+
+Y.on("domready", setupMarkDuplicateFormOverlay);
+});
+      </script>
+      <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/overlay/assets/pretty-overlay-core.css"
+        />
+      <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay-skin.css"
+        />
+      <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
+        />
+    </metal:block>
+
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
       <p class="object timestamp">
 
@@ -106,7 +165,8 @@
               tal:define="link context_menu/markduplicate"
               tal:condition="python: link.enabled and not
                             context.bug.duplicateof"
-              tal:attributes="href link/url">
+              tal:attributes="href link/url"
+              class="menu-link-mark-dupe">
               <img src="/@@/bug-dupe-icon" /> Mark as duplicate</a>
             <tal:block
               tal:condition="context/bug/duplicates"
