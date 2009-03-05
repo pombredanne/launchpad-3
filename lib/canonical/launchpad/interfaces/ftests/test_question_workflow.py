@@ -26,7 +26,8 @@ from lazr.lifecycle.interfaces import (
     IObjectCreatedEvent, IObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILanguageSet, ILaunchBag, InvalidQuestionStateError,
-    IPersonSet, IQuestion, IQuestionMessage, QuestionAction, QuestionStatus)
+    IQuestion, IQuestionMessage, QuestionAction, QuestionStatus)
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.ftests import login, login_person, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -244,6 +245,7 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
             len(self.collected_events) >= 1,
             failure_msg('failed to trigger an IObjectCreatedEvent'))
         created_event = self.collected_events[0]
+        created_event_user = IPerson(created_event.user)
         self.failUnless(
             IObjectCreatedEvent.providedBy(created_event),
             failure_msg(
@@ -252,14 +254,15 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
             created_event.object == message,
             failure_msg("IObjectCreatedEvent contains wrong message"))
         self.failUnless(
-            created_event.user == message.owner,
+            created_event_user == message.owner,
             failure_msg("%s != %s" % (
-                created_event.user.displayname, message.owner.displayname)))
+                created_event_user.displayname, message.owner.displayname)))
 
         self.failUnless(
             len(self.collected_events) == 2,
             failure_msg('failed to trigger an IObjectModifiedEvent'))
         modified_event = self.collected_events[1]
+        modified_event_user = IPerson(modified_event.user)
         self.failUnless(
             IObjectModifiedEvent.providedBy(modified_event),
             failure_msg(
@@ -269,9 +272,9 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
             modified_event.object == self.question,
             failure_msg("IObjectModifiedEvent contains wrong question"))
         self.failUnless(
-            modified_event.user == message.owner,
+            modified_event_user == message.owner,
             failure_msg("%s != %s" % (
-                modified_event.user.displayname, message.owner.displayname)))
+                modified_event_user.displayname, message.owner.displayname)))
         if edited_fields:
             self.failUnless(
                 set(modified_event.edited_fields) == set(edited_fields),

@@ -30,7 +30,7 @@ from canonical.database.sqlbase import block_implicit_flushes
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     IBugTask, IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
-    INotificationRecipientSet, IPersonSet, ISpecification,
+    INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
 from canonical.launchpad.interfaces.message import (
@@ -357,7 +357,7 @@ def update_security_contact_subscriptions(modified_bugtask, event):
         new_product = bugtask_after_modification.product
         if new_product.security_contact:
             bugtask_after_modification.bug.subscribe(
-                new_product.security_contact, event.user)
+                new_product.security_contact, IPerson(event.user))
 
 
 def get_bugmail_from_address(person, bug):
@@ -824,7 +824,7 @@ def notify_bug_modified(modified_bug, event):
     """
     bug_delta = get_bug_delta(
         old_bug=event.object_before_modification,
-        new_bug=event.object, user=event.user)
+        new_bug=event.object, user=IPerson(event.user))
 
     if bug_delta is not None:
         add_bug_change_notifications(bug_delta)
@@ -905,7 +905,7 @@ def notify_bugtask_added(bugtask, event):
     bug_delta = BugDelta(
         bug=bugtask.bug,
         bugurl=canonical_url(bugtask.bug),
-        user=event.user,
+        user=IPerson(event.user),
         added_bugtasks=bugtask)
 
     add_bug_change_notifications(bug_delta)
@@ -924,7 +924,7 @@ def notify_bugtask_edited(modified_bugtask, event):
         bug=event.object.bug,
         bugurl=canonical_url(event.object.bug),
         bugtask_deltas=bugtask_delta,
-        user=event.user)
+        user=IPerson(event.user))
 
     add_bug_change_notifications(
         bug_delta, old_bugtask=event.object_before_modification)
@@ -958,7 +958,7 @@ def notify_bug_watch_added(watch, event):
     bug_delta = BugDelta(
         bug=watch.bug,
         bugurl=canonical_url(watch.bug),
-        user=event.user,
+        user=IPerson(event.user),
         bugwatch={'new' : watch})
 
     add_bug_change_notifications(bug_delta)
@@ -980,7 +980,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
         bug_delta = BugDelta(
             bug=new.bug,
             bugurl=canonical_url(new.bug),
-            user=event.user,
+            user=IPerson(event.user),
             bugwatch={'old' : old, 'new' : new})
 
         add_bug_change_notifications(bug_delta)
@@ -995,7 +995,7 @@ def notify_bug_cve_added(bugcve, event):
     bug_delta = BugDelta(
         bug=bugcve.bug,
         bugurl=canonical_url(bugcve.bug),
-        user=event.user,
+        user=IPerson(event.user),
         cve={'new': bugcve.cve})
 
     add_bug_change_notifications(bug_delta)
@@ -1009,7 +1009,7 @@ def notify_bug_cve_deleted(bugcve, event):
     bug_delta = BugDelta(
         bug=bugcve.bug,
         bugurl=canonical_url(bugcve.bug),
-        user=event.user,
+        user=IPerson(event.user),
         cve={'old': bugcve.cve})
 
     add_bug_change_notifications(bug_delta)
@@ -1027,7 +1027,7 @@ def notify_bug_became_question(event):
     change_info = '\n'.join([
         '** bug changed to question:\n'
         '   %s' %  canonical_url(question)])
-    bug.addChangeNotification(change_info, person=event.user)
+    bug.addChangeNotification(change_info, person=IPerson(event.user))
 
 
 @block_implicit_flushes
@@ -1041,7 +1041,7 @@ def notify_bug_attachment_added(bugattachment, event):
     bug_delta = BugDelta(
         bug=bug,
         bugurl=canonical_url(bug),
-        user=event.user,
+        user=IPerson(event.user),
         attachment={'new' : bugattachment})
 
     add_bug_change_notifications(bug_delta)
@@ -1056,7 +1056,7 @@ def notify_bug_attachment_removed(bugattachment, event):
     change_info = '\n'.join([
         '** Attachment removed: "%s"\n' % bugattachment.title,
         '   %s' %  bugattachment.libraryfile.http_url])
-    bug.addChangeNotification(change_info, person=event.user)
+    bug.addChangeNotification(change_info, person=IPerson(event.user))
 
 
 @block_implicit_flushes
@@ -1219,6 +1219,7 @@ class QuestionNotification:
         """
         self.question = question
         self.event = event
+        self.user = IPerson(self.event.user)
         self.initialize()
         if self.shouldNotify():
             self.send()
@@ -1230,7 +1231,7 @@ class QuestionNotification:
         Default is Event Person Display Name <question#@answertracker_domain>
         """
         return format_address(
-            self.event.user.displayname,
+            self.user.displayname,
             'question%s@%s' % (
                 self.question.id, config.answertracker.email_domain))
 
@@ -1658,7 +1659,7 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
             wrapper = MailWrapper()
             statusexplanation = (
                 'Status change explanation given by %s:\n\n%s\n' % (
-                    self.event.user.displayname,
+                    self.user.displayname,
                     wrapper.format(self.bugtask.statusexplanation)))
         else:
             statusexplanation = ''
@@ -1684,7 +1685,8 @@ def specification_notification_subject(spec):
 @block_implicit_flushes
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""
-    spec_delta = spec.getDelta(event.object_before_modification, event.user)
+    user = IPerson(event.user)
+    spec_delta = spec.getDelta(event.object_before_modification, user)
     if spec_delta is None:
         # XXX: Bjorn Tillenius 2006-03-08:
         #      Ideally, if an IObjectModifiedEvent event is generated,
@@ -1736,20 +1738,20 @@ def notify_specification_modified(spec, event):
         # sending notification for the change.
         return
     body = get_email_template('specification-modified.txt') % {
-        'editor': event.user.displayname,
+        'editor': user.displayname,
         'info_fields': '\n'.join(info_lines),
         'spec_title': spec.title,
         'spec_url': canonical_url(spec)}
 
     for address in spec.notificationRecipientAddresses():
-        simple_sendmail_from_person(event.user, address, subject, body)
+        simple_sendmail_from_person(user, address, subject, body)
 
 
 
 @block_implicit_flushes
 def notify_specification_subscription_created(specsub, event):
     """Notify a user that they have been subscribed to a blueprint."""
-    user = event.user
+    user = IPerson(event.user)
     spec = specsub.specification
     person = specsub.person
     subject = specification_notification_subject(spec)
@@ -1769,7 +1771,7 @@ def notify_specification_subscription_modified(specsub, event):
     """Notify a subscriber to a blueprint that their
     subscription has changed.
     """
-    user = event.user
+    user = IPerson(event.user)
     spec = specsub.specification
     person = specsub.person
     # Only send a notification if the

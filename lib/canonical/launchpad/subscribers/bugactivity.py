@@ -72,7 +72,7 @@ def record_bug_added(bug, object_created_event):
     getUtility(IBugActivitySet).new(
         bug = bug.id,
         datechanged = UTC_NOW,
-        person = object_created_event.user,
+        person = IPerson(object_created_event.user),
         whatchanged = "bug",
         message = "added bug")
 
@@ -99,7 +99,7 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
             getUtility(IBugActivitySet).new(
                 bug = bug_edited.id,
                 datechanged = UTC_NOW,
-                person = sqlobject_modified_event.user,
+                person = IPerson(sqlobject_modified_event.user),
                 whatchanged = whatchanged,
                 oldvalue = oldvalue,
                 newvalue = newvalue,
@@ -110,7 +110,7 @@ def record_bug_task_added(bug_task, object_created_event):
     getUtility(IBugActivitySet).new(
         bug=bug_task.bug,
         datechanged=UTC_NOW,
-        person=object_created_event.user,
+        person=IPerson(object_created_event.user),
         whatchanged='bug',
         message='assigned to ' + bug_task.bugtargetname)
 
@@ -144,7 +144,7 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
             getUtility(IBugActivitySet).new(
                 bug=bug_task_edited.bug,
                 datechanged=UTC_NOW,
-                person=sqlobject_modified_event.user,
+                person=IPerson(sqlobject_modified_event.user),
                 whatchanged="%s: %s" % (task_title, changed_field),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
@@ -154,7 +154,7 @@ def record_product_task_added(product_task, object_created_event):
     getUtility(IBugActivitySet).new(
         bug=product_task.bug,
         datechanged=UTC_NOW,
-        person=object_created_event.user,
+        person=IPerson(object_created_event.user),
         whatchanged='bug',
         message='assigned to product ' + product_task.product.name)
 
@@ -172,7 +172,7 @@ def record_product_task_edited(product_task_edited, sqlobject_modified_event):
             getUtility(IBugActivitySet).new(
                 bug=product_task_edited.bug,
                 datechanged=UTC_NOW,
-                person=sqlobject_modified_event.user,
+                person=IPerson(sqlobject_modified_event.user),
                 whatchanged="%s: %s" % (product.name, changed_field),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
@@ -205,7 +205,7 @@ def record_package_infestation_edited(package_infestation_edited,
             getUtility(IBugActivitySet).new(
                 bug=package_infestation_edited.bug.id,
                 datechanged=UTC_NOW,
-                person=event.user,
+                person=IPerson(event.user),
                 whatchanged="%s: %s" % (package_release_name, changed_field),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
@@ -238,7 +238,7 @@ def record_product_infestation_edited(product_infestation_edited,
             getUtility(IBugActivitySet).new(
                 bug=product_infestation_edited.bug.id,
                 datechanged=UTC_NOW,
-                person=event.user,
+                person=IPerson(event.user),
                 whatchanged="%s: %s" % (product_release_name, changed_field),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
@@ -248,7 +248,7 @@ def record_bugsubscription_added(bugsubscription_added, object_created_event):
     getUtility(IBugActivitySet).new(
         bug=bugsubscription_added.bug,
         datechanged=UTC_NOW,
-        person=object_created_event.user,
+        person=IPerson(object_created_event.user),
         whatchanged='bug',
         message='added subscriber %s' % (
             bugsubscription_added.person.browsername))
@@ -263,7 +263,7 @@ def record_bugsubscription_edited(bugsubscription_edited,
             getUtility(IBugActivitySet).new(
                 bug=bugsubscription_edited.bug,
                 datechanged=UTC_NOW,
-                person=sqlobject_modified_event.user,
+                person=IPerson(sqlobject_modified_event.user),
                 whatchanged="subscriber %s" % (
                     bugsubscription_edited.person.browsername),
                 oldvalue=oldvalue,
@@ -276,7 +276,7 @@ def record_bug_attachment_added(attachment, created_event):
     getUtility(IBugActivitySet).new(
         bug=attachment.bug,
         datechanged=UTC_NOW,
-        person=created_event.user,
+        person=IPerson(created_event.user),
         whatchanged='bug',
         message="added attachment '%s' (%s)" % (
             attachment.libraryfile.filename, attachment.title))
