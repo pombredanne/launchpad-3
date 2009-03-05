@@ -293,6 +293,13 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         branches = self.all_branches.visibleByUser(None)
         self.assertEqual([self.public_branch], list(branches.getBranches()))
 
+    def test_visibility_then_product(self):
+        # We can apply other filters after applying the visibleByUser filter.
+        second_public_branch = self.factory.makeAnyBranch()
+        branches = self.all_branches.visibleByUser(None).inProduct(
+            self.public_branch.product).getBranches()
+        self.assertEqual([self.public_branch], list(branches))
+
     def test_random_person_sees_only_public(self):
         # Logged in users with no special permissions can see only public
         # branches.
