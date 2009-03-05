@@ -1733,7 +1733,10 @@ class BugTaskSet:
 
     def getAssignedMilestonesFromSearch(self, search_results):
         """See `IBugTaskSet`."""
-        # Unwrap SQLObjectResultSet; we want the Storm result set.
+        # XXX: Gavin Panella 2009-03-05 bug=338184: There is currently
+        # no clean way to get the underlying Storm ResultSet from an
+        # SQLObjectResultSet, so we must remove the security proxy for
+        # a moment.
         if ISQLObjectResultSet.providedBy(search_results):
             search_results = removeSecurityProxy(search_results)._result_set
         # Check that we have a Storm result set before we start doing
