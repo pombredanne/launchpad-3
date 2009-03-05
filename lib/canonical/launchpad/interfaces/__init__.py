@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces.archivepermission import *
 from canonical.launchpad.interfaces.announcement import *
 from canonical.launchpad.interfaces.answercontact import *
 from canonical.launchpad.interfaces.authserver import *
+from canonical.launchpad.interfaces.authtoken import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
 from canonical.launchpad.interfaces.bounty import *

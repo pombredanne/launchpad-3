@@ -3,11 +3,11 @@ Hello
 
 We received a request from %(requester)s using email address
 %(requesteremail)s, trying to validate the email address
-%(toaddress)s for use in Launchpad.
+%(toaddress)s for use in the Launchpad Login Service.
 
 If you made this request, please click on the link below
 and complete the process to add %(toaddress)s
-to your existing Launchpad account.
+to your existing Login Service account.
 
     %(token_url)s
 
@@ -17,5 +17,5 @@ your data.
 
 Thank you,
 
-The Launchpad team
+The Launchpad Login Service team
 

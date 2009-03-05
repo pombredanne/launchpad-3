@@ -163,13 +163,6 @@ time the caches are rebuilt.
     >>> sample.karma == sampleperson_old_karma
     True
 
-Marilize's OpenIDRPSummaries were transferred to Sample Person.
-
-    >>> summaries = openidrpsummaryset.getByIdentifier(
-    ...     'http://openid.launchpad.dev/+id/marilize_oid')
-    >>> summaries[0].account.displayname
-    u'Sample Person'
-
 A merged account gets a -merged suffix on its name.
 
     >>> from storm.store import Store
