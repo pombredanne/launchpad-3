@@ -16,12 +16,9 @@
   <div tal:replace="structure context/@@+portlet-top-contributors" />
 </metal:portlets>
 
-<metal:heading fill-slot="pageheading">
-   <h1>Download project files</h1>
-</metal:heading>
-
 <div metal:fill-slot="main"
      tal:define="has_edit context/required:launchpad.Edit">
+  <h1>Download project files</h1>
 
   <form method="POST"
         tal:attributes="action request/URL">
@@ -38,7 +35,7 @@
       </h2>
 
       <tal:seriesfilesexist
-          condition="series/release_files">
+          condition="series/has_release_files">
         <h2 tal:condition="not: has_edit">
           Release series &#8220;<tal:name
                                  replace="series/name">main</tal:name>&#8221;
@@ -77,9 +74,6 @@
                 </td>
                 <td>
                    <tal:version content="release/version">version</tal:version>
-                   <img tal:condition="python: view.is_milestone(series, release)"
-                        alt="milestone icon"
-                        src="/@@/milestone" />
                 </td>
                 <td tal:content="file/description">Installer for i386</td>
               </tr>

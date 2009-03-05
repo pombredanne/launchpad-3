@@ -17,11 +17,11 @@ import calendar
 import pytz
 import sets
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND)
-from storm.expr import And
-from storm.locals import Unicode
+    BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
+    StringCol)
 from storm.store import Store
+from storm.expr import And, Join
+from storm.locals import Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -537,12 +537,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def releases(self):
-        return ProductRelease.select(
-            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
-                ProductSeries.q.productID == self.id),
-            clauseTables=['ProductSeries'],
-            orderBy=['version']
-            )
+        store = Store.of(self)
+        origin = [
+            ProductRelease,
+            Join(Milestone, ProductRelease.milestone == Milestone.id),
+            ]
+        result = store.using(*origin)
+        result = result.find(ProductRelease, Milestone.product == self)
+        return result.order_by(Milestone.name)
 
     @property
     def drivers(self):

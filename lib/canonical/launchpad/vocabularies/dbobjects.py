@@ -83,14 +83,12 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
-    Account, Archive, Branch, Bounty, Bug, BugTracker, BugWatch,
-    Component, Country, Distribution, DistroArchSeries, DistroSeries,
-    EmailAddress, FeaturedProject, KarmaCategory, Language, LanguagePack,
-    MailingList, Milestone, Person, PillarName, POTemplate,
-    Processor, ProcessorFamily,
+    Account, Archive, Bounty, Branch, Bug, BugTracker, BugWatch, Component,
+    Country, Distribution, DistroArchSeries, DistroSeries, EmailAddress,
+    FeaturedProject, KarmaCategory, Language, LanguagePack, MailingList,
+    Milestone, Person, PillarName, POTemplate, Processor, ProcessorFamily,
     Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
     Specification, Sprint, TranslationGroup, TranslationMessage)
-
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import IStore
@@ -1081,8 +1079,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     # Sorting by version won't give the expected results, because it's just a
     # text field.  e.g. ["1.0", "2.0", "11.0"] would be sorted as ["1.0",
     # "11.0", "2.0"].
-    _orderBy = [Product.q.name, ProductSeries.q.name,
-                ProductRelease.q.version]
+    _orderBy = [Product.q.name, ProductSeries.q.name, Milestone.q.name]
     _clauseTables = ['Product', 'ProductSeries']
 
     def toTerm(self, obj):
@@ -1106,11 +1103,11 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
             raise LookupError(token)
 
         obj = ProductRelease.selectOne(
-            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
+            AND(ProductRelease.q.milestoneID == Milestone.q.id,
+                Milestone.q.productseriesID == ProductSeries.q.id,
                 ProductSeries.q.productID == Product.q.id,
                 Product.q.name == productname,
-                ProductSeries.q.name == productseriesname,
-                ProductRelease.q.version == productreleaseversion
+                ProductSeries.q.name == productseriesname
                 )
             )
         try:
@@ -1126,12 +1123,12 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         query = query.lower()
         objs = self._table.select(
             AND(
-                ProductSeries.q.id == ProductRelease.q.productseriesID,
+                Milestone.q.id == ProductRelease.q.milestoneID,
+                ProductSeries.q.id == Milestone.q.productseriesID,
                 Product.q.id == ProductSeries.q.productID,
                 OR(
                     CONTAINSSTRING(Product.q.name, query),
                     CONTAINSSTRING(ProductSeries.q.name, query),
-                    CONTAINSSTRING(ProductRelease.q.version, query)
                     )
                 ),
             orderBy=self._orderBy
@@ -1336,7 +1333,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
                 getUtility(IMilestoneSet), longest_expected=40)
 
         visible_milestones = [
-            milestone for milestone in milestones if milestone.visible]
+            milestone for milestone in milestones if milestone.active]
         if (IBugTask.providedBy(milestone_context) and
             milestone_context.milestone is not None and
             milestone_context.milestone not in visible_milestones):

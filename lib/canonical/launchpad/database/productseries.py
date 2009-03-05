@@ -14,6 +14,8 @@ from storm.expr import In, Or
 from warnings import warn
 from zope.component import getUtility
 from zope.interface import implements
+from storm.locals import And, Desc
+from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -79,14 +81,22 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
 
-    releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
-                            orderBy=['-datereleased'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
         return (Milestone.productseries == self)
+
+    @property
+    def releases(self):
+        """See `IProductSeries`."""
+        store = Store.of(self)
+        result = store.find(
+            ProductRelease,
+            And(Milestone.productseries == self,
+                ProductRelease.milestone == Milestone.id))
+        return result.order_by(Desc('datereleased'))
 
     @property
     def release_files(self):
@@ -385,11 +395,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 history.append(pkging)
         return history
 
-    def newMilestone(self, name, dateexpected=None, description=None):
+    def newMilestone(self, name, dateexpected=None, summary=None,
+                     code_name=None):
         """See IProductSeries."""
         return Milestone(
-            name=name, dateexpected=dateexpected, description=description,
-            product=self.product, productseries=self)
+            name=name, dateexpected=dateexpected, summary=summary,
+            product=self.product, productseries=self, code_name=code_name)
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -421,17 +432,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
-
-    def addRelease(self, version, owner, codename=None, summary=None,
-                   description=None, changelog=None):
-        """See `IProductSeries`."""
-        return ProductRelease(version=version,
-                              productseries=self,
-                              owner=owner,
-                              codename=codename,
-                              summary=summary,
-                              description=description,
-                              changelog=changelog)
 
 
 class ProductSeriesSet:
