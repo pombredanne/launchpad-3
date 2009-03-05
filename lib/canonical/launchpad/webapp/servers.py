@@ -70,7 +70,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.publisher import (

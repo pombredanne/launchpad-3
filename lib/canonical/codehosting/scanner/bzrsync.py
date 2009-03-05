@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 UTC = pytz.timezone('UTC')
