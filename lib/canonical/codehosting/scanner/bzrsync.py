@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 UTC = pytz.timezone('UTC')
@@ -435,10 +435,10 @@ class BzrSync:
         # last_scanned_revision is in the ancestry, then mark it as merged.
         branches = getUtility(IAllBranches).inProduct(self.db_branch.product)
         branches = branches.withLifecycleStatus(
-            [BranchLifecycleStatus.DEVELOPMENT,
-             BranchLifecycleStatus.EXPERIMENTAL,
-             BranchLifecycleStatus.MATURE,
-             BranchLifecycleStatus.ABANDONED])
+            BranchLifecycleStatus.DEVELOPMENT,
+            BranchLifecycleStatus.EXPERIMENTAL,
+            BranchLifecycleStatus.MATURE,
+            BranchLifecycleStatus.ABANDONED).getBranches()
         for branch in branches:
             last_scanned = branch.last_scanned_id
             # If the branch doesn't have any revisions, not any point setting
