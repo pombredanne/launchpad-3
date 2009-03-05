@@ -19,7 +19,9 @@
       <div id="person_map_div" class="small-map"
         style="height: 200px; border: 1px;"></div>
       <tal:mapscript replace="structure view/map_portlet_html" />
-      <p tal:condition="link/enabled" tal:content="structure link/render" />
+       <div id="person_map_actions">
+        <a tal:condition="link/enabled" tal:replace="structure link/render" /> &nbsp;
+      </div>
     </tal:map>
 
     <tal:comment condition="nothing">
