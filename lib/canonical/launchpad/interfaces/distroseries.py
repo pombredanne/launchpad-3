@@ -22,6 +22,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
@@ -114,7 +115,8 @@ class IDistroSeriesEditRestricted(Interface):
 
 
 class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
-                          IBugTarget, ISpecificationGoal, IHasMilestones):
+                          IBugTarget, ISpecificationGoal, IHasMilestones,
+                          IHasBuildRecords):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")

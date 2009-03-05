@@ -760,6 +760,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                   description=_("The Archive owned by this person, his PPA."),
                   schema=Interface)) # Really IArchive, see archive.py
 
+    ppas = Attribute(
+        "List of PPAs owned by this person or team ordered by name.")
+
     entitlements = Attribute("List of Entitlements for this person or team.")
 
     structural_subscriptions = Attribute(
@@ -1196,6 +1199,15 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :return: True if the user was subscribed, false if they weren't.
         """
 
+    def getPPAByName(name):
+        """Return a PPA with the given name if it exists or None.
+
+        :param name: A string with the exact name of the ppa being looked up.
+
+        :return: an `IArchive` record corresponding to the PPA or None if it
+            was not found.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
@@ -1470,18 +1482,6 @@ class IPersonSpecialRestricted(Interface):
             - Changing the ownership of products/projects/teams owned by him.
 
         :param comment: An explanation of why the account status changed.
-        """
-
-    def reactivateAccount(comment, password, preferred_email):
-        """Reactivate this person's Launchpad account.
-
-        Set the account status to ACTIVE and possibly restore the user's
-        name. The preferred email address is set.
-
-        :param comment: An explanation of why the account status changed.
-        :param password: The user's password, it cannot be None.
-        :param preferred_email: The `EmailAddress` to set as the user's
-            preferred email address. It cannot be None.
         """
 
 

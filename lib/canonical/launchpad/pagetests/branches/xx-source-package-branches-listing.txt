@@ -1,0 +1,41 @@
+= Populated source package branch listings =
+
+Going to a source package branch page shows a list of branches.
+
+Let's demonstrate this by making a source package with some branches and then
+browsing to it.
+
+    >>> from canonical.launchpad.database.sourcepackage import SourcePackage
+    >>> def make_source_package(distro, series, name):
+    ...     distro = factory.makeDistribution(name=distro, displayname=distro)
+    ...     distroseries = factory.makeDistroRelease(
+    ...         name=series, distribution=distro)
+    ...     sourcepackagename = factory.makeSourcePackageName(name=name)
+    ...     return SourcePackage(sourcepackagename, distroseries)
+
+    >>> login(ANONYMOUS)
+    >>> source_package = make_source_package('distro', 'series', 'foo')
+    >>> branch1 = factory.makePackageBranch(
+    ...     sourcepackage=source_package,
+    ...     owner=factory.makePerson(name='owner1'), name='branch1')
+    >>> branch2 = factory.makePackageBranch(
+    ...     sourcepackage=source_package,
+    ...     owner=factory.makePerson(name='owner2'), name='branch2')
+    >>> source_package_url = canonical_url(source_package, rootsite='code')
+    >>> logout()
+
+This takes us to the branch listing for that source package
+
+    >>> browser.open(source_package_url)
+    >>> print browser.title
+    Branches in distro series foo
+
+Both of the branches we made appear in the listing.
+
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    lp://dev/~owner1/distro/series/foo/branch1 ...
+    lp://dev/~owner2/distro/series/foo/branch2 ...
+
+XXX: Show that the summary is beautiful.

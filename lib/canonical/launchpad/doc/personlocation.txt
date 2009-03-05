@@ -184,7 +184,7 @@ default a person's location is visible.
 
 But it can be changed through the setLocationVisibility() method. If the
 visibility is set to False, only the person himself will be able to see
-the location data.
+the location data except for time zone.
 
     >>> login_person(salgado)
     >>> salgado.setLocationVisibility(False)
@@ -192,15 +192,13 @@ the location data.
     False
 
     >>> login_person(jdub)
+    >>> print salgado.time_zone
+    America/Sao_Paulo
     >>> salgado.latitude
     Traceback (most recent call last):
     ...
     Unauthorized:...
     >>> salgado.longitude
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-    >>> salgado.time_zone
     Traceback (most recent call last):
     ...
     Unauthorized:...

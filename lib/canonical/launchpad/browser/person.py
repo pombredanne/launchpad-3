@@ -2837,8 +2837,10 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     def initialize(self):
         super(PersonIndexView, self).initialize()
         # This view requires the gmap2 Javascript in order to render the map
-        # with the person's usual location.
-        self.request.needs_gmap2 = True
+        # with the person's usual location. The location is only availble if
+        # the location is set and visible.
+        if self.has_visible_location:
+            self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
 
@@ -2882,12 +2884,14 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                   "mailing list."))
         self.request.response.redirect(canonical_url(self.context))
 
+    @property
     def map_portlet_html(self):
         """Generate the HTML which shows the map portlet."""
+        assert self.has_visible_location, (
+            "Can't generate the map for a person who hasn't set a "
+            "visible location.")
         assert self.request.needs_gmap2, (
             "To use this method a view must flag that it needs gmap2.")
-        assert self.context.latitude is not None, (
-            "Can't generate the map for a person who hasn't set a location.")
 
         replacements = {'center_lat': self.context.latitude,
                         'center_lng': self.context.longitude}
@@ -2901,6 +2905,15 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                      Y.on("domready", renderMap);
                 });
             </script>""" % replacements
+
+    @cachedproperty
+    def has_visible_location(self):
+        """Does the person have latitude and a visible location."""
+        if self.context.is_team:
+            return len(self.context.mapped_participants) > 0
+        else:
+            return (check_permission('launchpad.View', self.context.location)
+                and self.context.latitude is not None)
 
     @property
     def should_show_map_portlet(self):
