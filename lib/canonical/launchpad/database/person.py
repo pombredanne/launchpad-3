@@ -1857,10 +1857,9 @@ class Person(
             cur.execute("DELETE FROM %s WHERE %s=%d"
                         % (table, person_id_column, self.id))
 
-        # Update the account's status, password, preferred email and name.
+        # Update the account's status, preferred email and name.
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
-        self.password = None
         self.preferredemail.status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'

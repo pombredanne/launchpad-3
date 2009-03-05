@@ -12,7 +12,6 @@ from canonical.config import config
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.login import logInPrincipal
@@ -28,20 +27,19 @@ class TestAuthenticationOfPersonlessAccounts(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
+        self.email = 'baz@example.com'
         self.request = LaunchpadTestRequest()
-        self.account = self.factory.makeAccount('Personless account')
-        self.email = self.factory.makeEmail(
-            'baz@example.com', person=None, account=self.account,
-            email_status=EmailAddressStatus.PREFERRED)
+        self.account = self.factory.makeAccount(
+            'Personless account', email=self.email)
         self.principal = LaunchpadPrincipal(
             self.account.id, self.account.displayname,
             self.account.displayname, self.account)
-        login('baz@example.com')
+        login(self.email)
 
     def test_navigate_anonymously_on_launchpad_dot_net(self):
         # A user with the credentials of a personless account will browse
         # launchpad.net anonymously.
-        logInPrincipal(self.request, self.principal, 'baz@example.com')
+        logInPrincipal(self.request, self.principal, self.email)
         self.request.response.setCookie(
             config.launchpad_session.cookie, 'xxx')
 
@@ -52,7 +50,7 @@ class TestAuthenticationOfPersonlessAccounts(TestCaseWithFactory):
     def test_navigate_logged_in_on_id_dot_launchpad_dot_net(self):
         # A user with the credentials of a personless account will browse
         # login.launchpad.net logged in as that account.
-        logInPrincipal(self.request, self.principal, 'baz@example.com')
+        logInPrincipal(self.request, self.principal, self.email)
         self.request.response.setCookie(
             config.launchpad_session.cookie, 'xxx')
 
@@ -65,7 +63,7 @@ class TestAuthenticationOfPersonlessAccounts(TestCaseWithFactory):
     def test_navigate_logged_in_on_login_dot_launchpad_dot_net(self):
         # A user with the credentials of a personless account will browse
         # login.launchpad.net logged in as that account.
-        logInPrincipal(self.request, self.principal, 'baz@example.com')
+        logInPrincipal(self.request, self.principal, self.email)
         self.request.response.setCookie(
             config.launchpad_session.cookie, 'xxx')
 
