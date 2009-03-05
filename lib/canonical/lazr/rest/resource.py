@@ -46,8 +46,7 @@ from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFieldsInOrder
-from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IChoice, IObject)
+from zope.schema.interfaces import ConstraintNotSatisfied, IBytes, IObject
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL

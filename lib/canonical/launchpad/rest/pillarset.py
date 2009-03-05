@@ -8,7 +8,6 @@ __all__ = [
     'PillarSetLink',
     ]
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import IPillarNameSet

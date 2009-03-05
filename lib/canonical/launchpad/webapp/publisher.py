@@ -393,22 +393,27 @@ def canonical_url_iterator(obj):
 
 
 class CanonicalAbsoluteURL:
-    """A bridge between Zope's IAbsoluteURL and Launchpad's canonical_url."""
+    """A bridge between Zope's IAbsoluteURL and Launchpad's canonical_url.
+
+    We don't implement the whole interface; only what's needed to
+    make absoluteURL() succceed.
+    """
     implements(IAbsoluteURL)
 
     def __init__(self, context, request):
+        """Initialize with respect to a context and request."""
         self.context = context
         self.request = request
 
-    def __unicode__():
+    def __unicode__(self):
         """Returns the URL as a unicode string."""
         raise NotImplementedError()
 
-    def __str__():
+    def __str__(self):
         """Returns an ASCII string with all unicode characters url quoted."""
         raise NotImplementedError()
 
-    def __repr__():
+    def __repr__(self):
         """Get a string representation """
         raise NotImplementedError()
 
