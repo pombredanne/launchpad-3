@@ -563,11 +563,8 @@ class ShippingRequestSet:
         if recipient_text:
             recipient_text = recipient_text.lower()
             queries.append("""
-                (ShippingRequest.fti @@ ftq(%s) OR recipient IN
+                (ShippingRequest.fti @@ ftq(%(text)s) OR recipient IN
                     (
-                    SELECT recipient FROM ShippingRequest
-                        WHERE fti @@ ftq(%(text)s)
-                    UNION
                     SELECT Person.account FROM Person
                         WHERE Person.fti @@ ftq(%(text)s)
                     UNION

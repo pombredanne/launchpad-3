@@ -797,6 +797,10 @@ class ShippingRequestAdminMixinView:
     # flavour in the UI
     ordered_architectures = (ShipItArchitecture.X86, ShipItArchitecture.AMD64)
 
+    @property
+    def recipient_shipit_account(self):
+        return IShipitAccount(self.context.recipient)
+
     def widgetsMatrixWithFlavours(self):
         """Return a matrix in which each row contains a ShipItFlavour and one
         quantity widget for each ShipItArchitecture that we ship CDs.
@@ -966,15 +970,19 @@ class ShippingRequestApproveOrDenyView(
         initial['highpriority'] = order.highpriority
         return initial
 
-    def recipientHasOtherShippedRequests(self):
-        """Return True if the recipient has other requests that were already
-        sent to the shipping company."""
+    @cachedproperty
+    def shipped_shipit_requests_of_current_series(self):
         recipient = self.context.recipient
-        shipped_requests = IShipitAccount(
-            recipient).shippedShipItRequestsOfCurrentSeries()
+        return list(IShipitAccount(
+            recipient).shippedShipItRequestsOfCurrentSeries())
+
+    def recipientHasOtherShippedRequests(self):
+        """Return True if the recipient has *other* requests that were already
+        sent to the shipping company."""
+        shipped_requests = self.shipped_shipit_requests_of_current_series
         if not shipped_requests:
             return False
-        elif (shipped_requests.count() == 1
+        elif (len(shipped_requests) == 1
               and shipped_requests[0] == self.context):
             return False
         else:
