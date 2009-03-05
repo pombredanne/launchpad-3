@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.openidserver import (
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.adapter import StoreSelector
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    AUTH_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -40,7 +40,7 @@ class OpenIDAuthorizationTestCase(unittest.TestCase):
         StoreSelector.setGlobalDefaultFlavor(SLAVE_FLAVOR)
         zstorm = getUtility(IZStorm)
         self.assertEquals(
-            'launchpad-%s-%s' % (MAIN_STORE, MASTER_FLAVOR),
+            'launchpad-%s-%s' % (AUTH_STORE, MASTER_FLAVOR),
             zstorm.get_name(OpenIDAuthorization._get_store()))
 
 
@@ -82,7 +82,7 @@ class OpenIDAuthorizationSet__with_SlaveStore_TestCase(TestCaseWithFactory):
         # The person is created on the master flavor, commit and fetch it
         # back from the slave store.
         transaction.commit()
-        slave_store = StoreSelector.get(MAIN_STORE, SLAVE_FLAVOR)
+        slave_store = StoreSelector.get(AUTH_STORE, SLAVE_FLAVOR)
         self.account = slave_store.get(Account, person.account.id)
 
     def test_authorize_works_with_person_loaded_from_the_slave_store(self):
