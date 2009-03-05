@@ -19,7 +19,7 @@ from zope.interface import implements
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords)
+    BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.interfaces.package import PackageUploadStatus
@@ -30,6 +30,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lazr.delegates import delegates
 
 
 class BuildUrl:
@@ -188,9 +189,22 @@ class BuildRescoringView(LaunchpadFormView):
 
 class CompleteBuild:
     """Super object to store related IBuild & IBuildQueue."""
-    def __init__(self, build, buildqueue_record):
-        self.build = build
-        self.buildqueue_record = buildqueue_record
+    delegates(IBuild)
+    def __init__(
+        self, build, buildqueue_record, sourcepackagerelease, buildlog):
+        self.context = build
+        self.buildqueue = buildqueue_record
+        self.sourcepackagerelease = sourcepackagerelease
+        self.buildlog = buildlog
+
+    def sourcepackagerelease(self):
+        return self.sourcepackagerelease
+
+    def buildlog(self):
+        return self.buildlog
+
+    def buildqueue_record(self):
+        return self.buildqueue
 
 
 def setupCompleteBuilds(batch):
@@ -209,17 +223,16 @@ def setupCompleteBuilds(batch):
     if not builds:
         return []
 
-    buildqueue_records = {}
-
     build_ids = [build.id for build in builds]
-    for buildqueue in getUtility(IBuildQueueSet).fetchByBuildIds(build_ids):
-        buildqueue_records[buildqueue.build.id] = buildqueue
+    results = getUtility(IBuildSet).prefetchBuildData(build_ids)
+    # The following dict is keyed on the Build.id; the values are 3-tuples
+    # containing the Build's 'buildqueue', 'sourcepackagerelease' and
+    # 'buildlog' respectively.
+    build_data = dict([(row[0],tuple(row[1:4])) for row in results])
 
     complete_builds = []
     for build in builds:
-        proposed_buildqueue = buildqueue_records.get(build.id, None)
-        complete_builds.append(
-            CompleteBuild(build, proposed_buildqueue))
+        complete_builds.append(CompleteBuild(build, *build_data[build.id]))
 
     return complete_builds
 

@@ -462,6 +462,21 @@ class IBuildSet(Interface):
         :rtype: ``dict``.
         """
 
+    def prefetchBuildData(build_ids):
+        """Used to pre-populate the cache with build related data.
+
+        When dealing with a group of Build records we can't use the
+        prejoin facility to also fetch BuildQueue, SourcePackageRelease
+        and LibraryFileAlias records in a single query because the
+        result set is too large and the queries time out too often.
+
+        So this method receives a list of Build IDs (the current batch
+        to be displayed on the GUI) and fetches the correspondent
+        BuildQueue, SourcePackageRelease and LibraryFileAlias rows
+        (prejoined with the appropriate Builder, SourcePackageName and
+        LibraryFileContent respectively).
+        """
+
 
 class IHasBuildRecords(Interface):
     """An Object that has build records"""

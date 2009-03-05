@@ -16,6 +16,8 @@ from zope.component import getUtility
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
+
+from storm.expr import In, Join, LeftJoin
 from storm.references import Reference
 
 from canonical.config import config
@@ -29,9 +31,12 @@ from canonical.launchpad.components.archivedependencies import (
     get_components_for_building)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
+from canonical.launchpad.database.builder import Builder
 from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
      get_contact_email_addresses, filenameToContentType, get_email_template)
@@ -46,6 +51,8 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
 
@@ -987,3 +994,37 @@ class BuildSet:
                 'status': BuildSetStatus.FULLYBUILT,
                 'builds': builds,
                 }
+
+    def prefetchBuildData(self, build_ids):
+        """See `IBuildSet`."""
+        from canonical.launchpad.database.sourcepackagename import (
+            SourcePackageName)
+        from canonical.launchpad.database.sourcepackagerelease import (
+            SourcePackageRelease)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = (
+            Build,
+            LeftJoin(
+                SourcePackageRelease,
+                SourcePackageRelease.id == Build.sourcepackagereleaseID),
+            LeftJoin(
+                SourcePackageName,
+                SourcePackageName.id
+                    == SourcePackageRelease.sourcepackagenameID),
+            LeftJoin(LibraryFileAlias,
+                     LibraryFileAlias.id == Build.buildlogID),
+            LeftJoin(LibraryFileContent,
+                     LibraryFileContent.id == LibraryFileAlias.contentID),
+            LeftJoin(
+                BuildQueue,
+                BuildQueue.buildID == Build.id),
+            LeftJoin(
+                Builder,
+                BuildQueue.builderID == Builder.id),
+            )
+        result_set = store.using(*origin).find(
+            (Build.id, BuildQueue, SourcePackageRelease, LibraryFileAlias,
+             SourcePackageName, LibraryFileContent, Builder),
+            In(Build.id, build_ids))
+
+        return result_set
