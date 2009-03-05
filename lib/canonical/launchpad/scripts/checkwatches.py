@@ -441,7 +441,7 @@ class BugWatchUpdater(object):
                 if bug_watch.unpushed_comments.any() is not None))
 
         remote_ids_to_check = sorted(
-            set(remote_ids_with_comments + remote_new_ids))
+            set(remote_ids_with_comments)) + sorted(remote_new_ids)
 
         # We remove any IDs that are already in remote_ids_to_check from
         # old_ids_to_check, since we're already going to be checking
@@ -455,17 +455,36 @@ class BugWatchUpdater(object):
         # to ensure that the list of bug watches is ordered by remote
         # bug id before we do so.
         if remotesystem.batch_size is not None:
+            # We'll recreate our remote_ids_to_check list so that it's
+            # prioritised. We always include remote ids with comments.
+            actual_remote_ids_to_check = remote_ids_with_comments
+
             # If there is still room in the batch, add as many 'old' bug
-            # watches as possible.
-            ids_to_check_count = len(remote_ids_to_check)
-            if ids_to_check_count < remotesystem.batch_size:
+            # watches as possible. We do this in kind of an odd way
+            # because we need the ids to go into the list in order of
+            # priority:
+            #  1. IDs with comments.
+            #  2. IDs that haven't been checked.
+            #  3. Everything else.
+            for id_list in (sorted(remote_new_ids), sorted(old_ids_to_check)):
+                # Include first as many IDs from remote_new_ids as
+                # possible and then, if there's room as many from
+                # old_ids_to_check as possible.
+                ids_to_check_count = len(actual_remote_ids_to_check)
                 slots_left = remotesystem.batch_size - ids_to_check_count
-                remote_ids_to_check = sorted(
-                    remote_ids_to_check + old_ids_to_check[:slots_left])
+                if slots_left < 1:
+                    continue
+
+                actual_remote_ids_to_check = (
+                    actual_remote_ids_to_check + id_list[:slots_left])
+
+            # Now that we've worked out which IDs we want to check we
+            # can sort the list.
+            remote_ids_to_check = sorted(set(actual_remote_ids_to_check))
         else:
             # If there's no batch size specified, update everything.
             remote_ids_to_check = sorted(
-                remote_ids_to_check + old_ids_to_check)
+                set(old_ids_to_check).union(remote_ids_to_check))
 
         # Make sure that unmodified_remote_ids only includes IDs that
         # could have been checked but which weren't modified on the
