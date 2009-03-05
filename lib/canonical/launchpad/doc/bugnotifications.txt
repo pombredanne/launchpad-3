@@ -24,7 +24,6 @@ those notifications look like.
 === Reporting a new bug ===
 
     >>> from zope.event import notify
-    >>> from zope.publisher.browser import TestRequest
     >>> from lazr.lifecycle.event import (
     ...     ObjectModifiedEvent, ObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
