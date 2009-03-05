@@ -244,6 +244,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_create(self):
+        """RevisionsAddedJob.create uses the correct values."""
         branch = self.factory.makeBranch()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
         self.assertEqual('rev1', job.last_scanned_id)
@@ -253,11 +254,19 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             BranchJobType.REVISIONS_ADDED_MAIL, job.context.job_type)
 
     def test_iterReady(self):
+        """IterReady iterates through ready jobs."""
         branch = self.factory.makeBranch()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
         self.assertEqual([job], list(RevisionsAddedJob.iterReady()))
 
     def updateDBRevisions(self, branch, bzr_branch, revision_ids=None):
+        """Update the database for the revisions.
+
+        :param branch: The database branch associated with the revisions.
+        :param bzr_branch: The Bazaar branch associated with the revisions.
+        :param revision_ids: The ids of the revisions to update.  If not
+            supplied, the branch revision history is used.
+        """
         if revision_ids is None:
             revision_ids = bzr_branch.revision_history()
         for bzr_revision in bzr_branch.repository.get_revisions(revision_ids):
@@ -277,6 +286,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             branch.createBranchRevision(revno, revision)
 
     def create3CommitsBranch(self):
+        """Create a branch with three commits."""
         branch, tree = self.create_branch_and_tree()
         tree.lock_write()
         try:
@@ -292,6 +302,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         return branch, tree
 
     def test_iterAddedMainline(self):
+        """iterAddedMainline iterates through mainline revisions."""
         self.useBzrBranches()
         branch, tree = self.create3CommitsBranch()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
@@ -301,6 +312,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual(2, revno)
 
     def test_iterAddedNonMainline(self):
+        """iterAddedMainline drops non-mainline revisions."""
         self.useBzrBranches()
         branch, tree = self.create3CommitsBranch()
         tree.pull(tree.branch, overwrite=True, stop_revision='rev2')
@@ -314,6 +326,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual(['rev2'], out)
 
     def makeBranchWithCommit(self):
+        """Create a branch with a commit."""
         jrandom = self.factory.makePerson(name='jrandom')
         product = self.factory.makeProduct(name='foo')
         branch = self.factory.makeProductBranch(
@@ -332,6 +345,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         return branch, tree
 
     def test_getRevisionMessage(self):
+        """getRevisionMessage provides a correctly-formatted message."""
         self.useBzrBranches()
         branch, tree = self.makeBranchWithCommit()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev1', '')
@@ -345,21 +359,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'message:\n'
         '  rev1\n', message)
 
-    def commitRevision(self, message=None, committer=None,
-                       extra_parents=None, rev_id=None,
-                       timestamp=None, timezone=None, revprops=None):
-        if message is None:
-            message = self.LOG
-        if committer is None:
-            committer = self.factory.getUniqueString()
-        if extra_parents is not None:
-            self.bzr_tree.add_pending_merge(*extra_parents)
-        self.bzr_tree.commit(
-            message, committer=committer, rev_id=rev_id,
-            timestamp=timestamp, timezone=timezone, allow_pointless=True,
-            revprops=revprops)
-
     def test_email_format(self):
+        """Contents of the email are as expected."""
         self.useBzrBranches()
         db_branch, tree = self.create_branch_and_tree()
         first_revision = 'rev-1'
@@ -442,6 +443,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual(message, expected)
 
     def test_getMailerForRevision(self):
+        """The mailer for the revision is as expected."""
         self.useBzrBranches()
         branch, tree = self.makeBranchWithCommit()
         revision = tree.branch.repository.get_revision('rev1')
@@ -453,6 +455,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             '[Branch ~jrandom/foo/bar] Rev 1: rev1', subject)
 
     def test_only_nodiff_subscribers_means_no_diff_generated(self):
+        """No diff is generated when no subscribers need it."""
         self.layer.switchDbUser('launchpad')
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()

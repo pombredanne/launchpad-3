@@ -46,6 +46,7 @@ class TestSendbranchmail(TestCaseWithFactory):
         self.assertEqual(0, retcode)
 
     def test_revision_added_job(self):
+        """RevisionsAddedJobs are run by sendbranchmail."""
         self.useTempBzrHome()
         branch, tree = self.createBranch()
         tree.bzrdir.root_transport.put_bytes('foo', 'baz')
