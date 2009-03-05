@@ -411,14 +411,13 @@ class CanonicalAbsoluteURL:
 
     def __str__(self):
         """Returns an ASCII string with all unicode characters url quoted."""
-        raise NotImplementedError()
+        return canonical_url(self.context, self.request)
 
     def __repr__(self):
         """Get a string representation """
         raise NotImplementedError()
 
-    def __call__(self):
-        return canonical_url(self.context, self.request)
+    __call__ = __str__
 
 
 def canonical_url(
