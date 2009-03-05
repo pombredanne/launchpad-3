@@ -20,7 +20,6 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords, IBuildSet)
-from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.webapp import (
@@ -228,7 +227,7 @@ def setupCompleteBuilds(batch):
     # The following dict is keyed on the Build.id; the values are 3-tuples
     # containing the Build's 'buildqueue', 'sourcepackagerelease' and
     # 'buildlog' respectively.
-    build_data = dict([(row[0],tuple(row[1:4])) for row in results])
+    build_data = dict([(row[0], tuple(row[1:4])) for row in results])
 
     complete_builds = []
     for build in builds:

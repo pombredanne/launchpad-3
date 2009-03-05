@@ -17,7 +17,7 @@ from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
 
-from storm.expr import In, Join, LeftJoin
+from storm.expr import In, LeftJoin
 from storm.references import Reference
 
 from canonical.config import config
