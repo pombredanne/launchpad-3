@@ -24,7 +24,7 @@ from canonical.launchpad.components.externalbugtracker import (
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
 from canonical.launchpad.components.externalbugtracker.bugzilla import (
     BugzillaLPPlugin)
-from canonical.launchpad.event import SQLObjectCreatedEvent
+from lazr.lifecycle.event import ObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchErrorType, CreateBugParams,
@@ -759,7 +759,7 @@ class BugWatchUpdater(object):
                 bug_watch.bug.addCommentNotification(notification_message)
             else:
                 for bug_message in imported_comments:
-                    notify(SQLObjectCreatedEvent(
+                    notify(ObjectCreatedEvent(
                         bug_message,
                         user=bug_watch_updater))
             self.log.info("Imported %(count)i comments for remote bug "

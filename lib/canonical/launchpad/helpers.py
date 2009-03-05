@@ -23,6 +23,11 @@ import sha
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 
+# XXX flacoste 2009/03/03 bug=XXX This is a temporary location, until
+# we either spin it off in its own package or make it part of
+# a Lang package.
+from lazr.lifecycle.shortlist import shortlist
+
 import canonical
 from canonical.launchpad.interfaces import (
     BinaryPackageFormat, BinaryPackageFileType, ILaunchBag,
@@ -288,48 +293,6 @@ def validate_translation(original, translation, flags):
 
     # Check the msg.
     msg.check_format()
-
-
-class ShortListTimeoutError(Exception):
-    """This error is raised when the shortlist hardlimit is reached"""
-
-
-def shortlist(sequence, longest_expected=15, hardlimit=None):
-    """Return a listified version of sequence.
-
-    If <sequence> has more than <longest_expected> items, a warning is issued.
-
-    >>> shortlist([1, 2])
-    [1, 2]
-
-    >>> shortlist([1, 2, 3], 2)
-    Traceback (most recent call last):
-        ...
-    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 3 items.
-
-    >>> shortlist([1, 2, 3, 4], hardlimit=2)
-    Traceback (most recent call last):
-        ...
-    ShortListTimeoutError: Hard limit of 2 exceeded.  There were 4 items.
-
-    >>> shortlist([1, 2, 3, 4], 2, hardlimit=4)
-    Traceback (most recent call last):
-        ...
-    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 4 items.
-
-    """
-    L = list(sequence)
-    size = len(L)
-    if hardlimit and size > hardlimit:
-        msg = 'Hard limit of %d exceeded.  There were %d items.'
-        raise ShortListTimeoutError(msg % (hardlimit, size))
-    if size > longest_expected:
-        warnings.warn(
-            "shortlist() should not be used here. It's meant to listify"
-            " sequences with no more than %d items.  There were %s items." %
-              (longest_expected, size),
-              stacklevel=2)
-    return L
 
 
 def preferred_or_request_languages(request):
