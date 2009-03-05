@@ -1399,12 +1399,6 @@ class BranchLifecycleStatusFilter(EnumeratedType):
 class BranchPersonSearchRestriction(EnumeratedType):
     """How to further restrict the query for a branch search for people."""
 
-    ALL = Item("""
-        All related branches
-
-        All branches owned, registered or subscribed to by the person.
-        """)
-
     REGISTERED = Item("""
         Registered branches
 
@@ -1441,10 +1435,8 @@ class BranchPersonSearchContext:
     """The simple implementation for the person search context."""
     implements(IBranchPersonSearchContext)
 
-    def __init__(self, person, restriction=None):
+    def __init__(self, person, restriction):
         self.person = person
-        if restriction is None:
-            restriction = BranchPersonSearchRestriction.ALL
         self.restriction = restriction
 
 

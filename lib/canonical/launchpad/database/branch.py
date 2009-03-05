@@ -1390,9 +1390,7 @@ class BranchSet:
         elif IBranchPersonSearchContext.providedBy(context):
             restriction = context.restriction
             person = context.person
-            if restriction == BranchPersonSearchRestriction.ALL:
-                return branches.relatedTo(person)
-            elif restriction == BranchPersonSearchRestriction.REGISTERED:
+            if restriction == BranchPersonSearchRestriction.REGISTERED:
                 return branches.registeredBy(person)
             elif restriction == BranchPersonSearchRestriction.OWNED:
                 return branches.ownedBy(person)
