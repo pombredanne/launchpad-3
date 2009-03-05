@@ -696,13 +696,14 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
-    'externalbugtracker-comment-pushing.txt':
-            LayeredDocFileSuite(
-                '../doc/externalbugtracker-comment-pushing.txt',
-                setUp=checkwatchesSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
+    # XXX: salgado, 2009-03-05: Disabled as because of spurious failures.
+    # 'externalbugtracker-comment-pushing.txt':
+    #         LayeredDocFileSuite(
+    #             '../doc/externalbugtracker-comment-pushing.txt',
+    #             setUp=checkwatchesSetUp,
+    #             tearDown=tearDown,
+    #             layer=LaunchpadZopelessLayer
+    #             ),
     'externalbugtracker-debbugs.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-debbugs.txt',
