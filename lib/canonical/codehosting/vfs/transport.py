@@ -28,6 +28,7 @@ from bzrlib.transport import (
     unregister_transport)
 
 from twisted.internet import defer
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.twistedsupport import extract_result, gatherResults
 
 
@@ -49,9 +50,12 @@ class TranslationError(BzrError):
             self.reason = ''
 
 
-def get_chrooted_transport(url):
+def get_chrooted_transport(url, mkdir=False):
     """Return a chrooted transport serving `url`."""
-    chroot_server = chroot.ChrootServer(get_transport(url))
+    transport = get_transport(url)
+    if mkdir:
+        ensure_base(transport)
+    chroot_server = chroot.ChrootServer(transport)
     chroot_server.setUp()
     return get_transport(chroot_server.get_url())
 
@@ -72,6 +76,10 @@ class _MultiServer(Server):
     def setUp(self):
         for server in self._servers:
             server.setUp()
+
+    def destroy(self):
+        for server in reversed(self._servers):
+            server.destroy()
 
     def tearDown(self):
         for server in reversed(self._servers):

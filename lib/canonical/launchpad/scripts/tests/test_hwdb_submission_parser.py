@@ -7,7 +7,13 @@ import logging
 import os
 from unittest import TestCase, TestLoader
 
-import cElementTree as etree
+try:
+    import xml.elementtree.cElementTree as etree
+except ImportError:
+    try:
+        import cElementTree as etree
+    except ImportError:
+        import elementtree.ElementTree as etree
 import pytz
 
 from zope.testing.loghandler import Handler
@@ -505,45 +511,6 @@ class TestHWDBSubmissionParser(TestCase):
                            'model': 'MD 4394'}],
                          'Invalid parsing result for <aliases>')
 
-    def testDmi(self):
-        """The content of the <dmi> node is at present not processed.
-
-        Instead, a log warning is issued.
-        """
-        parser = SubmissionParser(self.log)
-        parser.submission_key = 'Test of <dmi> parsing.'
-        node = etree.fromstring("""<dmi>
-        # dmidecode 2.9
-        SMBIOS 2.4 present.
-        73 structures occupying 2436 bytes.
-        Table at 0x000E0010.
-
-        Handle 0x0000, DMI type 0, 24 bytes
-        BIOS Information
-        </dmi>
-        """)
-        parser._parseDmi(node)
-        self.assertWarningMessage(
-            parser.submission_key,
-            'Submission contains unprocessed DMI data.')
-
-    def testLspci(self):
-        """The content of the <lspci> node is at present not processed.
-
-        Instead, a log warning is issued.
-        """
-        parser = SubmissionParser(self.log)
-        parser.submission_key = 'Test of <lspci> parsing.'
-        node = etree.fromstring("""<lspci>
-        00:00.0 Host bridge: Memory Controller Hub (rev 0c)
-        00:01.0 PCI bridge: PCI Express Root Port (rev 0c)
-        </lspci>
-        """)
-        parser._parseLspci(node)
-        self.assertWarningMessage(
-            parser.submission_key,
-            'Submission contains unprocessed lspci data.')
-
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""
         test = self
@@ -563,22 +530,10 @@ class TestHWDBSubmissionParser(TestCase):
             test.assertEqual(node.tag, 'aliases')
             return 'parsed alias data'
 
-        def _parseDmi(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'dmi')
-            return 'parsed dmi data'
-
-        def _parseLspci(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'lspci')
-            return 'parsed lspci data'
-
         parser = SubmissionParser(self.log)
         parser._parseHAL = lambda node: _parseHAL(parser, node)
         parser._parseProcessors = lambda node: _parseProcessors(parser, node)
         parser._parseAliases = lambda node: _parseAliases(parser, node)
-        parser._parseDmi = lambda node: _parseDmi(parser, node)
-        parser._parseLspci = lambda node: _parseLspci(parser, node)
         parser._setHardwareSectionParsers()
 
         node = etree.fromstring("""
@@ -586,18 +541,13 @@ class TestHWDBSubmissionParser(TestCase):
                 <hal/>
                 <processors/>
                 <aliases/>
-                <dmi/>
-                <lspci/>
             </hardware>
             """)
         result = parser._parseHardware(node)
         self.assertEqual(result,
                          {'hal': 'parsed HAL data',
                           'processors': 'parsed processor data',
-                          'aliases': 'parsed alias data',
-                          'dmi': 'parsed dmi data',
-                          'lspci': 'parsed lspci data',
-                          },
+                          'aliases': 'parsed alias data'},
                          'Invalid parsing result for <hardware>')
 
     def testLsbRelease(self):
@@ -871,6 +821,19 @@ class TestHWDBSubmissionParser(TestCase):
                            'id': 87}],
               'command': 'hdparm -t /dev/sda'}],
             'Invalid parsing result for measurement question')
+
+    def testContext(self):
+        """The content of the <context> node is currently not processed.
+
+        Instead, a log warning is issued.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'Test of <context> parsing'
+        node = etree.fromstring('<context/>')
+        parser._parseContext(node)
+        self.assertWarningMessage(
+            parser.submission_key,
+            'Submission contains unprocessed <context> data.')
 
     def testMainParser(self):
         """Test SubmissionParser.parseMainSections

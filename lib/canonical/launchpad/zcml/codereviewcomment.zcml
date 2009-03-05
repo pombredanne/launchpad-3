@@ -7,6 +7,7 @@
   <!-- CodeReviewComment -->
   <class class="canonical.launchpad.database.CodeReviewComment">
     <allow interface="canonical.launchpad.interfaces.ICodeReviewComment"/>
+    <allow interface="canonical.launchpad.interfaces.branchtarget.IHasBranchTarget"/>
   </class>
 
   <subscriber

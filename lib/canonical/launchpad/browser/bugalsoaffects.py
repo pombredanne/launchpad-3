@@ -719,6 +719,23 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
 
         return super(ProductBugTaskCreationStep, self).main_action(data)
 
+    @property
+    def upstream_bugtracker_links(self):
+        """Return the upstream bugtracker links for the current target.
+
+        :return: The bug tracker links for the target, as returned by
+            BugTracker.getBugFilingAndSearchLinks(). If product.bugtracker
+            is None, return None.
+        """
+        target = self.getTarget()
+
+        if not target.bugtracker:
+            return None
+        else:
+            return target.bugtracker.getBugFilingAndSearchLinks(
+                target.remote_product, self.context.bug.title,
+                self.context.bug.description)
+
 
 class BugTrackerCreationStep(AlsoAffectsStep):
     """View for creating a bugtracker from the given URL.
