@@ -441,7 +441,7 @@ class BugWatchUpdater(object):
                 if bug_watch.unpushed_comments.any() is not None))
 
         remote_ids_to_check = sorted(
-            set(remote_ids_with_comments + remote_new_ids))
+            set(remote_ids_with_comments)) + sorted(remote_new_ids)
 
         # We remove any IDs that are already in remote_ids_to_check from
         # old_ids_to_check, since we're already going to be checking
@@ -462,6 +462,9 @@ class BugWatchUpdater(object):
                 slots_left = remotesystem.batch_size - ids_to_check_count
                 remote_ids_to_check = sorted(
                     remote_ids_to_check + old_ids_to_check[:slots_left])
+            else:
+                remote_ids_to_check = sorted(
+                    remote_ids_to_check[:remotesystem.batch_size])
         else:
             # If there's no batch size specified, update everything.
             remote_ids_to_check = sorted(
