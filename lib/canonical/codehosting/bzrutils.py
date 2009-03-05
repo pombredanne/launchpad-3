@@ -20,7 +20,7 @@ from bzrlib.remote import RemoteBzrDir
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
 
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 def get_branch_stacked_on_url(a_bzrdir):

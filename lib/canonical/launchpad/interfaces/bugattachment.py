@@ -14,6 +14,7 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Bool, Bytes, Choice, Int, TextLine
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.launchpad import IHasBug
@@ -21,7 +22,6 @@ from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.fields import Title
 from canonical.launchpad import _
 
-from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_write_operation, exported)

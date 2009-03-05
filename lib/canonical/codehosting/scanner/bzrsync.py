@@ -22,6 +22,8 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 from bzrlib import urlutils
 
+from lazr.uri import URI
+
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -36,7 +38,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
-from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 
 
 UTC = pytz.timezone('UTC')

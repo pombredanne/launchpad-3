@@ -68,7 +68,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Int, Choice, Text, TextLine, Datetime)
 
-from canonical.lazr.enum import (
+from lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
@@ -497,7 +497,7 @@ class BranchURIField(URIField):
     def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
-        from canonical.launchpad.webapp.uri import URI
+        from lazr.uri import URI
 
         super(BranchURIField, self)._validate(value)
 
@@ -1186,7 +1186,7 @@ class IBranchSet(Interface):
         codehosting URLs of remote branches and mirrors, but not their
         remote URLs.
 
-        :param uri: An instance of webapp.uri.URI
+        :param uri: An instance of lazr.uri.URI
         :return: The unique name if possible, None if the URI is not a valid
             codehosting URI.
         """

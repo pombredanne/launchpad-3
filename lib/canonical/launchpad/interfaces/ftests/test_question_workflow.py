@@ -22,11 +22,12 @@ from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.event.interfaces import (
-    ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
+from lazr.lifecycle.interfaces import (
+    IObjectCreatedEvent, IObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILanguageSet, ILaunchBag, InvalidQuestionStateError,
-    IPersonSet, IQuestion, IQuestionMessage, QuestionAction, QuestionStatus)
+    IQuestion, IQuestionMessage, QuestionAction, QuestionStatus)
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.ftests import login, login_person, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -88,9 +89,9 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
             # Event listeners is already registered.
             return
         self.modified_event_listener = TestEventListener(
-            IQuestion, ISQLObjectModifiedEvent, self.collectEvent)
+            IQuestion, IObjectModifiedEvent, self.collectEvent)
         self.created_event_listener = TestEventListener(
-            IQuestionMessage, ISQLObjectCreatedEvent, self.collectEvent)
+            IQuestionMessage, IObjectCreatedEvent, self.collectEvent)
 
     def collectEvent(self, object, event):
         """Collect events"""
@@ -137,7 +138,7 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         automatically to a value that will make the message sort last.
 
         The edited_fields parameter contain the list of field that
-        are expected to be present in ISQLObjectModifiedEvent that should
+        are expected to be present in IObjectModifiedEvent that should
         be triggered.
         """
         self.setUpEventListeners()
@@ -234,44 +235,46 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
     def checkTransitionEvents(self, message, edited_fields, status_name):
         """Helper method to validate the events triggered from the transition.
 
-        Check that an ISQLObjectCreatedEvent event was sent when the message
-        was created and that an ISQLObjectModifiedEvent was also sent.
+        Check that an IObjectCreatedEvent event was sent when the message
+        was created and that an IObjectModifiedEvent was also sent.
         The event object and edited_fields attribute are checked.
         """
         def failure_msg(msg):
             return "From status %s: %s" % (status_name, msg)
         self.failUnless(
             len(self.collected_events) >= 1,
-            failure_msg('failed to trigger an ISQLObjectCreatedEvent'))
+            failure_msg('failed to trigger an IObjectCreatedEvent'))
         created_event = self.collected_events[0]
+        created_event_user = IPerson(created_event.user)
         self.failUnless(
-            ISQLObjectCreatedEvent.providedBy(created_event),
+            IObjectCreatedEvent.providedBy(created_event),
             failure_msg(
-                "%s doesn't provide ISQLObjectCreatedEvent" % created_event))
+                "%s doesn't provide IObjectCreatedEvent" % created_event))
         self.failUnless(
             created_event.object == message,
-            failure_msg("ISQLObjectCreatedEvent contains wrong message"))
+            failure_msg("IObjectCreatedEvent contains wrong message"))
         self.failUnless(
-            created_event.user == message.owner,
+            created_event_user == message.owner,
             failure_msg("%s != %s" % (
-                created_event.user.displayname, message.owner.displayname)))
+                created_event_user.displayname, message.owner.displayname)))
 
         self.failUnless(
             len(self.collected_events) == 2,
-            failure_msg('failed to trigger an ISQLObjectModifiedEvent'))
+            failure_msg('failed to trigger an IObjectModifiedEvent'))
         modified_event = self.collected_events[1]
+        modified_event_user = IPerson(modified_event.user)
         self.failUnless(
-            ISQLObjectModifiedEvent.providedBy(modified_event),
+            IObjectModifiedEvent.providedBy(modified_event),
             failure_msg(
-                "%s doesn't provide ISQLObjectModifiedEvent"
+                "%s doesn't provide IObjectModifiedEvent"
                 % modified_event))
         self.failUnless(
             modified_event.object == self.question,
-            failure_msg("ISQLObjectModifiedEvent contains wrong question"))
+            failure_msg("IObjectModifiedEvent contains wrong question"))
         self.failUnless(
-            modified_event.user == message.owner,
+            modified_event_user == message.owner,
             failure_msg("%s != %s" % (
-                modified_event.user.displayname, message.owner.displayname)))
+                modified_event_user.displayname, message.owner.displayname)))
         if edited_fields:
             self.failUnless(
                 set(modified_event.edited_fields) == set(edited_fields),

@@ -16,6 +16,7 @@ __all__ = [
 from email.Utils import make_msgid
 
 from lazr.delegates import delegates
+from lazr.enum import DBEnumeratedType, DBItem
 import simplejson
 from storm.expr import And, Or
 from storm.store import Store
@@ -25,7 +26,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import classProvides, implements
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from storm.expr import Desc, Join, LeftJoin
 from storm.locals import Int, Reference, Unicode
 from sqlobject import (
