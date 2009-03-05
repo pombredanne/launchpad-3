@@ -27,6 +27,7 @@ def new_import(code_import, event):
         # test.
         return
 
+    user = IPerson(event.user)
     subject = 'New code import: %s/%s' % (
         code_import.product.name, code_import.branch.name)
     body = get_email_template('new-code-import.txt') % {
@@ -34,7 +35,7 @@ def new_import(code_import, event):
         'branch': canonical_url(code_import.branch)}
 
     from_address = format_address(
-        event.user.displayname, event.user.preferredemail.email)
+        user.displayname, user.preferredemail.email)
 
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name,

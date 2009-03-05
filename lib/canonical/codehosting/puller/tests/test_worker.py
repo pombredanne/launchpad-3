@@ -30,7 +30,7 @@ from canonical.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.testing import reset_logging
 
 

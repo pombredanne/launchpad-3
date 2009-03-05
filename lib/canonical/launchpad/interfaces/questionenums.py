@@ -15,8 +15,7 @@ __all__ = [
     'QuestionStatus',
     ]
 
-from canonical.lazr.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item)
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 
 class QuestionAction(DBEnumeratedType):

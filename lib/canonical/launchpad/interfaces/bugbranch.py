@@ -13,6 +13,7 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Choice, Int, Object, TextLine
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import BugField, Summary
@@ -20,8 +21,6 @@ from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, non_duplicate_branch)
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.person import IPerson
-
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class BugBranchStatus(DBEnumeratedType):
