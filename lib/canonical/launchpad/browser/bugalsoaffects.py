@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, IAddBugTaskForm,
     IAddBugTaskWithProductCreationForm, IBug, IBugTaskSet, IBugTrackerSet,
     IBugWatchSet, IDistributionSourcePackage, ILaunchBag,
-    ILaunchpadCelebrities, IProductPublic, IProductSet, NoBugTrackerFound,
+    ILaunchpadCelebrities, IProductSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL, valid_remote_bug_url, valid_upstreamtask,
     validate_new_distrotask)
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -733,7 +733,8 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
             return None
         else:
             return target.bugtracker.getBugFilingAndSearchLinks(
-                target.remote_product)
+                target.remote_product, self.context.bug.title,
+                self.context.bug.description)
 
 
 class BugTrackerCreationStep(AlsoAffectsStep):

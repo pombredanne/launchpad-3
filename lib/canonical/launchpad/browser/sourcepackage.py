@@ -75,7 +75,7 @@ class SourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
-    enable_only = ['overview', 'bugs', 'answers', 'translations']
+    enable_only = ['overview', 'bugs', 'branches', 'answers', 'translations']
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):

@@ -31,7 +31,7 @@
                     branch_format repository_format control_format stacked_on
                     createBranchRevisionFromIDs distroseries sourcepackagename
                     addToLaunchBag distribution sourcepackage codebrowse_url
-                    merge_queue"
+                    merge_queue namespace"
                     />
     <require
         permission="launchpad.Edit"

@@ -31,7 +31,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IMasterObject
-from canonical.launchpad.interfaces.account import IAccountSet
+from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPrincipal
@@ -49,7 +49,6 @@ from canonical.launchpad.interfaces import (
     IGPGKeyValidationForm, ILoginToken, ILoginTokenSet, INewPersonForm,
     IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, LoginTokenType,
     PersonCreationRationale, ShipItConstants, UnexpectedFormData)
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 
 
 UTC = pytz.UTC
@@ -76,6 +75,7 @@ class LoginTokenView(LaunchpadView):
     PAGES = {LoginTokenType.PASSWORDRECOVERY: '+resetpassword',
              LoginTokenType.ACCOUNTMERGE: '+accountmerge',
              LoginTokenType.NEWACCOUNT: '+newaccount',
+             LoginTokenType.NEWPERSONLESSACCOUNT: '+newaccount',
              LoginTokenType.NEWPROFILE: '+newaccount',
              LoginTokenType.VALIDATEEMAIL: '+validateemail',
              LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
@@ -162,17 +162,17 @@ class BaseLoginTokenView(OpenIDMixin):
         self.next_url = canonical_url(self.context.requester)
         self.context.consume()
 
-    def accountWasSuspended(self, naked_person, reason):
+    def accountWasSuspended(self, account, reason):
         """Return True if the person's account was SUSPENDED, otherwise False.
 
         When the account was SUSPENDED, the Warning Notification with the
         reason is added to the request's response. The LoginToken is consumed.
 
-        :param naked_person: An unproxied Person.
+        :param account: The IAccount.
         :param reason: A sentence that explains why the SUSPENDED account
             cannot be used.
         """
-        if naked_person.account.status != AccountStatus.SUSPENDED:
+        if account.status != AccountStatus.SUSPENDED:
             return False
         suspended_account_mailto = (
             'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
@@ -319,44 +319,42 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         """
         emailaddress = getUtility(IEmailAddressSet).getByEmail(
             self.context.email)
-        person_id = removeSecurityProxy(emailaddress).personID
-        if person_id is not None:
-            # XXX: Guilherme Salgado 2006-09-27 bug=62674:
-            # It should be possible to do the login before this and avoid
-            # this hack. In case the user doesn't want to be logged in
-            # automatically we can log him out after doing what we want.
-            naked_person = removeSecurityProxy(getUtility(IPersonSet).get(
-                person_id))
-            #      end of evil code.
+        account = emailaddress.account
+        # Suspended accounts cannot reset their password.
+        reason = ('Your password cannot be reset because your account '
+                  'is suspended.')
+        if self.accountWasSuspended(account, reason):
+            return
 
-            # Suspended accounts cannot reset their password.
-            reason = ('Your password cannot be reset because your account '
-                      'is suspended.')
+        naked_account = removeSecurityProxy(account)
+        # Reset password can be used to reactivate a deactivated account.
+        if account.status == AccountStatus.DEACTIVATED:
+            naked_account.reactivate(
+                comment="User reactivated the account using reset password.",
+                password=data['password'],
+                preferred_email=emailaddress)
+            self.request.response.addInfoNotification(
+                _('Welcome back to Launchpad.'))
+        else:
+            naked_account.password = data.get('password')
 
-            if self.accountWasSuspended(naked_person, reason):
-                return
+        person = IMasterObject(emailaddress.person, None)
+        # Make sure this person has a preferred email address.
+        if person is not None and person.preferredemail != emailaddress:
+            # Must remove the security proxy of the email address because
+            # the user is not logged in at this point and we may need to
+            # change its status.
+            removeSecurityProxy(person).validateAndEnsurePreferredEmail(
+                removeSecurityProxy(emailaddress))
 
-            # Reset password can be used to reactivate a deactivated account.
-            elif naked_person.account.status == AccountStatus.DEACTIVATED:
-                naked_person.reactivateAccount(
-                    comment=
-                        "User reactivated the account using reset password.",
-                    password=data['password'],
-                    preferred_email=emailaddress)
-                self.request.response.addInfoNotification(
-                    _('Welcome back to Launchpad.'))
-            else:
-                naked_person.password = data.get('password')
-
-            # Make sure this person has a preferred email address.
-            if naked_person.preferredemail != emailaddress:
-                # Must remove the security proxy of the email address because
-                # the user is not logged in at this point and we may need to
-                # change its status.
-                naked_person.validateAndEnsurePreferredEmail(
-                    removeSecurityProxy(emailaddress))
-
-            self.next_url = canonical_url(naked_person)
+        if self.context.redirection_url is not None:
+            self.next_url = self.context.redirection_url
+        elif person is not None:
+            self.next_url = canonical_url(person)
+        else:
+            assert self.has_openid_request, (
+                'No redirection URL specified and this is not part of an '
+                'OpenID authentication.')
 
         self.context.consume()
 
@@ -707,7 +705,8 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     custom_widget('password', PasswordChangeWidget)
     label = 'Complete your registration'
     expected_token_types = (
-        LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
+        LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE,
+        LoginTokenType.NEWPERSONLESSACCOUNT)
 
     def initialize(self):
         if self.redirectIfInvalidOrConsumedToken():
@@ -780,7 +779,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             # Suspended accounts cannot reactivate their profile.
             reason = ('This profile cannot be claimed because the account '
                 'is suspended.')
-            if self.accountWasSuspended(naked_person, reason):
+            if self.accountWasSuspended(person.account, reason):
                 return
             naked_person.displayname = data['displayname']
             naked_person.hide_email_addresses = data['hide_email_addresses']
@@ -845,9 +844,8 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         Also fire ObjectCreatedEvents for both the newly created Person
         and EmailAddress.
         """
-        from zope.security.proxy import removeSecurityProxy
         rationale = self._getCreationRationale()
-        if self.has_openid_request:
+        if self.context.tokentype == LoginTokenType.NEWPERSONLESSACCOUNT:
             person = None
             account, email = getUtility(IAccountSet).createAccountAndEmail(
                 self.context.email, rationale, displayname,

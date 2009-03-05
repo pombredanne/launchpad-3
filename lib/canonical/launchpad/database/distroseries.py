@@ -77,7 +77,8 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.archive import (
     ALLOW_RELEASE_BUILDS, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from canonical.launchpad.interfaces.build import IBuildSet, IHasBuildRecords
+from canonical.launchpad.interfaces.build import IBuildSet
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageName)
 from canonical.launchpad.interfaces.distroseries import (

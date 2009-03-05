@@ -5,14 +5,15 @@ __all__ = [
     'BlockingProxy',
     'branch_id_to_path',
     'BranchFileSystemClient',
+    'get_lp_server',
+    'get_multi_server',
     'get_puller_server',
     'get_scanner_server',
-    'get_lp_server',
     'LaunchpadServer',
     ]
 
 from canonical.codehosting.vfs.branchfs import (
     AsyncLaunchpadTransport, branch_id_to_path, get_lp_server,
-    get_puller_server, get_scanner_server, LaunchpadServer)
+    get_multi_server, get_puller_server, get_scanner_server, LaunchpadServer)
 from canonical.codehosting.vfs.branchfsclient import (
     BlockingProxy,BranchFileSystemClient)

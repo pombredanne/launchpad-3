@@ -89,7 +89,6 @@ from canonical.launchpad.database import (
     Milestone, Person, PillarName, POTemplate, Processor, ProcessorFamily,
     Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
     Specification, Sprint, TranslationGroup, TranslationMessage)
-
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import IStore
@@ -105,8 +104,7 @@ from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.faq import IFAQ
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.language import ILanguage
