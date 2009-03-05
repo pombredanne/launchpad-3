@@ -325,7 +325,7 @@ class DatabaseConfig:
           ...
         AttributeError: ...
         >>> print config.launchpad.dbuser
-        launchpad
+        launchpad_main
         >>> print config.librarian.dbuser
         librarian
 
@@ -339,7 +339,7 @@ class DatabaseConfig:
         >>> print dbconfig.main_master
         dbname=...
         >>> print dbconfig.dbuser
-        launchpad
+        launchpad_main
 
     Some values are required to have a value, such as dbuser.  So we
     get an exception if they are not set:

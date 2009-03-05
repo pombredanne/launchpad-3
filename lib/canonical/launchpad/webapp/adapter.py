@@ -28,6 +28,7 @@ from zope.component import getUtility
 from zope.interface import (
     classImplements, classProvides, alsoProvides,
     implementer, implements, Interface)
+from zope.rdb.interfaces import IDBICursor
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
 from canonical.config import config, dbconfig, DatabaseConfig
@@ -528,7 +529,8 @@ class StoreSelector:
 # can just maintain a hardcoded list of what isn't in there for now.
 _auth_store_tables = frozenset([
     'Account', 'AccountPassword', 'AuthToken', 'EmailAddress',
-    'OpenIDRPSummary', 'OpenIDAuthorization'])
+    'OpenIDAssociations', 'OpenIDAuthorization', 'OpenIDRPSummary',
+    'OpenIDAuthorization'])
 
 
 # We want to be able to adapt a Storm class to an IStore, IMasterStore or

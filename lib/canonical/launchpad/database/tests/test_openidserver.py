@@ -29,17 +29,17 @@ class OpenIDAuthorizationTestCase(unittest.TestCase):
     layer = DatabaseFunctionalLayer
 
     def tearDown(self):
-        StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
+        StoreSelector.setGlobalDefaultFlavor(DEFAULT_FLAVOR)
 
     def test__get_store_should_return_the_auth_master_store(self):
         """We want the OAuthAuthorization check to use the master store,
         because it's modified on GET request which would use the SLAVE_FLAVOR
         by default.
         """
-        StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
+        StoreSelector.setGlobalDefaultFlavor(SLAVE_FLAVOR)
         zstorm = getUtility(IZStorm)
         self.assertEquals(
-            '%s-%s' % (MAIN_STORE, MASTER_FLAVOR),
+            'launchpad-%s-%s' % (MAIN_STORE, MASTER_FLAVOR),
             zstorm.get_name(OpenIDAuthorization._get_store()))
 
 
