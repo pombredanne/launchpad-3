@@ -467,10 +467,17 @@ class BugWatchUpdater(object):
             remote_ids_to_check = sorted(
                 remote_ids_to_check + old_ids_to_check)
 
-        unmodified_remote_ids = sorted(
-            set(remote_old_ids).difference(set(old_ids_to_check)))
+        # Make sure that unmodified_remote_ids only includes IDs that
+        # could have been checked but which weren't modified on the
+        # remote server and which haven't been listed for checking
+        # otherwise (i.e. because they have comments to be pushed).
+        unmodified_old_ids = set(
+            remote_old_ids).difference(set(old_ids_to_check))
+        unmodified_remote_ids = [
+            remote_id for remote_id in unmodified_old_ids
+            if remote_id not in remote_ids_to_check]
 
-        all_remote_ids = remote_ids_to_check + list(unmodified_remote_ids)
+        all_remote_ids = remote_ids_to_check + unmodified_remote_ids
         return {
             'remote_ids_to_check': remote_ids_to_check,
             'all_remote_ids': all_remote_ids,

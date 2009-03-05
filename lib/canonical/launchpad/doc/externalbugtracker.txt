@@ -958,8 +958,15 @@ will be ignored altogether.
     >>> print sorted(ids['remote_ids_to_check'])
     [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7']
 
-However, if there's room in the batch, the old IDs that need checking will
-also be included.
+The old IDs that aren't checked aren't included in the unmodified_remote_ids
+list, since they still need checking and shouldn't be marked as having been
+checked already.
+
+    >>> print sorted(ids['unmodified_remote_ids'])
+    []
+
+However, if there's room in the batch, old IDs that need checking will
+also be included, up to the batch_size limit.
 
     >>> external_bugtracker.batch_size = 9
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
