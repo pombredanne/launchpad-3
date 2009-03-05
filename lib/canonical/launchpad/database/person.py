@@ -3477,22 +3477,9 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_person, team_id))
 
-        # Transfer the OpenIDRPSummaries to the new account.
-        IMasterStore(OpenIDRPSummary).execute("""
-            UPDATE OpenIDRPSummary
-            SET account = %s
-            WHERE account = %s
-            """ % sqlvalues(to_person.account, from_person.account))
-
-        # Flag the account as merged
+        # Flag the person as merged
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
-            ''' % vars())
-
-        # And nuke any referencing Account
-        IMasterStore(Account).execute('''
-            DELETE FROM Account USING Person
-            WHERE Person.account = Account.id AND Person.id=%(from_id)d
             ''' % vars())
 
         # Append a -merged suffix to the account's name.

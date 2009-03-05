@@ -17,4 +17,7 @@ def test_suite():
         LayeredDocFileSuite(
             'test_adapter_permissions.txt',
             layer=LaunchpadFunctionalLayer),
+        LayeredDocFileSuite(
+            'test_adapter_dbpolicy.txt',
+            layer=LaunchpadFunctionalLayer),
         ])
