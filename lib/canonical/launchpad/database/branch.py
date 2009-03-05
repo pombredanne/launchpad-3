@@ -1376,31 +1376,6 @@ class BranchSet:
 
         return clause
 
-    def _filter_by_context(self, context, branches):
-        if context is None:
-            return branches
-        elif IProduct.providedBy(context):
-            return branches.inProduct(context)
-        elif IProject.providedBy(context):
-            return branches.inProject(context)
-        elif IPerson.providedBy(context):
-            return branches.relatedTo(context)
-        elif ISourcePackage.providedBy(context):
-            return branches.inSourcePackage(context)
-        elif IBranchPersonSearchContext.providedBy(context):
-            restriction = context.restriction
-            person = context.person
-            if restriction == BranchPersonSearchRestriction.REGISTERED:
-                return branches.registeredBy(person)
-            elif restriction == BranchPersonSearchRestriction.OWNED:
-                return branches.ownedBy(person)
-            elif restriction == BranchPersonSearchRestriction.SUBSCRIBED:
-                return branches.subscribedBy(person)
-            else:
-                raise BadBranchSearchContext(context)
-        else:
-            raise BadBranchSearchContext(context)
-
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):
         """See `IBranchSet`."""
