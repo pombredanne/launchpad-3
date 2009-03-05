@@ -766,7 +766,6 @@ BranchPersonSearchRestriction.
     ...     BranchPersonSearchContext, BranchPersonSearchRestriction)
     >>> for item in BranchPersonSearchRestriction.items:
     ...     print repr(item)
-    <Item ...ALL, All related branches>
     <Item ...REGISTERED, Registered branches>
     <Item ...OWNED, Owned branches>
     <Item ...SUBSCRIBED, Subscribed branches>
