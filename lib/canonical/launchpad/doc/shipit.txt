@@ -153,7 +153,8 @@ request.
 
 Instead, it'll be part of the past requests of that recipient.
 
-    >>> request in recipient.pastShipItRequests()
+    >>> from canonical.launchpad.interfaces.shipit import IShipitAccount
+    >>> request in IShipitAccount(recipient).pastShipItRequests()
     True
 
 

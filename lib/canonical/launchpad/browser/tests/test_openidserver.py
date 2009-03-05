@@ -22,6 +22,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.database.openidserver import OpenIDAuthorization
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
+from canonical.launchpad.interfaces.shipit import IShipitAccount
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
@@ -84,7 +85,8 @@ class SimpleRegistrationTestCase(unittest.TestCase):
         # Test that user details are extracted correctly when there is
         # no previous successful shipit request.
         person = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-        self.assertEqual(person.lastShippedRequest(), None)
+        self.assertEqual(
+            IShipitAccount(person.account).lastShippedRequest(), None)
         class FieldValueTest(OpenIDMixin):
             account = person.account
             sreg_field_names = [
