@@ -1102,3 +1102,7 @@ We can also get the collection of users affected by a bug.
     person-name14
     person-name17
 
+    >>> unaffecting_bug = factory.makeBug()
+    >>> print unaffecting_bug.users_affected
+    []
+
