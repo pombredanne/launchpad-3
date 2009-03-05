@@ -164,7 +164,7 @@ class CodeImportSourceDetails:
             cvs_module = str(code_import.cvs_module)
         elif code_import.rcs_type == RevisionControlSystems.GIT:
             rcstype = 'git'
-            svn_branch_url = cvs_root = cvs_module =None
+            svn_branch_url = cvs_root = cvs_module = None
             git_repo_url = code_import.git_repo_url
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
