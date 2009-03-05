@@ -3,6 +3,5 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-Branch format stuff.
 Creating git test branches is icky.
 Only load bzr-git when needed.
