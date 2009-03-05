@@ -4,7 +4,7 @@
 
 import simplejson
 
-from zope.component import getMultiAdapter, getUtility, queryAdapter
+from zope.component import getMultiAdapter, queryAdapter
 from zope.event import notify
 from zope.interface import Attribute, implements, providedBy
 from zope.interface.interfaces import IInterface
