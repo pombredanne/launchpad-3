@@ -33,7 +33,6 @@ from canonical.widgets import (
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branding import BrandingChangeView
-from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.cachedproperty import cachedproperty
