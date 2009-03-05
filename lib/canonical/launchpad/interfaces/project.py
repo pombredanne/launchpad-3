@@ -338,9 +338,6 @@ class IProjectSet(Interface):
         """Return a list of Projects which need review, or which have
         products that needs review."""
 
-    def forSyncReview():
-        """Return a list of projects that have productseries ready to
-        import which need review."""
 
 class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
                      IHasOwner):

@@ -8,7 +8,7 @@
   <class class="canonical.launchpad.database.Branch">
     <require
         permission="launchpad.View"
-        attributes="id branch_type name title summary url whiteboard container
+        attributes="id branch_type name title summary url whiteboard target
                     mirror_status_message private registrant owner author
                     reviewer code_reviewer product unique_name
                     displayname sort_key lifecycle_status last_mirrored
@@ -31,7 +31,7 @@
                     branch_format repository_format control_format stacked_on
                     createBranchRevisionFromIDs distroseries sourcepackagename
                     addToLaunchBag distribution sourcepackage codebrowse_url
-                    merge_queue"
+                    merge_queue namespace"
                     />
     <require
         permission="launchpad.Edit"
@@ -68,7 +68,7 @@
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
-      factory="canonical.launchpad.browser.branch.BranchPrimaryContext"
+      factory="canonical.launchpad.database.branchtarget.branch_to_target"
       />
 
   <!-- hierarchy -->

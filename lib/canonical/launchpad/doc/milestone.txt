@@ -147,7 +147,7 @@ appear as separate project milestones.
     >>> print [milestone.name for milestone in netapplet.all_milestones]
     [u'1.1.']
     >>> print [milestone.name for milestone in gnome.all_milestones]
-    [u'1.1', u'1.1.']
+    [u'1.1.', u'1.1']
 
 A project milestone is visible, if at least one product milestone with the
 same name is visible.

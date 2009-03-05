@@ -36,6 +36,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.gpg import IGPGKey
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
@@ -101,11 +102,6 @@ class IArchivePublic(IHasOwner):
             title=_("Name"), required=True,
             constraint=name_validator,
             description=_("The name of this archive.")))
-
-    description = exported(
-        Text(
-            title=_("Archive contents description"), required=False,
-            description=_("A short description of this archive's contents.")))
 
     enabled = Bool(
         title=_("Enabled"), required=False,
@@ -557,7 +553,7 @@ class IArchivePublic(IHasOwner):
             are to be copied.
         :param requestor: The `IPerson` who is requesting the package copy
             operation.
-        :param suite: The `IDistroSeries` name with optional pocket, for 
+        :param suite: The `IDistroSeries` name with optional pocket, for
             example, 'hoary-security'. If this is not provided it will
             default to the current series' release pocket.
         :param copy_binaries: Whether or not binary packages should be copied
@@ -571,14 +567,25 @@ class IArchivePublic(IHasOwner):
         """
 
 
-class IArchiveView(Interface):
+class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
 
     buildd_secret = TextLine(
         title=_("Buildd Secret"), required=False,
         description=_("The password used by the builder to access the "
-                      "archive.")
-        )
+                      "archive."))
+
+    description = exported(
+        Text(
+            title=_("Archive contents description"), required=False,
+            description=_("A short description of this archive's contents.")))
+
+    signing_key_fingerprint = exported(
+        Text(
+            title=_("Archive signing key fingerprint"), required=False,
+            description=_("A OpenPGP signing key fingerprint (40 chars) "
+                          "for this PPA or None if there is no signing "
+                          "key available.")))
 
     @rename_parameters_as(name="source_name", distroseries="distro_series")
     @operation_parameters(
@@ -874,7 +881,7 @@ class IArchiveSet(Interface):
 
     def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
         """Return a single PPA.
-        
+
         :param distribution: The context IDistribution.
         :param person_name: The context IPerson.
         :param ppa_name: The name of the archive (PPA)

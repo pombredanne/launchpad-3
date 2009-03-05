@@ -60,7 +60,8 @@ from canonical.launchpad.interfaces.archivepermission import (
 from canonical.launchpad.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus)
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IHasBuildRecords, IBuildSet)
+    BuildStatus, IBuildSet)
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.launchpad import (
@@ -260,6 +261,13 @@ class Archive(SQLBase):
         return urlappend(
             config.archivepublisher.base_url,
             self.distribution.name + postfix)
+
+    @property
+    def signing_key_fingerprint(self):
+        if self.signing_key is not None:
+            return self.signing_key.fingerprint
+
+        return None
 
     def getPubConfig(self):
         """See `IArchive`."""
@@ -1214,6 +1222,14 @@ class ArchiveSet:
                 raise AssertionError(
                     "archive '%s' exists already in '%s'." %
                     (name, distribution.name))
+        else:
+            archive = Archive.selectOneBy(
+                owner=owner, distribution=distribution, name=name,
+                purpose=ArchivePurpose.PPA)
+            if archive is not None:
+                raise AssertionError(
+                    "Person '%s' already has a PPA named '%s'." %
+                    (owner.name, name))
 
         return Archive(
             owner=owner, distribution=distribution, name=name,

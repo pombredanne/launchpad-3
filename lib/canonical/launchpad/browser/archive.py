@@ -46,7 +46,8 @@ from canonical.launchpad.interfaces.archive import (
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IBuildSet, IHasBuildRecords)
+    BuildStatus, IBuildSet)
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
@@ -95,9 +96,9 @@ def traverse_distro_archive(distribution, name):
     archive = getUtility(
         IArchiveSet).getByDistroAndName(distribution, name)
     if archive is None:
-        return NotFoundError(name)
-    else:
-        return archive
+        raise NotFoundError(name)
+
+    return archive
 
 
 def traverse_named_ppa(person_name, ppa_name):

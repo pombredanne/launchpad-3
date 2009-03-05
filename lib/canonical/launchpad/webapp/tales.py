@@ -43,7 +43,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)
@@ -1145,7 +1145,7 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         else:
             return (
                 '<a href="%(url)s" title="%(title)s" class="%(style)s">'
-                '%(line_count)s</a>' % args)
+                '<img src="/@@/download"/>&nbsp;%(line_count)s</a>' % args)
 
 
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):

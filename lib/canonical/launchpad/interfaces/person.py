@@ -761,6 +761,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                   description=_("The Archive owned by this person, his PPA."),
                   schema=Interface)) # Really IArchive, see archive.py
 
+    ppas = Attribute(
+        "List of PPAs owned by this person or team ordered by name.")
+
     entitlements = Attribute("List of Entitlements for this person or team.")
 
     structural_subscriptions = Attribute(
@@ -863,7 +866,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     def setContactAddress(email):
         """Set the given email address as this team's contact address.
 
-        This method must be used only for teams.
+        This method must be used only for teams, unless the disable argument
+        is True.
 
         If the team has a contact address its status will be changed to
         VALIDATED.
@@ -873,6 +877,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     def setPreferredEmail(email):
         """Set the given email address as this person's preferred one.
+
+        If ``email`` is None, the preferred email address is unset, which
+        will make the person invalid.
 
         This method must be used only for people, not teams.
         """
@@ -1208,6 +1215,15 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :return: True if the user was subscribed, false if they weren't.
         """
 
+    def getPPAByName(name):
+        """Return a PPA with the given name if it exists or None.
+
+        :param name: A string with the exact name of the ppa being looked up.
+
+        :return: an `IArchive` record corresponding to the PPA or None if it
+            was not found.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
@@ -1446,7 +1462,7 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPersonAdminWriteRestricted(Interface):
+class IPersonCommAdminWriteRestricted(Interface):
     """IPerson attributes that require launchpad.Admin permission to set."""
 
     visibility = exported(
@@ -1484,21 +1500,9 @@ class IPersonSpecialRestricted(Interface):
         :param comment: An explanation of why the account status changed.
         """
 
-    def reactivateAccount(comment, password, preferred_email):
-        """Reactivate this person's Launchpad account.
-
-        Set the account status to ACTIVE and possibly restore the user's
-        name. The preferred email address is set.
-
-        :param comment: An explanation of why the account status changed.
-        :param password: The user's password, it cannot be None.
-        :param preferred_email: The `EmailAddress` to set as the user's
-            preferred email address. It cannot be None.
-        """
-
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IPersonAdminWriteRestricted, IPersonSpecialRestricted,
+              IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
               IHasStanding, ISetLocation):
     """A Person."""
     export_as_webservice_entry(plural_name='people')

@@ -5,7 +5,6 @@ __metaclass__ = type
 from datetime import datetime
 import pytz
 
-from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import ISimpleInputWidget, SimpleInputWidget
@@ -16,7 +15,7 @@ from zope.schema import Choice, Datetime
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
-from canonical.launchpad.interfaces import IAnnouncement, ILaunchBag
+from canonical.launchpad.interfaces import IAnnouncement
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.date import DateTimeWidget
@@ -61,11 +60,9 @@ class AnnouncementDateWidget(SimpleInputWidget):
         self.announcement_date_widget = widgets['announcement_date']
 
     def __call__(self):
-        time_zone = getUtility(ILaunchBag).time_zone
         html = '<div>Publish this announcement:</div>\n'
-        html += "<p>%s</p><p>%s in the %s time zone</p>" % (
-            self.action_widget(), self.announcement_date_widget(),
-            time_zone)
+        html += "<p>%s</p><p>%s</p>" % (
+            self.action_widget(), self.announcement_date_widget())
         return html
 
     def hasInput(self):
@@ -107,7 +104,7 @@ class AnnouncementDateWidget(SimpleInputWidget):
                     _('Please provide a publication date.')))
             raise self._error
         if action == 'immediately':
-            return datetime.utcnow().replace(tzinfo=pytz.utc)
+            return datetime.now(pytz.utc)
         elif action == "sometime":
             return None
         elif action == "specific":

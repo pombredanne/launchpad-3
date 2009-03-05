@@ -232,14 +232,16 @@ class IBugTracker(Interface):
     multi_product = Attribute(
         "This bug tracker tracks multiple remote products.")
 
-    def getBugFilingAndSearchLinks(remote_product):
+    def getBugFilingAndSearchLinks(remote_product, summary=None,
+                                   description=None):
         """Return the bug filing and search links for the tracker.
 
         :param remote_product: The name of the product on which the bug
-            is to be filed or search for. This is usually a string but
-            can also take other forms. For example, SourceForge requires
-            a GroupID and an ATID in order to be able to file a bug.
-            These are passed in as a tuple of (group_id, at_id).
+            is to be filed or search for.
+        :param summary: The string with which to pre-filly the summary
+            field of the upstream bug tracker's search and bug filing forms.
+        :param description: The string with which to pre-filly the description
+            field of the upstream bug tracker's bug filing form.
         :return: A dict of the absolute URL of the bug filing form and
             the search form for `remote_product` on the remote tracker,
             in the form {'bug_filing_url': foo, 'search_url': bar}. If
