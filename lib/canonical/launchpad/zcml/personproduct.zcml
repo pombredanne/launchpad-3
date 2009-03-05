@@ -1,0 +1,44 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <class class="canonical.launchpad.database.personproduct.PersonProduct">
+    <allow interface="canonical.launchpad.interfaces.personproduct.IPersonProduct" />
+  </class>
+
+  <browser:url
+      for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+      path_expression="product/name"
+      attribute_to_parent="person"/>
+
+<!--
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BranchNavigation" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBranch"
+        facet="branches"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BranchView" >
+        <browser:page
+            name="+index"
+            template="../templates/branch-index.pt"
+            />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/branch-portlet-details.pt" />
+        <browser:page
+            name="+associations"
+            template="../templates/branch-associations.pt" />
+        <browser:page
+            name="+landing-candidates"
+            template="../templates/branch-landing-candidates.pt" />
+        <browser:page
+            name="+merges"
+            template="../templates/branch-merges.pt" />
+   </browser:pages>
+-->
+</configure>
