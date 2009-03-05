@@ -52,6 +52,14 @@
         factory="canonical.launchpad.webapp.dbpolicy.SlaveDatabasePolicy"
         />
 
+    <!-- lazr.batchnavigator hook -->
+    <adapter
+        factory='.batching.FiniteSequenceAdapter' />
+    
+    <adapter
+        factory='.batching.FiniteSequenceAdapter'
+        for='storm.zope.interfaces.ISQLObjectResultSet' />
+
     <!-- links -->
     <class class="canonical.launchpad.webapp.menu.LinkData">
         <allow interface="canonical.launchpad.webapp.interfaces.ILinkData" />
