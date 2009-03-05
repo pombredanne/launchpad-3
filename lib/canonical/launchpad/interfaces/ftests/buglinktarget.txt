@@ -24,7 +24,6 @@ shouldn't have any bugs linked to it at the start of the test.)
 
 == linkBug() ==
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> bugset = getUtility(IBugSet)
     >>> bug1 = bugset.get(1)
 

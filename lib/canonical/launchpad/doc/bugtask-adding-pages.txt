@@ -597,9 +597,6 @@ URLs for a Product's upstream bug tracker using its
 
 We'll link a product to an upstream bug tracker to demonstrate this.
 
-    >>> from canonical.launchpad.testing.factory import (
-    ...     LaunchpadObjectFactory)
-
     >>> logout()
     >>> login('foo.bar@canonical.com')
     >>> bugtracker = factory.makeBugTracker('http://example.com')

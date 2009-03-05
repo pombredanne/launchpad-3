@@ -7,7 +7,7 @@ __metaclass__ = type
 import unittest
 
 from zope.event import notify
-from zope.interface import implements, providedBy
+from zope.interface import providedBy
 
 from lazr.lifecycle.snapshot import Snapshot
 

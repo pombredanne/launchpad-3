@@ -42,7 +42,7 @@ from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.bugtask import (
-    BugTaskStatus, IBugTask, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.bugtracker import BugTrackerType
 from canonical.launchpad.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)

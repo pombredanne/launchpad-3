@@ -911,7 +911,6 @@ sent to the support list about that question:
     # Define a function that will replace non-ascii character with
     # its unicoded encoded value.
     # Effectively replace u'\xe9' by '\\e9'.
-    >>> import re
     >>> def escape_utf8_payload(message):
     ...     charset = message.get_content_charset()
     ...     content = unicode(message.get_payload(decode=True), charset)

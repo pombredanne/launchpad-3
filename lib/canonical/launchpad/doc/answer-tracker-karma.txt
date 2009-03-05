@@ -58,7 +58,6 @@ to order our messages.
 
     >>> login('test@canonical.com')
     >>> from zope.event import notify
-    >>> from lazr.lifecycle.event import ObjectCreatedEvent
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> firefox_question = firefox.newQuestion(
     ...     title='New question', description='Question description.',

@@ -13,7 +13,6 @@ import gettextpo
 import os
 import random
 import re
-import sys
 import tarfile
 import warnings
 from StringIO import StringIO
@@ -21,7 +20,6 @@ from difflib import unified_diff
 import sha
 
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 
 import canonical
 from canonical.launchpad.interfaces import (
