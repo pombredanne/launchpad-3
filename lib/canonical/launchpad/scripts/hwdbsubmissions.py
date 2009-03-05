@@ -1016,7 +1016,8 @@ class SubmissionParser(object):
         :param submission: An IHWSubmission instance.
         """
         raw_submission = submission.raw_submission
-        submission_data = self.loadRawSubmissionData(submission.raw_submission)
+        submission_data = self.loadRawSubmissionData(
+            submission.raw_submission)
         # We assume that the data has been sent bzip2-compressed,
         # but this is not checked when the data is submitted.
         expanded_data = None

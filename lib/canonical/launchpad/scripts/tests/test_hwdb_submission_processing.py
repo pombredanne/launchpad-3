@@ -3517,7 +3517,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         hwdbsubmissions.sleep = MockSleep()
 
         submission_parser = SubmissionParser()
-        exception= URLError('Connection refused')
+        exception = URLError('Connection refused')
         raw_submission = MockLibraryFileAlias(
             'test-load-raw-data-3', exception=exception, max_errors=12)
 
@@ -3541,7 +3541,8 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         hwdbsubmissions.sleep = MockSleep()
 
         submission_parser = SubmissionParser()
-        exception = HTTPError('http://fake.url/', 404, 'Not found', None, None)
+        exception = HTTPError(
+            'http://fake.url/', 404, 'Not found', None, None)
         raw_submission = MockLibraryFileAlias(
             'test-load-raw-data-2', exception=exception, max_errors=1)
         self.assertRaises(
