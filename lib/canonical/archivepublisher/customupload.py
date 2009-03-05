@@ -184,7 +184,7 @@ class CustomUpload:
         See `DebVersion` for more information about version validation.
         """
         # Get an appropriately-sorted list of the valid installer directories
-        # now present in the target. I deliberately skip 'broken' versions
+        # now present in the target. Deliberately skip 'broken' versions
         # because they can't be sorted anyway.
         versions = []
         for inst in os.listdir(self.targetdir):

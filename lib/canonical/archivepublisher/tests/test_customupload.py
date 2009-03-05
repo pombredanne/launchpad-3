@@ -33,7 +33,7 @@ class TestCustomUpload(unittest.TestCase):
         latests entry.
 
         Also check if it copes with entries not named as valid versions and
-        leave then alone.
+        leave them alone.
         """
         # Setup a bogus `CustomUpload` object with the 'targetdir' pointing
         # to the directory created for the test.
