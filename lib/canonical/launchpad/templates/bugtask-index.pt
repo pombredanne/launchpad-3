@@ -26,8 +26,11 @@ function setupMarkDuplicateFormOverlay() {
         function extractFormFromResponse(id, o){
             var form_content = o.responseText;
             formoverlay = new Y.lazr.FormOverlay({
-                headerContent: "Mark bug as duplicate",
+                headerContent: unescape(
+                    "%3Ch2%3EMark bug report as duplicate%3C/h2%3E"),
                 form_content: form_content,
+                form_submit_button: Y.Node.create(unescape(
+                    '%3Cinput type="submit" value="Mark duplicate" /%3E')),
                 align: {
                     points: 
                         [Y.WidgetPositionExt.CC, Y.WidgetPositionExt.CC]
