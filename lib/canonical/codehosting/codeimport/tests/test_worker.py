@@ -12,11 +12,13 @@ import tempfile
 import time
 import unittest
 
-from bzrlib.bzrdir import BzrDir
+from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
 from bzrlib.errors import NoSuchFile
 from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
+from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
@@ -34,6 +36,8 @@ from canonical.testing import BaseLayer
 
 import pysvn
 
+
+default_format = BzrDirFormat.get_default_format()
 
 class WorkerTest(TestCaseWithTransport):
     """Base test case for things that test the code import worker.
@@ -88,7 +92,8 @@ class TestBazaarBranchStore(WorkerTest):
         # If there's no Bazaar branch of this id, then pull creates a new
         # Bazaar working tree.
         store = self.makeBranchStore()
-        bzr_working_tree = store.pull(self.arbitrary_branch_id, self.temp_dir)
+        bzr_working_tree = store.pull(
+            self.arbitrary_branch_id, self.temp_dir, default_format)
         self.assertEqual([], bzr_working_tree.branch.revision_history())
 
     def test_pushBranchThenPull(self):
@@ -96,19 +101,63 @@ class TestBazaarBranchStore(WorkerTest):
         # from the store.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.arbitrary_branch_id, tree)
-        new_tree = store.pull(self.arbitrary_branch_id, self.temp_dir)
+        store.push(self.arbitrary_branch_id, tree, default_format)
+        new_tree = store.pull(
+            self.arbitrary_branch_id, self.temp_dir, default_format)
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
+
+    def test_pullUpgradesFormat(self):
+        # A branch should always be in the most up-to-date format before a pull
+        # is performed.
+        store = self.makeBranchStore()
+        target_url = store._getMirrorURL(self.arbitrary_branch_id)
+        knit_format = format_registry.get('knit')()
+        tree = create_branch_with_one_revision(target_url, format=knit_format)
+        default_format = BzrDirFormat.get_default_format()
+
+        # The fetched branch is in the default format.
+        new_tree = store.pull(
+            self.arbitrary_branch_id, self.temp_dir, default_format)
+        self.assertEqual(
+            default_format, new_tree.branch.bzrdir._format)
+
+        # In addition. the remote branch has been upgraded as well.
+        new_branch = Branch.open(target_url)
+        self.assertEqual(
+            default_format.get_branch_format(), new_branch._format)
+
+    def test_pullUpgradesFormatWithBackupDirPresent(self):
+        # pull can upgrade the remote branch even if there is a backup.bzr
+        # directory from a previous upgrade.
+        store = self.makeBranchStore()
+        target_url = store._getMirrorURL(self.arbitrary_branch_id)
+        knit_format = format_registry.get('knit')()
+        tree = create_branch_with_one_revision(target_url, format=knit_format)
+        upgrade(target_url, format_registry.get('dirstate-tags')())
+        self.failUnless(get_transport(target_url).has('backup.bzr'))
+        default_format = BzrDirFormat.get_default_format()
+
+        # The fetched branch is in the default format.
+        new_tree = store.pull(
+            self.arbitrary_branch_id, self.temp_dir, default_format)
+        self.assertEqual(
+            default_format, new_tree.branch.bzrdir._format)
+
+        # In addition. the remote branch has been upgraded as well.
+        new_branch = Branch.open(target_url)
+        self.assertEqual(
+            default_format.get_branch_format(), new_branch._format)
 
     def test_pushTwiceThenPull(self):
         # We can push up a branch to the store twice and then pull it from the
         # store.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.arbitrary_branch_id, tree)
-        store.push(self.arbitrary_branch_id, tree)
-        new_tree = store.pull(self.arbitrary_branch_id, self.temp_dir)
+        store.push(self.arbitrary_branch_id, tree, default_format)
+        store.push(self.arbitrary_branch_id, tree, default_format)
+        new_tree = store.pull(
+            self.arbitrary_branch_id, self.temp_dir, default_format)
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
 
@@ -129,7 +178,7 @@ class TestBazaarBranchStore(WorkerTest):
         # doesn't already exist.
         store = BazaarBranchStore(self.get_transport('doesntexist'))
         tree = create_branch_with_one_revision('original')
-        store.push(self.arbitrary_branch_id, tree)
+        store.push(self.arbitrary_branch_id, tree, default_format)
         self.assertIsDirectory('doesntexist', self.get_transport())
 
     def test_storedLocation(self):
@@ -137,7 +186,7 @@ class TestBazaarBranchStore(WorkerTest):
         # the BazaarBranchStore's transport.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.arbitrary_branch_id, tree)
+        store.push(self.arbitrary_branch_id, tree, default_format)
         new_tree = self.fetchBranch(
             urljoin(store.transport.base, '%08x' % self.arbitrary_branch_id),
             'new_tree')
@@ -433,31 +482,31 @@ class TestActualImportMixin:
         raise NotImplementedError(
             "Override this with a VCS-specific implementation.")
 
-    def getBazaarWorkingTree(self, worker):
-        """Get the Bazaar tree 'worker' stored into its BazaarBranchStore."""
-        tree_dir = self.makeTemporaryDirectory()
-        return worker.bazaar_branch_store.pull(
-            worker.source_details.branch_id, tree_dir)
+    def getStoredBazaarBranch(self, worker):
+        """Get the Bazaar branch 'worker' stored into its BazaarBranchStore."""
+        branch_url = worker.bazaar_branch_store._getMirrorURL(
+            worker.source_details.branch_id)
+        return Branch.open(branch_url)
 
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
         # the branch.
         worker = self.makeImportWorker()
         worker.run()
-        bazaar_tree = self.getBazaarWorkingTree(worker)
+        branch = self.getStoredBazaarBranch(worker)
         # XXX: JonathanLange 2008-02-22: This assumes that the branch that we
         # are importing has two revisions. Looking at the test, it's not
         # obvious why we make this assumption, hence the XXX. The two
         # revisions are from 1) making the repository and 2) adding a file.
         # The name of this test smell is "Mystery Guest".
-        self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
+        self.assertEqual(2, len(branch.revision_history()))
 
     def test_sync(self):
         # Do an import.
         worker = self.makeImportWorker()
         worker.run()
-        bazaar_tree = self.getBazaarWorkingTree(worker)
-        self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
+        branch = self.getStoredBazaarBranch(worker)
+        self.assertEqual(2, len(branch.revision_history()))
 
         # Change the remote branch.
 
@@ -478,8 +527,8 @@ class TestActualImportMixin:
         worker.run()
 
         # Check that the new revisions are in the Bazaar branch.
-        bazaar_tree = self.getBazaarWorkingTree(worker)
-        self.assertEqual(3, len(bazaar_tree.branch.revision_history()))
+        branch = self.getStoredBazaarBranch(worker)
+        self.assertEqual(3, len(branch.revision_history()))
 
     def test_import_script(self):
         # Like test_import, but using the code-import-worker.py script
@@ -499,10 +548,11 @@ class TestActualImportMixin:
         tree_path = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(tree_path))
 
-        bazaar_tree = get_default_bazaar_branch_store().pull(
-            self.source_details.branch_id, tree_path)
+        branch_url = get_default_bazaar_branch_store()._getMirrorURL(
+            self.source_details.branch_id)
+        branch = Branch.open(branch_url)
 
-        self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
+        self.assertEqual(2, len(branch.revision_history()))
 
 
 class CSCVSActualImportMixin(TestActualImportMixin):

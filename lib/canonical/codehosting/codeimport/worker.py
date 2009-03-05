@@ -17,11 +17,12 @@ import os
 import shutil
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.osutils import pumpfile
 from bzrlib.urlutils import join as urljoin
+from bzrlib.upgrade import upgrade
 
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.codeimport.foreigntree import (
@@ -29,7 +30,7 @@ from canonical.codehosting.codeimport.foreigntree import (
 from canonical.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from canonical.config import config
-from canonical.launchpad.interfaces import RevisionControlSystems
+from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
 
 from cscvs.cmds import totla
 import cscvs
@@ -51,20 +52,27 @@ class BazaarBranchStore:
         """Return the URL that `db_branch` is stored at."""
         return urljoin(self.transport.base, '%08x' % db_branch_id)
 
-    def pull(self, db_branch_id, target_path):
+    def pull(self, db_branch_id, target_path, required_format):
         """Pull down the Bazaar branch for `code_import` to `target_path`.
 
         :return: A Bazaar working tree for the branch of `code_import`.
         """
+        remote_url = self._getMirrorURL(db_branch_id)
         try:
-            bzr_dir = BzrDir.open(self._getMirrorURL(db_branch_id))
+            bzr_dir = BzrDir.open(remote_url)
         except NotBranchError:
             return BzrDir.create_standalone_workingtree(
-                target_path, format_registry.get('1.9-rich-root')())
+                target_path, required_format)
+        if bzr_dir.needs_format_conversion(format=required_format):
+            try:
+                bzr_dir.root_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
+            upgrade(remote_url, required_format)
         bzr_dir.sprout(target_path)
         return BzrDir.open(target_path).open_workingtree()
 
-    def push(self, db_branch_id, bzr_tree):
+    def push(self, db_branch_id, bzr_tree, required_format):
         """Push up `bzr_tree` as the Bazaar branch for `code_import`."""
         ensure_base(self.transport)
         branch_from = bzr_tree.branch
@@ -73,7 +81,7 @@ class BazaarBranchStore:
             branch_to = Branch.open(target_url)
         except NotBranchError:
             branch_to = BzrDir.create_branch_and_repo(
-                target_url, format=format_registry.get('1.9-rich-root')())
+                target_url, format=required_format)
         branch_to.pull(branch_from)
 
 
@@ -271,6 +279,8 @@ class ImportWorker:
     # Where the Bazaar working tree will be stored.
     BZR_WORKING_TREE_PATH = 'bzr_working_tree'
 
+    required_format = BzrDirFormat.get_default_format()
+
     def __init__(self, source_details, bazaar_branch_store, logger):
         """Construct an `ImportWorker`.
 
@@ -289,7 +299,8 @@ class ImportWorker:
         if os.path.isdir(self.BZR_WORKING_TREE_PATH):
             shutil.rmtree(self.BZR_WORKING_TREE_PATH)
         return self.bazaar_branch_store.pull(
-            self.source_details.branch_id, self.BZR_WORKING_TREE_PATH)
+            self.source_details.branch_id, self.BZR_WORKING_TREE_PATH,
+            self.required_format)
 
     def getWorkingDirectory(self):
         """The directory we should change to and store all scratch files in.
@@ -413,7 +424,7 @@ class CSCVSImportWorker(ImportWorker):
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
         self.bazaar_branch_store.push(
-            self.source_details.branch_id, bazaar_tree)
+            self.source_details.branch_id, bazaar_tree, self.required_format)
         self.foreign_tree_store.archive(
             self.source_details, foreign_tree)
 
@@ -421,10 +432,14 @@ class CSCVSImportWorker(ImportWorker):
 class PullingImportWorker(ImportWorker):
     """An import worker for imports that can be done by a bzr plugin."""
 
+    # XXX 2009-03-05, MichaelHudson, bug=338061: There should be a way to find
+    # the 'default' rich-root format.
+    required_format = format_registry.get('1.9-rich-root')()
+
     def _doImport(self):
         bazaar_tree = self.getBazaarWorkingTree()
         bazaar_tree.branch.pull(
             Branch.open(self.source_details.git_repo_url),
             overwrite=True)
         self.bazaar_branch_store.push(
-            self.source_details.branch_id, bazaar_tree)
+            self.source_details.branch_id, bazaar_tree, self.required_format)
