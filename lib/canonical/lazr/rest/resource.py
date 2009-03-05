@@ -56,8 +56,6 @@ from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.lazr.enum import BaseItem
 
-# XXX leonardr 2008-01-25 bug=185958:
-# canonical_url, BatchNavigator, and event code should be moved into lazr.
 from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission

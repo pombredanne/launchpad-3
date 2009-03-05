@@ -300,24 +300,32 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
     >>> shortlist([1, 2])
     [1, 2]
 
-    >>> shortlist([1, 2, 3], 2)
+    >>> shortlist([1, 2, 3], 2) #doctest: +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
-    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 3 items.
+    UserWarning: shortlist() should not be used here. It's meant to listify
+    sequences with no more than 2 items.  There were 3 items.
 
     >>> shortlist([1, 2, 3, 4], hardlimit=2)
     Traceback (most recent call last):
     ...
     ShortListTooBigError: Hard limit of 2 exceeded.
 
-    >>> shortlist([1, 2, 3, 4], 2, hardlimit=4)
+    >>> shortlist(
+    ...     [1, 2, 3, 4], 2, hardlimit=4) #doctest: +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
-    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 4 items.
+    UserWarning: shortlist() should not be used here. It's meant to listify
+    sequences with no more than 2 items.  There were 4 items.
 
-    It works on iterable also.
+    It works on iterable also which don't support the extended slice protocol.
 
-    >>> shortlist(range(10), 5, hardlimit=8) #doctest: +ELLIPSIS
+    >>> xrange(5)[:1] #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    TypeError: ...
+
+    >>> shortlist(xrange(10), 5, hardlimit=8) #doctest: +ELLIPSIS
     Traceback (most recent call last):
     ...
     ShortListTooBigError: ...
@@ -327,9 +335,9 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
         last = hardlimit + 1
     else:
         last = longest_expected + 1
-    if getattr(sequence, '__getitem__', False):
+    try:
         results = list(sequence[:last])
-    else:
+    except TypeError:
         results = []
         for idx, item in enumerate(sequence):
             if hardlimit and idx > hardlimit:

@@ -1,7 +1,7 @@
 Snapshots of results set
 ------------------------
 
-In Launchpad adds special Snapshot support for attributes that are results
+Launchpad adds special Snapshot support for attributes that are result
 set. Since for comparison purpose we are actually interested in the actual
 result set before the modifciation, we snapshot these as a shortlist.
 

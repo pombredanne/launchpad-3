@@ -17,5 +17,5 @@ def snapshot_sql_result(value):
     # SQLMultipleJoin and SQLRelatedJoin return
     # SelectResults, which doesn't really help the Snapshot
     # object. We therefore list()ify the values; this isn't
-    # perfect but allows deltas do be generated reliably.
+    # perfect but allows deltas to be generated reliably.
     return shortlist(value, longest_expected=100, hardlimit=1000)
