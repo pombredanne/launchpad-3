@@ -471,7 +471,7 @@ class IBuildSet(Interface):
         result set is too large and the queries time out too often.
 
         So this method receives a list of Build IDs (the current batch
-        to be displayed on the GUI) and fetches the correspondent
+        to be displayed on the GUI) and fetches the corresponding
         BuildQueue, SourcePackageRelease and LibraryFileAlias rows
         (prejoined with the appropriate Builder, SourcePackageName and
         LibraryFileContent respectively).
