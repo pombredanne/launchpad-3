@@ -26,16 +26,14 @@ from storm.zope.interfaces import IZStorm
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    classImplements, classProvides, alsoProvides,
-    implementer, implements, Interface)
-from zope.rdb.interfaces import IDBICursor
+    classImplements, classProvides, alsoProvides, implements)
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
 from canonical.config import config, dbconfig, DatabaseConfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.lazr.utils import safe_hasattr
 from canonical.launchpad.interfaces import (
-    IMasterObject, IMasterStore, ISlaveStore, IStore)
+    IMasterObject, IMasterStore, ISlaveStore)
 from canonical.launchpad.webapp.interfaces import (
     ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
     MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)

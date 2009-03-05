@@ -412,3 +412,26 @@ random token for a mnemonic has been used in the past.
     # Restore random number range.
     >>> naked_account_set._MAX_RANDOM_TOKEN_RANGE = 1000
 
+== OpenID authentications ==
+
+Whenever a user authenticates to a relying party using our OpenID server, we
+store that information, which can then later be shown to the account's owner
+using IAccount.recently_authenticated_rps.  These are sorted descending by
+date.
+
+    >>> from canonical.launchpad.interfaces.openidserver import (
+    ...     IOpenIDRPSummarySet)
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> two_thousand_and_seven = datetime(2007, 1, 1, tzinfo=pytz.UTC)
+    >>> two_thousand_and_eight = datetime(2008, 1, 1, tzinfo=pytz.UTC)
+    >>> summary = getUtility(IOpenIDRPSummarySet).record(
+    ...     fresh_account, 'http://example.com/',
+    ...     date_used=two_thousand_and_eight)
+    >>> summary = getUtility(IOpenIDRPSummarySet).record(
+    ...     fresh_account, 'http://blog.example.com/',
+    ...     date_used=two_thousand_and_seven)
+
+    >>> [summary.date_last_used.strftime('%Y-%m-%d')
+    ...  for summary in fresh_account.recently_authenticated_rps]
+    ['2008-01-01', '2007-01-01']

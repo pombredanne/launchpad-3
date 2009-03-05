@@ -1900,37 +1900,6 @@ class Person(
             count += 1
         return new_name
 
-    def reactivateAccount(self, comment, password, preferred_email):
-        """See `IPersonSpecialRestricted`.
-
-        :raise AssertionError: if the password is not valid.
-        :raise AssertionError: if the preferred email address is None.
-        :raise AssertionError: if this `Person` is a team.
-        """
-        if self.is_team:
-            raise AssertionError(
-                "Teams cannot be reactivated with this method.")
-        if password in (None, ''):
-            raise AssertionError(
-                "User %s cannot be reactivated without a "
-                "password." % self.name)
-        if preferred_email is None:
-            raise AssertionError(
-                "User %s cannot be reactivated without a "
-                "preferred email address." % self.name)
-        account = IMasterStore(Account).get(Account, self.accountID)
-        account.status = AccountStatus.ACTIVE
-        account.status_comment = comment
-        if '-deactivatedaccount' in self.name:
-            # The name was changed by deactivateAccount(). Restore the
-            # name, but we must ensure it does not conflict with a current
-            # user.
-            name_parts = self.name.split('-deactivatedaccount')
-            base_new_name = name_parts[0]
-            self.name = self._ensureNewName(base_new_name)
-        self.password = password
-        self.validateAndEnsurePreferredEmail(preferred_email)
-
     @property
     def visibility_consistency_warning(self):
         """Warning used when changing the team's visibility.
@@ -2443,8 +2412,18 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
+        return self.getPPAByName('ppa')
+
+    @property
+    def ppas(self):
+        """See `IPerson`."""
+        return Archive.selectBy(
+            owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
+
+    def getPPAByName(self, name):
+        """See `IPerson`."""
         return Archive.selectOneBy(
-            owner=self, purpose=ArchivePurpose.PPA, name='ppa')
+            owner=self, purpose=ArchivePurpose.PPA, name=name)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

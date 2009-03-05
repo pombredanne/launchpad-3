@@ -22,7 +22,8 @@ from openid.store.sqlstore import PostgreSQLStore
 import psycopg2
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
-from storm.expr import Or
+from storm.expr import Desc, Or
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements, classProvides
 
@@ -104,6 +105,13 @@ class OpenIDAuthorizationSet:
                 accountID=account.id, trust_root=trust_root,
                 date_expires=expires, client_id=client_id
                 )
+
+    def getByAccount(self, account):
+        """See `IOpenIDAuthorizationSet`."""
+        store = Store.of(account)
+        result = store.find(OpenIDAuthorization, account=account)
+        result.order_by(Desc(OpenIDAuthorization.date_created))
+        return result
 
 
 class OpenIDRPConfig(SQLBase):

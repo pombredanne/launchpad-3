@@ -8,11 +8,7 @@ __all__ = [
     ]
 
 
-from storm.locals import Storm
-from storm.store import Store
-
-from zope.interface import classImplements, directlyProvides, Interface
-from zope.interface.interfaces import IInterface
+from zope.interface import Interface
 
 
 class IStore(Interface):

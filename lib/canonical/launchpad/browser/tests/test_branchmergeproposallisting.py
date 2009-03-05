@@ -105,7 +105,6 @@ class TestProposalVoteSummary(TestCaseWithFactory):
     def test_abstain(self):
         # Shown as Abstain: <count>.
         proposal = self.factory.makeBranchMergeProposal()
-        import transaction
         transaction.commit()
         self._createComment(proposal, vote=CodeReviewVote.ABSTAIN)
         summary, comment_count = self._get_vote_summary(proposal)

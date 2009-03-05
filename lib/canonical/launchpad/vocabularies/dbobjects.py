@@ -83,7 +83,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
-    Account, Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch,
+    Account, Archive, Branch, Bounty, Bug, BugTracker, BugWatch,
     Component, Country, Distribution, DistroArchSeries, DistroSeries,
     EmailAddress, FeaturedProject, KarmaCategory, Language, LanguagePack,
     MailingList, Milestone, Person, PillarName, POTemplate,
@@ -106,8 +106,7 @@ from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.faq import IFAQ
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.language import ILanguage
@@ -1448,9 +1447,9 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             return self.emptySelectResults()
         if check_permission('launchpad.Commercial', user):
             product_set = getUtility(IProductSet)
-            projects = product_set.forReview(search_text=query,
-                                             licenses=[License.OTHER_PROPRIETARY],
-                                             active=True)
+            projects = product_set.forReview(
+                search_text=query, licenses=[License.OTHER_PROPRIETARY],
+                active=True)
         else:
             projects = user.getOwnedProjects(match_name=query)
             projects = self._filter_projs(projects)
