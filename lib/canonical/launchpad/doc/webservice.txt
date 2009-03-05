@@ -1677,6 +1677,16 @@ The cover can be deleted with DELETE.
     None
 
 
+== Field resources ==
+
+An entry's primitive data fields are exposed as subordinate resources.
+
+    >>> field_resource = create_web_service_request(
+    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking/name').traverse(app)
+    >>> field_resource()
+    '"The Joy of Cooking"'
+
+
 == Requesting non available resources ==
 
 If the user tries to traverse to a nonexistent object, the result is a
@@ -1695,14 +1705,6 @@ Requesting a non-existent cookbook:
     Traceback (most recent call last):
     ...
     NotFound: ... name: u'104'
-
-Requesting an attribute which isn't exposed as a collection:
-
-    >>> create_web_service_request(
-    ...     '/beta/cookbooks/The%20Joy%20of%20Cooking/name').traverse(app)
-    Traceback (most recent call last):
-    ...
-    NotFound: ... name: u'name'
 
 Requesting a non-existent comment:
 

@@ -47,7 +47,8 @@ from canonical.lazr.interfaces import (
     IWebBrowserInitiatedRequest)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
-    CollectionResource, EntryResource, ScopedCollection)
+    CollectionResource, EntryField, EntryFieldResource,
+    EntryResource, ScopedCollection)
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
@@ -1149,6 +1150,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
                 elif IBytes.providedBy(field):
                     result = self._traverseToByteStorage(
                         request, entry, field, name)
+                elif field is not None:
+                    result = EntryField(entry, field, name)
             if result is not None:
                 return result
         return super(WebServicePublication, self).traverseName(
@@ -1206,6 +1209,10 @@ class WebServicePublication(LaunchpadBrowserPublication):
               queryAdapter(ob, IEntry) is not None):
             # Object supports IEntry protocol.
             resource = EntryResource(ob, request)
+        elif (IEntryField.providedBy(ob) or
+              queryAdapter(ob, IEntryField) is not None):
+            # Object supports IEntryField protocol.
+            resource = EntryFieldResource(ob, request)
         elif queryMultiAdapter((ob, request), IHTTPResource) is not None:
             # Object can be adapted to a resource.
             resource = queryMultiAdapter((ob, request), IHTTPResource)

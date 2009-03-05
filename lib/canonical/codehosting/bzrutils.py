@@ -59,6 +59,8 @@ def get_branch_stacked_on_url(a_bzrdir):
         raise UnstackableBranchFormat(
             a_bzrdir._format, a_bzrdir.root_transport.base)
     format = find_branch_format()
+    if not format.supports_stacking():
+        raise UnstackableBranchFormat(format, a_bzrdir.root_transport.base)
     branch_transport = a_bzrdir.get_branch_transport(None)
     # XXX: JonathanLange 2008-09-04: We should be using BranchConfig here, but
     # that requires opening the Branch. Bazaar should grow APIs to let us

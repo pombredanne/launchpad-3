@@ -11,7 +11,10 @@ __all__ = [
     'ICollection',
     'ICollectionResource',
     'IEntry',
+    'IEntryField',
+    'IEntryFieldResource',
     'IEntryResource',
+    'IFieldHTMLRenderer',
     'IFieldMarshaller',
     'IHTTPResource',
     'IJSONPublishable',
@@ -96,6 +99,16 @@ class IEntryResource(IHTTPResource):
         """Return the underlying entry for this resource."""
 
 
+class IEntryFieldResource(IHTTPResource):
+    """A resource that represents one of an entry's fields."""
+
+    def do_GET():
+        """Retrieve the value of the field.
+
+        :return: A string representation.
+        """
+
+
 class ICollectionResource(IHTTPResource):
     """A resource that represents a collection of entry resources."""
 
@@ -172,6 +185,25 @@ class IScopedCollection(ICollection):
     collection = Attribute("The collection scoped to an entry.")
 
 
+class IFieldHTMLRenderer(Interface):
+    """An interface that renders generic strings as HTML representations.
+
+    This can be a callable class, or a function that returns another
+    function.
+    """
+
+    def __call__(value):
+        """Render the given string as HTML."""
+
+
+class IEntryField(Interface):
+    """An individual field of an entry."""
+
+    entry = Attribute("The entry whose field this is.")
+
+    field = Attribute("The field, bound to the entry.")
+
+
 class ITopLevelEntryLink(Interface):
     """A link to a special entry.
 
@@ -196,9 +228,9 @@ class WebServiceLayer(IDefaultBrowserLayer):
 class IJSONRequestCache(Interface):
     """A cache of objects exposed as URLs or JSON representations."""
 
-    links = Attribute("Objects whose links need to be exposed.");
+    links = Attribute("Objects whose links need to be exposed.")
     objects = Attribute("Objects whose JSON representations need "
-                        "to be exposed.");
+                        "to be exposed.")
 
 
 class IByteStorage(Interface):
