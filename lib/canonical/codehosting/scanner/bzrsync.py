@@ -10,18 +10,17 @@ __all__ = [
     ]
 
 import logging
-from StringIO import StringIO
 import urlparse
 
 import pytz
 from zope.component import getUtility
 from bzrlib.branch import BzrBranchFormat4
-from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 from bzrlib import urlutils
 
+from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -29,19 +28,16 @@ from canonical.launchpad.interfaces import (
     IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
     NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet)
-from canonical.launchpad.interfaces.branchjob import IRevisionMailJobSource
+    BranchFormat, BranchLifecycleStatus, ControlFormat)
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
+from canonical.launchpad.interfaces.branchjob import (
+    IRevisionMailJobSource, IRevisionsAddedJobSource)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
-from canonical.launchpad.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize)
-from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 UTC = pytz.timezone('UTC')
-# Use at most the first 100 characters of the commit message.
-SUBJECT_COMMIT_MESSAGE_LENGTH = 100
 
 
 class BadLineInBugsProperty(Exception):
@@ -75,27 +71,6 @@ def set_bug_branch_status(bug, branch, status):
     return bug_branch
 
 
-def get_revision_message(bzr_branch, bzr_revision):
-    """Return the log message for `bzr_revision` on `bzr_branch`.
-
-    :param bzr_branch: A `bzrlib.branch.Branch` object.
-    :param bzr_revision: A Bazaar `Revision` object.
-    :return: The commit message entered for `bzr_revision`.
-    """
-    outf = StringIO()
-    lf = log_formatter('long', to_file=outf)
-    rev_id = bzr_revision.revision_id
-    rev1 = rev2 = bzr_branch.revision_id_to_revno(rev_id)
-    if rev1 == 0:
-        rev1 = None
-        rev2 = None
-
-    show_log(bzr_branch,
-             lf,
-             start_revision=rev1,
-             end_revision=rev2,
-             verbose=True)
-    return outf.getvalue()
 
 
 class BugBranchLinker:
@@ -194,7 +169,6 @@ class BranchMailer:
         self.db_branch = db_branch
         self.pending_emails = []
         self.subscribers_want_notification = False
-        self.generate_diffs = False
         self.initial_scan = None
         self.email_from = config.canonical.noreply_from_address
 
@@ -217,10 +191,6 @@ class BranchMailer:
         subscriptions = self.db_branch.getSubscriptionsByLevel(diff_levels)
         for subscription in subscriptions:
             self.subscribers_want_notification = True
-            if (subscription.max_diff_lines !=
-                BranchSubscriptionDiffSize.NODIFF):
-                self.generate_diffs = True
-                break
 
         # If db_history is empty, then this is the initial scan of the
         # branch.  We only want to send one email for the initial scan
@@ -247,39 +217,6 @@ class BranchMailer:
             job = getUtility(IRevisionMailJobSource).create(
                 self.db_branch, revno='removed', from_address=self.email_from,
                 body=contents, perform_diff=False, subject=None)
-            self.pending_emails.append(job)
-
-    def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
-        """Generate an email for a revision for later sending.
-
-        :param bzr_branch: The branch being scanned.
-        :param bzr_revision: The revision that we are sending the email about.
-            This is assumed to be in the main-line history of the branch. (Not
-            just the ancestry).
-        :param sequence: The revision number of `bzr_revision`.
-        """
-        if (not self.initial_scan
-            and self.subscribers_want_notification):
-            message = get_revision_message(bzr_branch, bzr_revision)
-            # Use the first (non blank) line of the commit message
-            # as part of the subject, limiting it to 100 characters
-            # if it is longer.
-            message_lines = [
-                line.strip() for line in bzr_revision.message.split('\n')
-                if len(line.strip()) > 0]
-            if len(message_lines) == 0:
-                first_line = 'no commit message given'
-            else:
-                first_line = message_lines[0]
-                if len(first_line) > SUBJECT_COMMIT_MESSAGE_LENGTH:
-                    offset = SUBJECT_COMMIT_MESSAGE_LENGTH - 3
-                    first_line = first_line[:offset] + '...'
-            subject = '[Branch %s] Rev %s: %s' % (
-                self.db_branch.unique_name, sequence, first_line)
-            job = getUtility(IRevisionMailJobSource).create(
-                self.db_branch, revno=sequence, from_address=self.email_from,
-                    body=message, perform_diff=self.generate_diffs,
-                    subject=subject)
             self.pending_emails.append(job)
 
     def sendRevisionNotificationEmails(self, bzr_history):
@@ -387,13 +324,6 @@ class WarehouseBranchPolicy(BranchPolicy):
         return urlutils.join(branch.base, url), True
 
 
-def iter_list_chunks(a_list, size):
-    """Iterate over `a_list` in chunks of size `size`.
-
-    I'm amazed this isn't in itertools (mwhudson).
-    """
-    for i in range(0, len(a_list), size):
-        yield a_list[i:i+size]
 
 
 class BzrSync:
@@ -503,15 +433,12 @@ class BzrSync:
             return
         # Get all the active branches for the product, and if the
         # last_scanned_revision is in the ancestry, then mark it as merged.
-        branches = getUtility(IBranchSet).getBranchesForContext(
-            context=self.db_branch.product,
-            visible_by_user=LAUNCHPAD_SERVICES,
-            lifecycle_statuses=(
-                BranchLifecycleStatus.NEW,
-                BranchLifecycleStatus.DEVELOPMENT,
-                BranchLifecycleStatus.EXPERIMENTAL,
-                BranchLifecycleStatus.MATURE,
-                BranchLifecycleStatus.ABANDONED))
+        branches = getUtility(IAllBranches).inProduct(self.db_branch.product)
+        branches = branches.withLifecycleStatus(
+            BranchLifecycleStatus.DEVELOPMENT,
+            BranchLifecycleStatus.EXPERIMENTAL,
+            BranchLifecycleStatus.MATURE,
+            BranchLifecycleStatus.ABANDONED).getBranches()
         for branch in branches:
             last_scanned = branch.last_scanned_id
             # If the branch doesn't have any revisions, not any point setting
@@ -733,15 +660,11 @@ class BzrSync:
         mainline_revids = [
             revid for (revid, sequence)
             in branchrevisions_to_insert.iteritems() if sequence is not None]
-
-        for revid_chunk in iter_list_chunks(mainline_revids, 1000):
-            present_mainline_revisions = self.getBazaarRevisions(
-                bzr_branch, revid_chunk)
-            for revision in present_mainline_revisions:
-                sequence = branchrevisions_to_insert[revision.revision_id]
-                assert sequence is not None
-                self._branch_mailer.generateEmailForRevision(
-                    bzr_branch, revision, sequence)
+        if self.db_branch.last_scanned_id is not None:
+            job = getUtility(IRevisionsAddedJobSource).create(
+                self.db_branch, self.db_branch.last_scanned_id,
+                bzr_branch.last_revision(),
+                config.canonical.noreply_from_address)
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""

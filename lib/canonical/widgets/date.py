@@ -54,22 +54,11 @@ class DateTimeWidget(TextWidget):
       <...in time zone: UTC...
 
     The datetime popup widget links to the page which allows the user to
-    change their system time zone. If the user is not logged in, then it
-    will invite them to login to set that time zone.
+    change their system time zone.
 
-      >>> 'change time zone' in widget()
-      False
-      >>> 'login to set time zone' in widget()
-      True
-
-      >>> from canonical.launchpad.ftests import login
-      >>> login('no-priv@canonical.com')
-      >>> widget.request.setPrincipal(getUtility(ILaunchBag).user)
-
-      >>> 'change time zone' in widget()
-      True
-      >>> 'login to set time zone' in widget()
-      False
+      >>> print widget()  #doctest: +ELLIPSIS
+      <BLANKLINE>
+      <...<a href="/people/+me/+editlocation">...
 
     If there is a required time zone, then that overrides the user or system
     default, and the user is not invited to change the time zone:

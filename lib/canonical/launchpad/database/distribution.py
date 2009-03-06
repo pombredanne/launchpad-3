@@ -73,7 +73,8 @@ from canonical.launchpad.interfaces.archivepermission import (
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.interfaces.build import IBuildSet, IHasBuildRecords
+from canonical.launchpad.interfaces.build import IBuildSet
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from canonical.launchpad.interfaces.distributionmirror import (

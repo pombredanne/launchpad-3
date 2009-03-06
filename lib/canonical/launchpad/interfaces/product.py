@@ -57,6 +57,8 @@ from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.validators.sourceforgeproject import (
+    sourceforge_project_name_validator)
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
@@ -322,6 +324,7 @@ class IProductPublic(
         TextLine(
             title=_('Sourceforge Project'),
             required=False,
+            constraint=sourceforge_project_name_validator,
             description=_("""The SourceForge project name for
                 this project, if it is in sourceforge.""")),
         exported_as='sourceforge_project')
@@ -483,10 +486,6 @@ class IProductPublic(
             title=_('Remote project'), required=False,
             description=_(
                 "The ID of this project on its remote bug tracker.")))
-
-    upstream_bugtracker_links = Attribute(
-        "The URLs of bug filing and search forms on this project's upstream "
-        "bug tracker")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,

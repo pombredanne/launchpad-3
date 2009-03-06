@@ -15,12 +15,12 @@ from zope.testing.cleanup import CleanUp
 
 from canonical.lazr.interfaces import IObjectPrivacy
 
-from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.security import AuthorizationBase
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interfaces import (
-    IAuthorization, IStoreSelector)
+    IAuthorization, IStoreSelector, ILaunchpadPrincipal)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
 
@@ -44,13 +44,13 @@ class Checker(AuthorizationBase):
         self.calls.append('checkUnauthenticated')
         return False
 
-    def checkAuthenticated(self, user):
-        """See `IAuthorization.checkAuthenticated`.
+    def checkAccountAuthenticated(self, account):
+        """See `IAuthorization.checkAccountAuthenticated`.
 
         We record the call and then return False, arbitrarily chosen, to keep
         the policy from complaining.
         """
-        self.calls.append(('checkAuthenticated', user))
+        self.calls.append(('checkAccountAuthenticated', account))
         return False
 
 
@@ -85,13 +85,15 @@ class PermissionAccessLevel:
     access_level = 'read'
 
 
-class FakePersonPrincipal:
-    """A minimal principal that can be adapted to `IPerson`.
+class FakeAccount:
+    """A minimal object to represent an account."""
+    implements(IAccount)
 
-    For simplicity we declare this class implements `IPerson` so it will
-    just adapt to itself.
-    """
-    implements(IPerson)
+
+class FakeLaunchpadPrincipal:
+    """A minimal principal implementing `ILaunchpadPrincipal`"""
+    implements(ILaunchpadPrincipal)
+    account = FakeAccount()
     scope = None
     access_level = ''
 
@@ -162,7 +164,7 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
     def test_checkPermission_cache_authenticated(self):
         # checkPermission caches the result of checkAuthenticated for a
         # particular object and permission.
-        principal = FakePersonPrincipal()
+        principal = FakeLaunchpadPrincipal()
         request = self.makeRequest()
         request.setPrincipal(principal)
         policy = LaunchpadSecurityPolicy(request)
@@ -172,11 +174,13 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         # calls the checker.
         policy.checkPermission(permission, obj)
         self.assertEqual(
-            [('checkAuthenticated', principal)], checker_factory.calls)
+            [('checkAccountAuthenticated', principal.account)],
+            checker_factory.calls)
         # A subsequent identical call does not call the checker.
         policy.checkPermission(permission, obj)
         self.assertEqual(
-            [('checkAuthenticated', principal)], checker_factory.calls)
+            [('checkAccountAuthenticated', principal.account)],
+            checker_factory.calls)
 
     def test_checkPermission_clearSecurityPolicyCache_resets_cache(self):
         # Calling clearSecurityPolicyCache on the request clears the cache.
@@ -200,7 +204,7 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
     def test_checkPermission_setPrincipal_resets_cache(self):
         # Setting the principal on the request clears the cache of results
         # (this is important during login).
-        principal = FakePersonPrincipal()
+        principal = FakeLaunchpadPrincipal()
         request = self.makeRequest()
         policy = LaunchpadSecurityPolicy(request)
         obj, permission, checker_factory = (
@@ -215,7 +219,8 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         # rather than finding a value in the cache.
         policy.checkPermission(permission, obj)
         self.assertEqual(
-            ['checkUnauthenticated', ('checkAuthenticated', principal)],
+            ['checkUnauthenticated', ('checkAccountAuthenticated',
+                                      principal.account)],
             checker_factory.calls)
 
     def test_checkPermission_commit_clears_cache(self):
