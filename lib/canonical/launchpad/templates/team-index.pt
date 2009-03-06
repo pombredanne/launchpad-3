@@ -25,16 +25,8 @@
   tal:define="overview_menu context/menu:overview">
 
   <div class="actions" style="float:right;"
-    tal:define="link overview_menu/edit"
-    tal:condition="link/enabled">
-    <a
-      tal:attributes="href link/url;
-                      title link/summary"
-      tal:content="link/escapedtext">action</a>&nbsp;<a
-      tal:attributes="href link/url;
-                      title link/summary"><img
-      tal:attributes="src string:/@@/${link/icon};
-                      alt link/summary" /></a>
+    tal:condition="overview_menu/edit/enabled"
+    tal:content="structure overview_menu/edit/fmt:link-icon">
   </div>
 
   <tal:icon replace="structure context/image:mugshot" />
@@ -167,9 +159,7 @@
     </ul>
     <div>
       <tal:mentorships
-        define="link overview_menu/mentorships"
-        condition="link/enabled"
-        replace="structure link/render" />
+        replace="structure overview_menu/mentorships/fmt:link" />
     </div>
   </div>
 
@@ -230,32 +220,12 @@
                 tal:attributes="href context/fmt:url/+mailing-list-subscribers"
                 >Mailing list subscribers</a>
       </div>
-      <div>
+      <div tal:condition="overview_menu/moderate_mailing_list/enabled">
         <tal:moderate_mailing_list
-          define="link overview_menu/moderate_mailing_list"
-          condition="link/enabled">
-          <a
-            tal:attributes="href link/url;
-                            title link/summary"
-            tal:content="link/escapedtext">action</a>&nbsp;<a
-            tal:attributes="href link/url;
-                            title link/summary"><img
-            tal:attributes="src string:/@@/${link/icon};
-                            alt link/summary" /></a>
-        </tal:moderate_mailing_list>
+          replace="structure overview_menu/moderate_mailing_list/fmt:link-icon" />
         &nbsp;
         <tal:configure_mailing_list
-          define="link overview_menu/configure_mailing_list"
-          condition="link/enabled">
-          <a
-            tal:attributes="href link/url;
-                            title link/summary"
-            tal:content="link/escapedtext">action</a>&nbsp;<a
-            tal:attributes="href link/url;
-                            title link/summary"><img
-            tal:attributes="src string:/@@/${link/icon};
-                            alt link/summary" /></a>
-        </tal:configure_mailing_list>
+          replace="structure overview_menu/configure_mailing_list/fmt:link-icon" />
       </div>
       <tal:block condition="view/userIsParticipant">
         <p tal:condition="view/team_has_mailing_list">
@@ -319,13 +289,9 @@
 
     <div>
       <tal:members
-        define="link overview_menu/members"
-        condition="link/enabled"
-        replace="structure link/render" />
+        replace="structure overview_menu/members/fmt:link" />
       <br /><tal:mugshots
-        define="link overview_menu/mugshots"
-        condition="link/enabled"
-        replace="structure link/render" />
+        replace="structure overview_menu/mugshots/fmt:link" />
     </div>
 
     <tal:can-view condition="context/@@+restricted-membership/userCanViewMembership">
@@ -342,14 +308,10 @@
         </ul>
         <div>
           <tal:add_my_teams
-            define="link overview_menu/add_my_teams"
-            condition="link/enabled"
-            replace="structure link/render" />
+            replace="structure overview_menu/add_my_teams/fmt:link" />
           &nbsp;&nbsp;
           <tal:add_member
-            define="link overview_menu/add_member"
-            condition="link/enabled"
-            replace="structure link/render" />
+            replace="structure overview_menu/add_member/fmt:link" />
         </div>
       </div>
     </tal:can-view>
@@ -387,14 +349,10 @@
 
     <p>
       <tal:memberships
-        define="link overview_menu/memberships"
-        condition="link/enabled"
-        replace="structure link/render" />
+        replace="structure overview_menu/memberships/fmt:link" />
       &nbsp;
       <tal:received_invitations
-        define="link overview_menu/received_invitations"
-        condition="link/enabled"
-        replace="structure link/render" />
+        replace="structure overview_menu/received_invitations/fmt:link" />
     </p>
   </div>
 
