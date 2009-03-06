@@ -44,7 +44,7 @@ from canonical.config import config
 
 from canonical.lazr.interfaces import (
     IByteStorage, ICollection, IEntry, IEntryField, IFeed, IHTTPResource,
-        IWebBrowserInitiatedRequest, IWebServiceConfiguration)
+    IWebBrowserInitiatedRequest, IWebServiceConfiguration)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
     CollectionResource, EntryField, EntryFieldResource,

@@ -105,7 +105,7 @@ def service_is_available(timeout=2.0):
         sock.close() # Clean up.
 
 
-def wait_for_service(timeout=30.0):
+def wait_for_service(timeout=10.0):
     """Poll the service and BLOCK until we can connect to it.
 
     :param timeout: The socket should timeout after this many seconds.

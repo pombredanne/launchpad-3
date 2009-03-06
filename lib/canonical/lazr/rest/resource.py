@@ -73,8 +73,8 @@ from canonical.lazr.interfaces import (
     IEntryFieldResource, IEntryResource, IFieldHTMLRenderer,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue,
-    IWebServiceConfiguration, LAZR_WEBSERVICE_NAME, WebServiceLayer)
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME,
+    IWebServiceConfiguration, WebServiceLayer)
 from canonical.lazr.interfaces.fields import ICollectionField
 
 # The path to the WADL XML Schema definition.
