@@ -26,11 +26,13 @@ __all__ = [
     'IServiceRootResource',
     'ITopLevelEntryLink',
     'IUnmarshallingDoesntNeedValue',
+    'IWebServiceConfiguration',
     'LAZR_WEBSERVICE_NAME',
     'LAZR_WEBSERVICE_NS',
     'WebServiceLayer',
     ]
 
+from zope.schema import TextLine
 from zope.interface import Attribute, Interface
 # These two should really be imported from zope.interface, but
 # the import fascist complains because they are not in __all__ there.
@@ -312,6 +314,25 @@ class IFieldMarshaller(Interface):
 
         :return: A value that can be serialized as part of a JSON hash.
         """
+
+
+class IWebServiceConfiguration(Interface):
+    """A group of configuration settings for a web service.
+
+    These are miscellaneous strings that may differ in different web
+    services.
+    """
+    view_permission = TextLine(default=u"zope.View")
+
+    service_version_uri_prefix = Attribute(
+        "The versioning string, if any, to use as the URI prefix for web "
+        "service URIs. A popular string is 'beta', but you could also use "
+        "a version number or the date the API was finalized.")
+
+    code_revision = Attribute(
+        "A string designating the current revision number of the code "
+        "running the webservice. This may be a revision number from version "
+        "control, or a hand-chosen version number.")
 
 
 class IUnmarshallingDoesntNeedValue(Interface):

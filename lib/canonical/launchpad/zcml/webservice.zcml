@@ -6,6 +6,12 @@
     i18n_domain="launchpad">
 
     <securedutility
+        class="canonical.launchpad.rest.configuration.LaunchpadWebServiceConfiguration"
+        provides="canonical.lazr.interfaces.rest.IWebServiceConfiguration">
+        <allow interface="canonical.lazr.interfaces.rest.IWebServiceConfiguration" />
+    </securedutility>
+
+    <securedutility
         class="canonical.launchpad.systemhomes.WebServiceApplication"
         provides="canonical.launchpad.interfaces.IWebServiceApplication">
         <allow

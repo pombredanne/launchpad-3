@@ -43,7 +43,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces import (
-    IByteStorage, ICollection, IEntry, IEntryField, IFeed, IHTTPResource)
+    IByteStorage, ICollection, IEntry, IEntryField, IFeed, IHTTPResource,
+    IWebServiceConfiguration)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
     CollectionResource, EntryField, EntryFieldResource,
@@ -1351,16 +1352,18 @@ class WebServiceRequestTraversal:
         return self.publication.getResource(self, result)
 
     def _removeVirtualHostTraversals(self):
-        """Remove the /api and /beta traversal names."""
+        """Remove the /api and /[version] traversal names."""
         names = list()
         api = self._popTraversal(WEBSERVICE_PATH_OVERRIDE)
         if api is not None:
             names.append(api)
 
         # Only accept versioned URLs.
-        beta = self._popTraversal('beta')
-        if beta is not None:
-            names.append(beta)
+        version_string = getUtility(
+            IWebServiceConfiguration).service_version_uri_prefix
+        version = self._popTraversal(version_string)
+        if version is not None:
+            names.append(version)
             self.setVirtualHostRoot(names=names)
         else:
             raise NotFound(self, '', self)
@@ -1402,8 +1405,10 @@ def website_request_to_web_service_request(website_request):
     # Zope picks up on SERVER_URL when setting the _app_server attribute
     # of the new request.
     environ['SERVER_URL'] = website_request.getApplicationURL()
+    version_string = getUtility(
+        IWebServiceConfiguration).service_version_uri_prefix
     web_service_request = WebServiceClientRequest(body, environ)
-    web_service_request.setVirtualHostRoot(names=["api", "beta"])
+    web_service_request.setVirtualHostRoot(names=["api", version_string])
     web_service_request.setPublication(WebServicePublication(None))
     return web_service_request
 

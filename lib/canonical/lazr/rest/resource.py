@@ -60,7 +60,6 @@ from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url, BatchNavigator, and event code should be moved into lazr.
-from canonical.launchpad import versioninfo
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
@@ -74,8 +73,8 @@ from canonical.lazr.interfaces import (
     IEntryFieldResource, IEntryResource, IFieldHTMLRenderer,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME,
-    WebServiceLayer)
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue,
+    IWebServiceConfiguration, LAZR_WEBSERVICE_NAME, WebServiceLayer)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 
@@ -310,7 +309,8 @@ class HTTPResource:
         # Append the revision number, because the algorithm for
         # generating the representation might itself change across
         # versions.
-        hash_object.update("\0" + str(versioninfo.revno))
+        revno = getUtility(IWebServiceConfiguration).code_revision
+        hash_object.update("\0" + revno)
 
         etag = '"%s"' % hash_object.hexdigest()
         self.etags_by_media_type[media_type] = etag
@@ -552,9 +552,10 @@ class BatchingResourceMixin:
         """
         navigator = WebServiceBatchNavigator(entries, request)
 
+        view_permission = getUtility(IWebServiceConfiguration).view_permission
         resources = [EntryResource(entry, request)
                      for entry in navigator.batch
-                     if check_permission('launchpad.View', entry)]
+                     if check_permission(view_permission, entry)]
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }
