@@ -618,7 +618,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonBranchesView"
+    class="canonical.launchpad.browser.PersonOwnedBranchesView"
     permission="zope.Public"
     facet="branches"
     name="+branches"

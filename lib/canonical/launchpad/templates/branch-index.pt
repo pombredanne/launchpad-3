@@ -412,7 +412,7 @@
       </a>
     </li>
     <li>
-      <a tal:attributes="href string:${context/owner/fmt:url}/+ownedbranches">
+      <a tal:attributes="href context/owner/fmt:url">
         Other branches owned by <tal:person
         replace="context/owner/displayname">Owner</tal:person>
       </a>
