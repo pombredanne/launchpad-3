@@ -194,7 +194,6 @@ and IRecipe.
     >>> from canonical.lazr.interfaces.rest import IWebServiceConfiguration
     >>> view_permission = getUtility(
     ...     IWebServiceConfiguration).view_permission
-    >>> import pdb; pdb.set_trace()
     >>> protect_schema(Recipe, IRecipe, read_permission=view_permission,
     ...                write_permission=CheckerPublic)
 

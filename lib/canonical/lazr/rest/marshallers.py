@@ -61,27 +61,32 @@ class URLDereferencingMixin:
         :raise NotFound: If the URL does not designate a
             published object.
         """
-        uri = URI(url)
-        protocol = uri.scheme
-        host = uri.host
-        path = uri.path
-        query = uri.query
-        fragment = uri.fragment
-
-        request_host = self.request.get('HTTP_HOST')
         if config.vhosts.use_https:
             site_protocol = 'https'
             default_port = '443'
         else:
             site_protocol = 'http'
             default_port = '80'
+        request_host_and_port = self.request.get('HTTP_HOST').split(':', 2)
+        if len(request_host_and_port) == 1:
+            request_host = request_host_and_port[0]
+            request_port = default_port
+        else:
+            request_host, request_port = request_host_and_port
+
+        uri = URI(url)
+        protocol = uri.scheme
+        host = uri.host
+        port = uri.port or default_port
+        path = uri.path
+        query = uri.query
+        fragment = uri.fragment
 
         url_host_and_http_host_are_identical = (
-            host == request_host
-            or host + ':' + default_port == request_host
-            or host == request_host + ':' + default_port)
+            host == request_host and port == request_port)
         if (not url_host_and_http_host_are_identical
-            or protocol != site_protocol or query != '' or fragment != ''):
+            or protocol != site_protocol or query is not None
+            or fragment is not None):
             raise NotFound(self, url, self.request)
 
         path_parts = [urllib.unquote(part) for part in path.split('/')]
