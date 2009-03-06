@@ -14,9 +14,9 @@ from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from lazr.batchnavigator.interfaces import (
     # InvalidBatchSizeError is a reimport for convenience
     IBatchNavigator, InvalidBatchSizeError)
+from lazr.enum import DBEnumeratedType, DBItem, use_template
 
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem, use_template
 
 
 class TranslationUnavailable(Exception):
@@ -367,6 +367,7 @@ class ILaunchBag(Interface):
     bug = Attribute('IBug, or None')
     bugtask = Attribute('IBugTask, or None')
 
+    account = Attribute('Currently authenticated IAccount, or None')
     user = Attribute('Currently authenticated IPerson, or None')
     login = Attribute('The login used by the authenticated person, or None')
 

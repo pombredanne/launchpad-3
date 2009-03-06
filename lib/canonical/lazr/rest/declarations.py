@@ -43,12 +43,11 @@ from zope.interface.interfaces import IInterface, IMethod
 from zope.schema import getFields
 from zope.schema.interfaces import IField, IText
 from zope.security.checker import CheckerPublic
-
+from zope.traversing.browser import absoluteURL
 
 # XXX flacoste 2008-01-25 bug=185958:
-# canonical_url and ILaunchBag code should be moved into lazr.
+# ILaunchBag code should be moved into lazr.
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp import canonical_url
 
 from lazr.delegates import Passthrough
 from canonical.lazr.fields import CollectionField, Reference
@@ -801,7 +800,7 @@ class BaseFactoryResourceOperationAdapter(BaseResourceOperationAdapter):
         result = getattr(self.context, self._method_name)(**params)
         response = self.request.response
         response.setStatus(201)
-        response.setHeader('Location', canonical_url(result))
+        response.setHeader('Location', absoluteURL(result, self.request))
         return u''
 
 

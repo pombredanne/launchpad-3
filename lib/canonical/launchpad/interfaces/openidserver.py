@@ -66,6 +66,13 @@ class IOpenIDAuthorizationSet(Interface):
         (account, trust_root, client_id).
         """
 
+    def getByAccount(account):
+        """Get the `IOpenIDAuthorization` objects for the given account.
+
+        The authorization objects will be sorted in reverse of the
+        order they were created.
+        """
+
 
 class ILaunchpadOpenIDStoreFactory(Interface):
     """Factory to create LaunchpadOpenIDStore instances."""

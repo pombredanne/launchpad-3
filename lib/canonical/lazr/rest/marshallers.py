@@ -33,11 +33,11 @@ from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
+from zope.traversing.browser import absoluteURL
 
 from canonical.config import config
 
 from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.url import urlsplit
 
 from canonical.lazr.interfaces.rest import (
@@ -221,7 +221,7 @@ class BytesFieldMarshaller(SimpleFieldMarshaller):
 
         Marshall as a link to the byte storage resource.
         """
-        return "%s/%s" % (canonical_url(entry.context, self.request),
+        return "%s/%s" % (absoluteURL(entry.context, self.request),
                           self.field.__name__)
 
     def _marshall_from_request(self, value):
@@ -408,7 +408,7 @@ class CollectionFieldMarshaller(SimpleFieldMarshaller):
 
         This returns a link to the scoped collection.
         """
-        return "%s/%s" % (canonical_url(entry.context, self.request),
+        return "%s/%s" % (absoluteURL(entry.context, self.request),
                           self.field.__name__)
 
 
@@ -476,7 +476,7 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
         """
         repr_value = None
         if value is not None:
-            repr_value = canonical_url(value, self.request)
+            repr_value = absoluteURL(value, self.request)
         return repr_value
 
     def _marshall_from_json_data(self, value):

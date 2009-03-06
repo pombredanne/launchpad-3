@@ -16,13 +16,13 @@ __all__ = [
 
 from zope.schema import Int, Datetime, Choice, Set
 from zope.interface import Interface, Attribute
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, IHasOwner, can_be_nominated_for_serieses)
 
-from canonical.lazr import DBEnumeratedType, DBItem
 
 class NominationError(Exception):
     """The bug cannot be nominated for this release."""
