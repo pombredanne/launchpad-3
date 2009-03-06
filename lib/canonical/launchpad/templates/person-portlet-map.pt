@@ -18,7 +18,7 @@
     <tal:map condition="context/latitude">
       <div id="person_map_div" style="height: 200px; border: 1px;"></div>
       <tal:mapscript replace="structure view/map_portlet_html" />
-      <p tal:content="structure overview_menu/editlocation/fmt:suffix" />
+      <p tal:content="structure overview_menu/editlocation/fmt:link-icon" />
     </tal:map>
 
     <tal:comment condition="nothing">

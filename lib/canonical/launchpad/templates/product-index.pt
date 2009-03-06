@@ -15,11 +15,11 @@
       <div class="section">
         <div style="float:right">
           <tal:review
-            content="structure overview_menu/review_license/fmt:suffix" />
+            content="structure overview_menu/review_license/fmt:link-icon" />
           <tal:admin
-            content="structure overview_menu/administer/fmt:suffix" />
+            content="structure overview_menu/administer/fmt:link-icon" />
           <tal:edit
-            content="structure overview_menu/edit/fmt:suffix" />
+            content="structure overview_menu/edit/fmt:link-icon" />
         </div>
         <tal:mugshot replace="structure context/image:mugshot" />
         <h1 tal:replace="structure view/title_edit_widget">

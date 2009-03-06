@@ -26,19 +26,19 @@
       <h2 style="margin-top: 2em;">Other actions</h2>
       <ul style="list-style-type:none; padding-left:1.5em;">
         <li
-          tal:content="structure overview_menu/editlanguages/fmt:suffix">
+          tal:content="structure overview_menu/editlanguages/fmt:link-icon">
           Set your preferred language
         </li>
         <li
-          tal:content="structure overview_menu/editwikinames/fmt:suffix">
+          tal:content="structure overview_menu/editwikinames/fmt:link-icon">
           Edit your wiki names
         </li>
         <li
-          tal:content="structure overview_menu/editircnicknames/fmt:suffix">
+          tal:content="structure overview_menu/editircnicknames/fmt:link-icon">
           Edit your IRC contact names
         </li>
         <li
-          tal:content="structure overview_menu/editjabberids/fmt:suffix">
+          tal:content="structure overview_menu/editjabberids/fmt:link-icon">
           Edit your Jabber contact names
         </li>
       </ul>

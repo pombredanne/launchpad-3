@@ -17,7 +17,7 @@
       <tal:mugshot replace="structure context/image:mugshot" />
       <div
         style="float:right"
-        tal:content="structure overview_menu/edit/fmt:suffix"
+        tal:content="structure overview_menu/edit/fmt:link-icon"
       />
       <h1 tal:content="context/title"/>
       <div

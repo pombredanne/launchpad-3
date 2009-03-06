@@ -50,10 +50,10 @@
   <div class="actions" style="float:right;">
     <tal:is-person condition="not: context/is_team">
       <tal:administer
-        replace="structure overview_menu/administer/fmt:suffix" />
+        replace="structure overview_menu/administer/fmt:link-icon" />
     </tal:is-person>
     <tal:edit
-      replace="structure overview_menu/edit/fmt:suffix" />
+      replace="structure overview_menu/edit/fmt:link-icon" />
   </div>
 
   <tal:is-valid-person tal:condition="context/is_valid_person">
@@ -126,7 +126,7 @@
           <tal:editable tal:condition="context/required:launchpad.Edit">
             <p tal:condition="not: context/preferredemail">
               <tal:editemailaddresses
-                replace="structure overview_menu/editemailaddresses/fmt:suffix" />
+                replace="structure overview_menu/editemailaddresses/fmt:link-icon" />
             </p>
           </tal:editable>
           <a tal:attributes="
