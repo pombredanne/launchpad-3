@@ -16,7 +16,7 @@ from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
@@ -34,9 +34,9 @@ from canonical.launchpad.interfaces import (
     BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
     ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+    IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.person import (
-    IPerson, IPersonSet, PersonVisibility)
+    IPerson, IPersonSet)
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -1750,6 +1750,34 @@ class DurationFormatterAPI:
         # granularity of weeks, once and for all.
         weeks = int(round(seconds / (7 * 24 * 3600.0)))
         return "%s weeks" % number_name.get(weeks, str(weeks))
+
+
+class LinkFormatterAPI(ObjectFormatterAPI):
+    """Adapter from Link objects to a formatted anchor."""
+    final_traversable_names = {
+        'icon': 'icon',
+        'suffix': 'suffix',
+        }
+
+    def icon(self):
+        """Return the icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-icon")()
+
+    def suffix(self):
+        """Return the text and icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-suffix")()
+
+    def link(self, view_name, rootsite=None):
+        """Return the default representation of the link."""
+        return self._context.render()
+
+    def url(self, view_name=None):
+        """Return the URL representation of the link."""
+        return self._context.url
 
 
 def clean_path_segments(request):
