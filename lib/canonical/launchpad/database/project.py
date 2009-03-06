@@ -42,7 +42,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import (
-    HasMilestonesMixin, Milestone, ProjectMilestone)
+    Milestone, ProjectMilestone, milestone_sort_key)
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.product import Product
@@ -375,8 +375,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         milestones = shortlist(
             [ProjectMilestone(self, name, dateexpected, visible)
              for name, dateexpected, visible in result])
-        return sorted(milestones, key=HasMilestonesMixin.milestone_sort_key,
-                      reverse=True)
+        return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     @property
     def milestones(self):

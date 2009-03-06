@@ -25,6 +25,13 @@
     </class>
 
     <adapter
+        for="zope.interface.Interface
+             zope.publisher.interfaces.http.IHTTPRequest"
+        provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+        factory="canonical.launchpad.webapp.publisher.CanonicalAbsoluteURL"
+        />
+
+    <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
@@ -640,14 +647,6 @@
       <allow
         attributes="publishTraverse"
         />
-    </class>
-
-    <!-- the URI class -->
-    <class class="canonical.launchpad.webapp.uri.URI">
-      <allow attributes="scheme userinfo host port path query fragment
-          authority hier_part
-          __str__ __repr__ __eq__ __ne__ replace resolve append contains
-          ensureSlash ensureNoSlash" />
     </class>
 
     <!-- Define the widget used by Choice fields that use huge vocabularies -->

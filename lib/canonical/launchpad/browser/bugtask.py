@@ -75,7 +75,7 @@ from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugnomination import (

@@ -19,7 +19,7 @@ from canonical.codehosting.puller.worker import (
     BranchReferenceForbidden, BranchLoopError, PullerWorker,
     PullerWorkerProtocol, StackedOnBranchNotFound)
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.webapp.uri import InvalidURIError
+from lazr.uri import InvalidURIError
 
 
 class StubbedPullerWorkerProtocol(PullerWorkerProtocol):

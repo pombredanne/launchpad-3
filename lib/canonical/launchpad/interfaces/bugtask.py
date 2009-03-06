@@ -1158,6 +1158,13 @@ class IBugTaskSet(Interface):
         orderby specified in the first BugTaskSearchParams object.
         """
 
+    def getAssignedMilestonesFromSearch(search_results):
+        """Returns distinct milestones for the given tasks.
+
+        :param search_results: A result set yielding BugTask objects,
+            typically the result of calling `BugTaskSet.search()`.
+        """
+
     def createTask(bug, product=None, productseries=None, distribution=None,
                    distroseries=None, sourcepackagename=None, status=None,
                    importance=None, assignee=None, owner=None,
