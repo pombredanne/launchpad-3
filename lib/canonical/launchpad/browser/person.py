@@ -2192,6 +2192,34 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         return False
 
 
+class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs someone is subscribed to."""
+
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
+
+    def search(self):
+        return BugTaskSearchListingView.search(
+            self, extra_params={'subscriber': self.context})
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs %s is subscribed to" % self.context.displayname
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs %s is Cc'd to: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs %s is Cc'd to" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
+        return canonical_url(self.context) + "/+subscribedbugs"
+
+
 class PersonVouchersView(LaunchpadFormView):
     """Form for displaying and redeeming commercial subscription vouchers."""
 
@@ -2302,34 +2330,6 @@ class PersonVouchersView(LaunchpadFormView):
             info = (error.__class__, error, None)
             globalErrorUtility = getUtility(IErrorReportingUtility)
             globalErrorUtility.raising(info, self.request)
-
-
-class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
-    """All bugs someone is subscribed to."""
-
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-
-    def search(self):
-        return BugTaskSearchListingView.search(
-            self, extra_params={'subscriber': self.context})
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s is subscribed to" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs %s is Cc'd to: Advanced Search" % (
-            self.context.displayname)
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s is Cc'd to" % self.context.displayname
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+subscribedbugs"
 
 
 class PersonLanguagesView(LaunchpadView):
