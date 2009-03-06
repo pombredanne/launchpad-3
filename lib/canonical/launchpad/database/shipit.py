@@ -376,7 +376,7 @@ class ShippingRequest(SQLBase):
             self.whoapproved = None
         else:
             # XXX: salgado, 2009-03-06: Need this hack here to get the
-            # reviewer from the same account that we come from.  Otherwise
+            # reviewer from the same store that self came from.  Otherwise
             # storm will complain.
             self.whoapproved = Store.of(self).get(Account, whoapproved.id)
 
@@ -390,7 +390,7 @@ class ShippingRequest(SQLBase):
             self.whocancelled = None
         else:
             # XXX: salgado, 2009-03-06: Need this hack here to get the
-            # reviewer from the same account that we come from.  Otherwise
+            # reviewer from the same store that self came from.  Otherwise
             # storm will complain.
             self.whocancelled = Store.of(self).get(Account, whocancelled.id)
 

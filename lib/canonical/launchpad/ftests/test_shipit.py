@@ -54,10 +54,9 @@ class TestFraudDetection(TestCaseWithFactory):
     flavours_that_can_be_requested = [
         ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.SERVER]
 
-    # XXX: Change this test to use makeAccount() instead of makePerson().
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.person = self.factory.makePerson()
+        self.requester = self.factory.makeAccount('Test account')
 
     def _get_standard_option(self, flavour):
         return StandardShipItRequest.selectBy(flavour=flavour)[0]
@@ -76,9 +75,9 @@ class TestFraudDetection(TestCaseWithFactory):
     def _make_new_request_through_web(
             self, flavour, create_new_user=False, form=None,
             distroseries=None):
-        requester = self.person
+        requester = self.requester
         if create_new_user:
-            requester = self.factory.makePerson()
+            requester = self.factory.makeAccount('Test account')
         if form is None:
             standardoption = self._get_standard_option(flavour)
             form = {
