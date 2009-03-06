@@ -285,6 +285,7 @@ class BranchTraversalMixin:
         except (NotFoundError, InvalidNamespace):
             pillar = getUtility(IPillarNameSet).getByName(pillar_name)
             if IProduct.providedBy(pillar):
+                getUtility(IOpenLaunchBag).add(pillar)
                 return getUtility(IPersonProductFactory).create(
                     self.context, pillar)
             else:
