@@ -558,3 +558,24 @@ Once the user has commented, the related milestone does appear.
     [{'checked': False,
       'title': u'Milestone 1.0 for Coughing Bob',
       'value': ...}]
+
+
+=== Subscribed bugs ===
+
+    >>> subscribed_bugs_view = create_view(user, '+subscribedbugs', {'advanced': 1})
+
+Our user is not subscribed to any bugs, so no relevant milestones are
+found.
+
+    >>> print pretty(list(subscribed_bugs_view.getMilestoneWidgetValues()))
+    []
+
+Once the user has subscribed, the related milestones appear.
+
+    >>> bug.subscribe(user, user)
+    <BugSubscription at ...>
+
+    >>> print pretty(list(subscribed_bugs_view.getMilestoneWidgetValues()))
+    [{'checked': False,
+      'title': u'Milestone 1.0 for Coughing Bob',
+      'value': ...}]
