@@ -2046,7 +2046,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
         return "Search bugs related to %s" % self.context.displayname
 
     def getSimpleSearchURL(self):
-        return canonical_url(self.context) + "/+bugs"
+        return canonical_url(self.context, view_name="+bugs")
 
 
 class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
@@ -2098,7 +2098,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     def getSimpleSearchURL(self):
         """Return a URL that can be usedas an href to the simple search."""
-        return canonical_url(self.context) + "/+assignedbugs"
+        return canonical_url(self.context, view_name="+assignedbugs")
 
 
 class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
@@ -2138,7 +2138,7 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+commentedbugs"
+        return canonical_url(self.context, view_name="+commentedbugs")
 
 
 class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
@@ -2181,7 +2181,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+reportedbugs"
+        return canonical_url(self.context, view_name="+reportedbugs")
 
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""
@@ -2229,7 +2229,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+subscribedbugs"
+        return canonical_url(self.context, view_name="+subscribedbugs")
 
 
 class PersonVouchersView(LaunchpadFormView):
