@@ -54,6 +54,7 @@ class TestFraudDetection(TestCaseWithFactory):
     flavours_that_can_be_requested = [
         ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.SERVER]
 
+    # XXX: Change this test to use makeAccount() instead of makePerson().
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.person = self.factory.makePerson()

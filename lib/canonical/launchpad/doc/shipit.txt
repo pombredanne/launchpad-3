@@ -91,7 +91,7 @@ The number of CDs can be altered by the user, if he wants.
 When a request is approved, you must specify the approved quantities.
 
     >>> login('marilize@hbd.com')
-    >>> request.approve(whoapproved=getUtility(ILaunchBag).user.account)
+    >>> request.approve(whoapproved=getUtility(ILaunchBag).account)
     >>> request.status == ShippingRequestStatus.APPROVED
     True
     >>> request.whoapproved.displayname
@@ -138,7 +138,7 @@ If a request hasn't been exported yet, it can still be denied.
 A request can also be cancelled, and this means the approved and
 quantity*approved will be set back to None.
 
-    >>> request.cancel(getUtility(ILaunchBag).user.account)
+    >>> request.cancel(getUtility(ILaunchBag).account)
     >>> request.isCancelled()
     True
     >>> request.whocancelled.displayname
