@@ -2192,7 +2192,8 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         return False
 
 
-class PersonSubscribedBugTaskSearchListingView(BugTaskSearchListingView):
+class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                               BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",

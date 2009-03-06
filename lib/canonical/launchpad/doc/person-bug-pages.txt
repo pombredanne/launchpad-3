@@ -562,17 +562,19 @@ Once the user has commented, the related milestone does appear.
 
 === Subscribed bugs ===
 
-    >>> subscribed_bugs_view = create_view(user, '+subscribedbugs', {'advanced': 1})
+    >>> new_user = factory.makePerson()
+    >>> subscribed_bugs_view = create_view(
+    ...     new_user, '+subscribedbugs', {'advanced': 1})
 
-Our user is not subscribed to any bugs, so no relevant milestones are
-found.
+Our new_user is not subscribed to any bugs, so no relevant milestones
+are found.
 
     >>> print pretty(list(subscribed_bugs_view.getMilestoneWidgetValues()))
     []
 
-Once the user has subscribed, the related milestones appear.
+Once new_user has subscribed, the related milestones appear.
 
-    >>> bug.subscribe(user, user)
+    >>> bug.subscribe(new_user, new_user)
     <BugSubscription at ...>
 
     >>> print pretty(list(subscribed_bugs_view.getMilestoneWidgetValues()))
