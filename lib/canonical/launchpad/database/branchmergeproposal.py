@@ -31,6 +31,7 @@ from storm.locals import Int, Reference, Unicode
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
+from canonical.codehosting.vfs import get_multi_server
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -57,6 +58,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
     IMergeProposalCreatedJob, UserNotBranchReviewer, WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessageJob
@@ -125,7 +127,7 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
 class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
 
-    implements(IBranchMergeProposal, IBranchNavigationMenu)
+    implements(IBranchMergeProposal, IBranchNavigationMenu, IHasBranchTarget)
 
     _table = 'BranchMergeProposal'
     _defaultOrder = ['-date_created', 'id']
@@ -192,6 +194,11 @@ class BranchMergeProposal(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
+
+    @property
+    def target(self):
+        """See `IHasBranchTarget`."""
+        return self.source_branch.target
 
     @property
     def root_comment(self):
@@ -941,7 +948,12 @@ class CreateMergeProposalJob(object):
         from canonical.launchpad.mail.incoming import authenticateEmail
         message = self.getMessage()
         authenticateEmail(message)
-        return CodeHandler().processMergeProposal(message)
+        server = get_multi_server(write_hosted=True)
+        server.setUp()
+        try:
+            return CodeHandler().processMergeProposal(message)
+        finally:
+            server.tearDown()
 
 
 class MergeProposalCreatedJob(BranchMergeProposalJobDerived):

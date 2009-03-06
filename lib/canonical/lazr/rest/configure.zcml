@@ -6,6 +6,10 @@
         <allow interface='canonical.lazr.interfaces.ICollectionResource' />
     </class>
 
+    <class class="canonical.lazr.rest.EntryFieldResource">
+        <allow interface='canonical.lazr.interfaces.IEntryFieldResource' />
+    </class>
+
     <class class="canonical.lazr.rest.EntryResource">
         <allow interface='canonical.lazr.interfaces.IEntryResource' />
         <allow interface='canonical.lazr.interfaces.IJSONPublishable' />
@@ -129,6 +133,14 @@
         for="canonical.lazr.enum.BaseItem"
         provides="canonical.lazr.interfaces.IJSONPublishable"
         factory="canonical.lazr.rest.JSONItem"
+        />
+
+    <!-- Field resources -->
+    <adapter
+        for="canonical.lazr.interfaces.IEntryField
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IHTTPResource"
+        factory="canonical.lazr.rest.EntryFieldResource"
         />
 
     <!-- Byte storage resources -->
@@ -272,6 +284,8 @@
         factory="canonical.lazr.rest.resource.EntryHTMLView"
         name="canonical.lazr.rest.resource.EntryResource"
         />
+
+    <adapter factory="canonical.lazr.rest.resource.render_field_to_html" />
 
     <!-- System Errors -->
     <view

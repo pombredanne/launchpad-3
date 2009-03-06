@@ -90,16 +90,11 @@ the Person table for it.
 
 That account can obviously be used in further OpenID interactions.
 
+    >>> browser = setupBrowser()
     >>> request = consumer.beginWithoutDiscovery(
     ...     make_identifier_select_endpoint(PROTOCOL_URI))
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
-
-    # This is just to log out of the OpenID server, so that we can log back
-    # in.
-    >>> print browser.title
-    Authenticate to http://launchpad.dev/
-    >>> browser.getControl("I'm Someone Else").click()
 
     >>> print browser.title
     Launchpad Login Service
@@ -114,16 +109,11 @@ That account can obviously be used in further OpenID interactions.
 
 If the user forgets their password, it's possible to reset it.
 
+    >>> browser = setupBrowser()
     >>> request = consumer.beginWithoutDiscovery(
     ...     make_identifier_select_endpoint(PROTOCOL_URI))
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
-
-    # This is just to log out of the OpenID server, so that we can pretend we
-    # forgot the password.
-    >>> print browser.title
-    Authenticate to http://launchpad.dev/
-    >>> browser.getControl("I'm Someone Else").click()
 
     >>> print browser.title
     Launchpad Login Service
@@ -151,6 +141,25 @@ If the user forgets their password, it's possible to reset it.
     >>> print info.status
     success
 
+And then log back in, using the new password.
+
+    >>> browser = setupBrowser()
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(PROTOCOL_URI))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
+    >>> print browser.title
+    Launchpad Login Service
+    >>> browser.getControl(name='field.email').value = 'new-user@example.com'
+    >>> browser.getControl(name='field.password').value = 'test2'
+    >>> browser.getControl('Continue').click()
+
+    # Here we see the OpenID interaction completed successfully.
+    >>> info = complete_from_browser(consumer, browser, expected_claimed_id)
+    >>> print info.status
+    success
+
 
 == Browsing launchpad.net ==
 
@@ -170,9 +179,8 @@ logged in user.
     'http://launchpad.dev/people/+me/+login'
 
 If they login with their existing credentials, we will automatically create
-an associated Person entry for that account.
+a Person and associate it with that account.
 
-    >>> browser.handleErrors = False
     >>> browser.getControl(
     ...     'E-mail address:', index=0).value = 'new-user@example.com'
     >>> browser.getControl('Password').value = 'test2'
@@ -186,6 +194,7 @@ an associated Person entry for that account.
     >>> getUtility(IPersonSet).getByAccount(account)
     <Person ... new-user ...
     >>> logout()
+
 
 == Cleanup ==
 

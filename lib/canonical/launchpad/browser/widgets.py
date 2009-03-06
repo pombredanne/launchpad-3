@@ -36,7 +36,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import BranchFormatterAPI
-from canonical.launchpad.webapp.uri import InvalidURIError, URI
+from lazr.uri import InvalidURIError, URI
 from canonical.widgets import SinglePopupWidget, StrippedTextWidget
 
 

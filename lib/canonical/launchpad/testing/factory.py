@@ -190,11 +190,26 @@ class LaunchpadObjectFactory(ObjectFactory):
             pocket)
         return location
 
-    def makeAccount(self, displayname, status=AccountStatus.ACTIVE,
-                    rationale=AccountCreationRationale.UNKNOWN):
-        """Create and return a new Account."""
-        account = getUtility(IAccountSet).new(rationale, displayname)
+    def makeAccount(self, displayname, email=None, password=None,
+                    status=AccountStatus.ACTIVE,
+                    rationale=AccountCreationRationale.UNKNOWN,
+                    commit=True):
+        """Create and return a new Account.
+
+        If commit is True, we do a transaction.commit() at the end so that the
+        newly created objects can be seen in other stores as well.
+        """
+        account = getUtility(IAccountSet).new(
+            rationale, displayname, password=password)
         removeSecurityProxy(account).status = status
+        if email is None:
+            email = self.getUniqueEmailAddress()
+        email = self.makeEmail(
+            email, person=None, account=account,
+            email_status=EmailAddressStatus.PREFERRED)
+        if commit:
+            import transaction
+            transaction.commit()
         return account
             
     def makePerson(self, email=None, name=None, password=None,
@@ -1119,14 +1134,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             distribution = self.makeDistribution()
         if name is None:
             name = self.getUniqueString()
+        if version is None:
+            version = "%s.0" % self.getUniqueInteger()
 
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
         naked_distribution = removeSecurityProxy(distribution)
         return naked_distribution.newSeries(
-            version="%s.0" % self.getUniqueInteger(),
+            version=version,
             name=name,
-            displayname=self.getUniqueString(),
+            displayname=name,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)

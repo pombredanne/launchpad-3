@@ -251,10 +251,28 @@ class VisibleBranchCollection(GenericBranchCollection):
     def __init__(self, user, store=None, branch_filter_expressions=None,
                  tables=None, exclude_from_search=None):
         super(VisibleBranchCollection, self).__init__(
-            store=None, branch_filter_expressions=None,
-            tables=None, exclude_from_search=None)
+            store=store, branch_filter_expressions=branch_filter_expressions,
+            tables=tables, exclude_from_search=exclude_from_search)
         self._user = user
         self._user_visibility_expression = self._getVisibilityExpression()
+
+    def _filterBy(self, expressions, tables=None, exclude_from_search=None):
+        """Return a subset of this collection, filtered by 'expressions'."""
+        # NOTE: JonathanLange 2009-02-17: We might be able to avoid the need
+        # for explicit 'tables' by harnessing Storm's table inference system.
+        # See http://paste.ubuntu.com/118711/ for one way to do that.
+        if tables is None:
+            tables = []
+        if exclude_from_search is None:
+            exclude_from_search = []
+        if expressions is None:
+            expressions = []
+        return self.__class__(
+            self._user,
+            self.store,
+            self._branch_filter_expressions + expressions,
+            self._tables + tables,
+            self._exclude_from_search + exclude_from_search)
 
     def _getVisibilityExpression(self):
         # Everyone can see public branches.

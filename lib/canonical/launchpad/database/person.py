@@ -1857,10 +1857,9 @@ class Person(
             cur.execute("DELETE FROM %s WHERE %s=%d"
                         % (table, person_id_column, self.id))
 
-        # Update the account's status, password, preferred email and name.
+        # Update the account's status, preferred email and name.
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
-        self.password = None
         self.preferredemail.status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'
@@ -1874,36 +1873,6 @@ class Person(
             new_name = base_new_name + str(count)
             count += 1
         return new_name
-
-    def reactivateAccount(self, comment, password, preferred_email):
-        """See `IPersonSpecialRestricted`.
-
-        :raise AssertionError: if the password is not valid.
-        :raise AssertionError: if the preferred email address is None.
-        :raise AssertionError: if this `Person` is a team.
-        """
-        if self.is_team:
-            raise AssertionError(
-                "Teams cannot be reactivated with this method.")
-        if password in (None, ''):
-            raise AssertionError(
-                "User %s cannot be reactivated without a "
-                "password." % self.name)
-        if preferred_email is None:
-            raise AssertionError(
-                "User %s cannot be reactivated without a "
-                "preferred email address." % self.name)
-        self.account.status = AccountStatus.ACTIVE
-        self.account.status_comment = comment
-        if '-deactivatedaccount' in self.name:
-            # The name was changed by deactivateAccount(). Restore the
-            # name, but we must ensure it does not conflict with a current
-            # user.
-            name_parts = self.name.split('-deactivatedaccount')
-            base_new_name = name_parts[0]
-            self.name = self._ensureNewName(base_new_name)
-        self.password = password
-        self.validateAndEnsurePreferredEmail(preferred_email)
 
     @property
     def visibility_consistency_warning(self):
