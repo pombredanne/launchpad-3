@@ -53,6 +53,7 @@ from canonical.launchpad.datetimeutils import make_mondays_between
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
+from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShipitAccount, IShipItReport, IShipItReportSet,
