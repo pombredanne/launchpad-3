@@ -20,6 +20,7 @@ from difflib import unified_diff
 import sha
 
 from zope.component import getUtility
+from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
 from canonical.launchpad.interfaces import (
@@ -337,7 +338,7 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
         last = longest_expected + 1
     try:
         results = list(sequence[:last])
-    except TypeError:
+    except (TypeError, ForbiddenAttribute):
         results = []
         for idx, item in enumerate(sequence):
             if hardlimit and idx > hardlimit:
