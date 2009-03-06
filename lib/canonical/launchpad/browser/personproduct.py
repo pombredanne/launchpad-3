@@ -3,7 +3,11 @@
 """Views, menus and traversal related to PersonProducts."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'PersonProductBreadcrumbBuilder',
+    'PersonProductFacets',
+    'PersonProductNavigation',
+    ]
 
 
 from zope.component import queryAdapter
@@ -11,7 +15,8 @@ from zope.traversing.interfaces import IPathAdapter
 
 from canonical.launchpad.interfaces.personproduct import IPersonProduct
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.launchpad.webapp import Navigation
+from canonical.launchpad.webapp import (
+    Link, Navigation, StandardLaunchpadFacets)
 
 
 class PersonProductNavigation(Navigation):
@@ -30,3 +35,18 @@ class PersonProductBreadcrumbBuilder(BreadcrumbBuilder):
     def icon(self):
         return queryAdapter(
             self.context.product, IPathAdapter, name='image').icon()
+
+
+class PersonProductFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IPerson."""
+
+    usedfor = IPersonProduct
+
+    enable_only = ['branches']
+
+    def branches(self):
+        text = 'Code'
+        summary = ('Bazaar Branches of %s owned by %s' %
+                   (self.context.product.displayname,
+                    self.context.person.displayname))
+        return Link('', text, summary)

@@ -621,6 +621,14 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
 class PersonBranchCountMixin:
     """A mixin class for person branch listings."""
 
+    def _getCountCollection(self):
+        """Can be overridden in the concrete class."""
+        return getUtility(IAllBranches).visible_by_user(self.user)
+
+    def _getPersonFromContext(self):
+        """Can be overridden in the concrete class."""
+        return self.context
+
     @cachedproperty
     def has_branches(self):
         """Does this person have branches that the logged in user can see?"""
@@ -632,45 +640,32 @@ class PersonBranchCountMixin:
     @cachedproperty
     def registered_branch_count(self):
         """Return the number of branches registered by the person."""
-        return getUtility(IAllBranches).visibleByUser(self.user).registeredBy(
-            self.context).count()
+        return self._getCountCollection().registeredBy(
+            self._getPersonFromContext()).count()
 
     @cachedproperty
     def owned_branch_count(self):
         """Return the number of branches owned by the person."""
-        return getUtility(IAllBranches).visibleByUser(self.user).ownedBy(
-            self.context).count()
+        return self._getCountCollection().ownedBy(
+            self._getPersonFromContext()).count()
 
     @cachedproperty
     def subscribed_branch_count(self):
         """Return the number of branches subscribed to by the person."""
-        return getUtility(IAllBranches).visibleByUser(self.user).subscribedBy(
-            self.context).count()
-
-    @property
-    def user_in_context_team(self):
-        if self.user is None:
-            return False
-        return self.user.inTeam(self.context)
+        return self._getCountCollection().subscribedBy(
+            self._getPersonFromContext()).count()
 
     @cachedproperty
     def active_review_count(self):
         """Return the number of active reviews for the user."""
-        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
-        # IBranchCollection supports getMergeProposals.
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
-        return query.count()
+        return self._getCountCollection().getMergeProposals(
+            [BranchMergeProposalStatus.NEEDS_REVIEW]).count()
 
     @cachedproperty
     def approved_merge_count(self):
         """Return the number of active reviews for the user."""
-        # XXX: JonathanLange 2009-03-05: Make this use IBranchCollection, when
-        # IBranchCollection supports getMergeProposals.
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
-            self.user)
-        return query.count()
+        return self._getCountCollection().getMergeProposals(
+            [BranchMergeProposalStatus.CODE_APPROVED]).count()
 
     @cachedproperty
     def requested_review_count(self):
@@ -744,7 +739,28 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
         return Link('+requestedreviews', text, summary=summary)
 
 
-class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
+class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
+    """Base class used for different person listing views."""
+
+    def _getCountCollection(self):
+        return getUtility(IAllBranches).visibleByUser(self.user)
+
+    def _getPersonFromContext(self):
+        return self.context
+
+    @property
+    def user_in_context_team(self):
+        if self.user is None:
+            return False
+        return self.user.inTeam(self._getPersonFromContext())
+
+    @property
+    def no_branches_message(self):
+        return "There are no branches related to %s today." % (
+            self.context.displayname)
+
+
+class PersonRegisteredBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
@@ -754,7 +770,7 @@ class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
         return getUtility(IAllBranches).registeredBy(self.context)
 
 
-class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
+class PersonOwnedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
@@ -764,7 +780,7 @@ class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
         return getUtility(IAllBranches).ownedBy(self.context)
 
 
-class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
+class PersonSubscribedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
@@ -1165,3 +1181,50 @@ class SourcePackageBranchesView(BranchListingView):
                 series_name=series.name,
                 package=SourcePackage(our_sourcepackagename, series),
                 linked=(series != our_series))
+
+
+class PersonProductOwnedBranchesView(PersonBaseBranchListingView):
+    """View for branch listing for a person's owned branches."""
+
+    no_sort_by = (BranchListingSort.DEFAULT,
+                  BranchListingSort.REGISTRANT,
+                  BranchListingSort.PRODUCT)
+
+    def _getCountCollection(self):
+        """Can be overridden in the concrete class."""
+        return getUtility(IAllBranches).visibleByUser(
+            self.user).inProduct(self.context.product)
+
+    def _getPersonFromContext(self):
+        """Can be overridden in the concrete class."""
+        return self.context.person
+
+    @property
+    def heading(self):
+        return ('Bazaar Branches of %s owned by %s' %
+                (self.context.product.displayname,
+                 self.context.person.displayname))
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).ownedBy(
+            self.context.person).inProduct(self.context.product)
+
+    @property
+    def no_branch_message(self):
+        """This may also be overridden in derived classes to provide
+        context relevant messages if there are no branches returned."""
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
+            message = (
+                'There are branches of %s owned by %s but none of them '
+                'match the current filter criteria for this page. '
+                'Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches of %s owned by %s '
+                'in Launchpad today. You can use Launchpad as a registry for '
+                'Bazaar branches, and encourage broader community '
+                'participation in your project using '
+                'distributed version control.')
+        return message % (
+            self.context.product.displayname, self.context.person.displayname)

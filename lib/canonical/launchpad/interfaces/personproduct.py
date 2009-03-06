@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'IPersonProduct',
+    'IPersonProductFactory',
     ]
 
 from zope.interface import Interface
