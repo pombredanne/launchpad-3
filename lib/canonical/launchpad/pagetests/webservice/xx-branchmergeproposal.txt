@@ -235,15 +235,16 @@ Or I can look for anything that is approved.
     >>> fixit_proposal.approveBranch(fixit_proposal.target_branch.owner, '1')
     >>> logout()
 
-    >>> def print_fooix_proposals(webservice, status=None):
+    >>> def print_proposals(webservice, url, status=None):
     ...     proposals = webservice.named_get(
-    ...         '/fooix', 'getMergeProposals',
+    ...         url, 'getMergeProposals',
     ...         status=status).jsonBody()
     ...     for proposal in proposals['entries']:
     ...         print_proposal(proposal)
 
-    >>> print_fooix_proposals(
-    ...     webservice, status=[BranchMergeProposalStatus.CODE_APPROVED.title])
+    >>> print_proposals(
+    ...     webservice, url='/fooix',
+    ...     status=[BranchMergeProposalStatus.CODE_APPROVED.title])
     http://.../~source/fooix/fix-it/+merge/1 - Approved
 
 If the branch is private it is not visible to an unpriveleged user.
@@ -253,14 +254,42 @@ If the branch is private it is not visible to an unpriveleged user.
     >>> branch_owner = fixit_proposal.source_branch.owner
     >>> logout()
 
-    >>> print_fooix_proposals(
-    ...     webservice, status=[BranchMergeProposalStatus.CODE_APPROVED.title])
+    >>> print_proposals(
+    ...     webservice, url='/fooix',
+    ...     status=[BranchMergeProposalStatus.CODE_APPROVED.title])
 
 If we get a webservice for the owner of the source branch, then they can see
 the proposal if they have allowed the API to access private bits.
 
     >>> service = webservice_for_person(
     ...     branch_owner, permission=OAuthPermission.READ_PRIVATE)
-    >>> print_fooix_proposals(
-    ...     service, status=[BranchMergeProposalStatus.CODE_APPROVED.title])
+    >>> print_proposals(
+    ...     service, url='/fooix',
+    ...     status=[BranchMergeProposalStatus.CODE_APPROVED.title])
     http://.../~source/fooix/fix-it/+merge/1 - Approved
+
+    >>> login('foo.bar@canonical.com')
+    >>> fixit_proposal.source_branch.private = False
+    >>> logout()
+
+
+== Getting a Person's Pending Merge Proposals ==
+
+It is possible to view all of a person's merge proposals or filter their
+proposals by their status.
+
+    >>> proposals = webservice.named_get('/~source', 'getMergeProposals',
+    ...     ).jsonBody()
+    >>> print_proposals(service, url='/~source')
+    http://.../~source/fooix/fix-it/+merge/1 - Approved
+
+The person's proposals can also be filtered by status.
+
+    >>> login('foo.bar@canonical.com')
+    >>> fixit_proposal.rejectBranch(fixit_proposal.target_branch.owner, '1')
+    >>> logout()
+
+    >>> print_proposals(webservice, url='/~source',
+    ...     status=[BranchMergeProposalStatus.REJECTED.title])
+    http://.../~source/fooix/fix-it/+merge/1 - Rejected
+
