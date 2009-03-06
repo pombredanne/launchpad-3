@@ -82,12 +82,6 @@ from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
 from canonical.lazr.timeout import set_default_timeout_function
 
 
-# Any requests that have the following element at the beginning of their
-# PATH_INFO will be handled by the web service, as if they had gone to
-# api.launchpad.net.
-WEBSERVICE_PATH_OVERRIDE = 'api'
-
-
 class StepsToGo:
     """
 
@@ -451,7 +445,8 @@ class VHostWebServiceRequestPublicationFactory(
         # Add a trailing slash, if it is missing.
         if not path.endswith('/'):
             path = path + '/'
-        return path.startswith('/%s/' % WEBSERVICE_PATH_OVERRIDE)
+        config = getUtility(IWebServiceConfiguration)
+        return path.startswith('/%s/' % config.path_override)
 
 
 class NotFoundRequestPublicationFactory:
@@ -1279,7 +1274,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # on the API virtual host but comes through the path_override on
         # the other regular virtual hosts.
         request_path = request.get('PATH_INFO', '')
-        if request_path.startswith("/%s" % WEBSERVICE_PATH_OVERRIDE):
+        config = getUtility(IWebServiceConfiguration)
+        if request_path.startswith("/%s" % config.path_override):
             return super(WebServicePublication, self).getPrincipal(request)
 
         # Fetch OAuth authorization information from the request.
@@ -1351,7 +1347,8 @@ class WebServiceRequestTraversal:
     def _removeVirtualHostTraversals(self):
         """Remove the /api and /[version] traversal names."""
         names = list()
-        api = self._popTraversal(WEBSERVICE_PATH_OVERRIDE)
+        config = getUtility(IWebServiceConfiguration)
+        api = self._popTraversal(config.path_override)
         if api is not None:
             names.append(api)
             # Requests that use the webservice path override are
@@ -1361,8 +1358,7 @@ class WebServiceRequestTraversal:
             alsoProvides(self, IWebBrowserInitiatedRequest)
 
         # Only accept versioned URLs.
-        version_string = getUtility(
-            IWebServiceConfiguration).service_version_uri_prefix
+        version_string = config.service_version_uri_prefix
         version = self._popTraversal(version_string)
         if version is not None:
             names.append(version)
