@@ -58,10 +58,10 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
+from lazr.enum import BaseItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.lazr.enum import BaseItem
 from canonical.lazr.interfaces.fields import IReferenceChoice
 
 from canonical.launchpad import versioninfo

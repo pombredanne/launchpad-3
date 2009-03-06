@@ -10,18 +10,16 @@
   i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="main" class="pillar">
+    <div metal:fill-slot="main" class="pillar"
+      tal:define="overview_menu context/menu:overview">
       <div class="section">
         <div style="float:right">
-          <span tal:define="link context/menu:overview/review_license"
-                tal:condition="link/enabled"
-                tal:content="structure link/render" />
-          <span tal:define="link context/menu:overview/administer"
-                tal:condition="link/enabled"
-                tal:content="structure link/render" />
-          <span tal:define="link context/menu:overview/edit"
-                tal:condition="link/enabled"
-                tal:content="structure link/render" />
+          <tal:review
+            content="structure overview_menu/review_license/fmt:link-icon" />
+          <tal:admin
+            content="structure overview_menu/administer/fmt:link-icon" />
+          <tal:edit
+            content="structure overview_menu/edit/fmt:link-icon" />
         </div>
         <tal:mugshot replace="structure context/image:mugshot" />
         <h1 tal:replace="structure view/title_edit_widget">
@@ -195,7 +193,7 @@
           />
         </a>
         <a
-           tal:define="link context/menu:overview/mentorship"
+           tal:define="link overview_menu/mentorship"
            tal:condition="context/mentoring_offers/count"
            tal:attributes="href link/url"
         >
@@ -244,9 +242,7 @@
         </div>
         <div
            class="actions"
-           tal:define="link context/menu:overview/series_add"
-           tal:condition="link/enabled"
-           tal:content="structure link/render"
+           tal:content="structure overview_menu/series_add/render"
         />
         <a href="+series">Series history</a><br/>
         <a href="+milestones">Milestone history</a>
@@ -260,9 +256,7 @@
         <tal:created replace="context/datecreated/fmt:approximatedate" /> by
         <tal:registrant replace="structure context/registrant/fmt:link" />
         <p />
-        <div tal:define="link context/menu:overview/rdf"
-             tal:condition="link/enabled"
-             tal:content="structure link/render" />
+        <div tal:content="structure overview_menu/rdf/render" />
       </div>
     </div>
   </body>

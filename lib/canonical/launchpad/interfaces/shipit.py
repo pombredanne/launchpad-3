@@ -34,8 +34,7 @@ from zope.schema import Bool, Choice, Int, Datetime, Set, TextLine
 from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
-
-from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.config import config
 from canonical.launchpad.validators import LaunchpadValidationError

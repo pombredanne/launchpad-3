@@ -61,6 +61,8 @@ from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
+from lazr.delegates import delegates
+from lazr.enum import EnumeratedType, Item
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -125,8 +127,6 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
-from canonical.lazr import EnumeratedType, Item
-from lazr.delegates import delegates
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.interfaces.rest import IJSONRequestCache
 

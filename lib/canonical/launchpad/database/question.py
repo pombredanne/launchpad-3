@@ -30,6 +30,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import LeftJoin
 from storm.store import Store
 
+from lazr.enum import DBItem, Item
 from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
@@ -61,7 +62,6 @@ from canonical.launchpad.database.questionsubscription import (
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
-from canonical.lazr import DBItem, Item
 
 
 class notify_question_modified:

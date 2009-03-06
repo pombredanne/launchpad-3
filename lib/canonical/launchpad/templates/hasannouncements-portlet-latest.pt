@@ -3,7 +3,8 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-<tal:news define="announcements view/latest_announcements">
+<tal:news define="announcements view/latest_announcements;
+                  overview_menu context/menu:overview">
 <div
   class="portlet"
   id="portlet-latest-announcements">
@@ -26,15 +27,11 @@
       </li>
     </ul>
     <div
-      tal:define="link context/menu:overview/announcements"
-      tal:condition="link/enabled"
-      tal:content="structure link/render"
+      tal:content="structure overview_menu/announcements/render"
     />
     <div
       class="actions"
-      tal:define="link context/menu:overview/announce"
-      tal:condition="link/enabled"
-      tal:content="structure link/render"
+      tal:content="structure overview_menu/announce/render"
     />
   </div>
 </div>

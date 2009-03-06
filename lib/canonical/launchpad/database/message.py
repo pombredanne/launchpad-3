@@ -22,7 +22,7 @@ from datetime import datetime
 from operator import attrgetter
 
 from canonical.database.enumcol import EnumCol
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
