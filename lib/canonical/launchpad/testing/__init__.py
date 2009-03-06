@@ -23,6 +23,8 @@ from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.testing.factory import *
 
+from twisted.python.util import mergeFunctionMetadata
+
 
 class FakeTime:
     """Provides a controllable implementation of time.time()."""
@@ -161,6 +163,15 @@ class TestCase(unittest.TestCase):
             self.fail(
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
+
+    def assertEqual(self, a, b, message=''):
+        """Assert that 'a' equals 'b'."""
+        if a == b:
+            return
+        if message:
+            message += '\n'
+        self.fail("%snot equal:\na = %s\nb = %s\n"
+                  % (message, pformat(a), pformat(b)))
 
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
@@ -478,3 +489,13 @@ def get_lsb_information():
 
     return distinfo
 
+
+def with_anonymous_login(function):
+    """Decorate 'function' so that it runs in an anonymous login."""
+    def wrapped(*args, **kwargs):
+        login(ANONYMOUS)
+        try:
+            return function(*args, **kwargs)
+        finally:
+            logout()
+    return mergeFunctionMetadata(function, wrapped)
