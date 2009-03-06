@@ -110,4 +110,4 @@ class TextLineEditorWidget:
         if canWrite(self.context, self.attribute):
             params['trigger'] = self.TRIGGER_TEMPLATE % params
             params['activation_script'] = self.ACTIVATION_TEMPLATE % params
-        return self.WIDGET_TEMPLATE % params 
+        return self.WIDGET_TEMPLATE % params

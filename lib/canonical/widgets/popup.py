@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import cgi
 import simplejson
+from textwrap import dedent
 
 from zope.interface import Attribute, implements, Interface
 from zope.app import zapi
@@ -48,6 +49,7 @@ class ISinglePopupWidget(ISimpleInputWidget):
 
         An empty list should be returned if 'too many' results are found.
         """
+
 
 class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     """Window popup widget for single item choices from a huge vocabulary.
@@ -249,3 +251,108 @@ class SearchForUpstreamPopupView(SinglePopupView):
                 '<a href="%s/+affects-new-product" target="_parent">'
                 'Register it</a>.' % canonical_url(self.context))
 
+
+class VocabularyPickerWidget(SinglePopupWidget):
+    """Wrapper for the lazr-js picker/picker.js widget."""
+
+    popup_name = 'popup-vocabulary-picker'
+
+    def chooseLink(self):
+        return dedent("""
+            (<a id="show-widget-%(suffix)s">Choose&hellip;</a>)
+            <div id="picker-%(suffix)s"/>
+
+            <script>
+            YUI().use('dom', 'dump', 'lazr.overlay', 'lazr.picker', function(Y) {
+                var picker = new Y.Picker({
+                    align: {
+                        points: [Y.WidgetPositionExt.CC,
+                                 Y.WidgetPositionExt.CC]
+                    },
+                    progressbar: true,
+                    progress: 100,
+                    headerContent: "<h2>Picker example</h2>",
+                    steptitle: "Enter search terms",
+                    zIndex: 1000
+                    });
+
+            picker.subscribe('save', function (e) {
+                Y.log('Got save event.');
+                Y.DOM.byId('%(id)s').value = e.details[Y.Picker.SEARCH_STRING];
+                });
+
+            picker.subscribe('cancel', function (e) {
+                Y.log('Got cancel event.');
+                });
+
+            picker.after('visibleChange', function () {
+                Y.get('#show-widget-%(suffix)s').set('disabled', picker.get('visible'));
+                });
+
+            Y.on('click', function () {
+                picker.show();
+            }, '#show-widget-%(suffix)s');
+
+            // Search for results, create batches and update the display.
+            // in the widget.
+            picker.after('search', function (e) {
+                Y.log('Got search event:' + Y.dump(e.details));
+                var spin_for = e.details[1] !== undefined && 500 || 2000;
+                Y.later(spin_for, null, function () {
+                    var search_string = e.details[0];
+                    var results = [
+                            [{value: 'foo',
+                              title: 'The Foo',
+                              css: '',
+                              image: '/@@/edit',
+                              description: 'Foo is good'}
+                            ],
+                            [],
+                            [],
+                        ];
+                    var selected_batch = e.details[1] || 0;
+
+                    // Update the batches only if it's a new search.
+                    if (e.details[1] === undefined) {
+                        var batches = [];
+                        Y.Array.each(results, function (batch, i) {
+                            batches.push({
+                                    name: i+1,
+                                    value: i,
+                                });
+                        });
+
+                        // Only display batches if there is more than one.
+                        if (results.length > 1 ) {
+                            picker.set('batches', batches);
+                        } else {
+                            picker.set('batches', []);
+                        }
+                    }
+
+                    picker.set('results', results[selected_batch]);
+                });
+            });
+
+            picker.render();
+        });
+        </script>
+        """ % dict(id=self.name, suffix=self.name.replace('.', '-')))
+
+    def popupHref(self):
+        template = (
+            "javascript:"
+            "popup_window('@@%s?"
+            "vocabulary=%s&field=%s&search="
+            "'+escape(document.getElementById('%s').value),"
+            "'%s','300','420')"
+            ) % (self.popup_name, self.context.vocabularyName, self.name,
+                 self.name, self.name)
+        if self.onKeyPress:
+            # XXX kiko 2005-09-27: I suspect onkeypress() here is
+            # non-standard, but it works for me, and enough researching for
+            # tonight. It may be better to use dispatchEvent or a
+            # compatibility function
+            template += ("; document.getElementById('%s').onkeypress()" %
+                         self.name)
+        return template

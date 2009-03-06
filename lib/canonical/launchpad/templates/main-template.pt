@@ -83,6 +83,18 @@
         tal:attributes="href
         string:${icingroot}/lazr/build/inlineedit/assets/skins/sam/editor.css"
         />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/picker/assets/picker-core.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/picker/assets/skins/sam/picker-skin.css"
+        />
 
     <tal:devmode define="yui string:${icingroot}/yui/3.0.0pr2/build;
                          lazr_js string:${icingroot}/lazr/build;
@@ -116,6 +128,8 @@
               tal:attributes="src string:${yui}/plugin/plugin.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/widget/widget.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>
@@ -125,6 +139,10 @@
               tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/inlineedit/editor.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/overlay/overlay.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/picker/picker.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/lp/lp.js"></script>
       <script type="text/javascript"
