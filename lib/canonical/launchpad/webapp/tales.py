@@ -1777,7 +1777,10 @@ class LinkFormatterAPI(ObjectFormatterAPI):
 
     def url(self, view_name=None):
         """Return the URL representation of the link."""
-        return self._context.url
+        if self._context.enabled:
+            return self._context.url
+        else:
+            return u''
 
 
 def clean_path_segments(request):

@@ -1050,7 +1050,7 @@ The link can be rendered as an anchored icon.
 
     >>> print test_tales('menu_link/fmt:icon', menu_link=menu_link)
     <a href="http://launchpad.dev/+place" class="menu-link-test_link"
-       title="summary"><img src="/@@/icon" alt="icon" /></a>
+       title="summary"><img src="/@@/icon" alt="text" /></a>
 
 The link can be rendered as text with an icon to the right.
 
@@ -1076,3 +1076,14 @@ And the url format is also available.
     >>> print test_tales('menu_link/fmt:url', menu_link=menu_link)
     http://launchpad.dev/+place
 
+If the link is disabled, no markup is rendered.
+
+    >>> menu_link.enabled = False
+    >>> test_tales('menu_link/fmt:icon', menu_link=menu_link)
+    u''
+    >>> test_tales('menu_link/fmt:suffix', menu_link=menu_link)
+    u''
+    >>> test_tales('menu_link/fmt:link', menu_link=menu_link)
+    u''
+    >>> test_tales('menu_link/fmt:url', menu_link=menu_link)
+    u''

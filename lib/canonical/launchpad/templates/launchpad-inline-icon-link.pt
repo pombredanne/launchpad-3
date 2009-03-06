@@ -9,4 +9,4 @@
 ><img
    tal:attributes="
      src context/icon_url;
-     alt context/icon" /></a></tal:link-enabled>
+     alt context/text" /></a></tal:link-enabled>
