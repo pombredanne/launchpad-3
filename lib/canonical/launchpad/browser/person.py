@@ -52,6 +52,7 @@ __all__ = [
     'PersonSpecsMenu',
     'PersonSpecWorkloadView',
     'PersonSpecWorkloadTableView',
+    'PersonSubscribedBugTaskSearchListingView',
     'PersonTranslationView',
     'PersonTranslationRelicensingView',
     'PersonView',
@@ -64,7 +65,6 @@ __all__ = [
     'SearchCreatedQuestionsView',
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
-    'SubscribedBugTaskSearchListingView',
     'TeamAddMyTeamsView',
     'TeamEditLocationView',
     'TeamJoinView',
@@ -2046,7 +2046,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
         return "Search bugs related to %s" % self.context.displayname
 
     def getSimpleSearchURL(self):
-        return canonical_url(self.context) + "/+bugs"
+        return canonical_url(self.context, view_name="+bugs")
 
 
 class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
@@ -2098,7 +2098,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     def getSimpleSearchURL(self):
         """Return a URL that can be usedas an href to the simple search."""
-        return canonical_url(self.context) + "/+assignedbugs"
+        return canonical_url(self.context, view_name="+assignedbugs")
 
 
 class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
@@ -2138,7 +2138,7 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+commentedbugs"
+        return canonical_url(self.context, view_name="+commentedbugs")
 
 
 class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
@@ -2181,7 +2181,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+reportedbugs"
+        return canonical_url(self.context, view_name="+reportedbugs")
 
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""
@@ -2190,6 +2190,46 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
     def shouldShowTagsCombinatorWidget(self):
         """Should the tags combinator widget show on the search page?"""
         return False
+
+
+class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                               BugTaskSearchListingView):
+    """All bugs someone is subscribed to."""
+
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
+
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
+        """Return the bugs subscribed to by a person."""
+        if context is None:
+            context = self.context
+
+        if extra_params is None:
+            extra_params = dict()
+        else:
+            extra_params = dict(extra_params)
+        extra_params['subscriber'] = context
+
+        sup = super(PersonSubscribedBugTaskSearchListingView, self)
+        return sup.searchUnbatched(searchtext, context, extra_params)
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs %s is subscribed to" % self.context.displayname
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs %s is Cc'd to: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs %s is Cc'd to" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
+        return canonical_url(self.context, view_name="+subscribedbugs")
 
 
 class PersonVouchersView(LaunchpadFormView):
@@ -2302,34 +2342,6 @@ class PersonVouchersView(LaunchpadFormView):
             info = (error.__class__, error, None)
             globalErrorUtility = getUtility(IErrorReportingUtility)
             globalErrorUtility.raising(info, self.request)
-
-
-class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
-    """All bugs someone is subscribed to."""
-
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-
-    def search(self):
-        return BugTaskSearchListingView.search(
-            self, extra_params={'subscriber': self.context})
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s is subscribed to" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs %s is Cc'd to: Advanced Search" % (
-            self.context.displayname)
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s is Cc'd to" % self.context.displayname
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+subscribedbugs"
 
 
 class PersonLanguagesView(LaunchpadView):
