@@ -33,7 +33,7 @@ __all__ = [
     'WebServiceLayer',
     ]
 
-from zope.schema import TextLine
+from zope.schema import Bool, TextLine
 from zope.interface import Attribute, Interface
 # These two should really be imported from zope.interface, but
 # the import fascist complains because they are not in __all__ there.
@@ -335,15 +335,21 @@ class IWebServiceConfiguration(Interface):
         "ensure that the request is processed as a web service request "
         "instead of a website request.")
 
+    use_https = Bool(
+        title=u"Web service is secured",
+        default=True,
+        description=u"Whether or not requests to the web service are secured "
+        "through SSL.")
+
     service_version_uri_prefix = Attribute(
-        "The versioning string, if any, to use as the URI prefix for web "
-        "service URIs. A popular string is 'beta', but you could also use "
-        "a version number or the date the API was finalized.")
+        """The versioning string, if any, to use as the URI prefix for web
+        service URIs. A popular string is 'beta', but you could also use
+        a version number or the date the API was finalized.""")
 
     code_revision = Attribute(
-        "A string designating the current revision number of the code "
-        "running the webservice. This may be a revision number from version "
-        "control, or a hand-chosen version number.")
+        """A string designating the current revision number of the code
+        running the webservice. This may be a revision number from version
+        control, or a hand-chosen version number.""")
 
 
 class IUnmarshallingDoesntNeedValue(Interface):

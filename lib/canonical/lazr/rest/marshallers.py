@@ -29,7 +29,7 @@ import urllib
 import simplejson
 
 from zope.datetime import DateTimeError, DateTimeParser
-from zope.component import getMultiAdapter
+from zope.component import getMultiAdapter, getUtility
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
@@ -37,11 +37,11 @@ from zope.traversing.browser import absoluteURL
 
 from lazr.uri import URI
 
-from canonical.config import config
 from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 
 from canonical.lazr.interfaces.rest import (
-    IFieldMarshaller, IUnmarshallingDoesntNeedValue)
+    IFieldMarshaller, IUnmarshallingDoesntNeedValue,
+    IWebServiceConfiguration)
 from canonical.lazr.utils import safe_hasattr
 
 
@@ -61,7 +61,7 @@ class URLDereferencingMixin:
         :raise NotFound: If the URL does not designate a
             published object.
         """
-        if config.vhosts.use_https:
+        if getUtility(IWebServiceConfiguration).use_https:
             site_protocol = 'https'
             default_port = '443'
         else:
