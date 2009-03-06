@@ -557,6 +557,14 @@ class Branch(SQLBase):
         BranchSubscription.delete(subscription.id)
         store.flush()
 
+    def getMainlineBranchRevisions(self, revision_ids):
+        return Store.of(self).find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            BranchRevision.revision == Revision.id,
+            Revision.revision_id.is_in(revision_ids))
+
     def getBranchRevision(self, sequence=None, revision=None,
                           revision_id=None):
         """See `IBranch`."""

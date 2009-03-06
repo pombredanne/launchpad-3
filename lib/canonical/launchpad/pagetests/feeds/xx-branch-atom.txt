@@ -102,7 +102,6 @@ developers team has two branches which are both private.
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.database.branch import Branch
-    >>> from canonical.launchpad.interfaces.branch import IBranchSet
     >>> from canonical.launchpad.interfaces.branchcollection import (
     ...     IAllBranches)
     >>> from canonical.launchpad.interfaces.person import IPersonSet

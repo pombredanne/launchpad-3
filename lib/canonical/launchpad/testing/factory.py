@@ -710,6 +710,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent, sequence)
 
+    def makeBranchRevision(self, branch, revision_id, sequence=None):
+        revision = self.makeRevision(rev_id=revision_id)
+        return branch.createBranchRevision(sequence, revision)
+
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
                 date_created=None):

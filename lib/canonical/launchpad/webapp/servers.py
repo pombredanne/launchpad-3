@@ -26,7 +26,7 @@ from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import (
     getMultiAdapter, getUtility, queryAdapter, queryMultiAdapter)
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
@@ -44,7 +44,7 @@ from canonical.config import config
 
 from canonical.lazr.interfaces import (
     IByteStorage, ICollection, IEntry, IEntryField, IFeed, IHTTPResource,
-    IWebServiceConfiguration)
+        IWebBrowserInitiatedRequest, IWebServiceConfiguration)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
     CollectionResource, EntryField, EntryFieldResource,
@@ -1243,14 +1243,11 @@ class WebServicePublication(LaunchpadBrowserPublication):
             request, object)
         if request.response.getStatus() / 100 == 3:
             vhost = URI(request.getApplicationURL()).host
-            api = allvhosts.configs['api']
-            if vhost != api.hostname and vhost not in api.althostnames:
-                # This request came in on a vhost other than the
-                # dedicated web service vhost. That means it was
-                # probably sent by a web browser. Because web
-                # browsers, content negotiation, and redirects are a
-                # deadly combination, we're going to help the browser
-                # out a little.
+            if IWebBrowserInitiatedRequest.providedBy(request):
+                # This request was (probably) sent by a web
+                # browser. Because web browsers, content negotiation,
+                # and redirects are a deadly combination, we're going
+                # to help the browser out a little.
                 #
                 # We're going to take the current request's "Accept"
                 # header and put it into the URL specified in the
@@ -1357,6 +1354,11 @@ class WebServiceRequestTraversal:
         api = self._popTraversal(WEBSERVICE_PATH_OVERRIDE)
         if api is not None:
             names.append(api)
+            # Requests that use the webservice path override are
+            # usually made by web browsers. Mark this request as one
+            # initiated by a web browser, for the sake of
+            # optimizations later in the request lifecycle.
+            alsoProvides(self, IWebBrowserInitiatedRequest)
 
         # Only accept versioned URLs.
         version_string = getUtility(
