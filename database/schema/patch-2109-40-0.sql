@@ -25,14 +25,15 @@ UPDATE shipitsurvey SET account = person.account
     WHERE shipitsurvey.person = person.id;
 -- Flag requests where the recipient is shipit-admins to be admin-made
 -- requests.
-UPDATE shippingrequest SET is_admin_request = TRUE
-    WHERE recipient = 243601;
--- Requests which had shipit-admins as the recipient will now have Salgado
+UPDATE shippingrequest
+SET is_admin_request = TRUE
+WHERE recipient = (SELECT id FROM person WHERE name='shipit-admins');
+-- Requests which had shipit-admins as the recipient will now have Marilize
 -- as the recipient.  Note that recipient should probably be renamed to
 -- requester, as that's what it really represents.
 UPDATE shippingrequest
-    SET recipient_account = (SELECT account FROM person WHERE name = 'salgado')
-    WHERE recipient = 243601;
+SET recipient_account = (SELECT account FROM person WHERE name = 'marilize')
+WHERE recipient = (SELECT id FROM person WHERE name='shipit-admins');
 
 
 -----------  DROP existing COLUMNS  ----------------------------
@@ -47,16 +48,28 @@ ALTER TABLE shippingrequest RENAME COLUMN recipient_account TO recipient;
 ALTER TABLE shippingrequest RENAME COLUMN whoapproved_account TO whoapproved;
 ALTER TABLE shippingrequest RENAME COLUMN whocancelled_account TO whocancelled;
 
+----------- Repack the now severely bloated tables -----------
+CLUSTER shippingrequest USING shippingrequest_pkey;
+CLUSTER shipitsurvey USING shipitsurvey_pkey;
+
+----------- Create needed indexes ---------------------------
+CREATE INDEX shippingrequest__recipient__idx
+    ON ShippingRequest(recipient);
+CREATE INDEX shippingrequest__whoapproved__idx
+    ON ShippingRequest(whoapproved)
+    WHERE whoapproved IS NOT NULL;
+CREATE INDEX shippingrequest__whocancelled__idx
+    ON ShippingRequest(whocancelled)
+    WHERE whocancelled IS NOT NULL;
 
 ----------- Add constraints to new COLUMNS  ----------------------------
 ALTER TABLE shippingrequest ALTER COLUMN recipient SET NOT NULL;
 ALTER TABLE shipitsurvey ALTER COLUMN account SET NOT NULL;
 CREATE UNIQUE INDEX shippingrequest_one_outstanding_request_unique 
-    ON shippingrequest USING btree (recipient)
-    WHERE ((
-	    (shipment IS NULL) AND ((status <> 3) AND (status <> 2))
-	   )
-           AND (is_admin_request <> TRUE)
-          );
+    ON shippingrequest(recipient)
+    WHERE (
+        shipment IS NULL
+        AND is_admin_request IS NOT TRUE
+        AND status NOT IN (2,3));
 
-INSERT INTO LaunchpADDatabaseRevision VALUES (2109, 35, 0);
+INSERT INTO LaunchpADDatabaseRevision VALUES (2109, 40, 0);
