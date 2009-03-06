@@ -50,8 +50,8 @@ from canonical.launchpad.database.person import Person
 from canonical.launchpad.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
-from canonical.launchpad.interfaces.branch import (
-    IBranchNavigationMenu, user_has_special_branch_access)
+from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -674,15 +674,22 @@ class BranchMergeProposalGetter:
     @staticmethod
     def getProposalsForContext(context, status=None, visible_by_user=None):
         """See `IBranchMergeProposalGetter`."""
-        builder = BranchMergeProposalQueryBuilder(context, status)
-        return BranchMergeProposal.select(
-            BranchMergeProposalGetter._generateVisibilityClause(
-                builder.query, visible_by_user))
+        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+        if context is None:
+            pass
+        elif IProduct.providedBy(context):
+            collection = collection.inProduct(context)
+        elif IPerson.providedBy(context):
+            collection = collection.ownedBy(context)
+        else:
+            raise BadBranchMergeProposalSearchContext(context)
+        return collection.getMergeProposals(status)
 
     @staticmethod
-    def getProposalsForReviewer(context, status=None, visible_by_user=None):
+    def getProposalsForReviewer(reviewer, status=None, visible_by_user=None):
         """See `IBranchMergeProposalGetter`."""
-        store = Store.of(context)
+        from canonical.launchpad.database.branch import Branch
+        store = Store.of(reviewer)
         tables = [
             BranchMergeProposal,
             Join(CodeReviewVoteReference,
@@ -690,42 +697,18 @@ class BranchMergeProposalGetter:
                  BranchMergeProposal.id),
             LeftJoin(CodeReviewComment,
                  CodeReviewVoteReference.commentID == CodeReviewComment.id)]
-        result = store.using(*tables).find(
-            BranchMergeProposal,
-            BranchMergeProposal.queue_status.is_in(status),
-            CodeReviewVoteReference.reviewer == context)
+        visible_branches = set(getUtility(IAllBranches).visibleByUser(
+            visible_by_user).getBranches().values(Branch.id))
+        expression = And(
+            CodeReviewVoteReference.reviewer == reviewer,
+            BranchMergeProposal.target_branchID.is_in(visible_branches),
+            BranchMergeProposal.source_branchID.is_in(visible_branches))
+        if status is not None:
+            expression = And(
+                expression, BranchMergeProposal.queue_status.is_in(status))
+        result = store.using(*tables).find(BranchMergeProposal, expression)
         result.order_by(Desc(CodeReviewComment.vote))
-
         return result
-
-    @staticmethod
-    def _generateVisibilityClause(query, visible_by_user):
-        # BranchMergeProposals are only visible is the user is able to
-        # see both the source and target branches.  Here we need to use
-        # a similar query to branches.
-        lp_admins = getUtility(ILaunchpadCelebrities).admin
-        if user_has_special_branch_access(visible_by_user):
-            return query
-
-        if len(query) > 0:
-            query = '%s AND ' % query
-
-        # Non logged in people can only see public branches.
-        if visible_by_user is None:
-            private_subquery = ('''
-                SELECT Branch.id
-                FROM Branch
-                WHERE NOT Branch.private
-                ''')
-        else:
-            # To avoid circular imports.
-            from canonical.launchpad.database.branch import BranchSet
-            private_subquery = BranchSet._getBranchVisibilitySubQuery(
-                visible_by_user)
-
-        return ('%sBranchMergeProposal.source_branch in (%s) '
-                ' AND BranchMergeProposal.target_branch in (%s)'
-                % (query, private_subquery, private_subquery))
 
     @staticmethod
     def getVotesForProposals(proposals):
@@ -861,8 +844,8 @@ class BranchMergeProposalJob(Storm):
         """Return selected instances of this class.
 
         At least one pair of keyword arguments must be supplied.
-        foo=bar is interpreted as "select all instances of
-        BranchMergeProposalJob whose property "foo" is equal to "bar".
+        foo=bar is interpreted as 'select all instances of
+        BranchMergeProposalJob whose property "foo" is equal to "bar"'.
         """
         assert len(kwargs) > 0
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -880,68 +863,6 @@ class BranchMergeProposalJob(Storm):
             raise SQLObjectNotFound(
                 'No occurrence of %s has key %s' % (klass.__name__, key))
         return instance
-
-
-class BranchMergeProposalQueryBuilder:
-    """A utility class to help build branch merge proposal query strings."""
-
-    def __init__(self, context, statuses):
-        self._tables = ['BranchMergeProposal']
-        self._where_clauses = []
-
-        if statuses:
-            self._where_clauses.append(
-                'BranchMergeProposal.queue_status in %s' % quote(statuses))
-
-        if context is None:
-            pass
-        elif IProduct.providedBy(context):
-            self._searchByProduct(context)
-        elif IPerson.providedBy(context):
-            self._searchByPerson(context)
-        else:
-            raise BadBranchMergeProposalSearchContext(context)
-
-    def _searchByProduct(self, product):
-        """Add restrictions to a particular product."""
-        # Restrict to merge proposals where the product on the target
-        # branch is the one specified.
-        self._tables.append('Branch as TargetBranch')
-        self._where_clauses.append(
-            'TargetBranch.id = BranchMergeProposal.target_branch')
-        self._where_clauses.append(
-            'TargetBranch.product = %s' % quote(product))
-
-    def _searchByPerson(self, person):
-        """Add restrictions to a particular person.
-
-        Return merge proposals where the source branch is owned by
-        the person.  This method does not check for team membership
-        to account for branches that are owned by a team that the
-        person is in.
-        """
-        self._tables.append('Branch as SourceBranch')
-        self._where_clauses.append(
-            'SourceBranch.id = BranchMergeProposal.source_branch')
-        self._where_clauses.append(
-            'SourceBranch.owner = %s' % quote(person))
-
-    @property
-    def query(self):
-        """Return a query string."""
-        if len(self._tables) == 1:
-            # Just the Branch table.
-            query = ' AND '.join(self._where_clauses)
-        else:
-            # More complex query needed.
-            query = ("""
-                BranchMergeProposal.id IN (
-                    SELECT BranchMergeProposal.id
-                    FROM %(tables)s
-                    WHERE %(where_clause)s)
-                """ % {'tables': ', '.join(self._tables),
-                       'where_clause': ' AND '.join(self._where_clauses)})
-        return query
 
 
 class BranchMergeProposalJobDerived(object):

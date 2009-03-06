@@ -21,6 +21,7 @@ from storm.store import Store
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.uri import find_uris_in_text
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -37,7 +38,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend, urlsplit
-from canonical.launchpad.webapp.uri import find_uris_in_text
 
 
 BUG_TRACKER_URL_FORMATS = {
