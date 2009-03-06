@@ -52,6 +52,7 @@ __all__ = [
     'PersonSpecsMenu',
     'PersonSpecWorkloadView',
     'PersonSpecWorkloadTableView',
+    'PersonSubscribedBugTaskSearchListingView',
     'PersonTranslationView',
     'PersonTranslationRelicensingView',
     'PersonView',
@@ -64,7 +65,6 @@ __all__ = [
     'SearchCreatedQuestionsView',
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
-    'SubscribedBugTaskSearchListingView',
     'TeamAddMyTeamsView',
     'TeamEditLocationView',
     'TeamJoinView',
@@ -2192,7 +2192,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         return False
 
 
-class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
+class PersonSubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
