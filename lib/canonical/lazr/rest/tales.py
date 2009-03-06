@@ -16,11 +16,11 @@ from epydoc.markup.restructuredtext import parse_docstring
 from zope.app.zapi import getGlobalSiteManager
 from zope.component import queryAdapter
 from zope.interface.interfaces import IInterface
-from zope.schema import ValidationError, getFieldsInOrder
+from zope.schema import getFieldsInOrder
 from zope.schema.interfaces import IBytes, IChoice, IDate, IDatetime, IObject
 from zope.security.proxy import removeSecurityProxy
+from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 from canonical.lazr.rest import EntryResource, ResourceJSONEncoder
@@ -133,7 +133,7 @@ class WadlResourceAPI(RESTUtilityBase):
     @property
     def url(self):
         """Return the full URL to the resource."""
-        return canonical_url(self.context)
+        return absoluteURL(self.context, get_current_browser_request())
 
 
 class WadlEntryResourceAPI(WadlResourceAPI):
@@ -177,7 +177,8 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
                 relationship_name = webservice_tag['as']
             else:
                 relationship_name = self.context.relationship.__name__
-            return (canonical_url(self.context.context) + '/' +
+            return (absoluteURL(self.context.context,
+                                get_current_browser_request()) + '/' +
                     urllib.quote(relationship_name))
         else:
             return super(WadlCollectionResourceAPI, self).url

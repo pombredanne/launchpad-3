@@ -102,14 +102,16 @@ developers team has two branches which are both private.
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.database.branch import Branch
-    >>> from canonical.launchpad.interfaces.branch import IBranchSet
+    >>> from canonical.launchpad.interfaces.branchcollection import (
+    ...     IAllBranches)
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> person_set = getUtility(IPersonSet)
     >>> landscape_team = person_set.getByName('landscape-developers')
     >>> test_user = person_set.getByEmail('test@canonical.com')
-    >>> branches = getUtility(IBranchSet).getBranchesForContext(
-    ...     landscape_team, visible_by_user=test_user).order_by(Branch.id)
+    >>> branches = getUtility(IAllBranches).relatedTo(landscape_team)
+    >>> branches = branches.visibleByUser(
+    ...     test_user).getBranches().order_by(Branch.id)
     >>> for branch in branches:
     ...     branch = removeSecurityProxy(branch)
     ...     print branch.unique_name, branch.private
