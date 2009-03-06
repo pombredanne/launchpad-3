@@ -10,9 +10,14 @@ __metaclass__ = type
 __all__ = [
     'IAllBranches',
     'IBranchCollection',
+    'InvalidFilter',
     ]
 
 from zope.interface import Interface
+
+
+class InvalidFilter(Exception):
+    """Raised when an `IBranchCollection` cannot apply the given filter."""
 
 
 class IBranchCollection(Interface):
@@ -45,6 +50,14 @@ class IBranchCollection(Interface):
 
     def getBranches():
         """Return a result set of all branches in this collection."""
+
+    def getMergeProposals(statuses=None):
+        """Return a result set of merge proposals for the branches in this
+        collection.
+
+        :param statuses: If specified, only return merge proposals with these
+            statuses. If not, return all merge proposals.
+        """
 
     def inProduct(product):
         """Restrict the collection to branches in 'product'."""

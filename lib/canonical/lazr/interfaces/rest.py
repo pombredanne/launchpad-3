@@ -11,7 +11,10 @@ __all__ = [
     'ICollection',
     'ICollectionResource',
     'IEntry',
+    'IEntryField',
+    'IEntryFieldResource',
     'IEntryResource',
+    'IFieldHTMLRenderer',
     'IFieldMarshaller',
     'IHTTPResource',
     'IJSONPublishable',
@@ -23,6 +26,7 @@ __all__ = [
     'IServiceRootResource',
     'ITopLevelEntryLink',
     'IUnmarshallingDoesntNeedValue',
+    'IWebBrowserInitiatedRequest',
     'LAZR_WEBSERVICE_NAME',
     'LAZR_WEBSERVICE_NS',
     'WebServiceLayer',
@@ -93,6 +97,16 @@ class IEntryResource(IHTTPResource):
 
     def getContext():
         """Return the underlying entry for this resource."""
+
+
+class IEntryFieldResource(IHTTPResource):
+    """A resource that represents one of an entry's fields."""
+
+    def do_GET():
+        """Retrieve the value of the field.
+
+        :return: A string representation.
+        """
 
 
 class ICollectionResource(IHTTPResource):
@@ -171,6 +185,25 @@ class IScopedCollection(ICollection):
     collection = Attribute("The collection scoped to an entry.")
 
 
+class IFieldHTMLRenderer(Interface):
+    """An interface that renders generic strings as HTML representations.
+
+    This can be a callable class, or a function that returns another
+    function.
+    """
+
+    def __call__(value):
+        """Render the given string as HTML."""
+
+
+class IEntryField(Interface):
+    """An individual field of an entry."""
+
+    entry = Attribute("The entry whose field this is.")
+
+    field = Attribute("The field, bound to the entry.")
+
+
 class ITopLevelEntryLink(Interface):
     """A link to a special entry.
 
@@ -195,9 +228,9 @@ class WebServiceLayer(IDefaultBrowserLayer):
 class IJSONRequestCache(Interface):
     """A cache of objects exposed as URLs or JSON representations."""
 
-    links = Attribute("Objects whose links need to be exposed.");
+    links = Attribute("Objects whose links need to be exposed.")
     objects = Attribute("Objects whose JSON representations need "
-                        "to be exposed.");
+                        "to be exposed.")
 
 
 class IByteStorage(Interface):
@@ -288,4 +321,14 @@ class IUnmarshallingDoesntNeedValue(Interface):
     Most marshallers transform the value they're given, but some work
     entirely on the field name. If they use this marker interface
     we'll save time because we won't have to calculate the value.
+    """
+
+
+class IWebBrowserInitiatedRequest(Interface):
+    """A marker interface for requests initiated by a web browser.
+
+    Web browsers are broken in subtle ways that interact in complex
+    ways with the parts of HTTP used in web services. It's useful to
+    know when a request was initiated by a web browser so that
+    responses can be tweaked for their benefit.
     """
