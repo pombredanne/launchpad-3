@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="table-details"
   class="summary"
->
+  tal:define="overview_menu context/menu:overview">
   <tbody>
     <tr>
       <th>Driver:</th>
@@ -13,11 +13,8 @@
         <tal:driver condition="context/driver">
           <a tal:replace="structure context/driver/fmt:link" />
         </tal:driver>
-        <a
-          tal:define="link context/menu:overview/driver"
-          tal:condition="link/enabled"
-          tal:attributes="href link/url"
-        ><img tal:attributes="alt link/text" src="/@@/edit" /></a>
+        <tal:edit-driver
+          replace="structure overview_menu/driver/fmt:icon" />
       </td>
     </tr>
     <tr>
@@ -27,11 +24,8 @@
         <tal:members condition="context/members">
           <a tal:replace="structure context/members/fmt:link" />
         </tal:members>
-        <a
-          tal:define="link context/menu:overview/members"
-          tal:condition="link/enabled"
-          tal:attributes="href link/url"
-        ><img tal:attributes="alt link/text" src="/@@/edit" /></a>
+        <tal:edit-members
+          replace="structure overview_menu/members/fmt:icon" />
       </td>
     </tr>
     <tr>
@@ -50,11 +44,8 @@
         <tal:members condition="context/mirror_admin">
           <a tal:replace="structure context/mirror_admin/fmt:link" />
         </tal:members>
-        <a
-          tal:define="link context/menu:overview/mirror_admin"
-          tal:condition="link/enabled"
-          tal:attributes="href link/url"
-        ><img tal:attributes="alt link/text" src="/@@/edit" /></a>
+        <tal:mirror_admin
+          replace="structure overview_menu/mirror_admin/fmt:icon" />
       </td>
     </tr>
   </tbody>

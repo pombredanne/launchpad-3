@@ -446,6 +446,12 @@
         name="fmt"
         />
     <adapter
+        for="canonical.launchpad.webapp.interfaces.ILink"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.LinkFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="*"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
