@@ -15,8 +15,9 @@ a new password.
 
     >>> from zope.component import getMultiAdapter, getUtility
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
     >>> from canonical.launchpad.interfaces.logintoken import (
-    ...     ILoginTokenSet, LoginTokenType)
+    ...     ILoginTokenSet)
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 

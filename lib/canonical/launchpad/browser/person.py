@@ -4090,7 +4090,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         token = getUtility(ILoginTokenSet).new(
                     self.context, getUtility(ILaunchBag).login, email,
                     LoginTokenType.VALIDATEEMAIL)
-        token.sendEmailValidationRequest(self.request.getApplicationURL())
+        token.sendEmailValidationRequest()
         self.request.response.addInfoNotification(
             "An e-mail message was sent to '%s' with "
             "instructions on how to confirm that "
@@ -4183,7 +4183,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         token = logintokenset.new(
                     self.context, getUtility(ILaunchBag).login, newemail,
                     LoginTokenType.VALIDATEEMAIL)
-        token.sendEmailValidationRequest(self.request.getApplicationURL())
+        token.sendEmailValidationRequest()
 
         self.request.response.addInfoNotification(
                 "A confirmation message has been sent to '%s'. "

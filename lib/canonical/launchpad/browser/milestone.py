@@ -46,7 +46,7 @@ class MilestoneContextMenu(ContextMenu):
 
     usedfor = IMilestone
 
-    links = ['edit', 'admin', 'subscribe']
+    links = ['edit', 'admin', 'subscribe', 'publish_release', 'view_release']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -68,6 +68,27 @@ class MilestoneContextMenu(ContextMenu):
         enabled = not IProjectMilestone.providedBy(self.context)
         return Link('+subscribe', 'Subscribe to bug mail',
                     icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def publish_release(self):
+        text = 'Publish release'
+        # Releases only exist for products.
+        # A milestone can only have a single product release.
+        enabled = (not IProjectMilestone.providedBy(self.context)
+                   and self.context.product_release is None)
+        return Link('+addrelease', text, icon='add', enabled=enabled)
+
+    def view_release(self):
+        text = 'View release'
+        # Releases only exist for products.
+        if (not IProjectMilestone.providedBy(self.context)
+            and self.context.product_release is not None):
+            enabled = True
+            url = canonical_url(self.context.product_release)
+        else:
+            enabled = False
+            url = '.'
+        return Link(url, text, enabled=enabled)
 
 
 class MilestoneView(LaunchpadView):
@@ -132,7 +153,7 @@ class MilestoneAddView(LaunchpadFormView):
     """A view for creating a new Milestone."""
 
     schema = IMilestone
-    field_names = ['name', 'dateexpected', 'description']
+    field_names = ['name', 'dateexpected', 'summary']
     label = "Register a new milestone"
 
     custom_widget('dateexpected', DateWidget)
@@ -143,7 +164,7 @@ class MilestoneAddView(LaunchpadFormView):
         milestone = self.context.newMilestone(
             name=data.get('name'),
             dateexpected=data.get('dateexpected'),
-            description=data.get('description'))
+            summary=data.get('summary'))
         self.next_url = canonical_url(self.context)
 
     @property
@@ -156,11 +177,11 @@ class MilestoneEditView(LaunchpadEditFormView):
 
     This view supports editing of properties such as the name, the date it is
     expected to complete, the milestone description, and whether or not it is
-    visible (i.e. active).
+    active (i.e. active).
     """
 
     schema = IMilestone
-    field_names = ['name', 'visible', 'dateexpected', 'description']
+    field_names = ['name', 'active', 'dateexpected', 'summary']
     label = "Modify milestone details"
 
     custom_widget('dateexpected', DateWidget)
