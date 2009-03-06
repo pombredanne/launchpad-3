@@ -24,11 +24,10 @@ import itertools
 import random
 import re
 
-
 from storm.store import Store
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
-from zope.component import getUtility
+from zope.component import adapts, getUtility
 
 import pytz
 
@@ -66,6 +65,7 @@ from canonical.launchpad.interfaces.shipit import (
     ShippingService, SOFT_MAX_SHIPPINGRUN_SIZE)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet)
+from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.karma import Karma
 from canonical.launchpad.database.person import Person
@@ -374,10 +374,10 @@ class ShippingRequest(SQLBase):
         if whoapproved is None:
             self.whoapproved = None
         else:
-            # Need to assign directly to whocancelledID to bypass storm.
-            # Otherwise we may get an error if whocancelled came from a
-            # different store than this request's one.
-            self.whoapprovedID = whoapproved.id
+            # XXX: salgado, 2009-03-06: Need this hack here to get the
+            # reviewer from the same account that we come from.  Otherwise
+            # storm will complain.
+            self.whoapproved = Store.of(self).get(Account, whoapproved.id)
 
     def cancel(self, whocancelled):
         """See IShippingRequest"""
@@ -388,10 +388,10 @@ class ShippingRequest(SQLBase):
         if whocancelled is None:
             self.whocancelled = None
         else:
-            # Need to assign directly to whocancelledID to bypass storm.
-            # Otherwise we may get an error if whocancelled came from a
-            # different store than this request's one.
-            self.whocancelledID = whocancelled.id
+            # XXX: salgado, 2009-03-06: Need this hack here to get the
+            # reviewer from the same account that we come from.  Otherwise
+            # storm will complain.
+            self.whocancelled = Store.of(self).get(Account, whocancelled.id)
 
     def addressIsDuplicated(self):
         """See IShippingRequest"""
@@ -1692,6 +1692,7 @@ class ShipItSurveySet:
 class ShipitAccount:
     """See `IShipitAccount`."""
     implements(IShipitAccount)
+    adapts(IAccount)
 
     def __init__(self, account):
         self.account = account
