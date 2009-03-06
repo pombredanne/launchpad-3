@@ -199,7 +199,7 @@ class FakeProduct(FakeDatabaseObject):
 
     @property
     def default_stacked_on_branch(self):
-        b = self.development_focus.user_branch
+        b = self.development_focus.branch
         if b is None:
             return None
         elif b._mirrored:
@@ -211,7 +211,7 @@ class FakeProduct(FakeDatabaseObject):
 class FakeProductSeries(FakeDatabaseObject):
     """Fake product series."""
 
-    user_branch = None
+    branch = None
 
 
 class FakeScriptActivity(FakeDatabaseObject):
@@ -353,7 +353,7 @@ class FakeObjectFactory(ObjectFactory):
         if branch is None:
             branch = self.makeBranch(product=product)
         branch._mirrored = True
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
         return branch
 
 class FakeBranchPuller:
@@ -366,7 +366,7 @@ class FakeBranchPuller:
         default_branch = ''
         if branch.product is not None:
             series = branch.product.development_focus
-            user_branch = series.user_branch
+            user_branch = series.branch
             if (user_branch is not None
                 and not (
                     user_branch.private
