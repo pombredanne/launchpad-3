@@ -142,6 +142,9 @@ class ITranslationImportQueueEntry(Interface):
         title=_("The timestamp when the status was changed."),
         required=True)
 
+    is_targeted_to_ubuntu = Attribute(
+        "True if this entry is to be imported into the Ubuntu distribution.")
+
     sourcepackage = Attribute("The sourcepackage associated with this entry.")
 
     guessed_potemplate = Attribute(

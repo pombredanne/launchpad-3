@@ -23,7 +23,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.hastranslationimports import (
     HasTranslationImportsView)
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
     ITranslationImportQueue, RosettaImportStatus, TranslationFileType)
@@ -67,9 +66,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         if self.context.sourcepackagename is not None:
             field_values['sourcepackagename'] = self.context.sourcepackagename
-        if (self.context.distroseries is not None and
-            self.context.distroseries.distribution == 
-            getUtility(ILaunchpadCelebrities).ubuntu):
+        if self.context.is_targeted_to_ubuntu:
             if self.context.potemplate is None:
                 # Default for Ubuntu templates is to
                 # include them in languagepacks.
@@ -77,7 +74,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             else:
                 field_values['languagepack'] = (
                     self.context.potemplate.languagepack)
-        if( file_type in (TranslationFileType.POT,
+        if (file_type in (TranslationFileType.POT,
                           TranslationFileType.UNSPEC) and
                           self.context.potemplate is not None):
             field_values['name'] = (
@@ -129,9 +126,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             # useful here.
             self.field_names.remove('sourcepackagename')
 
-        if (self.context.distroseries is None or
-            self.context.distroseries.distribution != 
-            getUtility(ILaunchpadCelebrities).ubuntu):
+        if not self.context.is_targeted_to_ubuntu:
             # Only show languagepack for Ubuntu packages.
             self.field_names.remove('languagepack')
 
@@ -317,9 +312,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             potemplate.from_sourcepackagename = (
                 self.context.sourcepackagename)
 
-        if (self.context.distroseries is not None and
-            self.context.distroseries.distribution == 
-            getUtility(ILaunchpadCelebrities).ubuntu):
+        if self.context.is_targeted_to_ubuntu:
             potemplate.languagepack = languagepack
 
         return potemplate
