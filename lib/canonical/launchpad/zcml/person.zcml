@@ -533,7 +533,7 @@
     name="+subscribedbugs"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
-    class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
+    class="canonical.launchpad.browser.PersonSubscribedBugTaskSearchListingView"
     permission="zope.Public"
     template="../templates/buglisting-embedded-advanced-search.pt"
     />
