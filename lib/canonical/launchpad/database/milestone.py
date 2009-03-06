@@ -82,7 +82,7 @@ class HasMilestonesMixin:
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
                                 Milestone.active == True))
-        return sorted(result, key=self.milestone_sort_key, reverse=True)
+        return sorted(result, key=milestone_sort_key, reverse=True)
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):

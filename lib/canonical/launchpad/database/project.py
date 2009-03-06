@@ -375,8 +375,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         milestones = shortlist(
             [ProjectMilestone(self, name, dateexpected, active)
              for name, dateexpected, active in result])
-        return sorted(milestones, key=HasMilestonesMixin.milestone_sort_key,
-                      reverse=True)
+        return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     @property
     def milestones(self):
