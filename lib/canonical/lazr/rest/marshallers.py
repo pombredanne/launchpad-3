@@ -35,10 +35,10 @@ from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from canonical.config import config
+from lazr.uri import URI
 
+from canonical.config import config
 from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
-from canonical.launchpad.webapp.url import urlsplit
 
 from canonical.lazr.interfaces.rest import (
     IFieldMarshaller, IUnmarshallingDoesntNeedValue)
@@ -61,7 +61,12 @@ class URLDereferencingMixin:
         :raise NotFound: If the URL does not designate a
             published object.
         """
-        (protocol, host, path, query, fragment) = urlsplit(url)
+        uri = URI(url)
+        protocol = uri.scheme
+        host = uri.host
+        path = uri.path
+        query = uri.query
+        fragment = uri.fragment
 
         request_host = self.request.get('HTTP_HOST')
         if config.vhosts.use_https:
