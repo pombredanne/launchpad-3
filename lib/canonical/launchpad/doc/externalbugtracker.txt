@@ -456,8 +456,18 @@ watches, the getModifiedRemoteBugs() method won't be called.
 The method that determines which remote bug IDs need to be updated is
 _getRemoteIdsToCheck(), which returns a dict containing three lists:
 
- * all_remote_ids: The list of all remote IDs to be checked for this run.
+ * all_remote_ids: The list of all the remote IDs that were considered
+   for checking in this run. This includes IDs which: have comments to
+   be pushed, have never been checked or have not been checked for 24
+   hours.
  * remote_ids_to_check: The subset of all_remote_ids that need to be checked.
+   This list only includes those items from all_remote_ids that actually
+   need checking. For many bug trackers this list and all_remote_ids
+   will be the same, but for those bug trackers where Launchpad can
+   check to see if a remote bug has changed since it was last checked
+   this list will not include bugs that have not changed remotely (and
+   so don't need checking). The difference between this list and
+   all_remote_ids will be returned in unmodified_remote_ids.
  * unmodified_remote_ids: The subset of all_remote_ids that haven't changed
    on the remote server and so don't need to be checked.
 
