@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'get_bzr_path',
     'get_bzr_plugins_path',
+    'iter_list_chunks',
     ]
 
 
@@ -17,6 +18,15 @@ import os
 from bzrlib.plugin import load_plugins
 
 from canonical.config import config
+
+
+def iter_list_chunks(a_list, size):
+    """Iterate over `a_list` in chunks of size `size`.
+
+    I'm amazed this isn't in itertools (mwhudson).
+    """
+    for i in range(0, len(a_list), size):
+        yield a_list[i:i+size]
 
 
 def get_bzr_path():
