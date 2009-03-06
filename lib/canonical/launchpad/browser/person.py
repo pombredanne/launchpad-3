@@ -2198,9 +2198,20 @@ class PersonSubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
 
-    def search(self):
-        return BugTaskSearchListingView.search(
-            self, extra_params={'subscriber': self.context})
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
+        """Return the bugs subscribed to by a person."""
+        if context is None:
+            context = self.context
+
+        if extra_params is None:
+            extra_params = dict()
+        else:
+            extra_params = dict(extra_params)
+        extra_params['subscriber'] = context
+
+        sup = super(PersonSubscribedBugTaskSearchListingView, self)
+        return sup.searchUnbatched(searchtext, context, extra_params)
 
     def getSearchPageHeading(self):
         """The header for the search page."""
