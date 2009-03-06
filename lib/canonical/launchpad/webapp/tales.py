@@ -34,9 +34,9 @@ from canonical.launchpad.interfaces import (
     BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
     ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+    IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.person import (
-    IPerson, IPersonSet, PersonVisibility)
+    IPerson, IPersonSet)
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -974,7 +974,8 @@ class TeamFormatterAPI(PersonFormatterAPI):
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
             return self._hidden
-        return super(TeamFormatterAPI, self).unique_displayname(view_name, rootsite)
+        return super(TeamFormatterAPI, self).unique_displayname(view_name,
+                                                                rootsite)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
@@ -2504,7 +2505,8 @@ class FormattersAPI:
                 css_class = 'diff-comment text'
             else:
                 css_class = 'text'
-            result.append('<td class="%s">%s</td>' % (css_class, escape(line)))
+            result.append('<td class="%s">%s</td>' %
+                          (css_class, escape(line)))
             result.append('</tr>')
 
         result.append('</table>')
