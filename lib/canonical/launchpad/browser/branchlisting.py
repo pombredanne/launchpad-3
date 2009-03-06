@@ -58,6 +58,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
@@ -790,16 +791,49 @@ class PersonSubscribedBranchesView(PersonBaseBranchListingView):
         return getUtility(IAllBranches).subscribedBy(self.context)
 
 
-class PersonTeamBranchesView(LaunchpadView):
-    """View for team branches portlet."""
+class BaseTeamBranchesView(LaunchpadView):
+    """Base class for both Person and Person in Product listings."""
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).visibleByUser(self.user)
+
+    def _createItem(self, team):
+        """Return a dict of the team, and the thing to get the URL from."""
+        return {'team': team, 'url_provider': team}
+
+    def _getPerson(self):
+        return self.context
 
     @cachedproperty
     def teams_with_branches(self):
         def team_has_branches(team):
-            return getUtility(IAllBranches).ownedBy(team).visibleByUser(
-                self.user).count() > 0
-        return [team for team in self.context.teams_participated_in
-                if team_has_branches(team) and team != self.context]
+            return self._getCollection().ownedBy(team).count() > 0
+        person = self._getPerson()
+        return [self._createItem(team)
+                for team in person.teams_participated_in
+                if team_has_branches(team) and team != person]
+
+
+class PersonTeamBranchesView(BaseTeamBranchesView):
+    """View for team branches portlet."""
+
+
+class PersonProductTeamBranchesView(BaseTeamBranchesView):
+    """View for team branches portlet."""
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).visibleByUser(self.user).inProduct(
+                self.context.product)
+
+    def _createItem(self, team):
+        """Return a tuple of the team, and the thing to get the URL from."""
+        return {
+            'team': team,
+            'url_provider': getUtility(IPersonProductFactory).create(
+                team, self.context.product)}
+
+    def _getPerson(self):
+        return self.context.person
 
 
 class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):

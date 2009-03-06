@@ -44,6 +44,14 @@
       template="../templates/person-branches.pt"
       />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+      class="canonical.launchpad.browser.branchlisting.PersonProductTeamBranchesView"
+      name="+portlet-teambranches"
+      template="../templates/person-portlet-teambranches.pt"
+      permission="zope.Public"
+      />
+
   <securedutility
       component="canonical.launchpad.database.personproduct.PersonProduct"
       provides="canonical.launchpad.interfaces.personproduct.IPersonProductFactory" >
