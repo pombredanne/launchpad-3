@@ -67,12 +67,11 @@ class URLDereferencingMixin:
         else:
             site_protocol = 'http'
             default_port = '80'
-        request_host_and_port = self.request.get('HTTP_HOST').split(':', 2)
-        if len(request_host_and_port) == 1:
-            request_host = request_host_and_port[0]
-            request_port = default_port
+        request_host = self.request.get('HTTP_HOST', 'localhost')
+        if ':' in request_host:
+            request_host, request_port = request_host.split(':', 2)
         else:
-            request_host, request_port = request_host_and_port
+            request_port = default_port
 
         uri = URI(url)
         protocol = uri.scheme

@@ -1345,7 +1345,7 @@ class WebServiceRequestTraversal:
         return self.publication.getResource(self, result)
 
     def _removeVirtualHostTraversals(self):
-        """Remove the /api and /[version] traversal names."""
+        """Remove the /[path_override] and /[version] traversal names."""
         names = list()
         config = getUtility(IWebServiceConfiguration)
         api = self._popTraversal(config.path_override)
