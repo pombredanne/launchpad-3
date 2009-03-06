@@ -1041,7 +1041,7 @@ class BrowserWindowDimensions(LaunchpadView):
 
 
 def get_launchpad_views(cookies):
-    """The state of optional page elements that user may choose to view.
+    """The state of optional page elements the user may choose to view.
 
     :param cookies: The request.cookies object that contains launchpad_views.
     :return: A dict of all the view states.
@@ -1053,8 +1053,13 @@ def get_launchpad_views(cookies):
     if len(cookie) > 0:
         pairs = cookie.split('&')
         for pair in pairs:
-            key, value = pair.split('=')
+            parts = pair.split('=')
+            if len(parts) != 2:
+                # The cookie is malformed, possibly hacked.
+                continue
+            key, value = parts
             if not key in views:
+                # The cookie may be hacked.
                 continue
             # 'false' is the value that the browser script sets to disable a
             # part of a page. Any other value is considered to be 'true'.

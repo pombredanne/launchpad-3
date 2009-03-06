@@ -96,7 +96,7 @@ After a member has set his location, the map will be rendered.
     >>> team_view.request.needs_gmap2
     True
 
-The small_maps key in the launchpad_views cookie can be set of the viewing
+The small_maps key in the launchpad_views cookie can be set by the viewing
 user to 'false' to indicate that small maps are not wanted.
 
     >>> cookie = 'launchpad_views=small_maps=false'

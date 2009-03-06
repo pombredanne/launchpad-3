@@ -141,8 +141,8 @@ email addresses state is NONE_AVAILABLE.
 The Person profile page contains the location portlet that shows a map.
 The map requires the google GMap JavaScript to display, so the views set
 the state of the request's needs_gmap2 attribute to True only when the
-user has set his latitude, it is visible, sand the viewing user wishes
-to see it. The map is not rendered if the user has set his not location.
+user has set his latitude, it is visible, and the viewing user wishes
+to see it. The map is not rendered if the user has not set his location.
 
     >>> sample_person.latitude is None
     True
@@ -190,10 +190,10 @@ the map_portlet_html can be called.
     <script type="text/javascript">
       YUI().use('node', 'lp.mapping', function(Y) { ...
 
-The small_maps key in the launchpad_views cookie can bet set of the viewing
-user to 'false' to indicate that small maps are not wanted. The
-map_portlet_html can be called because the script so that the user can set
-small_maps to the default value of 'true'.
+The small_maps key in the launchpad_views cookie can be set of the viewing
+user to 'false' to indicate that small maps are not wanted. While needs_gmap2
+is False, the map_portlet_html property's markup is still needed to render
+the 'Show maps' checkbox.
 
     >>> cookie = 'launchpad_views=small_maps=false'
     >>> person_view = create_initialized_view(
