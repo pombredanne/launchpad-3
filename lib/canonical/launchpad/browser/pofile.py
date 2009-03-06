@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    canonical_url, enabled_with_permission, LaunchpadView,
     Link, Navigation, NavigationMenu)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
@@ -434,9 +434,19 @@ class POFileTranslateView(BaseTranslationView):
 
     def _buildBatchNavigator(self):
         """See BaseTranslationView._buildBatchNavigator."""
+
+        # Changing the "show" option resets batching.
+        old_show_option = self.request.form.get('old_show')
+        show_option_changed = (
+            old_show_option is not None and old_show_option != self.show)
+        if show_option_changed:
+            force_start = True # start will be 0, by default
+        else:
+            force_start = False
         return BatchNavigator(self._getSelectedPOTMsgSets(),
                               self.request, size=self.DEFAULT_SIZE,
-                              transient_parameters=["old_show"])
+                              transient_parameters=["old_show"],
+                              force_start=force_start)
 
     def _initializeTranslationMessageViews(self):
         """See BaseTranslationView._initializeTranslationMessageViews."""
@@ -566,22 +576,6 @@ class POFileTranslateView(BaseTranslationView):
             self.show = self.DEFAULT_SHOW
 
         self.shown_count = count_functions[self.show]()
-
-        # Changing the "show" option resets batching.
-        old_show_option = self.request.form.get('old_show')
-        show_option_changed = (
-            old_show_option is not None and old_show_option != self.show)
-        if show_option_changed:
-            if 'start' in self.request:
-                del self.request.form['start']
-
-            # Note: the BatchNavigator has now been updated so that it
-            # gets the parameters out of the request.query_string_params
-            # dict by default. Therefore, if the type of translations
-            # we are showing has changed, we need remove the 'start' option
-            # from request.query_string_params as well.
-            if 'start' in self.request.query_string_params:
-                del self.request.query_string_params['start']
 
     def _handleShowAll(self):
         """Get `POTMsgSet`s when filtering for "all" (but possibly searching).

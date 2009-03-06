@@ -19,8 +19,7 @@ from zope.schema.interfaces import IChoice
 from zope.app.form.browser import MultiCheckBoxWidget
 from zope.app.form.browser.itemswidgets import DropdownWidget, RadioWidget
 from zope.app.form.browser.widget import renderElement
-
-from canonical.lazr.enum import IEnumeratedType
+from lazr.enum import IEnumeratedType
 
 class LaunchpadDropdownWidget(DropdownWidget):
     """A Choice widget that doesn't encloses itself in <div> tags."""
