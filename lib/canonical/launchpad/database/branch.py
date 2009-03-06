@@ -73,7 +73,7 @@ from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
-from canonical.launchpad.webapp.uri import InvalidURIError, URI
+from lazr.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc import faults
 
@@ -556,6 +556,14 @@ class Branch(SQLBase):
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
         store.flush()
+
+    def getMainlineBranchRevisions(self, revision_ids):
+        return Store.of(self).find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            BranchRevision.revision == Revision.id,
+            Revision.revision_id.is_in(revision_ids))
 
     def getBranchRevision(self, sequence=None, revision=None,
                           revision_id=None):

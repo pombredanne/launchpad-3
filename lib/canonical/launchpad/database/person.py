@@ -77,6 +77,8 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -964,6 +966,17 @@ class Person(
     def isTeam(self):
         """Deprecated. Use is_team instead."""
         return self.teamowner is not None
+
+    def getMergeProposals(self, status=None, visible_by_user=None):
+        """See `IPerson`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self, status, visible_by_user=None)
 
     @property
     def mailing_list(self):

@@ -24,17 +24,22 @@ dish. Users may comment on cookbooks and on individual recipes.
     >>> from zope.interface import Interface, Attribute
     >>> from zope.schema import Bool, Bytes, Int, Text, TextLine, Object
 
-    >>> class IAuthor(Interface):
+    >>> class ITestDataObject(Interface):
+    ...     """A marker interface for data objects."""
+    ...     path = Attribute("The path portion of this object's URL. "
+    ...                      "Defined here for simplicity of testing.")
+
+    >>> class IAuthor(ITestDataObject):
     ...     name = TextLine(title=u"Name", required=True)
     ...     # favorite_recipe.schema will be set to IRecipe once
     ...     # IRecipe is defined.
     ...     favorite_recipe = Object(schema=Interface)
     ...     popularity = Int(readonly=True)
 
-    >>> class ICommentTarget(Interface):
+    >>> class ICommentTarget(ITestDataObject):
     ...     comments = Attribute('List of comments about this object.')
 
-    >>> class IComment(Interface):
+    >>> class IComment(ITestDataObject):
     ...     target = Attribute('The object containing this comment.')
     ...     text = TextLine(title=u"Text", required=True)
 
@@ -45,7 +50,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     ...     recipes = Attribute("List of recipes published in this cookbook.")
     ...     cover = Bytes(0, 5000, title=u"An image of the cookbook's cover.")
 
-    >>> class IDish(Interface):
+    >>> class IDish(ITestDataObject):
     ...     name = TextLine(title=u"Name", required=True)
     ...     recipes = Attribute("List of recipes for this dish.")
 
@@ -63,14 +68,14 @@ dish. Users may comment on cookbooks and on individual recipes.
 Here's the interface for the 'set' objects that manage the authors,
 cookbooks, and dishes. The inconsistent naming is intentional.
 
-    >>> class IAuthorSet(Interface):
+    >>> class IAuthorSet(ITestDataObject):
     ...     def getAllAuthors(self):
     ...         "Get all authors."
     ...
     ...     def getAuthor(self, name):
     ...         "Retrieve a single author by name."
 
-    >>> class ICookbookSet(Interface):
+    >>> class ICookbookSet(ITestDataObject):
     ...     def getAll(self):
     ...         "Get all cookbooks."
     ...
@@ -80,7 +85,7 @@ cookbooks, and dishes. The inconsistent naming is intentional.
     ...     def findRecipes(self, name):
     ...         "Find recipes with a given name, across cookbooks."
 
-    >>> class IDishSet(Interface):
+    >>> class IDishSet(ITestDataObject):
     ...     def getAll(self):
     ...         "Get all dishes."
     ...
@@ -91,9 +96,23 @@ cookbooks, and dishes. The inconsistent naming is intentional.
 Here are simple implementations of IAuthor, IComment, ICookbook, IDish,
 and IRecipe.
 
-    >>> from zope.security.checker import CheckerPublic
+    >>> from zope.component import getMultiAdapter, provideAdapter
     >>> from zope.interface import implements
+    >>> from zope.security.checker import CheckerPublic
+    >>> from zope.traversing.browser.interfaces import IAbsoluteURL
     >>> from canonical.lazr.security import protect_schema
+    >>> class BaseAbsoluteURL:
+    ...     """A basic, extensible implementation of IAbsoluteURL."""
+    ...     implements(IAbsoluteURL)
+    ...
+    ...     def __init__(self, context, request):
+    ...         self.context = context
+    ...         self.request = request
+    ...
+    ...     def __str__(self):
+    ...         return "http://api.launchpad.dev/beta/" + self.context.path
+    ...
+    ...     __call__ = __str__
 
     >>> class Author:
     ...     implements(IAuthor)
@@ -101,15 +120,36 @@ and IRecipe.
     ...         self.name = name
     ...         self.favorite_recipe = None
     ...         self.popularity = 1
+    ...
+    ...     @property
+    ...     def path(self):
+    ...         return 'authors/' + quote(self.name)
+
     >>> protect_schema(Author, IAuthor, write_permission=CheckerPublic)
 
-    >>> class Comment(object):
+    >>> class Comment:
     ...     implements(IComment)
+    ...
     ...     def __init__(self, target, text):
     ...         self.target = target
     ...         self.text = text
     ...         self.target.comments.append(self)
+    ...
+
     >>> protect_schema(Comment, IComment, write_permission=CheckerPublic)
+
+    >>> class CommentAbsoluteURL(BaseAbsoluteURL):
+    ...     """Code for generating the URL to a comment.
+    ...
+    ...     The URL is based on the URL of the ICommentTarget on which
+    ...     this is a comment.
+    ...     """
+    ...     def __str__(self):
+    ...         base = getMultiAdapter((self.context.target, request),
+    ...                                IAbsoluteURL)()
+    ...         return base + "/comments/%d" % (
+    ...             self.context.target.comments.index(self.context)+1)
+    ...     __call__ = __str__
 
     >>> class Cookbook:
     ...     implements(ICookbook)
@@ -120,6 +160,11 @@ and IRecipe.
     ...         self.comments = []
     ...         self.cuisine = cuisine
     ...         self.cover = None
+    ...
+    ...     @property
+    ...     def path(self):
+    ...         return 'cookbooks/' + quote(self.name)
+
     >>> protect_schema(Cookbook, ICookbook, write_permission=CheckerPublic)
 
     >>> class Dish:
@@ -127,10 +172,14 @@ and IRecipe.
     ...     def __init__(self, name):
     ...         self.name = name
     ...         self.recipes = []
+    ...     @property
+    ...     def path(self):
+    ...         return 'dishes/' + quote(self.name)
     >>> protect_schema(Dish, IDish, write_permission=CheckerPublic)
 
     >>> class Recipe:
     ...     implements(IRecipe)
+    ...     path = ''
     ...     def __init__(self, id, cookbook, dish, instructions,
     ...                  private=False):
     ...         self.id = id
@@ -141,8 +190,34 @@ and IRecipe.
     ...         self.instructions = instructions
     ...         self.comments = []
     ...         self.private = private
+
     >>> protect_schema(Recipe, IRecipe, read_permission='launchpad.View',
     ...                write_permission=CheckerPublic)
+
+    >>> class RecipeAbsoluteURL(BaseAbsoluteURL):
+    ...     """Code for generating the URL to a recipe.
+    ...
+    ...     The URL is based on the URL of the cookbook to which
+    ...     this recipe belongs.
+    ...     """
+    ...     def __str__(self):
+    ...         base = getMultiAdapter((self.context.cookbook, request),
+    ...                                IAbsoluteURL)()
+    ...         return base + "/recipes/%s" % quote(self.context.dish.name)
+    ...     __call__ = __str__
+
+
+We implement the standard Zope IAbsoluteURL interface to generate URLs
+for these objects.
+
+    >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+    >>> provideAdapter(BaseAbsoluteURL, [ITestDataObject, IDefaultBrowserLayer],
+    ...                IAbsoluteURL)
+    >>> provideAdapter(RecipeAbsoluteURL, [IRecipe, IDefaultBrowserLayer],
+    ...                IAbsoluteURL)
+    >>> provideAdapter(CommentAbsoluteURL, [IComment, IDefaultBrowserLayer],
+    ...                IAbsoluteURL)
+
 
 Here are the "model objects" themselves:
 
@@ -178,8 +253,9 @@ Here are the "model objects" themselves:
 Here's a simple CookbookSet with a predefined list of cookbooks.
 
     >>> from zope.component import provideUtility
-    >>> class CookbookSet:
+    >>> class CookbookSet(BaseAbsoluteURL):
     ...     implements(ICookbookSet)
+    ...     path = 'cookbooks'
     ...     def __init__(self):
     ...         self.cookbooks = COOKBOOKS
     ...
@@ -219,8 +295,9 @@ Here's a simple CookbookSet with a predefined list of cookbooks.
 
 Here's a simple AuthorSet with predefined authors.
 
-    >>> class AuthorSet:
+    >>> class AuthorSet(BaseAbsoluteURL):
     ...     implements(IAuthorSet)
+    ...     path = 'authors'
     ...     def __init__(self):
     ...         self.authors = AUTHORS
     ...
@@ -237,6 +314,7 @@ Here's a simple AuthorSet with predefined authors.
     ...         if len(match) > 0:
     ...             return match[0]
     ...         return None
+
     >>> protect_schema(AuthorSet, IAuthorSet)
     >>> provideUtility(AuthorSet(), IAuthorSet)
 
@@ -260,8 +338,9 @@ among authors.
 
 Finally, a simple DishSet with predefined dishes.
 
-    >>> class DishSet:
+    >>> class DishSet(BaseAbsoluteURL):
     ...     implements(IDishSet)
+    ...     path = 'dishes'
     ...     def __init__(self):
     ...         self.dishes = [D1, D2, D3]
     ...
@@ -273,6 +352,7 @@ Finally, a simple DishSet with predefined dishes.
     ...         if len(match) > 0:
     ...             return match[0]
     ...         return None
+    ...
     >>> protect_schema(DishSet, IDishSet)
     >>> provideUtility(DishSet(), IDishSet)
 
@@ -284,7 +364,6 @@ lenient policy makes it possible, in general, for users to see the
 objects.
 
     >>> from canonical.launchpad.webapp.interfaces import IAuthorization
-    >>> from zope.component import provideAdapter
     >>> class OpenAuthorization:
     ...     implements(IAuthorization)
     ...     def __init__(self, context):
@@ -324,17 +403,14 @@ will prevent unauthenticated users from seeing private recipes.
 == Navigation ==
 
 The web service uses the standard Navigation components to map URLs to
-components to publish (see navigation.txt) and the standard
-ICanonicalUrlData to map content object back to URL (see
-canonical_url.txt).
+components to publish (see navigation.txt).
 
 The navigation for these components:
 
-    >>> from urllib import unquote
+    >>> from urllib import unquote, quote
     >>> from canonical.launchpad.webapp.publisher import (
     ...     Navigation, stepthrough)
-    >>> from zope.publisher.interfaces.browser import (
-    ...     IBrowserPublisher, IDefaultBrowserLayer)
+    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
 
     >>> def register_navigation(navigation, for_):
     ...     provideAdapter(navigation, [for_, IDefaultBrowserLayer],
@@ -389,69 +465,6 @@ The navigation for these components:
     ...
     ...     def traverse(self, name):
     ...         return self.top_level_names.get(name)
-
-The canonical URLs for these components:
-
-    >>> from urllib import quote
-    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-    >>> class BaseUrlData(object):
-    ...     inside = None
-    ...     def __init__(self, context):
-    ...         self.context = context
-    ...         self.rootsite = None
-    ...
-    ...     @property
-    ...     def path(self):
-    ...         return quote(self.context.name)
-
-    >>> class AuthorUrlData(BaseUrlData):
-    ...     @property
-    ...     def inside(self):
-    ...         return AuthorSet()
-    >>> provideAdapter(AuthorUrlData, [IAuthor], ICanonicalUrlData)
-
-    >>> class DishUrlData(BaseUrlData):
-    ...     @property
-    ...     def inside(self):
-    ...         return DishSet()
-    >>> provideAdapter(DishUrlData, [IDish], ICanonicalUrlData)
-
-    >>> class RecipeUrlData(BaseUrlData):
-    ...     @property
-    ...     def inside(self):
-    ...         return self.context.cookbook
-    ...     @property
-    ...     def path(self):
-    ...         return quote(u"recipes/%s" % str(self.context.dish.name))
-    >>> provideAdapter(RecipeUrlData, [IRecipe], ICanonicalUrlData)
-
-    >>> class CookbookUrlData(BaseUrlData):
-    ...     @property
-    ...     def inside(self):
-    ...         return CookbookSet()
-    >>> provideAdapter(CookbookUrlData, [ICookbook], ICanonicalUrlData)
-
-    >>> class DishSetUrlData(BaseUrlData):
-    ...     path = 'dishes'
-    >>> provideAdapter(DishSetUrlData, [IDishSet], ICanonicalUrlData)
-
-    >>> class CookbookSetUrlData(BaseUrlData):
-    ...     path = 'cookbooks'
-    >>> provideAdapter(CookbookSetUrlData, [ICookbookSet], ICanonicalUrlData)
-
-    >>> class AuthorSetUrlData(BaseUrlData):
-    ...     path = 'authors'
-    >>> provideAdapter(AuthorSetUrlData, [IAuthorSet], ICanonicalUrlData)
-
-    >>> class CommentUrlData(BaseUrlData):
-    ...     @property
-    ...     def path(self):
-    ...         return "comments/%d" % (
-    ...             self.context.target.comments.index(self.context)+1)
-    ...     @property
-    ...     def inside(self):
-    ...         return self.context.target
-    >>> provideAdapter(CommentUrlData, [Comment], ICanonicalUrlData)
 
 
 == Defining the resources ==
@@ -702,7 +715,6 @@ collection. There is a default ScopedCollection adapter that works
 whenever the scoped collection is available as an iterable attribute
 of the context.
 
-    >>> from zope.component import getMultiAdapter
     >>> from canonical.lazr.interfaces import IScopedCollection
 
     >>> def scope_collection(parent, child, name):
@@ -799,7 +811,7 @@ a named factory operation for creating a new cookbook.
     ...             author_name, title, cuisine)
     ...         self.request.response.setStatus(201)
     ...         self.request.response.setHeader(
-    ...             "Location", canonical_url(cookbook))
+    ...             "Location", absoluteURL(cookbook, self.request))
     ...         return cookbook
 
     >>> from canonical.lazr.interfaces import IResourcePOSTOperation
@@ -854,11 +866,21 @@ root of the object tree.
     ...    ILaunchpadApplication)
     >>> from canonical.lazr.interfaces import IServiceRootResource
     >>> from canonical.lazr.rest import ServiceRootResource
+    >>> from zope.traversing.browser.interfaces import IAbsoluteURL
     >>> class IMyWebServiceApplication(ILaunchpadApplication,
     ...                                IServiceRootResource):
     ...     """Marker interface for the web service."""
+
     >>> class MyServiceRootResource(ServiceRootResource):
-    ...     implements(IMyWebServiceApplication)
+    ...     implements(IMyWebServiceApplication, IAbsoluteURL)
+    ...     path = ''
+
+It's the responsibility of each web service to provide an
+implementation of IAbsoluteURL for their service root resource.
+
+    >>> provideAdapter(BaseAbsoluteURL,
+    ...     [MyServiceRootResource, IDefaultBrowserLayer], IAbsoluteURL)
+
     >>> register_navigation(RootNavigation, IMyWebServiceApplication)
 
     >>> from canonical.launchpad.webapp.servers import WebServicePublication
@@ -923,15 +945,14 @@ top-level collections of authors, cookbooks, and dishes. It's the
     >>> representation["dishes_collection_link"]
     u'http://api.launchpad.dev/beta/dishes'
 
-The standard canonical_url() function can be used to generate URLs to
+The standard absoluteURL() function can be used to generate URLs to
 content objects published on the web service. It works for the web
-service root also.
+service root, so long as you've given it an IAbsoluteURL
+implementation.
 
-    >>> from canonical.launchpad.webapp import canonical_url
-    >>> ICanonicalUrlData.providedBy(app)
-    True
-    >>> canonical_url(app)
-    u'http://api.launchpad.dev/beta/'
+    >>> from zope.traversing.browser import absoluteURL
+    >>> absoluteURL(app, request)
+    'http://api.launchpad.dev/beta/'
 
 
 === WADL documents ===

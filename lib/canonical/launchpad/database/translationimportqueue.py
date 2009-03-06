@@ -27,10 +27,11 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IDistribution, IDistroSeries, IHasTranslationImports, ILanguageSet,
-    IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
-    ISourcePackage, ITranslationImporter, ITranslationImportQueue,
-    ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
-    TranslationFileFormat, TranslationImportQueueConflictError)
+    ILaunchpadCelebrities, IPerson, IPOFileSet, IPOTemplateSet, IProduct,
+    IProductSeries, ISourcePackage, ITranslationImporter,
+    ITranslationImportQueue, ITranslationImportQueueEntry, NotFoundError,
+    RosettaImportStatus, TranslationFileFormat,
+    TranslationImportQueueConflictError)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -79,6 +80,12 @@ class TranslationImportQueueEntry(SQLBase):
     date_status_changed = UtcDateTimeCol(dbName='date_status_changed',
         notNull=True, default=DEFAULT)
     error_output = StringCol(notNull=False, default=None)
+
+    @property
+    def is_targeted_to_ubuntu(self):
+        return (self.distroseries is not None and
+            self.distroseries.distribution == 
+            getUtility(ILaunchpadCelebrities).ubuntu)
 
     @property
     def sourcepackage(self):
