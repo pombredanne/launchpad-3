@@ -652,7 +652,7 @@ series has no branch set, so the product has no
 default_stacked_on_branch.
 
     >>> product = factory.makeProduct()
-    >>> print product.development_focus.series_branch
+    >>> print product.development_focus.branch
     None
     >>> print product.default_stacked_on_branch
     None
@@ -664,7 +664,7 @@ branch.
     >>> branch = factory.makeProductBranch(name='trunk')
     >>> print branch.last_mirrored
     None
-    >>> product.development_focus.user_branch = branch
+    >>> product.development_focus.branch = branch
     >>> print product.default_stacked_on_branch
     None
     >>> branch.startMirroring()

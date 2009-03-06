@@ -73,9 +73,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_public_person, notNull=False, default=None)
-    import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
-                               default=None)
-    user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
+    branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
     # where are the tarballs released from this branch placed?
     releasefileglob = StringCol(default=None)
@@ -143,13 +141,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def security_contact(self):
         """See IProductSeries."""
         return self.product.security_contact
-
-    @property
-    def series_branch(self):
-        """See IProductSeries."""
-        if self.user_branch is not None:
-            return self.user_branch
-        return self.import_branch
 
     def getPOTemplate(self, name):
         """See IProductSeries."""
@@ -499,6 +490,5 @@ class ProductSeriesSet:
         branch_ids = [branch.id for branch in branches]
         return store.find(
             ProductSeries,
-            Or(In(ProductSeries.user_branchID, branch_ids),
-               In(ProductSeries.import_branchID, branch_ids))).order_by(
+            In(ProductSeries.branchID, branch_ids)).order_by(
             ProductSeries.name)
