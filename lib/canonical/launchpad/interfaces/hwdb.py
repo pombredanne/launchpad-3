@@ -164,10 +164,6 @@ class IHWSubmission(Interface):
             title=_(u"The HWSubmissionDevice records for this submission."),
             value_type=Reference(schema=Interface)))
 
-# Fix circular dependencies in
-# ./person.py#IPersonPublic.hardware_submissions
-IPerson['hardware_submissions'].value_type.schema = IHWSubmission
-
 
 class IHWSubmissionForm(Interface):
     """The schema used to build the HW submission form."""
