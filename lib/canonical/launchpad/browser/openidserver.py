@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, IOpenIDAuthorizationSet, IOpenIDRPConfigSet,
     IOpenIDRPSummarySet)
+from canonical.launchpad.interfaces.shipit import IShipitAccount
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -230,21 +231,21 @@ class OpenIDMixin:
             values['nickname'] = person.name
             if person.time_zone is not None:
                 values['timezone'] = person.time_zone
-            shipment = person.lastShippedRequest()
-            if shipment is not None:
-                values['x_address1'] = shipment.addressline1
-                values['x_city'] = shipment.city
-                values['country'] = shipment.country.name
-                if shipment.addressline2 is not None:
-                    values['x_address2'] = shipment.addressline2
-                if shipment.organization is not None:
-                    values['x_organization'] = shipment.organization
-                if shipment.province is not None:
-                    values['x_province'] = shipment.province
-                if shipment.postcode is not None:
-                    values['postcode'] = shipment.postcode
-                if shipment.phone is not None:
-                    values['x_phone'] = shipment.phone
+        shipment = IShipitAccount(self.account).lastShippedRequest()
+        if shipment is not None:
+            values['x_address1'] = shipment.addressline1
+            values['x_city'] = shipment.city
+            values['country'] = shipment.country.name
+            if shipment.addressline2 is not None:
+                values['x_address2'] = shipment.addressline2
+            if shipment.organization is not None:
+                values['x_organization'] = shipment.organization
+            if shipment.province is not None:
+                values['x_province'] = shipment.province
+            if shipment.postcode is not None:
+                values['postcode'] = shipment.postcode
+            if shipment.phone is not None:
+                values['x_phone'] = shipment.phone
         return [(field, values[field])
                 for field in self.sreg_field_names if field in values]
 

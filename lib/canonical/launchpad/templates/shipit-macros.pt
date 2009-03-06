@@ -142,11 +142,11 @@
 <metal:previous_requests define-macro="previous_requests">
   <tal:comment replace="nothing">
     This macro expects the following variables defined:
-        :user: The logged in user.
+        :account: An IShipitAccount for the logged in user.
   </tal:comment>
 
   <ul>
-    <li tal:repeat="pastorder user/pastShipItRequests">
+    <li tal:repeat="pastorder account/pastShipItRequests">
       <span tal:replace="pastorder/getTotalCDs" /> CDs requested
       <span
         tal:attributes="title pastorder/daterequested/fmt:datetime"

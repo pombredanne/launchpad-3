@@ -20,7 +20,7 @@ except ImportError:
 
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.codehosting.tests.helpers import LoomTestMixin
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.testing import reset_logging
 
 
