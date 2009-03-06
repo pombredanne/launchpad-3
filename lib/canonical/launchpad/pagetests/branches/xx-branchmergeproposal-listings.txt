@@ -15,7 +15,7 @@ Log-in an administrator to avoid permission problems.
 Make a trunk branch and set as the development focus branch.
 
     >>> trunk = factory.makeProductBranch(product=fooix)
-    >>> fooix.development_focus.user_branch = trunk
+    >>> fooix.development_focus.branch = trunk
 
 Make a single proposal for albert that is needing review by robert.
 

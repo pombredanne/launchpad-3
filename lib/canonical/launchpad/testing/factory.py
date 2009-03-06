@@ -107,7 +107,7 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
 from canonical.launchpad.webapp.adapter import StoreSelector
-from canonical.launchpad.webapp.interfaces import MASTER_FLAVOR
+from canonical.launchpad.webapp.interfaces import ALL_STORES, MASTER_FLAVOR
 
 SPACE = ' '
 
@@ -144,12 +144,16 @@ def default_master_store(func):
     However, if we then read it back the default Store has to be used.
     """
     def with_default_master_store(*args, **kw):
-        current_flavor = StoreSelector.getDefaultFlavor()
+        current_flavors = {}
+        for store in ALL_STORES:
+            current_flavors[store] = StoreSelector.getDefaultFlavor(store)
         try:
-            StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+            for store in ALL_STORES:
+                StoreSelector.setDefaultFlavor(store, MASTER_FLAVOR)
             return func(*args, **kw)
         finally:
-            StoreSelector.setDefaultFlavor(current_flavor)
+            for store in ALL_STORES:
+                StoreSelector.setDefaultFlavor(store, current_flavors[store])
     return with_default_master_store
 
 
@@ -632,10 +636,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         naked_branch = removeSecurityProxy(branch)
         naked_branch.startMirroring()
         naked_branch.mirrorComplete('rev1')
-        # Likewise, we might not have permission to set the user_branch of the
+        # Likewise, we might not have permission to set the branch of the
         # development focus series.
         naked_series = removeSecurityProxy(product.development_focus)
-        naked_series.user_branch = branch
+        naked_series.branch = branch
         return branch
 
     def makeBranchMergeQueue(self, name=None):
@@ -1115,14 +1119,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         MessageChunk(message=message, sequence=1, content=content)
         return message
 
-    def makeSeries(self, user_branch=None, import_branch=None,
-                   name=None, product=None):
+    def makeSeries(self, branch=None, name=None, product=None):
         """Create a new, arbitrary ProductSeries.
 
-        :param user_branch: If supplied, the branch to set as
-            ProductSeries.user_branch.
-        :param import_branch: If supplied, the branch to set as
-            ProductSeries.import_branch.
+        :param branch: If supplied, the branch to set as
+            ProductSeries.branch.
         :param product: If supplied, the name of the series.
         :param product: If supplied, the series is created for this product.
             Otherwise, a new product is created.
@@ -1135,9 +1136,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
         series = naked_product.newSeries(
-            product.owner, name, self.getUniqueString(), user_branch)
-        if import_branch is not None:
-            series.import_branch = import_branch
+            product.owner, name, self.getUniqueString(), branch)
+        if branch is not None:
+            series.branch = branch
         syncUpdate(series)
         return series
 

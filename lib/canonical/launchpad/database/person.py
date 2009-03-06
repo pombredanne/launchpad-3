@@ -78,6 +78,7 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -94,8 +95,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
-from canonical.launchpad.interfaces.logintoken import (
-    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
@@ -3368,25 +3368,10 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_person, team_id))
 
-        # Transfer the OpenIDRPSummaries to the new account.
-        IMasterStore(OpenIDRPSummary).execute("""
-            UPDATE OpenIDRPSummary
-            SET account = %s
-            WHERE account = %s
-            """ % sqlvalues(to_person.account, from_person.account))
-
-        # Flag the account as merged
+        # Flag the person as merged
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
-
-        # XXX: Commented out to please our tests, but Stuart has also changed
-        # this in one of his branches.  Will remove before landing this.
-        # And nuke any referencing Account
-        # IMasterStore(Account).execute('''
-        #     DELETE FROM Account USING Person
-        #     WHERE Person.account = Account.id AND Person.id=%(from_id)d
-        #     ''' % vars())
 
         # Append a -merged suffix to the account's name.
         name = base = "%s-merged" % from_person.name.encode('ascii')
