@@ -21,3 +21,11 @@ class IPersonProduct(Interface):
     person = Reference(IPerson)
 
     product = Reference(IProduct)
+
+
+class IPersonProductFactory(Interface):
+    """Creates `IPersonProduct`s."""
+
+    def create(person, product):
+        """Create and return an `IPersonProduct`."""
+

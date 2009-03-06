@@ -149,6 +149,8 @@ from canonical.launchpad.interfaces.launchpad import (
     INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
@@ -281,7 +283,12 @@ class BranchTraversalMixin:
             branch = getUtility(IBranchNamespaceSet).traverse(
                 self._getSegments(pillar_name))
         except (NotFoundError, InvalidNamespace):
-            return super(BranchTraversalMixin, self).traverse(pillar_name)
+            pillar = getUtility(IPillarNameSet).getByName(pillar_name)
+            if IProduct.providedBy(pillar):
+                return getUtility(IPersonProductFactory).create(
+                    self.context, pillar)
+            else:
+                return super(BranchTraversalMixin, self).traverse(pillar_name)
 
         # Normally, populating the launch bag is done by the traversal
         # mechanism. However, here we short-circuit that mechanism by

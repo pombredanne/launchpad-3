@@ -13,6 +13,36 @@
       path_expression="product/name"
       attribute_to_parent="person"/>
 
+  <browser:navigation
+    module="canonical.launchpad.browser.personproduct"
+    classes="PersonProductNavigation"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+    factory="canonical.launchpad.browser.personproduct.PersonProductBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+    name="+index" />
+
+  <browser:page
+    name="+index"
+    for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+    permission="launchpad.View"
+    template="../templates/personproduct-index.pt"
+    />
+
+  <securedutility
+      component="canonical.launchpad.database.personproduct.PersonProduct"
+      provides="canonical.launchpad.interfaces.personproduct.IPersonProductFactory" >
+    <allow
+        interface="canonical.launchpad.interfaces.personproduct.IPersonProductFactory" />
+  </securedutility>
+
 <!--
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -41,4 +71,5 @@
             template="../templates/branch-merges.pt" />
    </browser:pages>
 -->
+
 </configure>
