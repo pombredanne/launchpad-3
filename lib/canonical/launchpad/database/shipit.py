@@ -950,7 +950,7 @@ class ShippingRequestSet:
                     FROM Person, Karma
                     WHERE Person.id = Karma.person
                     GROUP BY Person.account
-                    HAVING COUNT(id) > 10);
+                    HAVING COUNT(Karma.id) > 10);
             """
         cur.execute(query)
 
@@ -1107,7 +1107,6 @@ class ShippingRequestSet:
                           SELECT recipient, has_10_karma
                           FROM previous_series_requester
                          ) AS FIRST_TIME_REQUESTERS
-                    WHERE is_admin_request IS FALSE
                     ) AS RECIPIENTS_AND_COUNTS
                 GROUP BY requests
                 ) AS REQUEST_DISTRIBUTION_AND_TOTALS
