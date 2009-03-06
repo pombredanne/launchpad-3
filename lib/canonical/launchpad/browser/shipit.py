@@ -973,7 +973,7 @@ class ShippingRequestApproveOrDenyView(
     @cachedproperty
     def shipped_shipit_requests_of_current_series(self):
         recipient = self.context.recipient
-        return list(IShipitAccount(
+        return shortlist(IShipitAccount(
             recipient).shippedShipItRequestsOfCurrentSeries())
 
     def recipientHasOtherShippedRequests(self):

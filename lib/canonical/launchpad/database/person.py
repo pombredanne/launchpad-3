@@ -2910,46 +2910,6 @@ class PersonSet:
             % vars())
         skip.append(('gpgkey','owner'))
 
-        # XXX: Will have to fix this!
-        # Update shipit shipments.
-        cur.execute('''
-            UPDATE ShippingRequest SET recipient=%(to_id)s
-            WHERE recipient = %(from_id)s AND (
-                shipment IS NOT NULL
-                OR status IN (%(cancelled)s, %(denied)s)
-                OR NOT EXISTS (
-                    SELECT TRUE FROM ShippingRequest
-                    WHERE recipient = %(to_id)s
-                        AND status = %(shipped)s
-                    LIMIT 1
-                    )
-                )
-            ''' % sqlvalues(to_id=to_id, from_id=from_id,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            denied=ShippingRequestStatus.DENIED,
-                            shipped=ShippingRequestStatus.SHIPPED))
-        # Technically, we don't need the not cancelled nor denied
-        # filter, as these rows should have already been dealt with.
-        # I'm using it anyway for added paranoia.
-        cur.execute('''
-            DELETE FROM RequestedCDs USING ShippingRequest
-            WHERE RequestedCDs.request = ShippingRequest.id
-                AND recipient = %(from_id)s
-                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
-            ''' % sqlvalues(from_id=from_id,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            denied=ShippingRequestStatus.DENIED,
-                            shipped=ShippingRequestStatus.SHIPPED))
-        cur.execute('''
-            DELETE FROM ShippingRequest
-            WHERE recipient = %(from_id)s
-                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
-            ''' % sqlvalues(from_id=from_id,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            denied=ShippingRequestStatus.DENIED,
-                            shipped=ShippingRequestStatus.SHIPPED))
-        skip.append(('shippingrequest', 'recipient'))
-
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.
         cur.execute('''
@@ -3420,11 +3380,13 @@ class PersonSet:
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
 
+        # XXX: Commented out to please our tests, but Stuart has also changed
+        # this in one of his branches.  Will remove before landing this.
         # And nuke any referencing Account
-        IMasterStore(Account).execute('''
-            DELETE FROM Account USING Person
-            WHERE Person.account = Account.id AND Person.id=%(from_id)d
-            ''' % vars())
+        # IMasterStore(Account).execute('''
+        #     DELETE FROM Account USING Person
+        #     WHERE Person.account = Account.id AND Person.id=%(from_id)d
+        #     ''' % vars())
 
         # Append a -merged suffix to the account's name.
         name = base = "%s-merged" % from_person.name.encode('ascii')
