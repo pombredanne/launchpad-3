@@ -16,7 +16,7 @@ from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
@@ -34,16 +34,16 @@ from canonical.launchpad.interfaces import (
     BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
     ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
+    IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.person import (
-    IPerson, IPersonSet, PersonVisibility)
+    IPerson, IPersonSet)
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)
@@ -1750,6 +1750,42 @@ class DurationFormatterAPI:
         # granularity of weeks, once and for all.
         weeks = int(round(seconds / (7 * 24 * 3600.0)))
         return "%s weeks" % number_name.get(weeks, str(weeks))
+
+
+class LinkFormatterAPI(ObjectFormatterAPI):
+    """Adapter from Link objects to a formatted anchor."""
+    final_traversable_names = {
+        'icon': 'icon',
+        'icon-link': 'icon_link',
+        'link-icon': 'link_icon',
+        }
+
+    def icon(self):
+        """Return the icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-icon")()
+
+    def link_icon(self):
+        """Return the text and icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-suffix")()
+
+    def icon_link(self):
+        """Return the icon and text representation of the link."""
+        return self.link(None)
+
+    def link(self, view_name, rootsite=None):
+        """Return the default representation of the link."""
+        return self._context.render()
+
+    def url(self, view_name=None):
+        """Return the URL representation of the link."""
+        if self._context.enabled:
+            return self._context.url
+        else:
+            return u''
 
 
 def clean_path_segments(request):

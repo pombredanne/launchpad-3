@@ -31,16 +31,14 @@
       <b>Karma:</b>
       <a
         id="karma-total"
-        tal:define="link overview_menu/karma"
-        tal:attributes="href link/url"
+        tal:attributes="href overview_menu/karma/url"
         tal:content="context/karma">342</a><br />
 
       <tal:ubuntero condition="context/is_ubuntero"><b>Ubuntero:</b>
         <a
           id="ubuntero"
           tal:condition="context/required:launchpad.Edit"
-          tal:define="link overview_menu/codesofconduct"
-          tal:attributes="href link/url"
+          tal:attributes="href overview_menu/codesofconduct/url"
           >Yes</a>
          <span
            id="ubuntero"

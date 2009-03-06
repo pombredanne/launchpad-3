@@ -15,6 +15,8 @@ from zope.interface import implements
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.branchmergeproposal import (
+    BranchMergeProposal)
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.distroseries import DistroSeries
@@ -24,7 +26,8 @@ from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.branch import (
     IBranchSet, user_has_special_branch_access)
-from canonical.launchpad.interfaces.branchcollection import IBranchCollection
+from canonical.launchpad.interfaces.branchcollection import (
+    IBranchCollection, InvalidFilter)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -70,6 +73,18 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self.getBranches().count()
 
+    @property
+    def store(self):
+        # Although you might think we could set the default value for store in
+        # the constructor, we can't. The IStoreSelector utility is not
+        # available at the time that the branchcollection.zcml is parsed,
+        # which means we get an error if this code is in the constructor.
+        # -- JonathanLange 2009-02-17.
+        if self._store is None:
+            return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        else:
+            return self._store
+
     def _filterBy(self, expressions, tables=None, exclude_from_search=None):
         """Return a subset of this collection, filtered by 'expressions'."""
         # NOTE: JonathanLange 2009-02-17: We might be able to avoid the need
@@ -82,28 +97,38 @@ class GenericBranchCollection:
         if expressions is None:
             expressions = []
         return self.__class__(
-            self._store,
+            self.store,
             self._branch_filter_expressions + expressions,
             self._tables + tables,
             self._exclude_from_search + exclude_from_search)
 
+    def _getBranchIdQuery(self):
+        """Return a Storm 'Select' for the branch IDs in this collection."""
+        # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
+        # decorated set, so we get at the underlying set so we can get at the
+        # private and juicy _get_select.
+        select = self.getBranches().result_set._get_select()
+        select.columns = (Branch.id,)
+        return select
+
     def getBranches(self):
         """See `IBranchCollection`."""
-        # Although you might think we could set the default value for store in
-        # the constructor, we can't. The IStoreSelector utility is not
-        # available at the time that the branchcollection.zcml is parsed,
-        # which means we get an error if this code is in the constructor.
-        # -- JonathanLange 2009-02-17.
-        if self._store is None:
-            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        else:
-            store = self._store
-        results = store.using(*(self._tables)).find(
+        results = self.store.using(*(self._tables)).find(
             Branch, *(self._branch_filter_expressions))
         def identity(x):
             return x
         # Decorate the result set to work around bug 217644.
         return DecoratedResultSet(results, identity)
+
+    def getMergeProposals(self, statuses=None):
+        """See `IBranchCollection`."""
+        expression = BranchMergeProposal.source_branchID.is_in(
+            self._getBranchIdQuery())
+        if statuses is not None:
+            expression = And(
+                BranchMergeProposal.queue_status.is_in(statuses),
+                expression)
+        return self.store.find(BranchMergeProposal, expression)
 
     def inProduct(self, product):
         """See `IBranchCollection`."""
@@ -208,7 +233,50 @@ class GenericBranchCollection:
         if (person == LAUNCHPAD_SERVICES or
             user_has_special_branch_access(person)):
             return self
+        return VisibleBranchCollection(
+            person, self._store, self._branch_filter_expressions,
+            self._tables, self._exclude_from_search)
+
+    def withBranchType(self, *branch_types):
+        return self._filterBy([Branch.branch_type.is_in(branch_types)])
+
+    def withLifecycleStatus(self, *statuses):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.lifecycle_status.is_in(statuses)])
+
+
+class VisibleBranchCollection(GenericBranchCollection):
+    """A branch collection that has special logic for visibility."""
+
+    def __init__(self, user, store=None, branch_filter_expressions=None,
+                 tables=None, exclude_from_search=None):
+        super(VisibleBranchCollection, self).__init__(
+            store=store, branch_filter_expressions=branch_filter_expressions,
+            tables=tables, exclude_from_search=exclude_from_search)
+        self._user = user
+        self._user_visibility_expression = self._getVisibilityExpression()
+
+    def _filterBy(self, expressions, tables=None, exclude_from_search=None):
+        """Return a subset of this collection, filtered by 'expressions'."""
+        # NOTE: JonathanLange 2009-02-17: We might be able to avoid the need
+        # for explicit 'tables' by harnessing Storm's table inference system.
+        # See http://paste.ubuntu.com/118711/ for one way to do that.
+        if tables is None:
+            tables = []
+        if exclude_from_search is None:
+            exclude_from_search = []
+        if expressions is None:
+            expressions = []
+        return self.__class__(
+            self._user,
+            self.store,
+            self._branch_filter_expressions + expressions,
+            self._tables + tables,
+            self._exclude_from_search + exclude_from_search)
+
+    def _getVisibilityExpression(self):
         # Everyone can see public branches.
+        person = self._user
         public_branches = Select(Branch.id, Branch.private == False)
 
         if person is None:
@@ -234,11 +302,35 @@ class GenericBranchCollection:
                                TeamParticipation.teamID,
                            TeamParticipation.person == person,
                            Branch.private == True)))
-        return self._filterBy([Branch.id.is_in(visible_branches)])
+        return visible_branches
 
-    def withBranchType(self, *branch_types):
-        return self._filterBy([Branch.branch_type.is_in(branch_types)])
-
-    def withLifecycleStatus(self, *statuses):
+    def getBranches(self):
         """See `IBranchCollection`."""
-        return self._filterBy([Branch.lifecycle_status.is_in(statuses)])
+        expressions = self._branch_filter_expressions + [
+            Branch.id.is_in(self._user_visibility_expression)]
+        results = self.store.using(*(self._tables)).find(Branch, *expressions)
+        def identity(x):
+            return x
+        # Decorate the result set to work around bug 217644.
+        return DecoratedResultSet(results, identity)
+
+    def getMergeProposals(self, statuses=None):
+        """See `IBranchCollection`."""
+        expressions = [
+            BranchMergeProposal.source_branchID.is_in(
+                self._getBranchIdQuery()),
+            BranchMergeProposal.target_branchID.is_in(
+                self._getVisibilityExpression()),
+            ]
+        if statuses is not None:
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(statuses))
+        return self.store.find(BranchMergeProposal, expressions)
+
+    def visibleByUser(self, person):
+        """See `IBranchCollection`."""
+        if person == self._user:
+            return self
+        raise InvalidFilter(
+            "Cannot filter for branches visible by user %r, already "
+            "filtering for %r" % (person, self._user))

@@ -6,12 +6,13 @@ __metaclass__ = type
 
 import gc
 
-from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDirFormat
+from bzrlib.branch import (
+    Branch, BranchFormat, BranchReferenceFormat, _legacy_formats)
 from bzrlib import errors
 from bzrlib.tests import (
-    adapt_tests, default_transport, TestCaseWithTransport, TestLoader,
+    adapt_tests, TestCaseWithTransport, TestLoader,
     TestNotApplicable)
+from bzrlib.tests.branch_implementations import BranchTestProviderAdapter
 from bzrlib.tests.bzrdir_implementations import (
     BzrDirTestProviderAdapter, TestCaseWithBzrDir)
 from bzrlib.transport.memory import MemoryServer
@@ -122,26 +123,22 @@ def load_tests(basic_tests, module, loader):
     """
     result = loader.suiteClass()
 
-    # Add a format that supports stacking.
-    from bzrlib.bzrdir import BzrDirMetaFormat1
-    from bzrlib.branch import BzrBranchFormat7
-    from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
-    stacking_format = BzrDirMetaFormat1()
-    stacking_format.set_branch_format(BzrBranchFormat7())
-    stacking_format.repository_format = RepositoryFormatKnitPack5()
-    BzrDirFormat.register_format(stacking_format)
-
     get_branch_stacked_on_url_tests = loader.loadTestsFromTestCase(
         TestGetBranchStackedOnURL)
 
-    formats = BzrDirFormat.known_formats()
-    adapter = BzrDirTestProviderAdapter(
-        default_transport,
+    # Generate a list of branch formats and their associated bzrdir formats to
+    # use.
+    combinations = [(format, format._matchingbzrdir)
+                    for format in
+                    BranchFormat._formats.values() + _legacy_formats
+                    if format != BranchReferenceFormat()]
+    adapter = BranchTestProviderAdapter(
+        # None here will cause the default vfs transport server to be used.
         None,
         # None here will cause a readonly decorator to be created
         # by the TestCaseWithTransport.get_readonly_transport method.
         None,
-        formats)
+        combinations)
     # add the tests for the sub modules
     adapt_tests(get_branch_stacked_on_url_tests, adapter, result)
 
