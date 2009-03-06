@@ -462,21 +462,16 @@ By marking all of Thunderbird's branches as Abandoned, thunderbird will
 no longer appear in the result set.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     BranchLifecycleStatus, IBranchSet)
-    >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForContext(
-    ...     context=productset.getByName('thunderbird'),
-    ...     lifecycle_statuses=None)
+    ...     BranchLifecycleStatus)
+    >>> from canonical.launchpad.interfaces.branchcollection import (
+    ...     IAllBranches)
+    >>> thunderbird_branches = getUtility(IAllBranches).inProduct(
+    ...     productset.getByName('thunderbird')).getBranches()
 
     # Only an owner, admin, or a bazaar expert can set the
     # branch.lifecycle_status.
     >>> login('foo.bar@canonical.com')
-    >>> for branch_view in thunderbird_branches:
-    ...     # XXX: MichaelHudson 2007-10-12 bug=154016: getBranchesForContext
-    ...     # returns objects from BranchWithSortKeys, which is a view and so
-    ...     # can't be modified.  Get the branch with the same id.  This can
-    ...     # go away when BranchWithSortKeys goes away, i.e. when we get
-    ...     # away from SQLObject.
-    ...     branch = getUtility(IBranchSet).get(branch_view.id)
+    >>> for branch in thunderbird_branches:
     ...     branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
 
     >>> for product in productset.getProductsWithBranches():

@@ -19,7 +19,7 @@ from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView, BranchView)
-from canonical.launchpad.browser.branchlisting import PersonBranchesView
+from canonical.launchpad.browser.branchlisting import PersonOwnedBranchesView
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, IBranchSet, IPersonSet, IProductSet)
@@ -240,7 +240,7 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
 
 
 class TestBranchBzrIdentity(TestCaseWithFactory):
-    """Test the bzr_identity on the PersonBranchesView."""
+    """Test the bzr_identity on the PersonOwnedBranchesView."""
 
     layer = DatabaseFunctionalLayer
 
@@ -253,7 +253,7 @@ class TestBranchBzrIdentity(TestCaseWithFactory):
         # the development focus branch.
         login_person(product.owner)
         product.development_focus.branch = branch
-        view = PersonBranchesView(branch.owner, LaunchpadTestRequest())
+        view = PersonOwnedBranchesView(branch.owner, LaunchpadTestRequest())
         view.initialize()
         navigator = view.branches()
         [decorated_branch] = navigator.branches()
