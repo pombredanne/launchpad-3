@@ -5,7 +5,6 @@ __metaclass__ = type
 
 __all__ = [
     'POExportView',
-    'POFileAppMenus',
     'POFileFacets',
     'POFileFilteredView',
     'POFileNavigation',
@@ -32,7 +31,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    canonical_url, enabled_with_permission, LaunchpadView,
     Link, Navigation, NavigationMenu)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
@@ -112,13 +111,6 @@ class POFileMenuMixin:
     def download(self):
         text = 'Download'
         return Link('+export', text, icon='download')
-
-
-class POFileAppMenus(ApplicationMenu, POFileMenuMixin):
-    """Application menus for `IPOFile` objects."""
-    usedfor = IPOFile
-    facet = 'translations'
-    links = ['description', 'translate', 'upload', 'download']
 
 
 class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
@@ -403,11 +395,58 @@ class POFileTranslateView(BaseTranslationView):
     # BaseTranslationView API
     #
 
+    @cachedproperty
+    def translation_group(self):
+        """Is there a translation group for this translation?
+
+        :return: TranslationGroup or None if not found.
+        """
+        # XXX 2009-02-20 Danilo (bug #332044): potemplate.translationgroups
+        # provides a list of translation groups even if it can have at
+        # most one.
+        translation_groups = self.context.potemplate.translationgroups
+        if translation_groups is not None and len(translation_groups) > 0:
+            group = translation_groups[0]
+        else:
+            group = None
+        return group
+
+    @cachedproperty
+    def translation_team(self):
+        """Is there a translation group for this translation."""
+        group = self.translation_group
+        if group is not None:
+            team = group.query_translator(self.context.language)
+        else:
+            team = None
+        return team
+
+    @cachedproperty
+    def has_any_documentation(self):
+        """Return whether there is any documentation for this POFile."""
+        if (self.translation_group is not None and
+            self.translation_group.translation_guide_url is not None):
+            return True
+        if (self.translation_team is not None and
+            self.translation_team.style_guide_url is not None):
+            return True
+        return False
+
     def _buildBatchNavigator(self):
         """See BaseTranslationView._buildBatchNavigator."""
+
+        # Changing the "show" option resets batching.
+        old_show_option = self.request.form.get('old_show')
+        show_option_changed = (
+            old_show_option is not None and old_show_option != self.show)
+        if show_option_changed:
+            force_start = True # start will be 0, by default
+        else:
+            force_start = False
         return BatchNavigator(self._getSelectedPOTMsgSets(),
                               self.request, size=self.DEFAULT_SIZE,
-                              transient_parameters=["old_show"])
+                              transient_parameters=["old_show"],
+                              force_start=force_start)
 
     def _initializeTranslationMessageViews(self):
         """See BaseTranslationView._initializeTranslationMessageViews."""
@@ -538,13 +577,6 @@ class POFileTranslateView(BaseTranslationView):
 
         self.shown_count = count_functions[self.show]()
 
-        # Changing the "show" option resets batching.
-        old_show_option = self.request.form.get('old_show')
-        show_option_changed = (
-            old_show_option is not None and old_show_option != self.show)
-        if show_option_changed and 'start' in self.request:
-            del self.request.form['start']
-
     def _handleShowAll(self):
         """Get `POTMsgSet`s when filtering for "all" (but possibly searching).
 
@@ -590,6 +622,12 @@ class POFileTranslateView(BaseTranslationView):
 
 
 class POExportView(BaseExportView):
+
+    def modifyFormat(self, format):
+        pochanged = self.request.form.get("pochanged")
+        if format == 'PO' and pochanged == 'POCHANGED':
+            return 'POCHANGED'
+        return format
 
     def processForm(self):
         return (None, [self.context])

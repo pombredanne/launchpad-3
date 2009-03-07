@@ -40,6 +40,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
@@ -54,7 +55,8 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceSet, IHWDriver, IHWDriverSet, IHWSubmission, IHWSubmissionBug,
     IHWSubmissionBugSet, IHWSubmissionDevice, IHWSubmissionDeviceSet,
     IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
-    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet)
+    IHWVendorID, IHWVendorIDSet, IHWVendorName, IHWVendorNameSet,
+    IllegalQuery)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -62,7 +64,8 @@ from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 
 # The vendor name assigned to new, unknown vendor IDs. See
 # HWDeviceSet.create().
@@ -265,7 +268,7 @@ class HWSubmissionSet:
         return result_set
 
     def search(self, user=None, device=None, driver=None, distribution=None,
-               architecture=None):
+               distroseries=None, architecture=None, owner=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         args = []
@@ -282,7 +285,14 @@ class HWSubmissionSet:
                         HWDeviceDriverLink.id)
             args.append(HWSubmissionDevice.submission == HWSubmission.id)
 
-        if distribution is not None or architecture is not None:
+        if (distribution is not None or distroseries is not None
+            or architecture is not None):
+            # We need to select a specific distribution, distroseries,
+            # and/or processor architecture.
+            if distribution and distroseries:
+                raise IllegalQuery(
+                    'Only one of `distribution` or '
+                    '`distroseries` can be present.')
             args.append(HWSubmission.distroarchseries == DistroArchSeries.id)
             if architecture is not None:
                 args.append(DistroArchSeries.architecturetag == architecture)
@@ -290,6 +300,11 @@ class HWSubmissionSet:
                 args.append(DistroArchSeries.distroseries == DistroSeries.id)
                 args.append(DistroSeries.distribution == Distribution.id)
                 args.append(Distribution.id == distribution.id)
+            if distroseries is not None:
+                args.append(DistroArchSeries.distroseries == distroseries.id)
+        if owner is not None:
+            args.append(HWSubmission.owner == owner.id)
+
         result_set = store.find(
             HWSubmission,
             self._userHasAccessStormClause(user),
@@ -302,7 +317,13 @@ class HWSubmissionSet:
         # DISTINCT clause.
         result_set.config(distinct=True)
         result_set.order_by(HWSubmission.id)
-        return result_set
+        # The Storm implementation of ResultSet.count() is incorrect if
+        # the select query uses the distinct directive (see bug #217644).
+        # DecoratedResultSet solves this problem by modifying the query
+        # to count only the records appearing in a subquery.
+        # We don't actually need to transform the results, which is why
+        # the second argument is a no-op.
+        return DecoratedResultSet(result_set, lambda result: result)
 
 
 class HWSystemFingerprint(SQLBase):
@@ -538,11 +559,11 @@ class HWDevice(SQLBase):
         SQLBase._create(self, id, **kw)
 
     def getSubmissions(self, driver=None, distribution=None,
-                       architecture=None):
+                       distroseries=None, architecture=None, owner=None):
         """See `IHWDevice.`"""
         return HWSubmissionSet().search(
-            device=self, distribution=distribution, driver=driver,
-            architecture=architecture)
+            device=self, driver=driver, distribution=distribution,
+            distroseries=distroseries, architecture=architecture, owner=owner)
 
     @property
     def drivers(self):
@@ -664,6 +685,13 @@ class HWDriver(SQLBase):
     name = StringCol(notNull=True)
     license = EnumCol(enum=License, notNull=False)
 
+    def getSubmissions(self, distribution=None, distroseries=None,
+                       architecture=None, owner=None):
+        """See `IHWDriver.`"""
+        return HWSubmissionSet().search(
+            driver=self, distribution=distribution,
+            distroseries=distroseries, architecture=architecture, owner=owner)
+
 
 class HWDriverSet:
     """See `IHWDriver`."""
@@ -706,6 +734,32 @@ class HWDriverSet:
         """See `IHWDriverSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(HWDriver, HWDriver.id == id).one()
+
+    @property
+    def package_names(self):
+        """See `IHWDriverSet`."""
+        # We want to return a distinct set of the values of the column
+        # package_name. The attempt to do this the "standard way" with
+        # Storm has two problems:
+        # - The Storm API allows at present only the values None, True,
+        #   False for result_set.config(distinct=...), but we would need
+        #   here a value which results in the SQL clause
+        #   DISTINCT ON (package_name)
+        # - The result set entries would be tuples (package name, driver
+        #   name), but the driver name is pure noise in this context.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.execute("""
+            SELECT DISTINCT ON (package_name) package_name
+                FROM HWDriver
+                ORDER BY package_name
+                """)
+        # Return a shortlist, because returning result_set itself (which
+        # is of type PostgresResult, while results of ordinary queries are
+        # of type storm.store.ResultSet) would lead to ForbiddenAttribute
+        # errors. We have currently (2009-02-12) ca. 350 distinct package
+        # names, which is reasonably small.
+        return shortlist([record[0] for record in result_set],
+                         longest_expected=1000)
 
 
 class HWDeviceDriverLink(SQLBase):

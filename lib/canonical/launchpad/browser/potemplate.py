@@ -88,8 +88,10 @@ class POTemplateFacets(StandardLaunchpadFacets):
         StandardLaunchpadFacets.__init__(self, context)
         target = context.translationtarget
         if IProductSeries.providedBy(target):
+            self._is_product_series = True
             self.target_facets = ProductSeriesFacets(target)
         elif ISourcePackage.providedBy(target):
+            self._is_product_series = False
             self.target_facets = SourcePackageFacets(target)
         else:
             # We don't know yet how to handle this target.
@@ -139,9 +141,8 @@ class POTemplateFacets(StandardLaunchpadFacets):
 
     def branches(self):
         branches_link = self.target_facets.branches()
-        # XXX thumper: 2008-01-16
-        # See bug 183433 about changing the target.
-        # branches_link.target = self.target
+        if not self._is_product_series:
+            branches_link.target = self.target
         return branches_link
 
 

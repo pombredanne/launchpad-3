@@ -128,13 +128,39 @@ the thread that processed it.
     ...     failures. The time resolution isn't great enough to reliably
     ...     sort on it.
     ...     """
-    ...     profiles = ['-'.join(name.split('-')[3:])
+    ...     profiles = ['-'.join(name.split('-')[-4:])
     ...                 for name in os.listdir(profile_dir)]
     ...     return sorted(profiles)
 
     >>> profiles = get_profiles()
     >>> print "\n".join(profiles)
-    RootObject:index.html-MainThread.prof
+    RootObject:index.html-OOPS-...-MainThread.prof
+
+Together with the profiling information, an OOPS report is also created.
+It's not really an OOPS, but the same format is re-used to make
+analyzing it easier.
+
+    >>> from sys import stdout
+    >>> from zope.error.interfaces import IErrorReportingUtility
+    >>> logged_oops = getUtility(IErrorReportingUtility).getLastOopsReport()
+    >>> logged_oops.write(stdout)
+    Oops-Id: OOPS-...
+    Exception-Type: ProfilingOops
+    Exception-Value: None
+    Date: ...
+    Page-Id: RootObject:index.html
+    Branch: ...
+    Revision: ...
+    User: ...
+    URL: http://localhost/index.html
+    ...
+
+The OOPS id is referenced in the profiling log's filename.
+
+    >>> profiling_filename = profiles[0]
+    >>> profiling_oops_id = '-'.join(profiling_filename.split('-')[1:3])
+    >>> profiling_oops_id == logged_oops.id
+    True
 
 These profile can be loaded using the pstats2 module.
 
@@ -147,22 +173,31 @@ Making another request will create another profile.
     >>> response = http('GET / HTTP/1.0')
 
     >>> print "\n".join(get_profiles())
-    RootObject:index.html-MainThread.prof
-    RootObject:index.html-MainThread.prof
+    RootObject:index.html-OOPS-...-MainThread.prof
+    RootObject:index.html-OOPS-...-MainThread.prof
 
-If the request resulted in an OOPS, the OOPS id will be included in the
-filename. Two files are logged. One for the first request in the slave
-store, and one for the retried request in the master store:
+If the request resulted in an OOPS, the logged OOPS will have the real
+exception information, instead of the fake ProfilingOops one.  Two files
+are logged. One for the first request in the slave store, and one for
+the retried request in the master store:
 
     >>> http('GET /no-such-file HTTP/1.0', handle_errors=False)
     Traceback (most recent call last):
       ...
     NotFound:...
     >>> print "\n".join(get_profiles())
-    RootObject:index.html-MainThread.prof
-    RootObject:index.html-MainThread.prof
-    Unknown-MainThread.prof
+    RootObject:index.html-OOPS-...-MainThread.prof
+    RootObject:index.html-OOPS-...-MainThread.prof
     Unknown-OOPS-...-MainThread.prof
+    Unknown-OOPS-...-MainThread.prof
+
+    >>> oops = getUtility(IErrorReportingUtility).getLastOopsReport()
+    >>> oops.write(stdout)
+    Oops-Id: OOPS-...
+    Exception-Type: NotFound
+    ...
+    URL: http://localhost/no-such-file
+    ...
 
 
 == Profiling scripts ==
@@ -214,7 +249,7 @@ ending VSS and RSS.
     >>> print timestamp
     20...
     >>> print oops_id
-    -
+    OOPS-...
     >>> print page_id
     RootObject:index.html
 
@@ -225,27 +260,41 @@ When an OOPS is triggered by the request, its identifier is logged:
       ...
     NotFound:...
 
-Two lines are logged. The first one doesn't have an OOPS id, since the
-request was made in the slave store, and will be retried in the master
-store.
+Two lines are logged. The first one is for the request in the slave
+store. When that fails, the request is retried in the master store,
+causing another line to be logged.
 
-    >>> (timestamp, page_id, oops_id, duration,
+    >>> (timestamp, page_id, first_oops_id, duration,
     ...  start_vss, start_rss, end_vss, end_rss) = (
     ...     memory_profile_fh.readline().split())
-    >>> print oops_id
-    -
-    >>> print page_id
-    Unknown
-
-After being retried in the master store, an OOPS is finally logged.
-
-    >>> (timestamp, page_id, oops_id, duration,
-    ...  start_vss, start_rss, end_vss, end_rss) = (
-    ...     memory_profile_fh.readline().split())
-    >>> print oops_id
+    >>> print first_oops_id
     OOPS-...
     >>> print page_id
     Unknown
+
+    >>> (timestamp, page_id, second_oops_id, duration,
+    ...  start_vss, start_rss, end_vss, end_rss) = (
+    ...     memory_profile_fh.readline().split())
+    >>> print second_oops_id
+    OOPS-...
+    >>> print page_id
+    Unknown
+
+The logged OOPSes aren't the same.
+
+    >>> first_oops_id == second_oops_id
+    False
+
+The second OOPS has the real exception in its log, instead of the usual
+ProfilingOops one.
+
+    >>> oops = getUtility(IErrorReportingUtility).getLastOopsReport()
+    >>> oops.write(stdout)
+    Oops-Id: OOPS-...
+    Exception-Type: NotFound
+    ...
+    URL: http://localhost/no-such-file
+    ...
 
 
 == Clean up ==

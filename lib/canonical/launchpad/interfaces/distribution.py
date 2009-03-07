@@ -14,7 +14,7 @@ __all__ = [
     'NoSuchDistribution',
     ]
 
-from zope.schema import Choice, Datetime, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from canonical.lazr.rest.declarations import (
@@ -29,6 +29,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
@@ -74,7 +75,7 @@ class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasDrivers,
     IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
     IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
-    IMakesAnnouncements, IPillar, ISpecificationTarget):
+    IMakesAnnouncements, IPillar, ISpecificationTarget, IHasBuildRecords):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -248,6 +249,12 @@ class IDistributionPublic(
     upstream_report_excluded_packages = Attribute(
         "A list of the source packages that should not be shown on the "
         "upstream bug report for this Distribution.")
+
+    has_published_binaries = Bool(
+        title=_("Has Published Binaries"),
+        description=_("True if this distribution has binaries published "
+                      "on disk."),
+        readonly=True, required=False)
 
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().

@@ -22,7 +22,6 @@ as well as the up to five latest members who proposed themselves.
     >>> for member in team_home.recently_approved_members:
     ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
     ...     print "%s: %s" % (member.name, membership.status.title)
-    ...            
     name20: Approved
     spiv: Approved
     limi: Approved
@@ -72,33 +71,81 @@ Posting malformed data to the team home page raises an error.
     form fields.
 
 
+== +map-portlet ==
+
+The team profile page contain the location portlet that shows a map. The
+map requires the google GMap JavaScript to display, so the views set the
+state of the request's needs_gmap2 attribute to true if there are
+members who have set their location.
+
+    >>> team_view = create_initialized_view(ubuntu_team, '+index')
+    >>> team_view.has_visible_location
+    False
+    >>> team_view.request.needs_gmap2
+    False
+
+After a member has set his location, the map will be rendered.
+
+    >>> login_person(sample_person)
+    >>> sample_person.setLocation(
+    ...     38.81, 77.1, 'America/New_York', sample_person)
+
+    >>> team_view = create_initialized_view(ubuntu_team, '+index')
+    >>> team_view.has_visible_location
+    True
+    >>> team_view.request.needs_gmap2
+    True
+
+The small_maps key in the launchpad_views cookie can be set by the viewing
+user to 'false' to indicate that small maps are not wanted.
+
+    >>> cookie = 'launchpad_views=small_maps=false'
+    >>> team_view = create_initialized_view(
+    ...     ubuntu_team, '+index', cookie=cookie)
+    >>> team_view.request.needs_gmap2
+    False
+
+
 == +map ==
 
 A team's +map page will show a map with markers on the location of all
 members of that team.  That page also lists the local times of members.
 
+    >>> login('foo.bar@canonical.com')
     >>> context = factory.makeTeam(salgado)
     >>> len(context.mapped_participants)
     0
-    >>> view = create_view(context, '+map')
+    >>> view = create_initialized_view(context, '+map')
     >>> view.times
     []
+
+There are no mapped member yet, so needs_gmap2 is False, so the map will
+not be rendered.
+
+    >>> view.request.needs_gmap2
+    False
+
+Once a member is mapped, needs_gmap2 is True and the map will be rendered.
+The number of times is incremented for each timezone added.
 
     >>> london_member = factory.makePerson(
     ...     latitude=51.49, longitude=-0.13, time_zone='Europe/London')
     >>> context.addMember(london_member, sabdfl)
     >>> len(context.mapped_participants)
     1
-    >>> view = create_view(context, '+map')
+    >>> view = create_initialized_view(context, '+map')
     >>> len(view.times)
     1
+
+    >>> view.request.needs_gmap2
+    True
 
     >>> brazil_member = factory.makePerson(
     ...     latitude=-23.60, longitude=-46.64, time_zone='America/Sao_Paulo')
     >>> context.addMember(brazil_member, sabdfl)
     >>> len(context.mapped_participants)
     2
-    >>> view = create_view(context, '+map')
+    >>> view = create_initialized_view(context, '+map')
     >>> len(view.times)
     2
 

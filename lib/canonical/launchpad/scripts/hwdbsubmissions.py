@@ -662,12 +662,24 @@ class SubmissionParser(object):
             questions.append(question)
         return questions
 
+    def _parseContext(self, context_node):
+        """Parse the <context> part of a submission.
+
+        We don't do anything real right now, but simply log a warning
+        that this submission contains a <context> section, so that
+        we can parse it again later, once we have the SQL tables needed
+        to store the data.
+        """
+        self._logWarning('Submission contains unprocessed <context> data.')
+
     def _setMainSectionParsers(self):
         self._parse_system = {
             'summary': self._parseSummary,
             'hardware': self._parseHardware,
             'software': self._parseSoftware,
-            'questions': self._parseQuestions}
+            'questions': self._parseQuestions,
+            'context': self._parseContext,
+            }
 
     def parseMainSections(self, submission_doc):
         # The RelaxNG validation ensures that submission_doc has exactly

@@ -449,9 +449,67 @@ class BugWatchUpdater(object):
                 if bug_watch.unpushed_comments.any() is not None))
 
         remote_ids_to_check = sorted(
-            set(remote_new_ids + old_ids_to_check + remote_ids_with_comments))
+            set(remote_ids_with_comments)) + sorted(remote_new_ids)
 
-        return remote_ids_to_check
+        # We remove any IDs that are already in remote_ids_to_check from
+        # old_ids_to_check, since we're already going to be checking
+        # them anyway.
+        old_ids_to_check = sorted(
+            set(old_ids_to_check).difference(set(remote_ids_to_check)))
+
+        # We limit the number of watches we're updating by the
+        # ExternalBugTracker's batch_size. In an ideal world we'd just
+        # slice the bug_watches list but for the sake of testing we need
+        # to ensure that the list of bug watches is ordered by remote
+        # bug id before we do so.
+        if remotesystem.batch_size is not None:
+            # We'll recreate our remote_ids_to_check list so that it's
+            # prioritised. We always include remote ids with comments.
+            actual_remote_ids_to_check = remote_ids_with_comments
+
+            # If there is still room in the batch, add as many 'old' bug
+            # watches as possible. We do this in kind of an odd way
+            # because we need the ids to go into the list in order of
+            # priority:
+            #  1. IDs with comments.
+            #  2. IDs that haven't been checked.
+            #  3. Everything else.
+            for id_list in (sorted(remote_new_ids), sorted(old_ids_to_check)):
+                # Include first as many IDs from remote_new_ids as
+                # possible and then, if there's room as many from
+                # old_ids_to_check as possible.
+                ids_to_check_count = len(actual_remote_ids_to_check)
+                slots_left = remotesystem.batch_size - ids_to_check_count
+                if slots_left < 1:
+                    continue
+
+                actual_remote_ids_to_check = (
+                    actual_remote_ids_to_check + id_list[:slots_left])
+
+            # Now that we've worked out which IDs we want to check we
+            # can sort the list.
+            remote_ids_to_check = sorted(set(actual_remote_ids_to_check))
+        else:
+            # If there's no batch size specified, update everything.
+            remote_ids_to_check = sorted(
+                set(old_ids_to_check).union(remote_ids_to_check))
+
+        # Make sure that unmodified_remote_ids only includes IDs that
+        # could have been checked but which weren't modified on the
+        # remote server and which haven't been listed for checking
+        # otherwise (i.e. because they have comments to be pushed).
+        unmodified_old_ids = set(
+            remote_old_ids).difference(set(old_ids_to_check))
+        unmodified_remote_ids = [
+            remote_id for remote_id in unmodified_old_ids
+            if remote_id not in remote_ids_to_check]
+
+        all_remote_ids = remote_ids_to_check + unmodified_remote_ids
+        return {
+            'remote_ids_to_check': remote_ids_to_check,
+            'all_remote_ids': all_remote_ids,
+            'unmodified_remote_ids': unmodified_remote_ids,
+            }
 
     # XXX gmb 2008-11-07 [bug=295319]
     #     This method is 186 lines long. It needs to be shorter.
@@ -466,24 +524,6 @@ class BugWatchUpdater(object):
         # list here to ensure that were're doing sane things with it
         # later on.
         bug_watches = list(bug_watches_to_update)
-
-        # We limit the number of watches we're updating by the
-        # ExternalBugTracker's batch_size. In an ideal world we'd just
-        # slice the bug_watches list but for the sake of testing we need
-        # to ensure that the list of bug watches is ordered by remote
-        # bug id before we do so.
-        remote_ids = sorted(
-            set(bug_watch.remotebug for bug_watch in bug_watches))
-        if remotesystem.batch_size is not None:
-            remote_ids = remote_ids[:remotesystem.batch_size]
-
-            for bug_watch in list(bug_watches):
-                if bug_watch.remotebug not in remote_ids:
-                    bug_watches.remove(bug_watch)
-
-        self.log.info("Updating %i watches on %s" %
-            (len(bug_watches), bug_tracker_url))
-
         bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
 
         # Fetch the time on the server. We'll use this in
@@ -491,10 +531,35 @@ class BugWatchUpdater(object):
         # sync comments or not.
         self.txn.commit()
         server_time = remotesystem.getCurrentDBTime()
+        try:
+            remote_ids = self._getRemoteIdsToCheck(
+                remotesystem, bug_watches, server_time, now)
+        except TooMuchTimeSkew, error:
+            # If there's too much time skew we can't continue with this
+            # run.
+            self.txn.begin()
+            errortype = get_bugwatcherrortype_for_error(error)
+            for bug_watch_id in bug_watch_ids:
+                bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
+                bugwatch.lastchecked = UTC_NOW
+                bugwatch.last_error_type = errortype
+            self.txn.commit()
+            raise
+
+        remote_ids_to_check = remote_ids['remote_ids_to_check']
+        all_remote_ids = remote_ids['all_remote_ids']
+        unmodified_remote_ids = remote_ids['unmodified_remote_ids']
+
+        # Remove from the list of bug watches any watch whose remote ID
+        # doesn't appear in the list of IDs to check.
+        for bug_watch in list(bug_watches):
+            if bug_watch.remotebug not in remote_ids_to_check:
+                bug_watches.remove(bug_watch)
+
+        self.log.info("Updating %i watches on %s" %
+            (len(bug_watches), bug_tracker_url))
 
         try:
-            remote_ids_to_check = self._getRemoteIdsToCheck(
-                remotesystem, bug_watches, server_time, now)
             remotesystem.initializeRemoteBugDB(remote_ids_to_check)
         except Exception, error:
             # We record the error against all the bugwatches that should
@@ -513,7 +578,6 @@ class BugWatchUpdater(object):
         self.txn.begin()
         bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
             bug_watch_ids)
-        non_modified_bugs = set(remote_ids).difference(remote_ids_to_check)
 
         # Whether we can import and / or push comments is determined on
         # a per-bugtracker-type level.
@@ -547,12 +611,11 @@ class BugWatchUpdater(object):
             "local bugs: %(local_ids)s"
             )
 
-        for bug_id in remote_ids:
+        for bug_id in all_remote_ids:
             bug_watches = bug_watches_by_remote_bug[bug_id]
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
-            if bug_id in non_modified_bugs:
-                # No need to try to update it, if it wasn't modified.
+            if bug_id in unmodified_remote_ids:
                 continue
 
             # Save the remote bug URL in case we need to log an error.

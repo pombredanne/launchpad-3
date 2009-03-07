@@ -45,6 +45,8 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
+from lazr.enum import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -60,8 +62,6 @@ from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.lazr import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
@@ -345,8 +345,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary='DistroSeries')
-    milestone = exported(Choice(
-        title=_('Milestone'), required=False, vocabulary='Milestone'))
+    milestone = exported(ReferenceChoice(
+        title=_('Milestone'),
+        required=False,
+        vocabulary='Milestone',
+        schema=Interface)) # IMilestone
+
     # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
@@ -1152,6 +1156,13 @@ class IBugTaskSet(Interface):
         If more than one BugTaskSearchParams is given, return the union of
         IBugTasks which match any of them, with the results ordered by the
         orderby specified in the first BugTaskSearchParams object.
+        """
+
+    def getAssignedMilestonesFromSearch(search_results):
+        """Returns distinct milestones for the given tasks.
+
+        :param search_results: A result set yielding BugTask objects,
+            typically the result of calling `BugTaskSet.search()`.
         """
 
     def createTask(bug, product=None, productseries=None, distribution=None,

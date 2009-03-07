@@ -17,7 +17,7 @@ translation, and also reminds him that he has full editing privileges.
     ...     'evolution/trunk/+pots/evolution-2.2/es/+translate')
     >>> print_tag(admin_browser.contents, 'translation-managers')
     This translation is managed by <...testing Spanish team<...>, assigned by
-    <...testing-translation-team<...>.
+    <...Just a testing team<...>.
 
     >>> print_tag(admin_browser.contents, 'translation-access')
     You have full access to this translation.
@@ -50,7 +50,7 @@ translation group of its own, that too is shown here.
     ...     'evolution/trunk/+pots/evolution-2.2/es/+translate')
     >>> print_tag(admin_browser.contents, 'translation-managers')
     This translation is managed by <...testing Spanish team<...>, assigned by
-    <...testing-translation-team<...>, and <...gnomegroup<...>.
+    <...Just a testing team<...>, and <...gnomegroup<...>.
 
 If the two groups are identical, however, it is only listed once.
 
@@ -90,7 +90,7 @@ the same information, except she's not allowed to enter anything.
     ...     'evolution/trunk/+pots/evolution-2.2/es/+translate')
     >>> print_tag(anon_browser.contents, 'translation-managers')
     This translation is managed by <...testing Spanish team<...>, assigned by
-    <...testing-translation-team<...>.
+    <...Just a testing team<...>.
 
     >>> print_tag(anon_browser.contents, 'translation-access')
     You are not logged in.  Please log in to work on translations.
@@ -146,4 +146,3 @@ closed.
     ...     'evolution/trunk/+pots/evolution-2.2/es/+translate')
     >>> print_tag(user_browser.contents, 'translation-access')
     This translation is not open for changes.
-

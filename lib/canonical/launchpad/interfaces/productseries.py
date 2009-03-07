@@ -6,26 +6,18 @@
 __metaclass__ = type
 
 __all__ = [
-    'ImportStatus',
     'IProductSeries',
     'IProductSeriesEditRestricted',
     'IProductSeriesPublic',
     'IProductSeriesSet',
-    'RevisionControlSystems',
-    'validate_cvs_module',
-    'validate_cvs_root',
     ]
 
-import re
-
-from zope.schema import  Choice, Datetime, Int, Text, TextLine
+from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
-from CVS.protocol import CVSRoot, CvsRootError
-
-from canonical.config import config
 from canonical.launchpad.fields import (
-    ContentNameField, PublicPersonChoice, Title, URIField)
+    ContentNameField, PublicPersonChoice, Title)
+from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
@@ -37,104 +29,15 @@ from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
 from canonical.launchpad.interfaces.validation import validate_url
-
 from canonical.launchpad.validators import LaunchpadValidationError
+
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
 
-from canonical.lazr.enum import DBEnumeratedType, DBItem
-from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
     call_with, export_as_webservice_entry, export_factory_operation, exported,
     rename_parameters_as, REQUEST_USER)
-
-
-class ImportStatus(DBEnumeratedType):
-    """This schema describes the states that a SourceSource record can take
-    on."""
-
-    DONTSYNC = DBItem(1, """
-        Do Not Import
-
-        Launchpad will not attempt to make a Bazaar import.
-        """)
-
-    TESTING = DBItem(2, """
-        Testing
-
-        Launchpad has not yet attempted this import. The vcs-imports operator
-        will review the source details and either mark the series \"Do not
-        sync\", or perform a test import. If the test import is successful, a
-        public import will be created. After the public import completes, it
-        will be updated automatically.
-        """)
-
-    TESTFAILED = DBItem(3, """
-        Test Failed
-
-        The test import has failed. We will do further tests, and plan to
-        complete this import eventually, but it may take a long time. For more
-        details, you can ask on the %s mailing list
-        or on IRC in the #launchpad channel on irc.freenode.net.
-        """ % config.launchpad.users_address)
-
-    AUTOTESTED = DBItem(4, """
-        Test Successful
-
-        The test import was successful. The vcs-imports operator will lock the
-        source details for this series and perform a public Bazaar import.
-        """)
-
-    PROCESSING = DBItem(5, """
-        Processing
-
-        The public Bazaar import is being created. When it is complete, a
-        Bazaar branch will be published and updated automatically. The source
-        details for this series are locked and can only be modified by
-        vcs-imports members and Launchpad administrators.
-        """)
-
-    SYNCING = DBItem(6, """
-        Online
-
-        The Bazaar import is published and automatically updated to reflect the
-        upstream revision control system. The source details for this series
-        are locked and can only be modified by vcs-imports members and
-        Launchpad administrators.
-        """)
-
-    STOPPED = DBItem(7, """
-        Stopped
-
-        The Bazaar import has been suspended and is no longer updated. The
-        source details for this series are locked and can only be modified by
-        vcs-imports members and Launchpad administrators.
-        """)
-
-
-class RevisionControlSystems(DBEnumeratedType):
-    """Revision Control Systems
-
-    Bazaar brings code from a variety of upstream revision control
-    systems into bzr. This schema documents the known and supported
-    revision control systems.
-    """
-
-    CVS = DBItem(1, """
-        Concurrent Versions System
-
-        The Concurrent Version System is very widely used among
-        older open source projects, it was the first widespread
-        open source version control system in use.
-        """)
-
-    SVN = DBItem(2, """
-        Subversion
-
-        Subversion aims to address some of the shortcomings in
-        CVS, but retains the central server bottleneck inherent
-        in the CVS design.
-        """)
 
 
 class ProductSeriesNameField(ContentNameField):
@@ -150,37 +53,6 @@ class ProductSeriesNameField(ContentNameField):
             return self.context.product.getSeries(name)
         else:
             return self.context.getSeries(name)
-
-
-def validate_cvs_root(cvsroot):
-    try:
-        root = CVSRoot(cvsroot)
-    except CvsRootError, e:
-        raise LaunchpadValidationError(e)
-    if root.method == 'local':
-        raise LaunchpadValidationError('Local CVS roots are not allowed.')
-    if root.hostname.count('.') == 0:
-        raise LaunchpadValidationError(
-            'Please use a fully qualified host name.')
-    return True
-
-
-def validate_cvs_module(cvsmodule):
-    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
-    if not valid_module.match(cvsmodule):
-        raise LaunchpadValidationError(
-            'The CVS module contains illegal characters.')
-    if cvsmodule == 'CVS':
-        raise LaunchpadValidationError(
-            'A CVS module can not be called "CVS".')
-    return True
-
-
-def validate_cvs_branch(branch):
-    if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
-        return True
-    else:
-        raise LaunchpadValidationError('Your CVS branch name is invalid.')
 
 
 def validate_release_glob(value):
@@ -358,12 +230,15 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         readonly=True,
         description=_("The Bazaar branch for this series."))
 
-    user_branch = Choice(
-        title=_('Branch'),
-        vocabulary='BranchRestrictedOnProduct',
-        required=False,
-        description=_("The Bazaar branch for this series.  Leave blank "
-                      "if this series is not maintained in Bazaar."))
+    user_branch = exported(
+        ReferenceChoice(
+            title=_('Branch'),
+            vocabulary='BranchRestrictedOnProduct',
+            schema=IBranch,
+            required=False,
+            description=_("The Bazaar branch for this series.  Leave blank "
+                          "if this series is not maintained in Bazaar.")),
+        exported_as='branch')
 
     def getRelease(version):
         """Get the release in this series that has the specified version.
@@ -391,7 +266,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
 
-    # revision control items
     import_branch = Choice(
         title=_('Import Branch'),
         vocabulary='Branch',
@@ -401,41 +275,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                       "as the branches of individual tarball releases. "
                       "This branch is the real upstream code, mapped into "
                       "Bazaar from CVS or SVN."))
-    importstatus = Attribute("The bazaar-import status of upstream "
-        "revision control for this series. It can be NULL if we do not "
-        "have any revision control data for this series, otherwise it "
-        "will reflect our current status for importing and syncing the "
-        "upstream code and publishing it as a Bazaar branch.")
-    rcstype = Choice(title=_("Type of RCS"),
-        required=False, vocabulary=RevisionControlSystems,
-        description=_("The type of revision control used for "
-        "the upstream branch of this series. Can be CVS or Subversion."))
-    cvsroot = TextLine(title=_("Repository"), required=False,
-        constraint=validate_cvs_root,
-        description=_('The CVSROOT. '
-            'Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'))
-    cvsmodule = TextLine(title=_("Module"), required=False,
-        constraint=validate_cvs_module,
-        description=_('The path to import within the repository.'
-            ' Usually, it is the name of the project.'))
-    cvstarfileurl = Text(title=_("A URL where a tarball of the CVS "
-        "repository can be found. This can sometimes be faster than "
-        "trying to query the server for commit-by-commit data."))
-    cvsbranch = TextLine(title=_("Branch"), required=False,
-        constraint=validate_cvs_branch,
-        description=_("The branch in this module."
-            " Only MAIN branches are imported."))
-    svnrepository = URIField(title=_("Branch"), required=False,
-        description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
-            " http(s)://. Only trunk branches are imported."),
-        allowed_schemes=["http", "https", "svn", "svn+ssh"],
-        allow_userinfo=False, # Only anonymous access is supported.
-        allow_port=True,
-        allow_query=False,    # Query makes no sense in Subversion.
-        allow_fragment=False, # Fragment makes no sense in Subversion.
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
-
     # where are the tarballs released from this branch placed?
     releasefileglob = TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,
@@ -445,27 +284,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                       'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz'))
     releaseverstyle = Attribute("The version numbering style for this "
         "series of releases.")
-    # Key dates on the road to import happiness
-    dateautotested = Attribute("The date this upstream passed automatic "
-        "testing.")
-    datestarted = Attribute("The timestamp when we started the latest "
-        "sync attempt on this upstream RCS.")
-    datefinished = Attribute("The timestamp when the latest sync attempt "
-        "on this upstream RCS finished.")
-    dateprocessapproved = Attribute("The date when we approved processing "
-        "of this upstream source.")
-    datesyncapproved = Attribute("The date when we approved syncing of "
-        "this upstream source into a public Bazaar branch.")
-    # Controlling the freshness of an import
-    syncinterval = Attribute(_("The time between sync attempts for this "
-        "series. In some cases we might want to sync once a week, in "
-        "others, several times per day."))
-    datelastsynced = Attribute(_("The date on which we last "
-        "successfully synced the upstream RCS. The date of the currently "
-        "published branch data if it is older than "
-        "import_branch.last_mirrored"))
-    datepublishedsync = Attribute(_("The date of the published code was last "
-        "synced, at the time of the last sync."))
 
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
@@ -490,20 +308,6 @@ class IProductSeriesSet(Interface):
         """Return the ProductSeries with the given id.
 
         Return the default value if there is no such series.
-        """
-
-    def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):
-        """Return the ProductSeries with the given CVS details.
-
-        Return the default value if there is no ProductSeries with the
-        given details.
-        """
-
-    def getBySVNDetails(svnrepository, default=None):
-        """Return the ProductSeries with the given SVN details.
-
-        Return the default value if there is no ProductSeries with the
-        given details.
         """
 
     def getSeriesForBranches(branches):

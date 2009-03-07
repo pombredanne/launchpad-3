@@ -14,9 +14,10 @@ import re
 import rfc822
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
+from lazr.enum import enumerated_type_registry
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
@@ -34,23 +35,21 @@ from canonical.launchpad.interfaces import (
     BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
     ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.person import (
-    IPerson, IPersonSet, PersonVisibility)
+    IHasIcon, IHasLogo, IHasMugshot)
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
-from canonical.lazr import enumerated_type_registry
 from canonical.lazr.canonicalurl import nearest_adapter
 
 
@@ -108,6 +107,8 @@ class MenuAPI:
         if not self._has_facet(facet):
             raise AttributeError(facet)
         menu = queryAdapter(self._context, IApplicationMenu, facet)
+        if menu is None:
+            menu = queryAdapter(self._context, INavigationMenu, facet)
         if menu is not None:
             menu.request = self._request
             links_map = dict(
@@ -115,7 +116,7 @@ class MenuAPI:
                 for link in menu.iterlinks(request_url=self._request_url()))
         else:
             # The object has the facet, but does not have a menu, this
-            # is propbably the overview menu with is the default facet.
+            # is probably the overview menu with is the default facet.
             links_map = {}
         object.__setattr__(self, facet, links_map)
         return links_map
@@ -1084,6 +1085,68 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             '%(name)s</a>: %(title)s' % self._args(view_name))
 
 
+class PreviewDiffFormatterAPI(ObjectFormatterAPI):
+    """Formatter for preview diffs."""
+
+    def url(self, view_name=None):
+        """Use the url of the librarian file containing the diff.
+        """
+        librarian_alias = self._context.diff_text
+        if librarian_alias is None:
+            return None
+        else:
+            return librarian_alias.getURL()
+
+    def link(self, view_name):
+        """The link to the diff should show the line count.
+
+        Stale diffs will have a stale-diff css class.
+        Diffs with conflicts will have a conflict-diff css class.
+        Diffs with neither will have clean-diff css class.
+
+        The title of the diff will show the number of lines added or removed
+        if available.
+
+        :param view_name: If not None, the link will point to the page with
+            that name on this object.
+        """
+        title_words = []
+        if self._context.conflicts is not None:
+            style = 'conflicts-diff'
+            title_words.append(_('CONFLICTS'))
+        else:
+            style = 'clean-diff'
+        # Stale style overrides conflicts or clean.
+        if self._context.stale:
+            style = 'stale-diff'
+            title_words.append(_('Stale'))
+
+        if self._context.added_lines_count:
+            title_words.append(
+                _("%s added") % self._context.added_lines_count)
+
+        if self._context.removed_lines_count:
+            title_words.append(
+                _("%s removed") % self._context.removed_lines_count)
+
+        args = {
+            'line_count': _('%s lines') % self._context.diff_lines_count,
+            'style': style,
+            'title': ', '.join(title_words),
+            'url': self.url(view_name),
+            }
+        # Under normal circumstances, there will be an associated file,
+        # however if the diff is empty, then there is no alias to link to.
+        if args['url'] is None:
+            return (
+                '<span title="%(title)s" class="%(style)s">'
+                '%(line_count)s</span>' % args)
+        else:
+            return (
+                '<a href="%(url)s" title="%(title)s" class="%(style)s">'
+                '<img src="/@@/download"/>&nbsp;%(line_count)s</a>' % args)
+
+
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):
     """Adapter for IBranchSubscription objects to a formatted string."""
 
@@ -1688,6 +1751,42 @@ class DurationFormatterAPI:
         return "%s weeks" % number_name.get(weeks, str(weeks))
 
 
+class LinkFormatterAPI(ObjectFormatterAPI):
+    """Adapter from Link objects to a formatted anchor."""
+    final_traversable_names = {
+        'icon': 'icon',
+        'icon-link': 'icon_link',
+        'link-icon': 'link_icon',
+        }
+
+    def icon(self):
+        """Return the icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-icon")()
+
+    def link_icon(self):
+        """Return the text and icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-suffix")()
+
+    def icon_link(self):
+        """Return the icon and text representation of the link."""
+        return self.link(None)
+
+    def link(self, view_name, rootsite=None):
+        """Return the default representation of the link."""
+        return self._context.render()
+
+    def url(self, view_name=None):
+        """Return the URL representation of the link."""
+        if self._context.enabled:
+            return self._context.url
+        else:
+            return u''
+
+
 def clean_path_segments(request):
     """Returns list of path segments, excluding system-related segments."""
     proto_host_port = request.getApplicationURL()
@@ -1963,10 +2062,6 @@ class FormattersAPI:
                 return text
 
             root_url = config.launchpad.oops_root_url
-
-            if not root_url.endswith('/'):
-                root_url += '/'
-
             url = root_url + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
         else:
@@ -2372,6 +2467,43 @@ class FormattersAPI:
         else:
             return self._stringtoformat
 
+    def format_diff(self):
+        """Format the string as a diff in a table with line numbers."""
+        # Trim off trailing carriage returns.
+        text = self._stringtoformat.rstrip('\n')
+        if len(text) == 0:
+            return text
+        result = ['<table class="diff">']
+
+        for row, line in enumerate(text.split('\n')):
+            result.append('<tr>')
+            result.append('<td class="line-no">%s</td>' % (row+1))
+            if line.startswith('==='):
+                css_class = 'diff-file text'
+            elif (line.startswith('+++') or
+                  line.startswith('---')):
+                css_class = 'diff-header text'
+            elif line.startswith('@@'):
+                css_class = 'diff-chunk text'
+            elif line.startswith('+'):
+                css_class = 'diff-added text'
+            elif line.startswith('-'):
+                css_class = 'diff-removed text'
+            elif line.startswith('#'):
+                # This doesn't occur in normal unified diffs, but does
+                # appear in merge directives, which use text/x-diff or
+                # text/x-patch.
+                css_class = 'diff-comment text'
+            else:
+                css_class = 'text'
+            result.append(
+                '<td class="%s">%s</td>' % (css_class, escape(line)))
+            result.append('</tr>')
+
+        result.append('</table>')
+        return ''.join(result)
+
+
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
@@ -2397,6 +2529,8 @@ class FormattersAPI:
                     "you need to traverse a number after fmt:shorten")
             maxlength = int(furtherPath.pop())
             return self.shorten(maxlength)
+        elif name == 'diff':
+            return self.format_diff()
         else:
             raise TraversalError(name)
 

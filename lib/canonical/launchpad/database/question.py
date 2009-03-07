@@ -23,6 +23,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.security.proxy import isinstance as zope_isinstance
+from lazr.enum import DBItem, Item
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
@@ -61,7 +62,6 @@ from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lazr import DBItem, Item
 
 
 class notify_question_modified:
@@ -455,13 +455,33 @@ class Question(SQLBase, BugLinkTargetMixin):
                 store.flush()
                 return
 
-    def getSubscribers(self):
+    def getDirectSubscribers(self):
+        """See `IQuestion`.
+
+        This method is sorted so that it iterates like getDirectRecipients().
+        """
+        return sorted(
+            self.subscribers, key=operator.attrgetter('displayname'))
+
+    def getIndirectSubscribers(self):
+        """See `IQuestion`.
+
+        This method adds the assignee and is sorted so that it iterates like
+        getIndirectRecipients().
+        """
+        subscribers = set(
+            self.target.getAnswerContactsForLanguage(self.language))
+        if self.assignee:
+            subscribers.add(self.assignee)
+        return sorted(subscribers, key=operator.attrgetter('displayname'))
+
+    def getRecipients(self):
         """See `IQuestion`."""
-        subscribers = self.getDirectSubscribers()
-        subscribers.update(self.getIndirectSubscribers())
+        subscribers = self.getDirectRecipients()
+        subscribers.update(self.getIndirectRecipients())
         return subscribers
 
-    def getDirectSubscribers(self):
+    def getDirectRecipients(self):
         """See `IQuestion`."""
         subscribers = NotificationRecipientSet()
         reason = ("You received this question notification because you are "
@@ -469,7 +489,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         subscribers.add(self.subscribers, reason, 'Subscriber')
         return subscribers
 
-    def getIndirectSubscribers(self):
+    def getIndirectRecipients(self):
         """See `IQuestion`."""
         subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:

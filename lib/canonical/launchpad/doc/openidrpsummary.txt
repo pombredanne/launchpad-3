@@ -266,7 +266,7 @@ database does not have a constraint to guard against this.
     >>> cur.execute("""
     ...     INSERT INTO OpenIDRPSummary (
     ...         account, openid_identifier, trust_root)
-    ...     VALUES(12, 'http://openid.launchpad.dev/+id/knightsOfNi',
+    ...     VALUES(121, 'http://openid.launchpad.dev/+id/knightsOfNi',
     ...            'an-irrelevant-trust-root')
     ...     """)
 

@@ -32,8 +32,8 @@ with a link to the complete listing.
     >>> preview = find_tag_by_id(browser.contents, 'project-cloud-preview')
     >>> print extract_text(preview)
     Projects with active branches
-    evolution firefox gnome-terminal iso-codes landscape thunderbird
-    more&#8230;
+    firefox
+    see all projects&#8230;
 
     >>> print preview.fetch('a')[-1]['href']
     /+project-cloud

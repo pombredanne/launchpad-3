@@ -21,7 +21,7 @@
 <div metal:fill-slot="main"
      tal:define="context_menu context/menu:context">
 
-  <h1>Merge proposal for <tal:source content="context/source_branch/bzr_identity"/>
+  <h1>Proposal to merge branch
     <a tal:define="link context_menu/delete"
        tal:condition="link/enabled"
        tal:attributes="href link/url"
@@ -76,7 +76,7 @@
   <tal:votes replace="structure context/@@+votes"/>
 
   <tal:comments repeat="row view/comments" >
-    <div tal:content="structure row/comment/@@+fragment-summary"
+    <div tal:content="structure row/comment/@@+fragment"
          tal:attributes="style row/style" />
   </tal:comments>
 
@@ -120,10 +120,25 @@
 
   <div id="review-diff" tal:condition="context/review_diff">
   <h2>Review Diff</h2>
-  <pre tal:content="view/review_diff" />
+  <div class="boardComment attachment"
+       tal:define="attachment context/review_diff/diff/diff_text">
+    <tal:real-diff condition="attachment">
+      <div class="boardCommentDetails filename">
+        <a tal:attributes="href attachment/getURL">
+          <img src="/@@/download"/>
+          Download diff
+        </a>
+      </div>
+      <div class="boardCommentBody attachmentBody">
+        <tal:diff replace="structure view/review_diff/fmt:diff" />
+      </div>
+    </tal:real-diff>
+    <tal:empty-diff condition="not: attachment">
+      <div class="boardCommentBody attachmentBody">
+        <em>Empty</em>
+      </div>
+    </tal:empty-diff>
   </div>
-  <div class="back-link">
-    &laquo; Back to <tal:link replace="structure context/source_branch/fmt:bzr-link"/>
   </div>
 
 </div>

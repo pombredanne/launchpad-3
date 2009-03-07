@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = ['SourceForge']
 
 import re
+import urllib
 
 from BeautifulSoup import BeautifulSoup
 
@@ -14,6 +15,7 @@ from canonical.launchpad.components.externalbugtracker import (
     PrivateRemoteBug, UnknownRemoteStatusError, UnparseableBugData)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.webapp import urlsplit
 
 
 class SourceForge(ExternalBugTracker):
@@ -78,11 +80,40 @@ class SourceForge(ExternalBugTracker):
             else:
                 resolution = None
 
+            # We save the group_id and atid parameters from the
+            # query_url. They'll be returned by getRemoteProduct().
+            query_dict = {}
+            bugtracker_link = soup.find('a', text='Bugs')
+            if bugtracker_link:
+                href = bugtracker_link.findParent()['href']
+
+                # We need to replace encoded ampersands in the URL since
+                # SourceForge occasionally encodes them.
+                href = href.replace('&amp;', '&')
+                schema, host, path, query, fragment = urlsplit(href)
+
+                query_bits = query.split('&')
+                for bit in query_bits:
+                    key, value = urllib.splitvalue(bit)
+                    query_dict[key] = value
+
+                try:
+                    atid = int(query_dict.get('atid', None))
+                    group_id = int(query_dict.get('group_id', None))
+                except ValueError:
+                    atid = None
+                    group_id = None
+            else:
+                group_id = None
+                atid = None
+
             self.bugs[int(bug_id)] = {
                 'id': int(bug_id),
                 'private': private,
                 'status': status,
                 'resolution': resolution,
+                'group_id': group_id,
+                'atid': atid,
                 }
 
     def _extractErrorMessage(self, page_data):
@@ -200,3 +231,29 @@ class SourceForge(ExternalBugTracker):
             return self._status_lookup.find(status, resolution)
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)
+
+    def getRemoteProduct(self, remote_bug):
+        """Return the remote product for a given bug.
+
+        :return: A tuple of (group_id, atid) for the remote bug.
+        """
+        try:
+            remote_bug = int(remote_bug)
+        except ValueError:
+            raise InvalidBugId(
+                "remote_bug must be convertible to an integer: %s" %
+                str(remote_bug))
+
+        try:
+            remote_bug = self.bugs[remote_bug]
+        except KeyError:
+            raise BugNotFound(remote_bug)
+
+        group_id = remote_bug['group_id']
+        atid = remote_bug['atid']
+
+        if group_id is None or atid is None:
+            return None
+        else:
+            return "%s&%s" % (group_id, atid)
+

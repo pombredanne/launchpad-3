@@ -5,8 +5,10 @@
 
 __metaclass__ = type
 
+import cgi
 import pytz
 import threading
+import urllib
 import xmlrpclib
 from datetime import datetime
 
@@ -24,7 +26,7 @@ from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import (
     getMultiAdapter, getUtility, queryAdapter, queryMultiAdapter)
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
@@ -41,16 +43,18 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces import (
-    IByteStorage, ICollection, IEntry, IFeed, IHTTPResource)
+    IByteStorage, ICollection, IEntry, IEntryField, IFeed, IHTTPResource,
+    IWebBrowserInitiatedRequest)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
-    CollectionResource, EntryResource, ScopedCollection)
+    CollectionResource, EntryField, EntryFieldResource,
+    EntryResource, ScopedCollection)
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIDApplication, IPerson,
     IPersonSet, IShipItApplication, IWebServiceApplication,
-    IOAuthConsumerSet, NonceAlreadyUsed)
+    IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError, ClockSkew)
 import canonical.launchpad.versioninfo
 
 from canonical.launchpad.webapp.adapter import (
@@ -67,7 +71,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.publisher import (
@@ -467,6 +471,23 @@ class NotFoundRequestPublicationFactory:
         return (ProtocolErrorRequest, ProtocolErrorPublicationFactory(404))
 
 
+def get_query_string_params(request):
+    """Return a dict of the query string params for a request.
+
+    Defined here so that it can be used in both BasicLaunchpadRequest and
+    the LaunchpadTestRequest (which doesn't inherit from
+    BasicLaunchpadRequest).
+    """
+    query_string = request.get('QUERY_STRING', '')
+
+    # Just in case QUERY_STRING is in the environment explicitly as
+    # None (Some tests seem to do this, but not sure if it can ever
+    # happen outside of tests.)
+    if query_string is None:
+        query_string = ''
+
+    return cgi.parse_qs(query_string, keep_blank_values=True)
+
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo."""
 
@@ -482,6 +503,9 @@ class BasicLaunchpadRequest:
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
+        # Our response always vary based on authentication.
+        self.response.setHeader('Vary', 'Cookie, Authorization')
+
     @property
     def stepstogo(self):
         return StepsToGo(self)
@@ -489,7 +513,7 @@ class BasicLaunchpadRequest:
     def retry(self):
         """See IPublisherRequest."""
         new_request = super(BasicLaunchpadRequest, self).retry()
-        # propagate the list of keys we have set in the WSGI environment
+        # Propagate the list of keys we have set in the WSGI environment.
         new_request._wsgi_keys = self._wsgi_keys
         return new_request
 
@@ -513,6 +537,11 @@ class BasicLaunchpadRequest:
             raise KeyError("'%s' already present in wsgi environment." % key)
         self._orig_env[key] = value
         self._wsgi_keys.add(key)
+
+    @cachedproperty
+    def query_string_params(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return get_query_string_params(self)
 
 
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
@@ -725,6 +754,14 @@ class LaunchpadTestRequest(TestRequest):
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
 
+    It also provides the query_string_params dict that is available from
+    LaunchpadBrowserRequest.
+
+    >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar',
+    ...     QUERY_STRING='a=1&b=2&c=3')
+    >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
+    True
+
     It also provides the  hooks for popup calendar iframes:
 
     >>> request.needs_datetimepicker_iframe
@@ -787,6 +824,11 @@ class LaunchpadTestRequest(TestRequest):
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
+
+    @property
+    def query_string_params(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return get_query_string_params(self)
 
     def setPrincipal(self, principal):
         """See `IPublicationRequest`."""
@@ -957,6 +999,13 @@ class TranslationsPublication(LaunchpadBrowserPublication):
 class TranslationsBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.TranslationsLayer)
 
+    def __init__(self, body_instream, environ, response=None):
+        super(TranslationsBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Some of the responses from translations vary based on language.
+        self.response.setHeader(
+            'Vary', 'Cookie, Authorization, Accept-Language')
+
 # ---- bugs
 
 class BugsPublication(LaunchpadBrowserPublication):
@@ -972,6 +1021,14 @@ class AnswersPublication(LaunchpadBrowserPublication):
 
 class AnswersBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.AnswersLayer)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(AnswersBrowserRequest, self).__init__(
+            body_instream, environ, response)
+        # Many of the responses from Answers vary based on language.
+        self.response.setHeader(
+            'Vary', 'Cookie, Authorization, Accept-Language')
+
 
 # ---- shipit
 
@@ -1093,6 +1150,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
                 elif IBytes.providedBy(field):
                     result = self._traverseToByteStorage(
                         request, entry, field, name)
+                elif field is not None:
+                    result = EntryField(entry, field, name)
             if result is not None:
                 return result
         return super(WebServicePublication, self).traverseName(
@@ -1150,6 +1209,10 @@ class WebServicePublication(LaunchpadBrowserPublication):
               queryAdapter(ob, IEntry) is not None):
             # Object supports IEntry protocol.
             resource = EntryResource(ob, request)
+        elif (IEntryField.providedBy(ob) or
+              queryAdapter(ob, IEntryField) is not None):
+            # Object supports IEntryField protocol.
+            resource = EntryFieldResource(ob, request)
         elif queryMultiAdapter((ob, request), IHTTPResource) is not None:
             # Object can be adapted to a resource.
             resource = queryMultiAdapter((ob, request), IHTTPResource)
@@ -1173,6 +1236,38 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # encounter doomed transactions.  If it does, this will need to be
         # revisited.
         txn.commit()
+
+    def callObject(self, request, object):
+        """Help web browsers handle redirects correctly."""
+        value = super(WebServicePublication, self).callObject(
+            request, object)
+        if request.response.getStatus() / 100 == 3:
+            vhost = URI(request.getApplicationURL()).host
+            if IWebBrowserInitiatedRequest.providedBy(request):
+                # This request was (probably) sent by a web
+                # browser. Because web browsers, content negotiation,
+                # and redirects are a deadly combination, we're going
+                # to help the browser out a little.
+                #
+                # We're going to take the current request's "Accept"
+                # header and put it into the URL specified in the
+                # Location header. When the web browser makes its
+                # request, it will munge the original 'Accept' header,
+                # but because the URL it's accessing will include the
+                # old header in the "ws.accept" header, we'll still be
+                # able to serve the right document.
+                location = request.response.getHeader("Location", None)
+                if location is not None:
+                    accept = request.response.getHeader(
+                        "Accept", "application/json")
+                    qs_append = "ws.accept=" + urllib.quote(accept)
+                    uri = URI(location)
+                    if uri.query is None:
+                        uri.query = qs_append
+                    else:
+                        uri.query += '&' + qs_append
+                    request.response.setHeader("Location", str(uri))
+        return value
 
     def getPrincipal(self, request):
         """See `LaunchpadBrowserPublication`.
@@ -1201,8 +1296,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
         nonce = form.get('oauth_nonce')
         timestamp = form.get('oauth_timestamp')
         try:
-            token.ensureNonce(nonce, timestamp)
-        except NonceAlreadyUsed, e:
+            token.checkNonceAndTimestamp(nonce, timestamp)
+        except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
             raise Unauthorized('Invalid nonce/timestamp: %s' % e)
         now = datetime.now(pytz.timezone('UTC'))
         if token.permission == OAuthPermission.UNAUTHORIZED:
@@ -1215,7 +1310,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
             # Everything is fine, let's return the principal.
             pass
         principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            token.person.id, access_level=token.permission,
+            token.person.account.id, access_level=token.permission,
             scope=token.context)
 
         # Make sure the principal is a member of the beta test team.
@@ -1228,8 +1323,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
                 webservice_beta_team_name)
             person = IPerson(principal)
             if not person.inTeam(webservice_beta_team):
-                raise Unauthorized(person.name +
-                                   " is not a member of the beta test team.")
+                raise Unauthorized(
+                    person.name + " is not a member of the beta test team.")
         return principal
 
 
@@ -1259,6 +1354,11 @@ class WebServiceRequestTraversal:
         api = self._popTraversal(WEBSERVICE_PATH_OVERRIDE)
         if api is not None:
             names.append(api)
+            # Requests that use the webservice path override are
+            # usually made by web browsers. Mark this request as one
+            # initiated by a web browser, for the sake of
+            # optimizations later in the request lifecycle.
+            alsoProvides(self, IWebBrowserInitiatedRequest)
 
         # Only accept versioned URLs.
         beta = self._popTraversal('beta')
@@ -1286,6 +1386,12 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
                               LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
     implements(canonical.launchpad.layers.WebServiceLayer)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(WebServiceClientRequest, self).__init__(
+            body_instream, environ, response)
+        # Web service requests use content negotiation.
+        self.response.setHeader('Vary', 'Cookie, Authorization, Accept')
 
 
 def website_request_to_web_service_request(website_request):
@@ -1331,6 +1437,20 @@ class IdPublication(LaunchpadBrowserPublication):
 
     root_object_interface = IOpenIDApplication
 
+    def getPrincipal(self, request):
+        """Return the authenticated principal for this request.
+
+        This is only necessary because, unlike in LaunchpadBrowserPublication,
+        here we want principals representing personless accounts to be
+        returned, so that personless accounts can use our OpenID server.
+        """
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = auth_utility.authenticate(request)
+        if principal is None:
+            principal = auth_utility.unauthenticatedPrincipal()
+            assert principal is not None, "Missing unauthenticated principal."
+        return principal
+
 
 class IdBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.IdLayer)
@@ -1338,7 +1458,7 @@ class IdBrowserRequest(LaunchpadBrowserRequest):
 
 # XXX sinzui 2008-09-04 bug=264783:
 # Remove OpenIDPublication and OpenIDBrowserRequest.
-class OpenIDPublication(LaunchpadBrowserPublication):
+class OpenIDPublication(IdPublication):
     """The publication used for old OpenID requests."""
 
     root_object_interface = IOpenIDApplication

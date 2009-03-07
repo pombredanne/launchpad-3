@@ -28,16 +28,17 @@ __all__ = [
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.person import IPerson
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_read_operation,
+    exported, operation_returns_collection_of)
 
 
 #
@@ -543,6 +544,8 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             `IBinaryPackagePublishingHistory`.
         """
 
+    @operation_returns_collection_of(Interface) # Really IBuild, see below.
+    @export_read_operation()
     def getBuilds():
         """Return a list of `IBuild` objects in this publishing context.
 
@@ -925,4 +928,11 @@ inactive_publishing_status = (
     PackagePublishingStatus.OBSOLETE,
     )
 
+
+# Fix circular import problems.
+
+from canonical.launchpad.interfaces.build import IBuild
+ISourcePackagePublishingHistory['getBuilds'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IBuild
 

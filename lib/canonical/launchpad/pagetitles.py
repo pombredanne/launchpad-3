@@ -729,6 +729,8 @@ logintoken_newaccount = 'Create a new Launchpad account'
 
 logintoken_resetpassword = 'Forgotten your password?'
 
+loginservice_standalone_login = loginservice_login
+
 logintoken_validateemail = 'Confirm e-mail address'
 
 logintoken_validategpg = 'Confirm OpenPGP key'
@@ -833,7 +835,15 @@ object_translations = ContextDisplayName('Translation templates for %s')
 
 oops = 'Oops!'
 
-openid_index = 'Launchpad OpenID Server'
+openid_account_change_password = 'Change your password'
+
+def openid_account_edit(context, view):
+    return smartquote("%s's details") % view.account.displayname
+
+openid_default = 'OpenID Endpoint'
+
+def openid_index(context, view):
+    return 'Welcome %s' % view.account.displayname
 
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
@@ -1015,6 +1025,8 @@ potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
+
+product_active_reviews = 'Pending proposals'
 
 product_add_from_project = 'Register a project in your project group'
 
@@ -1261,6 +1273,8 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
+
+sourcepackage_branches = ContextDisplayName('Branches in %s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 

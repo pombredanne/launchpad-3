@@ -20,6 +20,7 @@ __all__ = [
 from zope.schema import Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface
 from zope.component import getUtility
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import sane_version
@@ -29,7 +30,6 @@ from canonical.launchpad.validators.productrelease import (
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.interfaces.person import IPerson
 
-from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
@@ -112,7 +112,12 @@ class ProductReleaseVersionField(ContentNameField):
         else:
             productseries = self.context.productseries
         releaseset = getUtility(IProductReleaseSet)
-        return releaseset.getBySeriesAndVersion(productseries, version)
+        release = releaseset.getBySeriesAndVersion(productseries, version)
+        if release == self.context:
+            # A ProductRelease may edit itself; do not report that another
+            # ProductRelease exists with the same version.
+            return None
+        return release
 
 
 class IProductReleaseFileEditRestricted(Interface):
@@ -233,7 +238,7 @@ class IProductReleasePublic(Interface):
             description= u'The specific version number assigned to this '
             'release. Letters and numbers are acceptable, for releases like '
             '"1.2rc3".',
-            readonly=True, constraint=sane_version)
+            constraint=sane_version)
         )
 
     owner = exported(

@@ -53,14 +53,15 @@ from canonical.launchpad.database.queue import (
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
-    IArchive, IArchiveSet, IDistributionArchive, IPPA, PocketNotFound,
-    SourceNotFound)
+    IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
+    PocketNotFound, SourceNotFound)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus)
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IHasBuildRecords, IBuildSet)
+    BuildStatus, IBuildSet)
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.launchpad import (
@@ -176,6 +177,11 @@ class Archive(SQLBase):
         return self.purpose == ArchivePurpose.COPY
 
     @property
+    def is_main(self):
+        """See `IArchive`."""
+        return self.purpose in MAIN_ARCHIVE_PURPOSES
+
+    @property
     def title(self):
         """See `IArchive`."""
         if self.is_ppa:
@@ -255,6 +261,13 @@ class Archive(SQLBase):
         return urlappend(
             config.archivepublisher.base_url,
             self.distribution.name + postfix)
+
+    @property
+    def signing_key_fingerprint(self):
+        if self.signing_key is not None:
+            return self.signing_key.fingerprint
+
+        return None
 
     def getPubConfig(self):
         """See `IArchive`."""
@@ -376,7 +389,8 @@ class Archive(SQLBase):
 
         return sources
 
-    def getSourcesForDeletion(self, name=None, status=None):
+    def getSourcesForDeletion(self, name=None, status=None,
+            distroseries=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -415,6 +429,11 @@ class Archive(SQLBase):
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
+
+        if distroseries is not None:
+            clauses.append("""
+                SourcePackagePublishingHistory.distroseries = %s
+            """ % sqlvalues(distroseries))
 
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
@@ -1203,6 +1222,14 @@ class ArchiveSet:
                 raise AssertionError(
                     "archive '%s' exists already in '%s'." %
                     (name, distribution.name))
+        else:
+            archive = Archive.selectOneBy(
+                owner=owner, distribution=distribution, name=name,
+                purpose=ArchivePurpose.PPA)
+            if archive is not None:
+                raise AssertionError(
+                    "Person '%s' already has a PPA named '%s'." %
+                    (owner.name, name))
 
         return Archive(
             owner=owner, distribution=distribution, name=name,

@@ -5,11 +5,12 @@
 
 from unittest import TestLoader
 
+import transaction
 from canonical.testing import (LaunchpadZopelessLayer)
 
 from canonical.config import config
 from canonical.codehosting.jobs import JobRunner
-from canonical.launchpad.database import RevisionMailJob
+from canonical.launchpad.database.branchjob import RevisionMailJob
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
@@ -102,6 +103,8 @@ class TestJobRunner(TestCaseWithFactory):
         """When an error is encountered, report an oops and continue."""
         branch, job_1, job_2 = self.makeBranchAndJobs()
         def raiseError():
+            # Ensure that jobs which call transaction.abort work, too.
+            transaction.abort()
             raise Exception('Fake exception.  Foobar, I say!')
         job_1.run = raiseError
         runner = JobRunner([job_1, job_2])

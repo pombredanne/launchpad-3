@@ -140,7 +140,7 @@
           </tr>
         </tal:keys>
 
-        <tr tal:condition="not: context/is_team">
+        <tr tal:condition="view/viewing_own_page" id="openid-info">
           <th>OpenID login:</th>
           <td>
             <img src="/@@/private" alt="" />
