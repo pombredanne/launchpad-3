@@ -1010,3 +1010,46 @@ returned.
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
     >>> print sorted(ids['remote_ids_to_check'])
     [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
+
+
+== Setting the batch size ==
+
+It's possible to set the batch size for a particular checkwatches run by
+passing a batch_size parameter to _getRemoteIdsToCheck(). This overrides
+the batch_size set by a given ExternalBugTracker instance.
+
+With a batch_size of 5 on the ExternalBugTracker instance and a batch_size
+of 2 passed as a parameter to _getExternalBugTrackersAndWatches(), only two
+results will be returned.
+
+    >>> external_bugtracker.batch_size = 5
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker,
+    ...     unchecked_watches + watches_with_comments + old_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now,
+    ...     batch_size=2)
+    >>> print sorted(ids['remote_ids_to_check'])
+    [u'5', u'6']
+
+If the batch_size parameter is set to None (the default value), the
+ExternalBugTracker's batch_size is used to decide the number of IDs returned.
+
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker,
+    ...     unchecked_watches + watches_with_comments + old_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now,
+    ...     batch_size=None)
+    >>> print sorted(ids['remote_ids_to_check'])
+    [u'0', u'1', u'5', u'6', u'7']
+
+_getRemoteIdsToCheck() will interpret a batch_size parameter of 0 as an
+instruction to ignore the batch size limitation altogether and just return all
+the IDs that need checking.
+
+    >>> ids = bug_watch_updater._getRemoteIdsToCheck(
+    ...     external_bugtracker,
+    ...     unchecked_watches + watches_with_comments + old_watches,
+    ...     external_bugtracker.getCurrentDBTime(), utc_now,
+    ...     batch_size=0)
+    >>> print sorted(ids['remote_ids_to_check'])
+    [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']

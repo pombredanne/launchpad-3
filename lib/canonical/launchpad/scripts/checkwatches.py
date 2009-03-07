@@ -468,7 +468,8 @@ class BugWatchUpdater(object):
         if batch_size is not None:
             # We'll recreate our remote_ids_to_check list so that it's
             # prioritised. We always include remote ids with comments.
-            actual_remote_ids_to_check = remote_ids_with_comments
+            actual_remote_ids_to_check = sorted(
+                remote_ids_with_comments[:batch_size])
 
             # If there is still room in the batch, add as many 'old' bug
             # watches as possible. We do this in kind of an odd way
@@ -482,7 +483,7 @@ class BugWatchUpdater(object):
                 # possible and then, if there's room as many from
                 # old_ids_to_check as possible.
                 ids_to_check_count = len(actual_remote_ids_to_check)
-                slots_left = remotesystem.batch_size - ids_to_check_count
+                slots_left = batch_size - ids_to_check_count
                 if slots_left < 1:
                     continue
 
