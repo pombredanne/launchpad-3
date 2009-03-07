@@ -1062,3 +1062,37 @@ too.
     initializeRemoteBugDB() called: [u'0', u'1']
     getRemoteStatus() called: u'0'
     getRemoteStatus() called: u'1'
+
+It can also be passed via updateBugTracker() (which will in turn pass it to
+updateBugWatches()).  In order to prevent it from attempting to connect to the
+outside world we'll subclass it to make sure it uses our non-connecting
+external_bugtracker.
+
+    >>> class NonConnectingBugWatchUpdater(BugWatchUpdater):
+    ...
+    ...     def _getExternalBugTrackersAndWatches(self, bug_trackers,
+    ...                                           bug_watches):
+    ...         return [(external_bugtracker, bug_watches)]
+
+    >>> bug_watch_updater = NonConnectingBugWatchUpdater(
+    ...     transaction, QuietFakeLogger())
+    >>> bug_watch_updater.updateBugTracker(standard_bugzilla, batch_size=2)
+    initializeRemoteBugDB() called: [u'5', u'6']
+    getRemoteStatus() called: u'5'
+    getRemoteStatus() called: u'6'
+
+The default entry point into BugWatchUpdater for the checkwatches script is
+the updateBugTrackers() method. This, too, takes a batch_size parameter, which
+allows it to be passed as a command-line option when the checkwatches script
+is run.
+
+    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> bug_watch_updater = NonConnectingBugWatchUpdater(
+    ...     transaction, FakeLogger())
+    >>> bug_watch_updater.updateBugTrackers(
+    ...     bug_tracker_names=[standard_bugzilla.name], batch_size=2)
+    DEBUG Using a global batch size of 2
+    INFO Updating 4 watches for 2 bugs on http://example.com
+    initializeRemoteBugDB() called: [u'5', u'6']
+    getRemoteStatus() called: u'5'
+    getRemoteStatus() called: u'6'

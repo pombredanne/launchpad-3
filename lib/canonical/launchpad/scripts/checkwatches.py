@@ -195,6 +195,8 @@ class BugWatchUpdater(object):
         # notification code expects a logged in user.
         self._login()
 
+        self.log.debug("Using a global batch size of %s" % batch_size)
+
         if bug_tracker_names is None:
             bug_tracker_names = [
                 bugtracker.name for bugtracker in getUtility(IBugTrackerSet)]
@@ -218,7 +220,7 @@ class BugWatchUpdater(object):
                     self.log.debug(
                         "Skipping updating Ubuntu Bugzilla watches.")
                 else:
-                    self.updateBugTracker(bug_tracker)
+                    self.updateBugTracker(bug_tracker, batch_size)
 
                 self.txn.commit()
             except (KeyboardInterrupt, SystemExit):
@@ -310,7 +312,7 @@ class BugWatchUpdater(object):
 
         return trackers_and_watches
 
-    def updateBugTracker(self, bug_tracker):
+    def updateBugTracker(self, bug_tracker, batch_size=None):
         """Updates the given bug trackers's bug watches."""
         # XXX 2007-01-18 gmb:
         #     Once we start running checkwatches more frequently we need
@@ -345,7 +347,7 @@ class BugWatchUpdater(object):
             else:
                 for remotesystem, bug_watch_batch in trackers_and_watches:
                     self.updateBugWatches(
-                        remotesystem, bug_watch_batch, batch_size)
+                        remotesystem, bug_watch_batch, batch_size=batch_size)
         else:
             self.log.debug(
                 "No watches to update on %s" % bug_tracker.baseurl)
@@ -561,8 +563,10 @@ class BugWatchUpdater(object):
             if bug_watch.remotebug not in remote_ids_to_check:
                 bug_watches.remove(bug_watch)
 
-        self.log.info("Updating %i watches on %s" %
-            (len(bug_watches), bug_tracker_url))
+
+        self.log.info("Updating %i watches for %i bugs on %s" %
+            (len(bug_watches), len(remote_ids_to_check),
+            bug_tracker_url))
 
         try:
             remotesystem.initializeRemoteBugDB(remote_ids_to_check)
