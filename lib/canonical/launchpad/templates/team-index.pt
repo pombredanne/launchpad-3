@@ -220,7 +220,7 @@
                 tal:attributes="href context/fmt:url/+mailing-list-subscribers"
                 >Mailing list subscribers</a>
       </div>
-      <div tal:condition="overview_menu/moderate_mailing_list/enabled">
+      <div tal:condition="overview_menu/configure_mailing_list/enabled">
         <tal:moderate_mailing_list
           replace="structure overview_menu/moderate_mailing_list/fmt:link-icon" />
         &nbsp;
