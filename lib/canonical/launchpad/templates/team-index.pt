@@ -198,6 +198,9 @@
           <br tal:omit-tag="repeat/email/end" />
         </span>
       </tal:emails>
+      <br /><strong>Languages:</strong>
+      <tal:languages content="view/languages">English (en)</tal:languages>
+      <a tal:replace="structure overview_menu/editlanguages/fmt:icon"/>
     </div>
   </div>
 

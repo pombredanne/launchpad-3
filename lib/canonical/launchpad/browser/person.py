@@ -146,7 +146,7 @@ from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.launchpad import (
-    INotificationRecipientSet, UnknownRecipientError)
+    ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.product import IProduct
@@ -2769,6 +2769,16 @@ class PersonView(LaunchpadView, FeedsMixin):
             return mailing_list.archive_url
         else:
             return None
+
+    @cachedproperty
+    def languages(self):
+        """The user's preferred languages, or English is none are set."""
+        languages = list(self.context.languages)
+        if len(languages) > 0:
+            displaynames = [lang.displayname for lang in languages]
+            return ', '.join(sorted(displaynames))
+        else:
+            return getUtility(ILaunchpadCelebrities).english.displayname
 
 
 class EmailAddressVisibleState:
