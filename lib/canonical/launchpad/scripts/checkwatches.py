@@ -538,7 +538,7 @@ class BugWatchUpdater(object):
         server_time = remotesystem.getCurrentDBTime()
         try:
             remote_ids = self._getRemoteIdsToCheck(
-                remotesystem, bug_watches, server_time, now)
+                remotesystem, bug_watches, server_time, now, batch_size)
         except TooMuchTimeSkew, error:
             # If there's too much time skew we can't continue with this
             # run.

@@ -1053,3 +1053,12 @@ the IDs that need checking.
     ...     batch_size=0)
     >>> print sorted(ids['remote_ids_to_check'])
     [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
+
+batch_size can be passed to _getRemoteIdsToCheck() via updateBugWatches(),
+too.
+
+    >>> bug_watch_updater.updateBugWatches(
+    ...     external_bugtracker, unchecked_watches, utc_now, batch_size=2)
+    initializeRemoteBugDB() called: [u'0', u'1']
+    getRemoteStatus() called: u'0'
+    getRemoteStatus() called: u'1'
