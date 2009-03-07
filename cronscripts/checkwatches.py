@@ -25,7 +25,7 @@ class CheckWatches(LaunchpadCronScript):
                 "one bugtracker using this option will check all the "
                 "bugtrackers specified.")
         self.parser.add_option(
-            '-b', '--batch-bize', action='store', dest='batch_size',
+            '-b', '--batch-size', action='store', dest='batch_size',
             help="Set the number of watches to be checked per bug "
                  "tracker in this run. If BATCH_SIZE is 0, all watches "
                  "on the bug tracker that are eligible for checking will "
@@ -35,7 +35,8 @@ class CheckWatches(LaunchpadCronScript):
         start_time = time.time()
 
         updater = BugWatchUpdater(self.txn, self.logger)
-        updater.updateBugTrackers(self.options.bug_trackers)
+        updater.updateBugTrackers(
+            self.options.bug_trackers, self.options.batch_size)
 
         run_time = time.time() - start_time
         self.logger.info("Time for this run: %.3f seconds." % run_time)
