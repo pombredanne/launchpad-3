@@ -20,11 +20,11 @@ from zope.schema import getFieldsInOrder
 from zope.schema.interfaces import IBytes, IChoice, IDate, IDatetime, IObject
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
+from lazr.enum import IEnumeratedType
 
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 from canonical.lazr.rest import EntryResource, ResourceJSONEncoder
-from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollection, IEntry, IJSONRequestCache, IResourceGETOperation,
     IResourceOperation, IResourcePOSTOperation, IScopedCollection,
