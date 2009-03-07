@@ -16,6 +16,7 @@ from zope.event import notify
 from zope.formlib import form
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from lazr.enum import EnumeratedType, Item
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -33,8 +34,6 @@ from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.menu import structured
-
-from canonical.lazr import EnumeratedType, Item
 
 from canonical.widgets.bugtask import (
     BugTaskAlsoAffectsSourcePackageNameWidget)
