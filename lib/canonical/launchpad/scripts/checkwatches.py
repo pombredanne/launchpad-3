@@ -180,7 +180,7 @@ class BugWatchUpdater(object):
         """Tear down the Bug Watch Updater Interaction."""
         endInteraction()
 
-    def updateBugTrackers(self, bug_tracker_names=None):
+    def updateBugTrackers(self, bug_tracker_names=None, batch_size=None):
         """Update all the bug trackers that have watches pending.
 
         If bug tracker names are specified in bug_tracker_names only
@@ -344,7 +344,8 @@ class BugWatchUpdater(object):
                 self.warning(message)
             else:
                 for remotesystem, bug_watch_batch in trackers_and_watches:
-                    self.updateBugWatches(remotesystem, bug_watch_batch)
+                    self.updateBugWatches(
+                        remotesystem, bug_watch_batch, batch_size)
         else:
             self.log.debug(
                 "No watches to update on %s" % bug_tracker.baseurl)
@@ -388,7 +389,7 @@ class BugWatchUpdater(object):
         return bug_watch_lastchecked_times[0]
 
     def _getRemoteIdsToCheck(self, remotesystem, bug_watches,
-                             server_time=None, now=None):
+                             server_time=None, now=None, batch_size=None):
         """Return the remote bug IDs to check for a set of bug watches.
 
         The remote bug tracker is queried to find out which of the
@@ -454,7 +455,17 @@ class BugWatchUpdater(object):
         # slice the bug_watches list but for the sake of testing we need
         # to ensure that the list of bug watches is ordered by remote
         # bug id before we do so.
-        if remotesystem.batch_size is not None:
+        if batch_size is None:
+            # If a batch_size hasn't been passed, use the one specified
+            # by the ExternalBugTracker.
+            batch_size = remotesystem.batch_size
+
+        if batch_size == 0:
+            # A batch_size of 0 means that there's no batch size limit
+            # for this bug tracker.
+            batch_size = None
+
+        if batch_size is not None:
             # We'll recreate our remote_ids_to_check list so that it's
             # prioritised. We always include remote ids with comments.
             actual_remote_ids_to_check = remote_ids_with_comments
@@ -505,7 +516,8 @@ class BugWatchUpdater(object):
 
     # XXX gmb 2008-11-07 [bug=295319]
     #     This method is 186 lines long. It needs to be shorter.
-    def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
+    def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None,
+                         batch_size=None):
         """Update the given bug watches."""
         # Save the url for later, since we might need it to report an
         # error after a transaction has been aborted.
