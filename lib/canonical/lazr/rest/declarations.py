@@ -12,6 +12,7 @@ __all__ = [
     'REQUEST_USER',
     'call_with',
     'collection_default_content',
+    'error_status',
     'exported',
     'export_as_webservice_collection',
     'export_as_webservice_entry',
@@ -227,6 +228,7 @@ class collection_default_content:
         tag['collection_default_content'] = f.__name__
         return f
 
+WEBSERVICE_ERROR = '__lazr_webservice_error__'
 
 def webservice_error(status):
     """Mark the exception with the HTTP status code to use.
@@ -247,7 +249,38 @@ def webservice_error(status):
             "webservice_error() can only be used from within an exception "
             "definition.")
 
-    f_locals['__lazr_webservice_error__'] = int(status)
+    f_locals[WEBSERVICE_ERROR] = int(status)
+
+def error_status(status):
+    """Make a Python 2.6 class decorator for the given status.
+
+    Usage 1:
+        @error_status(400)
+        class FooBreakage(Exception):
+            pass
+
+    Usage 2 (legacy):
+        class FooBreakage(Exception):
+            pass
+        error_status(400)(FooBreakage)
+
+    That status code will be used by the view used to handle that kind of
+    exceptions on the web service.
+
+    This is only effective when the exception is raised from within a
+    published method.  For example, if the exception is raised by the field's
+    validation, its specified status won't propagate to the response.
+    """
+    status = int(status)
+    def func(value):
+        if not issubclass(value, Exception):
+            raise TypeError('Annotated value must be an exception class.')
+        old = getattr(value, WEBSERVICE_ERROR, None)
+        if old is not None and old != status:
+            raise ValueError('Exception already has an error status', old)
+        setattr(value, WEBSERVICE_ERROR, status)
+        return value
+    return func
 
 
 class _method_annotator:

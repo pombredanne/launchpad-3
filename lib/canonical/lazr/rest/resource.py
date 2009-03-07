@@ -57,7 +57,7 @@ from zope.schema.interfaces import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
-from canonical.lazr.enum import BaseItem
+from lazr.enum import BaseItem
 from canonical.lazr.interfaces.fields import IReferenceChoice
 
 # XXX leonardr 2008-01-25 bug=185958:
