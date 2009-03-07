@@ -198,6 +198,7 @@
           <br tal:omit-tag="repeat/email/end" />
         </span>
       </tal:emails>
+      <a tal:replace="structure overview_menu/editemail/fmt:icon" />
       <br /><strong>Languages:</strong>
       <tal:languages content="view/languages">English (en)</tal:languages>
       <a tal:replace="structure overview_menu/editlanguages/fmt:icon"/>
@@ -212,7 +213,8 @@
         tal:define="archive_url view/archive_url"
         tal:condition="archive_url">
         <img src="/@@/mail" alt="" />
-        <a tal:attributes="href string:mailto:${context/mailing_list/address}"
+        <a id="mailing-list-posting-address"
+          tal:attributes="href string:mailto:${context/mailing_list/address}"
           tal:content="context/mailing_list/address">team@example.com</a>
         <br />
         <strong>Policy:</strong>
@@ -231,7 +233,8 @@
           replace="structure overview_menu/configure_mailing_list/fmt:link-icon" />
       </div>
       <tal:block condition="view/userIsParticipant">
-        <p tal:condition="view/team_has_mailing_list">
+        <p id="mailing-list-involvement"
+          tal:condition="view/team_has_mailing_list">
           <tal:subscribed-to-list
               condition="view/user_is_subscribed_to_list">
             <form class="actions"
@@ -310,6 +313,8 @@
           </li>
         </ul>
         <div>
+          <tal:join-leave
+            replace="structure overview_menu/joinleave/fmt:link" />
           <tal:add_my_teams
             replace="structure overview_menu/add_my_teams/fmt:link" />
           &nbsp;&nbsp;
@@ -336,8 +341,7 @@
   </div>
 
 
-  <div class="portlet" id="subteam-of"
-    tal:condition="context/super_teams">
+  <div class="portlet" id="subteam-of">
     <h2>Subteam of</h2>
 
     <p>

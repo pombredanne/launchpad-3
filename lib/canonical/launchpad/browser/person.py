@@ -1204,7 +1204,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = (
             'The address Launchpad uses to contact %s' %
             self.context.browsername)
-        return Link(target, text, summary, icon='mail')
+        return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):

@@ -42,11 +42,9 @@
         tal:content="structure overview_menu/reassign/fmt:link-icon">
         Change owner
       </li>
-      <li>
-        <a tal:attributes="href overview_menu/editemail/url;
-                           title overview_menu/editemail/summary"
-          >Change contact address
-          <img src="/@@/edit" alt="edit" /></a>
+      <li
+        tal:content="structure overview_menu/editemail/fmt:link-icon">
+        Change contact address
       </li>
     </ul>
   </div>
