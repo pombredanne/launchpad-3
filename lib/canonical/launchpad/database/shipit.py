@@ -28,14 +28,13 @@ from storm.store import Store
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.component import adapts, getUtility
+from lazr.enum import Item
 
 import pytz
 
 from sqlobject.sqlbuilder import AND, SQLConstant
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol)
-
-from canonical.lazr import Item
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config

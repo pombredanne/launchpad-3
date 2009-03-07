@@ -36,15 +36,14 @@ from zope.formlib import form
 from zope.interface import Interface, implements
 from zope.publisher.interfaces import NotFound
 from zope.schema import Choice, Text
+from lazr.delegates import delegates
+from lazr.enum import EnumeratedType, Item
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
-from lazr.delegates import delegates
-from canonical.lazr.enum import EnumeratedType, Item
 from canonical.lazr.interface import copy_field
-
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin

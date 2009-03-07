@@ -23,7 +23,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Date, Datetime, Int, List, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
-
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -60,7 +60,6 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.sourceforgeproject import (
     sourceforge_project_name_validator)
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, collection_default_content,

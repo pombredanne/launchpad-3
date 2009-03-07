@@ -52,6 +52,14 @@
         factory="canonical.launchpad.webapp.dbpolicy.SlaveDatabasePolicy"
         />
 
+    <!-- lazr.batchnavigator hook -->
+    <adapter
+        factory='.batching.FiniteSequenceAdapter' />
+    
+    <adapter
+        factory='.batching.FiniteSequenceAdapter'
+        for='storm.zope.interfaces.ISQLObjectResultSet' />
+
     <!-- links -->
     <class class="canonical.launchpad.webapp.menu.LinkData">
         <allow interface="canonical.launchpad.webapp.interfaces.ILinkData" />
@@ -119,7 +127,7 @@
 
     <!-- TALES enum-value: namespace -->
     <adapter
-        for="canonical.lazr.BaseItem"
+        for="lazr.enum.BaseItem"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.EnumValueAPI"
         name="enumvalue"
@@ -443,6 +451,12 @@
         for="canonical.launchpad.interfaces.IBugWatch"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugWatchFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="canonical.launchpad.webapp.interfaces.ILink"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.LinkFormatterAPI"
         name="fmt"
         />
     <adapter

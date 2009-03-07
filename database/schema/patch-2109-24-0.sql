@@ -49,6 +49,62 @@ RENAME COLUMN visible TO active;
 ALTER TABLE ProductRelease
 RENAME COLUMN description TO release_notes;
 
+UPDATE ProductRelease
+SET version = version || '-series-' || ProductSeries.name
+FROM ProductSeries
+WHERE ProductRelease.productseries = ProductSeries.id
+    AND ProductSeries.status = 6 -- obsolete
+    AND (SELECT count(*) > 1
+         FROM ProductRelease sub
+            JOIN ProductSeries series ON sub.productseries = series.id
+         WHERE lower(sub.version) = lower(ProductRelease.version)
+            AND series.product = ProductSeries.product);
+
+UPDATE ProductRelease
+SET version = version || '-series-' || ProductSeries.name
+FROM ProductSeries
+WHERE ProductRelease.productseries = ProductSeries.id
+    AND ProductSeries.status NOT IN (2, 4) -- active devel, current stable
+    AND version !~ '-series-'
+    AND (SELECT count(*) > 1
+         FROM ProductRelease sub
+            JOIN ProductSeries series ON sub.productseries = series.id
+         WHERE lower(sub.version) = lower(ProductRelease.version)
+            AND series.product = ProductSeries.product);
+
+UPDATE ProductRelease
+SET version = version || '-series-' || ProductSeries.name
+FROM ProductSeries
+WHERE ProductRelease.productseries = ProductSeries.id
+    AND ProductSeries.name = 'trunk'
+    AND version !~ '-series-'
+    AND (SELECT count(*) > 1
+         FROM ProductRelease sub
+            JOIN ProductSeries series ON sub.productseries = series.id
+         WHERE lower(sub.version) = lower(ProductRelease.version)
+            AND series.product = ProductSeries.product);
+
+UPDATE ProductRelease
+SET version = version || '-series-' || ProductSeries.name
+FROM ProductSeries
+WHERE ProductRelease.productseries = ProductSeries.id
+    AND version !~ '-series-'
+    AND (SELECT count(*) > 1
+         FROM ProductRelease sub
+            JOIN ProductSeries series ON sub.productseries = series.id
+         WHERE lower(sub.version) = lower(ProductRelease.version)
+            AND series.product = ProductSeries.product);
+
+UPDATE ProductRelease
+SET version = version || '-id-' || ProductRelease.id
+FROM ProductSeries
+WHERE ProductRelease.productseries = ProductSeries.id
+    AND (SELECT count(*) > 1
+         FROM ProductRelease sub
+            JOIN ProductSeries series ON sub.productseries = series.id
+         WHERE lower(sub.version) = lower(ProductRelease.version)
+            AND series.product = ProductSeries.product);
+
 -- Link milestones and releases with matching names and productseries.
 UPDATE ProductRelease
 SET milestone = Milestone.id
@@ -63,6 +119,22 @@ SET codename = ProductRelease.codename,
                   || E'\n' || coalesce(ProductRelease.summary, '')
 FROM ProductRelease
 WHERE ProductRelease.milestone = Milestone.id;
+
+-- Rename releases which conflict with existing milestones
+-- on different series.
+UPDATE ProductRelease
+SET version = regexp_replace(
+    lower(version || '-series-' || ps1.name),
+    '[^a-zA-Z0-9\\-\\.]','','g')
+FROM ProductSeries AS ps1
+WHERE ProductRelease.productseries = ps1.id
+    AND ProductRelease.milestone IS NULL
+    AND lower(version) IN (
+        SELECT MileStone.name
+        FROM MileStone,ProductSeries AS ps2
+        WHERE MileStone.productseries = ps2.id
+            AND ps2.id <> ps1.id
+            AND ps1.product = ps2.product);
 
 -- Create new milestones for releases that don't match.
 INSERT INTO Milestone (
