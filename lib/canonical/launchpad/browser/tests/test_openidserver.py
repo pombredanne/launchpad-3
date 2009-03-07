@@ -62,7 +62,8 @@ class SimpleRegistrationTestCase(unittest.TestCase):
     def test_sreg_fields(self):
         # Test that user details are extracted correctly.
         class FieldValueTest(OpenIDMixin):
-            account = getUtility(IPersonSet).getByEmail('david@canonical.com')
+            account = getUtility(IPersonSet).getByEmail(
+                'david@canonical.com').account
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
                 'x_address1', 'x_address2', 'x_city', 'x_province',
