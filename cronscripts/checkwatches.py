@@ -35,8 +35,13 @@ class CheckWatches(LaunchpadCronScript):
         start_time = time.time()
 
         updater = BugWatchUpdater(self.txn, self.logger)
-        updater.updateBugTrackers(
-            self.options.bug_trackers, self.options.batch_size)
+
+        # Make sure batch_size is an integer or None.
+        batch_size = self.options.batch_size
+        if batch_size is not None:
+            batch_size = int(batch_size)
+
+        updater.updateBugTrackers(self.options.bug_trackers, batch_size)
 
         run_time = time.time() - start_time
         self.logger.info("Time for this run: %.3f seconds." % run_time)
