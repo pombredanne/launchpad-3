@@ -67,3 +67,8 @@ tracker option fully.
                             Only check a given bug tracker. Specifying
                             more than one bugtracker using this option
                             will check all the bugtrackers specified...
+      -s BATCH_SIZE, --batch-size=BATCH_SIZE
+                            Set the number of watches to be checked per
+                            bug tracker in this run. If BATCH_SIZE is 0,
+                            all watches on the bug tracker that are
+                            eligible for checking will be checked.
