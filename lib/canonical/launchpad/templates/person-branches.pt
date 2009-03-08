@@ -49,6 +49,5 @@
 
   <div tal:replace="structure context/@@+portlet-teambranches" />
 </div>
-
 </body>
 </html>

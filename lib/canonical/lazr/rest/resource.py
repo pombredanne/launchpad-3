@@ -53,20 +53,20 @@ from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFieldsInOrder
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IChoice, IField, IObject)
+    ConstraintNotSatisfied, IBytes, IField, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-from canonical.lazr.enum import BaseItem
+from zope.traversing.browser import absoluteURL
+from lazr.enum import BaseItem
+from canonical.lazr.interfaces.fields import IReferenceChoice
 
 # XXX leonardr 2008-01-25 bug=185958:
-# canonical_url, BatchNavigator, and event code should be moved into lazr.
+# BatchNavigator and event code should be moved into lazr.
 from canonical.launchpad import versioninfo
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, ILaunchBag)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces import (
@@ -77,7 +77,6 @@ from canonical.lazr.interfaces import (
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME,
     WebServiceLayer)
 from canonical.lazr.interfaces.fields import ICollectionField
-from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -421,16 +420,8 @@ class HTTPResource:
         object as its value. But an IChoice field might also have a
         vocabulary drawn from the set of data model objects.
         """
-        if IObject.providedBy(field):
-            return True
-        if IChoice.providedBy(field):
-            # Find out whether the field's vocabulary is made of
-            # database objects (which correspond to resources that
-            # need to be linked to) or regular objects (which can
-            # be serialized to JSON).
-            field = field.bind(self.context)
-            return isinstance(field.vocabulary, SQLObjectVocabularyBase)
-        return False
+        return (IObject.providedBy(field)
+                or IReferenceChoice.providedBy(field))
 
     def _parseContentDispositionHeader(self, value):
         """Parse a Content-Disposition header.
@@ -912,7 +903,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
         of media_type.
         """
         data = {}
-        data['self_link'] = canonical_url(self.context, self.request)
+        data['self_link'] = absoluteURL(self.context, self.request)
         data['resource_type_link'] = self.type_url
         unmarshalled_field_values = {}
         for name, field in getFieldsInOrder(self.entry.schema):
@@ -1034,7 +1025,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
         adapter = EntryAdapterUtility(self.entry.__class__)
 
         return "%s#%s" % (
-            canonical_url(self.request.publication.getApplication(
+            absoluteURL(self.request.publication.getApplication(
                     self.request), self.request),
             adapter.singular_type)
 
@@ -1087,8 +1078,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
         modified_read_only_attribute = ("%s: You tried to modify a "
                                         "read-only attribute.")
         if 'self_link' in changeset:
-            if changeset['self_link'] != canonical_url(self.context,
-                                                       self.request):
+            if changeset['self_link'] != absoluteURL(self.context,
+                                                     self.request):
                 errors.append(modified_read_only_attribute % 'self_link')
             del changeset['self_link']
 
@@ -1253,7 +1244,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
             self.entry.context, providing=providedBy(self.entry.context))
 
         # Store the entry's current URL so we can see if it changes.
-        original_url = canonical_url(self.context, self.request)
+        original_url = absoluteURL(self.context, self.request)
         # Make the changes.
         for field, (name, value) in validated_changeset.items():
             field.set(self.entry, value)
@@ -1276,7 +1267,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
 
         # If the modification caused the entry's URL to change, tell
         # the client about the new URL.
-        new_url = canonical_url(self.context, self.request)
+        new_url = absoluteURL(self.context, self.request)
         if new_url != original_url:
             self.request.response.setStatus(301)
             self.request.response.setHeader('Location', new_url)
@@ -1361,14 +1352,10 @@ class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
 
 class ServiceRootResource(HTTPResource):
     """A resource that responds to GET by describing the service."""
-    implements(IServiceRootResource, ICanonicalUrlData, IJSONPublishable)
+    implements(IServiceRootResource, IJSONPublishable)
 
     # A preparsed template file for WADL representations of the root.
     WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-root.pt')
-
-    inside = None
-    path = ''
-    rootsite = None
 
     def __init__(self):
         """Initialize the resource.
@@ -1490,15 +1477,15 @@ class ServiceRootResource(HTTPResource):
         represented.
         """
         type_url = "%s#%s" % (
-            canonical_url(
+            absoluteURL(
                 self.request.publication.getApplication(self.request),
                 self.request),
             "service-root")
         data_for_json = {'resource_type_link' : type_url}
         publications = self.getTopLevelPublications()
         for link_name, publication in publications.items():
-            data_for_json[link_name] = canonical_url(publication,
-                                                     self.request)
+            data_for_json[link_name] = absoluteURL(publication,
+                                                   self.request)
         return data_for_json
 
     def getTopLevelPublications(self):
@@ -1540,8 +1527,8 @@ class ServiceRootResource(HTTPResource):
         adapter = EntryAdapterUtility(self.entry.__class__)
 
         return "%s#%s" % (
-            canonical_url(self.request.publication.getApplication(
-                    self.request)),
+            absoluteURL(self.request.publication.getApplication(
+                    self.request), self.request),
             adapter.singular_type)
 
 
@@ -1597,7 +1584,8 @@ class RESTUtilityBase:
     def _service_root_url(self):
         """Return the URL to the service root."""
         request = get_current_browser_request()
-        return canonical_url(request.publication.getApplication(request))
+        return absoluteURL(request.publication.getApplication(request),
+                           request)
 
 
 class EntryAdapterUtility(RESTUtilityBase):

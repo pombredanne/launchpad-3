@@ -13,6 +13,7 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
@@ -20,7 +21,6 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class PackageCopyStatus(DBEnumeratedType):

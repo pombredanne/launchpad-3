@@ -70,18 +70,18 @@ class TestApplicationServerSettingRequestFactory(unittest.TestCase):
         request = factory(StringIO.StringIO(), {'HTTP_HOST': 'launchpad.dev'})
         self.assertEquals(
             request.get('HTTPS'), 'on', "factory didn't set the HTTPS env")
-        # This is a sanity check ensuring that effect of this works as 
+        # This is a sanity check ensuring that effect of this works as
         # expected with the Zope request implementation.
         self.assertEquals(request.getURL(), 'https://launchpad.dev')
 
     def test___call___should_not_set_HTTPS(self):
-        # Ensure that the factory doesn't put an HTTPS variable in the 
+        # Ensure that the factory doesn't put an HTTPS variable in the
         # request when the protocol is http.
         factory = ApplicationServerSettingRequestFactory(
             LaunchpadBrowserRequest, 'launchpad.dev', 'http', 80)
         request = factory(StringIO.StringIO(), {})
         self.assertEquals(
-            request.get('HTTPS'), None, 
+            request.get('HTTPS'), None,
             "factory should not have set HTTPS env")
 
 
@@ -356,7 +356,7 @@ class TestLaunchpadBrowserRequest(unittest.TestCase):
 
         self.assertEqual(request.method, 'POST')
         self.assertEqual(
-            request.query_string_params, 
+            request.query_string_params,
             {'a':['1'], 'b': ['2'], 'c': ['3']},
             "The query_string_params dict is populated from the "
             "QUERY_STRING during POST requests.")
