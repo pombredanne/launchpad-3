@@ -45,7 +45,7 @@
   />
 
   <div id="portlet-details" class="portlet">
-    <h2>summary</h2>
+    <h2>Summary</h2>
 
     <div class="portletBody portletContent">
       <table>
@@ -315,9 +315,10 @@
         <div>
           <tal:join-leave
             replace="structure overview_menu/joinleave/fmt:link" />
+          &nbsp;
           <tal:add_my_teams
             replace="structure overview_menu/add_my_teams/fmt:link" />
-          &nbsp;&nbsp;
+          &nbsp;
           <tal:add_member
             replace="structure overview_menu/add_member/fmt:link" />
         </div>

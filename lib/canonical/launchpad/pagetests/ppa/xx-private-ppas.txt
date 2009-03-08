@@ -54,7 +54,7 @@ Let's make a new team PPA for "landscape-developers" and make it
 private.
 
     >>> admin_browser.open("http://launchpad.dev/~landscape-developers")
-    >>> admin_browser.getLink("Activate Personal Package Archive").click()
+    >>> admin_browser.getLink('Personal Package Archive').click()
     >>> admin_browser.getControl(name="field.accepted").value = True
     >>> admin_browser.getControl("Activate").click()
     >>> admin_browser.open(

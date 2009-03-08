@@ -34,7 +34,7 @@ We'll now propose Launchpad Administrators as a member of Ubuntu Team.
     [u'Launchpad Administrators has been proposed to this team.']
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
-    Recently applied
+    Recently applied:
     Launchpad Administrators (admins)
     ...
 
@@ -57,7 +57,7 @@ members.
     [u'Rosetta Administrators has been added to this team.']
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
-    Recently approved
+    Recently approved:
     Rosetta Administrators (rosetta-admins)
     ...
 

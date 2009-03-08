@@ -676,7 +676,7 @@ together.
 
     >>> jblack_browser.getControl("Create").click()
 
-    >>> jblack_browser.getLink('Activate Personal Package Archive').click()
+    >>> jblack_browser.getLink('Personal Package Archive').click()
     >>> jblack_browser.getControl(name="field.accepted").value = True
     >>> jblack_browser.getControl(name="field.description").value = (
     ...    'Come friends ...')
@@ -819,7 +819,7 @@ tests.
 
     >>> jblack_browser.getControl("Create").click()
 
-    >>> jblack_browser.getLink('Activate Personal Package Archive').click()
+    >>> jblack_browser.getLink('Personal Package Archive').click()
     >>> jblack_browser.getControl(name="field.accepted").value = True
     >>> jblack_browser.getControl(name="field.description").value = (
     ...    'Come friends ...')
