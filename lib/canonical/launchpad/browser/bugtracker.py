@@ -145,7 +145,7 @@ class BugTrackerSetView(LaunchpadView):
         # The caching of bugtracker pillars here avoids us hitting the
         # database multiple times for each bugtracker.
         self._pillar_cache = bugtrackerset.getPillarsForBugtrackers(
-            self.bugtrackers)
+            active_bug_trackers + inactive_bug_trackers)
 
     def getPillarData(self, bugtracker):
         """Return dict of pillars and booleans indicating ellipsis.
@@ -197,6 +197,26 @@ class BugTrackerEditView(LaunchpadEditFormView):
     custom_widget('summary', TextAreaWidget, width=30, height=5)
     custom_widget('aliases', DelimitedListWidget, height=3)
     custom_widget('active', LaunchpadRadioWidget, orientation='vertical')
+
+    @property
+    def field_names(self):
+        field_names = [
+            'name',
+            'title',
+            'bugtrackertype',
+            'summary',
+            'baseurl',
+            'aliases',
+            'contactdetails',
+            ]
+
+        # Members of the admin team can set the bug tracker's active
+        # state.
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        if self.user.inTeam(admin_team):
+            field_names.append('active')
+
+        return field_names
 
     def validate(self, data):
         # Normalise aliases to an empty list if it's None.
