@@ -128,7 +128,19 @@ class BugTrackerSetView(LaunchpadView):
     PILLAR_LIMIT = 3
 
     def initialize(self):
-        self.bugtrackers = list(self.context)
+        # Sort the bug trackers into active and inactive lists so that
+        # we can display them separately.
+        active_bug_trackers = []
+        inactive_bug_trackers = []
+        for bug_tracker in list(self.context):
+            if not bug_tracker.active:
+                inactive_bug_trackers.append(bug_tracker)
+            else:
+                active_bug_trackers.append(bug_tracker)
+
+        self.active_bug_trackers = active_bug_trackers
+        self.inactive_bug_trackers = inactive_bug_trackers
+
         bugtrackerset = getUtility(IBugTrackerSet)
         # The caching of bugtracker pillars here avoids us hitting the
         # database multiple times for each bugtracker.
