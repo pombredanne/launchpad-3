@@ -66,10 +66,12 @@ automatically approved.
 
   >>> max_cds = ShipItConstants.max_size_for_auto_approval
 
+  >>> from canonical.launchpad.interfaces.shipit import IShipitAccount
   >>> from canonical.launchpad.database import Person
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
   >>> login(ANONYMOUS)
-  >>> current_request = Person.byName('name16').currentShipItRequest()
+  >>> shipit_account = IShipitAccount(Person.byName('name16').account)
+  >>> current_request = shipit_account.currentShipItRequest()
   >>> current_request.isApproved()
   True
   >>> current_request.getTotalApprovedCDs() == max_cds
@@ -84,11 +86,11 @@ be approved before they can be shipped.
   >>> browser.getControl('Change Request').click()
 
   >>> login(ANONYMOUS)
-  >>> Person.byName('name16').currentShipItRequest().isAwaitingApproval()
+  >>> shipit_account.currentShipItRequest().isAwaitingApproval()
   True
-  >>> Person.byName('name16').currentShipItRequest().getTotalApprovedCDs()
+  >>> shipit_account.currentShipItRequest().getTotalApprovedCDs()
   0
-  >>> Person.byName('name16').currentShipItRequest().reason
+  >>> shipit_account.currentShipItRequest().reason
   u'foo'
   >>> logout()
 
@@ -120,9 +122,9 @@ $max_size_for_auto_approval CDs in total.
   >>> browser.getControl('Request More CDs').click()
 
   >>> login(ANONYMOUS)
-  >>> Person.byName('name16').currentShipItRequest().isAwaitingApproval()
+  >>> shipit_account.currentShipItRequest().isAwaitingApproval()
   True
-  >>> Person.byName('name16').currentShipItRequest().getTotalApprovedCDs()
+  >>> shipit_account.currentShipItRequest().getTotalApprovedCDs()
   0
   >>> logout()
 
@@ -130,7 +132,7 @@ And the reason will still be there, because Marilize will have to check it
 before approving.
 
   >>> login(ANONYMOUS)
-  >>> Person.byName('name16').currentShipItRequest().reason
+  >>> shipit_account.currentShipItRequest().reason
   u'foo'
   >>> logout()
 
@@ -139,7 +141,7 @@ how shipit would behave if this guy (name16) comes back asking for more CDs
 of this same distroseries.
 
   >>> login(ANONYMOUS)
-  >>> shipit_request = Person.byName('name16').currentShipItRequest()
+  >>> shipit_request = shipit_account.currentShipItRequest()
   >>> shipit_request.approve()
   >>> for requestedcds in shipit_request.getAllRequestedCDs():
   ...     requestedcds.quantityapproved = requestedcds.quantity
@@ -147,8 +149,8 @@ of this same distroseries.
   >>> flush_database_updates()
   >>> from canonical.launchpad.database import ShippingRequestSet
   >>> run = ShippingRequestSet()._create_shipping_run([shipit_request.id])
-  >>> [request.recipient.name for request in run.requests]
-  [u'name16']
+  >>> [request.recipient.displayname for request in run.requests]
+  [u'Foo Bar']
   >>> logout()
 
 His shipped request contained only Ubuntu and Kubuntu CDs, so a request for
@@ -179,7 +181,7 @@ be auto approved.
   sixteen weeks to deliver...
 
   >>> login(ANONYMOUS)
-  >>> Person.byName('name16').currentShipItRequest().isApproved()
+  >>> shipit_account.currentShipItRequest().isApproved()
   True
   >>> logout()
 
@@ -205,7 +207,7 @@ Although his new request contains only 21 CDs, it will be pending approval
 because he already has a shipped request containing Ubuntu CDs.
 
   >>> login(ANONYMOUS)
-  >>> Person.byName('name16').currentShipItRequest().isAwaitingApproval()
+  >>> shipit_account.currentShipItRequest().isAwaitingApproval()
   True
   >>> logout()
 
