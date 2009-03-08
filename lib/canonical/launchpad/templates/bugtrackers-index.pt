@@ -79,7 +79,7 @@
   <tal:inactive-bug-trackers condition="view/inactive_bug_trackers">
     <h1>Inactive bug trackers</h1>
 
-    <table class="sortable listing" id="disabled-trackers">
+    <table class="sortable listing" id="inactive-trackers">
       <thead>
         <tr>
           <th>Title</th>

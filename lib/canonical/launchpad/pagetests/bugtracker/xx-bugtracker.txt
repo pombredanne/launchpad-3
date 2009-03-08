@@ -459,16 +459,16 @@ But admins can.
     >>> admin_browser.getControl(name='field.active').value = ['off']
     >>> admin_browser.getControl('Change').click()
 
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
+    >>> message = find_tag_by_id(admin_browser.contents, 'inactive-message')
+    >>> print extract_text(message)
     Bug watch updates for Debian Bug tracker are disabled.
 
-If a user looks at a disabled bug tracker they'll see a warning message
+If a user looks at a disabled bug tracker they'll see a message
 notifying them that it has been disabled.
 
     >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/debbugs')
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> message = find_tag_by_id(user_browser.contents, 'inactive-message')
+    >>> print extract_text(message)
     Bug watch updates for Debian Bug tracker are disabled.
 
 And if the users views a bug with a watch against a disabled bug
@@ -480,24 +480,26 @@ been disabled.
     ...     print message
     Bug watch updates for Debian Bug tracker are disabled.
 
-#The list of bug trackers will display the disabled bug tracker
-#'greyed-out' to indicate that it's disabled.
-#
-#    >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
-#    >>> for tag in find_tags_by_class(user_browser.contents, 'disabled'):
-#    ...     print extract_text(tag)
-#    Debian Bug tracker  http://bugs.debian.org...
-#
-The admin can re-enable the bug tracker.
+Inactive bug trackers are displayed in a separate table from the active
+ones on the bug tracker index page.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
+    >>> inactive_trackers_table = find_tag_by_id(
+    ...     user_browser.contents, 'inactive-trackers')
+    >>> print extract_text(inactive_trackers_table)
+    Title               Location...
+    Debian Bug tracker  http://bugs.debian.org...
+
+The admin can re-activate the bug tracker.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/bugs/bugtrackers/debbugs/+edit')
     >>> admin_browser.getControl(name='field.active').value = ['on']
     >>> admin_browser.getControl('Change').click()
 
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    Bug watch updates for Debian Bug tracker have been enabled.
+    >>> message = find_tag_by_id(user_browser.contents, 'inactive-message')
+    >>> print message
+    None
 
 And the user will no longer see any messages.
 

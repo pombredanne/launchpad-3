@@ -16,9 +16,11 @@
         overview
       </h1>
 
-      <p tal:condition="not: context/active" class="informational message">
-      Bug watch updates for <tal:bugtracker content="context/title" />
-      are disabled.
+      <p tal:condition="not: context/active" id="inactive-message">
+        <strong>
+          Bug watch updates for <tal:bugtracker content="context/title" />
+          are disabled.
+        </strong>
       </p>
     </metal:heading>
 
