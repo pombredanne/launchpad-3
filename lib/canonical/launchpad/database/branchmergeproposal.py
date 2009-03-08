@@ -699,6 +699,11 @@ class BranchMergeProposalGetter:
             LeftJoin(CodeReviewComment,
                  CodeReviewVoteReference.commentID == CodeReviewComment.id)]
 
+        # XXX: TimPenhey 2009-03-08 bug=337494
+        # This code is copied from BranchCollection.  Shortly this method
+        # will live there.  The old code that this replaces realised the
+        # visible branches result set into a set and this caused a double
+        # query, which took 2s rather than less than 100ms.
         # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
         # decorated set, so we get at the underlying set so we can get at the
         # private and juicy _get_select.
