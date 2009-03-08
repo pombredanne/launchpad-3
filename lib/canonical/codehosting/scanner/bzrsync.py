@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 
 """Import version control metadata from a Bazaar branch into the database."""
 

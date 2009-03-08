@@ -1,7 +1,5 @@
 #!/usr/bin/python2.4
-# Copyright (c) 2005-2006 Canonical Ltd.
-# Author: Gustavo Niemeyer <gustavo@niemeyer.net>
-#         David Allouche <david@allouche.net>
+# Copyright (c) 2005-2009 Canonical Ltd.
 # pylint: disable-msg=W0141
 
 import datetime
