@@ -29,8 +29,9 @@ import re
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.interface import implements, alsoProvides
-from zope.component import getUtility
+from zope.interface import alsoProvides, implementer, implements
+from zope.component import adapter, getUtility
+from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
@@ -71,11 +72,13 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, AccountStatus, IAccountSet,
+    AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -963,6 +966,17 @@ class Person(
     def isTeam(self):
         """Deprecated. Use is_team instead."""
         return self.teamowner is not None
+
+    def getMergeProposals(self, status=None, visible_by_user=None):
+        """See `IPerson`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self, status, visible_by_user=None)
 
     @property
     def mailing_list(self):
@@ -1856,10 +1870,9 @@ class Person(
             cur.execute("DELETE FROM %s WHERE %s=%d"
                         % (table, person_id_column, self.id))
 
-        # Update the account's status, password, preferred email and name.
+        # Update the account's status, preferred email and name.
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
-        self.password = None
         self.preferredemail.status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'
@@ -1873,36 +1886,6 @@ class Person(
             new_name = base_new_name + str(count)
             count += 1
         return new_name
-
-    def reactivateAccount(self, comment, password, preferred_email):
-        """See `IPersonSpecialRestricted`.
-
-        :raise AssertionError: if the password is not valid.
-        :raise AssertionError: if the preferred email address is None.
-        :raise AssertionError: if this `Person` is a team.
-        """
-        if self.is_team:
-            raise AssertionError(
-                "Teams cannot be reactivated with this method.")
-        if password in (None, ''):
-            raise AssertionError(
-                "User %s cannot be reactivated without a "
-                "password." % self.name)
-        if preferred_email is None:
-            raise AssertionError(
-                "User %s cannot be reactivated without a "
-                "preferred email address." % self.name)
-        self.account.status = AccountStatus.ACTIVE
-        self.account.status_comment = comment
-        if '-deactivatedaccount' in self.name:
-            # The name was changed by deactivateAccount(). Restore the
-            # name, but we must ensure it does not conflict with a current
-            # user.
-            name_parts = self.name.split('-deactivatedaccount')
-            base_new_name = name_parts[0]
-            self.name = self._ensureNewName(base_new_name)
-        self.password = password
-        self.validateAndEnsurePreferredEmail(preferred_email)
 
     @property
     def visibility_consistency_warning(self):
@@ -2405,7 +2388,18 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
-        return Archive.selectOneBy(owner=self, purpose=ArchivePurpose.PPA)
+        return self.getPPAByName('ppa')
+
+    @property
+    def ppas(self):
+        """See `IPerson`."""
+        return Archive.selectBy(
+            owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
+
+    def getPPAByName(self, name):
+        """See `IPerson`."""
+        return Archive.selectOneBy(
+            owner=self, purpose=ArchivePurpose.PPA, name=name)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -3836,3 +3830,15 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
 
     finally:
         random.setstate(random_state)
+
+
+@adapter(IAccount)
+@implementer(IPerson)
+def person_from_account(account):
+    """Adapt an IAccount into an IPerson."""
+    # The IAccount interface does not publish the account.person reference.
+    naked_account = removeSecurityProxy(account)
+    person = ProxyFactory(naked_account.person)
+    if person is None:
+        raise ComponentLookupError
+    return person

@@ -13,11 +13,11 @@ __all__ = [
 
 from zope.schema import Choice, Int, Object, TextLine
 from zope.interface import Interface
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
 from canonical.lazr.fields import Reference
@@ -90,7 +90,7 @@ class IEmailAddress(IHasOwner):
     account = Object(title=_('Account'), schema=IAccount, required=False)
     accountID = Int(title=_('AccountID'), required=False, readonly=True)
     person = exported(
-        Reference(title=_('Person'), required=True, readonly=True,
+        Reference(title=_('Person'), required=False, readonly=False,
                   schema=Interface))
 
     rdf_sha1 = TextLine(

@@ -17,10 +17,10 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 from zope.schema import Bool, Choice, Datetime, Int
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Whiteboard
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class EntitlementQuotaExceededError(Exception):

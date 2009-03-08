@@ -36,7 +36,8 @@ class TestMergeProposalMailing(TestCase):
         login('admin@canonical.com')
         self.factory = LaunchpadObjectFactory()
 
-    def makeProposalWithSubscriber(self, diff_text=None):
+    def makeProposalWithSubscriber(self, diff_text=None,
+                                   initial_comment=None):
         if diff_text is not None:
             review_diff = StaticDiff.acquireFromText(
                 self.factory.getUniqueString('revid'),
@@ -49,7 +50,8 @@ class TestMergeProposalMailing(TestCase):
             name='bazqux', displayname='Baz Qux', email='baz.qux@example.com')
         product = self.factory.makeProduct(name='super-product')
         bmp = self.factory.makeBranchMergeProposal(
-            registrant=registrant, product=product, review_diff=review_diff)
+            registrant=registrant, product=product, review_diff=review_diff,
+            initial_comment=initial_comment)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
             email='baz.quxx@example.com')
         bmp.source_branch.subscribe(subscriber,
@@ -227,7 +229,8 @@ new commit message
         self.assertEqual(set(recipients), set(persons))
 
     def makeReviewRequest(self):
-        merge_proposal, subscriber_ = self.makeProposalWithSubscriber()
+        merge_proposal, subscriber_ = self.makeProposalWithSubscriber(
+            diff_text="Make a diff.", initial_comment="Initial comment")
         candidate = self.factory.makePerson(
             displayname='Candidate', email='candidate@example.com')
         requester = self.factory.makePerson(
@@ -244,6 +247,12 @@ new commit message
             request, request.merge_proposal, requester)
         self.assertEqual(
             'Requester <requester@example.com>', mailer.from_address)
+        self.assertEqual(
+            request.merge_proposal.root_comment,
+            mailer.comment)
+        self.assertEqual(
+            request.merge_proposal.review_diff,
+            mailer.review_diff)
         self.assertRecipientsMatches([request.recipient], mailer)
 
     def test_forReviewRequestMessageId(self):

@@ -38,13 +38,14 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import (Bool, Choice, Datetime, Int, List, Object, Text,
+    TextLine)
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
-from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
@@ -760,6 +761,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                   description=_("The Archive owned by this person, his PPA."),
                   schema=Interface)) # Really IArchive, see archive.py
 
+    ppas = Attribute(
+        "List of PPAs owned by this person or team ordered by name.")
+
     entitlements = Attribute("List of Entitlements for this person or team.")
 
     structural_subscriptions = Attribute(
@@ -900,6 +904,21 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """Deprecated.  Use IPerson.is_team instead.
 
         True if this Person is actually a Team, otherwise False.
+        """
+
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary='BranchMergeProposalStatus')))
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal
+    @export_read_operation()
+    def getMergeProposals(status=None, visible_by_user=None):
+        """Returns all merge proposals of a given status.
+
+        :param status: A list of statuses to filter with.
+        :param visible_by_user: Normally the user who is asking.
+        :returns: A list of `IBranchMergeProposal`.
         """
 
     # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
@@ -1196,6 +1215,15 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :return: True if the user was subscribed, false if they weren't.
         """
 
+    def getPPAByName(name):
+        """Return a PPA with the given name if it exists or None.
+
+        :param name: A string with the exact name of the ppa being looked up.
+
+        :return: an `IArchive` record corresponding to the PPA or None if it
+            was not found.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
@@ -1470,18 +1498,6 @@ class IPersonSpecialRestricted(Interface):
             - Changing the ownership of products/projects/teams owned by him.
 
         :param comment: An explanation of why the account status changed.
-        """
-
-    def reactivateAccount(comment, password, preferred_email):
-        """Reactivate this person's Launchpad account.
-
-        Set the account status to ACTIVE and possibly restore the user's
-        name. The preferred email address is set.
-
-        :param comment: An explanation of why the account status changed.
-        :param password: The user's password, it cannot be None.
-        :param preferred_email: The `EmailAddress` to set as the user's
-            preferred email address. It cannot be None.
         """
 
 

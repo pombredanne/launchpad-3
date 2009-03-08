@@ -41,7 +41,7 @@ from canonical.launchpad.interfaces.sprint import ISprint
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 
-from canonical.lazr import (
+from lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item)
 
 

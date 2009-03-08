@@ -24,7 +24,7 @@ from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.launchpad.interfaces.branch import (
     BranchType, get_blacklisted_hostnames)
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from lazr.uri import URI, InvalidURIError
 
 
 __all__ = [

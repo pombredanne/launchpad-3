@@ -239,20 +239,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return (Milestone.product == self)
 
     @property
-    def upstream_bugtracker_links(self):
-        """Return the upstream bugtracker links for this project.
-
-        :return: A dict of the bug filing URL and the search URL as
-            returned by `BugTracker.getBugFilingAndSearchLinks()`. If
-            self.bugtracker is None, return None.
-        """
-        if not self.bugtracker:
-            return None
-        else:
-            return self.bugtracker.getBugFilingAndSearchLinks(
-                self.remote_product)
-
-    @property
     def official_anything(self):
         return True in (self.official_malone, self.official_rosetta,
                         self.official_blueprints, self.official_answers,
@@ -953,7 +939,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMergeProposals(self, status=None, visible_by_user=None):
         """See `IProduct`."""
-        if not status:
+        if status is None:
             status = (
                 BranchMergeProposalStatus.CODE_APPROVED,
                 BranchMergeProposalStatus.NEEDS_REVIEW,

@@ -14,6 +14,7 @@ __all__ = [
 from sqlobject import StringCol, ForeignKey
 
 from zope.interface import implements
+from lazr.enum import DBItem
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -22,9 +23,9 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeImportEventDataType, CodeImportEventType,
     ICodeImportEvent, ICodeImportEventSet, ICodeImportEventToken,
-    CodeImportMachineOfflineReason, RevisionControlSystems)
+    CodeImportMachineOfflineReason)
+from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.lazr.enum import DBItem
 
 
 class CodeImportEvent(SQLBase):
