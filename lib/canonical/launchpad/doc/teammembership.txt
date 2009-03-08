@@ -867,9 +867,11 @@ Bad user joins a team, and he is approved. An admin later suspends him.
     ...     bad_user, TeamMembershipStatus.APPROVED, reviewer)
 
     >>> login('foo.bar@canonical.com')
-    >>> bad_user.account.status = AccountStatus.SUSPENDED
-    >>> bad_user.preferredemail.status = EmailAddressStatus.OLD
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
+    >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
     >>> removeSecurityProxy(bad_user)._preferredemail_cached = None
+    >>> transaction.commit()
 
     >>> [m.displayname for m in t3.allmembers]
     [u'Bad-user', u'Foo Bar']

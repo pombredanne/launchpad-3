@@ -16,8 +16,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.logintoken import (
-    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
@@ -227,7 +227,6 @@ class LoginOrRegister:
                 "The password provided contains non-ASCII characters.")
             return
 
-        appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is None or not principal.validate(password):
@@ -259,7 +258,7 @@ class LoginOrRegister:
                     ) % email
                 token = getUtility(ILoginTokenSet).new(
                     person, email, email, LoginTokenType.VALIDATEEMAIL)
-                token.sendEmailValidationRequest(appurl)
+                token.sendEmailValidationRequest()
                 return
             if person.is_valid_person:
                 logInPrincipal(self.request, principal, email)

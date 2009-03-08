@@ -296,7 +296,7 @@ class BranchMergeDetectionHandler:
             'Merge detected: %s => %s',
             source.bzr_identity, target.bzr_identity)
         dev_focus = target.product.development_focus
-        if target != dev_focus.user_branch:
+        if target != dev_focus.branch:
             return
         self._markSourceBranchMerged(source)
 

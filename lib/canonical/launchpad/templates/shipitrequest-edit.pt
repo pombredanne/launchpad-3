@@ -74,7 +74,7 @@
 
     <div tal:condition="view/recipientHasOtherShippedRequests"
          tal:define="shipped_requests
-                     context/recipient/shippedShipItRequestsOfCurrentSeries"
+                       view/shipped_shipit_requests_of_current_series"
          class="informational message">
      <p>This person has other requests already sent to the shipping company.
      </p>
