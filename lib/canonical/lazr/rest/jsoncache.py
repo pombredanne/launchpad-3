@@ -11,7 +11,7 @@ __all__ = [
 from canonical.lazr.interfaces.rest import (
     IJSONRequestCache, LAZR_WEBSERVICE_NS)
 
-from zope.component import adapts, getUtility
+from zope.component import adapts
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserRequest
 

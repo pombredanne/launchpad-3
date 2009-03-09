@@ -36,9 +36,6 @@ from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchjob import IRevisionsAddedJobSource
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
-from canonical.launchpad.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize)
-from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 
 
 UTC = pytz.timezone('UTC')

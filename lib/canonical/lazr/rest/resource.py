@@ -53,7 +53,7 @@ from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFieldsInOrder
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IChoice, IField, IObject)
+    ConstraintNotSatisfied, IBytes, IField, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
