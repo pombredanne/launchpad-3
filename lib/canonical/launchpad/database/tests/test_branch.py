@@ -42,13 +42,13 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace, InvalidNamespace)
+    get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
     NoSuchSeries)
@@ -127,6 +127,37 @@ class TestBranchGetRevision(TestCaseWithFactory):
                           revision=rev1, revision_id=rev1.revision_id)
         self.assertRaises(AssertionError, self.branch.getBranchRevision,
                           sequence=1, revision_id=rev1.revision_id)
+
+
+class TestGetMainlineBranchRevisions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getMainlineBranchRevisions(self):
+        """Only gets the mainline revisions, ignoring the others."""
+        branch = self.factory.makeBranch()
+        self.factory.makeBranchRevision(branch, 'rev1', 1)
+        self.factory.makeBranchRevision(branch, 'rev2', 2)
+        self.factory.makeBranchRevision(branch, 'rev2b', None)
+        result_set = branch.getMainlineBranchRevisions(
+            ['rev1', 'rev2', 'rev3'])
+        revid_set = set(
+            branch_revision.revision.revision_id for
+            branch_revision in result_set)
+        self.assertEqual(set(['rev1', 'rev2']), revid_set)
+
+    def test_getMainlineBranchRevisionsWrongBranch(self):
+        """Only gets the revisions for this branch, ignoring the others."""
+        branch = self.factory.makeBranch()
+        other_branch = self.factory.makeBranch()
+        self.factory.makeBranchRevision(branch, 'rev1', 1)
+        self.factory.makeBranchRevision(other_branch, 'rev1b', 2)
+        result_set = branch.getMainlineBranchRevisions(
+            ['rev1', 'rev1b'])
+        revid_set = set(
+            branch_revision.revision.revision_id for
+            branch_revision in result_set)
+        self.assertEqual(set(['rev1']), revid_set)
 
 
 class TestBranch(TestCaseWithFactory):
@@ -1394,6 +1425,50 @@ class TestCodebrowseURL(TestCaseWithFactory):
         self.assertEqual(
             'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
             branch.codebrowse_url('a', 'b'))
+
+
+class TestBranchNamespace(TestCaseWithFactory):
+    """Tests for `IBranch.namespace`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertNamespaceEqual(self, namespace_one, namespace_two):
+        """Assert that `namespace_one` equals `namespace_two`."""
+        namespace_one = removeSecurityProxy(namespace_one)
+        namespace_two = removeSecurityProxy(namespace_two)
+        self.assertEqual(namespace_one.__class__, namespace_two.__class__)
+        self.assertEqual(namespace_one.owner, namespace_two.owner)
+        self.assertEqual(
+            getattr(namespace_one, 'sourcepackage', None),
+            getattr(namespace_two, 'sourcepackage', None))
+        self.assertEqual(
+            getattr(namespace_one, 'product', None),
+            getattr(namespace_two, 'product', None))
+
+    def test_namespace_personal(self):
+        # The namespace attribute of a personal branch points to the namespace
+        # that corresponds to ~owner/+junk.
+        branch = self.factory.makePersonalBranch()
+        namespace = getUtility(IBranchNamespaceSet).get(person=branch.owner)
+        self.assertNamespaceEqual(namespace, branch.namespace)
+
+    def test_namespace_package(self):
+        # The namespace attribute of a package branch points to the namespace
+        # that corresponds to
+        # ~owner/distribution/distroseries/sourcepackagename.
+        branch = self.factory.makePackageBranch()
+        namespace = getUtility(IBranchNamespaceSet).get(
+            person=branch.owner, distroseries=branch.distroseries,
+            sourcepackagename=branch.sourcepackagename)
+        self.assertNamespaceEqual(namespace, branch.namespace)
+
+    def test_namespace_product(self):
+        # The namespace attribute of a product branch points to the namespace
+        # that corresponds to ~owner/product.
+        branch = self.factory.makeProductBranch()
+        namespace = getUtility(IBranchNamespaceSet).get(
+            person=branch.owner, product=branch.product)
+        self.assertNamespaceEqual(namespace, branch.namespace)
 
 
 def test_suite():

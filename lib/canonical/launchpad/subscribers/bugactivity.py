@@ -6,13 +6,13 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.proxy import isProxy
 from zope.schema.vocabulary import getVocabularyRegistry
+from lazr.enum import BaseItem
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
     IBug, IBugActivitySet, IBugTask, IMilestone, IPerson, IProductRelease,
     ISourcePackageRelease)
-from canonical.lazr import BaseItem
 
 vocabulary_registry = getVocabularyRegistry()
 
