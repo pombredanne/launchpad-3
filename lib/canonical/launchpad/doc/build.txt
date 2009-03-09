@@ -489,9 +489,12 @@ data from the database for a given set of builds:
     ...     else:
     ...         return 'n/a'
     >>> for row in rset:
+    ...     (build_id, buildqueue, sourcepackagerelease, buildlog,
+    ...      sourcepackagename, buildlog_content, builder) = row
     ...     print(
-    ...         'id: %s, queue: %s, spr: %s, log: %s' % ((row[0],) +
-    ...         tuple([id_or_none(d) for d in row[1:4]])))
+    ...         'id: %s, queue: %s, spr: %s, log: %s' % ((build_id,) +
+    ...         tuple([id_or_none(d) for d in (buildqueue,
+    ...         sourcepackagerelease, buildlog)])))
     id: 2, queue: n/a, spr:  14, log:   1
     id: 6, queue: n/a, spr:  32, log:   1
     id: 7, queue: n/a, spr:  20, log:   1
