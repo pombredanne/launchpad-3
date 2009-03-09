@@ -12,7 +12,7 @@ from zope.component import getUtility
 
 from canonical.codehosting.scanner.bzrsync import (
     BranchMergeDetectionHandler, BzrSync)
-from canonical.codehosting.scanner.bzrsync.tests.test_bzrsync import (
+from canonical.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase, run_as_db_user)
 from canonical.config import config
 from canonical.launchpad.interfaces.branch import (

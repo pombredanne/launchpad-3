@@ -6,8 +6,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.codehosting.scanner.bzrsync.tests.test_bzrsync import (
-    BzrSyncTestCase)
+from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.launchpad.interfaces.branch import (
     BranchFormat, ControlFormat, RepositoryFormat)
 
