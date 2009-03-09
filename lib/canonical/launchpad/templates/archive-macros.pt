@@ -231,7 +231,7 @@ div.package-details {
                   replace="request/source_component/name" />)
               </tal:component>
             </td>
-            <td><a tal:content="structure request/requester/fmt:link" /></td>
+            <td><a tal:replace="structure request/requester/fmt:link" /></td>
             <td tal:content="request/date_created/fmt:approximatedate" />
             <td tal:content="request/status/name/capitalize" />
           </tr>

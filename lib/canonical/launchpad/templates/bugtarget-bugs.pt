@@ -58,7 +58,7 @@
                   <tal:none condition="not:context/driver">None set</tal:none>
                   <a
                     tal:condition="context/driver"
-                    tal:content="structure context/driver/fmt:link"
+                    tal:replace="structure context/driver/fmt:link"
                   >John Smith</a>
                 </td>
               </tr>
@@ -69,7 +69,7 @@
                   >None set</tal:none>
                   <a
                     tal:condition="bug_supervisor"
-                    tal:content="structure bug_supervisor/fmt:link"
+                    tal:replace="structure bug_supervisor/fmt:link"
                   >Bob Johnson</a>
                 </td>
                 <td>
@@ -90,7 +90,7 @@
                   >None set</tal:none>
                   <a
                     tal:condition="securitycontact"
-                    tal:content="structure securitycontact/fmt:link"
+                    tal:replace="structure securitycontact/fmt:link"
                   >Billy Anderson</a>
                 </td>
                 <td>

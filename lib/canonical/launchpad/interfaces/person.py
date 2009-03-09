@@ -737,8 +737,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                       "member of the 'ubuntumembers' team or she has more "
                       "than MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT karma "
                       "entries."))
-    browsername = Attribute(
-        'Return a textual name suitable for display in a browser.')
 
     archive = exported(
         Reference(title=_("Personal Package Archive"),
@@ -1227,6 +1225,8 @@ class IPersonViewRestricted(Interface):
                 "Your name as you would like it displayed throughout "
                 "Launchpad. Most people use their full name here.")),
         exported_as='display_name')
+    browsername = Attribute(
+        'Return a textual name suitable for display in a browser.')
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     active_member_count = Attribute(

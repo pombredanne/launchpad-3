@@ -21,7 +21,7 @@
 
       <p metal:fill-slot="extra_info">
         Confirm the key <code tal:content="context/fingerprint"/> by
-        <tal:name replace="structure context/requester/fmt:displayname">Foo Bar</tal:name>
+        <tal:name replace="context/requester/fmt:displayname">Foo Bar</tal:name>
       </p>
 
       <div metal:fill-slot="extra_top">

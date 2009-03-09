@@ -917,12 +917,12 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             url, image_html, cgi.escape(person.browsername))
 
     def displayname(self, view_name, rootsite=None):
-        """Return the displayname."""
+        """Return the displayname as a string."""
         person = self._context
         return person.displayname
 
     def unique_displayname(self, view_name, rootsite=None):
-        """Return the unique_displayname."""
+        """Return the unique_displayname as a string."""
         person = self._context
         return person.unique_displayname
 
@@ -930,10 +930,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 class TeamFormatterAPI(PersonFormatterAPI):
     """Adapter for `ITeam` objects to a formatted string."""
 
-    @property
-    def _hidden(self):
-        return '%s' % (
-            '&lt;hidden&gt;')
+    hidden = u'<hidden>'
 
     def url(self, view_name=None):
         """See `ObjectFormatterAPI`."""
@@ -955,8 +952,8 @@ class TeamFormatterAPI(PersonFormatterAPI):
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
             image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
-            return '%s&nbsp;%s' % (
-                image_html, self._hidden)
+            return u'%s&nbsp;%s' % (
+                image_html, cgi.escape(self.hidden))
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
 
     def displayname(self, view_name, rootsite=None):
@@ -964,7 +961,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            return self._hidden
+            return self.hidden
         return super(TeamFormatterAPI, self).displayname(view_name, rootsite)
 
     def unique_displayname(self, view_name, rootsite=None):
@@ -972,7 +969,7 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            return self._hidden
+            return self.hidden
         return super(TeamFormatterAPI, self).unique_displayname(view_name,
                                                                 rootsite)
 

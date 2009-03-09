@@ -96,7 +96,7 @@
             <tal:block condition="request/lp:person">
               <form action="/+logout" class="login" method="post">
                 Logged in as
-                <span tal:replace="structure request/lp:person/fmt:displayname" />
+                <span tal:replace="request/lp:person/fmt:displayname" />
                   &ndash;
                 <input type="submit" value="Log Out" />
               </form>

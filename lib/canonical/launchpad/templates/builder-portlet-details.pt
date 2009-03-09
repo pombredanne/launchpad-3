@@ -21,6 +21,6 @@
      <div tal:content="structure context/status/fmt:text-to-html"/>
 
      <b>Owner</b>
-     <a tal:content="structure context/owner/fmt:link">OWNER</a>
+     <a tal:replace="structure context/owner/fmt:link">OWNER</a>
    </div>
 </div>

@@ -60,8 +60,7 @@
            Ubuntu release manager
         </span>
         is
-        <a href="#"
-           tal:content="structure release_manager/fmt:link">
+        <a tal:replace="structure release_manager/fmt:link">
            Foo Bar
         </a>.
       </p>

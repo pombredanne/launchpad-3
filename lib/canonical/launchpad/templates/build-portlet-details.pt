@@ -18,7 +18,7 @@
             tal:attributes="href dspr/fmt:url">foobar</a>
          <tal:ppa condition="context/archive/purpose/enumvalue:PPA">
            <span tal:replace="context/sourcepackagerelease/title" /> in
-           <a tal:content="structure context/archive/owner/fmt:link"/> PPA
+           <a tal:replace="structure context/archive/owner/fmt:link"/> PPA
          </tal:ppa>
       </td>
     </tr>

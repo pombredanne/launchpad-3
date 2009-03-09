@@ -27,9 +27,9 @@
         </p>
         <div class="informational message">
           The following email addresses are owned by
-          <tal:dupe_displayname replace="structure view/dupe_person/fmt:displayname" />
+          <tal:dupe_displayname replace="view/dupe_person/fmt:displayname" />
           and are going to be transferred to
-          <tal:target_displayname replace="structure view/target_person/fmt:displayname" />:
+          <tal:target_displayname replace="view/target_person/fmt:displayname" />:
           <ul>
             <li tal:repeat="email view/dupe_person_emails">
               <strong tal:content="email/email"/>
@@ -51,7 +51,7 @@
           </strong>?
         </p>
         <div class="informational message">
-          <tal:dupe_name replace="structure view/dupe_person/fmt:displayname" /> has
+          <tal:dupe_name replace="view/dupe_person/fmt:displayname" /> has
           <tal:member_count replace="view/dupe_person/activemembers/count" />
           active members which will have to be deactivated before the teams
           can be merged.

@@ -14,7 +14,7 @@
        </tal:displayname>
     </a>
     by
-    <a tal:content="structure source/sourcepackagerelease/creator/fmt:link">
+    <a tal:replace="structure source/sourcepackagerelease/creator/fmt:link">
       Mark Shuttleworth
     </a>
     <tal:dateuploaded replace="source/dateuploaded/fmt:displaydate">

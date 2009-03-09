@@ -104,8 +104,7 @@
                   The maintainer of
                   <tal:security-context content="security_context/displayname">
                     Mozilla Firefox</tal:security-context>,
-                  <a href=""
-                     tal:content="structure maintainer/fmt:link">
+                  <a tal:replace="structure maintainer/fmt:link">
                     Sample Person</a>,
                   will be notified.
                 </tal:maintainer>

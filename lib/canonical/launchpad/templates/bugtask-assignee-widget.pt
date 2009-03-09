@@ -50,7 +50,7 @@
           <td style="padding: 0">
             <label style="font-weight: normal"
                    tal:attributes="for view/assigned_to">
-              <tal:assignee content="structure view/getAssigneeDisplayValue" />
+              <tal:assignee content="view/getAssigneeDisplayValue" />
             </label>
           </td>
         </tr>

@@ -28,8 +28,7 @@
           <tr>
             <th>Registrant:</th>
             <td>
-              <a href=""
-                 tal:content="structure context/registrant/fmt:link">
+              <a tal:replace="structure context/registrant/fmt:link">
                 Some Person.
               </a>
             </td>

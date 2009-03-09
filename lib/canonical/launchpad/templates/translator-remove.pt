@@ -20,7 +20,7 @@
       </div>
       <h1>
         Remove
-        <tal:translator replace="structure context/translator/fmt:displayname">
+        <tal:translator replace="context/translator/fmt:displayname">
           Carlos
         </tal:translator> as the
         <tal:language replace="context/language/englishname">

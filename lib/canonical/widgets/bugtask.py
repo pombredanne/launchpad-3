@@ -180,16 +180,14 @@ class BugTaskAssigneeWidget(Widget):
         """Return a display value for current IBugTask.assignee.
 
         If no IBugTask.assignee, return None.
-        If the assignee is not viewable, return redacted.
+        If the assignee is not viewable, return u'<hidden>'.
         """
         field = self.context
         bugtask = field.context
         if not bugtask.assignee:
             return None
-        try:
-            display_value = bugtask.assignee.unique_displayname
-        except Unauthorized:
-            display_value = TeamFormatterAPI(bugtask.assignee).link(None)
+        display_value = (
+            TeamFormatterAPI(bugtask.assignee).unique_displayname(None))
         return display_value
 
     def selectedRadioButton(self):

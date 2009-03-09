@@ -9,7 +9,7 @@
   </h2>
   <h2 tal:condition="python:not view.user == context"
       tal:define="name context/fmt:displayname"
-      tal:content="structure string: ${name}'s other packages">
+      tal:content="string: ${name}'s other packages">
     Sample Person's other packages
   </h2>
   <div class="portletBody portletContent"

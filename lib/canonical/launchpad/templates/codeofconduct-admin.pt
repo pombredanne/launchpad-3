@@ -77,7 +77,7 @@
 
      <ul tal:condition="view/results">
        <li tal:repeat="code view/results">
-           <a tal:content="structure code/owner/fmt:link">OWNER</a>
+           <a tal:replace="structure code/owner/fmt:link">OWNER</a>
            <a tal:attributes="href code/id"
               tal:content="code/displayname">CoC</a>
            <span tal:omit-tag="" tal:condition="code/active">[ACTIVE]</span>
