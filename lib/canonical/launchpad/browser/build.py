@@ -194,18 +194,18 @@ class CompleteBuild:
     def __init__(
         self, build, buildqueue_record, sourcepackagerelease, buildlog):
         self.context = build
-        self.buildqueue = buildqueue_record
-        self.sourcepackagerelease = sourcepackagerelease
-        self.buildlog = buildlog
+        self._buildqueue_record = buildqueue_record
+        self._sourcepackagerelease = sourcepackagerelease
+        self._buildlog = buildlog
 
     def sourcepackagerelease(self):
-        return self.sourcepackagerelease
+        return self._sourcepackagerelease
 
     def buildlog(self):
-        return self.buildlog
+        return self._buildlog
 
     def buildqueue_record(self):
-        return self.buildqueue
+        return self._buildqueue_record
 
 
 def setupCompleteBuilds(batch):
@@ -224,16 +224,14 @@ def setupCompleteBuilds(batch):
     if not builds:
         return []
 
-    build_ids = [build.id for build in builds]
-    results = getUtility(IBuildSet).prefetchBuildData(build_ids)
-    # The following dict is keyed on the Build.id; the values are 3-tuples
-    # containing the Build's 'buildqueue', 'sourcepackagerelease' and
-    # 'buildlog' respectively.
-    build_data = dict([(row[0], tuple(row[1:4])) for row in results])
-
     complete_builds = []
-    for build in builds:
-        complete_builds.append(CompleteBuild(build, *build_data[build.id]))
+    build_dict = dict([(build.id, build) for build in builds])
+    results = getUtility(IBuildSet).prefetchBuildData(build_dict.keys())
+    for row in results:
+        # Get the build's db key, 'buildqueue', 'sourcepackagerelease' and
+        # 'buildlog' (from the result set) respectively.
+        id, queue, spr, log = row[:4]
+        complete_builds.append(CompleteBuild(build_dict[id], queue, spr, log))
 
     return complete_builds
 
