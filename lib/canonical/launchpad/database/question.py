@@ -23,6 +23,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.security.proxy import isinstance as zope_isinstance
+from lazr.enum import DBItem, Item
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
@@ -61,7 +62,6 @@ from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lazr import DBItem, Item
 
 
 class notify_question_modified:

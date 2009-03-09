@@ -35,6 +35,7 @@ from zope import formlib
 from zope.interface import implements, providedBy, Interface
 from zope.schema import Bool, Choice
 from zope.security.interfaces import Unauthorized
+from lazr.enum import EnumeratedType, Item
 
 from canonical.cachedproperty import cachedproperty
 
@@ -63,8 +64,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.snapshot import Snapshot
-
-from canonical.lazr import EnumeratedType, Item
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
@@ -559,7 +558,8 @@ class BugSecrecyEditView(BugEditViewBase):
             default=False)
         super(BugSecrecyEditView, self).setUpFields()
         self.form_fields = self.form_fields.omit('private')
-        self.form_fields = formlib.form.Fields(private_field) + self.form_fields
+        self.form_fields = (
+            formlib.form.Fields(private_field) + self.form_fields)
 
     @property
     def initial_values(self):
