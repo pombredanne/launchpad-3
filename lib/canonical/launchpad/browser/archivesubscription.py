@@ -162,7 +162,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
     @property
     def private_ppa_sources_list(self):
         """Return all the private ppa sources.list entries as a string."""
-        sources_list_text = "# Personal subscriptions for private PPAs\n"
+        sources_list_text = "# Personal subscriptions for private PPAs\n\n"
         active_sources_entries = []
         for subs_with_token in self.active_subscriptions_with_tokens:
             subscription = subs_with_token['subscription']
@@ -172,7 +172,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
             active_sources_entries.append(
                 "# %(title)s\n"
                 "deb %(archive_url)s %(series_name)s main\n"
-                "deb-src %(archive_url)s %(series_name)s main" % {
+                "deb-src %(archive_url)s %(series_name)s main\n" % {
                     'title': archive.title,
                     'archive_url': token.archive_url,
                     'series_name': series_name})
