@@ -59,7 +59,7 @@ class IBranchCollection(Interface):
             statuses. If not, return all merge proposals.
         """
 
-    def getProposalsForReviewer(reviewer, status=None):
+    def getMergeProposalsForReviewer(reviewer, status=None):
         """Return a result set of merge proposals for the given reviewer.
 
         That is, all merge proposals that 'reviewer' has voted on or has been

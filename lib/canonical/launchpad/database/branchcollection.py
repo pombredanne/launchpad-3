@@ -133,7 +133,7 @@ class GenericBranchCollection:
                 expression)
         return self.store.find(BranchMergeProposal, expression)
 
-    def getProposalsForReviewer(self, reviewer, status=None):
+    def getMergeProposalsForReviewer(self, reviewer, status=None):
         """See `IBranchCollection`."""
         tables = [
             BranchMergeProposal,

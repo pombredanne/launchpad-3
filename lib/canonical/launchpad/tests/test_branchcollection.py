@@ -493,7 +493,7 @@ class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal()
         proposal.nominateReviewer(reviewer, reviewer)
         proposal2 = self.factory.makeBranchMergeProposal()
-        proposals = self.all_branches.getProposalsForReviewer(reviewer)
+        proposals = self.all_branches.getMergeProposalsForReviewer(reviewer)
         self.assertEqual([proposal], list(proposals))
 
     def test_getProposalsForReviewer_filter_status(self):
@@ -504,7 +504,7 @@ class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
         proposal2 = self.factory.makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
         proposal2.nominateReviewer(reviewer, reviewer)
-        proposals = self.all_branches.getProposalsForReviewer(
+        proposals = self.all_branches.getMergeProposalsForReviewer(
             reviewer, [BranchMergeProposalStatus.NEEDS_REVIEW])
         self.assertEqual([proposal1], list(proposals))
 
@@ -517,7 +517,7 @@ class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
             target_branch=target_branch)
         proposal.nominateReviewer(reviewer, reviewer)
         proposals = self.all_branches.visibleByUser(
-            None).getProposalsForReviewer(reviewer)
+            None).getMergeProposalsForReviewer(reviewer)
         self.assertEqual([], list(proposals))
 
     def test_getProposalsForReviewer_anonymous_source_private(self):
@@ -532,7 +532,7 @@ class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
             source_branch=source_branch, target_branch=target_branch)
         proposal.nominateReviewer(reviewer, reviewer)
         proposals = self.all_branches.visibleByUser(
-            None).getProposalsForReviewer(reviewer)
+            None).getMergeProposalsForReviewer(reviewer)
         self.assertEqual([], list(proposals))
 
     def test_getProposalsForReviewer_for_product(self):
@@ -542,7 +542,8 @@ class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
         proposal2 = self.factory.makeBranchMergeProposal()
         proposal2.nominateReviewer(reviewer, reviewer)
         proposals = self.all_branches.inProduct(
-            proposal.source_branch.product).getProposalsForReviewer(reviewer)
+            proposal.source_branch.product).getMergeProposalsForReviewer(
+            reviewer)
         self.assertEqual([proposal], list(proposals))
 
 
