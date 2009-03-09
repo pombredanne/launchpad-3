@@ -66,7 +66,7 @@ from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.lazr.interfaces.fields import 
+from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import (
     ICollection, ICollectionResource, IEntry, IEntryField,
