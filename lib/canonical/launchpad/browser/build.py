@@ -227,7 +227,7 @@ def setupCompleteBuilds(batch):
     build_ids = [build.id for build in builds]
     results = getUtility(IBuildSet).prefetchBuildData(build_ids)
     for row in results:
-        # Get the build's db key, 'buildqueue', 'sourcepackagerelease' and
+        # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
         # 'buildlog' (from the result set) respectively.
         id, queue, spr, log = row[:4]
         prejoins[id] = (queue, spr, log)
