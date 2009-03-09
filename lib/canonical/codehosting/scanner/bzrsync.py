@@ -23,6 +23,8 @@ from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.codehosting.scanner.bugs import BugBranchLinker
 from canonical.codehosting.scanner.email import BranchMailer
+from canonical.codehosting.scanner.mergedetection import (
+    BranchMergeDetectionHandler)
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBranchRevisionSet, IRevisionSet, RepositoryFormat)
@@ -40,50 +42,6 @@ UTC = pytz.timezone('UTC')
 
 class InvalidStackedBranchURL(Exception):
     """Raised when we try to scan a branch stacked on an invalid URL."""
-
-
-class BranchMergeDetectionHandler:
-    """Handle merge detection events."""
-
-    def __init__(self, logger=None):
-        if logger is None:
-            logger = logging.getLogger(self.__class__.__name__)
-        self.logger = logger
-
-    def _markSourceBranchMerged(self, source):
-        # If the source branch is a series branch, then don't change the
-        # lifecycle status of it at all.
-        if source.associatedProductSeries().count() > 0:
-            return
-        # In other cases, we now want to update the lifecycle status of the
-        # source branch to merged.
-        self.logger.info("%s now Merged.", source.bzr_identity)
-        source.lifecycle_status = BranchLifecycleStatus.MERGED
-
-    def mergeProposalMerge(self, proposal):
-        """Handle a detected merge of a proposal."""
-        self.logger.info(
-            'Merge detected: %s => %s',
-            proposal.source_branch.bzr_identity,
-            proposal.target_branch.bzr_identity)
-        proposal.markAsMerged()
-        # Don't update the source branch unless the target branch is a series
-        # branch.
-        if proposal.target_branch.associatedProductSeries().count() == 0:
-            return
-        self._markSourceBranchMerged(proposal.source_branch)
-
-    def mergeOfTwoBranches(self, source, target):
-        """Handle the merge of source into target."""
-        # If the target branch is not the development focus, then don't update
-        # the status of the source branch.
-        self.logger.info(
-            'Merge detected: %s => %s',
-            source.bzr_identity, target.bzr_identity)
-        dev_focus = target.product.development_focus
-        if target != dev_focus.user_branch:
-            return
-        self._markSourceBranchMerged(source)
 
 
 class WarehouseBranchPolicy(BranchPolicy):
