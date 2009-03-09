@@ -477,6 +477,28 @@ First we'll define a helper to print the build summary:
     Relevant builds:
      - i386 build of pmount 0.1-1 in ubuntu warty RELEASE
 
+The build set class furthermore provides a mechanism to load build-related
+data from the database for a given set of builds:
+
+    >>> build_ids = sorted(
+    ...     [build.id for build in ubuntu.getBuildRecords()])[:5]
+    >>> rset = bs.prefetchBuildData(build_ids)
+    >>> def id_or_none(item):
+    ...     if item is not None:
+    ...         return '%3d' % item.id
+    ...     else:
+    ...         return 'n/a'
+    >>> for row in rset:
+    ...     print(
+    ...         'id: %s, queue: %s, spr: %s, log: %s' % ((row[0],) +
+    ...         tuple([id_or_none(d) for d in row[1:4]])))
+    id: 2, queue: n/a, spr:  14, log:   1
+    id: 6, queue: n/a, spr:  32, log:   1
+    id: 7, queue: n/a, spr:  20, log:   1
+    id: 8, queue:   1, spr:  14, log: n/a
+    id: 9, queue:   3, spr:  20, log: n/a
+
+
 
 == IHadBuildRecords.getBuildRecords() Implementations ==
 
