@@ -23,7 +23,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.security.proxy import isinstance as zope_isinstance
-from lazr.enum import DBItem, Item
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
@@ -31,6 +30,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import LeftJoin
 from storm.store import Store
 
+from lazr.enum import DBItem, Item
 from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
