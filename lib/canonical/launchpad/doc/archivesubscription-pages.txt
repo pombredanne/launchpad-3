@@ -189,6 +189,12 @@ subscriptions for the person, with a corresponding token for each:
     Private PPA for Mark Shuttleworth       spiv's still my friend   None
     Private PPA for Celso Providelo         spiv's my friend         None
 
+As long as there are no active subscriptions, the private_ppa_sources_list
+property will not contain any repo urls:
+
+    >>> print view.private_ppa_sources_list
+    # Personal subscriptions for private PPAs
+
 Posting an Archive ID to the PersonArchiveSubscriptionView will
 generate a token for that archive:
 
@@ -236,6 +242,14 @@ active_subscriptions_with_tokens property:
     ...         print "Token"
     Private PPA for Mark Shuttleworth              Token
 
+Now the private_ppa_sources_list property should contain Mark's repo:
+
+    >>> print view.private_ppa_sources_list
+    # Personal subscriptions for private PPAs
+    # Private PPA for Mark Shuttleworth
+    deb http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
+    deb-src http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
+
 Activate the second subscription and then verify that there are no more
 pending subscriptions:
 
@@ -248,6 +262,17 @@ pending subscriptions:
     ...     form={"archive_id": str(cprov.archive.id)})
     >>> view.pending_subscriptions
     []
+
+Now the private_ppa_sources_list property should contain both repos:
+
+    >>> print view.private_ppa_sources_list
+    # Personal subscriptions for private PPAs
+    # Private PPA for Mark Shuttleworth
+    deb http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
+    deb-src http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
+    # Private PPA for Celso Providelo
+    deb http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb-src http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
 If a user fiddles with the POST data and sends a bad archive_id or an
 archive_id corresponding to an archive to which the user is not subscribed

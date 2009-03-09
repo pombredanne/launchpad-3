@@ -55,6 +55,7 @@ class ArchiveAuthToken(Storm):
             userinfo="%s:%s" %(self.person.name, self.token))
         return str(auth_url)
 
+
 class ArchiveAuthTokenSet:
     """See `IArchiveAuthTokenSet`."""
     implements(IArchiveAuthTokenSet)

@@ -159,6 +159,27 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
                 for subs_with_token in self.subscriptions_with_tokens
                     if subs_with_token["token"] is None]
 
+    @property
+    def private_ppa_sources_list(self):
+        """Return all the private ppa sources.list entries as a string."""
+        sources_list_text = "# Personal subscriptions for private PPAs\n"
+        active_sources_entries = []
+        for subs_with_token in self.active_subscriptions_with_tokens:
+            subscription = subs_with_token['subscription']
+            token = subs_with_token['token']
+            archive = subscription.archive
+            series_name = archive.distribution.currentseries.name
+            active_sources_entries.append(
+                "# %(title)s\n"
+                "deb %(archive_url)s %(series_name)s main\n"
+                "deb-src %(archive_url)s %(series_name)s main" % {
+                    'title': archive.title,
+                    'archive_url': token.archive_url,
+                    'series_name': series_name})
+
+        sources_list_text += "\n".join(active_sources_entries)
+        return sources_list_text
+
     def processSubscriptionActivation(self):
         """Process any posted data that activates a subscription."""
         # Just for clarity, define a redirectToSelf() helper.
