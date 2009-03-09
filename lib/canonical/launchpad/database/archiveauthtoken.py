@@ -10,6 +10,8 @@ __all__ = [
 
 import pytz
 
+from lazr.uri import URI
+
 from storm.locals import DateTime, Int, Reference, Storm, Unicode
 
 from zope.component import getUtility
@@ -20,7 +22,6 @@ from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthToken, IArchiveAuthTokenSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.uri import URI
 
 class ArchiveAuthToken(Storm):
     """See `IArchiveAuthToken`."""
