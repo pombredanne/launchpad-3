@@ -368,6 +368,10 @@ Zero or more spaces may appear between the ":" and the "#".
     u'LP: <a href="/bugs/10" title="another test bug">#10</a>,
     <a href="/bugs/7" title="A test bug">#7</a>'
 
+    >>> spr_view._linkify_bug_numbers("LP: #10 LP: #10")
+    u'LP: <a href="/bugs/10" title="another test bug">#10</a>
+      LP: <a href="/bugs/10" title="another test bug">#10</a>'
+
 
 == Comparing Sourcepackages ==
 
