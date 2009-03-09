@@ -196,7 +196,11 @@ class CompleteBuild:
         self.context = build
         self._buildqueue_record = buildqueue_record
         self._sourcepackagerelease = sourcepackagerelease
-        self.buildlog = buildlog
+        self._buildlog = buildlog
+
+    @property
+    def buildlog(self):
+        return self._buildlog
 
     def buildqueue_record(self):
         return self._buildqueue_record
