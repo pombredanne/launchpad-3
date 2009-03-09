@@ -16,8 +16,8 @@
     <h1 tal:content="CONTEXTS/fmt:pagetitle">
       Private archive subscriptions for Joe Smith
     </h1>
-  <tal:has_subscriptions condition="view/has_subscriptions">
-    <div id="pending_subscriptions" tal:condition="view/has_pending_subscriptions">
+  <tal:has_subscriptions condition="view/subscriptions_with_tokens">
+    <div id="pending_subscriptions" tal:condition="view/pending_subscriptions">
       <h2>Pending subscriptions</h2>
       <p>You have been added as a subscriber of the following Private PPAs.
          If you wish to download software from these PPAs, please activate
@@ -48,7 +48,7 @@
         </tbody>
       </table>
     </div>
-    <div id="sources_list" tal:condition="view/has_active_subscriptions">
+    <div id="sources_list" tal:condition="view/active_subscriptions_with_tokens">
       <h2>Custom sources.list entries</h2>
       <p>The following sources.list entries will enable you to download
          software from the private PPAs for which you have activated
@@ -102,7 +102,7 @@ deb-src <tal:repo-url content="archive_url" /> <tal:distroseries content="series
       </table>
     </div>
   </tal:has_subscriptions>
-  <tal:has_no_subscriptions condition="not: view/has_subscriptions">
+  <tal:has_no_subscriptions condition="not: view/subscriptions_with_tokens">
     <p>You do not have any current subscriptions to private archives.
     </p>
   </tal:has_no_subscriptions>

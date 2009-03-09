@@ -130,7 +130,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
             self.context)
 
         # Turn the result set into a list of dicts so it can be easily
-        # accessed in TALS:
+        # accessed in TAL:
         return [
             {"subscription": subscription, "token": token}
                 for subscription, token in subs_with_tokens]
@@ -158,21 +158,6 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
             subs_with_token["subscription"]
                 for subs_with_token in self.subscriptions_with_tokens
                     if subs_with_token["token"] is None]
-
-    @property
-    def has_subscriptions(self):
-        """Return whether this person has any subscriptions."""
-        return len(self.subscriptions_with_tokens) > 0
-
-    @property
-    def has_active_subscriptions(self):
-        """Return whether this person has active subscriptions."""
-        return len(self.active_subscriptions_with_tokens) > 0
-
-    @property
-    def has_pending_subscriptions(self):
-        """Return whether this person has pending subscriptions."""
-        return len(self.pending_subscriptions) > 0
 
     def processSubscriptionActivation(self):
         """Process any posted data that activates a subscription."""

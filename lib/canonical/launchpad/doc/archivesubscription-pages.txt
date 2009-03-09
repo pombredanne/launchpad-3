@@ -155,25 +155,21 @@ So we try again with an expiry date in the future:
 The PersonArchiveSubscriptions view provides all the archive subscriptions
 for a person, as well as the ability to activate subscriptions.
 
-The has_subscriptions helper simply returns whether the current person
-has any archive subscriptions. Currently sabdfl isn't subscribed to any
-private archives:
-
     >>> view = create_initialized_view(sabdfl, name="+archivesubscriptions")
-    >>> view.has_subscriptions
-    False
+    >>> view.subscriptions_with_tokens
+    []
 
 But spiv is subscribed to a number of archives:
 
     >>> spiv = getUtility(IPersonSet).getByName('spiv')
     >>> login("andrew.bennetts@ubuntulinux.com")
     >>> view = create_initialized_view(spiv, name="+archivesubscriptions")
-    >>> view.has_subscriptions
-    True
-    >>> view.has_active_subscriptions
-    False
-    >>> view.has_pending_subscriptions
-    True
+    >>> len(view.subscriptions_with_tokens)
+    2
+    >>> view.active_subscriptions_with_tokens
+    []
+    >>> len(view.pending_subscriptions)
+    2
 
 The subscriptions_with_tokens property returns all the current archive
 subscriptions for the person, with a corresponding token for each:
@@ -217,12 +213,12 @@ And the subscription has been activated:
     Private PPA for Mark Shuttleworth       spiv's still my friend   Token
     Private PPA for Celso Providelo         spiv's my friend         None
 
-    >>> view.has_subscriptions
-    True
-    >>> view.has_active_subscriptions
-    True
-    >>> view.has_pending_subscriptions
-    True
+    >>> len(view.subscriptions_with_tokens)
+    2
+    >>> len(view.active_subscriptions_with_tokens)
+    1
+    >>> len(view.pending_subscriptions)
+    1
 
 The user will also see a notification of the subscription activation:
 
@@ -250,8 +246,8 @@ pending subscriptions:
     ...         "https://launchpad.dev/~cprov/+archivesubscriptions",
     ...     method="post",
     ...     form={"archive_id": str(cprov.archive.id)})
-    >>> view.has_pending_subscriptions
-    False
+    >>> view.pending_subscriptions
+    []
 
 If a user fiddles with the POST data and sends a bad archive_id or an
 archive_id corresponding to an archive to which the user is not subscribed
