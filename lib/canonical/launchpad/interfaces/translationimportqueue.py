@@ -3,11 +3,10 @@
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Field, Text, TextLine
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import TranslationFileFormat
-
-from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad.interfaces.translationcommonformat import (
     TranslationImportExportBaseException)
@@ -208,9 +207,6 @@ class ITranslationImportQueue(Interface):
 
     def entryCount():
         """Return the number of TranslationImportQueueEntry records."""
-
-    def iterNeedReview():
-        """Iterate over all entries in the queue that need review."""
 
     def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,

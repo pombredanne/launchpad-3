@@ -602,8 +602,8 @@ class TranslationImportQueue:
         """See ITranslationImportQueue."""
         return TranslationImportQueueEntry.select().count()
 
-    def iterNeedsReview(self):
-        """See ITranslationImportQueue."""
+    def _iterNeedsReview(self):
+        """Iterate over all entries in the queue that need review."""
         return iter(TranslationImportQueueEntry.selectBy(
             status=RosettaImportStatus.NEEDS_REVIEW,
             orderBy=['dateimported']))
@@ -980,7 +980,7 @@ class TranslationImportQueue:
         """See ITranslationImportQueue."""
         there_are_entries_approved = False
         importer = getUtility(ITranslationImporter)
-        for entry in self.iterNeedsReview():
+        for entry in self._iterNeedsReview():
             if entry.import_into is None:
                 # We don't have a place to import this entry. Try to guess it.
                 if importer.isTranslationName(entry.path):
@@ -1025,7 +1025,7 @@ class TranslationImportQueue:
         """See ITranslationImportQueue."""
         importer = getUtility(ITranslationImporter)
         num_blocked = 0
-        for entry in self.iterNeedsReview():
+        for entry in self._iterNeedsReview():
             if importer.isTemplateName(entry.path):
                 # Templates cannot be managed automatically.  Ignore them and
                 # wait for an admin to do it.

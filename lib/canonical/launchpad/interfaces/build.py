@@ -17,6 +17,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import (Choice, Datetime, Int, Object, TextLine, Timedelta,
     Text)
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
@@ -29,8 +30,6 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.lazr.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item)
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
@@ -460,6 +459,21 @@ class IBuildSet(Interface):
                     'builds':[build3]
                 }
         :rtype: ``dict``.
+        """
+
+    def prefetchBuildData(build_ids):
+        """Used to pre-populate the cache with build related data.
+
+        When dealing with a group of Build records we can't use the
+        prejoin facility to also fetch BuildQueue, SourcePackageRelease
+        and LibraryFileAlias records in a single query because the
+        result set is too large and the queries time out too often.
+
+        So this method receives a list of Build IDs (the current batch
+        to be displayed on the GUI) and fetches the corresponding
+        BuildQueue, SourcePackageRelease and LibraryFileAlias rows
+        (prejoined with the appropriate Builder, SourcePackageName and
+        LibraryFileContent respectively).
         """
 
 

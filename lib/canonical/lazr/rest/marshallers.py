@@ -35,7 +35,7 @@ from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from lazr.uri import URI
+from lazr.uri import URI, InvalidURIError
 
 from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 
@@ -498,7 +498,7 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
         except NotFound:
             # The URL doesn't correspond to any real object.
             raise ValueError('No such object "%s".' % value)
-        except URIError:
+        except InvalidURIError:
             raise ValueError('"%s" is not a valid URI.' % value)
         # We looked up the URL and got the thing at the other end of
         # the URL: a resource. But internally, a resource isn't a

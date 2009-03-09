@@ -35,6 +35,7 @@ from zope.interface import implements, alsoProvides
 from zope.interface.interfaces import IMethod
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
+from lazr.enum import DBItem
 
 from canonical.config import config
 
@@ -44,8 +45,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
-
-from canonical.lazr.enum import DBItem
 
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist

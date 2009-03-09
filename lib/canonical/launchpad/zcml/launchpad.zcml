@@ -323,6 +323,22 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILink"
+      name="+inline-icon"
+      class="canonical.launchpad.browser.launchpad.LinkView"
+      template="../templates/launchpad-inline-icon-link.pt"
+      permission="zope.Public"
+      />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILink"
+      name="+inline-suffix"
+      class="canonical.launchpad.browser.launchpad.LinkView"
+      template="../templates/launchpad-inline-suffix-link.pt"
+      permission="zope.Public"
+      />
+
   <!-- hierarchy -->
   <browser:page
       for="zope.interface.Interface"

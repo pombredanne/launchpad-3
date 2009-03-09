@@ -123,6 +123,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.archive import traverse_named_ppa
+from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces import (
@@ -1160,7 +1161,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def map(self):
         target = '+map'
         text = 'Show map and time zones'
-        return Link(target, text)
+        return Link(target, text, icon='meeting')
 
     def add_my_teams(self):
         target = '+add-my-teams'
@@ -2850,8 +2851,10 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         super(PersonIndexView, self).initialize()
         # This view requires the gmap2 Javascript in order to render the map
         # with the person's usual location. The location is only availble if
-        # the location is set and visible.
-        if self.has_visible_location:
+        # the location is set, visible, and the viewing user wants to see it.
+        launchpad_views = get_launchpad_views(self.request.cookies)
+        self._small_map = launchpad_views['small_maps']
+        if (self.has_visible_location and self._small_map):
             self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
@@ -2902,7 +2905,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         assert self.has_visible_location, (
             "Can't generate the map for a person who hasn't set a "
             "visible location.")
-        assert self.request.needs_gmap2, (
+        assert self.request.needs_gmap2 or not self._small_map, (
             "To use this method a view must flag that it needs gmap2.")
 
         replacements = {'center_lat': self.context.latitude,

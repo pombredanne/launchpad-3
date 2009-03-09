@@ -18,12 +18,13 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.event import notify
 from zope.interface import implements
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IDistribution, IFAQ, IFAQSet, FAQSort, IPerson, IProduct, IProject)
 from canonical.launchpad.validators.person import validate_public_person
@@ -95,7 +96,7 @@ class FAQ(SQLBase):
             owner=owner, title=title, content=content, keywords=keywords,
             date_created=date_created, product=product,
             distribution=distribution)
-        notify(SQLObjectCreatedEvent(faq))
+        notify(ObjectCreatedEvent(faq))
         return faq
 
     @staticmethod

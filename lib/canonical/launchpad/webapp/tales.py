@@ -14,9 +14,10 @@ import re
 import rfc822
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
+from lazr.enum import enumerated_type_registry
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
@@ -34,9 +35,8 @@ from canonical.launchpad.interfaces import (
     BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
     ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.person import (
-    IPerson, IPersonSet, PersonVisibility)
+    IHasIcon, IHasLogo, IHasMugshot)
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -50,7 +50,6 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
-from canonical.lazr import enumerated_type_registry
 from canonical.lazr.canonicalurl import nearest_adapter
 
 
@@ -1752,6 +1751,42 @@ class DurationFormatterAPI:
         return "%s weeks" % number_name.get(weeks, str(weeks))
 
 
+class LinkFormatterAPI(ObjectFormatterAPI):
+    """Adapter from Link objects to a formatted anchor."""
+    final_traversable_names = {
+        'icon': 'icon',
+        'icon-link': 'icon_link',
+        'link-icon': 'link_icon',
+        }
+
+    def icon(self):
+        """Return the icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-icon")()
+
+    def link_icon(self):
+        """Return the text and icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-suffix")()
+
+    def icon_link(self):
+        """Return the icon and text representation of the link."""
+        return self.link(None)
+
+    def link(self, view_name, rootsite=None):
+        """Return the default representation of the link."""
+        return self._context.render()
+
+    def url(self, view_name=None):
+        """Return the URL representation of the link."""
+        if self._context.enabled:
+            return self._context.url
+        else:
+            return u''
+
+
 def clean_path_segments(request):
     """Returns list of path segments, excluding system-related segments."""
     proto_host_port = request.getApplicationURL()
@@ -2461,7 +2496,8 @@ class FormattersAPI:
                 css_class = 'diff-comment text'
             else:
                 css_class = 'text'
-            result.append('<td class="%s">%s</td>' % (css_class, escape(line)))
+            result.append(
+                '<td class="%s">%s</td>' % (css_class, escape(line)))
             result.append('</tr>')
 
         result.append('</table>')

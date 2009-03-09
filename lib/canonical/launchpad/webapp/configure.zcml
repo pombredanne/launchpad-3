@@ -52,6 +52,14 @@
         factory="canonical.launchpad.webapp.dbpolicy.SlaveDatabasePolicy"
         />
 
+    <!-- lazr.batchnavigator hook -->
+    <adapter
+        factory='.batching.FiniteSequenceAdapter' />
+    
+    <adapter
+        factory='.batching.FiniteSequenceAdapter'
+        for='storm.zope.interfaces.ISQLObjectResultSet' />
+
     <!-- links -->
     <class class="canonical.launchpad.webapp.menu.LinkData">
         <allow interface="canonical.launchpad.webapp.interfaces.ILinkData" />
@@ -119,7 +127,7 @@
 
     <!-- TALES enum-value: namespace -->
     <adapter
-        for="canonical.lazr.BaseItem"
+        for="lazr.enum.BaseItem"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.EnumValueAPI"
         name="enumvalue"
@@ -446,6 +454,12 @@
         name="fmt"
         />
     <adapter
+        for="canonical.launchpad.webapp.interfaces.ILink"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.LinkFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="*"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
@@ -567,6 +581,13 @@
         provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
         factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
         />
+
+    <adapter
+        factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result" />
+    <!-- It also works for the legacy SQLObject interface. -->
+    <adapter
+        factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result"
+        for="storm.zope.interfaces.ISQLObjectResultSet" />
 
     <!--These pages are used for testing BrowserNotificationMessages
         They are protected with admin privileges rather than being installed
