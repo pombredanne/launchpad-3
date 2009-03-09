@@ -10,8 +10,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.codehosting.jobs import JobRunner
-from canonical.codehosting.scanner.bzrsync.tests.test_bzrsync import (
-    BzrSyncTestCase)
+from canonical.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel, IPersonSet)
