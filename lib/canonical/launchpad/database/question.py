@@ -23,13 +23,16 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.security.proxy import isinstance as zope_isinstance
-from lazr.enum import DBItem, Item
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import LeftJoin
 from storm.store import Store
+
+from lazr.enum import DBItem, Item
+from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
@@ -56,20 +59,17 @@ from canonical.launchpad.database.questionbug import QuestionBug
 from canonical.launchpad.database.questionmessage import QuestionMessage
 from canonical.launchpad.database.questionsubscription import (
     QuestionSubscription)
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class notify_question_modified:
-    """Decorator that sends a SQLObjectModifiedEvent after a workflow action.
+    """Decorator that sends a ObjectModifiedEvent after a workflow action.
 
     This decorator will take a snapshot of the object before the call to
     the decorated workflow_method. It will fire an
-    SQLObjectModifiedEvent after the method returns.
+    ObjectModifiedEvent after the method returns.
 
     The list of edited_fields will be computed by comparing the snapshot
     with the modified question. The fields that are checked for
@@ -80,9 +80,9 @@ class notify_question_modified:
     """
 
     def __call__(self, func):
-        """Return the SQLObjectModifiedEvent decorator."""
+        """Return the ObjectModifiedEvent decorator."""
         def notify_question_modified(self, *args, **kwargs):
-            """Create the SQLObjectModifiedEvent decorator."""
+            """Create the ObjectModifiedEvent decorator."""
             old_question = Snapshot(self, providing=providedBy(self))
             msg = func(self, *args, **kwargs)
 
@@ -92,7 +92,7 @@ class notify_question_modified:
                 if getattr(self, field) != getattr(old_question, field):
                     edited_fields.append(field)
 
-            notify(SQLObjectModifiedEvent(
+            notify(ObjectModifiedEvent(
                 self, object_before_modification=old_question,
                 edited_fields=edited_fields, user=msg.owner))
             return msg
@@ -535,7 +535,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
         tktmsg = QuestionMessage(
             question=self, message=msg, action=action, new_status=new_status)
-        notify(SQLObjectCreatedEvent(tktmsg, user=tktmsg.owner))
+        notify(ObjectCreatedEvent(tktmsg, user=tktmsg.owner))
         # Make sure we update the relevant date of response or query.
         if update_question_dates:
             if owner == self.owner:
@@ -1092,7 +1092,7 @@ class QuestionTargetMixin:
             title=title, description=description, owner=owner,
             datecreated=datecreated, language=language,
             **self.getTargetTypes())
-        notify(SQLObjectCreatedEvent(question))
+        notify(ObjectCreatedEvent(question))
         return question
 
     def createQuestionFromBug(self, bug):

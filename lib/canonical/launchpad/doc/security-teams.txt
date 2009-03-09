@@ -218,14 +218,13 @@ contact for thunderbird to see how this works.
     >>> thunderbird.security_contact = stub
 
     >>> from zope.event import notify
-    >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IUpstreamBugTask
 
     >>> old_state = Snapshot(bug_in_evolution, providing=IUpstreamBugTask)
     >>> bug_in_evolution.product = thunderbird
-    >>> bug_product_changed = SQLObjectModifiedEvent(
+    >>> bug_product_changed = ObjectModifiedEvent(
     ...     bug_in_evolution, old_state, ["product"])
 
 First, let's publish the change event with the bug still marked private,
