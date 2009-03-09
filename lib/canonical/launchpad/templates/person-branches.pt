@@ -38,9 +38,9 @@
       There are no branches related to Eric the Viking today.
     </p>
   </div>
-<!--
+
   <tal:summary replace="structure context/@@+codesummary"/>
--->
+
   <tal:has-branches condition="view/has_branches">
 
     <tal:branchlisting

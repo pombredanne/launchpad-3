@@ -60,7 +60,8 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet
-from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
+from canonical.launchpad.interfaces.personproduct import (
+    IPersonProduct, IPersonProductFactory)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
@@ -789,8 +790,8 @@ class PersonSubscribedBranchesView(PersonBaseBranchListingView):
         return getUtility(IAllBranches).subscribedBy(self.context)
 
 
-class BaseTeamBranchesView(LaunchpadView):
-    """Base class for both Person and Person in Product listings."""
+class PersonTeamBranchesView(LaunchpadView):
+    """View for team branches portlet."""
 
     def _getCollection(self):
         return getUtility(IAllBranches).visibleByUser(self.user)
@@ -812,11 +813,7 @@ class BaseTeamBranchesView(LaunchpadView):
                 if team_has_branches(team) and team != person]
 
 
-class PersonTeamBranchesView(BaseTeamBranchesView):
-    """View for team branches portlet."""
-
-
-class PersonProductTeamBranchesView(BaseTeamBranchesView):
+class PersonProductTeamBranchesView(PersonTeamBranchesView):
     """View for team branches portlet."""
 
     def _getCollection(self):
@@ -847,6 +844,16 @@ class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
         support for showing the summary even if there are no branches.
         """
         return self.has_branches or self.requested_review_count
+
+
+class PersonProductCodeSummaryView(PersonCodeSummaryView):
+    """A view to render the code page summary for a person."""
+
+    __used_for__ = IPersonProduct
+
+    def _getCollection(self):
+        return getUtility(IAllBranches).visibleByUser(self.user).inProduct(
+                self.context.product)
 
 
 class ProductReviewCountMixin:

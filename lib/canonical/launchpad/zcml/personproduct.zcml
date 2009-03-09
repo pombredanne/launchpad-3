@@ -47,8 +47,18 @@
   <browser:page
       for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
       class="canonical.launchpad.browser.branchlisting.PersonProductTeamBranchesView"
+      facet="branches"
       name="+portlet-teambranches"
       template="../templates/person-portlet-teambranches.pt"
+      permission="zope.Public"
+      />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+      class="canonical.launchpad.browser.branchlisting.PersonProductCodeSummaryView"
+      facet="branches"
+      name="+codesummary"
+      template="../templates/person-codesummary.pt"
       permission="zope.Public"
       />
 
