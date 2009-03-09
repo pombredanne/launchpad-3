@@ -28,9 +28,10 @@ class BranchMailer:
     def initializeEmailQueue(self, initial_scan):
         """Create an email queue and determine whether to create diffs.
 
-        In order to avoid creating diffs when no one is interested in seeing
-        it, we check all the branch subscriptions first, and decide here
-        whether or not to generate the revision diffs as the branch is scanned.
+        In order to avoid sending emails when no one is interested in seeing
+        them, we check all the branch subscriptions first, and decide here
+        whether or not to generate the revision diffs as the branch is
+        scanned.
 
         See XXX comment in `sendRevisionNotificationEmails` for the reason
         behind the queue itself.
