@@ -21,7 +21,7 @@ from bzrlib import urlutils
 
 from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
-from canonical.codehosting.scanner.bugs import BugBranchLinker
+from canonical.codehosting.scanner.buglinks import BugBranchLinker
 from canonical.codehosting.scanner.email import BranchMailer
 from canonical.codehosting.scanner.mergedetection import (
     BranchMergeDetectionHandler)
