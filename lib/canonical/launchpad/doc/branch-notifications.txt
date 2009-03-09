@@ -405,7 +405,7 @@ that is used rather than the email addresses of the seven members.
     ...     print u'To: %s\nFrom: %s\nSubject: %s\n%s' % (
     ...         email['To'], email['From'], email['Subject'], body)
 
-It is the form infrastructure that fires off the SQLObjectModifedEvent,
+It is the form infrastructure that fires off the ObjectModifedEvent,
 so we'll fake that bit here.  The page tests will check the emails
 sent.
 
@@ -419,8 +419,8 @@ Resubscribe our test user.
     <BranchSubscription ...
 
     >>> from zope.event import notify
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> login('test@canonical.com')
     >>> before_modification = Snapshot(branch, providing=IBranch)
@@ -430,7 +430,7 @@ Resubscribe our test user.
 Even though the branch notification emails don't use the field
 names just now, we'll pass them through anyway
 
-    >>> notify(SQLObjectModifiedEvent(branch,
+    >>> notify(ObjectModifiedEvent(branch,
     ...                               before_modification,
     ...                               ['whiteboard']))
 
@@ -481,7 +481,7 @@ something like this:
     >>> from canonical.launchpad.interfaces import BranchLifecycleStatus
     >>> branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
     >>> updated_fields = ['name','title','summary','url','whiteboard','lifecycle_status']
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
     >>> notifications = pop_notifications()
@@ -525,7 +525,7 @@ must also handle the unicode.
     >>> branch.title = u'New \ua000 title '
     >>> branch.summary = u'A new \ua000 summary'
     >>> updated_fields = ['title','summary']
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
     >>> notifications = pop_notifications()
@@ -562,7 +562,7 @@ by pushing the branch to launchpad.
 
     >>> branch.name = 'foo'
     >>> updated_fields = ['name']
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
     >>> notifications = pop_notifications()
@@ -592,7 +592,7 @@ We don't want to show None in the email, so we show (not set) instead.
 
     >>> branch.title = 'A new title'
     >>> updated_fields = ['title']
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
     >>> notifications = pop_notifications()
@@ -635,7 +635,7 @@ Login as an admin user so we can alter the branch.
     >>> branch.whiteboard = (
     ...     'Please refrain from bad language in a public arena.')
     >>> updated_fields = ['summary', 'whiteboard']
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
     >>> notifications = pop_notifications()
