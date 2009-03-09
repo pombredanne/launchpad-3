@@ -221,18 +221,21 @@ def setupCompleteBuilds(batch):
     list if no builds were contained in the received batch.
     """
     builds = list(batch)
-
     if not builds:
         return []
 
-    complete_builds = []
-    build_dict = dict([(build.id, build) for build in builds])
-    results = getUtility(IBuildSet).prefetchBuildData(build_dict.keys())
+    prejoins = dict()
+    build_ids = [build.id for build in builds]
+    results = getUtility(IBuildSet).prefetchBuildData(build_ids)
     for row in results:
         # Get the build's db key, 'buildqueue', 'sourcepackagerelease' and
         # 'buildlog' (from the result set) respectively.
         id, queue, spr, log = row[:4]
-        complete_builds.append(CompleteBuild(build_dict[id], queue, spr, log))
+        prejoins[id] = (queue, spr, log)
+
+    complete_builds = []
+    for build in builds:
+        complete_builds.append(CompleteBuild(build, *prejoins[build.id]))
 
     return complete_builds
 
