@@ -32,6 +32,9 @@ class BranchMergeDetectionHandler:
 
     def mergeProposalMerge(self, proposal):
         """Handle a detected merge of a proposal."""
+        # XXX: JonathanLange 2009-03-09: This should be combined with
+        # mergeOfTwoBranches -- the events are the same and should be handled
+        # similarly.
         self.logger.info(
             'Merge detected: %s => %s',
             proposal.source_branch.bzr_identity,
@@ -43,7 +46,7 @@ class BranchMergeDetectionHandler:
             return
         self._markSourceBranchMerged(proposal.source_branch)
 
-    def mergeOfTwoBranches(self, source, target):
+    def mergeOfTwoBranches(self, source, target, proposal=None):
         """Handle the merge of source into target."""
         # If the target branch is not the development focus, then don't update
         # the status of the source branch.
@@ -53,4 +56,6 @@ class BranchMergeDetectionHandler:
         dev_focus = target.product.development_focus
         if target != dev_focus.user_branch:
             return
+        if proposal is not None:
+            proposal.markAsMerged()
         self._markSourceBranchMerged(source)
