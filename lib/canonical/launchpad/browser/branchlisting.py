@@ -625,7 +625,7 @@ class PersonBranchCountMixin:
 
     def _getCountCollection(self):
         """Can be overridden in the concrete class."""
-        return getUtility(IAllBranches).visible_by_user(self.user)
+        return getUtility(IAllBranches).visibleByUser(self.user)
 
     def _getPersonFromContext(self):
         """Can be overridden in the concrete class."""
@@ -742,12 +742,6 @@ class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
     """Base class used for different person listing views."""
 
-    def _getCountCollection(self):
-        return getUtility(IAllBranches).visibleByUser(self.user)
-
-    def _getPersonFromContext(self):
-        return self.context
-
     @property
     def user_in_context_team(self):
         if self.user is None:
@@ -851,9 +845,14 @@ class PersonProductCodeSummaryView(PersonCodeSummaryView):
 
     __used_for__ = IPersonProduct
 
-    def _getCollection(self):
+    def _getCountCollection(self):
+        """Limit the branches to those in the product."""
         return getUtility(IAllBranches).visibleByUser(self.user).inProduct(
                 self.context.product)
+
+    def _getPersonFromContext(self):
+        """Return the person from the context."""
+        return self.context.person
 
 
 class ProductReviewCountMixin:
