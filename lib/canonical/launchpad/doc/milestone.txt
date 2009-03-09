@@ -291,7 +291,8 @@ list of recipients.
 == Deleting a milestone ==
 
 A milestone can be deleted using its destroySelf() method, as long as it
-doesn't have a IProductRelease associated with it.
+doesn't have an IProductRelease associated with it, nor any bugtasks
+or specifications targeted to it.
 
     >>> owner = getUtility(IPersonSet).getByName('name12')
     >>> login_person(owner)
