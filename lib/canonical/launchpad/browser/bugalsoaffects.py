@@ -8,7 +8,7 @@ __all__ = ['BugAlsoAffectsProductMetaView', 'BugAlsoAffectsDistroMetaView',
 import cgi
 from textwrap import dedent
 
-from zope.app.form.browser import DropdownWidget, TextWidget
+from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import MissingInputError, WidgetsError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
@@ -33,7 +33,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import (
-    custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
+    custom_widget, action, canonical_url, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 
 from canonical.widgets.bugtask import (
