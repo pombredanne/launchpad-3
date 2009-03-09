@@ -499,7 +499,6 @@ data from the database for a given set of builds:
     id: 9, queue:   3, spr:  20, log: n/a
 
 
-
 == IHadBuildRecords.getBuildRecords() Implementations ==
 
 We can find recent and pending builds for a given distroseries.
