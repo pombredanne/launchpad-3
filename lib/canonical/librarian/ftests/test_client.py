@@ -1,16 +1,18 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-import unittest
-import textwrap
 from cStringIO import StringIO
+import textwrap
+import unittest
+from urllib2 import URLError, HTTPError
 
 import transaction
 
 from canonical.testing import DatabaseLayer, LaunchpadFunctionalLayer
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.librarian import client as client_module
 from canonical.librarian.client import (
-    LibrarianClient, RestrictedLibrarianClient)
+    LibrarianClient, LibrarianServerError, RestrictedLibrarianClient)
 from canonical.librarian.interfaces import UploadFailed
 from canonical.launchpad.database import LibraryFileAlias
 
@@ -27,6 +29,27 @@ class InstrumentedLibrarianClient(LibrarianClient):
         self.called_getURLForDownload = True
         return LibrarianClient._getURLForDownload(self, aliasID)
 
+
+def make_mock_file(error, max_raise):
+    """Return a surrogate for clinet._File.
+
+    The surrogate function raises error when called for the first
+    max_raise times.
+    """
+
+    file_status = {
+        'error': error,
+        'max_raise': max_raise,
+        'num_calls': 0,
+        }
+
+    def mock_file(url):
+        if file_status['num_calls'] < file_status['max_raise']:
+            file_status['num_calls'] += 1
+            raise file_status['error']
+        return 'This is a fake file object'
+
+    return mock_file
 
 class LibrarianClientTestCase(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
@@ -153,6 +176,75 @@ class LibrarianClientTestCase(unittest.TestCase):
         f = client.getFileByAlias(alias_id)
         self.assertEqual(f.read(), 'sample')
         self.failUnless(client.called_getURLForDownload)
+
+    def test_getFileByAliasLookupError(self):
+        # The Librarian server can return a 404 HTTPError;
+        # LibrarienClient.getFileByAlias() returns a LookupError in
+        # this case.
+        _File = client_module._File
+        client_module._File = make_mock_file(
+            HTTPError('http://fake.url/', 404, 'Forced error', None, None), 1)
+
+        client = InstrumentedLibrarianClient()
+        alias_id = client.addFile(
+            'sample.txt', 6, StringIO('sample'), 'text/plain')
+        transaction.commit()
+        self.assertRaises(LookupError, client.getFileByAlias, alias_id)
+
+        client_module._File = _File
+
+    def test_getFileByAliasLibrarianLongServerError(self):
+        # The Librarian server can return a 500 HTTPError.
+        # LibrarienClient.getFileByAlias() returns a LibrarianServerError
+        # if the server returns this error for a longer time than given
+        # by the parameter timeout.
+        _File = client_module._File
+
+        client_module._File = make_mock_file(
+            HTTPError('http://fake.url/', 500, 'Forced error', None, None), 2)
+        client = InstrumentedLibrarianClient()
+        alias_id = client.addFile(
+            'sample.txt', 6, StringIO('sample'), 'text/plain')
+        transaction.commit()
+        self.assertRaises(
+            LibrarianServerError, client.getFileByAlias, alias_id, 1)
+
+        client_module._File = make_mock_file(
+            URLError('Connection refused'), 2)
+        client = InstrumentedLibrarianClient()
+        alias_id = client.addFile(
+            'sample.txt', 6, StringIO('sample'), 'text/plain')
+        transaction.commit()
+        self.assertRaises(
+            LibrarianServerError, client.getFileByAlias, alias_id, 1)
+
+        client_module._File = _File
+
+    def test_getFileByAliasLibrarianShortServerError(self):
+        # The Librarian server can return a 500 HTTPError;
+        # LibrarienClient.getFileByAlias() returns a LibrarianServerError
+        # in this case.
+        _File = client_module._File
+
+        client_module._File = make_mock_file(
+            HTTPError('http://fake.url/', 500, 'Forced error', None, None), 1)
+        client = InstrumentedLibrarianClient()
+        alias_id = client.addFile(
+            'sample.txt', 6, StringIO('sample'), 'text/plain')
+        transaction.commit()
+        self.assertEqual(
+            client.getFileByAlias(alias_id), 'This is a fake file object', 3)
+
+        client_module._File = make_mock_file(
+            URLError('Connection refused'), 1)
+        client = InstrumentedLibrarianClient()
+        alias_id = client.addFile(
+            'sample.txt', 6, StringIO('sample'), 'text/plain')
+        transaction.commit()
+        self.assertEqual(
+            client.getFileByAlias(alias_id), 'This is a fake file object', 3)
+
+        client_module._File = _File
 
 
 def test_suite():

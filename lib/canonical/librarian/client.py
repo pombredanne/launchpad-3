@@ -29,7 +29,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
-    UploadFailed)
+    LibrarianServerError, UploadFailed)
 
 
 class FileUploadClient:
@@ -325,25 +325,36 @@ class FileDownloadClient:
         base = self._internal_download_url
         return urljoin(base, path)
 
-    def getFileByAlias(self, aliasID):
-        """Returns a fd to read the file from
-
-        :param aliasID: A unique ID for the alias
-
-        :returns: file-like object, or None if the file has expired and
-                  been deleted.
-        """
+    def getFileByAlias(self, aliasID, timeout=5):
+        """See `IFileDownloadClient`."""
         url = self._getURLForDownload(aliasID)
         if url is None:
             # File has been deleted
             return None
-        try:
-            return _File(urllib2.urlopen(url))
-        except urllib2.HTTPError, x:
-            if x.code == 404:
-                raise LookupError, aliasID
-            else:
-                raise
+        try_until = time.time() + timeout
+        while 1:
+            try:
+                return _File(urllib2.urlopen(url))
+            except urllib2.URLError, error:
+                # 404 errors indicate a data inconsistency: more than one
+                # attempt to open the file is pointless.
+                #
+                # Note that URLError is a base class of HTTPError.
+                if isinstance(error, urllib2.HTTPError) and error.code == 404:
+                    raise LookupError, aliasID
+                # HTTPErrors with a 5xx error code ("server problem")
+                # are a reason to retry the access again, as well as
+                # generic, non-HTTP, URLErrors like "connection refused".
+                if (isinstance(error, urllib2.HTTPError)
+                    and 500 <= error.code <= 599
+                    or isinstance(error, urllib2.URLError) and
+                        not isinstance(error, urllib2.HTTPError)):
+                    if  time.time() <= try_until:
+                        time.sleep(1)
+                    else:
+                        raise LibrarianServerError(str(error))
+                else:
+                    raise
 
 
 class LibrarianClient(FileUploadClient, FileDownloadClient):
