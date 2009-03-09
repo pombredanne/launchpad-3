@@ -15,30 +15,18 @@
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_form/form">
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      <p style="font-size: larger; background: #F5DE89;
-        padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
-        -webkit-border-radius: 5px;"
-        id="staging-message"
-        tal:condition="not: is_demo">
-      <strong>Want to test drive Launchpad?</strong>
-      Use <a href="https://staging.launchpad.net/">
-      <strong>staging.launchpad.net</strong></a>,
-      our code staging instance. You can use that server to create sample
-      projects, file random bugs and even push throw-away branches, all
-      without disturbing the community actively using Launchpad.</p>
-      
-      <p style="font-size: larger; background: #e0f0d0;
+    <div style="font-size: larger; background: #e0f0d0;
         padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
        -webkit-border-radius: 5px;">
-      The more information you provide here, the more attention and
-      collaboration your project will be able to attract. You can edit these
-      details later on your project's page.</p>
+      <strong>Requesting Ubuntu CDs</strong> is done at <a
+      href="https://shipit.ubuntu.com/">shipit.ubuntu.com</a>
+      <form style="display: inline; font-size: smaller"
+            action="https://shipit.ubuntu.com/">
+        <input type="submit" value="Oh, I want Ubuntu CDs" />
+      </form>
     </div>
 
-    </div>
+    <div metal:use-macro="context/@@launchpad_form/form" />
 
   </div>
 

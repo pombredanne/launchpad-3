@@ -93,11 +93,11 @@ from canonical.launchpad.webapp.menu import NavigationMenu
 from lazr.uri import URI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget,
-    LaunchpadRadioWidget)
+    CheckBoxMatrixWidget, LaunchpadRadioWidget)
 from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.popup import SinglePopupWidget
-from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
+from canonical.widgets.product import (
+    LicenseWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -1456,13 +1456,21 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
         return canonical_url(self.product)
 
 
-class ProductAddView(ProductAddViewBase):
+class ProductAddView(ProductLicenseMixin, LaunchpadFormView):
+    """product/+new view class for creating a new project."""
 
-    field_names = (ProductAddViewBase.field_names
-                   + ['owner', 'project', 'license_reviewed'])
+    schema = IProduct
+    field_names = ['displayname', 'name', 'summary']
 
-    label = "Register an upstream open source project"
+    label = "Register a project in Launchpad"
     product = None
+
+    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
+    custom_widget('name', ProductNameWidget, label='URL')
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     def isVCSImport(self):
         if self.user is None:
@@ -1480,7 +1488,7 @@ class ProductAddView(ProductAddViewBase):
             self.form_fields = self.form_fields.omit('owner',
                                                      'license_reviewed')
 
-    @action(_('Publish this Project'), name='add')
+    @action(_('Continue'), name='add')
     def add_action(self, action, data):
         if self.user is None:
             raise zope.security.interfaces.Unauthorized(
