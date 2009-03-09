@@ -25,6 +25,9 @@ def set_bug_branch_status(bug, branch, status):
     This creates a BugBranch if one doesn't exist, and changes the status if
     it does. If a BugBranch is created, the registrant is the branch owner.
 
+    If the BugBranch status is set to BESTFIX, we don't change it. That way,
+    we avoid overwriting data set in the web UI.
+
     :return: The updated BugBranch.
     """
     bug_branch_set = getUtility(IBugBranchSet)
@@ -47,9 +50,10 @@ class BugBranchLinker:
         """Parse a line from a bug property.
 
         :param line: A line from a Bazaar bug property.
-        :raise BadLineInBugsProperty: if the line is invalid.
-        :return: (bug_url, bug_id) if the line is good, None if the line
-            should be skipped.
+        :raise BadLineInBugsProperty: if the line is invalid. Raising this
+            will cause the line to be skipped.
+        :return: (bug_url, bug_id) if the line is good; None if the line
+            is technically valid but should be skipped.
         """
         valid_statuses = {'fixed': BugBranchStatus.FIXAVAILABLE}
         line = line.strip()
