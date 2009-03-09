@@ -37,10 +37,12 @@ from zope.schema import Bool, Choice
 from zope.security.interfaces import Unauthorized
 from lazr.enum import EnumeratedType, Item
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BugTaskStatus,
     BugTaskSearchParams,
@@ -63,7 +65,6 @@ from canonical.launchpad.webapp import (
     custom_widget, redirection, stepthrough, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
@@ -588,7 +589,7 @@ class BugSecrecyEditView(BugEditViewBase):
             # makes the change. We have applied the 'private' change
             # already, so updateBugFromData will only send an event if
             # 'security_related' is changed, and we can't have that.
-            notify(SQLObjectModifiedEvent(
+            notify(ObjectModifiedEvent(
                     bug, bug_before_modification, ['private']))
 
         # Apply other changes.
