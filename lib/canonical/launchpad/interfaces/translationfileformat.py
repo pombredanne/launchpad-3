@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = ['TranslationFileFormat']
 
 
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 
 class TranslationFileFormat(DBEnumeratedType):

@@ -42,7 +42,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import (
-    HasMilestonesMixin, Milestone, ProjectMilestone)
+    Milestone, ProjectMilestone, milestone_sort_key)
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.product import Product
@@ -349,10 +349,10 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
-    def _getMilestones(self, only_visible):
+    def _getMilestones(self, only_active):
         """Return a list of milestones for this project.
 
-        If only_visible is True, only visible milestones are returned,
+        If only_active is True, only active milestones are returned,
         else all milestones.
 
         A project has a milestone named 'A', if at least one of its
@@ -363,20 +363,19 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         columns = (
             Milestone.name,
             SQL('MIN(Milestone.dateexpected)'),
-            SQL('BOOL_OR(Milestone.visible)'),
+            SQL('BOOL_OR(Milestone.active)'),
             )
         conditions = And(Milestone.product == Product.id,
                          Product.project == self,
                          Product.active == True)
         result = store.find(columns, conditions)
         result.group_by(Milestone.name)
-        if only_visible:
-            result.having('BOOL_OR(Milestone.visible) = TRUE')
+        if only_active:
+            result.having('BOOL_OR(Milestone.active) = TRUE')
         milestones = shortlist(
-            [ProjectMilestone(self, name, dateexpected, visible)
-             for name, dateexpected, visible in result])
-        return sorted(milestones, key=HasMilestonesMixin.milestone_sort_key,
-                      reverse=True)
+            [ProjectMilestone(self, name, dateexpected, active)
+             for name, dateexpected, active in result])
+        return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     @property
     def milestones(self):
@@ -498,8 +497,7 @@ class ProjectSet:
         if bazaar:
             clauseTables.add('Product')
             clauseTables.add('ProductSeries')
-            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
-                           'ProductSeries.user_branch IS NOT NULL)')
+            queries.append('(ProductSeries.branch IS NOT NULL)')
             queries.append('ProductSeries.product=Product.id')
 
         if text:

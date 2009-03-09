@@ -24,6 +24,7 @@ from zope.interface import Interface, Attribute
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -31,7 +32,6 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 # The number of hours before we bother probing a mirror again
@@ -235,7 +235,7 @@ class DistroMirrorURIField(URIField):
     def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
-        from canonical.launchpad.webapp.uri import URI
+        from lazr.uri import URI
 
         super(DistroMirrorURIField, self)._validate(value)
         uri = URI(self.normalize(value))

@@ -17,6 +17,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import (Choice, Datetime, Int, Object, TextLine, Timedelta,
     Text)
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
@@ -29,8 +30,6 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.lazr.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item)
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
