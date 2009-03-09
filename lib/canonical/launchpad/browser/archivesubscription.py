@@ -11,8 +11,11 @@ __all__ = [
 
 import datetime
 
+import pytz
+
 from sqlobject import SQLObjectNotFound
 
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -21,20 +24,23 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.archive import ArchiveViewBase
 from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriber, IArchiveSubscriberSet)
+    IArchiveSubscriberUI, IArchiveSubscriberSet)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
+from canonical.widgets import DateWidget
+
 
 
 class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
     """A view for listing and creating archive subscribers."""
 
-    schema = IArchiveSubscriber
+    schema = IArchiveSubscriberUI
     field_names = ['subscriber', 'date_expires', 'description']
     custom_widget('description', TextWidget, displayWidth=40)
+    custom_widget('date_expires', CustomWidgetFactory(DateWidget))
 
     def initialize(self):
         """Ensure that we are dealing with a private archive."""
@@ -82,10 +88,7 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
                     "%s is already subscribed." % subscriber.displayname)
 
         if date_expires:
-            # date_expires includes tzinfo, and is only comparable with
-            # other datetime objects that include tzinfo.
-            now = datetime.datetime.now().replace(tzinfo=date_expires.tzinfo)
-            if date_expires < now:
+            if date_expires < datetime.date.today():
                 self.setFieldError('date_expires',
                     "The expiry date must be in the future.")
 
@@ -93,11 +96,20 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
             validator="validate_new_subscription")
     def create_subscription(self, action, data):
         """Create a subscription for the supplied user."""
+        # As we present a date selection to the user for expiry, we
+        # need to convert the value into a datetime with UTC:
+        date_expires = data['date_expires']
+        if date_expires:
+            date_expires = datetime.datetime(
+                date_expires.year,
+                date_expires.month,
+                date_expires.day,
+                tzinfo=pytz.timezone('UTC'))
         self.context.newSubscription(
             data['subscriber'],
             self.user,
             description=data['description'],
-            date_expires=data['date_expires'])
+            date_expires=date_expires)
 
         notification = "%s has been added as a subscriber." % (
             data['subscriber'].displayname)
