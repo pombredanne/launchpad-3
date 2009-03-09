@@ -11,10 +11,10 @@ from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
-from lazr.enum import DBEnumeratedType, DBItem, use_template
 from lazr.batchnavigator.interfaces import (
     # InvalidBatchSizeError is a reimport for convenience
     IBatchNavigator, InvalidBatchSizeError)
+from lazr.enum import DBEnumeratedType, DBItem, use_template
 
 from canonical.launchpad import _
 

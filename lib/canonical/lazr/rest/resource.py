@@ -56,27 +56,25 @@ from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IChoice, IField, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-
 from zope.traversing.browser import absoluteURL
-from canonical.lazr.interfaces.fields import IReferenceChoice
+
 from lazr.enum import BaseItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
-# XXX leonardr 2008-01-25 bug=185958:
-# BatchNavigator and event code should be moved into lazr.
 from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.lazr.interfaces import (
+from canonical.lazr.interfaces.fields import 
+    ICollectionField, IReferenceChoice)
+from canonical.lazr.interfaces.rest import (
     ICollection, ICollectionResource, IEntry, IEntryField,
     IEntryFieldResource, IEntryResource, IFieldHTMLRenderer,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME,
     WebServiceLayer)
-from canonical.lazr.interfaces.fields import ICollectionField
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),

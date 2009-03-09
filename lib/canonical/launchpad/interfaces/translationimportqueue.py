@@ -141,6 +141,9 @@ class ITranslationImportQueueEntry(Interface):
         title=_("The timestamp when the status was changed."),
         required=True)
 
+    is_targeted_to_ubuntu = Attribute(
+        "True if this entry is to be imported into the Ubuntu distribution.")
+
     sourcepackage = Attribute("The sourcepackage associated with this entry.")
 
     guessed_potemplate = Attribute(
@@ -378,6 +381,14 @@ class IEditTranslationImportQueueEntry(Interface):
             "Used with PO file format when generating MO files for inclusion "
             "in language pack or MO tarball exports."),
         required=False)
+
+    languagepack = Bool(
+        title=_("Include translations for this template in language packs?"),
+        description=_("For POT only: "
+            "Check this box if this template is part of a language pack so "
+            "its translations should be exported that way."),
+        required=True,
+        default=False)
 
     potemplate = Choice(
         title=_("Template"),

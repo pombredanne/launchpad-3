@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from lazr.enum import enumerated_type_registry
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
@@ -1749,6 +1749,42 @@ class DurationFormatterAPI:
         # granularity of weeks, once and for all.
         weeks = int(round(seconds / (7 * 24 * 3600.0)))
         return "%s weeks" % number_name.get(weeks, str(weeks))
+
+
+class LinkFormatterAPI(ObjectFormatterAPI):
+    """Adapter from Link objects to a formatted anchor."""
+    final_traversable_names = {
+        'icon': 'icon',
+        'icon-link': 'icon_link',
+        'link-icon': 'link_icon',
+        }
+
+    def icon(self):
+        """Return the icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-icon")()
+
+    def link_icon(self):
+        """Return the text and icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-suffix")()
+
+    def icon_link(self):
+        """Return the icon and text representation of the link."""
+        return self.link(None)
+
+    def link(self, view_name, rootsite=None):
+        """Return the default representation of the link."""
+        return self._context.render()
+
+    def url(self, view_name=None):
+        """Return the URL representation of the link."""
+        if self._context.enabled:
+            return self._context.url
+        else:
+            return u''
 
 
 def clean_path_segments(request):
