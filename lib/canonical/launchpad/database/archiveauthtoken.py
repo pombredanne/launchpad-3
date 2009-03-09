@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthToken, IArchiveAuthTokenSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
+from canonical.launchpad.webapp.uri import URI
 
 class ArchiveAuthToken(Storm):
     """See `IArchiveAuthToken`."""
@@ -50,9 +50,10 @@ class ArchiveAuthToken(Storm):
     @property
     def archive_url(self):
         """Return a custom archive url for basic authentication."""
-        normal_url = self.archive.archive_url
-        return normal_url.replace('//', '//%s:%s@' %(
-            self.person.name, self.token))
+        normal_url = URI(self.archive.archive_url)
+        auth_url = normal_url.replace(
+            userinfo="%s:%s" %(self.person.name, self.token))
+        return str(auth_url)
 
 class ArchiveAuthTokenSet:
     """See `IArchiveAuthTokenSet`."""
