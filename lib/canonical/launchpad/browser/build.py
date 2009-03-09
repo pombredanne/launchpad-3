@@ -196,16 +196,13 @@ class CompleteBuild:
         self.context = build
         self._buildqueue_record = buildqueue_record
         self._sourcepackagerelease = sourcepackagerelease
-        self._buildlog = buildlog
-
-    def sourcepackagerelease(self):
-        return self._sourcepackagerelease
-
-    def buildlog(self):
-        return self._buildlog
+        self.buildlog = buildlog
 
     def buildqueue_record(self):
         return self._buildqueue_record
+
+    def sourcepackagerelease(self):
+        return self._sourcepackagerelease
 
 
 def setupCompleteBuilds(batch):
