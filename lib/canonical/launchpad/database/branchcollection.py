@@ -7,7 +7,7 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And, LeftJoin, Join, Or, Select, Union
+from storm.expr import And, Desc, LeftJoin, Join, Or, Select, Union
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -18,6 +18,9 @@ from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.codereviewcomment import CodeReviewComment
+from canonical.launchpad.database.codereviewvote import (
+    CodeReviewVoteReference)
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.distroseries import DistroSeries
 from canonical.launchpad.database.person import Owner
@@ -129,6 +132,28 @@ class GenericBranchCollection:
                 BranchMergeProposal.queue_status.is_in(statuses),
                 expression)
         return self.store.find(BranchMergeProposal, expression)
+
+    def getProposalsForReviewer(self, reviewer, status=None):
+        """See `IBranchCollection`."""
+        tables = [
+            BranchMergeProposal,
+            Join(CodeReviewVoteReference,
+                 CodeReviewVoteReference.branch_merge_proposalID == \
+                 BranchMergeProposal.id),
+            LeftJoin(CodeReviewComment,
+                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
+
+        expressions = [
+            CodeReviewVoteReference.reviewer == reviewer,
+            BranchMergeProposal.source_branchID.is_in(
+                self._getBranchIdQuery())]
+        if status is not None:
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(status))
+        result = self.store.using(*tables).find(
+            BranchMergeProposal, expressions)
+        result.order_by(Desc(CodeReviewComment.vote))
+        return result
 
     def inProduct(self, product):
         """See `IBranchCollection`."""
@@ -326,6 +351,31 @@ class VisibleBranchCollection(GenericBranchCollection):
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
         return self.store.find(BranchMergeProposal, expressions)
+
+    def getProposalsForReviewer(self, reviewer, status=None):
+        """See `IBranchCollection`."""
+        tables = [
+            BranchMergeProposal,
+            Join(CodeReviewVoteReference,
+                 CodeReviewVoteReference.branch_merge_proposalID == \
+                 BranchMergeProposal.id),
+            LeftJoin(CodeReviewComment,
+                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
+
+        expressions = [
+            CodeReviewVoteReference.reviewer == reviewer,
+            BranchMergeProposal.source_branchID.is_in(
+                self._getBranchIdQuery()),
+            BranchMergeProposal.target_branchID.is_in(
+                self._getVisibilityExpression())]
+
+        if status is not None:
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(status))
+        result = self.store.using(*tables).find(
+            BranchMergeProposal, expressions)
+        result.order_by(Desc(CodeReviewComment.vote))
+        return result
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""

@@ -633,10 +633,11 @@ class PersonBranchCountMixin:
     @cachedproperty
     def has_branches(self):
         """Does this person have branches that the logged in user can see?"""
-        return bool(
-            self.owned_branch_count +
-            self.registered_branch_count +
-            self.subscribed_branch_count)
+        # Use short circuit evaluation instead of necessarily realising all
+        # queries.
+        return ((self.owned_branch_count > 0) or
+                (self.registered_branch_count > 0) or
+                (self.subscribed_branch_count > 0))
 
     @cachedproperty
     def registered_branch_count(self):
@@ -671,13 +672,10 @@ class PersonBranchCountMixin:
     @cachedproperty
     def requested_review_count(self):
         """Return the number of active reviews for the user."""
-        utility = getUtility(IBranchMergeProposalGetter)
-        query = utility.getProposalsForReviewer(
-            self.context, [
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.NEEDS_REVIEW],
-            self.user)
-        return query.count()
+        return self._getCountCollection().getMergeProposalsForReviewer(
+            self._getPersonFromContext(),
+            [BranchMergeProposalStatus.CODE_APPROVED,
+             BranchMergeProposalStatus.NEEDS_REVIEW]).count()
 
 
 class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
