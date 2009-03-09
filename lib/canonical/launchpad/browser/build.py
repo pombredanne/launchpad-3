@@ -19,7 +19,7 @@ from zope.interface import implements
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IBuild, IBuildRescoreForm)
+    BuildStatus, IBuild, IBuildRescoreForm, IBuildSet)
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
