@@ -11,6 +11,7 @@ import gettextpo
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILanguageSet, TranslationValidationStatus)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
@@ -64,9 +65,38 @@ class TestTranslationSuggestions(unittest.TestCase):
             self.nl)
         other_suggestions = foomsg.getExternallySuggestedTranslationMessages(
             self.nl)
-        #self.assertEquals(len(used_suggestions), 1)
-        #self.assertEquals(used_suggestions[0], translation)
+        self.assertEquals(len(used_suggestions), 1)
+        self.assertEquals(used_suggestions[0], translation)
         self.assertEquals(len(other_suggestions), 0)
+
+    def test_DisabledExternallyUsedSuggestions(self):
+        # If foo wants to translate "error message 936" and bar happens
+        # to have a translation for that, that's an externally used
+        # suggestion.
+        # If global suggestions are disabled, empty list is returned.
+        text = "error message 936"
+        foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
+        barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
+        translation = barmsg.updateTranslation(self.bar_nl, self.bar_nl.owner,
+            ["foutmelding 936"], is_imported=False,
+            lock_timestamp=None)
+
+        # There is a global (externally used) suggestion.
+        used_suggestions = foomsg.getExternallyUsedTranslationMessages(
+            self.nl)
+        self.assertEquals(len(used_suggestions), 1)
+
+        # Override the config option to disable global suggestions.
+        new_config = ("""
+            [rosetta]
+            global_suggestions_enabled = False
+            """)
+        config.push('disabled_suggestions', new_config)
+        disabled_used_suggestions = (
+            foomsg.getExternallyUsedTranslationMessages(self.nl))
+        self.assertEquals(len(disabled_used_suggestions), 0)
+        # Restore the old configuration.
+        config.pop('disabled_suggestions')
 
     def test_SimpleOtherSuggestion(self):
         # Suggestions made for bar can also be useful suggestions for foo.
@@ -83,8 +113,8 @@ class TestTranslationSuggestions(unittest.TestCase):
         other_suggestions = foomsg.getExternallySuggestedTranslationMessages(
             self.nl)
         self.assertEquals(len(used_suggestions), 0)
-        #self.assertEquals(len(other_suggestions), 1)
-        #self.assertEquals(other_suggestions[0], suggestion)
+        self.assertEquals(len(other_suggestions), 1)
+        self.assertEquals(other_suggestions[0], suggestion)
 
     def test_IdenticalSuggestions(self):
         # If two suggestions are identical, the most recent one is used.
@@ -112,8 +142,8 @@ class TestTranslationSuggestions(unittest.TestCase):
             oof_template, singular=text)
         suggestions = oof_potmsgset.getExternallyUsedTranslationMessages(
             self.nl)
-        #self.assertEquals(len(suggestions), 1)
-        #self.assertEquals(suggestions[0], suggestion1)
+        self.assertEquals(len(suggestions), 1)
+        self.assertEquals(suggestions[0], suggestion1)
 
     def test_RevertingToUpstream(self):
         # When a msgid string is unique and nobody has submitted any
