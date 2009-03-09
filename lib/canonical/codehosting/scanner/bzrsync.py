@@ -38,11 +38,6 @@ from lazr.uri import URI
 UTC = pytz.timezone('UTC')
 
 
-class RevisionModifiedError(Exception):
-    """An error indicating that a revision has been modified."""
-    pass
-
-
 class InvalidStackedBranchURL(Exception):
     """Raised when we try to scan a branch stacked on an invalid URL."""
 
