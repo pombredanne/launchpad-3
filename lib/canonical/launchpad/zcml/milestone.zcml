@@ -12,7 +12,7 @@
                            specifications product_release" />
         <require
             permission="launchpad.Edit"
-            attributes="createProductRelease" />
+            attributes="createProductRelease destroySelf" />
         <allow interface="canonical.launchpad.interfaces.bugtarget.IHasBugs" />
         <allow interface="canonical.launchpad.webapp.interfaces.IAuthorization" />
         <require

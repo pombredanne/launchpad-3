@@ -286,3 +286,56 @@ list of recipients.
     cprov Subscriber (Mozilla Firefox: 1.0)
     ddaa Subscriber (Mozilla Firefox: 2.0)
     ...
+
+
+== Deleting a milestone ==
+
+A milestone can be deleted using its destroySelf() method, as long as it
+doesn't have a IProductRelease associated with it.
+
+    >>> owner = getUtility(IPersonSet).getByName('name12')
+    >>> login_person(owner)
+    >>> milestone = ff_onedotzero.newMilestone('1.0.10')
+    >>> print milestone.product_release
+    None
+    >>> milestone.destroySelf()
+    >>> print upstream_firefox.getMilestone('1.0.10')
+    None
+
+If a milestone has a product release associated with it though, it can not be
+deleted.
+
+    >>> from datetime import datetime
+    >>> from pytz import UTC
+
+    >>> milestone = ff_onedotzero.newMilestone('1.0.11')
+    >>> release = milestone.createProductRelease(
+    ...     owner, datetime.now(UTC))
+    >>> milestone.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: You cannot delete a milestone which has a product release
+                    associated with it.
+
+If bugtaskss are targeted to the milestone, it cannot be deleted.
+
+    >>> milestone = ff_onedotzero.newMilestone('1.0.12')
+    >>> bug = factory.makeBug(product=upstream_firefox)
+    >>> bugtask = bug.bugtasks[0]
+    >>> bugtask.milestone = milestone
+    >>> milestone.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: You cannot delete a milestone which has bugtasks
+                    targeted to it.
+
+If specifications are targeted to the milestone, it cannot be deleted.
+
+    >>> milestone = ff_onedotzero.newMilestone('1.0.13')
+    >>> specification = factory.makeSpecification(product=upstream_firefox)
+    >>> specification.milestone = milestone
+    >>> milestone.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: You cannot delete a milestone which has specifications
+                    targeted to it.
