@@ -1027,5 +1027,4 @@ class BuildSet:
              SourcePackageName, LibraryFileContent, Builder),
             In(Build.id, build_ids))
 
-        list(result_set)
         return result_set
