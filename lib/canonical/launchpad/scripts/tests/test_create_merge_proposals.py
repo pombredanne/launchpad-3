@@ -40,9 +40,8 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         self.assertEqual('', stdout)
         self.assertEqual(1, source.landing_targets.count())
 
-    def test_merge_directive_with_bundle(self):
-        self.useBzrBranches(real_server=True)
-        branch, tree = self.create_branch_and_tree()
+    def createJob(self, branch, tree):
+        """Create merge directive job from this branch."""
         tree.branch.set_public_branch(branch.bzr_identity)
         tree.commit('rev1')
         source = tree.bzrdir.sprout('source').open_workingtree()
@@ -54,6 +53,10 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         file_alias = library_file_aliases.create(
             '*', len(message_str), StringIO(message_str), '*')
         CreateMergeProposalJob.create(file_alias)
+        return source
+
+    def jobOutputCheck(self, branch, source):
+        """Run the job and check the output."""
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
@@ -73,6 +76,21 @@ class TestCreateMergeProposals(TestCaseWithFactory):
             source.branch.last_revision(), local_source.last_revision())
         # A mirror should be scheduled.
         self.assertIsNot(None, bmp.source_branch.next_mirror_time)
+
+    def test_merge_directive_with_bundle(self):
+        """Merge directives with bundles generate branches."""
+        self.useBzrBranches(real_server=True)
+        branch, tree = self.create_branch_and_tree()
+        source = self.createJob(branch, tree)
+        self.jobOutputCheck(branch, source)
+
+    def test_merge_directive_with_project(self):
+        """Bundles are handled when the target branch has a project."""
+        self.useBzrBranches(real_server=True)
+        product = self.factory.makeProduct(project=self.factory.makeProject())
+        branch, tree = self.create_branch_and_tree(product=product)
+        source = self.createJob(branch, tree)
+        self.jobOutputCheck(branch, source)
 
     def test_oops(self):
         """A bogus request should cause an oops, not an exception."""

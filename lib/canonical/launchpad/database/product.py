@@ -939,7 +939,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMergeProposals(self, status=None, visible_by_user=None):
         """See `IProduct`."""
-        if not status:
+        if status is None:
             status = (
                 BranchMergeProposalStatus.CODE_APPROVED,
                 BranchMergeProposalStatus.NEEDS_REVIEW,

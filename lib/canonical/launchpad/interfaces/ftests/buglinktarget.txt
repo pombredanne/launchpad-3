@@ -24,7 +24,6 @@ shouldn't have any bugs linked to it at the start of the test.)
 
 == linkBug() ==
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> bugset = getUtility(IBugSet)
     >>> bug1 = bugset.get(1)
 
@@ -47,15 +46,15 @@ be used.
     >>> target.linkBug(bug1) == link1
     True
 
-When a IBugLink is created, one ISQLObjectCreatedEvent for the created
+When a IBugLink is created, one IObjectCreatedEvent for the created
 should be fired by the method.
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.event.interfaces import (
-    ...     ISQLObjectCreatedEvent, ISQLObjectDeletedEvent)
+    >>> from lazr.lifecycle.interfaces import (
+    ...     IObjectCreatedEvent, IObjectDeletedEvent)
     >>> created_events = []
     >>> created_event_listener = TestEventListener(
-    ...     IBugLink, ISQLObjectCreatedEvent,
+    ...     IBugLink, IObjectCreatedEvent,
     ...     lambda object, event: created_events.append(event))
 
     >>> bug2 = bugset.get(2)
@@ -126,11 +125,11 @@ This method is only available to registered users:
     >>> login('no-priv@canonical.com')
 
 The method returns the linked object which was removed. It should also
-send a ISQLObjectDeletedEvent for the removed IBugLink:
+send a IObjectDeletedEvent for the removed IBugLink:
 
     >>> deleted_events = []
     >>> deleted_event_listener = TestEventListener(
-    ...     IBugLink, ISQLObjectDeletedEvent,
+    ...     IBugLink, IObjectDeletedEvent,
     ...     lambda object, event: deleted_events.append(event))
 
     >>> target.unlinkBug(bug1) == link1
