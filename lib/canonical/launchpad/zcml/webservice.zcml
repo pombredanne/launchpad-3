@@ -5,11 +5,10 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <securedutility
-        class="canonical.launchpad.rest.configuration.LaunchpadWebServiceConfiguration"
+    <utility
+        factory="canonical.launchpad.rest.configuration.LaunchpadWebServiceConfiguration"
         provides="canonical.lazr.interfaces.rest.IWebServiceConfiguration">
-        <allow interface="canonical.lazr.interfaces.rest.IWebServiceConfiguration" />
-    </securedutility>
+    </utility>
 
     <securedutility
         class="canonical.launchpad.systemhomes.WebServiceApplication"

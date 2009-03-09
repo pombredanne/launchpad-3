@@ -1274,8 +1274,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # on the API virtual host but comes through the path_override on
         # the other regular virtual hosts.
         request_path = request.get('PATH_INFO', '')
-        config = getUtility(IWebServiceConfiguration)
-        if request_path.startswith("/%s" % config.path_override):
+        web_service_config = getUtility(IWebServiceConfiguration)
+        if request_path.startswith("/%s" % web_service_config.path_override):
             return super(WebServicePublication, self).getPrincipal(request)
 
         # Fetch OAuth authorization information from the request.
