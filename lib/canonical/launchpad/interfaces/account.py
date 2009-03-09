@@ -5,22 +5,23 @@
 __metaclass__ = type
 
 __all__ = [
-        'AccountStatus',
-        'AccountCreationRationale',
-        'IAccount',
-        'IAccountPrivate',
-        'IAccountPublic',
-        'IAccountSet',
-        'INACTIVE_ACCOUNT_STATUSES',
-        ]
+    'AccountStatus',
+    'AccountCreationRationale',
+    'IAccount',
+    'IAccountPrivate',
+    'IAccountPublic',
+    'IAccountSet',
+    'IAccountSpecialRestricted',
+    'INACTIVE_ACCOUNT_STATUSES',
+    ]
 
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 
 
@@ -232,11 +233,35 @@ class IAccountPrivate(Interface):
     password = PasswordField(
         title=_("Password."), readonly=False, required=True)
 
+    recently_authenticated_rps = List(
+        title=_("Most recently authenticated relying parties."),
+        description=_(
+            "A list of up to 10 `IOpenIDRPSummary` objects representing the "
+            "OpenID Relying Parties in which this account authenticated "
+            "most recently."),
+        readonly=False, required=True)
+
     def createPerson(self, rationale):
         """Create and return a new `IPerson` associated with this account."""
 
 
-class IAccount(IAccountPublic, IAccountPrivate):
+class IAccountSpecialRestricted(Interface):
+    """Attributes of `IAccount` protected with launchpad.Special."""
+
+    def reactivate(comment, password, preferred_email):
+        """Reactivate the given account.
+
+        Set the account status to ACTIVE and possibly restore its name.
+        The preferred email address is set.
+
+        :param comment: An explanation of why the account status changed.
+        :param password: The user's password, it cannot be None.
+        :param preferred_email: The `EmailAddress` to set as the account's
+            preferred email address. It cannot be None.
+        """
+
+
+class IAccount(IAccountPublic, IAccountPrivate, IAccountSpecialRestricted):
     """Interface describing an `Account`."""
 
 

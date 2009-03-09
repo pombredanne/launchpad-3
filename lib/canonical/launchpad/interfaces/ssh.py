@@ -13,8 +13,8 @@ __all__ = [
 
 from zope.schema import Choice, Int, TextLine
 from zope.interface import Interface
+from lazr.enum import DBEnumeratedType, DBItem
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 
 

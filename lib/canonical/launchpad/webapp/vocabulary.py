@@ -21,7 +21,7 @@ __all__ = [
 
 from sqlobject import AND, CONTAINSSTRING
 
-from zope.interface import implements, Attribute
+from zope.interface import implements, Attribute, Interface
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import isinstance as zisinstance
@@ -48,9 +48,30 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
         """
 
 
-# XXX flacoste 2007-07-06: A proper interface should be implemented for
-# this, either ISelectResults or define an interface expressing the
-# required subset.
+class ICountableIterator(Interface):
+    """An iterator that knows how many items it has."""
+
+    # XXX: JonathanLange 2009-02-23: This should probably be fused with or at
+    # least adapted from storm.zope.interfaces.IResultSet. Or maybe just
+    # deleted in favour of passing around Storm ResultSets.
+
+    def count():
+        """Return the number of items in the iterator."""
+
+    def __iter__():
+        """Iterate over items."""
+
+    def __getitem__(argument):
+        """Return a slice or item of the collection."""
+
+    def __len__():
+        """Synonym for `ICountableIterator.count`."""
+        # XXX kiko 2007-01-16: __len__ is required to make BatchNavigator
+        # work; we should probably change that to either check for the
+        # presence of a count() method, or for a simpler interface than
+        # ISelectResults, but I'm not going to do that today.
+
+
 class CountableIterator:
     """Implements a wrapping iterator with a count() method.
 
@@ -58,6 +79,8 @@ class CountableIterator:
     namely the portion required to have it work as part of a
     BatchNavigator.
     """
+
+    implements(ICountableIterator)
 
     def __init__(self, count, iterator, item_wrapper=None):
         """Construct a CountableIterator instance.
@@ -104,10 +127,6 @@ class CountableIterator:
                 yield item
 
     def __len__(self):
-        # XXX kiko 2007-01-16: __len__ is required to make BatchNavigator
-        # work; we should probably change that to either check for the
-        # presence of a count() method, or for a simpler interface than
-        # ISelectResults, but I'm not going to do that today.
         return self._count
 
 

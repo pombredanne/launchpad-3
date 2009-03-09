@@ -19,6 +19,7 @@
                        getNotificationRecipients getVoteReference
                        isValidTransition getUnlandedSourceBranchRevisions
                        root_message_id getUsersVoteReference"/>
+    <allow interface="canonical.launchpad.interfaces.branchtarget.IHasBranchTarget"/>
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message

@@ -57,7 +57,8 @@ from canonical.launchpad.interfaces.codeimportmachine import (
     CodeImportMachineState, ICodeImportMachineSet)
 from canonical.launchpad.interfaces.codeimportresult import (
     CodeImportResultStatus, ICodeImportResultSet)
-from canonical.launchpad.interfaces.codeimport import CodeImportReviewStatus
+from canonical.launchpad.interfaces.codeimport import (
+    CodeImportReviewStatus, RevisionControlSystems)
 from canonical.launchpad.interfaces.country import ICountrySet
 from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionSet)
@@ -82,8 +83,7 @@ from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, License)
-from canonical.launchpad.interfaces.productseries import (
-    IProductSeries, RevisionControlSystems)
+from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.project import IProjectSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.revision import IRevisionSet
@@ -190,11 +190,26 @@ class LaunchpadObjectFactory(ObjectFactory):
             pocket)
         return location
 
-    def makeAccount(self, displayname, status=AccountStatus.ACTIVE,
-                    rationale=AccountCreationRationale.UNKNOWN):
-        """Create and return a new Account."""
-        account = getUtility(IAccountSet).new(rationale, displayname)
+    def makeAccount(self, displayname, email=None, password=None,
+                    status=AccountStatus.ACTIVE,
+                    rationale=AccountCreationRationale.UNKNOWN,
+                    commit=True):
+        """Create and return a new Account.
+
+        If commit is True, we do a transaction.commit() at the end so that the
+        newly created objects can be seen in other stores as well.
+        """
+        account = getUtility(IAccountSet).new(
+            rationale, displayname, password=password)
         removeSecurityProxy(account).status = status
+        if email is None:
+            email = self.getUniqueEmailAddress()
+        email = self.makeEmail(
+            email, person=None, account=account,
+            email_status=EmailAddressStatus.PREFERRED)
+        if commit:
+            import transaction
+            transaction.commit()
         return account
             
     def makePerson(self, email=None, name=None, password=None,
@@ -596,28 +611,30 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant, target_branch, dependent_branch=dependent_branch,
             review_diff=review_diff, initial_comment=initial_comment)
 
+        unsafe_proposal = removeSecurityProxy(proposal)
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
             # The initial state is work in progress, so do nothing.
             pass
         elif set_state == BranchMergeProposalStatus.NEEDS_REVIEW:
-            proposal.requestReview()
+            unsafe_proposal.requestReview()
         elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
-            proposal.approveBranch(
+            unsafe_proposal.approveBranch(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.REJECTED:
-            proposal.rejectBranch(
+            unsafe_proposal.rejectBranch(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.MERGED:
-            proposal.markAsMerged()
+            unsafe_proposal.markAsMerged()
         elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
-            proposal.mergeFailed(proposal.target_branch.owner)
+            unsafe_proposal.mergeFailed(proposal.target_branch.owner)
         elif set_state == BranchMergeProposalStatus.QUEUED:
-            proposal.commit_message = self.getUniqueString('commit message')
-            proposal.enqueue(
+            unsafe_proposal.commit_message = self.getUniqueString(
+                'commit message')
+            unsafe_proposal.enqueue(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.SUPERSEDED:
-            proposal.resubmit(proposal.registrant)
+            unsafe_proposal.resubmit(proposal.registrant)
         else:
             raise AssertionError('Unknown status: %s' % set_state)
 
@@ -692,6 +709,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             parent = revision
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent, sequence)
+
+    def makeBranchRevision(self, branch, revision_id, sequence=None):
+        revision = self.makeRevision(rev_id=revision_id)
+        return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
@@ -791,7 +812,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, bugtrackertype)
 
-    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
+    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
+                     owner=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -801,7 +823,10 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         if bug is None:
             bug = self.makeBug()
-        owner = self.makePerson()
+
+        if owner is None:
+            owner = self.makePerson()
+
         return getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
 
@@ -1117,14 +1142,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             distribution = self.makeDistribution()
         if name is None:
             name = self.getUniqueString()
+        if version is None:
+            version = "%s.0" % self.getUniqueInteger()
 
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
         naked_distribution = removeSecurityProxy(distribution)
         return naked_distribution.newSeries(
-            version="%s.0" % self.getUniqueInteger(),
+            version=version,
             name=name,
-            displayname=self.getUniqueString(),
+            displayname=name,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)

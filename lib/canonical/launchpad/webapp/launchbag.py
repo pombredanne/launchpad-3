@@ -15,13 +15,31 @@ from zope import thread
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
-        IBug, IDistribution, IDistroSeries, IPerson,
+        IAccount, IBug, IDistribution, IDistroSeries, IPerson,
         IProject, IProduct, ISourcePackage, IDistroArchSeries,
         ISpecification, IBugTask, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, ILaunchpadApplication, ILoggedInEvent, IOpenLaunchBag)
 
 _utc_tz = pytz.timezone('UTC')
+
+
+def get_principal():
+    """Return the principal for the current interaction."""
+    interaction = management.queryInteraction()
+    if interaction is None:
+        return None
+    principals = [
+        participation.principal
+        for participation in list(interaction.participations)
+        if participation.principal is not None
+        ]
+    if not principals:
+        return None
+    elif len(principals) > 1:
+        raise ValueError('Too many principals')
+    else:
+        return principals[0]
 
 
 class LaunchBag:
@@ -63,25 +81,13 @@ class LaunchBag:
 
     @property
     @block_implicit_flushes
+    def account(self):
+        return IAccount(get_principal(), None)
+
+    @property
+    @block_implicit_flushes
     def user(self):
-        interaction = management.queryInteraction()
-        if interaction is None:
-            return None
-        principals = [
-            participation.principal
-            for participation in list(interaction.participations)
-            if participation.principal is not None
-            ]
-        if not principals:
-            return None
-        elif len(principals) > 1:
-            raise ValueError('Too many principals')
-        else:
-            try:
-                person = IPerson(principals[0])
-            except TypeError:
-                person = None
-            return person
+        return IPerson(get_principal(), None)
 
     def add(self, obj):
         store = self._store

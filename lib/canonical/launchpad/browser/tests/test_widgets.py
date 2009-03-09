@@ -23,7 +23,7 @@ from canonical.launchpad.vocabularies import (
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 class DummyLaunchBag:

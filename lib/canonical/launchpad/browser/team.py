@@ -911,7 +911,8 @@ class TeamMapView(LaunchpadView):
     def initialize(self):
         # Tell our main-template to include Google's gmap2 javascript so that
         # we can render the map.
-        self.request.needs_gmap2 = True
+        if len(self.mapped_participants) > 0:
+            self.request.needs_gmap2 = True
 
     @cachedproperty
     def mapped_participants(self):
@@ -919,9 +920,19 @@ class TeamMapView(LaunchpadView):
         return self.context.mapped_participants
 
     @cachedproperty
+    def mapped_participants_count(self):
+        """Count of participants with locations."""
+        return len(self.mapped_participants)
+
+    @cachedproperty
     def unmapped_participants(self):
         """Participants (ordered by name) with no recorded locations."""
         return list(self.context.unmapped_participants)
+
+    @cachedproperty
+    def unmapped_participants_count(self):
+        """Count of participants with no recorded locations."""
+        return len(self.unmapped_participants)
 
     @cachedproperty
     def times(self):
