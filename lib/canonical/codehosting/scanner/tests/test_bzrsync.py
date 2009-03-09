@@ -592,39 +592,6 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
         self.assertEqual(old_date, revision.revision_date)
 
 
-class TestBzrSyncModified(BzrSyncTestCase):
-    """Tests for BzrSync.syncOneRevision when the revision has been modified.
-    """
-
-    def setUp(self):
-        BzrSyncTestCase.setUp(self)
-        self.bzrsync = self.makeBzrSync(self.db_branch)
-
-    def makeRevision(self, parent_ids):
-        """Make a fake Bazaar revision for testing `syncOneRevision`."""
-        return BzrRevision(
-            revision_id=self.factory.getUniqueString(), parent_ids=parent_ids,
-            committer=self.factory.getUniqueString(), message=self.LOG,
-            timestamp=1000000000.0, timezone=0, properties={})
-
-    def makeSyncedRevision(self):
-        """Return a fake revision that has already been synced.
-
-        :param parent_ids: The list of parent IDs for the revision.
-        """
-        revision_id = self.factory.getUniqueString()
-        parent_ids = [
-            self.factory.getUniqueString(), self.factory.getUniqueString()]
-        fake_revision = self.makeRevision(parent_ids)
-        counts = self.getCounts()
-        self.bzrsync.syncOneRevision(
-            fake_revision, {fake_revision.revision_id: None})
-        self.assertCounts(
-            counts, new_revisions=1, new_numbers=0,
-            new_parents=len(parent_ids), new_authors=1)
-        return fake_revision
-
-
 class TestBzrSyncEmail(BzrSyncTestCase):
     """Tests BzrSync support for generating branch email notifications."""
 
