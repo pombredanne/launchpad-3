@@ -686,42 +686,6 @@ class BranchMergeProposalGetter:
             raise BadBranchMergeProposalSearchContext(context)
         return collection.getMergeProposals(status)
 
-    @staticmethod
-    def getProposalsForReviewer(reviewer, status=None, visible_by_user=None):
-        """See `IBranchMergeProposalGetter`."""
-        from canonical.launchpad.database.branch import Branch
-        store = Store.of(reviewer)
-        tables = [
-            BranchMergeProposal,
-            Join(CodeReviewVoteReference,
-                 CodeReviewVoteReference.branch_merge_proposalID == \
-                 BranchMergeProposal.id),
-            LeftJoin(CodeReviewComment,
-                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
-
-        # XXX: TimPenhey 2009-03-08 bug=337494
-        # This code is copied from BranchCollection.  Shortly this method
-        # will live there.  The old code that this replaces realised the
-        # visible branches result set into a set and this caused a double
-        # query, which took 2s rather than less than 100ms.
-        # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
-        # decorated set, so we get at the underlying set so we can get at the
-        # private and juicy _get_select.
-        naked_query = removeSecurityProxy(
-            getUtility(IAllBranches).visibleByUser(
-                visible_by_user).getBranches())
-        visible_branches = naked_query.result_set._get_select()
-        visible_branches.columns = (Branch.id,)
-        expression = And(
-            CodeReviewVoteReference.reviewer == reviewer,
-            BranchMergeProposal.target_branchID.is_in(visible_branches),
-            BranchMergeProposal.source_branchID.is_in(visible_branches))
-        if status is not None:
-            expression = And(
-                expression, BranchMergeProposal.queue_status.is_in(status))
-        result = store.using(*tables).find(BranchMergeProposal, expression)
-        result.order_by(Desc(CodeReviewComment.vote))
-        return result
 
     @staticmethod
     def getVotesForProposals(proposals):
