@@ -10,7 +10,7 @@ __all__ = [
 
 import pytz
 
-from storm.locals import DateTime, Int, RawStr, Reference, Storm, Unicode
+from storm.locals import DateTime, Int, Reference, Storm, Unicode
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthToken, IArchiveAuthTokenSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
+from canonical.launchpad.webapp.uri import URI
 
 class ArchiveAuthToken(Storm):
     """See `IArchiveAuthToken`."""
@@ -47,6 +47,14 @@ class ArchiveAuthToken(Storm):
         """See `IArchiveAuthTokenSet`."""
         self.date_deactivated = UTC_NOW
 
+    @property
+    def archive_url(self):
+        """Return a custom archive url for basic authentication."""
+        normal_url = URI(self.archive.archive_url)
+        auth_url = normal_url.replace(
+            userinfo="%s:%s" %(self.person.name, self.token))
+        return str(auth_url)
+
 
 class ArchiveAuthTokenSet:
     """See `IArchiveAuthTokenSet`."""
@@ -64,3 +72,12 @@ class ArchiveAuthTokenSet:
         return store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.token == token).one()
+
+    def getActiveTokenForArchiveAndPerson(self, archive, person):
+        """See `IArchiveAuthTokenSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            ArchiveAuthToken,
+            ArchiveAuthToken.archive == archive,
+            ArchiveAuthToken.person == person,
+            ArchiveAuthToken.date_deactivated == None).one()
