@@ -7,7 +7,7 @@ __all__ = [
     'LibraryFileAliasSet',
     'LibraryFileContent',
     'LibraryFileDownloadCount',
-    'ParsedLibrarianApacheLog']
+    'ParsedApacheLog']
 
 from datetime import datetime, timedelta
 import pytz
@@ -21,7 +21,7 @@ from storm.locals import Date, Int, RawStr, Reference, Storm, Unicode
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet,
-    ILibraryFileDownloadCount, IMasterStore, IParsedLibrarianApacheLog)
+    ILibraryFileDownloadCount, IMasterStore, IParsedApacheLog)
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient)
 from canonical.database.sqlbase import SQLBase
@@ -208,13 +208,15 @@ class LibraryFileDownloadCount(Storm):
     libraryfilealias = Reference(libraryfilealias_id, 'LibraryFileAlias.id')
     day = Date(allow_none=False, tzinfo=pytz.UTC)
     count = Int(allow_none=False)
+    country_id = Int(name='country', allow_none=True)
+    country = Reference(country_id, 'Country.id')
 
 
-class ParsedLibrarianApacheLog(Storm):
-    """See `IParsedLibrarianApacheLog`"""
+class ParsedApacheLog(Storm):
+    """See `IParsedApacheLog`"""
 
-    implements(IParsedLibrarianApacheLog)
-    __storm_table__ = 'ParsedLibrarianApacheLog'
+    implements(IParsedApacheLog)
+    __storm_table__ = 'ParsedApacheLog'
 
     id = Int(primary=True)
     file_name = RawStr(allow_none=False)
@@ -222,6 +224,7 @@ class ParsedLibrarianApacheLog(Storm):
     bytes_read = Int(allow_none=False)
 
     def __init__(self, file_name, first_line, bytes_read):
+        super(ParsedApacheLog, self).__init__()
         self.file_name = file_name
         self.first_line = unicode(first_line)
         self.bytes_read = bytes_read

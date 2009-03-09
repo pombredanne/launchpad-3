@@ -10,15 +10,15 @@ __all__ = [
     'ILibraryFileAliasSet',
     'ILibraryFileContent',
     'ILibraryFileDownloadCount',
-    'IParsedLibrarianApacheLog',
+    'IParsedApacheLog',
     'NEVER_EXPIRES',
     ]
 
 from datetime import datetime
 from pytz import utc
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Date, Datetime, Int, TextLine
+from zope.interface import Attribute, Interface
+from zope.schema import Bool, Choice, Date, Datetime, Int, TextLine
 
 from canonical.lazr.fields import Reference
 from canonical.launchpad import _
@@ -151,9 +151,11 @@ class ILibraryFileDownloadCount(Interface):
         title=_('The day of the downloads'), required=True, readonly=True)
     count = Int(
         title=_('The number of downloads'), required=True, readonly=False)
+    country = Choice(
+        title=_('Country'), required=False, vocabulary='CountryName')
 
 
-class IParsedLibrarianApacheLog(Interface):
+class IParsedApacheLog(Interface):
     """An apache log file parsed to extract download counts of files.
 
     This is used so that we don't parse log files more than once.
