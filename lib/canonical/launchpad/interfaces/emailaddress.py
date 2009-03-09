@@ -13,11 +13,11 @@ __all__ = [
 
 from zope.schema import Choice, Int, Object, TextLine
 from zope.interface import Interface
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
 from canonical.lazr.fields import Reference

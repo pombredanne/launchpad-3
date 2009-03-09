@@ -33,15 +33,15 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet,
     RepositoryFormat)
-from canonical.launchpad.interfaces.branchjob import IRevisionMailJobSource
+from canonical.launchpad.interfaces.branchjob import (
+    IRevisionMailJobSource, IRevisionsAddedJobSource)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.codehosting.jobs import JobRunner
 from canonical.codehosting.scanner.bzrsync import (
-    BranchMergeDetectionHandler, BzrSync, get_revision_message,
-    InvalidStackedBranchURL)
+    BranchMergeDetectionHandler, BzrSync, InvalidStackedBranchURL)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -709,6 +709,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         author = self.factory.getUniqueString()
         self.commitRevision('second', committer=author)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        JobRunner.fromReady(getUtility(IRevisionsAddedJobSource)).runAll()
         JobRunner.fromReady(getUtility(IRevisionMailJobSource)).runAll()
         self.assertEqual(len(stub.test_emails), 2)
         [recommit_email, uncommit_email] = stub.test_emails
@@ -732,103 +733,6 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         for bit in body_bits:
             self.assertTextIn(bit, recommit_email_body)
 
-    def test_email_format(self):
-        first_revision = 'rev-1'
-        self.writeToFile(filename="hello.txt",
-                         contents="Hello World\n")
-        self.commitRevision(rev_id=first_revision,
-                            message="Log message",
-                            committer="Joe Bloggs <joe@example.com>",
-                            timestamp=1000000000.0,
-                            timezone=0)
-        self.writeToFile(filename="hello.txt",
-                         contents="Hello World\n\nFoo Bar\n")
-        second_revision = 'rev-2'
-        self.commitRevision(rev_id=second_revision,
-                            message="Extended contents",
-                            committer="Joe Bloggs <joe@example.com>",
-                            timestamp=1000100000.0,
-                            timezone=0)
-        sync = self.makeBzrSync(self.db_branch)
-
-        revision = self.bzr_branch.repository.get_revision(first_revision)
-        expected = (
-            u"-"*60 + '\n'
-            "revno: 1" '\n'
-            "committer: Joe Bloggs <joe@example.com>" '\n'
-            "branch nick: %s" '\n'
-            "timestamp: Sun 2001-09-09 01:46:40 +0000" '\n'
-            "message:" '\n'
-            "  Log message" '\n'
-            "added:" '\n'
-            "  hello.txt" '\n' % self.bzr_branch.nick)
-        self.assertEqualDiff(
-            get_revision_message(self.bzr_branch, revision), expected)
-
-        expected_diff = (
-            "=== modified file 'hello.txt'" '\n'
-            "--- hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
-            "+++ hello.txt" '\t' "2001-09-10 05:33:20 +0000" '\n'
-            "@@ -1,1 +1,3 @@" '\n'
-            " Hello World" '\n'
-            "+" '\n'
-            "+Foo Bar" '\n'
-            '\n')
-        expected_message = (
-            u"-"*60 + '\n'
-            "revno: 2" '\n'
-            "committer: Joe Bloggs <joe@example.com>" '\n'
-            "branch nick: %s" '\n'
-            "timestamp: Mon 2001-09-10 05:33:20 +0000" '\n'
-            "message:" '\n'
-            "  Extended contents" '\n'
-            "modified:" '\n'
-            "  hello.txt" '\n' % self.bzr_branch.nick)
-        revision = self.bzr_branch.repository.get_revision(second_revision)
-        self.bzr_branch.lock_read()
-        self.bzr_branch.unlock()
-        message = get_revision_message(self.bzr_branch, revision)
-        self.assertEqualDiff(message, expected_message)
-
-    def test_message_encoding(self):
-        """Test handling of non-ASCII commit messages."""
-        rev_id = 'rev-1'
-        self.commitRevision(
-            rev_id=rev_id, message = u"Non ASCII: \xe9",
-            committer=u"Non ASCII: \xed",
-            timestamp=1000000000.0, timezone=0)
-        sync = self.makeBzrSync(self.db_branch)
-        revision = self.bzr_branch.repository.get_revision(rev_id)
-        message = get_revision_message(self.bzr_branch, revision)
-        # The revision message must be a unicode object.
-        expected = (
-            u'-' * 60 + '\n'
-            u"revno: 1" '\n'
-            u"committer: Non ASCII: \xed" '\n'
-            u"branch nick: %s" '\n'
-            u"timestamp: Sun 2001-09-09 01:46:40 +0000" '\n'
-            u"message:" '\n'
-            u"  Non ASCII: \xe9" '\n' % self.bzr_branch.nick)
-        self.assertEqualDiff(message, expected)
-
-    def test_only_nodiff_subscribers_means_no_diff_generated(self):
-        self.layer.switchDbUser('launchpad')
-        subscriptions = self.db_branch.getSubscriptionsByLevel(
-            [BranchSubscriptionNotificationLevel.FULL])
-        for s in subscriptions:
-            s.max_diff_lines = BranchSubscriptionDiffSize.NODIFF
-        self.layer.commit()
-        self.layer.switchDbUser(config.branchscanner.dbuser)
-        self.commitRevision()
-        sync = self.makeBzrSync(self.db_branch)
-        sync.syncBranchAndClose()
-
-        self.writeToFile(filename='foo', contents='bar')
-        self.commitRevision()
-        sync = self.makeBzrSync(self.db_branch)
-        sync.syncBranchAndClose()
-        self.assertEqual(1, len(sync._branch_mailer.pending_emails))
-        self.assertFalse(sync._branch_mailer.pending_emails[0].perform_diff)
 
 
 class TestBzrSyncNoEmail(BzrSyncTestCase):
@@ -1198,7 +1102,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         # merged, and the source branch lifecycle status set as merged.
         product = self.factory.makeProduct()
         proposal = self.factory.makeBranchMergeProposal(product=product)
-        product.development_focus.user_branch = proposal.target_branch
+        product.development_focus.branch = proposal.target_branch
         self.assertNotEqual(
             BranchMergeProposalStatus.MERGED, proposal.queue_status)
         self.assertNotEqual(
@@ -1243,7 +1147,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         product = self.factory.makeProduct()
         source = self.factory.makeProductBranch(product=product)
         target = self.factory.makeProductBranch(product=product)
-        product.development_focus.user_branch = target
+        product.development_focus.branch = target
         self.handler.mergeOfTwoBranches(source, target)
         self.assertEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
@@ -1254,9 +1158,9 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         product = self.factory.makeProduct()
         source = self.factory.makeProductBranch(product=product)
         target = self.factory.makeProductBranch(product=product)
-        product.development_focus.user_branch = target
+        product.development_focus.branch = target
         series = product.newSeries(product.owner, 'new', '')
-        series.user_branch = source
+        series.branch = source
 
         self.handler.mergeOfTwoBranches(source, target)
         self.assertNotEqual(

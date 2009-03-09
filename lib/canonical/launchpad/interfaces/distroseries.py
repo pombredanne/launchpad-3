@@ -16,6 +16,7 @@ __all__ = [
 
 from zope.schema import Bool, Datetime, Choice, Object, TextLine
 from zope.interface import Interface, Attribute
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
@@ -35,7 +36,6 @@ from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
@@ -110,7 +110,7 @@ class DistroSeriesStatus(DBEnumeratedType):
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
 
-    def newMilestone(name, dateexpected=None, description=None):
+    def newMilestone(name, dateexpected=None, summary=None):
         """Create a new milestone for this DistroSeries."""
 
 

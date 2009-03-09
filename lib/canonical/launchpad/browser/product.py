@@ -90,7 +90,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -109,8 +109,8 @@ class ProductNavigation(
 
     @stepto('.bzr')
     def dotbzr(self):
-        if self.context.development_focus.series_branch:
-            return BranchRef(self.context.development_focus.series_branch)
+        if self.context.development_focus.branch:
+            return BranchRef(self.context.development_focus.branch)
         else:
             return None
 
@@ -655,7 +655,7 @@ class ProductWithSeries:
 
     def getSeriesById(self, id):
         """Look up and return a ProductSeries by id."""
-        return self.series_by_id.get(id)
+        return self.series_by_id[id]
 
 
 class SeriesWithReleases:
@@ -679,11 +679,11 @@ class SeriesWithReleases:
         self.releases.append(release)
 
     @cachedproperty
-    def release_files(self):
-        files = set()
+    def has_release_files(self):
         for release in self.releases:
-            files = files.union(release.files)
-        return files
+            if len(release.files) > 0:
+                return True
+        return False
 
 
 class ReleaseWithFiles:
@@ -1263,18 +1263,18 @@ class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product series"""
 
     schema = IProductSeries
-    field_names = ['name', 'summary', 'user_branch', 'releasefileglob']
+    field_names = ['name', 'summary', 'branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     series = None
 
     def validate(self, data):
-        branch = data.get('user_branch')
+        branch = data.get('branch')
         if branch is not None:
             message = get_series_branch_error(self.context, branch)
             if message:
-                self.setFieldError('user_branch', message)
+                self.setFieldError('branch', message)
 
     @action(_('Register Series'), name='add')
     def add_action(self, action, data):
@@ -1282,7 +1282,7 @@ class ProductAddSeriesView(LaunchpadFormView):
             owner=self.user,
             name=data['name'],
             summary=data['summary'],
-            branch=data['user_branch'])
+            branch=data['branch'])
 
     @property
     def next_url(self):
@@ -1568,3 +1568,4 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
+

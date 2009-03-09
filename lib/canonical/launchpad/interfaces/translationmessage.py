@@ -4,6 +4,7 @@
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
@@ -11,7 +12,6 @@ from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet
 from canonical.launchpad.interfaces.potranslation import IPOTranslation
-from canonical.lazr import DBEnumeratedType, DBItem
 
 __metaclass__ = type
 __all__ = [

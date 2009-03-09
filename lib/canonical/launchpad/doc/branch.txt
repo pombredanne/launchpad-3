@@ -649,7 +649,7 @@ show this the landscape trunk branch will be associated as the primary
 development focus branch.
 
     >>> landscape = branch.product
-    >>> landscape.development_focus.user_branch = branch
+    >>> landscape.development_focus.branch = branch
     >>> syncUpdate(landscape.development_focus)
 
 Private branches still show the full branch name.
@@ -670,7 +670,7 @@ names if possible.
     2
     >>> print branch.bzr_identity
     lp://dev/landscape
-    >>> landscape.development_focus.user_branch = None
+    >>> landscape.development_focus.branch = None
     >>> syncUpdate(landscape.development_focus)
     >>> print branch.bzr_identity
     lp://dev/landscape/experimental
@@ -680,7 +680,7 @@ bzr_identity.
 
     >>> print junkcode.product
     None
-    >>> series.user_branch = junkcode
+    >>> series.branch = junkcode
     >>> syncUpdate(series)
     >>> print junkcode.bzr_identity
     lp://dev/~junkowner/+junk/junkcode
@@ -746,159 +746,10 @@ scanned ID is.
     False
 
 
-== Getting all branches for a person ==
-
-Batching of the branch pages relies (ideally) on a quick simple query
-that can have the result set limited in order to only return a partial
-result set.  The getBranchesForContext method on IBranchSet where the
-context is a Person (or team) will return all branches associated with
-that person.  "Associated" means one of:
-
-  - person is subscribed to the branch
-  - person is owner of the branch
-  - person registered the branch
-
-In order to further restrict the branches that are returned for a person
-there is the BranchPersonSearchContext, which has a restriction from
-BranchPersonSearchRestriction.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchPersonSearchContext, BranchPersonSearchRestriction)
-    >>> for item in BranchPersonSearchRestriction.items:
-    ...     print repr(item)
-    <Item ...ALL, All related branches>
-    <Item ...REGISTERED, Registered branches>
-    <Item ...OWNED, Owned branches>
-    <Item ...SUBSCRIBED, Subscribed branches>
-
-A BranchPersonSearchContext takes a person and a restriction.
-
-    >>> from canonical.launchpad.database.product import Product
-    >>> search_context = BranchPersonSearchContext(
-    ...     sample_person, BranchPersonSearchRestriction.REGISTERED)
-    >>> branches = branchset.getBranchesForContext(search_context)
-    >>> for branch in branches.order_by(Product.name, Branch.id):
-    ...     print branch.unique_name
-    ~name12/firefox/main
-    ~name12/gnome-terminal/main
-    ~name12/gnome-terminal/2.6
-    ~name12/gnome-terminal/2.4
-    ~name12/gnome-terminal/klingon
-    ~name12/gnome-terminal/slowness
-    ~name12/gnome-terminal/pushed
-    ~name12/gnome-terminal/mirrored
-    ~name12/gnome-terminal/scanned
-    ~landscape-developers/landscape/trunk
-    ~name12/+junk/junk.dev
-    ~name12/+junk/junk.contrib
-
-    >>> search_context = BranchPersonSearchContext(
-    ...     sample_person, BranchPersonSearchRestriction.SUBSCRIBED)
-    >>> for branch in branchset.getBranchesForContext(search_context):
-    ...     print branch.unique_name
-    ~launchpad/gnome-terminal/launchpad
-    ~name12/+junk/junk.dev
-
-
-== Getting branches for a product ==
-
-In order to have batched branch listings the database needs to do as much
-of the work as possible.  This way there are optimal database queries for
-extra display information.
-
-    >>> from canonical.launchpad.database.person import Owner
-    >>> from canonical.launchpad.interfaces.product import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> gnome_terminal = productset.getByName('gnome-terminal')
-    >>> branches = branchset.getBranchesForContext(
-    ...     gnome_terminal).order_by(Owner.name, Branch.id)
-    >>> for branch in branches:
-    ...     print branch.lifecycle_status.title, branch.owner.displayname,
-    ...     print branch.unique_name
-    Development Launchpad Developers ~launchpad/gnome-terminal/launchpad
-    Development Sample Person ~name12/gnome-terminal/main
-    Mature Sample Person ~name12/gnome-terminal/2.6
-    Abandoned Sample Person ~name12/gnome-terminal/2.4
-    Experimental Sample Person ~name12/gnome-terminal/klingon
-    Merged Sample Person ~name12/gnome-terminal/slowness
-    Development Sample Person ~name12/gnome-terminal/pushed
-    Development Sample Person ~name12/gnome-terminal/mirrored
-    Development Sample Person ~name12/gnome-terminal/scanned
-    Development VCS imports ~vcs-imports/gnome-terminal/import
-
-    >>> from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
-    >>> branches = branchset.getBranchesForContext(
-    ...     gnome_terminal, [BranchLifecycleStatus.EXPERIMENTAL])
-    >>> for branch in branches:
-    ...     print branch.lifecycle_status.title, branch.unique_name
-    Experimental ~name12/gnome-terminal/klingon
-
-
-== Getting branches for a project ==
-
-Similarly as for a product, we can retrieve the branches associated to all the
-products that belong to a given project.
-
-    >>> from canonical.launchpad.interfaces import IProjectSet
-    >>> def printMozillaBranches(lifecycle_statuses=None):
-    ...     mozilla = getUtility(IProjectSet).getByName('mozilla')
-    ...     branches = branchset.getBranchesForContext(
-    ...         mozilla, lifecycle_statuses).order_by(Branch.id)
-    ...     for branch in branches:
-    ...         print branch.lifecycle_status.title, branch.unique_name
-
-    >>> printMozillaBranches()
-    Development ~name12/firefox/main
-    Development ~stevea/thunderbird/main
-    Development ~sabdfl/firefox/release-0.9.2
-    Development ~sabdfl/firefox/release--0.9.1
-    Development ~sabdfl/firefox/release-0.9
-    Development ~sabdfl/firefox/release-0.8
-
-Filtering by status must work here too.
-
-We update the branches for the Mozilla project in the sample data to use a
-variety of different statuses, so that we can demonstrate filtering by status.
-
-    >>> from canonical.launchpad.interfaces.branch import (
-    ...     DEFAULT_BRANCH_STATUS_IN_LISTING)
-    >>> def setMultipleStatus(branch_status_pairs):
-    ...     for unique_name, new_status_name in branch_status_pairs:
-    ...         branch = branchset.getByUniqueName(unique_name)
-    ...         new_status = getattr(BranchLifecycleStatus, new_status_name)
-    ...         branch.lifecycle_status = new_status
-    ...         syncUpdate(branch)
-    >>> login('foo.bar@canonical.com')
-    >>> setMultipleStatus([
-    ...     ('~name12/firefox/main', 'DEVELOPMENT'),
-    ...     ('~sabdfl/firefox/release-0.8', 'ABANDONED'),
-    ...     ('~sabdfl/firefox/release-0.9', 'ABANDONED'),
-    ...     ('~sabdfl/firefox/release--0.9.1', 'ABANDONED'),
-    ...     ('~sabdfl/firefox/release-0.9.2', 'MATURE'),
-    ...     ('~stevea/thunderbird/main', 'DEVELOPMENT')])
-
-    >>> printMozillaBranches()
-    Development ~name12/firefox/main
-    Development ~stevea/thunderbird/main
-    Mature ~sabdfl/firefox/release-0.9.2
-    Abandoned ~sabdfl/firefox/release--0.9.1
-    Abandoned ~sabdfl/firefox/release-0.9
-    Abandoned ~sabdfl/firefox/release-0.8
-
-    >>> printMozillaBranches(DEFAULT_BRANCH_STATUS_IN_LISTING)
-    Development ~name12/firefox/main
-    Development ~stevea/thunderbird/main
-    Mature ~sabdfl/firefox/release-0.9.2
-
-    >>> printMozillaBranches([BranchLifecycleStatus.DEVELOPMENT])
-    Development ~name12/firefox/main
-    Development ~stevea/thunderbird/main
-
 == Associated product series ==
 
 A branch is able to return a list of product series that the branch is
-associated with through either ProductSeries.user_branch or
-ProductSeries.import_branch.
+associated with through ProductSeries.branch.
 
     >>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
     >>> series = list(branch.associatedProductSeries())
@@ -1034,8 +885,7 @@ The current references to the branch table are shown here.
     branchsubscription.branch
     bugbranch.branch
     codeimport.branch
-    productseries.import_branch
-    productseries.user_branch
+    productseries.branch
     seriessourcepackagebranch.branch
     specificationbranch.branch
 
