@@ -154,6 +154,14 @@ def listdir(path):
 os.listdir = listdir
 
 
+# XXX: jml
+from canonical.testing.customresult import patch_zope_testresult
+from bzrlib.tests import TextTestResult
+from twisted.trial.reporter import TreeReporter
+
+patch_zope_testresult(TreeReporter())
+
+
 if __name__ == '__main__':
     # Extract arguments so we can see them too. We need to strip
     # --resume-layer and --default stuff if found as get_options can't
