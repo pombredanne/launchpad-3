@@ -218,10 +218,6 @@ class BugTracker(SQLBase):
         }
 
     @property
-    def is_active(self):
-        return self.active
-
-    @property
     def latestwatches(self):
         """See `IBugTracker`."""
         return self.watches[:10]
