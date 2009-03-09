@@ -1,6 +1,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""The way the branch scanner handles merges."""
 
 __metaclass__ = type
 __all__ = [
