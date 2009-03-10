@@ -32,12 +32,13 @@ from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
-from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
@@ -482,7 +483,7 @@ class FileBugViewBase(LaunchpadFormView):
             params.private = extra_data.private
 
         self.added_bug = bug = context.createBug(params)
-        notify(SQLObjectCreatedEvent(bug))
+        notify(ObjectCreatedEvent(bug))
 
         for comment in extra_data.comments:
             bug.newMessage(self.user, bug.followup_subject(), comment)

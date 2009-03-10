@@ -6,7 +6,7 @@ Let's start with creating a question, and see what the resulting
 notification looks like:
 
     >>> from zope.event import notify
-    >>> from canonical.launchpad.event import SQLObjectCreatedEvent
+    >>> from lazr.lifecycle.event import ObjectCreatedEvent
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> login('test@canonical.com')
@@ -95,8 +95,8 @@ notifications:
 If we edit the title and description of the question, a notification
 will be sent.
 
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from zope.interface import providedBy
 
     >>> login('no-priv@canonical.com')
@@ -110,7 +110,7 @@ will be sent.
     ... It boots straight into MacOS 9."""
     >>> libstdcplusplus_sourcepackage = ubuntu.getSourcePackage('libstdc++')
     >>> ubuntu_question.target = libstdcplusplus_sourcepackage
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question,
     ...     ['title', 'description', 'target']))
 
@@ -153,7 +153,7 @@ Foo Bar, and one to Ubuntu Team:
     >>> unmodified_question = Snapshot(
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
     >>> ubuntu_question.target = ubuntu
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['target']))
     >>> notifications = sorted(pop_notifications(), key=itemgetter('To'))
     >>> [notification['To'] for notification in notifications]
@@ -176,7 +176,7 @@ notifying about was made, no notification is sent:
 
     >>> unmodified_question = Snapshot(
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['status']))
 
     >>> notifications = pop_notifications()
@@ -206,7 +206,7 @@ bug that has been linked to it:
     >>> bug = ubuntu_question.target.createBug(params)
     >>> ubuntu_question.linkBug(bug)
     <QuestionBug...>
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
 
     >>> notifications = pop_notifications()
@@ -234,7 +234,7 @@ A notification is also sent when a bug is unlinked from the question:
     ...     providing=providedBy(ubuntu_question))
     >>> ubuntu_question.unlinkBug(bug)
     <QuestionBug...>
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
 
     >>> notifications = pop_notifications()
@@ -911,7 +911,6 @@ sent to the support list about that question:
     # Define a function that will replace non-ascii character with
     # its unicoded encoded value.
     # Effectively replace u'\xe9' by '\\e9'.
-    >>> import re
     >>> def escape_utf8_payload(message):
     ...     charset = message.get_content_charset()
     ...     content = unicode(message.get_payload(decode=True), charset)
@@ -956,7 +955,7 @@ with a warning appended to it.
     >>> unmodified_question = Snapshot(
     ...     french_question, providing=providedBy(french_question))
     >>> french_question.title = u"CD d'Ubuntu ne d\xe9marre pas"
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     french_question, unmodified_question, ['title']))
 
     >>> notifications = pop_notifications()
@@ -1023,7 +1022,7 @@ receive notifications about French (and English) questions.
     >>> rosetta_admins.addLanguage(french)
 
     # Resend the new message notification
-    >>> notify(SQLObjectCreatedEvent(french_question))
+    >>> notify(ObjectCreatedEvent(french_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['rosetta@launchpad.net', 'test@canonical.com']
@@ -1044,7 +1043,7 @@ if the team supported languages includes the question language:
     True
 
     # Resend the new message notification
-    >>> notify(SQLObjectCreatedEvent(spanish_question))
+    >>> notify(ObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'test@canonical.com']

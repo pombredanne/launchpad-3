@@ -30,8 +30,8 @@
 
   <table class="listing" tal:condition="batch">
     <tbody>
-      <tal:batch_repeat repeat="complete_build batch">
-        <tr class="build-row" tal:define="build complete_build/build">
+      <tal:batch_repeat repeat="build batch">
+        <tr class="build-row">
           <td class="left icon">
              <tal:icon replace="structure build/image:icon" />
           </td>
@@ -84,7 +84,7 @@
               </tal:date_built>
             </div>
             <div tal:condition="not: build/was_built"
-                    tal:define="bq complete_build/buildqueue_record">
+                    tal:define="bq build/buildqueue_record">
               <tal:buildqueue condition="bq">
                 <tal:pending condition="not: bq/builder">
                   Pending (<span tal:replace="bq/lastscore" />)
