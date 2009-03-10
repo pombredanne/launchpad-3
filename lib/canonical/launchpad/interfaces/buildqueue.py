@@ -144,22 +144,6 @@ class IBuildQueueSet(Interface):
     def getActiveBuildJobs():
         """Return All active Build Jobs."""
 
-    def fetchByBuildIds(build_ids):
-        """Used to pre-populate the cache with reversed referred keys.
-
-        When dealing with a group of Build records we can't use pre-join
-        facility to also fetch BuildQueue records in a single query,
-        because Build and BuildQueue are related with reversed keys
-
-        Build.id = BuildQueue.build
-
-        So this method receives a list of Build IDs and fetches the
-        correspondent BuildQueue with prejoined builder information.
-
-        It return the SelectResults or empty list if the passed builds
-        is empty, but the result isn't might to be used in call site.
-        """
-
     def calculateCandidates(archseries):
         """Return the BuildQueue records for the given archseries.
 

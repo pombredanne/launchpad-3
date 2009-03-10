@@ -12,9 +12,9 @@ __all__ = [
     ]
 
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Text
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 

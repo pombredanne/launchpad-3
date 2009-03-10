@@ -373,6 +373,29 @@ class IDistributionPublic(
         matching.
         """
 
+    def searchBinaryPackages(package_name, exact_match=False):
+        """Search for binary packages in this distribution.
+
+        :param package_name: The binary package name to match.
+        :param exact_match: If False, substring matches are done on the
+            binary package names; if True only a full string match is
+            returned.
+        :return: A result set containing appropriate DistributionSourcePackage
+            objects for the matching source.
+
+        The returned results will consist of source packages that match
+        (a substring of) their binary package names.
+        """
+
+    def searchBinaryPackagesFTI(package_name):
+        """Do an FTI search on binary packages.
+
+        :param package_name: The binary package name to search for.
+        :return: A result set containing DistributionSourcePackageCache
+            objects for the matching binaries found via an FTI search on
+            DistroSeriesPackageCache.
+        """
+
     def getFileByName(filename, archive=None, source=True, binary=True):
         """Find and return a LibraryFileAlias for the filename supplied.
 

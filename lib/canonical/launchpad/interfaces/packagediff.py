@@ -14,10 +14,10 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Object
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class PackageDiffAlreadyRequested(Exception):

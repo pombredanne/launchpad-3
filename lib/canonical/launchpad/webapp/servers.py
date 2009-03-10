@@ -26,7 +26,7 @@ from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import (
     getMultiAdapter, getUtility, queryAdapter, queryMultiAdapter)
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
@@ -43,10 +43,12 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces import (
-    IByteStorage, ICollection, IEntry, IFeed, IHTTPResource)
+    IByteStorage, ICollection, IEntry, IEntryField, IFeed, IHTTPResource,
+    IWebBrowserInitiatedRequest, IWebServiceConfiguration)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
-    CollectionResource, EntryResource, ScopedCollection)
+    CollectionResource, EntryField, EntryFieldResource,
+    EntryResource, ScopedCollection)
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
@@ -69,7 +71,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.publisher import (
@@ -78,12 +80,6 @@ from canonical.launchpad.webapp.opstats import OpStats
 from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
 
 from canonical.lazr.timeout import set_default_timeout_function
-
-
-# Any requests that have the following element at the beginning of their
-# PATH_INFO will be handled by the web service, as if they had gone to
-# api.launchpad.net.
-WEBSERVICE_PATH_OVERRIDE = 'api'
 
 
 class StepsToGo:
@@ -449,7 +445,8 @@ class VHostWebServiceRequestPublicationFactory(
         # Add a trailing slash, if it is missing.
         if not path.endswith('/'):
             path = path + '/'
-        return path.startswith('/%s/' % WEBSERVICE_PATH_OVERRIDE)
+        config = getUtility(IWebServiceConfiguration)
+        return path.startswith('/%s/' % config.path_override)
 
 
 class NotFoundRequestPublicationFactory:
@@ -1148,6 +1145,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
                 elif IBytes.providedBy(field):
                     result = self._traverseToByteStorage(
                         request, entry, field, name)
+                elif field is not None:
+                    result = EntryField(entry, field, name)
             if result is not None:
                 return result
         return super(WebServicePublication, self).traverseName(
@@ -1205,6 +1204,10 @@ class WebServicePublication(LaunchpadBrowserPublication):
               queryAdapter(ob, IEntry) is not None):
             # Object supports IEntry protocol.
             resource = EntryResource(ob, request)
+        elif (IEntryField.providedBy(ob) or
+              queryAdapter(ob, IEntryField) is not None):
+            # Object supports IEntryField protocol.
+            resource = EntryFieldResource(ob, request)
         elif queryMultiAdapter((ob, request), IHTTPResource) is not None:
             # Object can be adapted to a resource.
             resource = queryMultiAdapter((ob, request), IHTTPResource)
@@ -1235,14 +1238,11 @@ class WebServicePublication(LaunchpadBrowserPublication):
             request, object)
         if request.response.getStatus() / 100 == 3:
             vhost = URI(request.getApplicationURL()).host
-            api = allvhosts.configs['api']
-            if vhost != api.hostname and vhost not in api.althostnames:
-                # This request came in on a vhost other than the
-                # dedicated web service vhost. That means it was
-                # probably sent by a web browser. Because web
-                # browsers, content negotiation, and redirects are a
-                # deadly combination, we're going to help the browser
-                # out a little.
+            if IWebBrowserInitiatedRequest.providedBy(request):
+                # This request was (probably) sent by a web
+                # browser. Because web browsers, content negotiation,
+                # and redirects are a deadly combination, we're going
+                # to help the browser out a little.
                 #
                 # We're going to take the current request's "Accept"
                 # header and put it into the URL specified in the
@@ -1274,7 +1274,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # on the API virtual host but comes through the path_override on
         # the other regular virtual hosts.
         request_path = request.get('PATH_INFO', '')
-        if request_path.startswith("/%s" % WEBSERVICE_PATH_OVERRIDE):
+        web_service_config = getUtility(IWebServiceConfiguration)
+        if request_path.startswith("/%s" % web_service_config.path_override):
             return super(WebServicePublication, self).getPrincipal(request)
 
         # Fetch OAuth authorization information from the request.
@@ -1344,16 +1345,23 @@ class WebServiceRequestTraversal:
         return self.publication.getResource(self, result)
 
     def _removeVirtualHostTraversals(self):
-        """Remove the /api and /beta traversal names."""
+        """Remove the /[path_override] and /[version] traversal names."""
         names = list()
-        api = self._popTraversal(WEBSERVICE_PATH_OVERRIDE)
+        config = getUtility(IWebServiceConfiguration)
+        api = self._popTraversal(config.path_override)
         if api is not None:
             names.append(api)
+            # Requests that use the webservice path override are
+            # usually made by web browsers. Mark this request as one
+            # initiated by a web browser, for the sake of
+            # optimizations later in the request lifecycle.
+            alsoProvides(self, IWebBrowserInitiatedRequest)
 
         # Only accept versioned URLs.
-        beta = self._popTraversal('beta')
-        if beta is not None:
-            names.append(beta)
+        version_string = config.service_version_uri_prefix
+        version = self._popTraversal(version_string)
+        if version is not None:
+            names.append(version)
             self.setVirtualHostRoot(names=names)
         else:
             raise NotFound(self, '', self)
@@ -1395,8 +1403,10 @@ def website_request_to_web_service_request(website_request):
     # Zope picks up on SERVER_URL when setting the _app_server attribute
     # of the new request.
     environ['SERVER_URL'] = website_request.getApplicationURL()
+    version_string = getUtility(
+        IWebServiceConfiguration).service_version_uri_prefix
     web_service_request = WebServiceClientRequest(body, environ)
-    web_service_request.setVirtualHostRoot(names=["api", "beta"])
+    web_service_request.setVirtualHostRoot(names=["api", version_string])
     web_service_request.setPublication(WebServicePublication(None))
     return web_service_request
 

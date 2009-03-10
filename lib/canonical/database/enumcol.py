@@ -7,8 +7,7 @@ from storm.properties import SimpleProperty
 from storm.variables import Variable
 
 from zope.security.proxy import isinstance as zope_isinstance
-
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 __all__ = [
 'DBEnum',

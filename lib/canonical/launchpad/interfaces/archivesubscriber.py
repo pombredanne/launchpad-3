@@ -12,11 +12,11 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Datetime, Choice, Int, Text
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.person import IPerson
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 
 
