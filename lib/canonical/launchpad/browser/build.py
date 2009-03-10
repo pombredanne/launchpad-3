@@ -230,7 +230,7 @@ def setupCompleteBuilds(batch):
         # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
         # 'buildlog' (from the result set) respectively.
         (build_id, buildqueue, sourcepackagerelease, buildlog,
-         sourcepackagename, buildlog_content, builder) = results
+         sourcepackagename, buildlog_content, builder) = result
         prejoins[build_id] = (buildqueue, sourcepackagerelease, buildlog)
 
     complete_builds = []
