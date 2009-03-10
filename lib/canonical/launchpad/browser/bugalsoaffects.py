@@ -202,10 +202,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
         self.notifications = []
         self._field_names = ['bug_url'] + list(self.target_field_names)
 
-    @property
-    def next_step(self):
-        return None
-
     def setUpWidgets(self):
         super(BugTaskCreationStep, self).setUpWidgets()
         self.target_widgets = [
