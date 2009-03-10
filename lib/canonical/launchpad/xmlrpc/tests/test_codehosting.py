@@ -8,7 +8,7 @@ import datetime
 import pytz
 import unittest
 
-from bzrlib.tests import adapt_tests, TestScenarioApplier
+from bzrlib.tests import multiply_tests
 from bzrlib.urlutils import escape
 
 from zope.component import getUtility
@@ -1030,15 +1030,6 @@ class LaunchpadDatabaseFrontend:
         return getUtility(IScriptActivitySet).getLastActivity(activity_name)
 
 
-class PullerEndpointScenarioApplier(TestScenarioApplier):
-
-    scenarios = [
-        ('db', {'frontend': LaunchpadDatabaseFrontend,
-                'layer': DatabaseFunctionalLayer}),
-        ('inmemory', {'frontend': InMemoryFrontend,
-                      'layer': FunctionalLayer}),
-        ]
-
 
 def test_suite():
     loader = unittest.TestLoader()
@@ -1048,7 +1039,13 @@ def test_suite():
          loader.loadTestsFromTestCase(BranchPullQueueTest),
          loader.loadTestsFromTestCase(BranchFileSystemTest),
          ])
-    adapt_tests(puller_tests, PullerEndpointScenarioApplier(), suite)
+    scenarios = [
+        ('db', {'frontend': LaunchpadDatabaseFrontend,
+                'layer': DatabaseFunctionalLayer}),
+        ('inmemory', {'frontend': InMemoryFrontend,
+                      'layer': FunctionalLayer}),
+        ]
+    multiply_tests(puller_tests, scenarios, suite)
     suite.addTests(
         map(loader.loadTestsFromTestCase,
             [TestRunWithLogin, TestIterateSplit]))

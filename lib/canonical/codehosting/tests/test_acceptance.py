@@ -627,19 +627,14 @@ def make_smoke_tests(base_suite):
         'RepositoryFormat5',
         'RepositoryFormat6',
         'RepositoryFormat7',
-        # Using RemoteRepositoryFormat doesn't make sense when testing push to
-        # remote server.
-        'RemoteRepositoryFormat',
         ]
     scenarios = all_repository_format_scenarios()
     scenarios = [
         scenario for scenario in scenarios
         if scenario[0] not in excluded_scenarios
         and not scenario[0].startswith('RemoteRepositoryFormat')]
-    adapter = tests.TestScenarioApplier()
-    adapter.scenarios = scenarios
     new_suite = unittest.TestSuite()
-    tests.adapt_tests(base_suite, adapter, new_suite)
+    tests.multiply_tests(base_suite, scenarios, new_suite)
     return new_suite
 
 
