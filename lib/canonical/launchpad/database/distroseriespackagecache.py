@@ -24,6 +24,7 @@ class DistroSeriesPackageCache(SQLBase):
     binarypackagename = ForeignKey(dbName='binarypackagename',
         foreignKey='BinaryPackageName', notNull=True)
 
+    fti = StringCol(notNull=False, default=None)
     name = StringCol(notNull=False, default=None)
     summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)

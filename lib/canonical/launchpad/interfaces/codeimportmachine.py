@@ -14,9 +14,9 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int, TextLine
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class CodeImportMachineState(DBEnumeratedType):
