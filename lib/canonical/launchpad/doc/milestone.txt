@@ -318,7 +318,7 @@ deleted.
     AssertionError: You cannot delete a milestone which has a product release
                     associated with it.
 
-If bugtaskss are targeted to the milestone, it cannot be deleted.
+If bugtasks are targeted to the milestone, it cannot be deleted.
 
     >>> milestone = ff_onedotzero.newMilestone('1.0.12')
     >>> bug = factory.makeBug(product=upstream_firefox)
