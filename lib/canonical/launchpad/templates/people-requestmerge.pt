@@ -2,12 +2,10 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
 >
   <body>
     <div metal:fill-slot="main">
@@ -49,9 +47,9 @@
            tal:condition="status"
            tal:content="status" />
 
-        <p tal:condition="view/errors" i18n:translate="">
+        <p tal:condition="view/errors">
           There are <strong tal:content="view/errors/count:len"
-                            i18n:name="num_errors">6</strong> input errors.
+                            >6</strong> input errors.
         </p>
 
         <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
@@ -59,8 +57,7 @@
       </div>
       <div class="actions">
           <input type='submit' value='Submit'
-            name='UPDATE_SUBMIT'
-            i18n:attributes='value add-button' />
+            name='UPDATE_SUBMIT' />
       </div>
 
     </form>

@@ -2,13 +2,10 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
+  metal:use-macro="context/@@main_template/master">
 
 <body>
 
@@ -23,15 +20,15 @@
   <div metal:use-macro="context/@@launchpad_form/form">
     <metal:heading fill-slot="heading">
 
-      <h1 i18n:translate="">Link to a bug report</h1>
+      <h1>Link to a bug report</h1>
     </metal:heading>
 
     <div metal:fill-slot="extra_info">
-      <p i18n:translate="">Enter the number or nickname of the Launchpad
+      <p>Enter the number or nickname of the Launchpad
         bug report that should be linked to this blueprint.
       </p>
 
-      <p i18n:translate="">If you don't know the bug number, you can search for it
+      <p>If you don't know the bug number, you can search for it
         on the <a href=""
                   tal:attributes="href string:${context/target/fmt:url}/+bugs"
                   >Bug listing</a> page.

@@ -2,12 +2,11 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="rosetta" >
+>
 
   <body>
     <metal:portlets fill-slot="portlets">
@@ -27,7 +26,7 @@
       </a>
       </li>
   </ul>
-  <h1 i18n:translate="">Translation status by language</h1>
+  <h1>Translation status by language</h1>
 
   <div tal:replace="structure context/@@+langchart" />
   <div tal:replace="structure context/@@+rosetta-status-legend" />

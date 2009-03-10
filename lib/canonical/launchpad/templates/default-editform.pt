@@ -2,12 +2,10 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
 >
 <body>
 <tal:tag condition="view/update"/>
@@ -31,12 +29,10 @@
           <p
             tal:condition="view/errors"
             class="error message"
-            i18n:translate=""
           >
             There are
             <tal:count
               replace="view/errors/count:len"
-              i18n:name="num_errors"
             >6</tal:count> problems with the information you provided.
             Please fix them and try again.
           </p>
@@ -72,7 +68,6 @@
             type="submit"
             name="UPDATE_SUBMIT"
             value="Change"
-            i18n:attributes="value submit-button"
           />
         </div>
         <div class="row" metal:define-slot="extra_buttons"

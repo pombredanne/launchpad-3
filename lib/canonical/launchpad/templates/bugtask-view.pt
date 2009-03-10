@@ -2,12 +2,10 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="malone"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -52,11 +50,10 @@
                tal:content="status" />
             <p tal:define="errors view/errors|nothing"
                tal:condition="errors"
-               class="error message"
-               i18n:translate="">
+               class="error message">
               There are <strong
               tal:content="view/errors/count:len"
-              i18n:name="num_errors">6</strong>
+              >6</strong>
               problems with the information you entered.
               Please correct them and try again.
             </p>
