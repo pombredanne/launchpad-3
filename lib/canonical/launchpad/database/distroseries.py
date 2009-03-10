@@ -23,7 +23,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -941,8 +940,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Find out the distroarchseries in question.
         arch_ids = [arch.id for arch in self.architectures]
         # Use the facility provided by IBuildSet to retrieve the records.
-        return getUtility(IBuildSet).getBuildsByArchIds(
+        result_set = getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
+
+        decorated_results = DecoratedResultSet(
+            result_set, lambda x: x, getUtility(IBuildSet).prefetchBuildData)
+
+        return decorated_results
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,

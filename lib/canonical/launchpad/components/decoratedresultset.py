@@ -34,15 +34,17 @@ class DecoratedResultSet(object):
     """
     delegates(IResultSet, context='result_set')
 
-    def __init__(self, result_set, result_decorator):
+    def __init__(self, result_set, result_decorator, pre_iter_hook=None):
         """
         :param result_set: The original result set to be decorated.
         :param result_decorator: The method with which individual results
-                                 will be passed through before being
-                                 returned.
+            will be passed through before being returned.
+        :param pre_iter_hook: The method to be called (with the 'result_set')
+            immediately before iteration starts.
         """
         self.result_set = result_set
         self.result_decorator = result_decorator
+        self.pre_iter_hook = pre_iter_hook
 
     def decorate_or_none(self, result):
         """Decorate a result or return None if the result is itself None"""
@@ -72,6 +74,8 @@ class DecoratedResultSet(object):
 
         Yield a decorated version of the returned value.
         """
+        if self.pre_iter_hook is not None:
+            self.pre_iter_hook(self.result_set)
         for value in self.result_set.__iter__(*args, **kwargs):
             yield self.decorate_or_none(value)
 

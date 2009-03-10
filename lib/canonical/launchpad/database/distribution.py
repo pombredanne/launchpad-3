@@ -769,8 +769,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             arch_ids += [arch.id for arch in series.architectures]
 
         # Use the facility provided by IBuildSet to retrieve the records.
-        return getUtility(IBuildSet).getBuildsByArchIds(
+        result_set = getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
+
+        decorated_results = DecoratedResultSet(
+            result_set, lambda x: x, getUtility(IBuildSet).prefetchBuildData)
+
+        return decorated_results
 
     def getSourcePackageCaches(self, archive=None):
         """See `IDistribution`."""
