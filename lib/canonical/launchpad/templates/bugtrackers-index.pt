@@ -67,8 +67,6 @@
     </tbody>
   </table>
 
-  <!-- tal:attributes="class python:not bugtracker.active and 'disabled'
-  or None" -->
   <p
      tal:define="link context/menu:context/newbugtracker"
      tal:content="structure link/render"

@@ -501,9 +501,15 @@ The admin can re-activate the bug tracker.
     >>> print message
     None
 
-And the user will no longer see any messages.
+The user will no longer see any messages.
 
     >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/debbugs')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+
+The message won't appear on the bug pages either.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/15')
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
 

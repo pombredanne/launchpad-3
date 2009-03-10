@@ -37,6 +37,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
     redirection, structured)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.widgets import DelimitedListWidget, LaunchpadRadioWidget
@@ -130,22 +131,19 @@ class BugTrackerSetView(LaunchpadView):
     def initialize(self):
         # Sort the bug trackers into active and inactive lists so that
         # we can display them separately.
-        active_bug_trackers = []
-        inactive_bug_trackers = []
-        for bug_tracker in list(self.context):
-            if not bug_tracker.active:
-                inactive_bug_trackers.append(bug_tracker)
-            else:
-                active_bug_trackers.append(bug_tracker)
-
-        self.active_bug_trackers = active_bug_trackers
-        self.inactive_bug_trackers = inactive_bug_trackers
+        all_bug_trackers = list(self.context)
+        self.active_bug_trackers = [
+            bug_tracker for bug_tracker in all_bug_trackers
+            if bug_tracker.active]
+        self.inactive_bug_trackers = [
+            bug_tracker for bug_tracker in all_bug_trackers
+            if not bug_tracker.active]
 
         bugtrackerset = getUtility(IBugTrackerSet)
         # The caching of bugtracker pillars here avoids us hitting the
         # database multiple times for each bugtracker.
         self._pillar_cache = bugtrackerset.getPillarsForBugtrackers(
-            active_bug_trackers + inactive_bug_trackers)
+            all_bug_trackers)
 
     def getPillarData(self, bugtracker):
         """Return dict of pillars and booleans indicating ellipsis.
@@ -212,8 +210,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
 
         # Members of the admin team can set the bug tracker's active
         # state.
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        if self.user.inTeam(admin_team):
+        if check_permission("launchpad.Admin", self.user):
             field_names.append('active')
 
         return field_names
