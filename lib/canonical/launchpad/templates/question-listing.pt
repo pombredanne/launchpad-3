@@ -2,10 +2,12 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 
 <body>
@@ -43,7 +45,7 @@
     </tal:block>
   </tal:block>
 
-  <h1 tal:content="view/pageheading">Questions</h1>
+  <h1 i18n:translate="" tal:content="view/pageheading">Questions</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"
@@ -107,7 +109,8 @@
   </div>
 
   <tal:no-results condition="not: questions/batch">
-    <p tal:content="view/empty_listing_message">
+    <p i18n:translate=""
+       tal:content="view/empty_listing_message">
       No questions.
     </p>
   </tal:no-results>
@@ -130,9 +133,8 @@
           <th>Created</th>
           <th>Submitter</th>
           <th tal:condition="view/display_target_column">In</th>
-          <th tal:condition="view/display_sourcepackage_column">
-	    Source Package
-	  </th>
+          <th tal:condition="view/display_sourcepackage_column"
+              >Source Package</th>
           <th>Status</th>
         </tr>
       </thead>

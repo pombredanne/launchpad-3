@@ -1,5 +1,6 @@
 <form
   xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   action="#"
   tal:attributes="action string:${context/fmt:url}/+editstatus"
   method="post"
@@ -7,6 +8,7 @@
   <p
     tal:condition="view/errors"
     class="error message"
+    i18n:translate=""
   >
     <tal:block condition="python:len(view.errors) > 1">
       There are <tal:count content="view/errors/count:len" /> errors in the
@@ -258,6 +260,7 @@
     <input
       type="submit"
       value="Save Changes"
+      i18n:attributes="value submit-button"
       tal:attributes="name string:${view/prefix}.actions.save"
     />
   </div>
