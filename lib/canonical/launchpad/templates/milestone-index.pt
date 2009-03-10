@@ -11,7 +11,7 @@
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:leftportlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/target/@@+portlet-milestones" />
 </metal:leftportlets>
