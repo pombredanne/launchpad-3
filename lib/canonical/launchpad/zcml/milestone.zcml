@@ -49,7 +49,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.milestone"
-        classes="MilestoneContextMenu" />
+        classes="MilestoneContextMenu MilestoneOverviewNavigationMenu" />
 
     <browser:pages
       for="canonical.launchpad.interfaces.IMilestone"
@@ -88,7 +88,7 @@
         class="canonical.launchpad.browser.milestone.MilestoneDeleteView"
         facet="overview"
         permission="launchpad.Edit"
-        template="../templates/milestone-edit.pt"
+        template="../templates/milestone-delete.pt"
         />
 
     <browser:page

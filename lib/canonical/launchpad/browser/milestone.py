@@ -10,6 +10,7 @@ __all__ = [
     'MilestoneDeleteView',
     'MilestoneEditView',
     'MilestoneNavigation',
+    'MilestoneOverviewNavigationMenu',
     'MilestoneSetNavigation',
     ]
 
@@ -24,7 +25,7 @@ from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, ContextMenu, Link,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    enabled_with_permission, GetitemNavigation, Navigation)
+    enabled_with_permission, GetitemNavigation, Navigation, NavigationMenu)
 
 from canonical.widgets import DateWidget
 
@@ -90,6 +91,15 @@ class MilestoneContextMenu(ContextMenu):
             enabled = False
             url = '.'
         return Link(url, text, enabled=enabled)
+
+
+class MilestoneOverviewNavigationMenu(NavigationMenu):
+    """Overview navigation menus for `IProductSeries` objects."""
+    # Suppress the ProductOverviewNavigationMenu from showing on milestones,
+    # pages.
+    usedfor = IMilestone
+    facet = 'overview'
+    links = ()
 
 
 class MilestoneView(LaunchpadView):
