@@ -43,6 +43,9 @@ class IDistroSeriesLanguage(IRosettaStats):
     contributor_count = Attribute("The number of contributors in total "
         "for this language in the distribution.")
 
+    def updateStatistics(ztm):
+        """Update all the Rosetta stats for this distro series language."""
+
 
 class IDistroSeriesLanguageSet(Interface):
     """The set of distroserieslanguages."""
