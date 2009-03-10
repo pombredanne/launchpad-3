@@ -5,7 +5,7 @@
   omit-tag="">
 <input size="19" type="text"
    tal:attributes="name view/name; id view/name; value view/formvalue;
-                   disabled view/disabled_flag;" />
+                   disabled python:view.disabled_flag or None;" />
 <a href="javascript:void(0)"
    tal:attributes="
      onclick string:pickDateTime('${view/name}', ${view/daterange});"
