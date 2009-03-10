@@ -1,0 +1,66 @@
+Multiple step views
+===================
+
+Some views need multiple steps, kind of like a wizard where individual pages
+collect information along the way.  The MultiStepView abstracts this
+functionality for use across Launchpad.
+
+To use multiple steps, you need one subclass of MultiStepView to start your
+wizard, and one or more subclasses of StepView for each step of your wizard.
+
+    >>> from canonical.launchpad.browser.multistep import (
+    ...     MultiStepView, StepView)
+
+The controlling view must define a property `step_one` which is the view class
+of the first step in your wizard.   Each step must define a `next_step`
+property which is the view class of the next step in the wizard.  When
+`next_step` is None, the wizard is done.
+
+    >>> initialized = []
+
+    >>> from zope.interface import Interface
+    >>> class IStep(Interface):
+    ...     """A step."""
+
+StepView subclasses must override next_step, step_name, and _field_names
+attributes.
+
+    >>> class StepThree(StepView):
+    ...     schema = IStep
+    ...     step_name = 'three'
+    ...     def initialize(self):
+    ...         super(StepThree, self).initialize()
+    ...         initialized.append(3)
+    ...
+    ...     next_step = None
+
+    >>> class StepTwo(StepView):
+    ...     schema = IStep
+    ...     step_name = 'two'
+    ...     def initialize(self):
+    ...         super(StepTwo, self).initialize()
+    ...         initialized.append(2)
+    ...
+    ...     next_step = StepThree
+
+    >>> class StepOne(StepView):
+    ...     schema = IStep
+    ...     step_name = 'one'
+    ...     def initialize(self):
+    ...         super(StepOne, self).initialize()
+    ...         initialized.append(1)
+    ...
+    ...     next_step = StepTwo
+
+    >>> class CounterView(MultiStepView):
+    ...     step_one = StepOne
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.continue': 'Continue'},
+    ...     method='POST')
+    >>> view = CounterView(None, request)
+    >>> view.initialize()
+
+    >>> initialized
+    [1, 2, 3]
