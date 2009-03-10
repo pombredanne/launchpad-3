@@ -24,9 +24,8 @@ those notifications look like.
 === Reporting a new bug ===
 
     >>> from zope.event import notify
-    >>> from zope.publisher.browser import TestRequest
-    >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
+    >>> from lazr.lifecycle.event import (
+    ...     ObjectModifiedEvent, ObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
     ...     IProductSet, IPersonSet, IDistributionSet, IDistroSeriesSet,
     ...     ISourcePackageNameSet, IBugSet, CreateBugParams)
@@ -38,7 +37,7 @@ those notifications look like.
     ...     title="firefox crashes all the time",
     ...     comment="this is a comment", owner=bug_submitter)
     >>> firefox_crashes = firefox.createBug(params)
-    >>> notify(SQLObjectCreatedEvent(firefox_crashes))
+    >>> notify(ObjectCreatedEvent(firefox_crashes))
 
     >>> from canonical.launchpad.database import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
@@ -64,7 +63,7 @@ those notifications look like.
     ...     setattr(bug_before_modification, name,
     ...             getattr(firefox_crashes, name))
     >>> firefox_crashes.description = "a new description"
-    >>> firefox_crashes_modified = SQLObjectModifiedEvent(
+    >>> firefox_crashes_modified = ObjectModifiedEvent(
     ...     firefox_crashes, bug_before_modification,
     ...     ["description"])
     >>> notify(firefox_crashes_modified)
@@ -100,7 +99,7 @@ bug. Let's take a look at each type.
     ...     bug=firefox_crashes, distribution=debian,
     ...     sourcepackagename=firefox_source,
     ...     owner=bug_submitter)
-    >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_debian))
+    >>> notify(ObjectCreatedEvent(firefox_crashes_in_debian))
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
@@ -125,7 +124,7 @@ bug. Let's take a look at each type.
     >>> firefox_crashes_in_sid = getUtility(IBugTaskSet).createTask(
     ...     bug=firefox_crashes, distroseries=sid,
     ...     sourcepackagename=firefox_source, owner=bug_submitter)
-    >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_sid))
+    >>> notify(ObjectCreatedEvent(firefox_crashes_in_sid))
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
@@ -152,7 +151,7 @@ bug. Let's take a look at each type.
     >>> evolution = getUtility(IProductSet).get(5)
     >>> evolution_crashes_too = getUtility(IBugTaskSet).createTask(
     ...     bug=firefox_crashes, product=evolution, owner=bug_submitter)
-    >>> notify(SQLObjectCreatedEvent(evolution_crashes_too))
+    >>> notify(ObjectCreatedEvent(evolution_crashes_too))
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
@@ -173,7 +172,7 @@ bug. Let's take a look at each type.
     >>> trunk = evolution.getSeries('trunk')
     >>> firefox_crashes_in_trunk = getUtility(IBugTaskSet).createTask(
     ...     bug=firefox_crashes, productseries=trunk, owner=bug_submitter)
-    >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_trunk))
+    >>> notify(ObjectCreatedEvent(firefox_crashes_in_trunk))
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
@@ -195,7 +194,7 @@ bug. Let's take a look at each type.
     >>> comment_on_firefox_crashes_in_debian = bugmessageset.createMessage(
     ...     subject="some title", content="just a test comment",
     ...     bug=firefox_crashes, owner=current_user)
-    >>> notify(SQLObjectCreatedEvent(comment_on_firefox_crashes_in_debian))
+    >>> notify(ObjectCreatedEvent(comment_on_firefox_crashes_in_debian))
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
@@ -214,14 +213,14 @@ task Fixed, and assigns himself to it.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BugTaskStatus, IDistroBugTask)
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> bugtask_before_modification = Snapshot(
     ...     firefox_crashes_in_debian, providing=IDistroBugTask)
     >>> firefox_crashes_in_debian.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> firefox_crashes_in_debian.transitionToAssignee(bug_submitter)
-    >>> debian_task_modified = SQLObjectModifiedEvent(
+    >>> debian_task_modified = ObjectModifiedEvent(
     ...     firefox_crashes_in_debian, bugtask_before_modification,
     ...     ["status", "assignee"])
     >>> notify(debian_task_modified)
@@ -242,7 +241,7 @@ task Fixed, and assigns himself to it.
     >>> firefox_crashes_in_trunk.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> firefox_crashes_in_trunk.transitionToAssignee(bug_submitter)
-    >>> firefox_task_modified = SQLObjectModifiedEvent(
+    >>> firefox_task_modified = ObjectModifiedEvent(
     ...     firefox_crashes_in_trunk, bugtask_before_modification,
     ...     ["status", "assignee"])
     >>> notify(firefox_task_modified)
@@ -267,7 +266,7 @@ pretending we've just added a watch to a bug.
 
     >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> bugwatch = getUtility(IBugWatchSet).get(2)
-    >>> bugwatch_added = SQLObjectCreatedEvent(bugwatch)
+    >>> bugwatch_added = ObjectCreatedEvent(bugwatch)
     >>> notify(bugwatch_added)
 
     >>> add_notification = BugNotification.select(orderBy='id')[-1]
@@ -287,7 +286,7 @@ the changes made:
     >>> bugwatch_before_modification.remotebug = bugwatch.remotebug
     >>> bugwatch_before_modification.url = bugwatch.url
     >>> bugwatch.remotebug = "2001"
-    >>> bugwatch_modified = SQLObjectModifiedEvent(
+    >>> bugwatch_modified = ObjectModifiedEvent(
     ...     object = bugwatch,
     ...     object_before_modification = bugwatch_before_modification,
     ...     edited_fields = ["remotebug"])
@@ -342,12 +341,12 @@ this document:
 
 When a bug is marked as a duplicate, its subscribers are notified.
 
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> bug_two_unmodified = Snapshot(bug_two, providing=IBug)
     >>> bug_two.duplicateof = bug_one
-    >>> marked_duplicate = SQLObjectModifiedEvent(
+    >>> marked_duplicate = ObjectModifiedEvent(
     ...     bug_two, bug_two_unmodified, edited_fields=['duplicateof'])
     >>> notify(marked_duplicate)
 
@@ -370,7 +369,7 @@ that the correct notification message is sent.
     >>> bug_three = getUtility(IBugSet).get(3)
     >>> bug_six_unmodified = Snapshot(bug_six, providing=IBug)
     >>> bug_six.duplicateof = bug_three
-    >>> marked_duplicate = SQLObjectModifiedEvent(
+    >>> marked_duplicate = ObjectModifiedEvent(
     ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'])
     >>> notify(marked_duplicate)
 
@@ -404,7 +403,7 @@ message is sent.
     >>> bug_six = getUtility(IBugSet).get(6)
     >>> bug_six_unmodified = Snapshot(bug_six, providing=IBug)
     >>> bug_six.duplicateof = None
-    >>> marked_duplicate = SQLObjectModifiedEvent(
+    >>> marked_duplicate = ObjectModifiedEvent(
     ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'])
     >>> notify(marked_duplicate)
 
