@@ -43,11 +43,11 @@ from canonical.lazr.interfaces.rest import IWebServiceConfiguration
 from canonical.lazr.rest.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
-import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIDApplication, IPerson,
     IPersonSet, IShipItApplication, IWebServiceApplication,
     IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError, ClockSkew)
+import canonical.launchpad.layers
 import canonical.launchpad.versioninfo
 
 from canonical.launchpad.webapp.adapter import (
@@ -438,8 +438,8 @@ class VHostWebServiceRequestPublicationFactory(
         # Add a trailing slash, if it is missing.
         if not path.endswith('/'):
             path = path + '/'
-        config = getUtility(IWebServiceConfiguration)
-        return path.startswith('/%s/' % config.path_override)
+        ws_config = getUtility(IWebServiceConfiguration)
+        return path.startswith('/%s/' % ws_config.path_override)
 
 
 class NotFoundRequestPublicationFactory:
