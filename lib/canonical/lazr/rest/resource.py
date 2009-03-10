@@ -64,7 +64,6 @@ from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.lazr.interfaces.fields import IReferenceChoice
 
-from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import get_current_browser_request
@@ -74,7 +73,7 @@ from canonical.lazr.interfaces import (
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME,
-    WebServiceLayer)
+    IWebServiceConfiguration, WebServiceLayer)
 from canonical.lazr.interfaces.fields import ICollectionField
 
 # The path to the WADL XML Schema definition.
@@ -308,7 +307,8 @@ class HTTPResource:
         # Append the revision number, because the algorithm for
         # generating the representation might itself change across
         # versions.
-        hash_object.update("\0" + str(versioninfo.revno))
+        revno = getUtility(IWebServiceConfiguration).code_revision
+        hash_object.update("\0" + revno)
 
         etag = '"%s"' % hash_object.hexdigest()
         self.etags_by_media_type[media_type] = etag
@@ -542,9 +542,10 @@ class BatchingResourceMixin:
         """
         navigator = WebServiceBatchNavigator(entries, request)
 
+        view_permission = getUtility(IWebServiceConfiguration).view_permission
         resources = [EntryResource(entry, request)
                      for entry in navigator.batch
-                     if check_permission('launchpad.View', entry)]
+                     if check_permission(view_permission, entry)]
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }

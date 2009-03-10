@@ -191,7 +191,9 @@ and IRecipe.
     ...         self.comments = []
     ...         self.private = private
 
-    >>> protect_schema(Recipe, IRecipe, read_permission='launchpad.View',
+    >>> from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+    >>> view_permission = getUtility(IWebServiceConfiguration).view_permission
+    >>> protect_schema(Recipe, IRecipe, read_permission=view_permission,
     ...                write_permission=CheckerPublic)
 
     >>> class RecipeAbsoluteURL(BaseAbsoluteURL):
@@ -375,13 +377,13 @@ objects.
     ...     def checkAuthenticated(self, user):
     ...         return True
     >>> provideAdapter(OpenAuthorization, [IAuthor],
-    ...                IAuthorization, name='launchpad.View')
+    ...                IAuthorization, name=view_permission)
     >>> provideAdapter(OpenAuthorization, [IComment],
-    ...                IAuthorization, name='launchpad.View')
+    ...                IAuthorization, name=view_permission)
     >>> provideAdapter(OpenAuthorization, [ICookbook],
-    ...                IAuthorization, name='launchpad.View')
+    ...                IAuthorization, name=view_permission)
     >>> provideAdapter(OpenAuthorization, [IDish],
-    ...                IAuthorization, name='launchpad.View')
+    ...                IAuthorization, name=view_permission)
 
 Here's an different IAuthorization implementation for IRecipe. This
 will prevent unauthenticated users from seeing private recipes.
@@ -397,7 +399,7 @@ will prevent unauthenticated users from seeing private recipes.
     ...     def checkAuthenticated(self, user):
     ...         return True
     >>> provideAdapter(PublicOnlyAuthorization, [IRecipe],
-    ...                IAuthorization, name='launchpad.View')
+    ...                IAuthorization, name=view_permission)
 
 
 == Navigation ==
@@ -1532,7 +1534,7 @@ an error.
     >>> recipe_resource = get_request.traverse(app)
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Recipe object...>, 'dish', 'launchpad.View')
+    Unauthorized: (<Recipe object...>, 'dish', ...)
 
 The recipe will not show up in collections:
 
@@ -1616,7 +1618,7 @@ permission to see:
     >>> put_request.traverse(app)()
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Recipe object...>, 'dish', 'launchpad.View')
+    Unauthorized: (<Recipe object...>, 'dish', ...)
 
 
 == Stored file resources ==
@@ -1901,11 +1903,11 @@ so that they don't show up in other tests as parts of the site.
     >>> unregister([ICookbookSet], ICollection)
     >>> unregister([IDishSet], ICollection)
 
-    >>> unregister([IAuthor], IAuthorization, 'launchpad.View')
-    >>> unregister([ICookbook], IAuthorization, 'launchpad.View')
-    >>> unregister([IComment], IAuthorization, 'launchpad.View')
-    >>> unregister([IDish], IAuthorization, 'launchpad.View')
-    >>> unregister([IRecipe], IAuthorization, 'launchpad.View')
+    >>> unregister([IAuthor], IAuthorization, view_permission)
+    >>> unregister([ICookbook], IAuthorization, view_permission)
+    >>> unregister([IComment], IAuthorization, view_permission)
+    >>> unregister([IDish], IAuthorization, view_permission)
+    >>> unregister([IRecipe], IAuthorization, view_permission)
 
     >>> unregister([ICookbookSet, IHTTPApplicationRequest],
     ...                   IResourcePOSTOperation, 'create_cookbook')
