@@ -351,6 +351,16 @@ class IWebServiceConfiguration(Interface):
         running the webservice. This may be a revision number from version
         control, or a hand-chosen version number.""")
 
+    def createRequest(body_stream, environ):
+        """A factory method that creates a request for the web service.
+
+        It should have the correct publication set for the application.
+
+        :param body_stream: A file-like object containing the request
+            input stream.
+        :param environ: A dict containing the request environment.
+        """
+
 
 class IUnmarshallingDoesntNeedValue(Interface):
     """A marker interface for unmarshallers that work without values.
