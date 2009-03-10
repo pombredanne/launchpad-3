@@ -10,9 +10,23 @@ __all__ = [
 
 
 from zope.app.form.browser import TextWidget
+from zope.formlib import form
+from zope.interface import Interface
+from zope.schema import TextLine
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, action, canonical_url, custom_widget)
+
+
+class _IStepMachinery(Interface):
+    """A schema solely for the multistep wizard machinery."""
+    __visited_steps__ = TextLine(
+        title=_('Visited steps'),
+        required=False,
+        description=_(
+            "Used to keep track of the steps visited in a multistep form.")
+        )
 
 
 class MultiStepView(LaunchpadView):
@@ -71,16 +85,21 @@ class StepView(LaunchpadFormView):
     If views want to change the label of their Continue button, they should
     override `main_action_label`.
     """
-    custom_widget('visited_steps', TextWidget, visible=False)
+    custom_widget('__visited_steps__', TextWidget, visible=False)
 
     _field_names = []
     step_name = ''
     main_action_label = u'Continue'
     next_step = None
 
+    def extendFields(self):
+        """See `LaunchpadFormView`."""
+        self.form_fields += form.FormFields(_IStepMachinery)
+
     @property
     def field_names(self):
-        return self._field_names + ['visited_steps']
+        """Do not override."""
+        return self._field_names + ['__visited_steps__']
 
     def validateStep(self, data):
         """Validation specific to a given step.
@@ -88,6 +107,9 @@ class StepView(LaunchpadFormView):
         To be overridden in subclasses, if necessary.
         """
         pass
+
+    def main_action(self, data):
+        raise NotImplementedError
 
     @action(u'Continue', name='continue')
     def continue_action(self, action, data):
@@ -113,12 +135,14 @@ class StepView(LaunchpadFormView):
 
     def injectStepNameInRequest(self):
         """Inject this step's name into the request if necessary."""
-        visited_steps = self.request.form.get('field.visited_steps')
+        visited_steps = self.request.form.get('field.__visited_steps__')
         if not visited_steps:
-            self.request.form['field.visited_steps'] = self.step_name
+            self.request.form['field.__visited_steps__'] = self.step_name
         elif self.step_name not in visited_steps:
-            self.request.form['field.visited_steps'] = (
-                "%s, %s" % (visited_steps, self.step_name))
+            steps = visited_steps.split('|')
+            steps.append(self.step_name)
+            new_steps = '|'.join(steps)
+            self.request.form['field.__visited_steps__'] = new_steps
         else:
             # We already visited this step, so there's no need to inject our
             # step_name in the request again.
@@ -134,7 +158,8 @@ class StepView(LaunchpadFormView):
         that to find out whether or not to process them, so we use an extra
         hidden input to store the views the user has visited already.
         """
-        return self.step_name in data['visited_steps']
+        steps = data['__visited_steps__'].split('|')
+        return self.step_name in steps
 
     def render(self):
         # This is a hack to make it possible to change the label of our main
