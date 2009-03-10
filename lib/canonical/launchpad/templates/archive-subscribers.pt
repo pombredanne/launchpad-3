@@ -30,22 +30,24 @@
          tal:content="view/error_count" />
 
       <h2><tal:archive-label replace="archive_label"/> Subscribers</h2>
-      <table tal:attributes="summary string:Subscribers for this ${archive_label};">
+
+      <form action="."
+        tal:attributes="action view/action_url"
+        name="launchpadform"
+        method="post"
+        enctype="multipart/form-data"
+        accept-charset="UTF-8">
+
+      <table tal:attributes="summary string:Subscribers for this ${archive_label};"
+             id="archive-subscribers" class="listing">
         <thead>
           <tr class="archive_subscriber_row">
             <th>Name</th>
             <th>Expires</th>
-            <th>Comment</th>
+            <th colspan="2">Comment</th>
           </tr>
         </thead>
         <tbody>
-          <form action="."
-            tal:attributes="action view/action_url"
-            name="launchpadform"
-            method="post"
-            enctype="multipart/form-data"
-            accept-charset="UTF-8">
-
           <tr>
             <tal:single-row-form define="widgets widgets|view/widgets"
                        repeat="widget widgets">
@@ -76,15 +78,15 @@
               />
             </td>
           </tr>
-          </form>
           <tr class="archive_subscriber_row"
               tal:repeat="subscription view/subscriptions">
             <td tal:content="structure subscription/subscriber/fmt:link" />
             <td tal:content="subscription/date_expires/fmt:date" />
-            <td tal:content="subscription/description" />
+            <td colspan="2" tal:content="subscription/description" />
          </tr>
         </tbody>
       </table>
+      </form>
     </div>
 
   </div>
