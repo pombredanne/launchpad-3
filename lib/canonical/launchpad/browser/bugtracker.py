@@ -223,6 +223,10 @@ class BugTrackerEditView(LaunchpadEditFormView):
     def setUpFields(self):
         """Set up the fields for the bug tracker edit form.
 
+        If the `active` field is to be displayed, remove the default
+        Field and replace it with a Choice field for the sake of
+        usability.
+
         See `LaunchpadFormView`.
         """
         super(BugTrackerEditView, self).setUpFields()
