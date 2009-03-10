@@ -17,13 +17,23 @@ person), and see what's inside.
 It's an XML document.
 
     >>> print wadl
-    <?xml version="1.0"?>
-    <wadl:application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns="http://research.sun.com/wadl/2006/10"
-        xmlns:wadl="http://research.sun.com/wadl/2006/10"
-        xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd">
+    <?xml version="1.0"...?>
+    <wadl:application...>
     ...
     </wadl:application>
+
+    >>> wadl_uri = "http://research.sun.com/wadl/2006/10"
+    >>> 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' in wadl
+    True
+
+    >>> ('xmlns="%s"' % wadl_uri) in wadl
+    True
+
+    >>> 'xmlns:wadl="http://research.sun.com/wadl/2006/10"' in wadl
+    True
+
+    >>> ('xsi:schemaLocation="%s/wadl.xsd"' % wadl_uri) in wadl
+    True
 
 Let's parse it and make sure it validates against the WADL schema.
 
@@ -279,7 +289,8 @@ We can examine the real wadl now.
     True
     >>> wadl_schema.error_log
     ''
-    >>> tree = etree.fromstring(wadl)
+    >>> tree = etree.fromstring(
+    ...     wadl.replace('&nbsp;', '&#160;').encode('UTF-8'))
 
 Like all WADL documents, the WADL representation of the service root
 is rooted at an <application> tag.
