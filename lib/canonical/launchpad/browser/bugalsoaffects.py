@@ -16,6 +16,9 @@ from zope.event import notify
 from zope.formlib import form
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from lazr.enum import EnumeratedType, Item
+
+from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -27,14 +30,11 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProductSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL, valid_remote_bug_url, valid_upstreamtask,
     validate_new_distrotask)
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.menu import structured
-
-from canonical.lazr import EnumeratedType, Item
 
 from canonical.widgets.bugtask import (
     BugTaskAlsoAffectsSourcePackageNameWidget)
@@ -399,7 +399,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
             if bug_watch is None:
                 bug_watch = task_added.bug.addWatch(
                     extracted_bugtracker, extracted_bug, self.user)
-                notify(SQLObjectCreatedEvent(bug_watch))
+                notify(ObjectCreatedEvent(bug_watch))
             if not target.official_malone:
                 task_added.bugwatch = bug_watch
 
@@ -418,7 +418,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
             task_added.transitionToImportance(
                 BugTaskImportance.UNKNOWN, bug_importer)
 
-        notify(SQLObjectCreatedEvent(task_added))
+        notify(ObjectCreatedEvent(task_added))
         self.next_url = canonical_url(task_added)
 
 

@@ -121,6 +121,8 @@
       <script type="text/javascript"
               tal:attributes="src string:${yui}/base/base.js"></script>
       <script type="text/javascript"
+              tal:attributes="src string:${yui}/substitute/substitute.js"></script>
+      <script type="text/javascript"
               tal:attributes="src string:${yui}/anim/anim.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/classnamemanager/classnamemanager.js"></script>
@@ -130,6 +132,8 @@
               tal:attributes="src string:${yui}/widget/widget.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/cookie/cookie.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>

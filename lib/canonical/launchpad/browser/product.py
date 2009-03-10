@@ -92,6 +92,7 @@ from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.popup import VocabularyPickerWidget
+from lazr.uri import URI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
