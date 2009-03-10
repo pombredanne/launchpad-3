@@ -159,7 +159,7 @@ class IArchiveSubscriberUI(Interface):
     """
     subscriber = PublicPersonChoice(
         title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
-        description=_("The person who is subscribed."))
+        description=_("The person or team to subscribe."))
 
     date_expires = Date(
         title=_("Date of Expiration"), required=False,
