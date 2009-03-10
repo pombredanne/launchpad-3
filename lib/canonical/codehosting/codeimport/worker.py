@@ -56,13 +56,18 @@ class BazaarBranchStore:
 
         :return: A Bazaar working tree for the branch of `code_import`.
         """
+        remote_url = self._getMirrorURL(db_branch_id)
         try:
-            bzr_dir = BzrDir.open(self._getMirrorURL(db_branch_id))
+            bzr_dir = BzrDir.open(remote_url)
         except NotBranchError:
             return BzrDir.create_standalone_workingtree(target_path)
         if bzr_dir.needs_format_conversion(
                     format=BzrDirFormat.get_default_format()):
-            upgrade(self._getMirrorURL(db_branch_id))
+            try:
+                bzr_dir.root_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
+            upgrade(remote_url)
         bzr_dir.sprout(target_path)
         return BzrDir.open(target_path).open_workingtree()
 

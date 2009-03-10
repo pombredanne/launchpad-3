@@ -7,9 +7,9 @@ __all__ = [
     'FakeRequest',
     'FakeResponse',
     'pprint_entry',
+    'WebServiceTestPublication',
     'WebServiceTestRequest',
     'TestPublication',
-    'WebServiceTestPublication',
     ]
 import traceback
 
@@ -164,7 +164,7 @@ class TestPublication:
         # zope.app.publication.publicationtraverse.PublicationTraverse.
         # This should really live in zope.publisher, we are copying because
         # we don't want to depend on zope.app stuff.
-        # namespace support was dropped.
+        # Namespace support was dropped.
         if name == '.':
             return ob
 
