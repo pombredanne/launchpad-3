@@ -260,7 +260,7 @@ can create structural bug subscriptions.
 
 == Deleting milestones ==
 
-The milestone page for a series lists all the milestones targeted to to
+The milestone page for a series lists all the milestones targeted to
 the series.
 
     >>> driver_browser = setupBrowser(auth='Basic test@canonical.com:test')
@@ -285,7 +285,7 @@ access the delete page. Sample Person is the driver so he has those rights.
     >>> print driver_browser.title
     Delete Milestone 0.9.2 for Mozilla Firefox
 
-The 0.9.2 release has some a release and files associated with it. Sample
+The 0.9.2 release has a release and files associated with it. Sample
 Person reads that they will be deleted too.
 
     >>> print extract_text(find_main_content(driver_browser.contents))

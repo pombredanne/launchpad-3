@@ -1,6 +1,6 @@
 = Milestone pages =
 
-Users can directly see and edit milestones thought the milestone views.
+Users can directly see and edit milestones through the milestone views.
 
 
 == Deleting milestones ==
@@ -25,7 +25,7 @@ The view is restricted to owners of the project and drivers of the series.
 
 The view provides a few properties to access the dependent artifacts. This
 milestone does not have any bugtasks, specifications, a product release or
-and product release files.
+product release files.
 
     >>> view.bugtasks
     []
