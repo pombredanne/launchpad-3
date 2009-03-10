@@ -946,7 +946,7 @@ class BugTaskSearchParams:
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
                  bug_commenter=None, omit_targeted=False,
-                 date_closed=None):
+                 date_closed=None, affected_user=None):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -975,6 +975,7 @@ class BugTaskSearchParams:
         self.nominated_for = nominated_for
         self.bug_commenter = bug_commenter
         self.date_closed = date_closed
+        self.affected_user = affected_user
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1033,6 +1034,7 @@ class BugTaskSearchParams:
                        importance=None,
                        assignee=None, bug_reporter=None, bug_supervisor=None,
                        bug_commenter=None, bug_subscriber=None, owner=None,
+                       affected_user=None,
                        has_patch=None, has_cve=None, distribution=None,
                        tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
                        omit_duplicates=True, omit_targeted=None,
@@ -1051,6 +1053,7 @@ class BugTaskSearchParams:
         search_params.bug_commenter = bug_commenter
         search_params.subscriber = bug_subscriber
         search_params.owner = owner
+        search_params.affected_user = affected_user
         search_params.distribution = distribution
         if has_patch:
             # Import this here to avoid circular imports
