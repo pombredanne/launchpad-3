@@ -201,8 +201,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             translatables, self._ref_translatables(),
             "After hiding all translation, a distroseries should not be "
             "translatable but translatables() returns %r instead of %r." % (
-                translatables, self._ref_translatables())
-            )
+                translatables, self._ref_translatables()))
 
 
 def test_suite():
