@@ -1293,10 +1293,6 @@ class IAddBugTaskForm(Interface):
     bug_url = StrippedTextLine(
         title=_('URL'), required=False, constraint=valid_remote_bug_url,
         description=_("The URL of this bug in the remote bug tracker."))
-    visited_steps = TextLine(
-        title=_('Visited steps'), required=False,
-        description=_("Used to keep track of the steps we visited in a "
-                      "wizard-like form."))
 
 
 class IAddBugTaskWithProductCreationForm(Interface):

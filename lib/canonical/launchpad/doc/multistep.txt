@@ -16,51 +16,113 @@ of the first step in your wizard.   Each step must define a `next_step`
 property which is the view class of the next step in the wizard.  When
 `next_step` is None, the wizard is done.
 
-    >>> initialized = []
-
     >>> from zope.interface import Interface
     >>> class IStep(Interface):
     ...     """A step."""
 
-StepView subclasses must override next_step, step_name, and _field_names
-attributes.
+StepView subclasses must override next_step and step_name, and provide a
+main_action() method to process the form.
+
+    >>> visited_steps = None
 
     >>> class StepThree(StepView):
     ...     schema = IStep
     ...     step_name = 'three'
-    ...     def initialize(self):
-    ...         super(StepThree, self).initialize()
-    ...         initialized.append(3)
-    ...
-    ...     next_step = None
+    ...     def main_action(self, data):
+    ...         assert data['__visited_steps__'] == visited_steps
+    ...         print self.step_name
 
     >>> class StepTwo(StepView):
     ...     schema = IStep
     ...     step_name = 'two'
-    ...     def initialize(self):
-    ...         super(StepTwo, self).initialize()
-    ...         initialized.append(2)
-    ...
-    ...     next_step = StepThree
+    ...     def main_action(self, data):
+    ...         assert data['__visited_steps__'] == visited_steps
+    ...         print self.step_name
+    ...         self.next_step = StepThree
 
     >>> class StepOne(StepView):
     ...     schema = IStep
     ...     step_name = 'one'
-    ...     def initialize(self):
-    ...         super(StepOne, self).initialize()
-    ...         initialized.append(1)
-    ...
-    ...     next_step = StepTwo
+    ...     def main_action(self, data):
+    ...         assert data['__visited_steps__'] == visited_steps
+    ...         print self.step_name
+    ...         self.next_step = StepTwo
 
     >>> class CounterView(MultiStepView):
     ...     step_one = StepOne
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> request = LaunchpadTestRequest(
-    ...     form={'field.actions.continue': 'Continue'},
-    ...     method='POST')
+    >>> form = {'field.actions.continue': 'Continue'}
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> view = CounterView(None, request)
-    >>> view.initialize()
 
-    >>> initialized
-    [1, 2, 3]
+The view gets initialized three times to simulate the three clicks on the
+'Continue' button of each subsequent page.
+
+    >>> visited_steps = 'one'
+    >>> view.initialize()
+    one
+
+    >>> visited_steps = 'one|two'
+    >>> view.initialize()
+    one
+    two
+
+    >>> visited_steps = 'one|two|three'
+    >>> view.initialize()
+    one
+    two
+    three
+
+
+Validation
+----------
+
+Step views can validate their data, but they must not do so by overriding
+validate().  Instead, they must do this by overriding the validateStep()
+method.
+
+    >>> class StepSix(StepView):
+    ...     schema = IStep
+    ...     step_name = 'six'
+    ...     def main_action(self, data):
+    ...         pass
+    ...     def validateStep(self, data):
+    ...         print CounterView.counter
+    ...         CounterView.counter += 1
+
+    >>> class StepFive(StepView):
+    ...     schema = IStep
+    ...     step_name = 'five'
+    ...     def main_action(self, data):
+    ...         self.next_step = StepSix
+    ...     def validateStep(self, data):
+    ...         print CounterView.counter
+    ...         CounterView.counter += 1
+
+    >>> class StepFour(StepView):
+    ...     schema = IStep
+    ...     step_name = 'four'
+    ...     def main_action(self, data):
+    ...         self.next_step = StepFive
+    ...     def validateStep(self, data):
+    ...         print CounterView.counter
+    ...         CounterView.counter += 1
+
+    >>> class CounterView(MultiStepView):
+    ...     step_one = StepFour
+    ...     counter = 0
+
+    >>> form = {'field.actions.continue': 'Continue'}
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
+    >>> view = CounterView(None, request)
+
+    >>> view.initialize()
+    0
+    >>> view.initialize()
+    1
+    2
+    >>> view.initialize()
+    3
+    4
+    5
