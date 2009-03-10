@@ -14,7 +14,7 @@
   <!--There is one "service root" resource, located (as you'd expect)
       at the service root. This very document is the WADL
       representation of the "service root" resource.-->
-  <resources tal:attributes="base context/wadl:url">
+  <resources tal:attributes="base options/context/wadl:url">
     <resource path="" type="#service-root" />
   </resources>
 
@@ -33,7 +33,7 @@
   <!--The JSON representation of a "service root" resource contains a
       number of links to collection-type resources.-->
   <representation mediaType="application/json" id="service-root-json">
-    <tal:root_params tal:repeat="param context/wadl:top_level_resources">
+    <tal:root_params tal:repeat="param options/context/wadl:top_level_resources">
       <param style="plain" tal:attributes="name param/name;
                                            path param/path">
         <link tal:attributes="resource_type param/resource/wadl:type_link" />
@@ -51,7 +51,7 @@
       service.-->
 
   <!--Begin resource_type definitions for collection resources.-->
-  <tal:collection_classes tal:repeat="context collections">
+  <tal:collection_classes tal:repeat="context options/collections">
     <resource_type tal:attributes="id context/wadl_collection:collection_type"
       tal:define="entry_schema nocall:context/wadl_collection:entry_schema">
       <wadl:doc tal:replace="structure context/wadl_collection:doc">
@@ -120,7 +120,7 @@
 
   <!--Begin representation and resource_type definitions for entry
       resources and the collections that contain them. -->
-  <tal:entry_classes tal:repeat="context entries">
+  <tal:entry_classes tal:repeat="context options/entries">
     <resource_type tal:attributes="id context/wadl_entry:singular_type">
       <wadl:doc tal:replace="structure context/wadl_entry:doc">
         Human-readable description of the resource type, in XHTML format.
