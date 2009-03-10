@@ -205,6 +205,14 @@ class BugWatchUpdater(object):
             self.txn.begin()
             bug_tracker = getUtility(IBugTrackerSet).getByName(
                 bug_tracker_name)
+
+            if not bug_tracker.active:
+                self.log.debug(
+                    "Updates are disabled for bug tracker at %s" %
+                    bug_tracker.baseurl)
+                self.txn.abort()
+                continue
+
             # Save the url for later, since we might need it to report an
             # error after a transaction has been aborted.
             bug_tracker_url = bug_tracker.baseurl
