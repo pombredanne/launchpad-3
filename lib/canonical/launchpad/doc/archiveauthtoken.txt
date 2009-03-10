@@ -107,6 +107,17 @@ And retrieve the token by id and by token data:
     >>> print token_set.getByToken(u"testtoken").person.name
     name12
 
+It's also possible to retrieve a set of all the tokens for an archive.
+
+    >>> tokens = token_set.getByArchive(cprov.archive)
+    >>> print tokens.count()
+    2
+
+    >>> for token in tokens:
+    ...     print token.person.name
+    name12
+    name12
+
 
 == Amending Tokens ==
 
