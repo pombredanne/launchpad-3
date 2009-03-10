@@ -68,7 +68,7 @@ First, we do a valid import.
     ... msgid "foo"
     ... msgstr "blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> published = True
+    >>> published = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, published, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
@@ -81,6 +81,8 @@ We must approve the entry to be able to import it.
 We do the import.  This succeeds without errors.
 
     >>> (subject, message) = pofile.importFromQueue(entry)
+    >>> subject
+    u'Translation import - Welsh (cy) - firefox in Mozilla Firefox trunk'
     >>> print entry.error_output
     None
 
@@ -103,7 +105,7 @@ file we just imported.
 Now, we are going to import a .po file that has a 'PO-Revision-Date'
 field with a date older than a previous .po import.
 
-    >>> pofile_contents = r'''
+    >>> older_pofile_contents = r'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-05-03 19:41+0100\n"
@@ -116,9 +118,9 @@ field with a date older than a previous .po import.
     ... msgid "foo"
     ... msgstr "blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> published = True
+    >>> published = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, older_pofile_contents, published, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
@@ -169,3 +171,4 @@ The code also generated an email about the error we produced.
     <BLANKLINE>
     The Launchpad team
     <BLANKLINE>
+

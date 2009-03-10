@@ -902,3 +902,37 @@ language, we should not have to reimport all translations):
     >>> current_dv.msgstr2.translation
     u'Third form %d'
 
+== Published import notifications ==
+
+Add a published POFile import (i.e. from a package or bzr branch),
+approve and import it.
+
+    >>> pofile_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-05-03 20:41+0100\n"
+    ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=4; plural=n==1) "
+    ...     "? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "blah"
+    ... '''
+    >>> pofile = factory.makePOFile('sr')
+    >>> published = True
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, published, person,
+    ...     productseries=pofile.potemplate.productseries,
+    ...     potemplate=pofile.potemplate, pofile=pofile)
+    >>> transaction.commit()
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> (subject, message) = pofile.importFromQueue(entry)
+
+Import succeeds but no email is sent out.
+
+    >>> entry.status == RosettaImportStatus.IMPORTED
+    True
+    >>> print subject
+    None
+
