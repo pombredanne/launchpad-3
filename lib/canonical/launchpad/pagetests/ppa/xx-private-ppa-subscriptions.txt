@@ -5,6 +5,19 @@ part of the stories in xx-private-ppa-subscription-stories.txt.
 
 == Managing Archive subscriptions ==
 
+XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
+will require launchpad.Admin until the backend .htaccess update
+machinery is in-place and tested:
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> login('foo.bar@canonical.com')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> admins = getUtility(IPersonSet).getByName('admins')
+    >>> admins.addMember(cprov, foobar)
+    >>> logout()
+
 Public PPAs do not have an option for managing subscriptions:
 
     >>> cprov_browser = setupBrowser(
@@ -42,8 +55,9 @@ Setup both cprov's and sabdfl's PPAs as a private one:
     >>> admin_browser.getControl("Save").click()
 
 Normally the subscriptions are accessed via the PPA page:
-XXX: noodles 2009-03-10 bug=340405. This link is disabled until
-the cron-job supporting private archive subscriptions is enabled.
+XXX: noodles 2009-03-10 bug=340405. The link 'Manage subscriptions' on the
+PPA page is disabled until the cron-job supporting private archive
+subscriptions is enabled.
 
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> cprov_browser.getLink("Manage subscriptions")
@@ -71,6 +85,12 @@ Create two new users that can be subscribed to archives:
     ...     password="test", email="joe@example.com")
     >>> bradsmith = factory.makePerson(name="bradsmith", displayname="Brad Smith",
     ...     password="test", email="brad@example.com")
+
+XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
+will require launchpad.Admin until the backend .htaccess update
+machinery is in-place and tested:
+
+    >>> admins.addMember(joesmith, foobar)
     >>> logout()
 
 People can be subscribed by entering their details into the displayed
