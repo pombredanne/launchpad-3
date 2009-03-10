@@ -14,12 +14,15 @@ from epydoc.markup import DocstringLinker
 from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
-from zope.component import queryAdapter
+from zope.component import adapts, queryAdapter
+from zope.interface import implements
 from zope.interface.interfaces import IInterface
 from zope.schema import getFieldsInOrder
 from zope.schema.interfaces import IBytes, IChoice, IDate, IDatetime, IObject
 from zope.security.proxy import removeSecurityProxy
+from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.traversing.browser import absoluteURL
+from zope.traversing.interfaces import IPathAdapter
 from lazr.enum import IEnumeratedType
 
 from canonical.launchpad.webapp.publisher import get_current_browser_request
@@ -82,8 +85,11 @@ def generate_wadl_doc(doc):
 
     return WADL_DOC_TEMPLATE % parsed.to_html(WadlDocstringLinker())
 
+
 class WebServiceRequestAPI:
     """Namespace for web service functions related to a website request."""
+    implements(IPathAdapter)
+    adapts(IBrowserRequest)
 
     def __init__(self, request):
         """Initialize with respect to a request."""
