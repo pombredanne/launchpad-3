@@ -15,11 +15,7 @@
         <allow interface='canonical.lazr.interfaces.IJSONPublishable' />
     </class>
 
-    <adapter
-        for="zope.publisher.interfaces.browser.IBrowserRequest"
-        provides="canonical.lazr.interfaces.rest.WebServiceLayer"
-        factory="canonical.launchpad.webapp.servers.website_request_to_web_service_request"
-        />
+    <adapter factory="canonical.lazr.rest.publisher.browser_request_to_web_service_request" />
 
     <adapter factory="canonical.lazr.rest.jsoncache.JSONRequestCache" />
 
@@ -33,12 +29,9 @@
         />
 
     <adapter
-        for="zope.publisher.interfaces.browser.IBrowserRequest"
-        provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WebServiceRequestAPI"
         name="webservicerequest"
         />
-
 
     <!-- TALES namespaces for WADL generation -->
     <adapter
