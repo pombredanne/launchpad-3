@@ -43,31 +43,32 @@ class WebServicePublicationMixin:
         """See `zope.publisher.interfaces.IPublication`.
 
         In addition to the default traversal implementation, this publication
-        also handle traversal to collection scoped into an entry.
+        also handles traversal to collection scoped into an entry.
         """
         # If this is the last traversal step, then look first for a scoped
         # collection. This is done because although Navigation handles
         # traversal to entries in a scoped collection, they don't usually
         # handle traversing to the scoped collection itself.
         if len(request.getTraversalStack()) == 0:
-            try_special_traversal = True
             try:
                 entry = IEntry(ob)
             except TypeError:
-                try_special_traversal = False
-            result = None
-            if try_special_traversal:
+                pass
+            else:
                 field = entry.schema.get(name)
                 if ICollectionField.providedBy(field):
                     result = self._traverseToScopedCollection(
                         request, entry, field, name)
+                    if result is not None:
+                        return result
                 elif IBytes.providedBy(field):
-                    result = self._traverseToByteStorage(
+                    return self._traverseToByteStorage(
                         request, entry, field, name)
                 elif field is not None:
-                    result = EntryField(entry, field, name)
-            if result is not None:
-                return result
+                    return EntryField(entry, field, name)
+                else:
+                    # Falls through to our parent version.
+                    pass
         return super(WebServicePublicationMixin, self).traverseName(
             request, ob, name)
 

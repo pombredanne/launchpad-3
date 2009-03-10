@@ -1662,7 +1662,7 @@ Binary files, such as the covers of cookbooks, are stored on an
 external server, but they have addresses within the web service.
 The mapping of binary resources to the actual hosting of them is
 handled through the IByteStorage interface. For this example, let's define
-simple implementation that servers all files from the /files path.
+simple implementation that serves all files from the /files path.
 
     >>> from canonical.lazr.interfaces.rest import IByteStorage
     >>> from zope.schema.interfaces import IBytes
