@@ -70,4 +70,5 @@ class ArchiveAuthTokenSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             ArchiveAuthToken,
-            ArchiveAuthToken.archive == archive)
+            ArchiveAuthToken.archive == archive,
+            ArchiveAuthToken.date_deactivated == None)

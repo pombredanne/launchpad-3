@@ -143,3 +143,9 @@ We can do this as an admin too:
 
     >>> login("admin@canonical.com")
     >>> new_token.deactivate()
+
+Deactivating a token stops it being returned from getByArchive().  The
+previous count of 2 is now reduced to 1.
+
+    >>> token_set.getByArchive(cprov.archive).count()
+    1
