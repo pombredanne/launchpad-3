@@ -16,6 +16,7 @@ class IDistroSeriesPackageCache(Interface):
     archive = Attribute("The cache target archive.")
     distroseries = Attribute("The cache target distroseries.")
     binarypackagename = Attribute("The binary package name.")
+    fti = Attribute("Full Text Index")
 
     name = Attribute("The binary package name as text.")
     summary = Attribute("A single summary from one of the binary "

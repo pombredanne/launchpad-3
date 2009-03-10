@@ -9,7 +9,8 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.launchpad.event import SQLObjectCreatedEvent
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from canonical.launchpad.interfaces import (
     IExternalBugTrackerTokenAPI, ILoginTokenSet, IProductSet,
     IPersonSet, IDistributionSet, LoginTokenType, CreateBugParams,
@@ -103,7 +104,7 @@ class FileBugAPI(LaunchpadXMLRPCView):
             subscribers=subscriber_list)
 
         bug = target.createBug(params)
-        notify(SQLObjectCreatedEvent(bug))
+        notify(ObjectCreatedEvent(bug))
 
         return canonical_url(bug)
 

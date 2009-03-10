@@ -16,6 +16,9 @@ from zope.event import notify
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
+
 from canonical.launchpad.interfaces import (
     IBugLinkTarget,
     IDistroSeries,
@@ -39,8 +42,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, shortlist)
 
-from canonical.launchpad.event.sqlobjectevent import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -59,7 +60,7 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
 
-from canonical.launchpad.components import ObjectDelta
+from lazr.lifecycle.objectdelta import ObjectDelta
 from canonical.launchpad.components.specification import SpecificationDelta
 
 
@@ -295,7 +296,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # if no offer exists, create one from scratch
         mentoringoffer = MentoringOffer(owner=user, team=team,
             specification=self)
-        notify(SQLObjectCreatedEvent(mentoringoffer, user=user))
+        notify(ObjectCreatedEvent(mentoringoffer, user=user))
         return mentoringoffer
 
     def retractMentoring(self, user):
@@ -303,7 +304,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         mentoringoffer = MentoringOffer.selectOneBy(
             specification=self, owner=user)
         if mentoringoffer is not None:
-            notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
+            notify(ObjectDeletedEvent(mentoringoffer, user=user))
             MentoringOffer.delete(mentoringoffer.id)
 
     def notificationRecipientAddresses(self):
@@ -504,13 +505,13 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 # only the essential attribute changed, but we know
                 # that we can get away with not examining the attribute
                 # at all - it's a boolean!
-                notify(SQLObjectModifiedEvent(
+                notify(ObjectModifiedEvent(
                         sub, sub, ['essential'], user=user))
             return sub
         # since no previous subscription existed, create and return a new one
         sub = SpecificationSubscription(specification=self,
             person=person, essential=essential)
-        notify(SQLObjectCreatedEvent(sub, user=user))
+        notify(ObjectCreatedEvent(sub, user=user))
         return sub
 
     def unsubscribe(self, person):
@@ -648,7 +649,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         branch_link = SpecificationBranch(
             specification=self, branch=branch, summary=summary,
             registrant=registrant)
-        notify(SQLObjectCreatedEvent(branch_link))
+        notify(ObjectCreatedEvent(branch_link))
         return branch_link
 
 

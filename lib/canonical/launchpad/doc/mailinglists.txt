@@ -597,11 +597,10 @@ mailing list could have an archive and archives are never deleted.
 == Events ==
 
 Activating the mailing list (changing it's status to 'available for
-subscription') will fire an instance of the SQLObjectModifiedEvent.
+subscription') will fire an instance of the ObjectModifiedEvent.
 
     # Register an event listener that will print event it receives.
-    >>> from canonical.launchpad.event.interfaces import (
-    ...     ISQLObjectModifiedEvent)
+    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
     >>> from canonical.launchpad.interfaces import IMailingList
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> def print_event(object, event):
@@ -609,7 +608,7 @@ subscription') will fire an instance of the SQLObjectModifiedEvent.
     ...         event.__class__.__name__.split('.')[-1],
     ...         object.__class__.__name__.split('.')[-1])
     >>> mailinglist_event_listener = TestEventListener(
-    ...     IMailingList, ISQLObjectModifiedEvent, print_event)
+    ...     IMailingList, IObjectModifiedEvent, print_event)
 
 
     # We need to build a new mailing list to use in our tests
@@ -621,7 +620,7 @@ subscription') will fire an instance of the SQLObjectModifiedEvent.
     'CONSTRUCTING'
 
     >>> list_six.transitionToStatus(MailingListStatus.ACTIVE)
-    Received SQLObjectModifiedEvent on MailingList
+    Received ObjectModifiedEvent on MailingList
     >>> syncUpdate(list_six)
     >>> list_six.status.name
     'ACTIVE'
