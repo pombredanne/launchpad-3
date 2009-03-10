@@ -10,12 +10,12 @@ __metaclass__ = type
 __all__ = [
     'WebServicePublicationMixin',
     'WebServiceRequestTraversal',
-    'WEBSERVICE_PATH_OVERRIDE',
     ]
 
 import urllib
 
-from zope.component import getMultiAdapter, queryAdapter, queryMultiAdapter
+from zope.component import (
+    getMultiAdapter, getUtility, queryAdapter, queryMultiAdapter)
 from zope.interface import alsoProvides, implements
 from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import IBytes
@@ -25,16 +25,12 @@ from lazr.uri import URI
 
 from canonical.lazr.interfaces.rest import (
     IByteStorage, ICollection, IEntry, IEntryField, IHTTPResource,
-    IWebBrowserInitiatedRequest, WebServiceLayer)
+    IWebBrowserInitiatedRequest, IWebServiceConfiguration, WebServiceLayer)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
     CollectionResource, EntryField, EntryFieldResource,
     EntryResource, ScopedCollection)
 
-# Any requests that have the following element at the beginning of their
-# PATH_INFO will be handled by the web service, as if they had gone to
-# api.launchpad.net.
-WEBSERVICE_PATH_OVERRIDE = 'api'
 
 class WebServicePublicationMixin:
     """A mixin for webservice publication. 
@@ -197,9 +193,10 @@ class WebServiceRequestTraversal:
         return self.publication.getResource(self, result)
 
     def _removeVirtualHostTraversals(self):
-        """Remove the /api and /beta traversal names."""
+        """Remove the /[path_override] and /[version] traversal names."""
         names = list()
-        api = self._popTraversal(WEBSERVICE_PATH_OVERRIDE)
+        config = getUtility(IWebServiceConfiguration)
+        api = self._popTraversal(config.path_override)
         if api is not None:
             names.append(api)
             # Requests that use the webservice path override are
@@ -209,9 +206,10 @@ class WebServiceRequestTraversal:
             alsoProvides(self, IWebBrowserInitiatedRequest)
 
         # Only accept versioned URLs.
-        beta = self._popTraversal('beta')
-        if beta is not None:
-            names.append(beta)
+        version_string = config.service_version_uri_prefix
+        version = self._popTraversal(version_string)
+        if version is not None:
+            names.append(version)
             self.setVirtualHostRoot(names=names)
         else:
             raise NotFound(self, '', self)
