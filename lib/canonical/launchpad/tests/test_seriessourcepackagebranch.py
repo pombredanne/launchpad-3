@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 
 """Tests for ISeriesSourcePackageBranch."""
 
@@ -21,7 +21,7 @@ from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestSeriesSourcePackageBranch(TestCaseWithFactory):
-    """Tests for ISeriesSourcePackageBranch."""
+    """Tests for `ISeriesSourcePackageBranch`."""
 
     layer = DatabaseFunctionalLayer
 
