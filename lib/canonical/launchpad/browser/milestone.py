@@ -5,11 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'MilestoneSetNavigation',
-    'MilestoneNavigation',
-    'MilestoneContextMenu',
     'MilestoneAddView',
+    'MilestoneContextMenu',
+    'MilestoneDeleteView',
     'MilestoneEditView',
+    'MilestoneNavigation',
+    'MilestoneSetNavigation',
     ]
 
 from zope.component import getUtility
@@ -209,3 +210,58 @@ class MilestoneAdminEditView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
+class MilestoneDeleteView(LaunchpadFormView):
+    """A view for deleting an `IMilestone`."""
+    schema = IMilestone
+    field_names = []
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Delete %s' % self.context.title
+
+    @cachedproperty
+    def bugtasks(self):
+        """The list `IBugTask`s targeted to the milestone."""
+        params = BugTaskSearchParams(milestone=self.context, user=None)
+        bugtasks = getUtility(IBugTaskSet).search(params)
+        return list(bugtasks)
+
+    @cachedproperty
+    def specifications(self):
+        """The list `ISpecification`s targeted to the milestone."""
+        return list(self.context.specifications)
+
+    @cachedproperty
+    def product_release(self):
+        """The `IProductRelease` associated with the milestone."""
+        return self.context.product_release
+
+    @cachedproperty
+    def product_release_files(self):
+        """The list of `IProductReleaseFile`s related to the milestone."""
+        if self.product_release:
+            return list(self.product_release.files)
+        else:
+            return []
+
+    @action('Delete this Milestone', name='delete')
+    def delete_action(self, action, data):
+        # Any associated bugtasks and specifications are untargeted.
+        for bugtask in self.bugtasks:
+            bugtask.milestone = None
+        for spec in self.context.specifications:
+            spec.milestone = None
+        # Any associated product release and its files are deleted.
+        for release_file in self.product_release_files:
+            release_file.destroySelf()
+        if self.product_release is not None:
+            self.product_release.destroySelf()
+        self.request.response.addInfoNotification(
+            "Milestone %s deleted." % self.context.name)
+        self.next_url = canonical_url(self.context.productseries)
+        self.context.destroySelf()
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)

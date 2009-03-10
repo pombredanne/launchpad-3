@@ -83,6 +83,15 @@
         />
 
     <browser:page
+        name="+delete"
+        for="canonical.launchpad.interfaces.IMilestone"
+        class="canonical.launchpad.browser.milestone.MilestoneDeleteView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/milestone-edit.pt"
+        />
+
+    <browser:page
         name="+addrelease"
         for="canonical.launchpad.interfaces.IMilestone"
         class="canonical.launchpad.browser.ProductReleaseAddView"
