@@ -41,7 +41,7 @@
       />
     </tal:bugtracker-active>
     <p class="warning message"
-        condition="not:watch/bugtracker/active">
+        tal:condition="not:watch/bugtracker/active">
       Bug watch updates for
       <tal:bugtracker content="watch/bugtracker/title" /> are disabled.
     </p>

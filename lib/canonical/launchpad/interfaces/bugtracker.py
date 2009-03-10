@@ -12,7 +12,6 @@ __all__ = [
     'IBugTrackerAliasSet',
     'IBugTrackerSet',
     'IRemoteBug',
-    'BUG_TRACKER_ACTIVE_VOCABULARY',
     'SINGLE_PRODUCT_BUGTRACKERTYPES',
     ]
 
@@ -158,10 +157,6 @@ SINGLE_PRODUCT_BUGTRACKERTYPES = [
     ]
 
 
-BUG_TRACKER_ACTIVE_VOCABULARY = SimpleVocabulary.fromItems(
-    [('on', True), ('off', False)])
-
-
 class IBugTracker(Interface):
     """A remote bug system."""
     export_as_webservice_entry()
@@ -238,9 +233,8 @@ class IBugTracker(Interface):
     multi_product = Attribute(
         "This bug tracker tracks multiple remote products.")
     active = exported(
-        Choice(
-            title=_('Updates for this bug tracker are'),
-            vocabulary=BUG_TRACKER_ACTIVE_VOCABULARY,
+        Bool(
+            title=_('Updates for this bug tracker are enabled'),
             required=True, default=True))
 
     def getBugFilingAndSearchLinks(remote_product, summary=None,

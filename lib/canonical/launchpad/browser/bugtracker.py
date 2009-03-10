@@ -24,6 +24,7 @@ from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.formlib import form
 from zope.schema import Choice
+from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
@@ -185,6 +186,10 @@ class BugTrackerView(LaunchpadView):
                                self.context.products), 100)
 
 
+BUG_TRACKER_ACTIVE_VOCABULARY = SimpleVocabulary.fromItems(
+    [('on', True), ('off', False)])
+
+
 class BugTrackerEditView(LaunchpadEditFormView):
 
     schema = IBugTracker
@@ -196,7 +201,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
     custom_widget('aliases', DelimitedListWidget, height=3)
     custom_widget('active', LaunchpadRadioWidget, orientation='vertical')
 
-    @property
+    @cachedproperty
     def field_names(self):
         field_names = [
             'name',
@@ -214,6 +219,25 @@ class BugTrackerEditView(LaunchpadEditFormView):
             field_names.append('active')
 
         return field_names
+
+    def setUpFields(self):
+        """Set up the fields for the bug tracker edit form.
+
+        See `LaunchpadFormView`.
+        """
+        super(BugTrackerEditView, self).setUpFields()
+
+        # If we're displaying the 'active' field we need to swap it out
+        # and replace it with a field that uses our custom vocabulary.
+        if 'active' in self.field_names:
+            active_field = Choice(
+                __name__='active',
+                title=_('Updates for this bug tracker are'),
+                vocabulary=BUG_TRACKER_ACTIVE_VOCABULARY,
+                required=True, default=self.context.active)
+
+            self.form_fields = self.form_fields.omit('active')
+            self.form_fields += form.Fields(active_field)
 
     def validate(self, data):
         # Normalise aliases to an empty list if it's None.

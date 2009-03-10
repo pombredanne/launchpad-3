@@ -504,14 +504,23 @@ The admin can re-activate the bug tracker.
 The user will no longer see any messages.
 
     >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/debbugs')
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> message = find_tag_by_id(user_browser.contents, 'inactive-message')
+    >>> print message
+    None
 
 The message won't appear on the bug pages either.
 
     >>> user_browser.open('http://launchpad.dev/bugs/15')
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
+
+And the inactive bug trackers table will have disappeared since there
+are no inactive bug trackers.
+
+    >>> inactive_trackers_table = find_tag_by_id(
+    ...     user_browser.contents, 'inactive-trackers')
+    >>> print inactive_trackers_table
+    None
 
 
 == Overview pages ==

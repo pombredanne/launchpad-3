@@ -674,10 +674,11 @@ Non-admins can't disable a bugtracker through the API.
 
 Admins can, however.
 
-    >>> print webservice.patch(
+    >>> bug_tracker = webservice.patch(
     ...     bug_tracker_path, 'application/json',
-    ...     dumps(dict(active='off'))).jsonBody()
-    HTTP/1.1 200 Ok...
+    ...     dumps(dict(active=False))).jsonBody()
+    >>> pprint_entry(bug_tracker)
+    active: False...
 
 
 == Bug attachments ==
