@@ -49,4 +49,6 @@ def cache_me_link_when_principal_identified(event):
     except TypeError:
         cache = None
     if cache is not None:
-        cache.links['me'] = IPerson(event.principal)
+        person = IPerson(event.principal, None)
+        if person is not None:
+            cache.links['me'] = person

@@ -1029,3 +1029,71 @@ approximate durations.
     'two minutes'
     >>> test_tales('delta/fmt:approximateduration/use-digits', delta=delta)
     '2 minutes'
+
+
+== Formatting Link objects ==
+
+MenuLinks (ILink) can be formatted anchored text and icons.
+
+    # Build a link like the MenuAPI does.
+    >>> from canonical.launchpad.webapp.menu import Link, MenuLink
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> request = LaunchpadTestRequest()
+    >>> login(ANONYMOUS, request)
+    >>> link = Link('+place', 'text', 'summary', icon='icon', enabled=True)
+    >>> menu_link = MenuLink(link)
+    >>> menu_link.url = "http://launchpad.dev/+place"
+    >>> menu_link.name = 'test_link'
+
+The link can be rendered as an anchored icon.
+
+    >>> print test_tales('menu_link/fmt:icon', menu_link=menu_link)
+    <a href="http://launchpad.dev/+place" class="menu-link-test_link"
+       title="summary"><img src="/@@/icon" alt="text" /></a>
+
+The link can be rendered as text with an icon to the right.
+
+    >>> print test_tales('menu_link/fmt:link-icon', menu_link=menu_link)
+    <a style="
+              background: url(/@@/icon) center right no-repeat;
+              line-height: 20px; padding-right: 18px"
+       href="http://launchpad.dev/+place" class="menu-link-test_link"
+       title="summary">text</a>
+
+The default rendering can be explicitly called too, text with an icon to
+the left.
+
+    >>> print test_tales('menu_link/fmt:link', menu_link=menu_link)
+    <a style="
+              background: url(/@@/icon) center left no-repeat;
+              line-height: 20px; padding-left: 18px"
+       href="http://launchpad.dev/+place" class="menu-link-test_link"
+       title="summary">text</a>
+
+fmt:icon-link is an alias for fmt:link so that the fmt names are consistent.
+
+    >>> print test_tales('menu_link/fmt:icon-link', menu_link=menu_link)
+    <a style="
+              background: url(/@@/icon) center left no-repeat;
+              line-height: 20px; padding-left: 18px"
+       href="http://launchpad.dev/+place" class="menu-link-test_link"
+       title="summary">text</a>
+
+
+And the url format is also available.
+
+    >>> print test_tales('menu_link/fmt:url', menu_link=menu_link)
+    http://launchpad.dev/+place
+
+If the link is disabled, no markup is rendered.
+
+    >>> menu_link.enabled = False
+    >>> test_tales('menu_link/fmt:icon', menu_link=menu_link)
+    u''
+    >>> test_tales('menu_link/fmt:link-icon', menu_link=menu_link)
+    u''
+    >>> test_tales('menu_link/fmt:link', menu_link=menu_link)
+    u''
+    >>> test_tales('menu_link/fmt:url', menu_link=menu_link)
+    u''
