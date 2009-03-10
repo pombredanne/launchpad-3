@@ -42,11 +42,15 @@ Setup both cprov's and sabdfl's PPAs as a private one:
     >>> admin_browser.getControl("Save").click()
 
 Normally the subscriptions are accessed via the PPA page:
+XXX: noodles 2009-03-10 bug=340405. This link is disabled until
+the cron-job supporting private archive subscriptions is enabled.
 
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
-    >>> cprov_browser.getLink("Manage subscriptions").click()
-    >>> print cprov_browser.url
-    http://launchpad.dev/~cprov/+archive/ppa/+subscriptions
+    >>> cprov_browser.getLink("Manage subscriptions")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
 
 Initially there are no subscriptions for a newly privatized PPA (although,
 this may need to change, to add the owner/team). A heading is displayed
@@ -115,8 +119,7 @@ Joe has multiple subscriptions:
 
     >>> sabdfl_browser = setupBrowser(
     ...     auth="Basic mark@hbd.com:test")
-    >>> sabdfl_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa")
-    >>> sabdfl_browser.getLink("Manage subscriptions").click()
+    >>> sabdfl_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa/+subscriptions")
     >>> sabdfl_browser.getControl(name='field.subscriber').value = 'joesmith'
     >>> sabdfl_browser.getControl(
     ...     name='field.description').value = "Joe is also my friend"
