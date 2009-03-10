@@ -120,8 +120,11 @@ def load_tests(basic_tests, module, loader):
     get_branch_stacked_on_url_tests = loader.loadTestsFromTestCase(
         TestGetBranchStackedOnURL)
 
+    scenarios = [scenario for scenario in branch_scenarios()
+                 if scenario[0] != 'BranchReferenceFormat']
+
     multiply_tests(
-        get_branch_stacked_on_url_tests, branch_scenarios(), result)
+        get_branch_stacked_on_url_tests, scenarios, result)
 
     result.addTests(loader.loadTestsFromTestCase(TestDenyingServer))
     return result
