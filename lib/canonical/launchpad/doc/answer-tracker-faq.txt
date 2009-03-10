@@ -142,11 +142,11 @@ When the FAQ is modified, the attributes are automatically updated.
 
     >>> from zope.event import notify
     >>> from zope.interface import providedBy
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> old_faq = Snapshot(firefox_faq, providing=providedBy(firefox_faq))
     >>> firefox_faq.keywords = 'extension'
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     firefox_faq, old_faq, ['keywords'], user=sample_person))
 
     >>> print firefox_faq.last_updated_by.displayname

@@ -14,7 +14,7 @@
 
   <subscriber
       for="canonical.launchpad.interfaces.ISpecificationBranch
-           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="canonical.launchpad.subscribers.karma.spec_branch_created"
       />
 
