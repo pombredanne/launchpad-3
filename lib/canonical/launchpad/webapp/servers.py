@@ -38,16 +38,16 @@ from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
-from canonical.lazr.interfaces import IFeed
+from canonical.lazr.interfaces.feed import IFeed
+from canonical.lazr.interfaces.rest import IWebServiceConfiguration
 from canonical.lazr.rest.publisher import (
-    WebServicePublicationMixin, WebServiceRequestTraversal,
-    WEBSERVICE_PATH_OVERRIDE)
+    WebServicePublicationMixin, WebServiceRequestTraversal)
 
-import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIDApplication, IPerson,
     IPersonSet, IShipItApplication, IWebServiceApplication,
     IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError, ClockSkew)
+import canonical.launchpad.layers
 import canonical.launchpad.versioninfo
 
 from canonical.launchpad.webapp.adapter import (
@@ -438,7 +438,8 @@ class VHostWebServiceRequestPublicationFactory(
         # Add a trailing slash, if it is missing.
         if not path.endswith('/'):
             path = path + '/'
-        return path.startswith('/%s/' % WEBSERVICE_PATH_OVERRIDE)
+        ws_config = getUtility(IWebServiceConfiguration)
+        return path.startswith('/%s/' % ws_config.path_override)
 
 
 class NotFoundRequestPublicationFactory:
@@ -1144,7 +1145,8 @@ class WebServicePublication(WebServicePublicationMixin,
         # on the API virtual host but comes through the path_override on
         # the other regular virtual hosts.
         request_path = request.get('PATH_INFO', '')
-        if request_path.startswith("/%s" % WEBSERVICE_PATH_OVERRIDE):
+        web_service_config = getUtility(IWebServiceConfiguration)
+        if request_path.startswith("/%s" % web_service_config.path_override):
             return super(WebServicePublication, self).getPrincipal(request)
 
         # Fetch OAuth authorization information from the request.
@@ -1216,8 +1218,10 @@ def website_request_to_web_service_request(website_request):
     # Zope picks up on SERVER_URL when setting the _app_server attribute
     # of the new request.
     environ['SERVER_URL'] = website_request.getApplicationURL()
+    version_string = getUtility(
+        IWebServiceConfiguration).service_version_uri_prefix
     web_service_request = WebServiceClientRequest(body, environ)
-    web_service_request.setVirtualHostRoot(names=["api", "beta"])
+    web_service_request.setVirtualHostRoot(names=["api", version_string])
     web_service_request.setPublication(WebServicePublication(None))
     return web_service_request
 
