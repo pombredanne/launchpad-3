@@ -1,0 +1,10 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:webservice="http://namespaces.canonical.com/webservice">
+
+  <webservice:register module="canonical.lazr.rest.example.interfaces" />
+
+  <adapter factory="canonical.lazr.rest.example.traversal.TraverseWithGet" />
+  <allow interface="" names="__parent__ __name__" />
+
+</configure>

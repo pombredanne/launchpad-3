@@ -1,0 +1,11 @@
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns="http://namespaces.zope.org/zope">
+    ...   <include package="zope.app.component" file="meta.zcml"/>
+    ...   <include package="canonical.lazr.rest" />
+    ...   <include package="zope.traversing" />
+    ...   <include package="zope.publisher" />
+    ...   <include package="canonical.lazr.rest" file="meta.zcml" />
+    ...   <include package="canonical.lazr.rest.example" />
+    ... </configure>
+    ... """)
