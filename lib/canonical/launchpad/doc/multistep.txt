@@ -73,3 +73,56 @@ The view gets initialized three times to simulate the three clicks on the
     one
     two
     three
+
+
+Validation
+----------
+
+Step views can validate their data, but they must not do so by overriding
+validate().  Instead, they must do this by overriding the validateStep()
+method.
+
+    >>> class StepSix(StepView):
+    ...     schema = IStep
+    ...     step_name = 'six'
+    ...     def main_action(self, data):
+    ...         pass
+    ...     def validateStep(self, data):
+    ...         print CounterView.counter
+    ...         CounterView.counter += 1
+
+    >>> class StepFive(StepView):
+    ...     schema = IStep
+    ...     step_name = 'five'
+    ...     def main_action(self, data):
+    ...         self.next_step = StepSix
+    ...     def validateStep(self, data):
+    ...         print CounterView.counter
+    ...         CounterView.counter += 1
+
+    >>> class StepFour(StepView):
+    ...     schema = IStep
+    ...     step_name = 'four'
+    ...     def main_action(self, data):
+    ...         self.next_step = StepFive
+    ...     def validateStep(self, data):
+    ...         print CounterView.counter
+    ...         CounterView.counter += 1
+
+    >>> class CounterView(MultiStepView):
+    ...     step_one = StepFour
+    ...     counter = 0
+
+    >>> form = {'field.actions.continue': 'Continue'}
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
+    >>> view = CounterView(None, request)
+
+    >>> view.initialize()
+    0
+    >>> view.initialize()
+    1
+    2
+    >>> view.initialize()
+    3
+    4
+    5
