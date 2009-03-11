@@ -19,6 +19,7 @@ from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
+from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
@@ -33,6 +34,8 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.question import (
     QuestionTargetMixin, QuestionTargetSearch)
+from canonical.launchpad.database.seriessourcepackagebranch import (
+    SeriesSourcePackageBranch)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.translationimportqueue import (
@@ -591,3 +594,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             ''' % sqlvalues(self.distroseries, self.sourcepackagename),
             clauseTables = ['DistroSeries', 'Distribution'])
         return shortlist(result.orderBy(['-priority', 'name']), 300)
+
+    def getBranch(self, pocket):
+        store = Store.of(self.sourcepackagename)
+        return store.find(
+            Branch,
+            SeriesSourcePackageBranch.distroseries == self.distroseries.id,
+            (SeriesSourcePackageBranch.sourcepackagename
+             == self.sourcepackagename.id),
+            SeriesSourcePackageBranch.pocket == pocket,
+            SeriesSourcePackageBranch.branch == Branch.id).one()
