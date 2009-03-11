@@ -1029,7 +1029,6 @@ class LaunchpadDatabaseFrontend:
         return getUtility(IScriptActivitySet).getLastActivity(activity_name)
 
 
-
 def test_suite():
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
@@ -1048,6 +1047,8 @@ def test_suite():
         from bzrlib.tests import multiply_tests
         multiply_tests(puller_tests, scenarios, suite)
     except ImportError:
+        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
+        # once sourcecode/bzr has bzr.dev r4102.
         from bzrlib.tests import adapt_tests, TestScenarioApplier
         applier = TestScenarioApplier()
         applier.scenarios = scenarios

@@ -637,6 +637,8 @@ def make_smoke_tests(base_suite):
         from bzrlib.tests import multiply_tests
         multiply_tests(base_suite, scenarios, new_suite)
     except ImportError:
+        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
+        # once sourcecode/bzr has bzr.dev r4102.
         from bzrlib.tests import adapt_tests, TestScenarioApplier
         adapter = TestScenarioApplier()
         adapter.scenarios = scenarios

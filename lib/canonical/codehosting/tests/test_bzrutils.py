@@ -125,6 +125,8 @@ def load_tests(basic_tests, module, loader):
         multiply_tests(
             get_branch_stacked_on_url_tests, scenarios, result)
     except ImportError:
+        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
+        # once sourcecode/bzr has bzr.dev r4110.
         from bzrlib.branch import (
             BranchFormat, BranchReferenceFormat, _legacy_formats)
         from bzrlib.tests import adapt_tests
