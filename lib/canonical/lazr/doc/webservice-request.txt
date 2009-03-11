@@ -46,6 +46,7 @@ Objects can be stored in a cache so that they can be included in
 Javascript code inside the template. This is provided by the
 IJSONRequestCache. There is a default adapter available that works with
 any IApplicationRequest.
+
 An object can be stored in the cache's 'objects' dict or its 'links' dict.
 
     >>> from canonical.lazr.interfaces.rest import IJSONRequestCache
