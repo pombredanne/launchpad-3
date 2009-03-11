@@ -897,9 +897,11 @@ class POFile(SQLBase, POFileMixIn):
             # file, we tag it as FAILED.
             entry_to_import.status = RosettaImportStatus.FAILED
         else:
-            if entry_to_import.is_published and not needs_notification_for_imported:
-                # If it's a published upload (i.e. from a package or bzr branch),
-                # do not send success notifications unless they are needed.
+            if (entry_to_import.is_published and
+                not needs_notification_for_imported):
+                # If it's a published upload (i.e. from a package or bzr
+                # branch), do not send success notifications unless they
+                # are needed.
                 subject = None
 
             entry_to_import.status = RosettaImportStatus.IMPORTED
