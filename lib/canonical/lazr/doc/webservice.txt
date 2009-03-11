@@ -493,6 +493,10 @@ A IWebServiceConfiguration utility is also expected to be defined which
 defines common configuration option for the webservice.
 
     >>> from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+    >>> from canonical.lazr.testing.webservice import (
+    ...     WebServiceTestPublication, WebServiceTestRequest)
+    >>> from cStringIO import StringIO
+
     >>> class SimpleWebServiceConfiguration:
     ...     implements(IWebServiceConfiguration)
     ...     view_permission = 'zope.View'
@@ -500,6 +504,12 @@ defines common configuration option for the webservice.
     ...     use_https = False
     ...     service_version_uri_prefix = 'beta'
     ...     code_revision = 'test'
+    ...
+    ...     root = None # Will be set later
+    ...     def createRequest(self, body_instream, environ):
+    ...         request = WebServiceTestRequest(body_instream, environ)
+    ...         request.setPublication(WebServiceTestPublication(self.root))
+    ...         return request
     >>> webservice_configuration = SimpleWebServiceConfiguration()
     >>> sm.registerUtility(webservice_configuration)
 
@@ -933,12 +943,8 @@ If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
 'http://api.launchpad.net/beta/'.
 
-    >>> from canonical.lazr.testing.webservice import (
-    ...     WebServiceTestPublication, WebServiceTestRequest)
-    >>> from cStringIO import StringIO
-
     >>> app = MyServiceRootResource()
-    >>> webservice_publication = WebServiceTestPublication(app)
+    >>> webservice_configuration.root = app
     >>> def create_web_service_request(
     ...     path_info, method='GET', body=None, environ=None,
     ...     http_host='api.launchpad.dev'):
@@ -955,9 +961,8 @@ will act as though you had performed a GET on the URL
     ...     else:
     ...         test_environ['CONTENT_LENGTH'] = len(body)
     ...         body_instream = StringIO(body)
-    ...     request = WebServiceTestRequest(
-    ...         body_instream=body_instream, environ=test_environ)
-    ...     request.setPublication(webservice_publication)
+    ...     request = webservice_configuration.createRequest(
+    ...         body_instream, test_environ)
     ...     request.processInputs()
     ...     # This sets the request as the current interaction.
     ...     request.publication.beforeTraversal(request)
