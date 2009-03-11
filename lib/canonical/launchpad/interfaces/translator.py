@@ -16,7 +16,6 @@ from canonical.launchpad.fields import PublicPersonChoice, URIField
 from zope.interface import Interface, Attribute
 
 from zope.schema import Choice, Datetime, Int
-from zope.app.form.browser.interfaces import IAddFormCustomization
 
 
 class IEditTranslator(Interface):
@@ -33,7 +32,8 @@ class IEditTranslator(Interface):
         allow_userinfo=False,
         description=_("The URL of the translation team guidelines "
                       "to be followed by this particular translation team. "
-                      "Can be any of the http://, https://, or ftp:// links."))
+                      "Can be any of the http://, https://, or ftp:// links.")
+        )
 
 
 class IAdminTranslator(Interface):
@@ -77,7 +77,7 @@ class ITranslator(IEditTranslator, IAdminTranslator):
     """
 
 
-class ITranslatorSet(IAddFormCustomization):
+class ITranslatorSet(Interface):
     """A container for `ITranslator`s."""
 
     title = Attribute('Title')

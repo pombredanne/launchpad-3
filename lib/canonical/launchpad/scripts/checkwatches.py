@@ -24,7 +24,7 @@ from canonical.launchpad.components.externalbugtracker import (
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
 from canonical.launchpad.components.externalbugtracker.bugzilla import (
     BugzillaLPPlugin)
-from canonical.launchpad.event import SQLObjectCreatedEvent
+from lazr.lifecycle.event import ObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchErrorType, CreateBugParams,
@@ -180,7 +180,7 @@ class BugWatchUpdater(object):
         """Tear down the Bug Watch Updater Interaction."""
         endInteraction()
 
-    def updateBugTrackers(self, bug_tracker_names=None):
+    def updateBugTrackers(self, bug_tracker_names=None, batch_size=None):
         """Update all the bug trackers that have watches pending.
 
         If bug tracker names are specified in bug_tracker_names only
@@ -194,6 +194,8 @@ class BugWatchUpdater(object):
         # Set up an interaction as the Bug Watch Updater since the
         # notification code expects a logged in user.
         self._login()
+
+        self.log.debug("Using a global batch size of %s" % batch_size)
 
         if bug_tracker_names is None:
             bug_tracker_names = [
@@ -218,7 +220,7 @@ class BugWatchUpdater(object):
                     self.log.debug(
                         "Skipping updating Ubuntu Bugzilla watches.")
                 else:
-                    self.updateBugTracker(bug_tracker)
+                    self.updateBugTracker(bug_tracker, batch_size)
 
                 self.txn.commit()
             except (KeyboardInterrupt, SystemExit):
@@ -310,7 +312,7 @@ class BugWatchUpdater(object):
 
         return trackers_and_watches
 
-    def updateBugTracker(self, bug_tracker):
+    def updateBugTracker(self, bug_tracker, batch_size=None):
         """Updates the given bug trackers's bug watches."""
         # XXX 2007-01-18 gmb:
         #     Once we start running checkwatches more frequently we need
@@ -344,7 +346,8 @@ class BugWatchUpdater(object):
                 self.warning(message)
             else:
                 for remotesystem, bug_watch_batch in trackers_and_watches:
-                    self.updateBugWatches(remotesystem, bug_watch_batch)
+                    self.updateBugWatches(
+                        remotesystem, bug_watch_batch, batch_size=batch_size)
         else:
             self.log.debug(
                 "No watches to update on %s" % bug_tracker.baseurl)
@@ -388,7 +391,7 @@ class BugWatchUpdater(object):
         return bug_watch_lastchecked_times[0]
 
     def _getRemoteIdsToCheck(self, remotesystem, bug_watches,
-                             server_time=None, now=None):
+                             server_time=None, now=None, batch_size=None):
         """Return the remote bug IDs to check for a set of bug watches.
 
         The remote bug tracker is queried to find out which of the
@@ -454,10 +457,21 @@ class BugWatchUpdater(object):
         # slice the bug_watches list but for the sake of testing we need
         # to ensure that the list of bug watches is ordered by remote
         # bug id before we do so.
-        if remotesystem.batch_size is not None:
+        if batch_size is None:
+            # If a batch_size hasn't been passed, use the one specified
+            # by the ExternalBugTracker.
+            batch_size = remotesystem.batch_size
+
+        if batch_size == 0:
+            # A batch_size of 0 means that there's no batch size limit
+            # for this bug tracker.
+            batch_size = None
+
+        if batch_size is not None:
             # We'll recreate our remote_ids_to_check list so that it's
             # prioritised. We always include remote ids with comments.
-            actual_remote_ids_to_check = remote_ids_with_comments
+            actual_remote_ids_to_check = sorted(
+                remote_ids_with_comments[:batch_size])
 
             # If there is still room in the batch, add as many 'old' bug
             # watches as possible. We do this in kind of an odd way
@@ -471,7 +485,7 @@ class BugWatchUpdater(object):
                 # possible and then, if there's room as many from
                 # old_ids_to_check as possible.
                 ids_to_check_count = len(actual_remote_ids_to_check)
-                slots_left = remotesystem.batch_size - ids_to_check_count
+                slots_left = batch_size - ids_to_check_count
                 if slots_left < 1:
                     continue
 
@@ -505,7 +519,8 @@ class BugWatchUpdater(object):
 
     # XXX gmb 2008-11-07 [bug=295319]
     #     This method is 186 lines long. It needs to be shorter.
-    def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
+    def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None,
+                         batch_size=None):
         """Update the given bug watches."""
         # Save the url for later, since we might need it to report an
         # error after a transaction has been aborted.
@@ -525,7 +540,7 @@ class BugWatchUpdater(object):
         server_time = remotesystem.getCurrentDBTime()
         try:
             remote_ids = self._getRemoteIdsToCheck(
-                remotesystem, bug_watches, server_time, now)
+                remotesystem, bug_watches, server_time, now, batch_size)
         except TooMuchTimeSkew, error:
             # If there's too much time skew we can't continue with this
             # run.
@@ -548,8 +563,10 @@ class BugWatchUpdater(object):
             if bug_watch.remotebug not in remote_ids_to_check:
                 bug_watches.remove(bug_watch)
 
-        self.log.info("Updating %i watches on %s" %
-            (len(bug_watches), bug_tracker_url))
+
+        self.log.info("Updating %i watches for %i bugs on %s" %
+            (len(bug_watches), len(remote_ids_to_check),
+            bug_tracker_url))
 
         try:
             remotesystem.initializeRemoteBugDB(remote_ids_to_check)
@@ -822,7 +839,7 @@ class BugWatchUpdater(object):
                 bug_watch.bug.addCommentNotification(notification_message)
             else:
                 for bug_message in imported_comments:
-                    notify(SQLObjectCreatedEvent(
+                    notify(ObjectCreatedEvent(
                         bug_message,
                         user=bug_watch_updater))
             self.log.info("Imported %(count)i comments for remote bug "

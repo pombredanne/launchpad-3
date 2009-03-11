@@ -7,18 +7,24 @@ __metaclass__ = type
 __all__ = [
     'BugTargetBase',
     'HasBugsBase',
+    'OfficialBugTag',
     ]
 
+from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.database.bugtask import BugTaskSet, get_bug_privacy_filter
+from canonical.launchpad.database.bugtask import (
+    BugTaskSet, get_bug_privacy_filter)
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces.bugtarget import IOfficialBugTag
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.bugtask import (
     BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, IBugTaskSet, RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
 
 class HasBugsBase:
     """Standard functionality for IHasBugs.
@@ -32,6 +38,7 @@ class HasBugsBase:
                     importance=None,
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
+                    affected_user=None,
                     has_patch=None, has_cve=None, distribution=None,
                     tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
                     omit_duplicates=True, omit_targeted=None,
@@ -55,7 +62,7 @@ class HasBugsBase:
             del kwargs['search_params']
             search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
         self._customizeSearchParams(search_params)
-        return BugTaskSet().search(search_params) # getUtility(IBugTaskSet).search(search_params)
+        return BugTaskSet().search(search_params)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""
@@ -201,3 +208,46 @@ class BugTargetBase(HasBugsBase):
         from canonical.launchpad.database.bug import Bug
         return list(
             Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
+
+
+class OfficialBugTag(Storm):
+    """See `IOfficialBugTag`."""
+    # XXX Abel Deuring, 2009-03-11: The SQL table OfficialBugTag has
+    # a column "project", while a constraint requires that either "product"
+    # or "distribution" must be non-null. Once this is changed, we
+    # should add the column "project" here. Bug #341203.
+
+    implements(IOfficialBugTag)
+
+    __storm_table__ = 'OfficialBugTag'
+
+    id = Int(primary=True)
+
+    tag = Unicode(allow_none=False)
+    distribution_id = Int(name='distribution')
+    distribution = Reference(distribution_id, 'Distribution.id')
+
+    product_id = Int(name='product')
+    product = Reference(product_id, 'Product.id')
+
+    def target(self):
+        """See `IOfficialBugTag`."""
+        # A database constraint ensures that either distribution or
+        # product is not None.
+        if self.distribution is not None:
+            return self.distribution
+        else:
+            return self.product
+
+    def _settarget(self, target):
+        """See `IOfficialBugTag`."""
+        if IDistribution.providedBy(target):
+            self.distribution = target
+        elif IProduct.providedBy(target):
+            self.product = target
+        else:
+            raise ValueError(
+                'The target of an OfficialBugTag must be either an '
+                'IDistribution instance or an IProduct instance.')
+
+    target = property(target, _settarget, doc=target.__doc__)

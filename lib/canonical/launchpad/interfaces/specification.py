@@ -816,7 +816,7 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         the old_spec.
 
         This method is primarily used by event subscription code, to
-        determine what has changed during an SQLObjectModifiedEvent.
+        determine what has changed during an ObjectModifiedEvent.
         """
 
     # subscription-related methods

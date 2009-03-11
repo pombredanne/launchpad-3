@@ -1,5 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212
+# pylint: disable-msg=E0611,W0212,W0231
 
 """An implementation of DistroSeriesLanguage objects."""
 
@@ -127,7 +127,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
         """See `IRosettaStats`."""
         return self.unreviewed_count
 
-    def updateStatistics(self, ztm):
+    def updateStatistics(self, ztm=None):
         current = 0
         updates = 0
         rosetta = 0
@@ -189,44 +189,47 @@ class DummyDistroSeriesLanguage(RosettaStats):
         ourselves."""
         return self.pofiles
 
-    def currentCount(self):
+    def currentCount(self, language=None):
         return 0
 
-    def rosettaCount(self):
+    def rosettaCount(self, language=None):
         return 0
 
-    def updatesCount(self):
+    def updatesCount(self, language=None):
         return 0
 
-    def nonUpdatesCount(self):
+    def nonUpdatesCount(self, language=None):
         return 0
 
-    def translatedCount(self):
+    def translatedCount(self, language=None):
         return 0
 
-    def untranslatedCount(self):
+    def untranslatedCount(self, language=None):
         return self.messageCount
 
     def unreviewedCount(self):
         return 0
 
-    def currentPercentage(self):
+    def currentPercentage(self, language=None):
         return 0.0
 
-    def rosettaPercentage(self):
+    def rosettaPercentage(self, language=None):
         return 0.0
 
-    def updatesPercentage(self):
+    def updatesPercentage(self, language=None):
         return 0.0
 
-    def nonUpdatesPercentage(self):
+    def nonUpdatesPercentage(self, language=None):
         return 0.0
 
-    def translatedPercentage(self):
+    def translatedPercentage(self, language=None):
         return 0.0
 
-    def untranslatedPercentage(self):
+    def untranslatedPercentage(self, language=None):
         return 100.0
+
+    def updateStatistics(self, ztm=None):
+        return
 
 
 class DistroSeriesLanguageSet:
