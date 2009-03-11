@@ -59,15 +59,3 @@ Only a change in status triggers a notification.
     >>> len(pop_notifications())
     0
 
-Question subscribers are not sent notifications about private bugs, because
-they are indirect subscribers.
-
-    >>> bugtask.bug.setPrivate(True, bugtask.bug.owner)
-    True
-    >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
-    >>> bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED, no_priv)
-    >>> notify(ObjectModifiedEvent(
-    ...     bugtask, original_bugtask, ['status'], user=no_priv))
-    >>> notifications = pop_notifications()
-    >>> len(notifications)
-    0
