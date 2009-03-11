@@ -261,6 +261,8 @@ class VocabularyPickerWidget(SinglePopupWidget):
 
     header = 'Select an item'
 
+    max_description_length = 40
+
     @property
     def suffix(self):
         return self.name.replace('.', '-')
@@ -287,9 +289,10 @@ class VocabularyPickerWidget(SinglePopupWidget):
         js = js_template % dict(
             vocabulary=choice.vocabularyName,
             header=self.header,
+            max_description_length=self.max_description_length,
             show_widget_id=self.show_widget_id,
             input_id=self.name)
-        return ('(<a id="%s" href="#">Choose&hellip;</a>)'
+        return ('(<a id="%s" href="javascript:">Choose&hellip;</a>)'
                 '\n<script>\n%s\n</script>') % (self.show_widget_id, js)
 
 
