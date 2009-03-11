@@ -19,7 +19,8 @@ from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from canonical.launchpad.interfaces.bugtarget import IHasBugs
+from canonical.launchpad.interfaces.bugtarget import (
+    IHasBugs, IOfficialBugTag)
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
@@ -361,3 +362,6 @@ class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
     project = Object(schema=IProject,
                      title=u"The project this series belongs to",
                      required=True, readonly=True)
+
+# Fix a circular import.
+IOfficialBugTag['project'].schema = IProject

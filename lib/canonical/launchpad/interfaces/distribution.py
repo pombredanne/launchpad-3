@@ -28,7 +28,8 @@ from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import (
+    IBugTarget, IOfficialBugTag)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
@@ -551,3 +552,4 @@ from canonical.launchpad.interfaces.distributionsourcepackage import (
 IDistribution['getSourcePackage'].queryTaggedValue(
     'lazr.webservice.exported')[
     'return_type'].schema = IDistributionSourcePackage
+IOfficialBugTag['distribution'].schema = IDistribution

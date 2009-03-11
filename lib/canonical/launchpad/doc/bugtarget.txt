@@ -1,11 +1,10 @@
-Bug Targets
-===========
+= Bug Targets =
 
 A bug target is a thing on which a bug can be reported, e.g., an
 IDistributionSourcePackage, an IProduct, etc.
 
-Bug Tasks on Bug Targets
-------------------------
+
+== Bug Tasks on Bug Targets ==
 
 Bug targets have a bugtargetdisplayname attribute, which returns a value
 tailored for human reading (e.g. display in Web pages); and a bugtargetname
@@ -58,3 +57,56 @@ target (such as in filterable e-mail messages).
     mozilla-firefox (Debian Woody)
     >>> print debian_woody_firefox.bugtargetname
     mozilla-firefox (Debian Woody)
+
+
+== Official Bug Tags ==
+
+Distributions and products can define official bug tags.
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    >>> from canonical.launchpad.database.bugtarget import OfficialBugTag
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+    >>> ubuntu = distroset.getByName('ubuntu')
+    >>> distro_tag = OfficialBugTag()
+    >>> distro_tag.tag=u'PCI'
+    >>> distro_tag.distribution=ubuntu
+    >>> store.add(distro_tag)
+    <canonical.launchpad.database.bugtarget.OfficialBugTag object at...
+
+    >>> product_tag = OfficialBugTag()
+    >>> product_tag.tag = u'bar'
+    >>> product_tag.product = firefox
+    >>> store.add(product_tag)
+    <canonical.launchpad.database.bugtarget.OfficialBugTag object at...
+
+We can associate an official product tag additionally with a project.
+
+    >>> from canonical.launchpad.interfaces.project import IProjectSet
+    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> product_tag.project = mozilla
+
+We can add the same bug tag for different products and distributions.
+
+    >>> distro_tag2 = OfficialBugTag()
+    >>> distro_tag2.tag=u'foo'
+    >>> distro_tag2.distribution=ubuntu
+    >>> store.add(distro_tag2)
+    <canonical.launchpad.database.bugtarget.OfficialBugTag object at...
+    >>> store.flush()
+
+But bug tags must be unique for each product and distribution.
+
+    >>> distro_tag3 = OfficialBugTag()
+    >>> distro_tag3.tag=u'PCI'
+    >>> distro_tag3.distribution=ubuntu
+    >>> store.add(distro_tag3)
+    <canonical.launchpad.database.bugtarget.OfficialBugTag object at...
+    >>> store.flush()
+    Traceback (most recent call last):
+    IntegrityError: duplicate key value violates unique constraint
+    "officialbugtag__distribution__tag__key"
+
+    >>> import transaction
+    >>> transaction.abort()

@@ -7,18 +7,22 @@ __metaclass__ = type
 __all__ = [
     'BugTargetBase',
     'HasBugsBase',
+    'OfficialBugTag',
     ]
 
+from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.database.bugtask import BugTaskSet, get_bug_privacy_filter
+from canonical.launchpad.database.bugtask import (
+    BugTaskSet, get_bug_privacy_filter)
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces.bugtarget import IOfficialBugTag
 from canonical.launchpad.interfaces.bugtask import (
     BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, IBugTaskSet, RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
 
 class HasBugsBase:
     """Standard functionality for IHasBugs.
@@ -55,7 +59,8 @@ class HasBugsBase:
             del kwargs['search_params']
             search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
         self._customizeSearchParams(search_params)
-        return BugTaskSet().search(search_params) # getUtility(IBugTaskSet).search(search_params)
+        return BugTaskSet().search(search_params)
+        # getUtility(IBugTaskSet).search(search_params)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""
@@ -201,3 +206,22 @@ class BugTargetBase(HasBugsBase):
         from canonical.launchpad.database.bug import Bug
         return list(
             Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
+
+
+class OfficialBugTag(Storm):
+    """See `IOfficialBugTag`."""
+    implements(IOfficialBugTag)
+
+    __storm_table__ = 'OfficialBugTag'
+
+    id = Int(primary=True)
+
+    tag = Unicode(allow_none=False)
+    distribution_id = Int(name='distribution')
+    distribution = Reference(distribution_id, 'Distribution.id')
+
+    project_id = Int(name='project')
+    project = Reference(project_id, 'Project.id')
+
+    product_id = Int(name='product')
+    product = Reference(product_id, 'Product.id')

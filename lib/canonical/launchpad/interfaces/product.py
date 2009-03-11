@@ -35,7 +35,8 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal, BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import (
+    IBugTarget, IOfficialBugTag)
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
@@ -832,7 +833,8 @@ class NoSuchProduct(NameLookupFailed):
     _message_prefix = "No such product"
 
 
-# Fix a circular import.
+# Fix circular imports.
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 IDistributionSourcePackage['upstream_product'].schema = IProduct
+IOfficialBugTag['product'].schema = IProduct

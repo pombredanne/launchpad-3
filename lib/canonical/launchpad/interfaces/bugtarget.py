@@ -10,6 +10,7 @@ __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
+    'IOfficialBugTag',
     ]
 
 from zope.interface import Interface, Attribute
@@ -185,3 +186,28 @@ class BugDistroSeriesTargetDetails:
         self.sourcepackage = sourcepackage
         self.assignee = assignee
         self.status = status
+
+
+class IOfficialBugTag(Interface):
+    """Official bug tags for a product, a project or a distribution."""
+    tag = Text(
+        title=u'The official bug tag', required=True)
+
+    # The references below should refer to IDistribution, IProject and
+    # IProduct respectively. Importing these classes here would lead
+    # to circular imports. The references are fixed in
+    # interfaces.distribution, interfaces.prject and interfaces.product.
+    distribution = Reference(
+        Interface,
+        title=u'The distribution having this official bug tag',
+        required=False, readonly=True)
+
+    project = Reference(
+        Interface,
+        title=u'The project having this official bug tag',
+        required=False, readonly=True)
+
+    product = Reference(
+        Interface,
+        title=u'The product having this official bug tag',
+        required=False, readonly=True)
