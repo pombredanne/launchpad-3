@@ -12,6 +12,7 @@ from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranchSet)
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -47,6 +48,27 @@ class TestSourcePackage(TestCaseWithFactory):
         official_branch = sourcepackage.getBranch(
             PackagePublishingPocket.RELEASE)
         self.assertEqual(branch, official_branch)
+
+    def test_getBranchLink(self):
+        # getBranchLink returns the `ISeriesSourcePackageBranch` object
+        # associated with the branch link.
+        sourcepackage = self.factory.makeSourcePackage()
+        registrant = self.factory.makePerson()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        pocket = PackagePublishingPocket.RELEASE
+        sspb = getUtility(ISeriesSourcePackageBranchSet).new(
+            sourcepackage.distroseries, pocket,
+            sourcepackage.sourcepackagename, branch, registrant)
+        self.assertEqual(sspb, sourcepackage.getBranchLink(pocket))
+
+    def test_setBranch(self):
+        # We can set the official branch for a pocket of a source package.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        registrant = self.factory.makePerson()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        sourcepackage.setBranch(pocket, branch, registrant)
+        self.assertEqual(branch, sourcepackage.getBranch(pocket))
 
 
 def test_suite():

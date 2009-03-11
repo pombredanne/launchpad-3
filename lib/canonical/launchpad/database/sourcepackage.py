@@ -13,6 +13,7 @@ from operator import attrgetter
 from warnings import warn
 from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import implements
+from zope.component import getUtility
 
 from storm.expr import And
 from storm.store import Store
@@ -45,6 +46,8 @@ from canonical.launchpad.interfaces import (
     BuildStatus, ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
     IQuestionTarget, PackagingType, PackagePublishingPocket,
     PackagePublishingStatus, QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.seriessourcepackagebranch import (
+    ISeriesSourcePackageBranchSet)
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -605,3 +608,17 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
              == self.sourcepackagename.id),
             SeriesSourcePackageBranch.pocket == pocket,
             SeriesSourcePackageBranch.branch == Branch.id).one()
+
+    def getBranchLink(self, pocket):
+        store = Store.of(self.sourcepackagename)
+        return store.find(
+            SeriesSourcePackageBranch,
+            SeriesSourcePackageBranch.distroseries == self.distroseries.id,
+            (SeriesSourcePackageBranch.sourcepackagename
+             == self.sourcepackagename.id),
+            SeriesSourcePackageBranch.pocket == pocket).one()
+
+    def setBranch(self, pocket, branch, registrant):
+        getUtility(ISeriesSourcePackageBranchSet).new(
+            self.distroseries, pocket, self.sourcepackagename, branch,
+            registrant)

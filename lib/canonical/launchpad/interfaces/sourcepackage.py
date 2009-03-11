@@ -126,6 +126,22 @@ class ISourcePackage(IBugTarget):
         :return: An `IBranch`.
         """
 
+    def getBranchLink(pocket):
+        """Get the linking object for the  official branch for this package.
+
+        :param pocket: The `PackagePublishingPocket` of the link you want.
+        :return: An `ISeriesSourcePackageBranch`.
+        """
+
+    def setBranch(pocket, branch, registrant):
+        """Set the official branch for the given pocket of this package.
+
+        :param pocket: A `PackagePublishingPocket`.
+        :param branch: The branch to set as the official branch.
+        :param registrant: The individual who created this link.
+        :return: None
+        """
+
     shouldimport = Attribute("""Whether we should import this or not.
         By 'import' we mean sourcerer analysis resulting in a manifest and a
         set of Bazaar branches which describe the source package release.
