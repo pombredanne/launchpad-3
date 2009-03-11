@@ -11,10 +11,11 @@ __all__ = [
     'IBugTarget',
     'IHasBugs',
     'IOfficialBugTag',
+    'IOfficialBugTagTarget',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import List, Text
+from zope.schema import List, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtask import (
@@ -188,26 +189,24 @@ class BugDistroSeriesTargetDetails:
         self.status = status
 
 
+class IOfficialBugTagTarget(Interface):
+    """A marker interface for targets of ofccical bug tags."""
+
+
 class IOfficialBugTag(Interface):
     """Official bug tags for a product, a project or a distribution."""
     tag = Text(
         title=u'The official bug tag', required=True)
 
-    # The references below should refer to IDistribution, IProject and
-    # IProduct respectively. Importing these classes here would lead
-    # to circular imports. The references are fixed in
-    # interfaces.distribution, interfaces.prject and interfaces.product.
-    distribution = Reference(
-        Interface,
-        title=u'The distribution having this official bug tag',
-        required=False, readonly=True)
-
+    # The reference below should refer to IProduct. Importing thise class
+    # here would lead to a circular import. The reference is fixed in
+    # interfaces.project.
     project = Reference(
         Interface,
         title=u'The project having this official bug tag',
         required=False, readonly=True)
 
-    product = Reference(
-        Interface,
-        title=u'The product having this official bug tag',
-        required=False, readonly=True)
+    target = Object(
+        title=u'The target of this bug tag.', schema=IOfficialBugTagTarget,
+        description=
+            u'The distribution or product having this official bug tag.')

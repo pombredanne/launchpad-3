@@ -29,7 +29,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.bugtarget import (
-    IBugTarget, IOfficialBugTag)
+    IBugTarget, IOfficialBugTagTarget)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
@@ -73,10 +73,11 @@ class IDistributionEditRestricted(Interface):
 
 
 class IDistributionPublic(
-    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasDrivers,
-    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
-    IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
-    IMakesAnnouncements, IPillar, ISpecificationTarget, IHasBuildRecords):
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
+    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationGroup,
+    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTarget, IPillar, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -552,4 +553,3 @@ from canonical.launchpad.interfaces.distributionsourcepackage import (
 IDistribution['getSourcePackage'].queryTaggedValue(
     'lazr.webservice.exported')[
     'return_type'].schema = IDistributionSourcePackage
-IOfficialBugTag['distribution'].schema = IDistribution

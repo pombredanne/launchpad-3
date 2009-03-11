@@ -20,6 +20,8 @@ from canonical.launchpad.database.bugtask import (
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.bugtarget import IOfficialBugTag
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.bugtask import (
     BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
@@ -60,7 +62,6 @@ class HasBugsBase:
             search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
         self._customizeSearchParams(search_params)
         return BugTaskSet().search(search_params)
-        # getUtility(IBugTaskSet).search(search_params)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""
@@ -225,3 +226,25 @@ class OfficialBugTag(Storm):
 
     product_id = Int(name='product')
     product = Reference(product_id, 'Product.id')
+
+    def target(self):
+        """See `IOfficialBugTag`."""
+        # A database constraint ensures that either distribution or
+        # product is not None.
+        if self.distribution is not None:
+            return self.distribution
+        else:
+            return self.product
+
+    def _settarget(self, target):
+        """See `IOfficialBugTag`."""
+        if IDistribution.providedBy(target):
+            self.distribution = target
+        elif IProduct.providedBy(target):
+            self.product = target
+        else:
+            raise ValueError(
+                'The target of an OfficialBugTag must be either an '
+                'IDistribution instance or an IProduct instance.')
+
+    target = property(target, _settarget, doc=target.__doc__)

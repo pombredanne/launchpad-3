@@ -70,14 +70,14 @@ Distributions and products can define official bug tags.
 
     >>> ubuntu = distroset.getByName('ubuntu')
     >>> distro_tag = OfficialBugTag()
-    >>> distro_tag.tag=u'PCI'
-    >>> distro_tag.distribution=ubuntu
+    >>> distro_tag.tag = u'PCI'
+    >>> distro_tag.target = ubuntu
     >>> store.add(distro_tag)
     <canonical.launchpad.database.bugtarget.OfficialBugTag object at...
 
     >>> product_tag = OfficialBugTag()
     >>> product_tag.tag = u'bar'
-    >>> product_tag.product = firefox
+    >>> product_tag.target = firefox
     >>> store.add(product_tag)
     <canonical.launchpad.database.bugtarget.OfficialBugTag object at...
 
@@ -90,8 +90,8 @@ We can associate an official product tag additionally with a project.
 We can add the same bug tag for different products and distributions.
 
     >>> distro_tag2 = OfficialBugTag()
-    >>> distro_tag2.tag=u'foo'
-    >>> distro_tag2.distribution=ubuntu
+    >>> distro_tag2.tag = u'foo'
+    >>> distro_tag2.distribution = ubuntu
     >>> store.add(distro_tag2)
     <canonical.launchpad.database.bugtarget.OfficialBugTag object at...
     >>> store.flush()
@@ -99,8 +99,8 @@ We can add the same bug tag for different products and distributions.
 But bug tags must be unique for each product and distribution.
 
     >>> distro_tag3 = OfficialBugTag()
-    >>> distro_tag3.tag=u'PCI'
-    >>> distro_tag3.distribution=ubuntu
+    >>> distro_tag3.tag = u'PCI'
+    >>> distro_tag3.distribution = ubuntu
     >>> store.add(distro_tag3)
     <canonical.launchpad.database.bugtarget.OfficialBugTag object at...
     >>> store.flush()

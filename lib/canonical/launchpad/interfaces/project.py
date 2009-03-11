@@ -363,5 +363,3 @@ class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
                      title=u"The project this series belongs to",
                      required=True, readonly=True)
 
-# Fix a circular import.
-IOfficialBugTag['project'].schema = IProject
