@@ -207,8 +207,6 @@ class TranslationsStatusChecker:
                      FROM POTemplate
                      LEFT OUTER JOIN DistroSeries
                        ON POTemplate.distroseries=DistroSeries.id
-                     LEFT OUTER JOIN ProductSeries
-                       ON POTemplate.productseries=ProductSeries.id
                      JOIN POFile
                        ON POFile.potemplate=POTemplate.id
                      WHERE (distroseries IS NOT NULL AND
@@ -225,8 +223,6 @@ class TranslationsStatusChecker:
                      FROM POTemplate
                      LEFT OUTER JOIN DistroSeries
                        ON POTemplate.distroseries=DistroSeries.id
-                     LEFT OUTER JOIN ProductSeries
-                       ON POTemplate.productseries=ProductSeries.id
                      JOIN POTMsgSet
                        ON POTMsgSet.potemplate=POTemplate.id
                      WHERE (distroseries IS NOT NULL AND
@@ -245,8 +241,6 @@ class TranslationsStatusChecker:
                        ON POFile.potemplate=POTemplate.id
                      LEFT OUTER JOIN DistroSeries
                        ON POTemplate.distroseries=DistroSeries.id
-                     LEFT OUTER JOIN ProductSeries
-                       ON POTemplate.productseries=ProductSeries.id
                      JOIN POFileTranslator
                        ON POFileTranslator.pofile=POFile.id
                      WHERE (distroseries IS NOT NULL AND
