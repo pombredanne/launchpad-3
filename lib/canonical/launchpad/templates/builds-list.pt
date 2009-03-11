@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="builds_list" tal:condition="not: view/setupBuildList">
 
-  <tal:batch define="batch view/builds">
+  <tal:batch define="batch view/complete_builds">
 
     <div style="padding: 0em 1em 2em 0em">
      <form name="build_records_state" action="" method="GET">
@@ -113,7 +113,7 @@
   </div>
 
   <tal:block tal:condition="not: view/no_results">
-    <div id="no-default-result" tal:condition="not: view/builds">
+    <div id="no-default-result" tal:condition="not: view/complete_builds">
        No <tal:state condition="view/state">'<span
          tal:replace="view/state/title" />' </tal:state>build records.
     </div>

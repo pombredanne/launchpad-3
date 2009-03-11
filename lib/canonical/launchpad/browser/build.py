@@ -219,7 +219,7 @@ class BuildRecordsView(LaunchpadView):
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, user=self.user)
         self.batchnav = BatchNavigator(builds, self.request)
-        self.builds = self.batchnav.currentBatch()
+        self.complete_builds = self.batchnav.currentBatch()
 
     def _setupMappedStates(self, tag):
         """Build self.state and self.availableStates structures.
