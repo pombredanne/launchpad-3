@@ -19,8 +19,7 @@ from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from canonical.launchpad.interfaces.bugtarget import (
-    IHasBugs, IOfficialBugTag)
+from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
