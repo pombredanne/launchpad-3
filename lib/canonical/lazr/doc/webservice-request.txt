@@ -5,8 +5,8 @@ layer. But there are times when a request that came through the
 website neeeds to be treated as a web service request. It's easy to
 adapt an IBrowserRequest into an IWebServiceLayer request.
 
-This adapters uses the request factory from from the
-IWebServiceConfiguration utility.
+This adapters uses the request factory from the IWebServiceConfiguration
+utility.
 
     >>> from canonical.lazr.interfaces.rest import (
     ...     IWebServiceConfiguration, WebServiceLayer)
