@@ -1246,6 +1246,8 @@ shipit_index_ubuntu = 'Request an Ubuntu CD'
 
 shipit_login = 'ShipIt'
 
+shipit_login_error = 'ShipIt - Unable to login'
+
 shipit_myrequest = "Your ShipIt order"
 
 shipit_oops = 'Error: Oops'

@@ -7,9 +7,11 @@ __all__ = [
     'ShipItCustomRequestServerCDsView',
     'ShipItExportsView',
     'ShipitFrontPageView',
-    'ShipItLoginView',
-    'ShipItLoginForServerCDsView',
     'ShipItNavigation',
+    'ShipitOpenIDCallbackForServerCDsView',
+    'ShipitOpenIDCallbackView',
+    'ShipitOpenIDLoginForServerCDsView',
+    'ShipitOpenIDLoginView',
     'ShipItReportsView',
     'ShipItRequestServerCDsView',
     'ShipItRequestView',
@@ -32,24 +34,31 @@ from zope.app.form.browser.add import AddView
 from zope.formlib import form
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.session.interfaces import ISession
+
+from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.widgets import CheckBoxMatrixWidget, LabeledMultiCheckBoxWidget
 from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.webapp.error import SystemErrorView
-from canonical.launchpad.webapp.login import LoginOrRegister
+from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp import (
     canonical_url, Navigation, stepto, redirection)
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
     ILaunchBag, IShipItApplication, UnexpectedFormData)
+from canonical.launchpad.interfaces.openidserver import (
+    ILaunchpadOpenIDStoreFactory)
 from canonical.launchpad.interfaces.shipit import (
     IShipitAccount, IShipItReportSet, IShipItSurveySet, IShippingRequestAdmin,
     IShippingRequestEdit, IShippingRequestSet, IShippingRequestUser,
@@ -106,40 +115,17 @@ def shipit_is_open(flavour):
         flavour, getUtility(ILaunchBag).account))
 
 
-# XXX: GuilhermeSalgado 2005-09-09:
-# The LoginOrRegister class is not really designed to be reused. That
-# class must either be fixed to allow proper reuse or we should write a new
-# class which doesn't reuses LoginOrRegister here.
-class ShipItLoginView(LoginOrRegister):
-    """Process the login form and redirect the user to the request page."""
+class BaseLoginView(LaunchpadView):
 
-    standard_order_page = '/myrequest'
-    custom_order_page = '/specialrequest'
-    possible_origins = {
-        ShipItFlavour.UBUNTU: 'shipit-ubuntu',
-        ShipItFlavour.KUBUNTU: 'shipit-kubuntu',
-        ShipItFlavour.EDUBUNTU: 'shipit-edubuntu'}
+    _flavour = None
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.flavour = _get_flavour_from_layer(request)
-        self.series = ShipItConstants.current_distroseries
-        self.origin = self.possible_origins[self.flavour]
-
-    def is_open(self):
-        return shipit_is_open(self.flavour)
-
-    def getApplicationURL(self):
-        return 'https://launchpad.net'
-
-    def process_form(self):
-        if getUtility(ILaunchBag).account is not None:
-            # Already logged in.
-            self._redirect()
-            return
-        LoginOrRegister.process_form(self)
-        if self.login_success():
+    def initialize(self):
+        super(BaseLoginView, self).initialize()
+        if self._flavour is None:
+            self.flavour = _get_flavour_from_layer(self.request)
+        else:
+            self.flavour = self._flavour
+        if self.account is not None:
             self._redirect()
 
     def _redirect(self):
@@ -153,39 +139,120 @@ class ShipItLoginView(LoginOrRegister):
         else:
             self.request.response.redirect(self.standard_order_page)
 
-
-class ShipItLoginForServerCDsView(ShipItLoginView):
-    """The login page used when users want Server CDs."""
-
-    def __init__(self, context, request):
-        super(ShipItLoginForServerCDsView, self).__init__(context, request)
-        self.flavour = ShipItFlavour.SERVER
-
     @property
     def custom_order_page(self):
-        """Return the page where users make custom requests for server CDs.
+        """The page where users make custom requests of self.flavour CDs.
 
-        If the user hasn't answered the survey yet, we return the /survey page
-        instead.
+        If self.flavour is SERVER and the user hasn't answered the survey yet,
+        we return the /survey page instead.
         """
-        account = getUtility(ILaunchBag).account
-        if getUtility(IShipItSurveySet).personHasAnswered(account):
+        if self.flavour != ShipItFlavour.SERVER:
+            return '/specialrequest'
+        if getUtility(IShipItSurveySet).personHasAnswered(self.account):
             return '/specialrequest-server'
         else:
             return '/survey'
 
     @property
     def standard_order_page(self):
-        """Return the page where users make standard requests for server CDs.
+        """The page where users make standard requests of self.flavour CDs.
 
-        If the user hasn't answered the survey yet, we return the /survey page
-        instead.
+        If self.flavour is SERVER and the user hasn't answered the survey yet,
+        we return the /survey page instead.
         """
-        account = getUtility(ILaunchBag).account
-        if getUtility(IShipItSurveySet).personHasAnswered(account):
+        if self.flavour != ShipItFlavour.SERVER:
+            return '/myrequest'
+        if getUtility(IShipItSurveySet).personHasAnswered(self.account):
             return '/myrequest-server'
         else:
             return '/survey'
+
+
+class ShipitOpenIDLoginView(BaseLoginView):
+
+    def render(self):
+        session = ISession(self.request)['OPENID']
+        store = getUtility(ILaunchpadOpenIDStoreFactory)()
+        consumer = Consumer(session, store)
+        #openid_request = consumer.beginWithoutDiscovery(
+        openid_request = consumer.begin(
+            'https://openid.launchpad.dev')
+
+        return_to = self._getReturnToURL()
+        trust_root = self._getTrustRoot()
+        assert not openid_request.shouldSendRedirect(), (
+            "Our fixed OpenID server should not need us to redirect.")
+        form_html = openid_request.htmlMarkup(
+            trust_root, return_to, form_tag_attrs={'id': 'openid_message'})
+
+        # Need to commit here because the consumer.begin() call above will
+        # insert rows into the OpenIDAssociations table.
+        import transaction
+        transaction.commit()
+
+        return form_html
+
+    def _getReturnToURL(self):
+        return 'https://shipit.ubuntu.dev/callback'
+
+    def _getTrustRoot(self):
+        return 'https://shipit.ubuntu.dev/'
+
+
+class ShipitOpenIDLoginForServerCDsView(ShipitOpenIDLoginView):
+
+    _flavour = ShipItFlavour.SERVER
+
+    def _getReturnToURL(self):
+        return 'https://shipit.ubuntu.dev/callback-server'
+
+
+class ShipitOpenIDCallbackView(BaseLoginView):
+
+    app_url = 'https://shipit.ubuntu.dev/callback'
+
+    def render(self):
+        session = ISession(self.request)['OPENID']
+        store = getUtility(ILaunchpadOpenIDStoreFactory)()
+        consumer = Consumer(session, store)
+
+        response = consumer.complete(self.request.form, self.app_url)
+        if response.status == SUCCESS:
+            from zope.security.proxy import removeSecurityProxy
+            identity = response.identity_url
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                response.identity_url.split('/')[-1])
+            loginsource = getUtility(IPlacelessLoginSource)
+            email = removeSecurityProxy(account.preferredemail).email
+            logInPrincipal(
+                self.request, loginsource.getPrincipalByLogin(email), email)
+            self._redirect()
+        else:
+            return ShipitOpenIDLoginErrorView(
+                self.context, self.request, response)()
+
+
+class ShipitOpenIDCallbackForServerCDsView(ShipitOpenIDCallbackView):
+    """The callback page used when users want Server CDs."""
+
+    _flavour = ShipItFlavour.SERVER
+    app_url = 'https://shipit.ubuntu.dev/callback-server'
+
+
+class ShipitOpenIDLoginErrorView(LaunchpadView):
+
+    template = ViewPageTemplateFile("../templates/shipit-login-error.pt")
+
+    def __init__(self, context, request, openid_response):
+        super(ShipitOpenIDLoginErrorView, self).__init__(context, request)
+        assert self.account is None, (
+            "Don't try to render this page when the user is logged in.")
+        if openid_response.status == CANCEL:
+            self.login_error = "User cancelled"
+        elif openid_response.status == FAILURE:
+            self.login_error = openid_response.message
+        else:
+            self.login_error = "Unknown error: %s" % openid_response
 
 
 def _get_flavour_from_layer(request):

@@ -1659,6 +1659,7 @@ class ShipItSurveySet:
     """See IShipItSurveySet"""
     implements(IShipItSurveySet)
 
+    # XXX: salgado, 2009-03-11: This should be moved into ShipitAccount.
     def personHasAnswered(self, account):
         """See IShipItSurveySet"""
         return ShipItSurvey.selectBy(account=account).count() > 0

@@ -30,7 +30,7 @@ from zope.interface import implements, classProvides
 from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.openidserver import (
@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces.openidserver import (
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector, MASTER_FLAVOR)
+    AUTH_STORE, IStoreSelector, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -210,7 +210,7 @@ class LaunchpadOpenIDStore(PostgreSQLStore):
     exceptions = psycopg2
     settings_table = None
     associations_table = 'OpenIDAssociations'
-    nonces_table = None
+    nonces_table = 'OpenIDNonce'
 
     def __init__(self):
         # No need to pass in the connection - we have better ways of
