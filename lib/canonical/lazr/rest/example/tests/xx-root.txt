@@ -1,0 +1,4 @@
+>>> from canonical.lazr.testing.webservice import ExampleWebServiceHTTPCaller
+>>> http = ExampleWebServiceHTTPCaller()
+>>> print http("GET /api/beta HTTP/1.1\nHost: api.launchpad.dev")
+''

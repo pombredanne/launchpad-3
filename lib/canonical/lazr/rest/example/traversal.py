@@ -8,7 +8,6 @@ from zope.publisher.interfaces import IPublishTraverse, NotFound
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 from canonical.lazr.rest.example.interfaces import IHasGet
-from canonical.lazr.rest.example.root import COOKBOOK_SET
 
 
 class TraverseWithGet:

@@ -7,7 +7,7 @@ from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.lazr.rest import ServiceRootResource
 from canonical.lazr.rest.example.interfaces import (
-    ICookbook, ICookbookSet)
+    ICookbook, ICookbookSet, IHasGet)
 
 
 class Cookbook:
@@ -45,10 +45,12 @@ COOKBOOK_SET = CookbookSet([C1, C2, C3])
 
 
 class ExampleServiceRootResource(ServiceRootResource):
-    implements(IHasGet)
+    implements(IHasGet, IAbsoluteURL)
     top_level_names = {
         'cookbooks': COOKBOOK_SET
         }
 
     def get(self, name):
         return self.top_level_names.get(name)
+
+    __name__ = ''

@@ -4,7 +4,14 @@
 
   <webservice:register module="canonical.lazr.rest.example.interfaces" />
 
-  <adapter factory="canonical.lazr.rest.example.traversal.TraverseWithGet" />
-  <allow interface="" names="__parent__ __name__" />
+  <utility
+      factory="canonical.launchpad.rest.configuration.LaunchpadWebServiceConfiguration"
+      provides="canonical.lazr.interfaces.rest.IWebServiceConfiguration">
+  </utility>
 
+  <adapter factory="canonical.lazr.rest.example.traversal.TraverseWithGet" />
+
+  <!--<class class="canonical.lazr.rest.example.root">
+    <allow interface="" names="__parent__ __name__" />
+  </class>-->
 </configure>

@@ -189,6 +189,7 @@ class WebServiceRequestTraversal:
         WebService requests call the `WebServicePublication.getResource()`
         on the result of the base class's traversal.
         """
+        import pdb; pdb.set_trace()
         self._removeVirtualHostTraversals()
         result = super(WebServiceRequestTraversal, self).traverse(ob)
         return self.publication.getResource(self, result)

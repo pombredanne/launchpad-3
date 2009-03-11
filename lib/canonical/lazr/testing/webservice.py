@@ -4,8 +4,11 @@
 
 __metaclass__ = type
 __all__ = [
+    'ExampleWebServiceTestCaller',
+    'ExampleWebServicePublication',
     'FakeRequest',
     'FakeResponse',
+    'MockRootFolder',
     'pprint_entry',
     'WebServiceTestPublication',
     'WebServiceTestRequest',
@@ -13,6 +16,7 @@ __all__ = [
     ]
 import traceback
 
+from zope.app.testing.functional import HTTPCaller
 from zope.component import queryMultiAdapter
 from zope.interface import implements
 from zope.publisher.browser import BrowserRequest
@@ -26,6 +30,8 @@ from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.lazr.interfaces.rest import WebServiceLayer
 from canonical.lazr.rest.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
+from canonical.lazr.rest.example.root import (
+    ExampleServiceRootResource)
 
 
 class FakeResponse:
@@ -203,3 +209,28 @@ class TestPublication:
 
 class WebServiceTestPublication(WebServicePublicationMixin, TestPublication):
     """Test publication that mixes in the necessary web service stuff."""
+
+
+class MockRootFolder:
+    """Implement the minimum functionality required by Z3 ZODB dependencies
+
+    Installed as part of FunctionalLayer.testSetUp() to allow the http()
+    method (zope.app.testing.functional.HTTPCaller) to work.
+    """
+    @property
+    def _p_jar(self):
+        return self
+    def sync(self):
+        pass
+
+
+class ExampleWebServiceTestPublication(WebServiceTestPublication):
+    def getApplication(self, request):
+        return ExampleServiceRootResource()
+
+
+class ExampleWebServiceHTTPCaller(HTTPCaller):
+
+    def chooseRequestClass(self, method, path, environment):
+        return WebServiceTestRequest, ExampleWebServiceTestPublication
+
