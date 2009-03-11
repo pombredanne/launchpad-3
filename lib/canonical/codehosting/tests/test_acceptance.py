@@ -614,7 +614,6 @@ def make_server_tests(base_suite, servers):
 
 
 def make_smoke_tests(base_suite):
-    from bzrlib import tests
     from bzrlib.tests.per_repository import (
         all_repository_format_scenarios,
         )
@@ -634,7 +633,14 @@ def make_smoke_tests(base_suite):
         if scenario[0] not in excluded_scenarios
         and not scenario[0].startswith('RemoteRepositoryFormat')]
     new_suite = unittest.TestSuite()
-    tests.multiply_tests(base_suite, scenarios, new_suite)
+    try:
+        from bzrlib.tests import multiply_tests
+        multiply_tests(base_suite, scenarios, new_suite)
+    except ImportError:
+        from bzrlib.tests import adapt_tests, TestScenarioApplier
+        adapter = TestScenarioApplier()
+        adapter.scenarios = scenarios
+        adapt_tests(base_suite, adapter, new_suite)
     return new_suite
 
 
