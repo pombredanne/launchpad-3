@@ -307,6 +307,7 @@ class TestCaseWithFactory(TestCase):
     def setUp(self, user=ANONYMOUS):
         TestCase.setUp(self)
         login(user)
+        self.addCleanup(logout)
         self.factory = LaunchpadObjectFactory()
         self.real_bzr_server = False
 
@@ -317,10 +318,6 @@ class TestCaseWithFactory(TestCase):
         cwd = os.getcwd()
         os.chdir(tempdir)
         self.addCleanup(lambda: os.chdir(cwd))
-
-    def tearDown(self):
-        logout()
-        TestCase.tearDown(self)
 
     def getUserBrowser(self, url=None):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
