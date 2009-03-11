@@ -14,7 +14,6 @@ __metaclass__ = type
 __all__ = []
 
 
-from canonical.launchpad.interfaces.bugtarget import IOfficialBugTag
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -28,7 +27,6 @@ from canonical.launchpad.interfaces.codereviewcomment import (
 from canonical.launchpad.interfaces.diff import IPreviewDiff
 from canonical.launchpad.interfaces.person import IPersonPublic
 from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket)
 
@@ -66,4 +64,3 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].value_type.schema = IBuild
-IOfficialBugTag['project'].schema = IProject

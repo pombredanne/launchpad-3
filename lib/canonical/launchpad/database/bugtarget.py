@@ -221,9 +221,6 @@ class OfficialBugTag(Storm):
     distribution_id = Int(name='distribution')
     distribution = Reference(distribution_id, 'Distribution.id')
 
-    project_id = Int(name='project')
-    project = Reference(project_id, 'Project.id')
-
     product_id = Int(name='product')
     product = Reference(product_id, 'Product.id')
 

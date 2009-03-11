@@ -198,14 +198,6 @@ class IOfficialBugTag(Interface):
     tag = Text(
         title=u'The official bug tag', required=True)
 
-    # The reference below should refer to IProduct. Importing thise class
-    # here would lead to a circular import. The reference is fixed in
-    # interfaces.project.
-    project = Reference(
-        Interface,
-        title=u'The project having this official bug tag',
-        required=False, readonly=True)
-
     target = Object(
         title=u'The target of this bug tag.', schema=IOfficialBugTagTarget,
         description=

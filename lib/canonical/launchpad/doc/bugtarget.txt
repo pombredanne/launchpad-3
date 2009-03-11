@@ -81,12 +81,6 @@ Distributions and products can define official bug tags.
     >>> store.add(product_tag)
     <canonical.launchpad.database.bugtarget.OfficialBugTag object at...
 
-We can associate an official product tag additionally with a project.
-
-    >>> from canonical.launchpad.interfaces.project import IProjectSet
-    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
-    >>> product_tag.project = mozilla
-
 We can add the same bug tag for different products and distributions.
 
     >>> distro_tag2 = OfficialBugTag()
