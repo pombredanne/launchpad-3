@@ -19,6 +19,7 @@
                        getNotificationRecipients getVoteReference
                        isValidTransition getUnlandedSourceBranchRevisions
                        root_message_id getUsersVoteReference"/>
+    <allow interface="canonical.launchpad.interfaces.branchtarget.IHasBranchTarget"/>
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message
@@ -47,7 +48,7 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+         lazr.lifecycle.interfaces.IObjectModifiedEvent"
     handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_modified_notifications" />
 
   <subscriber

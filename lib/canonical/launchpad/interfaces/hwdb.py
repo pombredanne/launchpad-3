@@ -43,6 +43,7 @@ from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
     ASCIILine, Bool, Bytes, Choice, Datetime, Int, List, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -54,7 +55,6 @@ from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
@@ -163,7 +163,6 @@ class IHWSubmission(Interface):
         CollectionField(
             title=_(u"The HWSubmissionDevice records for this submission."),
             value_type=Reference(schema=Interface)))
-
 
 
 class IHWSubmissionForm(Interface):

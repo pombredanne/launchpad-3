@@ -62,11 +62,18 @@ class SourcePackageReleaseView(LaunchpadView):
         # bugnum groups.
         line_matches = re.finditer(
             'LP:\s*(?P<buglist>(.+?[^,]))($|\n)', changelog, re.DOTALL)
+        seen_bugnums = set()
         for line_match in line_matches:
             bug_matches = re.finditer(
                 '\s*((?P<bug>#(?P<bugnum>\d+)),?\s*)',
                 line_match.group('buglist'))
             for bug_match in bug_matches:
+                bugnum = bug_match.group('bug')
+                if bugnum in seen_bugnums:
+                    # This bug was already replaced across the entire text of
+                    # the changelog.
+                    continue
+                seen_bugnums.add(bugnum)
                 replace_text = bug_match.group('bug')
                 if replace_text is not None:
                     # XXX julian 2008-01-10

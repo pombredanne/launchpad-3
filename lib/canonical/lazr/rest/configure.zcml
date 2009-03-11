@@ -6,6 +6,10 @@
         <allow interface='canonical.lazr.interfaces.ICollectionResource' />
     </class>
 
+    <class class="canonical.lazr.rest.EntryFieldResource">
+        <allow interface='canonical.lazr.interfaces.IEntryFieldResource' />
+    </class>
+
     <class class="canonical.lazr.rest.EntryResource">
         <allow interface='canonical.lazr.interfaces.IEntryResource' />
         <allow interface='canonical.lazr.interfaces.IJSONPublishable' />
@@ -17,11 +21,7 @@
         factory="canonical.launchpad.webapp.servers.website_request_to_web_service_request"
         />
 
-    <adapter
-        for="zope.publisher.interfaces.browser.IBrowserRequest"
-        provides="canonical.lazr.interfaces.rest.IJSONRequestCache"
-        factory="canonical.lazr.rest.jsoncache.JSONRequestCache"
-        />
+    <adapter factory="canonical.lazr.rest.jsoncache.JSONRequestCache" />
 
     <!-- TALES namespace for web service functions available through the
          website. -->
@@ -119,16 +119,16 @@
         />
 
     <!-- Generic adapter for scoped collection -->
-    <adapter
-        for="* *"
-        provides="canonical.lazr.interfaces.IScopedCollection"
-        factory="canonical.lazr.rest.ScopedCollection"
-        />
+    <adapter factory="canonical.lazr.rest.ScopedCollection" />
 
+    <adapter factory="canonical.lazr.rest.JSONItem" />
+
+    <!-- Field resources -->
     <adapter
-        for="canonical.lazr.enum.BaseItem"
-        provides="canonical.lazr.interfaces.IJSONPublishable"
-        factory="canonical.lazr.rest.JSONItem"
+        for="canonical.lazr.interfaces.IEntryField
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IHTTPResource"
+        factory="canonical.lazr.rest.EntryFieldResource"
         />
 
     <!-- Byte storage resources -->
@@ -225,7 +225,7 @@
     <adapter
         for="zope.schema.interfaces.IChoice
              zope.publisher.interfaces.http.IHTTPRequest
-             canonical.lazr.enum.IEnumeratedType"
+             lazr.enum.IEnumeratedType"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
         factory="canonical.lazr.rest.marshallers.SimpleVocabularyLookupFieldMarshaller"
         />
@@ -272,6 +272,8 @@
         factory="canonical.lazr.rest.resource.EntryHTMLView"
         name="canonical.lazr.rest.resource.EntryResource"
         />
+
+    <adapter factory="canonical.lazr.rest.resource.render_field_to_html" />
 
     <!-- System Errors -->
     <view

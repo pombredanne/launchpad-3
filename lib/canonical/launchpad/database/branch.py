@@ -25,6 +25,8 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -39,21 +41,17 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.revision import Revision
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProject,
-    NotFoundError)
+    ILaunchpadCelebrities, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import (
-    BadBranchSearchContext, BranchCreationForbidden,
-    BranchCreationNoTeamOwnedJunkBranches,
+    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
     BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
-    BranchPersonSearchRestriction, BranchType, BranchTypeError,
-    CannotDeleteBranch, ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING,
-    IBranch, IBranchPersonSearchContext, IBranchSet, MAXIMUM_MIRROR_FAILURES,
-    MIRROR_TIME_INCREMENT, RepositoryFormat)
+    BranchType, BranchTypeError, CannotDeleteBranch, ControlFormat,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, NoSuchBranch,
     user_has_special_branch_access)
@@ -76,7 +74,7 @@ from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
-from canonical.launchpad.webapp.uri import InvalidURIError, URI
+from lazr.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc import faults
 
@@ -152,6 +150,11 @@ class Branch(SQLBase):
         else:
             target = self.product
         return IBranchTarget(target)
+
+    @property
+    def namespace(self):
+        """See `IBranch`."""
+        return self.target.getNamespace(self.owner)
 
     @property
     def distribution(self):
@@ -554,6 +557,14 @@ class Branch(SQLBase):
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
         store.flush()
+
+    def getMainlineBranchRevisions(self, revision_ids):
+        return Store.of(self).find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            BranchRevision.revision == Revision.id,
+            Revision.revision_id.is_in(revision_ids))
 
     def getBranchRevision(self, sequence=None, revision=None,
                           revision_id=None):
@@ -1062,7 +1073,7 @@ class BranchSet:
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.FULL)
 
-        notify(SQLObjectCreatedEvent(branch))
+        notify(ObjectCreatedEvent(branch))
         return branch
 
     @staticmethod
@@ -1369,39 +1380,6 @@ class BranchSet:
             % (query, self._getBranchVisibilitySubQuery(visible_by_user)))
 
         return clause
-
-    def _filter_by_context(self, context, branches):
-        if context is None:
-            return branches
-        elif IProduct.providedBy(context):
-            return branches.inProduct(context)
-        elif IProject.providedBy(context):
-            return branches.inProject(context)
-        elif IPerson.providedBy(context):
-            return branches.relatedTo(context)
-        elif IBranchPersonSearchContext.providedBy(context):
-            restriction = context.restriction
-            person = context.person
-            if restriction == BranchPersonSearchRestriction.ALL:
-                return branches.relatedTo(person)
-            elif restriction == BranchPersonSearchRestriction.REGISTERED:
-                return branches.registeredBy(person)
-            elif restriction == BranchPersonSearchRestriction.OWNED:
-                return branches.ownedBy(person)
-            elif restriction == BranchPersonSearchRestriction.SUBSCRIBED:
-                return branches.subscribedBy(person)
-            else:
-                raise BadBranchSearchContext(context)
-
-    def getBranchesForContext(self, context=None, lifecycle_statuses=None,
-                              visible_by_user=None):
-        """See `IBranchSet`."""
-        all_branches = getUtility(IAllBranches)
-        branches = self._filter_by_context(context, all_branches)
-        if lifecycle_statuses:
-            branches = branches.withLifecycleStatus(*lifecycle_statuses)
-        branches = branches.visibleByUser(visible_by_user)
-        return branches.getBranches()
 
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):

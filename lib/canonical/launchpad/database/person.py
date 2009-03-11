@@ -77,6 +77,8 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -964,6 +966,17 @@ class Person(
     def isTeam(self):
         """Deprecated. Use is_team instead."""
         return self.teamowner is not None
+
+    def getMergeProposals(self, status=None, visible_by_user=None):
+        """See `IPerson`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self, status, visible_by_user=None)
 
     @property
     def mailing_list(self):
@@ -1857,10 +1870,9 @@ class Person(
             cur.execute("DELETE FROM %s WHERE %s=%d"
                         % (table, person_id_column, self.id))
 
-        # Update the account's status, password, preferred email and name.
+        # Update the account's status, preferred email and name.
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
-        self.password = None
         self.preferredemail.status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'
@@ -2439,6 +2451,12 @@ class Person(
         else:
             # We don't want to subscribe to the list.
             return False
+
+    @property
+    def hardware_submissions(self):
+        """See `IPerson`."""
+        from canonical.launchpad.database.hwdb import HWSubmissionSet
+        return HWSubmissionSet().search(owner=self)
 
 
 class PersonSet:

@@ -25,6 +25,7 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Bool, Choice, Datetime, Object, Set, Text, TextLine
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -33,7 +34,6 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-from canonical.lazr.enum import DBEnumeratedType, DBItem
 
 
 class IMailingListApplication(ILaunchpadApplication):
