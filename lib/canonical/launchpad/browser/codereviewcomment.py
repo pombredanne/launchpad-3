@@ -114,8 +114,8 @@ class CodeReviewCommentAddView(LaunchpadFormView):
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
 
     def _get_wrapped_reply(self):
-        return TextWrapper(initial_indent='> ').fill(
-            self.reply_to.message_body)
+        wrapper = TextWrapper(initial_indent='> ', subsequent_indent='> ')
+        return wrapper.fill(self.reply_to.message_body)
 
     @property
     def initial_values(self):
