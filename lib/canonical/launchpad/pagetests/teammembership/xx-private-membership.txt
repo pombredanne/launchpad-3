@@ -111,21 +111,21 @@ membership team then he is indirectly a member of the private team.
 The rules for disclosing that information are the same as for direct
 membership.
 
-Make the Launchpad admins a member of My Team to demonstrate indirect
-membership.  Invite the team to join, since this is a restricted team.
+My Team invites the Launchpad Admins team to join them.
 
     >>> owner_browser = setupBrowser(auth='Basic owner@canonical.com:test')
     >>> owner_browser.open('http://launchpad.dev/~myteam/+addmember')
     >>> owner_browser.getControl('New member').value = 'admins'
     >>> owner_browser.getControl('Add Member').click()
 
-Have an admin accept the invitation.
+Foo Bar accepts the invitation for the Launchpad Admins, which makes
+him, and all other admins, an indirect member of My Team.
 
     >>> admin_browser.open('http://launchpad.dev/~admins/+invitation/myteam')
     >>> admin_browser.getControl('Accept').click()
 
-Now all admins are indirectly members of My Team and their
-participation is visible to other team members.
+All Launchpad Admin members are indirectly members of My Team and
+their participation is visible to other team members.
 
     >>> owner_browser.open('http://launchpad.dev/~name16/+participation')
     >>> div = find_tag_by_id(owner_browser.contents, 'indirect participation')
@@ -135,8 +135,9 @@ participation is visible to other team members.
     [u'Mailing List Experts']
     [u'My Team']
 
-People who are not members of My Team do not see it in the indirect
-participation list for the members who are.
+People who are not members of My Team, such as No Privileges Person,
+do not see it in the indirect participation list for the members who
+are.
 
     >>> user_browser.open('http://launchpad.dev/~name16/+participation')
     >>> div = find_tag_by_id(user_browser.contents, 'indirect participation')

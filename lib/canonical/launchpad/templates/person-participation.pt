@@ -63,8 +63,7 @@
       <table id="indirect participation">
         <tal:loop repeat="team_via view/indirect_teams_via">
           <tr tal:condition="team_via/team/@@+restricted-membership/userCanViewMembership">
-            <td><img src="/@@/team"
-                     tal:replace="structure team_via/team/image:icon" />
+            <td><img tal:replace="structure team_via/team/image:icon" />
             </td>
             <td>
               <div>
