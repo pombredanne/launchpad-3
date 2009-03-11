@@ -13,17 +13,48 @@
       <script type="text/javascript">
 YUI().use('io-base', 'node', 'lazr.formoverlay', function(Y) {
 
+var formoverlay;
+
+/*
+ * Process the data from the form.
+ */
+function processMarkDupeForm(data){
+    // HTTP vars can always have multiple values, so each field in
+    // the form will have a list.
+    var values = data['field.duplicateof'];
+    var bug_number;
+    if (typeof(values) == "object"){
+        bug_number = values[0];
+    }
+
+    if (bug_number){
+        formoverlay.hide();
+        var this_bug = LP.client.cache['bug'];
+        var self_link = bug['self_link'];
+        // Replace the bug number/nick
+        var dupe_link = self_link.substr(0, self_link.lastIndexOf('/') + 1) +
+            bug_number;
+        this_bug['duplicate_of_link'] = dupe_link;
+        this_bug.lp_save();
+        alert('Would contact api now');
+    } else {
+        alert('redisplay form with validation error.');
+        // TODO: add errors to formoverlay.
+    }
+}
+
 /*
  * Setup the 'Mark as duplicate' form overlay.
  */
+// TODO: change to request Form Content or similar.
 function setupMarkDuplicateFormOverlay() {
     var mark_dupe_links = Y.all('.menu-link-mark-dupe');
     if (mark_dupe_links) {
         // First things first, pre-load the mark-dupe form.
         var mark_dupe_url = mark_dupe_links.item(0).getAttribute("href");
         var mark_dupe_form_url = mark_dupe_url + "/++form++";
-        var formoverlay;
 
+        // TODO: change fn to setupMarkDupeFormOverlay()
         function extractFormFromResponse(id, o){
             var form_content = o.responseText;
             formoverlay = new Y.lazr.FormOverlay({
@@ -32,6 +63,7 @@ function setupMarkDuplicateFormOverlay() {
                 form_content: "Marking the bug as a duplicate will, by default, hide it from search results listings." + form_content,
                 form_submit_button: Y.Node.create(unescape(
                     '%3Cinput type="submit" value="Mark duplicate" /%3E')),
+                form_submit_callback: processMarkDupeForm,
                 align: {
                     points: 
                         [Y.WidgetPositionExt.CC, Y.WidgetPositionExt.CC]
