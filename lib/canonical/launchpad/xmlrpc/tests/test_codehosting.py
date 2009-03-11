@@ -8,7 +8,6 @@ import datetime
 import pytz
 import unittest
 
-from bzrlib.tests import multiply_tests
 from bzrlib.urlutils import escape
 
 from zope.component import getUtility
@@ -1045,7 +1044,14 @@ def test_suite():
         ('inmemory', {'frontend': InMemoryFrontend,
                       'layer': FunctionalLayer}),
         ]
-    multiply_tests(puller_tests, scenarios, suite)
+    try:
+        from bzrlib.tests import multiply_tests
+        multiply_tests(puller_tests, scenarios, suite)
+    except ImportError:
+        from bzrlib.tests import adapt_tests, TestScenarioApplier
+        applier = TestScenarioApplier()
+        applier.scenarios = scenarios
+        adapt_tests(puller_tests, applier, suite)
     suite.addTests(
         map(loader.loadTestsFromTestCase,
             [TestRunWithLogin, TestIterateSplit]))
