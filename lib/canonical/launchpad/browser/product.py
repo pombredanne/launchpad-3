@@ -65,8 +65,7 @@ from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from canonical.launchpad.interfaces.productrelease import (
     IProductRelease, IProductReleaseSet)
-from canonical.launchpad.interfaces.productseries import (
-    IProductSeries)
+from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -76,6 +75,7 @@ from canonical.launchpad.browser.bugtask import (
 from canonical.launchpad.browser.distribution import UsesLaunchpadMixin
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
@@ -1456,71 +1456,67 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
         return canonical_url(self.product)
 
 
-class ProductAddView(ProductLicenseMixin, LaunchpadFormView):
-    """product/+new view class for creating a new project."""
+class ProjectAddStepTwo(StepView, ProductLicenseMixin):
+    """Step 2 (of 2) in the +new project add wizard."""
 
+    _field_names = ['displayname', 'name', 'summary', 'licenses']
+    main_action_label = u'Complete Registration'
     schema = IProduct
-    field_names = ['displayname', 'name', 'summary']
+    step_name = 'projectaddstep2'
+    template = ViewPageTemplateFile('../templates/product-new.pt')
 
-    label = "Register a project in Launchpad"
     product = None
 
+    # StepView requires that its validate() method not be overridden, so make
+    # sure this calls the right method.  validateStep() will call the license
+    # validation code.
+
+    def validate(self, data):
+        StepView.validate(self, data)
+
+    def validateStep(self, data):
+        ProductLicenseMixin.validate(self, data)
+
+    custom_widget('licenses', LicenseWidget, column_count=3,
+                  orientation='vertical')
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
 
     @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+    def label(self):
+        return 'Register %s (%s) in Launchpad' % (
+            self.request.form['displayname'], self.request.form['name'])
 
-    def isVCSImport(self):
-        if self.user is None:
-            return False
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        return self.user.inTeam(vcs_imports)
-
-    def setUpFields(self):
-        super(ProductAddView, self).setUpFields()
-        if not self.isVCSImport():
-            # vcs-imports members get it easy and are able to change
-            # the owner and reviewed status during the edit process;
-            # this saves time wasted on getting to product/+admin.
-            # The fields are not displayed for other people though.
-            self.form_fields = self.form_fields.omit('owner',
-                                                     'license_reviewed')
-
-    @action(_('Continue'), name='add')
-    def add_action(self, action, data):
-        if self.user is None:
-            raise zope.security.interfaces.Unauthorized(
-                "Need an authenticated Launchpad owner")
-        if not self.isVCSImport():
-            # Zope makes sure these are never set, since they are not in
-            # self.form_fields
-            assert "owner" not in data
-            assert "license_reviewed" not in data
-            data['owner'] = self.user
-            data['license_reviewed'] = False
-        self.product = getUtility(IProductSet).createProduct(
-            name=data['name'],
-            title=data['title'],
-            summary=data['summary'],
-            description=data['description'],
-            displayname=data['displayname'],
-            homepageurl=data['homepageurl'],
-            downloadurl=data['downloadurl'],
-            screenshotsurl=data['screenshotsurl'],
-            wikiurl=data['wikiurl'],
-            freshmeatproject=data['freshmeatproject'],
-            sourceforgeproject=data['sourceforgeproject'],
-            programminglang=data['programminglang'],
-            project=data['project'],
-            owner=data['owner'],
-            registrant=self.user,
-            license_reviewed=data['license_reviewed'],
-            licenses = data['licenses'],
-            license_info=data['license_info'])
+    def main_action(self, data):
         self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
+
+
+class ProjectAddStepOne(StepView):
+    """product/+new view class for creating a new project."""
+
+    _field_names = ['displayname', 'name', 'summary']
+    label = "Register a project in Launchpad"
+    schema = IProduct
+    step_name = 'projectaddstep1'
+    template = ViewPageTemplateFile('../templates/product-new.pt')
+
+    custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
+    custom_widget('name', ProductNameWidget, label='URL')
+
+    def main_action(self, data):
+        self.next_step = ProjectAddStepTwo
+        self.request.form['displayname'] = data['displayname']
+        self.request.form['name'] = data['name']
+        self.request.form['summary'] = data['summary']
+
+
+class ProductAddView(MultiStepView):
+    """The controlling view for product/+new."""
+
+    @property
+    def step_one(self):
+        return ProjectAddStepOne
 
 
 class ProductEditPeopleView(LaunchpadEditFormView):

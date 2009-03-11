@@ -613,7 +613,6 @@
     facet="overview"
     class="canonical.launchpad.browser.ProductAddView"
     permission="launchpad.AnyPerson"
-    template="../templates/product-new.pt"
     />
 
 </configure>

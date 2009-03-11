@@ -5,5 +5,7 @@
   omit-tag="">
 http://launchpad.net/
 <input id="field.name" name="field.name"
-       class="textType" type="text" size="30"/>
+       class="textType" type="text" size="30"
+       value=""
+       tal:attributes="value view/product_name"/>
 </tal:root>

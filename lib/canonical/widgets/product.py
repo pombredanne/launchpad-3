@@ -243,3 +243,7 @@ class ProductNameWidget(TextWidget):
 
     def __call__(self):
         return self.template()
+
+    @property
+    def product_name(self):
+        return self.request.form.get('name', '')
