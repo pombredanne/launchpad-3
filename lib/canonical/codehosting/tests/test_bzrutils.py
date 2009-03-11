@@ -11,12 +11,13 @@ from bzrlib import errors
 from bzrlib.tests import (
     TestCaseWithTransport, TestLoader, TestNotApplicable)
 from bzrlib.tests.branch_implementations import TestCaseWithBranch
+from bzrlib.tests.branch_implementations import TestCaseWithBzrDir
 from canonical.codehosting.bzrutils import (
     DenyingServer, get_branch_stacked_on_url)
 from canonical.codehosting.tests.helpers import TestResultWrapper
 
 
-class TestGetBranchStackedOnURL(TestCaseWithBranch):
+class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
     """Tests for get_branch_stacked_on_url()."""
 
     def __str__(self):
@@ -28,7 +29,7 @@ class TestGetBranchStackedOnURL(TestCaseWithBranch):
         # test are dropped, so the daemon threads serving those branches can
         # exit.
         gc.collect()
-        TestCaseWithBranch.tearDown(self)
+        TestCaseWithBzrDir.tearDown(self)
 
     def run(self, result=None):
         """Run the test, with the result wrapped so that it knows about skips.
@@ -129,8 +130,7 @@ def load_tests(basic_tests, module, loader):
         from bzrlib.branch import (
             BranchFormat, BranchReferenceFormat, _legacy_formats)
         from bzrlib.tests import adapt_tests
-        from bzrlib.tests.branch_implementations import (
-            BranchTestProviderAdapter)
+        from bzrlib.tests.branch_implementations import BranchTestProviderAdapter
         from bzrlib.tests.bzrdir_implementations import (
             BzrDirTestProviderAdapter)
         from bzrlib.transport.memory import MemoryServer
