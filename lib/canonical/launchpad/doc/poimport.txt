@@ -255,7 +255,7 @@ validation errors.
     ... "PO-Revision-Date: 2005-06-03 19:41+0100\n"
     ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=4; plural=n==1) ? "
+    ... "Plural-Forms: nplurals=4; plural=(n==1) ? "
     ...     "0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
@@ -428,7 +428,7 @@ Now, let's import one without errors.
     ... "PO-Revision-Date: 2005-06-03 20:41+0100\n"
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=4; plural=n==1) ? "
+    ... "Plural-Forms: nplurals=4; plural=(n==1) ? "
     ...     "0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
@@ -906,7 +906,7 @@ approve and import it.
     ... "PO-Revision-Date: 2005-05-03 20:41+0100\n"
     ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=4; plural=n==1) "
+    ... "Plural-Forms: nplurals=4; plural=(n==1) "
     ...     "? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
     ...
     ... msgid "foo"
