@@ -23,18 +23,20 @@ class _IStepMachinery(Interface):
     """A schema solely for the multistep wizard machinery."""
     __visited_steps__ = TextLine(
         title=_('Visited steps'),
-        required=False,
         description=_(
             "Used to keep track of the steps visited in a multistep form.")
         )
 
 
 class MultiStepView(LaunchpadView):
-    """Meta-view for implementing a wizard-like multiple step views.
+    """Meta-view for implementing wizard-like multiple step views.
 
-    This view implements a wizard-like workflow in which you specify the first
-    step, and then each step is responsible for specifying the next one.  The
-    next step should be None if we need to stay at the current step.
+    This view implements a wizard-like workflow in which the controller
+    specifies the first step, and each step is responsible for specifying the
+    `next_step`.  A step should normally start with None as its `next_step`
+    (the default) to post back to itself, then set `next_step` to the
+    appropriate view class in its `main_action()` method.  The last step
+    should leave `next_step` as None to end the wizard.
 
     Any views used as steps here must inherit from `StepView`.  The views are
     responsible for injecting state information into the request, for anything
@@ -53,17 +55,19 @@ class MultiStepView(LaunchpadView):
     def initialize(self):
         """Initialize the view and handle stepping through sub-views."""
         view = self.step_one(self.context, self.request)
-        # In fact we should be calling injectStepNameInRequest() after
-        # initialize() in both cases, otherwise the form will be processed
-        # when it's first rendered, thus showing warning/error messages before
-        # the user submits it. For the first step, though, this won't happen
-        # because the request won't contain the action name, but it also won't
-        # contain the visited_steps key and thus the HTML won't contain the
-        # hidden widget unless I inject before calling initialize().
+        assert isinstance(view, StepView), 'Not a StepView: %s' % view
+        # We should be calling injectStepNameInRequest() after initialize() in
+        # both this case and inside the loop below, otherwise the form will be
+        # processed when it's first rendered, thus showing warning/error
+        # messages before the user submits it.  For the first step, though,
+        # this won't happen because the request won't contain the action name,
+        # or the __visited_steps__ key, and thus the HTML won't contain the
+        # hidden widget unless we inject before calling initialize().
         view.injectStepNameInRequest()
         view.initialize()
         while view.next_step is not None:
             view = view.next_step(self.context, self.request)
+            assert isinstance(view, StepView), 'Not a StepView: %s' % view
             view.initialize()
             view.injectStepNameInRequest()
         self.view = view
@@ -73,7 +77,7 @@ class MultiStepView(LaunchpadView):
 
 
 class StepView(LaunchpadFormView):
-    """Base class for all steps in a mulit-step view.
+    """Base class for all steps in a multiple step view.
 
     Subclasses must override `next_step`, `step_name` and `_field_names`.
     They must also define a `main_action()` method which processes the form
@@ -85,12 +89,17 @@ class StepView(LaunchpadFormView):
     If views want to change the label of their Continue button, they should
     override `main_action_label`.
     """
+    # Use a custom widget in order to make it invisible.
     custom_widget('__visited_steps__', TextWidget, visible=False)
 
     _field_names = []
     step_name = ''
     main_action_label = u'Continue'
     next_step = None
+
+    # Define this here so it can be overridden in subclasses, if for some
+    # crazy reason you need step names with vertical bars in them.
+    SEPARATOR = '|'
 
     def extendFields(self):
         """See `LaunchpadFormView`."""
@@ -111,7 +120,7 @@ class StepView(LaunchpadFormView):
     def main_action(self, data):
         raise NotImplementedError
 
-    @action(u'Continue', name='continue')
+    @action(main_action_label, name='continue')
     def continue_action(self, action, data):
         """The action of the continue button.
 
@@ -130,6 +139,7 @@ class StepView(LaunchpadFormView):
         `validateStep()` if they have any custom validation they need to
         perform.
         """
+        super(StepView, self).validate(data)
         if self.shouldProcess(data):
             self.validateStep(data)
 
@@ -139,9 +149,9 @@ class StepView(LaunchpadFormView):
         if not visited_steps:
             self.request.form['field.__visited_steps__'] = self.step_name
         elif self.step_name not in visited_steps:
-            steps = visited_steps.split('|')
+            steps = visited_steps.split(self.SEPARATOR)
             steps.append(self.step_name)
-            new_steps = '|'.join(steps)
+            new_steps = self.SEPARATOR.join(steps)
             self.request.form['field.__visited_steps__'] = new_steps
         else:
             # We already visited this step, so there's no need to inject our
@@ -175,5 +185,5 @@ class StepView(LaunchpadFormView):
 
     @property
     def cancel_url(self):
-        """Return the URL for the current context, i.e. bug."""
+        """Return the URL for the current context."""
         return canonical_url(self.context)

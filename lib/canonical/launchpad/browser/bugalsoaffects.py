@@ -168,9 +168,9 @@ class ChooseProductStep(AlsoAffectsStep):
                 search_url))
 
     def main_action(self, data):
-        """Inject the selected product into the form and set the next_step to
-        be used by our meta view.
-        """
+        """Perform the 'Continue' action."""
+        # Inject the selected product into the form and set the next_step to
+        # be used by our multistep controller.
         self.request.form['field.product'] = data['product'].name
         self.next_step = ProductBugTaskCreationStep
 
