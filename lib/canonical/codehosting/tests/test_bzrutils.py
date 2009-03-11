@@ -128,19 +128,21 @@ def load_tests(basic_tests, module, loader):
         from bzrlib.branch import (
             BranchFormat, BranchReferenceFormat, _legacy_formats)
         from bzrlib.tests import adapt_tests
-        from bzrlib.tests.branch_implementations import BranchTestProviderAdapter
+        from bzrlib.tests.branch_implementations import (
+            BranchTestProviderAdapter)
         from bzrlib.tests.bzrdir_implementations import (
             BzrDirTestProviderAdapter)
         from bzrlib.transport.memory import MemoryServer
 
-        # Generate a list of branch formats and their associated bzrdir formats to
-        # use.
+        # Generate a list of branch formats and their associated bzrdir
+        # formats to use.
         combinations = [(format, format._matchingbzrdir)
                         for format in
                         BranchFormat._formats.values() + _legacy_formats
                         if format != BranchReferenceFormat()]
         adapter = BranchTestProviderAdapter(
-            # None here will cause the default vfs transport server to be used.
+            # None here will cause the default vfs transport server to be
+            # used.
             None,
             # None here will cause a readonly decorator to be created
             # by the TestCaseWithTransport.get_readonly_transport method.
@@ -149,8 +151,9 @@ def load_tests(basic_tests, module, loader):
         # add the tests for the sub modules
         adapt_tests(get_branch_stacked_on_url_tests, adapter, result)
 
-        # This will always add the tests for smart server transport, regardless of
-        # the --transport option the user specified to 'bzr selftest'.
+        # This will always add the tests for smart server transport,
+        # regardless of the --transport option the user specified to 'bzr
+        # selftest'.
         from bzrlib.smart.server import (
             ReadonlySmartTCPServer_for_testing,
             ReadonlySmartTCPServer_for_testing_v2_only,
