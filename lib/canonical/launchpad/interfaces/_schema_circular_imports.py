@@ -75,3 +75,8 @@ ISourcePackage['getBranch'].queryTaggedValue(
         'params']['pocket'].vocabulary = PackagePublishingPocket
 ISourcePackage['getBranch'].queryTaggedValue(
     'lazr.webservice.exported')['return_type'].schema = IBranch
+ISourcePackage['setBranch'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['pocket'].vocabulary = PackagePublishingPocket
+ISourcePackage['setBranch'].queryTaggedValue(
+    'lazr.webservice.exported')['params']['branch'].vocabulary = IBranch

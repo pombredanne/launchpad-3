@@ -23,8 +23,9 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters, operation_returns_entry)
+    call_with, export_as_webservice_entry, export_read_operation,
+    export_write_operation, exported, operation_parameters,
+    operation_returns_entry, REQUEST_USER)
 
 
 class ISourcePackage(IBugTarget):
@@ -171,7 +172,17 @@ class ISourcePackage(IBugTarget):
         :return: An `ISeriesSourcePackageBranch`.
         """
 
-    # XXX: export
+
+    # 'pocket' should actually be a PackagePublishingPocket, and 'branch'
+    # should be IBranch, but we use the base classes to avoid circular
+    # imports. Correct interface specific in _schema_circular_imports.
+    @operation_parameters(
+        pocket=Choice(
+            title=_("Pocket"), required=True,
+            vocabulary=DBEnumeratedType),
+        branch=Reference(Interface, title=_("Branch")))
+    @call_with(registrant=REQUEST_USER)
+    @export_write_operation()
     def setBranch(pocket, branch, registrant):
         """Set the official branch for the given pocket of this package.
 

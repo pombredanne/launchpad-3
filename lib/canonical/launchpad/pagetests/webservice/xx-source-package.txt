@@ -1,31 +1,68 @@
 = Prelude =
 
-   >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> from canonical.launchpad.interfaces.distroseries import (
+    ...     IDistroSeriesSet)
+    >>> from canonical.lazr.testing.webservice import pprint_entry
 
 = Source Packages =
 
 We can get source packages that are bound to a distribution series from the
 distribution series.
 
-   >>> hoary = webservice.get('/ubuntu/hoary').jsonBody()
-   >>> evolution = webservice.named_get(
-   ...     hoary['self_link'], 'getSourcePackage',
-   ...     name='evolution').jsonBody()
+    >>> hoary = webservice.get('/ubuntu/hoary').jsonBody()
+    >>> evolution = webservice.named_get(
+    ...     hoary['self_link'], 'getSourcePackage',
+    ...     name='evolution').jsonBody()
 
-   >>> pprint_entry(evolution)
-   bug_reporting_guidelines: None
-   displayname: u'Ubuntu Hoary evolution'
-   distribution_link: u'http://.../ubuntu'
-   distroseries_link: u'http://.../ubuntu/hoary'
-   name: u'evolution'
-   productseries_link: u'http://.../evolution/trunk'
-   resource_type_link: ...
-   self_link: u'http://.../ubuntu/hoary/+source/evolution'
+    >>> pprint_entry(evolution)
+    bug_reporting_guidelines: None
+    displayname: u'Ubuntu Hoary evolution'
+    distribution_link: u'http://.../ubuntu'
+    distroseries_link: u'http://.../ubuntu/hoary'
+    name: u'evolution'
+    productseries_link: u'http://.../evolution/trunk'
+    resource_type_link: ...
+    self_link: u'http://.../ubuntu/hoary/+source/evolution'
 
 Then we can get the branches that are bound to various pockets of this
 distribution series. By default, there are none bound to evolution.
 
-   >>> branch = webservice.named_get(evolution['self_link'], 'getBranch',
-   ...     pocket='Release').jsonBody()
-   >>> print branch
-   None
+    >>> branch = webservice.named_get(evolution['self_link'], 'getBranch',
+    ...     pocket='Release').jsonBody()
+    >>> print branch
+    None
+
+We can even set a branch for the series. First we need to *make* a branch
+though.
+
+    >>> login(ANONYMOUS)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = getUtility(IDistroSeriesSet).queryByName(ubuntu, 'hoary')
+    >>> evolution_package = hoary.getSourcePackage('evolution')
+    >>> owner = factory.makePerson(name='devo')
+    >>> branch = factory.makePackageBranch(
+    ...     sourcepackage=evolution_package, owner=owner, name='branch')
+    >>> print branch.unique_name
+    ~devo/ubuntu/hoary/evolution/branch
+    >>> branch_url = '/' + branch.unique_name
+    >>> logout()
+
+Then we set the branch on the evolution hoary package:
+
+    >>> branch = webservice.get(branch_url).jsonBody()
+    >>> response = webservice.named_post(
+    ...     evolution['self_link'], 'setBranch', pocket='Release',
+    ...     branch=branch['self_link'])
+    >>> print response.jsonBody()
+    None
+
+I guess this means that if we get the branch for the RELEASE pocket again,
+we'll get the new branch.
+
+    >>> branch = webservice.named_get(evolution['self_link'], 'getBranch',
+    ...     pocket='Release').jsonBody()
+    >>> print branch['unique_name']
+    ~devo/ubuntu/hoary/evolution/branch
