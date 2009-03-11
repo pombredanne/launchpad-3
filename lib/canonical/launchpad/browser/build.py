@@ -13,13 +13,12 @@ __all__ = [
     'BuildView',
     ]
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IBuild, IBuildRescoreForm, IBuildSet)
+    BuildStatus, IBuild, IBuildRescoreForm)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.interfaces.package import PackageUploadStatus
@@ -30,7 +29,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from lazr.delegates import delegates
 
 
 class BuildUrl:
