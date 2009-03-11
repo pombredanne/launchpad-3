@@ -31,8 +31,8 @@ class LaunchpadWebServiceConfiguration:
     def code_revision(self):
         return str(versioninfo.revno)
 
-    def createRequest(self, body_stream, environ):
+    def createRequest(self, body_instream, environ):
         """See `IWebServiceConfiguration`."""
-        request = WebServiceClientRequest(body_stream, environ)
+        request = WebServiceClientRequest(body_instream, environ)
         request.setPublication(WebServicePublication(None))
         return request

@@ -357,12 +357,12 @@ class IWebServiceConfiguration(Interface):
         running the webservice. This may be a revision number from version
         control, or a hand-chosen version number.""")
 
-    def createRequest(body_stream, environ):
+    def createRequest(body_instream, environ):
         """A factory method that creates a request for the web service.
 
         It should have the correct publication set for the application.
 
-        :param body_stream: A file-like object containing the request
+        :param body_instream: A file-like object containing the request
             input stream.
         :param environ: A dict containing the request environment.
         """
