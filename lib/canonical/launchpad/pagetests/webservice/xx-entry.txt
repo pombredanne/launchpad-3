@@ -668,7 +668,7 @@ string won't work.
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  team_owner_link: No such object "A random string".
+  team_owner_link: "A random string" is not a valid URI.
 
 But not just any URL will do. It has to identify an object in the web
 service.

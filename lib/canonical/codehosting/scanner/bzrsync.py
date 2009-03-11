@@ -19,6 +19,8 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 from bzrlib import urlutils
 
+from lazr.uri import URI
+
 from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.codehosting.scanner.buglinks import BugBranchLinker
@@ -34,7 +36,6 @@ from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchjob import IRevisionsAddedJobSource
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
-from lazr.uri import URI
 
 
 UTC = pytz.timezone('UTC')
