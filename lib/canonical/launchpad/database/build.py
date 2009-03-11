@@ -1024,7 +1024,7 @@ class BuildSet:
         from canonical.launchpad.database.sourcepackagerelease import (
             SourcePackageRelease)
 
-        build_ids = result_set.values(Build.id)
+        build_ids = list(result_set.values(Build.id))
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             Build,

@@ -480,9 +480,13 @@ First we'll define a helper to print the build summary:
 The build set class furthermore provides a mechanism to load build-related
 data from the database for a given set of builds:
 
-    >>> build_ids = sorted(
-    ...     [build.id for build in ubuntu.getBuildRecords()])[:4]
-    >>> rset = bs.prefetchBuildData(build_ids)
+    >>> from storm.expr import In
+    >>> from canonical.launchpad.database.build import Build
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    >>> result_set = store.find(Build, In(Build.id, (2,6,7,8)))
+    >>> rset = removeSecurityProxy(bs)._prefetchBuildData(result_set)
     >>> def filename_or_none(item):
     ...     if item is not None:
     ...         return '%s' % item.filename

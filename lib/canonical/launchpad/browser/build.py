@@ -187,59 +187,6 @@ class BuildRescoringView(LaunchpadFormView):
             "Build rescored to %s." % score)
 
 
-class CompleteBuild:
-    """Super object to store related IBuild & IBuildQueue."""
-    delegates(IBuild)
-    def __init__(
-        self, build, buildqueue_record, sourcepackagerelease, buildlog):
-        self.context = build
-        self._buildqueue_record = buildqueue_record
-        self._sourcepackagerelease = sourcepackagerelease
-        self._buildlog = buildlog
-
-    @property
-    def buildlog(self):
-        return self._buildlog
-
-    def buildqueue_record(self):
-        return self._buildqueue_record
-
-    def sourcepackagerelease(self):
-        return self._sourcepackagerelease
-
-
-def setupCompleteBuilds(batch):
-    """Pre-populate new object with buildqueue items.
-
-    Single queries, using list() statement to force fetch
-    of the results in python domain.
-
-    Receive a sequence of builds, for instance, a batch.
-
-    Return a list of built CompleteBuild instances, or empty
-    list if no builds were contained in the received batch.
-    """
-    builds = list(batch)
-    if not builds:
-        return []
-
-    prejoins = dict()
-    build_ids = [build.id for build in builds]
-    results = getUtility(IBuildSet).prefetchBuildData(build_ids)
-    for result in results:
-        # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
-        # 'buildlog' (from the result set) respectively.
-        (build_id, buildqueue, sourcepackagerelease, buildlog,
-         sourcepackagename, buildlog_content, builder) = result
-        prejoins[build_id] = (buildqueue, sourcepackagerelease, buildlog)
-
-    complete_builds = []
-    for build in builds:
-        complete_builds.append(CompleteBuild(build, *prejoins[build.id]))
-
-    return complete_builds
-
-
 class BuildRecordsView(LaunchpadView):
     """Base class used to present objects that contains build records.
 
@@ -272,13 +219,7 @@ class BuildRecordsView(LaunchpadView):
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, user=self.user)
         self.batchnav = BatchNavigator(builds, self.request)
-        # We perform this extra step because we don't what to issue one
-        # extra query to retrieve the BuildQueue for each Build (batch item)
-        # A more elegant approach should be extending Batching class and
-        # integrating the fix into it. However the current solution is
-        # simpler and shorter, producing the same result. cprov 20060810
-        self.complete_builds = setupCompleteBuilds(
-            self.batchnav.currentBatch())
+        self.builds = self.batchnav.currentBatch()
 
     def _setupMappedStates(self, tag):
         """Build self.state and self.availableStates structures.
