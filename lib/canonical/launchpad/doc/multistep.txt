@@ -88,8 +88,7 @@ method.
     ...     def main_action(self, data):
     ...         pass
     ...     def validateStep(self, data):
-    ...         print CounterView.counter
-    ...         CounterView.counter += 1
+    ...         print self.step_name
 
     >>> class StepFive(StepView):
     ...     schema = IStep
@@ -97,8 +96,7 @@ method.
     ...     def main_action(self, data):
     ...         self.next_step = StepSix
     ...     def validateStep(self, data):
-    ...         print CounterView.counter
-    ...         CounterView.counter += 1
+    ...         print self.step_name
 
     >>> class StepFour(StepView):
     ...     schema = IStep
@@ -106,23 +104,21 @@ method.
     ...     def main_action(self, data):
     ...         self.next_step = StepFive
     ...     def validateStep(self, data):
-    ...         print CounterView.counter
-    ...         CounterView.counter += 1
+    ...         print self.step_name
 
     >>> class CounterView(MultiStepView):
     ...     step_one = StepFour
-    ...     counter = 0
 
     >>> form = {'field.actions.continue': 'Continue'}
     >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> view = CounterView(None, request)
 
     >>> view.initialize()
-    0
+    four
     >>> view.initialize()
-    1
-    2
+    four
+    five
     >>> view.initialize()
-    3
-    4
-    5
+    four
+    five
+    six
