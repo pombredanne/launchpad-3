@@ -1,6 +1,7 @@
 __all__ = ['Cookbook',
            'CookbookSet',
-           'ExampleServiceRootResource']
+           'ExampleServiceRootResource',
+           'TestWebServiceObject']
 
 from zope.interface import implements
 from zope.traversing.browser.interfaces import IAbsoluteURL
@@ -10,7 +11,10 @@ from canonical.lazr.rest.example.interfaces import (
     ICookbook, ICookbookSet, IHasGet)
 
 
-class Cookbook:
+class TestWebServiceObject:
+    pass
+
+class Cookbook(TestWebServiceObject):
     implements(ICookbook, IAbsoluteURL)
     def __init__(self, name):
         self.name = name
@@ -20,7 +24,7 @@ class Cookbook:
         return self.name
 
 
-class CookbookSet:
+class CookbookSet(TestWebServiceObject):
     implements(ICookbookSet, IAbsoluteURL)
 
     def __init__(self, cookbooks):
@@ -43,6 +47,19 @@ C2 = Cookbook(u"The Joy of Cooking")
 C3 = Cookbook(u"James Beard's American Cookery")
 COOKBOOK_SET = CookbookSet([C1, C2, C3])
 
+
+class RootAbsoluteURL:
+     """A basic, extensible implementation of IAbsoluteURL."""
+     implements(IAbsoluteURL)
+
+     def __init__(self, context, request):
+         self.context = context
+         self.request = request
+
+     def __str__(self):
+         return "http://api.launchpad.dev/beta/"
+
+     __call__ = __str__
 
 class ExampleServiceRootResource(ServiceRootResource):
     implements(IHasGet, IAbsoluteURL)
