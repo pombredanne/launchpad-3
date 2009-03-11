@@ -908,7 +908,7 @@ class BuildSet:
         # Grab the native storm result set.
         result_set = removeSecurityProxy(result_set)._result_set
         decorated_results = DecoratedResultSet(
-            result_set, pre_iter_hook=getUtility(IBuildSet).prefetchBuildData)
+            result_set, pre_iter_hook=self._prefetchBuildData)
         return decorated_results
 
     def retryDepWaiting(self, distroarchseries):
@@ -1003,12 +1003,25 @@ class BuildSet:
                 'builds': builds,
                 }
 
-    def prefetchBuildData(self, build_ids):
-        """See `IBuildSet`."""
+    def _prefetchBuildData(self, result_set):
+        """Used to pre-populate the cache with build related data.
+
+        When dealing with a group of Build records we can't use the
+        prejoin facility to also fetch BuildQueue, SourcePackageRelease
+        and LibraryFileAlias records in a single query because the
+        result set is too large and the queries time out too often.
+
+        So this method receives a Build (storm) result set and fetches the
+        corresponding BuildQueue, SourcePackageRelease and LibraryFileAlias
+        rows (prejoined with the appropriate Builder, SourcePackageName and
+        LibraryFileContent respectively).
+        """
         from canonical.launchpad.database.sourcepackagename import (
             SourcePackageName)
         from canonical.launchpad.database.sourcepackagerelease import (
             SourcePackageRelease)
+
+        build_ids = result_set.values(Build.id)
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             Build,
