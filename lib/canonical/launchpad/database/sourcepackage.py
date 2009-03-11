@@ -596,6 +596,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return shortlist(result.orderBy(['-priority', 'name']), 300)
 
     def getBranch(self, pocket):
+        """See `ISourcePackage`."""
         store = Store.of(self.sourcepackagename)
         return store.find(
             Branch,

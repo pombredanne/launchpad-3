@@ -119,6 +119,13 @@ class ISourcePackage(IBugTarget):
         and record that it was done by the owner.
         """
 
+    def getBranch(pocket):
+        """Get the official branch for this package in the given pocket.
+
+        :param pocket: A `PackagePublishingPocket`.
+        :return: An `IBranch`.
+        """
+
     shouldimport = Attribute("""Whether we should import this or not.
         By 'import' we mean sourcerer analysis resulting in a manifest and a
         set of Bazaar branches which describe the source package release.
