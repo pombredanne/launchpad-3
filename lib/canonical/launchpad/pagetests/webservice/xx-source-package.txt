@@ -14,5 +14,10 @@ distribution series.
 
    >>> pprint_entry(evolution)
    bug_reporting_guidelines: None
+   displayname: u'Ubuntu Hoary evolution'
+   distribution_link: u'http://.../ubuntu'
+   distroseries_link: u'http://.../ubuntu/hoary'
+   name: u'evolution'
+   productseries_link: u'http://.../evolution/trunk'
    resource_type_link: ...
    self_link: u'http://.../ubuntu/hoary/+source/evolution'

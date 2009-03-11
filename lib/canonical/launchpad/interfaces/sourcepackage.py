@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Source package interfaces."""
@@ -13,12 +13,17 @@ __all__ = [
     'SourcePackageUrgency',
     ]
 
-from zope.interface import Attribute
-from zope.schema import Object
+from zope.interface import Attribute, Interface
+from zope.schema import Object, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.component import IComponent
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 
 class ISourcePackage(IBugTarget):
@@ -27,12 +32,19 @@ class ISourcePackage(IBugTarget):
     interface from the SourcePackage table, with the new table-less
     implementation."""
 
+    export_as_webservice_entry()
+
     id = Attribute("ID")
 
-    name = Attribute("The text name of this source package, from "
-                     "SourcePackageName.")
+    name = exported(
+        TextLine(
+            title=_("Name"), required=True,
+            description=_("The text name of this source package.")))
 
-    displayname = Attribute("A displayname, constructed, for this package")
+    displayname = exported(
+        TextLine(
+            title=_("Display name"), required=True,
+            description=_("A displayname, constructed, for this package")))
 
     path = Attribute("A path to this package, <distro>/<series>/<package>")
 
@@ -46,22 +58,36 @@ class ISourcePackage(IBugTarget):
     distinctreleases = Attribute("Return a distinct list "
         "of sourcepackagepublishinghistory for this source package.")
 
-    distribution = Attribute("Distribution")
+    distribution = exported(
+        Reference(
+            IDistribution, title=_("Distribution"), required=True,
+            description=_("The distribution for this source package.")))
 
-    distroseries = Attribute("The DistroSeries for this SourcePackage")
+    # The interface for this is really IDistroSeries, but importing that would
+    # cause circular imports. Set in _schema_circular_imports.
+    distroseries = exported(
+        Reference(
+            Interface, title=_("Distribution Series"), required=True,
+            description=_("The DistroSeries for this SourcePackage")))
 
     sourcepackagename = Attribute("SourcePackageName")
 
+    # XXX: export?
     bugtasks = Attribute("Bug Tasks that reference this Source Package name "
                     "in the context of this distribution.")
 
-    product = Attribute("The best guess we have as to the Launchpad Project "
-                    "associated with this SourcePackage.")
+    product = Attribute(
+        "The best guess we have as to the Launchpad Project associated with "
+        "this SourcePackage.")
 
-    productseries = Attribute("The best guess we have as to the Launchpad "
-                    "ProductSeries for this Source Package. Try find "
-                    "packaging information for this specific distroseries "
-                    "then try parent series and previous ubuntu series.")
+    productseries = exported(
+        Reference(
+            Interface, title=_("Product Series"), required=False,
+            description=_(
+                "The best guess we have as to the Launchpad ProductSeries "
+                "for this Source Package. Try find packaging information for "
+                "this specific distroseries then try parent series and "
+                "previous Ubuntu series.")))
 
     releases = Attribute("The full set of source package releases that "
         "have been published in this distroseries under this source "
@@ -119,6 +145,7 @@ class ISourcePackage(IBugTarget):
         and record that it was done by the owner.
         """
 
+    # XXX: export
     def getBranch(pocket):
         """Get the official branch for this package in the given pocket.
 
@@ -133,6 +160,7 @@ class ISourcePackage(IBugTarget):
         :return: An `ISeriesSourcePackageBranch`.
         """
 
+    # XXX: export
     def setBranch(pocket, branch, registrant):
         """Set the official branch for the given pocket of this package.
 

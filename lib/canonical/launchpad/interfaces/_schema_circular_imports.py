@@ -25,10 +25,13 @@ from canonical.launchpad.interfaces.branchsubscription import (
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.person import IPersonPublic
 from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket)
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 
 IBranch['product'].schema = IProduct
@@ -64,3 +67,6 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].value_type.schema = IBuild
+
+ISourcePackage['distroseries'].schema = IDistroSeries
+ISourcePackage['productseries'].schema = IProductSeries
