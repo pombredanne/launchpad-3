@@ -1,5 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
+"""Milestone model classes."""
 
 __metaclass__ = type
 __all__ = [
@@ -11,6 +12,8 @@ __all__ = [
     ]
 
 import datetime
+
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
@@ -25,6 +28,8 @@ from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskSearchParams, IBugTaskSet)
 from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from canonical.launchpad.interfaces.milestone import (
     IHasMilestones, IMilestone, IMilestoneSet, IProjectMilestone)
@@ -171,6 +176,21 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
             release_notes=release_notes,
             datereleased=datereleased,
             milestone=self)
+
+    def destroySelf(self):
+        """See `IMilestone`."""
+        params = BugTaskSearchParams(milestone=self, user=None)
+        bugtasks = getUtility(IBugTaskSet).search(params)
+        assert bugtasks.count() == 0, (
+            "You cannot delete a milestone which has bugtasks targeted "
+            "to it.")
+        assert self.specifications.count() == 0, (
+            "You cannot delete a milestone which has specifications targeted "
+            "to it.")
+        assert self.product_release is None, (
+            "You cannot delete a milestone which has a product release "
+            "associated with it.")
+        SQLBase.destroySelf(self)
 
 
 class MilestoneSet:
