@@ -9,7 +9,8 @@ The HWDB application root provides the core methods to access HWDB
 tables. It also provides the set of known package names appearing
 in the table HWDriver.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from canonical.lazr.testing.webservice import (
+    ...     pprint_collection, pprint_entry)
     >>> hwdb_root = webservice.get('/+hwdb').jsonBody()
     >>> pprint_entry(hwdb_root)
     package_names: [u'linux-image-2.6.24-19-generic']
@@ -586,6 +587,22 @@ We can query for submissions from a particular user.
     ...     owner=webservice.getAbsoluteUrl('/~name20')).jsonBody()
     >>> print submissions['total_size']
     0
+
+=== Getting all submissions for a user ===
+
+We can get all of a user's hardware submissions by retrieving their
+`hardware_submissions` collection.
+
+    >>> name12 = webservice.get(webservice.getAbsoluteUrl('/~name12')).jsonBody()
+    >>> pprint_collection(
+    ...     webservice.get(
+    ...         name12['hardware_submissions_collection_link']).jsonBody())
+    resource_type_link: u'http://.../#h_w_submission-page-resource'
+    start: 0
+    total_size: 2
+    ...
+    submission_key: u'sample-submission'
+    ...
 
 
 === Submission Devices ===
