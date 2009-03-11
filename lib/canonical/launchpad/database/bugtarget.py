@@ -211,6 +211,11 @@ class BugTargetBase(HasBugsBase):
 
 class OfficialBugTag(Storm):
     """See `IOfficialBugTag`."""
+    # XXX Abel Deuring, 2009-03-11: The SQL table OfficialBugTag has
+    # a column "project", while a constraint requires that either "product"
+    # or "distribution" must be non-null. Once this is changed, we
+    # should add the column "project" here. Bug #341203.
+
     implements(IOfficialBugTag)
 
     __storm_table__ = 'OfficialBugTag'
