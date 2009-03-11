@@ -13,6 +13,7 @@ from textwrap import dedent
 from zope.interface import Attribute, implements, Interface
 from zope.app import zapi
 from zope.schema import TextLine
+from zope.schema.interfaces import IChoice
 from zope.app.form.browser.interfaces import ISimpleInputWidget
 from zope.app.form.browser.itemswidgets import (
     ItemsWidgetBase, SingleDataHelper)
@@ -258,6 +259,8 @@ class VocabularyPickerWidget(SinglePopupWidget):
 
     popup_name = 'popup-vocabulary-picker'
 
+    header = 'Select an item'
+
     @property
     def suffix(self):
         return self.name.replace('.', '-')
@@ -270,8 +273,25 @@ class VocabularyPickerWidget(SinglePopupWidget):
         js_file = os.path.join(os.path.dirname(__file__),
                                'templates/vocabulary-picker.js')
         js_template = open(js_file).read()
+
+        choice = IChoice(self.context)
+        if choice.vocabularyName is None:
+            # The webservice that provides the results of the search
+            # must be passed in the name of the vocabulary which is looked
+            # up by the vocabulary registry.
+            raise ValueError(
+                "The %r.%s interface attribute doesn't have its "
+                "vocabulary specified as a string, so it can't be loaded "
+                "by the vocabulary registry."
+                % (choice.context, choice.__name__))
         js = js_template % dict(
+            vocabulary=choice.vocabularyName,
+            header=self.header,
             show_widget_id=self.show_widget_id,
             input_id=self.name)
         return ('(<a id="%s" href="#">Choose&hellip;</a>)'
                 '\n<script>\n%s\n</script>') % (self.show_widget_id, js)
+
+
+class PersonPickerWidget(VocabularyPickerWidget):
+    header = 'Select a person or team'
