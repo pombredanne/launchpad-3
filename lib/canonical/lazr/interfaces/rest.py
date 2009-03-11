@@ -30,7 +30,8 @@ __all__ = [
     'IWebBrowserInitiatedRequest',
     'LAZR_WEBSERVICE_NAME',
     'LAZR_WEBSERVICE_NS',
-    'WebServiceLayer',
+    'IWebServiceClientRequest',
+    'IWebServiceLayer',
     ]
 
 from zope.schema import Bool, TextLine
@@ -39,7 +40,8 @@ from zope.interface import Attribute, Interface
 # the import fascist complains because they are not in __all__ there.
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
-from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+from zope.publisher.interfaces.browser import (
+    IBrowserRequest, IDefaultBrowserLayer)
 
 
 # The namespace prefix for LAZR web service-related tags.
@@ -223,8 +225,12 @@ class ITopLevelEntryLink(Interface):
                            "other end of the link.")
 
 
-class WebServiceLayer(IDefaultBrowserLayer):
-    """Marker interface for requests to the web service."""
+class IWebServiceClientRequest(IBrowserRequest):
+    """Marker interface requests to the web service."""
+
+
+class IWebServiceLayer(IWebServiceClientRequest, IDefaultBrowserLayer):
+    """Marker interface for registering views on the web service."""
 
 
 class IJSONRequestCache(Interface):

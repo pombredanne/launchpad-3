@@ -3,13 +3,13 @@
 Most of the time, web service requests come through the web service
 layer. But there are times when a request that came through the
 website neeeds to be treated as a web service request. It's easy to
-adapt an IBrowserRequest into an IWebServiceLayer request.
+adapt an IBrowserRequest into an IIWebServiceClientRequest request.
 
 This adapters uses the request factory from the IWebServiceConfiguration
 utility.
 
     >>> from canonical.lazr.interfaces.rest import (
-    ...     IWebServiceConfiguration, WebServiceLayer)
+    ...     IWebServiceConfiguration, IWebServiceClientRequest)
     >>> from canonical.lazr.rest.publisher import (
     ...     browser_request_to_web_service_request)
     >>> from canonical.lazr.testing.webservice import (
@@ -33,7 +33,7 @@ utility.
     >>> sm.registerAdapter(browser_request_to_web_service_request)
 
     >>> website_request = TestRequest(SERVER_URL="http://launchpad.dev/")
-    >>> request = WebServiceLayer(website_request)
+    >>> request = IWebServiceClientRequest(website_request)
     >>> request
     <...WebServiceTestRequest...>
     >>> request.getApplicationURL()

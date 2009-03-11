@@ -37,8 +37,6 @@ from zope.traversing.browser import absoluteURL
 
 from lazr.uri import URI, InvalidURIError
 
-from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
-
 from canonical.lazr.interfaces.rest import (
     IFieldMarshaller, IUnmarshallingDoesntNeedValue,
     IWebServiceConfiguration)
@@ -95,7 +93,6 @@ class URLDereferencingMixin:
         # Import here is necessary to avoid circular import.
         from canonical.launchpad.webapp.servers import WebServiceClientRequest
         request = WebServiceClientRequest(StringIO(), {'PATH_INFO' : path})
-        setFirstLayer(request, WebServiceLayer)
         request.setTraversalStack(path_parts)
 
         publication = self.request.publication

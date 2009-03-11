@@ -27,7 +27,8 @@ from lazr.uri import URI
 
 from canonical.lazr.interfaces.rest import (
     IByteStorage, ICollection, IEntry, IEntryField, IHTTPResource,
-    IWebBrowserInitiatedRequest, IWebServiceConfiguration, WebServiceLayer)
+    IWebBrowserInitiatedRequest, IWebServiceClientRequest,
+    IWebServiceConfiguration)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
     CollectionResource, EntryField, EntryFieldResource,
@@ -181,7 +182,7 @@ class WebServiceRequestTraversal:
 
     This should be mixed in the request using to the base publication used.
     """
-    implements(WebServiceLayer)
+    implements(IWebServiceClientRequest)
 
     def traverse(self, ob):
         """See `zope.publisher.interfaces.IPublisherRequest`.
@@ -231,7 +232,7 @@ class WebServiceRequestTraversal:
         return None
 
 
-@implementer(WebServiceLayer)
+@implementer(IWebServiceClientRequest)
 @adapter(IBrowserRequest)
 def browser_request_to_web_service_request(website_request):
     """An adapter from a browser request to a web service request.
