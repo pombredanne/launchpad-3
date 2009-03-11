@@ -51,7 +51,10 @@ class DecoratedResultSet(object):
         if result is None:
             return None
         else:
-            return self.result_decorator(result)
+            if self.result_decorator is None:
+                return result
+            else:
+                return self.result_decorator(result)
 
     def copy(self, *args, **kwargs):
         """See `IResultSet`.

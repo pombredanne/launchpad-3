@@ -30,6 +30,8 @@ from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.components.archivedependencies import (
     get_components_for_building)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import Builder
