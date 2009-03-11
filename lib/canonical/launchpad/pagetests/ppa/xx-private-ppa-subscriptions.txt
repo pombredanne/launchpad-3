@@ -5,6 +5,16 @@ part of the stories in xx-private-ppa-subscription-stories.txt.
 
 == Managing Archive subscriptions ==
 
+Public PPAs do not have an option for managing subscriptions:
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> cprov_browser.getLink("Manage subscriptions")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
 XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
 will require launchpad.Admin until the backend .htaccess update
 machinery is in-place and tested:
@@ -17,16 +27,6 @@ machinery is in-place and tested:
     >>> admins = getUtility(IPersonSet).getByName('admins')
     >>> admins.addMember(cprov, foobar)
     >>> logout()
-
-Public PPAs do not have an option for managing subscriptions:
-
-    >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
-    >>> cprov_browser.getLink("Manage subscriptions")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
 
 Similarly, trying to access the subscriptions page directly will simply
 redirect back to the PPA page with a feedback message:
