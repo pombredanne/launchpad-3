@@ -10,7 +10,7 @@
 >
   <body>
     <metal:block fill-slot="head_epilogue">
-      <script type="text/javascript">
+      <js tal:replace="structure string:<script type='text/javascript'>
 YUI().use('io-base', 'node', 'lazr.formoverlay', function(Y) {
 
 var formoverlay;
@@ -20,11 +20,10 @@ var update_dupe_url;
 function createBugDuplicateFormOverlay(id, o){
     var form_content = o.responseText;
     formoverlay = new Y.lazr.FormOverlay({
-        headerContent: unescape(
-            "%3Ch2%3EMark bug report as duplicate%3C/h2%3E"),
-        form_content: "Marking the bug as a duplicate will, by default, hide it from search results listings." + form_content,
-        form_submit_button: Y.Node.create(unescape(
-'%3Cinput type="submit" id="field.actions.change" name="field.actions.change" value="Change" /%3E')),
+        headerContent: '<h2>Mark bug report as duplicate</h2>',
+        form_content: 'Marking the bug as a duplicate will, by default, hide it from search results listings.' + form_content,
+        form_submit_button: Y.Node.create(
+            '<input type=\'submit\' name=\'field.actions.change\' value=\'Change\' />'),
         align: {
             points: 
                 [Y.WidgetPositionExt.CC, Y.WidgetPositionExt.CC]
@@ -65,8 +64,8 @@ function setupMarkDuplicateFormOverlay() {
 
     if (update_dupe_links) {
         // First things first, pre-load the mark-dupe form.
-        update_dupe_url = update_dupe_links.item(0).getAttribute("href");
-        var mark_dupe_form_url = update_dupe_url + "/++form++";
+        update_dupe_url = update_dupe_links.item(0).getAttribute('href');
+        var mark_dupe_form_url = update_dupe_url + '/++form++';
 
 
         Y.on('io:complete', createBugDuplicateFormOverlay, this);
@@ -83,9 +82,9 @@ function setupMarkDuplicateFormOverlay() {
     }
 }
 
-Y.on("domready", setupMarkDuplicateFormOverlay);
+Y.on('domready', setupMarkDuplicateFormOverlay);
 });
-      </script>
+      </script>" />
       <link rel="stylesheet" type="text/css"
         tal:attributes="href
         string:${icingroot}/lazr/build/overlay/assets/pretty-overlay-core.css"
