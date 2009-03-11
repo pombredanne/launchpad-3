@@ -9,11 +9,8 @@ import gc
 from bzrlib.branch import Branch
 from bzrlib import errors
 from bzrlib.tests import (
-    multiply_tests,
     TestCaseWithTransport, TestLoader, TestNotApplicable)
-from bzrlib.tests.branch_implementations import (
-    branch_scenarios, TestCaseWithBranch)
-
+from bzrlib.tests.branch_implementations import TestCaseWithBranch
 from canonical.codehosting.bzrutils import (
     DenyingServer, get_branch_stacked_on_url)
 from canonical.codehosting.tests.helpers import TestResultWrapper
@@ -120,11 +117,71 @@ def load_tests(basic_tests, module, loader):
     get_branch_stacked_on_url_tests = loader.loadTestsFromTestCase(
         TestGetBranchStackedOnURL)
 
-    scenarios = [scenario for scenario in branch_scenarios()
-                 if scenario[0] != 'BranchReferenceFormat']
+    try:
+        from bzrlib.tests import multiply_tests
+        from bzrlib.tests.branch_implementations import branch_scenarios
 
-    multiply_tests(
-        get_branch_stacked_on_url_tests, scenarios, result)
+        scenarios = [scenario for scenario in branch_scenarios()
+                     if scenario[0] != 'BranchReferenceFormat']
+        multiply_tests(
+            get_branch_stacked_on_url_tests, scenarios, result)
+    except ImportError:
+        from bzrlib.branch import (
+            BranchFormat, BranchReferenceFormat, _legacy_formats)
+        from bzrlib.tests import adapt_tests
+        from bzrlib.tests.branch_implementations import (
+            BranchTestProviderAdapter)
+        from bzrlib.tests.bzrdir_implementations import (
+            BzrDirTestProviderAdapter)
+        from bzrlib.transport.memory import MemoryServer
+
+        # Generate a list of branch formats and their associated bzrdir formats to
+        # use.
+        combinations = [(format, format._matchingbzrdir)
+                        for format in
+                        BranchFormat._formats.values() + _legacy_formats
+                        if format != BranchReferenceFormat()]
+        adapter = BranchTestProviderAdapter(
+            # None here will cause the default vfs transport server to be used.
+            None,
+            # None here will cause a readonly decorator to be created
+            # by the TestCaseWithTransport.get_readonly_transport method.
+            None,
+            combinations)
+        # add the tests for the sub modules
+        adapt_tests(get_branch_stacked_on_url_tests, adapter, result)
+
+        # This will always add the tests for smart server transport, regardless of
+        # the --transport option the user specified to 'bzr selftest'.
+        from bzrlib.smart.server import (
+            ReadonlySmartTCPServer_for_testing,
+            ReadonlySmartTCPServer_for_testing_v2_only,
+            SmartTCPServer_for_testing,
+            SmartTCPServer_for_testing_v2_only,
+            )
+        from bzrlib.remote import RemoteBzrDirFormat
+
+        # test the remote server behaviour using a MemoryTransport
+        smart_server_suite = loader.suiteClass()
+        adapt_to_smart_server = BzrDirTestProviderAdapter(
+            MemoryServer,
+            SmartTCPServer_for_testing,
+            ReadonlySmartTCPServer_for_testing,
+            [(RemoteBzrDirFormat())],
+            name_suffix='-default')
+        adapt_tests(
+            get_branch_stacked_on_url_tests, adapt_to_smart_server,
+            smart_server_suite)
+        adapt_to_smart_server = BzrDirTestProviderAdapter(
+            MemoryServer,
+            SmartTCPServer_for_testing_v2_only,
+            ReadonlySmartTCPServer_for_testing_v2_only,
+            [(RemoteBzrDirFormat())],
+            name_suffix='-v2')
+        adapt_tests(
+            get_branch_stacked_on_url_tests,
+            adapt_to_smart_server, smart_server_suite)
+        result.addTests(smart_server_suite)
 
     result.addTests(loader.loadTestsFromTestCase(TestDenyingServer))
     return result
