@@ -10,7 +10,6 @@ from bzrlib.branch import Branch
 from bzrlib import errors
 from bzrlib.tests import (
     TestCaseWithTransport, TestLoader, TestNotApplicable)
-from bzrlib.tests.branch_implementations import TestCaseWithBranch
 from bzrlib.tests.branch_implementations import TestCaseWithBzrDir
 from canonical.codehosting.bzrutils import (
     DenyingServer, get_branch_stacked_on_url)
@@ -111,8 +110,7 @@ class TestDenyingServer(TestCaseWithTransport):
 
 
 def load_tests(basic_tests, module, loader):
-    """Parametrize the tests of get_branch_stacked_on_url by branch format.
-    """
+    """Parametrize the tests of get_branch_stacked_on_url by branch format."""
     result = loader.suiteClass()
 
     get_branch_stacked_on_url_tests = loader.loadTestsFromTestCase(
