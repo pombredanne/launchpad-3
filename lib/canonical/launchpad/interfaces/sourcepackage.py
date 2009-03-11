@@ -74,7 +74,6 @@ class ISourcePackage(IBugTarget):
 
     sourcepackagename = Attribute("SourcePackageName")
 
-    # XXX: export?
     bugtasks = Attribute("Bug Tasks that reference this Source Package name "
                     "in the context of this distribution.")
 
