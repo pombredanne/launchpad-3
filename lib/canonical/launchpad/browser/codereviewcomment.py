@@ -7,6 +7,7 @@ __all__ = [
     'CodeReviewCommentSummary',
     'CodeReviewCommentView',
     ]
+from textwrap import TextWrapper
 
 from zope.app.form.browser import TextAreaWidget
 from zope.interface import Interface, implements
@@ -112,6 +113,10 @@ class CodeReviewCommentAddView(LaunchpadFormView):
 
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
 
+    def _get_wrapped_reply(self):
+        return TextWrapper(initial_indent='> ').fill(
+            self.reply_to.message_body)
+
     @property
     def initial_values(self):
         """The initial values are used to populate the form fields.
@@ -120,7 +125,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         quoted comment being replied to.
         """
         if self.reply_to:
-            comment = '"%s"' % self.reply_to.message_body
+            comment = self._get_wrapped_reply()
         else:
             comment = ''
         return {'comment': comment}
