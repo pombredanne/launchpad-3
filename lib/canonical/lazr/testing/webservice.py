@@ -23,8 +23,7 @@ from zope.security.checker import ProxyFactory
 from zope.security.management import endInteraction, newInteraction
 
 from canonical.launchpad.webapp.servers import StepsToGo
-from canonical.lazr.interfaces.rest import (
-    IWebServiceClientRequest, IWebServiceLayer)
+from canonical.lazr.interfaces.rest import IWebServiceLayer
 from canonical.lazr.rest.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
