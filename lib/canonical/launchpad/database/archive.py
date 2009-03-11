@@ -283,6 +283,8 @@ class Archive(SQLBase):
         elif self.is_ppa:
             if self.private:
                 pubconf.distroroot = ppa_config.private_root
+                pubconf.htaccessroot = os.path.join(
+                    pubconf.distroroot, self.owner.name, self.name)
             else:
                 pubconf.distroroot = ppa_config.root
             pubconf.archiveroot = os.path.join(
