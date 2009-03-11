@@ -21,3 +21,11 @@ distribution series.
    productseries_link: u'http://.../evolution/trunk'
    resource_type_link: ...
    self_link: u'http://.../ubuntu/hoary/+source/evolution'
+
+Then we can get the branches that are bound to various pockets of this
+distribution series. By default, there are none bound to evolution.
+
+   >>> branch = webservice.named_get(evolution['self_link'], 'getBranch',
+   ...     pocket='Release').jsonBody()
+   >>> print branch
+   None

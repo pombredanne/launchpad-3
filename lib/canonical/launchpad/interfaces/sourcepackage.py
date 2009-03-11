@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Object, TextLine
+from zope.schema import Choice, Object, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters, operation_returns_entry)
 
 
 class ISourcePackage(IBugTarget):
@@ -145,7 +146,17 @@ class ISourcePackage(IBugTarget):
         and record that it was done by the owner.
         """
 
-    # XXX: export
+    # 'pocket' should actually be a PackagePublishingPocket, but we say
+    # DBEnumeratedType to avoid circular imports. Correct interface specific
+    # in _schema_circular_imports.
+    @operation_parameters(
+        pocket=Choice(
+            title=_("Pocket"), required=True,
+            vocabulary=DBEnumeratedType))
+    # Actually returns an IBranch, but we say Interface here to avoid circular
+    # imports. Correct interface specified in _schema_circular_imports.
+    @operation_returns_entry(Interface)
+    @export_read_operation()
     def getBranch(pocket):
         """Get the official branch for this package in the given pocket.
 

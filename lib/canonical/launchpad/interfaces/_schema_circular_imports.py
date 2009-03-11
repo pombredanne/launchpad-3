@@ -70,3 +70,8 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
 
 ISourcePackage['distroseries'].schema = IDistroSeries
 ISourcePackage['productseries'].schema = IProductSeries
+ISourcePackage['getBranch'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['pocket'].vocabulary = PackagePublishingPocket
+ISourcePackage['getBranch'].queryTaggedValue(
+    'lazr.webservice.exported')['return_type'].schema = IBranch
