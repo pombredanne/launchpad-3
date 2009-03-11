@@ -12,6 +12,7 @@ import logging
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
