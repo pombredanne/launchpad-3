@@ -677,3 +677,11 @@ And we can also search for submissions from a particular user.
     >>> set(submission.owner.name for submission
     ...     in hw_submission_set.search(owner=owner))
     set([u'name12'])
+
+Alternatively, we can get the same result by looking at
+IPerson.hardware_submissions.
+
+    >>> set(submission.owner.name for submission
+    ...     in owner.hardware_submissions)
+    set([u'name12'])
+
