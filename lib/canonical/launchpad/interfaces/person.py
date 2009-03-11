@@ -814,6 +814,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             readonly=True, required=False,
             value_type=Reference(schema=Interface)))
 
+    hardware_submissions = exported(CollectionField(
+            title=_("Hardware submissions"),
+            readonly=True, required=False,
+            value_type=Reference(schema=Interface))) # HWSubmission
+
     @invariant
     def personCannotHaveIcon(person):
         """Only Persons can have icons."""

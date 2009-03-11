@@ -361,3 +361,4 @@ class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
     project = Object(schema=IProject,
                      title=u"The project this series belongs to",
                      required=True, readonly=True)
+
