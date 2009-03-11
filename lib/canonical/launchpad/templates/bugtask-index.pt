@@ -10,8 +10,10 @@
 >
   <body>
     <metal:block fill-slot="head_epilogue">
+      <script type='text/javascript' tal:content="string:var icingroot='${icingroot}';" />
       <js tal:replace="structure string:<script type='text/javascript'>
-YUI().use('io-base', 'node', 'lazr.formoverlay', function(Y) {
+YUI({base: '/+icing/' + icingroot + '/yui/current/build/'}).use(
+    'io-base', 'node', 'lazr.formoverlay', function(Y) {
 
 /*
  * The lazr.FormOverlay object.
