@@ -13,17 +13,64 @@
       <js tal:replace="structure string:<script type='text/javascript'>
 YUI().use('io-base', 'node', 'lazr.formoverlay', function(Y) {
 
+/*
+ * The lazr.FormOverlay object.
+ */
 var formoverlay;
 
+/*
+ * The url of the page used to update bug duplicates.
+ */
 var update_dupe_url;
 
-function createBugDuplicateFormOverlay(id, o){
-    var form_content = o.responseText;
+/*
+ * Check the page for 'Mark as duplicate' links and request the HTML
+ * for the form.
+ */
+function requestFormHTMLContent() {
+    // First look for 'Mark as duplicate' links.
+    var update_dupe_links = Y.all('.menu-link-mark-dupe');
+
+    // If there are none, check for any 'change duplicate bug' links.
+    if (!update_dupe_links){
+        update_dupe_links = Y.all('#change_duplicate_bug');
+    }
+
+    if (update_dupe_links) {
+        // First things first, pre-load the mark-dupe form.
+        update_dupe_url = update_dupe_links.item(0).getAttribute('href');
+        var mark_dupe_form_url = update_dupe_url + '/++form++';
+        Y.on('io:complete', createBugDuplicateFormOverlay, this);
+        Y.io(mark_dupe_form_url);
+
+        // Add an on-click handler to any links found that displays
+        // the form overlay.
+        update_dupe_links.on('click', function(e){
+            // Only go ahead if we have received the form content by the
+            // time the user clicks:
+            if (formoverlay){
+                e.preventDefault();
+                formoverlay.show();
+            }
+        });
+    }
+}
+
+Y.on('domready', requestFormHTMLContent);
+
+/*
+ * Receive the response to the AJAX request for the form content and
+ * user the result to create the form overlay.
+ */
+function createBugDuplicateFormOverlay(id, response_object){
+    var form_content = response_object.responseText;
     formoverlay = new Y.lazr.FormOverlay({
         headerContent: '<h2>Mark bug report as duplicate</h2>',
-        form_content: 'Marking the bug as a duplicate will, by default, hide it from search results listings.' + form_content,
+        form_content: 'Marking the bug as a duplicate will, by default, ' +
+                      'hide it from search results listings.' + form_content,
         form_submit_button: Y.Node.create(
-            '<input type=\'submit\' name=\'field.actions.change\' value=\'Change\' />'),
+            '<input type=\'submit\' name=\'field.actions.change\' ' +
+            'value=\'Change\' />'),
         align: {
             points: 
                 [Y.WidgetPositionExt.CC, Y.WidgetPositionExt.CC]
@@ -40,49 +87,15 @@ function createBugDuplicateFormOverlay(id, o){
     form_node.setAttribute('action', update_dupe_url);
     form_node.setAttribute('enctype', 'multipart/form-data');
 
-    // XXX: noodles 20090311. Currently the FormOverlay sets a default
+    // XXX: noodles 2009-03-11 bug=341034.
+    // Currently the FormOverlay sets a default
     // submit_callback when none is provided by the user, disabling
-    // the default behaviour of the event.
-    // Remove all the listeners on the form's submit event, so we can
-    // just submit the form by clicking on the button as per normal:
+    // the default submit behaviour of the event. Therefore at the moment
+    // we need to explicitly remove any listeners on the form's submit event,
+    // so we can just submit the form by clicking on the button as per normal:
     Y.Event.purgeElement(Y.Node.getDOMNode(form_node, false, 'submit'));
 }
 
-/*
- * Setup the 'Mark as duplicate' form overlay to display the normal
- * 'Mark as duplicate' form, and submit it as a normal form submit.
- */
-// TODO: change to request Form Content or similar.
-function setupMarkDuplicateFormOverlay() {
-    var update_dupe_links = Y.all('.menu-link-mark-dupe');
-
-    // If there is no menu link for marking the duplicate, check for
-    // links for changing the duplicate bug:
-    if (!update_dupe_links){
-        update_dupe_links = Y.all('#change_duplicate_bug');
-    }
-
-    if (update_dupe_links) {
-        // First things first, pre-load the mark-dupe form.
-        update_dupe_url = update_dupe_links.item(0).getAttribute('href');
-        var mark_dupe_form_url = update_dupe_url + '/++form++';
-
-
-        Y.on('io:complete', createBugDuplicateFormOverlay, this);
-        Y.io(mark_dupe_form_url);
-
-        update_dupe_links.on('click', function(e){
-            // Only go ahead if we have received the form content by the
-            // time the user clicks:
-            if (formoverlay){
-                e.preventDefault();
-                formoverlay.show();
-            }
-        });
-    }
-}
-
-Y.on('domready', setupMarkDuplicateFormOverlay);
 });
       </script>" />
       <link rel="stylesheet" type="text/css"
