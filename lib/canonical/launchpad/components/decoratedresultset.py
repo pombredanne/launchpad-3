@@ -34,7 +34,7 @@ class DecoratedResultSet(object):
     """
     delegates(IResultSet, context='result_set')
 
-    def __init__(self, result_set, result_decorator, pre_iter_hook=None):
+    def __init__(self, result_set, result_decorator=None, pre_iter_hook=None):
         """
         :param result_set: The original result set to be decorated.
         :param result_decorator: The method with which individual results

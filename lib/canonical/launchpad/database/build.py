@@ -835,8 +835,8 @@ class BuildSet:
         queries.append("archive=%s" % sqlvalues(archive))
         clause = " AND ".join(queries)
 
-        return Build.select(
-            clause, clauseTables=clauseTables,orderBy=orderBy)
+        return self._decorate_with_prejoins(
+            Build.select(clause, clauseTables=clauseTables,orderBy=orderBy))
 
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
@@ -899,9 +899,17 @@ class BuildSet:
             """ % ','.join(
                 sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
-        return Build.select(' AND '.join(condition_clauses),
-                            clauseTables=clauseTables,
-                            orderBy=orderBy)
+        return self._decorate_with_prejoins(
+            Build.select(' AND '.join(condition_clauses),
+            clauseTables=clauseTables, orderBy=orderBy))
+
+    def _decorate_with_prejoins(self, result_set):
+        """Decorate build records with related data prefetch functionality."""
+        # Grab the native storm result set.
+        result_set = removeSecurityProxy(result_set)._result_set
+        decorated_results = DecoratedResultSet(
+            result_set, pre_iter_hook=getUtility(IBuildSet).prefetchBuildData)
+        return decorated_results
 
     def retryDepWaiting(self, distroarchseries):
         """See `IBuildSet`. """
