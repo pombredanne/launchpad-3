@@ -2275,6 +2275,12 @@ to a single IArchive.
     >>> print sabdfl.archive.name
     ppa
 
+The ppas named differently than the default ('ppa') have a slightly
+different title format, including their names.
+
+    >>> print another_ppa.title
+    PPA named nightly for Mark Shuttleworth
+
 
 == Looking up named PPAs ==
 

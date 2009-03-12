@@ -26,12 +26,14 @@ __all__ = [
     'IServiceRootResource',
     'ITopLevelEntryLink',
     'IUnmarshallingDoesntNeedValue',
+    'IWebServiceConfiguration',
     'IWebBrowserInitiatedRequest',
     'LAZR_WEBSERVICE_NAME',
     'LAZR_WEBSERVICE_NS',
     'WebServiceLayer',
     ]
 
+from zope.schema import Bool, TextLine
 from zope.interface import Attribute, Interface
 # These two should really be imported from zope.interface, but
 # the import fascist complains because they are not in __all__ there.
@@ -313,6 +315,41 @@ class IFieldMarshaller(Interface):
 
         :return: A value that can be serialized as part of a JSON hash.
         """
+
+
+class IWebServiceConfiguration(Interface):
+    """A group of configuration settings for a web service.
+
+    These are miscellaneous strings that may differ in different web
+    services.
+    """
+    view_permission = TextLine(
+        title=u"View permission", default=u"zope.View",
+        description=u"The permission to use when checking object visibility.")
+
+    path_override = TextLine(
+        title=u"Web service path override", default=u"api",
+        description=u"The path component for Ajax clients to use when making "
+        "HTTP requests to the web service from their current virtual host. "
+        "The use of this path component (/api/foo instead of /foo) will "
+        "ensure that the request is processed as a web service request "
+        "instead of a website request.")
+
+    use_https = Bool(
+        title=u"Web service is secured",
+        default=True,
+        description=u"Whether or not requests to the web service are secured "
+        "through SSL.")
+
+    service_version_uri_prefix = Attribute(
+        """The versioning string, if any, to use as the URI prefix for web
+        service URIs. A popular string is 'beta', but you could also use
+        a version number or the date the API was finalized.""")
+
+    code_revision = Attribute(
+        """A string designating the current revision number of the code
+        running the webservice. This may be a revision number from version
+        control, or a hand-chosen version number.""")
 
 
 class IUnmarshallingDoesntNeedValue(Interface):

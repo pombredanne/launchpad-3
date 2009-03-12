@@ -188,6 +188,8 @@ class IStructuralSubscriptionTarget(Interface):
             the bug subscribers.
         """
 
+    target_type_display = Attribute("The type of the target, for display.")
+
 
 class IStructuralSubscriptionForm(Interface):
     """Schema for the structural subscription form."""

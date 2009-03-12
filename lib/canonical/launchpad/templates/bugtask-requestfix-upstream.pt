@@ -35,7 +35,7 @@
                     product product_widget/getInputValue">
 
       <tal:visited_steps
-          replace="structure view/widgets/visited_steps/hidden" />
+          replace="structure view/widgets/__visited_steps__/hidden" />
 
       <div class="field">
 

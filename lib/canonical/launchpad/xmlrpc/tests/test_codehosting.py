@@ -8,7 +8,6 @@ import datetime
 import pytz
 import unittest
 
-from bzrlib.tests import adapt_tests, TestScenarioApplier
 from bzrlib.urlutils import escape
 
 from zope.component import getUtility
@@ -1038,16 +1037,6 @@ class LaunchpadDatabaseFrontend:
         return getUtility(IScriptActivitySet).getLastActivity(activity_name)
 
 
-class PullerEndpointScenarioApplier(TestScenarioApplier):
-
-    scenarios = [
-        ('db', {'frontend': LaunchpadDatabaseFrontend,
-                'layer': DatabaseFunctionalLayer}),
-        ('inmemory', {'frontend': InMemoryFrontend,
-                      'layer': FunctionalLayer}),
-        ]
-
-
 def test_suite():
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
@@ -1056,7 +1045,22 @@ def test_suite():
          loader.loadTestsFromTestCase(BranchPullQueueTest),
          loader.loadTestsFromTestCase(BranchFileSystemTest),
          ])
-    adapt_tests(puller_tests, PullerEndpointScenarioApplier(), suite)
+    scenarios = [
+        ('db', {'frontend': LaunchpadDatabaseFrontend,
+                'layer': DatabaseFunctionalLayer}),
+        ('inmemory', {'frontend': InMemoryFrontend,
+                      'layer': FunctionalLayer}),
+        ]
+    try:
+        from bzrlib.tests import multiply_tests
+        multiply_tests(puller_tests, scenarios, suite)
+    except ImportError:
+        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
+        # once sourcecode/bzr has bzr.dev r4102.
+        from bzrlib.tests import adapt_tests, TestScenarioApplier
+        applier = TestScenarioApplier()
+        applier.scenarios = scenarios
+        adapt_tests(puller_tests, applier, suite)
     suite.addTests(
         map(loader.loadTestsFromTestCase,
             [TestRunWithLogin, TestIterateSplit]))
