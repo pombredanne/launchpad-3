@@ -25,12 +25,10 @@ CLUSTERNAME = 'sl'
 # The namespace in the database used to contain all the Slony-I tables.
 CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 
-
 # Seed tables for the authdb replication set to be passed to
 # calculate_replication_set().
 AUTHDB_SEED = set([
     ])
-
 
 # Seed tables for the lpmain replication set to be passed to
 # calculate_replication_set().
@@ -52,7 +50,6 @@ LPMAIN_SEED = set([
     ('public', 'parsedapachelog'),
     ('public', 'shipitsurvey'),
     ])
-
 
 # Explicitly list tables that should not be replicated. This includes the
 # session tables, as these might exist in developer databases but will not
@@ -163,13 +160,16 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
 
 
 class Node:
+    """Simple data structure for holding information about a Slony node."""
     def __init__(self, node_id, nickname, connection_string, is_master):
         self.node_id = node_id
         self.nickname = nickname
         self.connection_string = connection_string
         self.is_master = is_master
 
+
 def _get_nodes(con, query):
+    """Return a list of Nodes."""
     if not slony_installed(con):
         return []
     cur = con.cursor()
@@ -178,7 +178,9 @@ def _get_nodes(con, query):
     for node_id, nickname, connection_string, is_master in cur.fetchall():
         nodes.append(Node(node_id, nickname, connection_string, is_master))
 
+
 def get_master_node(con, set_id):
+    """Return the master Node, or None if the cluster is still being setup."""
     nodes = _get_nodes(con, """
         SELECT
             pa_server AS node_id,
@@ -196,6 +198,7 @@ def get_master_node(con, set_id):
 
 
 def get_slave_nodes(con, set_id):
+    """Return the list of slave Nodes."""
     nodes = _get_nodes(con, """
         SELECT
             pa_server AS node_id,
