@@ -93,6 +93,20 @@ class TestBaseBranchVisibilityRules(TestCaseWithFactory):
             product.setBranchVisibilityTeamPolicy,
             None, BranchVisibilityRule.PRIVATE_ONLY)
 
+    def test_no_forbidden_for_team(self):
+        # Forbidden is only valid for everyone, not a specific person or team.
+        product = self.factory.makeProduct()
+        person = self.factory.makePerson()
+        self.assertRaises(
+            InvalidVisibilityPolicy,
+            product.setBranchVisibilityTeamPolicy,
+            person, BranchVisibilityRule.FORBIDDEN)
+        team = self.factory.makeTeam(owner=person)
+        self.assertRaises(
+            InvalidVisibilityPolicy,
+            product.setBranchVisibilityTeamPolicy,
+            team, BranchVisibilityRule.FORBIDDEN)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

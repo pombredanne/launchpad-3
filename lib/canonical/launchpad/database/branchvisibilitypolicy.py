@@ -145,6 +145,8 @@ class BranchVisibilityPolicyMixin:
         if team is None and rule not in (
             BranchVisibilityRule.PUBLIC, BranchVisibilityRule.FORBIDDEN):
             raise InvalidVisibilityPolicy
+        if team is not None and rule == BranchVisibilityRule.FORBIDDEN:
+            raise InvalidVisibilityPolicy
         item = BranchVisibilityTeamPolicy.selectOneBy(
             team=team, **self._policy_visibility_context)
         if item is None:
