@@ -100,12 +100,14 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         
         :return: True if the file was replaced.
         """
-        pub_config = ppa.getPubConfig()
+        # The publisher Config object does not have an
+        # interface, so we need to remove the security wrapper.
+        pub_config = removeSecurityProxy(ppa.getPubConfig())
         htpasswd_filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
 
-        if not filecmp.cmp(htpasswd, temp_htpasswd_file):
+        if not filecmp.cmp(htpasswd_filename, temp_htpasswd_file):
             # Atomically replace the old file or create a new file.
-            os.rename(temp_htpasswd_file, htpasswd)
+            os.rename(temp_htpasswd_file, htpasswd_filename)
             self.logger.debug("Replaced htpasswd for %s" % ppa.title)
             return True
 
