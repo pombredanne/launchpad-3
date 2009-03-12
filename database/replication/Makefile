@@ -113,7 +113,9 @@ _replicate:
 	# Generate a preamble for manual slonik(1) usage.
 	LPCONFIG=${_CONFIG} ./preamble.py > preamble.sk
 	# Turn the slave into a replica.
-	LPCONFIG=${_CONFIG} ./initialize.py
+	LPCONFIG=${_CONFIG} ./initialize.py -vv
+	# Generate a preamble for manual slonik(1) usage.
+	LPCONFIG=${_CONFIG} ./preamble.py > preamble.sk
 	# Restart slon daemons with default lag setting.
 	LPCONFIG=${_CONFIG} make restart LAG="${LAG}"
 

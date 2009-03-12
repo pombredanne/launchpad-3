@@ -83,12 +83,12 @@ def initialize_cluster():
             echo 'Storing Master -> Slave#1 path.';
             store path (
                 server=@master_node, client=@slave1_node,
-                conninfo=@master_conninfo);
+                conninfo=@master_node_conninfo);
 
             echo 'Storing Slave#1 -> Master path.';
             store path (
                 server=@slave1_node, client=@master_node,
-                conninfo=@slave1_conninfo);
+                conninfo=@slave1_node_conninfo);
             }
         on success { echo 'Slave#1 initialized.'; }
         on error { echo 'Slave#1 initialization failed.'; exit 1; }

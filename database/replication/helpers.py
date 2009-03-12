@@ -11,7 +11,7 @@ from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
 from canonical.config import config
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import connect, sqlvalues
 from canonical.database.postgresql import (
     fqn, all_tables_in_schema, all_sequences_in_schema, ConnectionString
     )
@@ -162,36 +162,101 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
     return returncode == 0
 
 
-def preamble():
+class Node:
+    def __init__(self, node_id, nickname, connection_string, is_master):
+        self.node_id = node_id
+        self.nickname = nickname
+        self.connection_string = connection_string
+        self.is_master = is_master
+
+def _get_nodes(con, query):
+    if not slony_installed(con):
+        return []
+    cur = con.cursor()
+    cur.execute(query)
+    nodes = []
+    for node_id, nickname, connection_string, is_master in cur.fetchall():
+        nodes.append(Node(node_id, nickname, connection_string, is_master))
+
+def get_master_node(con, set_id):
+    nodes = _get_nodes(con, """
+        SELECT
+            pa_server AS node_id,
+            'master',
+            pa_conninfo AS connection_string,
+            True
+        FROM _sl.sl_set
+        JOIN _sl.sl_path ON set_origin = pa_server
+        WHERE set_id = %d
+        """ % set_id)
+    if not nodes:
+        return None
+    assert len(nodes) == 1, "Too many origins!"
+    return nodes[0]
+
+
+def get_slave_nodes(con, set_id):
+    nodes = _get_nodes(con, """
+        SELECT
+            pa_server AS node_id,
+            'slave' || node_id,
+            pa_conninfo AS connection_string,
+            False
+        FROM _sl.sl_set
+        JOIN _sl.sl_subscribe ON set_id = sub_set
+        JOIN _sl.sl_path ON sub_receiver = pa_server
+        WHERE
+            set_id = %d
+        ORDER BY node_id
+        """ % set_id)
+    return nodes
+
+
+def preamble(con=None):
     """Return the preable needed at the start of all slonik scripts."""
 
-    master_connection_string = ConnectionString(config.database.main_master)
-    slave_connection_string = ConnectionString(config.database.main_slave)
-    master_connection_string.user = 'slony'
-    slave_connection_string.user = 'slony'
+    if con is None:
+        con = connect('slony')
 
-    return dedent("""\
+    master_node = get_master_node(con, 1)
+    if master_node is not None:
+        nodes = [master_node] + get_slave_nodes(con, 1)
+
+    else:
+        # We are bootstrapping. Generate what we can from the config.
+        #
+        nodes = [
+            Node(
+                1, 'master_node',
+                ConnectionString(config.database.main_master), True),
+            Node(
+                2, 'slave1_node',
+                ConnectionString(config.database.main_slave), False)]
+        for node in nodes:
+            node.connection_string.user = 'slony'
+
+    preamble = [dedent("""\
         # Every slonik script must start with a clustername, which cannot
         # be changed once the cluster is initialized.
         cluster name = sl;
-
-        # Symbolic ids for nodes.
-        define master_node 1;
-        define slave1_node 2;
 
         # Symbolic ids for replication sets.
         define lpmain_set  1;
         define authdb_set  2;
         define holding_set 666;
+        """)]
 
-        # Connection strings.
-        define master_conninfo '%s';
-        define slave1_conninfo '%s';
-
-        # Connection strings so slonik knows where to go.
-        node @master_node admin conninfo = @master_conninfo;
-        node @slave1_node admin conninfo = @slave1_conninfo;
-        """ % (master_connection_string, slave_connection_string))
+    for node in nodes:
+        preamble.append(dedent("""\
+            define %s %d;
+            define %s_conninfo '%s';
+            node @%s admin conninfo = @%s_conninfo;
+            """ % (
+                node.nickname, node.node_id,
+                node.nickname, node.connection_string,
+                node.nickname, node.nickname)))
+    
+    return '\n\n'.join(preamble)
         
 
 def calculate_replication_set(cur, seeds):
