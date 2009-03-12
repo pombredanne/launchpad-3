@@ -10,11 +10,12 @@ __all__ = [
     'IHasBranchVisibilityPolicy',
     'IBranchVisibilityTeamPolicy',
     'InvalidVisibilityPolicy',
+    'TeamBranchVisibilityRule',
     ]
 
 from zope.interface import Interface
 from zope.schema import Choice
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, use_template
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -55,6 +56,10 @@ class BranchVisibilityRule(DBEnumeratedType):
 
         Users are not able to create branches in the context.
         """)
+
+class TeamBranchVisibilityRule(EnumeratedType):
+    """The valid policy rules for teams."""
+    use_template(BranchVisibilityRule, exclude='FORBIDDEN')
 
 
 class IHasBranchVisibilityPolicy(Interface):
@@ -118,13 +123,13 @@ class IBranchVisibilityTeamPolicy(Interface):
     """
 
     team = PublicPersonChoice(
-        title=_('Team'), required=False, vocabulary='ValidPersonOrTeam',
+        title=_('Team'), required=True, vocabulary='ValidPersonOrTeam',
         description=_("Specifies the team that the policy applies to. "
                       "If None then the policy applies to everyone."))
 
     rule = Choice(
-        title=_('Rule'), vocabulary=BranchVisibilityRule,
-        default=BranchVisibilityRule.PUBLIC,
+        title=_('Rule'), vocabulary=TeamBranchVisibilityRule,
+        default=TeamBranchVisibilityRule.PUBLIC,
         description=_(
         "The visibility rule defines the default branch visibility for "
         "members of the team specified."))
