@@ -18,6 +18,7 @@ from storm.locals import Count, Join
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.archiveuploader.utils import re_issource, re_isadeb
@@ -51,6 +52,8 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadSource)
 from canonical.launchpad.database.teammembership import TeamParticipation
+from canonical.launchpad.interfaces.archiveauthtoken import (
+    IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
     IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
@@ -58,7 +61,7 @@ from canonical.launchpad.interfaces.archive import (
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus)
+    ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -1104,6 +1107,29 @@ class Archive(SQLBase):
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
+
+        # First, ensure that a current subscription exists for the
+        # person and archive:
+        # XXX: noodles 2009-03-02 bug=336779: This can be removed once
+        # newAuthToken() is moved into IArchiveView.
+        subscription_set = getUtility(IArchiveSubscriberSet)
+        subscriptions = subscription_set.getBySubscriber(person, archive=self)
+        if subscriptions.count() == 0:
+            raise Unauthorized(
+                "You do not have a subscription for %s." % self.title)
+
+        # Second, ensure that the current subscription does not already
+        # have a token:
+        token_set = getUtility(IArchiveAuthTokenSet)
+        previous_token = token_set.getActiveTokenForArchiveAndPerson(
+            self, person)
+        if previous_token:
+            raise ArchiveSubscriptionError(
+                "%s already has a token for %s." % (
+                    person.displayname,
+                    self.title))
+
+        # Now onto the actual token creation:
         if token is None:
             token = create_unique_token_for_table(20, ArchiveAuthToken.token)
         archive_auth_token = ArchiveAuthToken()
@@ -1131,7 +1157,7 @@ class Archive(SQLBase):
         subscription.subscriber = subscriber
         subscription.date_expires = date_expires
         subscription.description = description
-        subscription.status = ArchiveSubscriberStatus.ACTIVE
+        subscription.status = ArchiveSubscriberStatus.CURRENT
         subscription.date_created = UTC_NOW
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(subscription)
