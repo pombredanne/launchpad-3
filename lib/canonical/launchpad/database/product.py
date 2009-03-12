@@ -75,7 +75,8 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
-from canonical.launchpad.interfaces.bugtarget import IOfficialBugTagTargetMixin
+from canonical.launchpad.interfaces.bugtarget import (
+    IOfficialBugTagTargetMixin)
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,

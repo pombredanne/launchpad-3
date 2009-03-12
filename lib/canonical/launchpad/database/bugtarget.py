@@ -20,8 +20,7 @@ from canonical.launchpad.database.bugtask import (
     BugTaskSet, get_bug_privacy_filter)
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.interfaces.bugtarget import (
-    IOfficialBugTag, IOfficialBugTagTargetMixin)
+from canonical.launchpad.interfaces.bugtarget import IOfficialBugTag
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.bugtask import (
