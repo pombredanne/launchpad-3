@@ -45,7 +45,9 @@ class TestTopLevelResource(TestWebServiceObject):
 class CookbookSet(TestTopLevelResource):
     implements(ICookbookSet)
 
-    def __init__(self, cookbooks=COOKBOOKS):
+    def __init__(self, cookbooks=None):
+        if cookbooks is None:
+            cookbooks = COOKBOOKS
         self.cookbooks = list(cookbooks)
 
     def getCookbooks(self):

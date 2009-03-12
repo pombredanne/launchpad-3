@@ -31,7 +31,8 @@ def test_suite():
               <include package="canonical.lazr.rest" file="meta.zcml" />
               <include package="canonical.lazr.rest.example" />
             </configure>""")
-    fs = FunctionalTestSetup(config_file='lib/canonical/lazr/rest/ftesting.zcml')
+    fs = FunctionalTestSetup(
+        config_file='lib/canonical/lazr/rest/ftesting.zcml')
     fs.setUp()
     if not fs.connection:
         fs.connection = fs.db.open()
