@@ -1021,6 +1021,21 @@ The call() method calls the underlying method and returns its result.
     ...     def new(self, author, base_price, title):
     ...         return Book(author, title, base_price, "unknown")
 
+We're going to create a fake request now, and that requires defining a
+web service configuration object. Each web service needs to have one
+of these registered utilities providing basic information about the web
+service. This one is just a dummy.
+
+    >>> from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+    >>> class MyWebServiceConfiguration:
+    ...     implements(IWebServiceConfiguration)
+    ...     view_permission = "lazr.View"
+    ...     service_version_uri_prefix = "beta"
+    ...     code_revision = "1.0b"
+    >>> provideUtility(MyWebServiceConfiguration(), IWebServiceConfiguration)
+
+Now we can create a fake request that invokes the named operation.
+
     >>> from canonical.lazr.testing.webservice import FakeRequest
     >>> request = FakeRequest()
     >>> read_method_adapter = read_method_adapter_factory(

@@ -1510,6 +1510,17 @@ class BugTaskSet:
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
 
+        if params.affected_user:
+            affected_user_clause = """
+            BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, BugAffectsPerson
+                WHERE BugTask.bug = BugAffectsPerson.bug
+                AND BugAffectsPerson.person = %(affected_user)s
+                AND BugAffectsPerson.affected = TRUE
+            )
+            """ % sqlvalues(affected_user=params.affected_user)
+            extra_clauses.append(affected_user_clause)
+
         if params.nominated_for:
             mappings = sqlvalues(
                 target=params.nominated_for,

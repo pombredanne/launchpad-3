@@ -17,7 +17,7 @@
   <h1>Milestones</h1>
 
   <tal:milestones define="milestones context/all_milestones">
-    <table tal:condition="milestones" class="listing">
+    <table tal:condition="milestones" id="milestones" class="listing">
       <thead>
         <th colspan="2">Milestone</th>
         <th>Date Targeted</th>
