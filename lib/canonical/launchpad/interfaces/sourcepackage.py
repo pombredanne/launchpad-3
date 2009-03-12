@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'ISourcePackage',
+    'ISourcePackageFactory',
     'SourcePackageFileType',
     'SourcePackageFormat',
     'SourcePackageRelationships',
@@ -198,6 +199,18 @@ class ISourcePackage(IBugTarget):
     latest_published_component = Object(
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
+
+
+class ISourcePackageFactory(Interface):
+    """A creator of source packages."""
+
+    def new(sourcepackagename, distroseries):
+        """Create a new `ISourcePackage`.
+
+        :param sourcepackagename: An `ISourcePackageName`.
+        :param distroseries: An `IDistroSeries`.
+        :return: `ISourcePackage`.
+        """
 
 
 class SourcePackageFileType(DBEnumeratedType):

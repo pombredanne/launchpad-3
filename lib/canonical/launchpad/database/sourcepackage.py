@@ -12,7 +12,7 @@ __all__ = [
 from operator import attrgetter
 from warnings import warn
 from sqlobject.sqlbuilder import SQLConstant
-from zope.interface import implements
+from zope.interface import classProvides, implements
 from zope.component import getUtility
 
 from storm.expr import And
@@ -43,11 +43,13 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    BuildStatus, ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
+    BuildStatus, IHasBuildRecords, IHasTranslationTemplates,
     IQuestionTarget, PackagingType, PackagePublishingPocket,
     PackagePublishingStatus, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranchSet)
+from canonical.launchpad.interfaces.sourcepackage import (
+    ISourcePackage, ISourcePackageFactory)
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -152,9 +154,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
         IQuestionTarget)
 
+    classProvides(ISourcePackageFactory)
+
     def __init__(self, sourcepackagename, distroseries):
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
+
+    @classmethod
+    def new(cls, sourcepackagename, distroseries):
+        """See `ISourcePackageFactory`."""
+        return cls(sourcepackagename, distroseries)
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, self.path)
