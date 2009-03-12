@@ -77,6 +77,8 @@ GLOBAL_NAMES = set([
     # For archiveuploader tests.
     'getUploadForSource',
     'getUploadForBinary',
+    # For answers linked to bugs tests
+    'get_bugtask_linked_to_question',
     ])
 
 

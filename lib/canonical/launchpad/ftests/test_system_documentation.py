@@ -596,6 +596,12 @@ special = {
             tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'answer-tracker-notifications-linked-private-bug.txt':
+            LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-private-bug.txt',
+            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
+            ),
     'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
             '../doc/answer-tracker-notifications-linked-bug.txt',
             setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
