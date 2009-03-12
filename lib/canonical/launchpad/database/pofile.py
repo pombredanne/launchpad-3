@@ -522,16 +522,48 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
-        query = [
-            'POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate),
-            'POTMsgSet.sequence > 0',
-            'TranslationMessage.potmsgset = POTMsgSet.id',
-            'TranslationMessage.pofile = %s' % sqlvalues(self),
-            'TranslationMessage.is_current']
-        self._appendCompletePluralFormsConditions(query)
+        clauses = [
+            'TranslationTemplateItem.potemplate = %s' % sqlvalues(
+                self.potemplate),
+            'TranslationTemplateItem.potmsgset = TranslationMessage.potmsgset',
+            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            'TranslationMessage.language = %s' % sqlvalues(self.language),
+            'TranslationMessage.is_current IS TRUE']
+        if self.variant is None:
+            clauses.append(
+                'TranslationMessage.variant IS NULL')
+        else:
+            clauses.append(
+                'TranslationMessage.variant = %s' % sqlvalues(self.variant))
+        self._appendCompletePluralFormsConditions(clauses)
+
+        # A message is current in this pofile if:
+        #  * it's current (above) AND
+        #  * (it's diverged AND non-empty)
+        #     OR (it's shared AND non-empty AND no diverged one exists)
+        diverged_translation_clauses = [
+            'TranslationMessage.potemplate = %s' % sqlvalues(self.potemplate),
+        ]
+        diverged_translation_query = ' AND '.join(diverged_translation_clauses)
+
+        shared_translation_clauses = [
+            'TranslationMessage.potemplate IS NULL',
+            '''NOT EXISTS (
+                 SELECT * FROM TranslationMessage AS diverged
+                   WHERE
+                     diverged.potemplate=%s AND
+                     diverged.potmsgset=TranslationMessage.potmsgset)''' % (
+                sqlvalues(self.potemplate)),
+        ]
+        shared_translation_query = ' AND '.join(shared_translation_clauses)
+
+        translated_query = ('( (' + diverged_translation_query + ') OR ('
+                            + shared_translation_query + ') )')
+        clauses.append(translated_query)
 
         return POTMsgSet.select(
-            ' AND '.join(query), clauseTables=['TranslationMessage'],
+            ' AND '.join(clauses), clauseTables=['TranslationMessage',
+                                               'TranslationTemplateItem'],
             orderBy='POTMsgSet.sequence')
 
     def getPOTMsgSetUntranslated(self):

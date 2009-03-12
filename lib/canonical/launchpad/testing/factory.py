@@ -1108,8 +1108,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return potmsgset
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
-                               translator=None, reviewer=None,
-                               translations=None):
+                               translator=None, suggestion=False,
+                               reviewer=None, translations=None):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
             pofile = self.makePOFile('sr')
@@ -1121,7 +1121,17 @@ class LaunchpadObjectFactory(ObjectFactory):
             translations = [self.getUniqueString()]
         translation_message = potmsgset.updateTranslation(
             pofile, translator, translations, is_imported=False,
-            lock_timestamp=None)
+            lock_timestamp=None, force_suggestion=suggestion)
+        return translation_message
+
+    def makeSharedTranslationMessage(self, pofile=None, potmsgset=None,
+                                     translator=None, suggestion=False,
+                                     reviewer=None, translations=None):
+        translation_message = self.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translator=translator,
+            suggestion=suggestion, reviewer=reviewer,
+            translations=translations)
+        translation_message.potemplate = None
         return translation_message
 
     def makeTeamAndMailingList(self, team_name, owner_name):
