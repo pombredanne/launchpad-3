@@ -62,7 +62,7 @@ class TestFatLocalTransport(TestCaseInTempDir):
     def test_localRealPath(self):
         # localRealPath takes a URL-encoded relpath and returns a URL-encoded
         # absolute path.
-        filename = '~foo'
+        filename = 'foo bar'
         escaped_filename = urlutils.escape(filename)
         self.assertNotEqual(filename, escaped_filename)
         realpath = self.transport.local_realPath(escaped_filename)
