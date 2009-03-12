@@ -17,7 +17,6 @@ Bug activity tracking is done using event subscribers. The handlers
 are simple little functions.
 
     >>> from zope.event import notify
-    >>> from canonical.database.constants import UTC_NOW
     >>> from lazr.lifecycle.event import (
     ...     ObjectCreatedEvent, ObjectModifiedEvent)
     >>> from canonical.launchpad.interfaces import (
