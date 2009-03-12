@@ -180,7 +180,11 @@ A user can subscribe to a branch through the API.
 
     >>> marley = webservice.get('/~marley').jsonBody()
     >>> subscription = webservice.named_post(fooix_trunk['self_link'],
-    ...     'subscribe', person=marley['self_link'])
+    ...     'subscribe', person=marley['self_link'],
+    ...     notification_level='Branch attribute notifications only',
+    ...     max_diff_lines='Don\'t send diffs',
+    ...     code_review_level='No email')
+    >>> subscription.getOutput()
 
     >>> subscribers = webservice.get(
     ...     fooix_trunk['subscribers_collection_link']).jsonBody()
