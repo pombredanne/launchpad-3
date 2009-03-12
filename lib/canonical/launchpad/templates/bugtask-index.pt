@@ -30,6 +30,11 @@ var update_dupe_url;
  * for the form.
  */
 function requestFormHTMLContent() {
+    // If the user is not logged in, then we need to defer to the
+    // default behaviour.
+    if (LP.client.links['me'] === undefined){
+        return;
+    }
     // First look for 'Mark as duplicate' links.
     var update_dupe_links = Y.all('.menu-link-mark-dupe');
 
