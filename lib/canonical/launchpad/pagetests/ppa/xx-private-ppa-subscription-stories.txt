@@ -132,6 +132,19 @@ And a notification about the new subscriber is also displayed.
  * I want to edit subscriptions to my private PPA
  * So that I can adjust who can download my software.
 
+=== Scenario 1: Adjusting the expiry date for a subscription ===
+
+Given a private PPA for Celso
+and a subscription to Celso's private PPA for the Launchpad Developers team
+and a browser for Celso currently navigated to the Manage Subscriptions page
+
+When Celso clicks 'Edit/Cancel' for the Launchpad Developers subscription
+and enters a new date in the expiry field
+and clicks Update
+
+Then the updated subscription for the launchpad team is displayed
+and a notification about the update is also displayed.
+
 == Story 3: A subscriber activates a subscription ==
 
  * As a user of Celso's software,
