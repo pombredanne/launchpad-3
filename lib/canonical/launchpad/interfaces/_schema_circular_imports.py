@@ -26,7 +26,8 @@ from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.person import IPersonPublic
+from canonical.launchpad.interfaces.person import IPerson, IPersonPublic
+from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.publishing import (
@@ -80,3 +81,5 @@ ISourcePackage['setBranch'].queryTaggedValue(
         'params']['pocket'].vocabulary = PackagePublishingPocket
 ISourcePackage['setBranch'].queryTaggedValue(
     'lazr.webservice.exported')['params']['branch'].vocabulary = IBranch
+
+IPerson['hardware_submissions'].value_type.schema = IHWSubmission
