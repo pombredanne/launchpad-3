@@ -61,17 +61,17 @@ class CookbookSet(TestTopLevelResource):
 
 
 class RootAbsoluteURL:
-     """A basic, extensible implementation of IAbsoluteURL."""
-     implements(IAbsoluteURL)
+    """A basic, extensible implementation of IAbsoluteURL."""
+    implements(IAbsoluteURL)
 
-     def __init__(self, context, request):
-         self.context = context
-         self.request = request
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
 
-     def __str__(self):
-         return "http://api.launchpad.dev/beta"
+    def __str__(self):
+        return "http://api.launchpad.dev/beta"
 
-     __call__ = __str__
+    __call__ = __str__
 
 
 class ExampleServiceRootResource(ServiceRootResource):

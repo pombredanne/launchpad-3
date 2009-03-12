@@ -18,6 +18,7 @@ __all__ = [
 import os
 import traceback
 import simplejson
+import urllib
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller

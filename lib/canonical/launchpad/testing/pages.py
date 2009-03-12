@@ -12,7 +12,6 @@ import re
 import transaction
 import sys
 import unittest
-import urllib
 
 # pprint25 is a copy of pprint.py from Python 2.5, which is almost
 # identical to that in 2.4 except that it resolves an ordering issue
@@ -27,7 +26,6 @@ from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
-from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
