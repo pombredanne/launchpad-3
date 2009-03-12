@@ -10,10 +10,12 @@ __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
+    'IOfficialBugTag',
+    'IOfficialBugTagTarget',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import List, Text
+from zope.schema import List, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtask import (
@@ -187,3 +189,18 @@ class BugDistroSeriesTargetDetails:
         self.sourcepackage = sourcepackage
         self.assignee = assignee
         self.status = status
+
+
+class IOfficialBugTagTarget(Interface):
+    """A marker interface for targets of ofccical bug tags."""
+
+
+class IOfficialBugTag(Interface):
+    """Official bug tags for a product, a project or a distribution."""
+    tag = Text(
+        title=u'The official bug tag', required=True)
+
+    target = Object(
+        title=u'The target of this bug tag.', schema=IOfficialBugTagTarget,
+        description=
+            u'The distribution or product having this official bug tag.')
