@@ -220,6 +220,7 @@ If the person has no time_zone specified, we use UTC.
     >>> test_tales("person/fmt:local-time", person=sabdfl)
     '... UTC'
 
+
 === Branches ===
 
 For branches, fmt:link links to the branch page.
@@ -1097,11 +1098,12 @@ If the link is disabled, no markup is rendered.
     >>> test_tales('menu_link/fmt:url', menu_link=menu_link)
     u''
 
+
 == Formatting of private attributes on Teams ==
 
 To protect privacy of teams, the formatter for teams will only show
 the data for link, displayname, and unique_displayname if the current
-user has the appropriate privilges.
+user has the appropriate privileges.
 
 The team 'myteam' is a private membership team so only the team
 members and Launchpad admins can see the details.
@@ -1131,7 +1133,7 @@ Owner is a member of myteam so he can see all.
     >>> test_tales("team/fmt:unique_displayname", team=myteam)
     u'My Team (myteam)'
 
-No Priv is neither a member of myteam nor an adminstrator, so the
+No Priv is neither a member of myteam nor an administrator, so the
 information about myteam is hidden.
 
     >>> login('no-priv@canonical.com')
@@ -1144,7 +1146,7 @@ information about myteam is hidden.
     >>> test_tales("team/fmt:unique_displayname", team=myteam)
     u'<hidden>'
 
-The anonymous user is not allowed to see private team deatils.
+The anonymous user is not allowed to see private team details.
 
     >>> login(ANONYMOUS)
     >>> test_tales("team/fmt:link", team=myteam)
