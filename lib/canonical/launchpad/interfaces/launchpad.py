@@ -120,6 +120,7 @@ class ILaunchpadCelebrities(Interface):
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
     ubuntu = Attribute("The Ubuntu Distribution.")
+    ubuntu_branches = Attribute("The Ubuntu branches team")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
