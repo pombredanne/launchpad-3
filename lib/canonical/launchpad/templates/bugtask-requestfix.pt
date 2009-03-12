@@ -38,7 +38,7 @@
     <div metal:fill-slot="extra_bottom">
 
       <tal:visited_steps
-          replace="structure view/widgets/visited_steps/hidden" />
+          replace="structure view/widgets/__visited_steps__/hidden" />
 
       <div tal:define="widgets view/bugwatch_widgets">
         <p>
