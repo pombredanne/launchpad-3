@@ -12,31 +12,27 @@ from canonical.launchpad.browser.shipit import (
 from canonical.launchpad.database.shipit import ShipItSurvey
 from canonical.launchpad.layers import setFirstLayer, ShipItUbuntuLayer
 from canonical.launchpad.systemhomes import ShipItApplication
-from canonical.launchpad.testing import (
-    login_person, logout, TestCaseWithFactory)
+from canonical.launchpad.testing import login_person, TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
 
-class BaseShipitTestCase(TestCaseWithFactory):
+class TestShipitLoginViewsWithUserAlreadyLoggedIn(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _createView(self, klass):
-        view = klass(self.application, self.request)
-        view.initialize()
-        return view
-
-
-class TestShipitLoginViewsWithUserAlreadyLoggedIn(BaseShipitTestCase):
-
     def setUp(self):
-        BaseShipitTestCase.setUp(self)
+        TestCaseWithFactory.setUp(self)
         self.application = ShipItApplication()
         self.person = self.factory.makePerson()
         self.request = LaunchpadTestRequest()
         setFirstLayer(self.request, ShipItUbuntuLayer)
         login_person(self.person, self.request)
+
+    def _createView(self, klass):
+        view = klass(self.application, self.request)
+        view.initialize()
+        return view
 
     def test_ShipitOpenIDLoginView_redirects(self):
         view = self._createView(ShipitOpenIDLoginView)
@@ -81,21 +77,6 @@ class TestShipitLoginViewsWithUserAlreadyLoggedIn(BaseShipitTestCase):
         self.failUnless(view._isRedirected())
         self.failUnlessEqual(
             view.request.response.getHeader('Location'), '/myrequest-server')
-
-
-class TestShipitLoginViewsWithoutLoggedInUser(BaseShipitTestCase):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        BaseShipitTestCase.setUp(self)
-        self.application = ShipItApplication()
-        self.request = LaunchpadTestRequest()
-        setFirstLayer(self.request, ShipItUbuntuLayer)
-
-    def test_ShipitOpenIDLoginView_redirects(self):
-        view = self._createView(ShipitOpenIDLoginView)
-        html = view()
 
 
 def test_suite():

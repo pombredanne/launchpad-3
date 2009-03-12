@@ -1,45 +1,60 @@
-Check the shipit login page.
+= Logging into shipit =
 
-  >>> print http(r"""
-  ... GET /login HTTP/1.1
-  ... Host: shipit.ubuntu.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...form name="login" method="POST"...
-  ...
-  ...input type="text" name="loginpage_email"...
-  ...
-  ...input type="password" ... name="loginpage_password"...
-  ...
-  ...input type="submit" name="loginpage_submit_login" value="Log In"...
-  ...
+ShipIt uses the Launchpad Login Service as its OpenID provider.  When a user
+tries to log into shipit, they will be taken to the Login Service, where they
+will be asked to authenticate using their Launchpad account.
 
-Check posting to the shipit login page.  On a successful login, it redirects
-you to the myrequest page.
+    # Manually setup the AppServerLayer and change the rooturl of our openid
+    # vhost.  This is necessary so that the python OpenID library can access
+    # the OpenID provider, made available by the AppServerLayer.
+    >>> from canonical.testing.layers import AppServerLayer
+    >>> AppServerLayer.setUp()
+    >>> from canonical.launchpad.webapp.vhosts import allvhosts
+    >>> orig_value = allvhosts.configs['openid'].rooturl
+    >>> allvhosts.configs['openid'].rooturl = (
+    ...     'http://openid.launchpad.dev:8085/')
 
-  >>> print http(r"""
-  ... POST /login HTTP/1.1
-  ... Host: shipit.ubuntu.dev
-  ... Content-Type: application/x-www-form-urlencoded
-  ...
-  ... loginpage_email=foo.bar%40canonical.com&loginpage_password=test&loginpage_submit_login=Log+In
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: /myrequest
-  ...
+    >>> anon_browser.open('http://shipit.ubuntu.dev')
+    >>> anon_browser.getLink('Log In').click()
 
+    >>> print anon_browser.title
+    OpenID transaction in progress
+
+    >>> anon_browser.getControl('Continue').click()
+
+    >>> print anon_browser.title
+    Launchpad Login Service
+
+After authenticating, the user is sent back to shipit for finishing the
+request.
+
+    >>> anon_browser.getControl(name='field.email').value = 'mark@hbd.com'
+    >>> anon_browser.getControl(name='field.password').value = 'test'
+    >>> anon_browser.getControl('Continue').click()
+
+    >>> print anon_browser.url
+
+    >>> print extract_text(
+    ...     find_tags_by_class(anon_browser.contents, 'login')[0])
+    Logged in as Mark Shuttleworth...
+
+Undo the config change we did and tear down the AppServerLayer.
+
+    >>> allvhosts.configs['openid'].rooturl = orig_value
+    >>> AppServerLayer.tearDown()
+
+
+== Misc ==
 
 Many people seem to have bookmarked /user.cgi as the shipit homepage.
 We want to redirect from here to the shipit front page, rather than giving
 an unfriendly 404 error.
 
-  >>> print http(r"""
-  ... GET /user.cgi HTTP/1.1
-  ... Host: shipit.ubuntu.dev
-  ... """)  #doctest: -NORMALIZE_WHITESPACE
-  HTTP/1.1 301 Moved Permanently
-  ...
-  Location: .
-  ...
+    >>> print http(r"""
+    ... GET /user.cgi HTTP/1.1
+    ... Host: shipit.ubuntu.dev
+    ... """)  #doctest: -NORMALIZE_WHITESPACE
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: .
+    ...

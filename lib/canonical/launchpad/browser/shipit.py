@@ -43,15 +43,17 @@ from canonical.cachedproperty import cachedproperty
 from canonical.widgets import CheckBoxMatrixWidget, LabeledMultiCheckBoxWidget
 from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.webapp.error import SystemErrorView
-from canonical.launchpad.webapp.login import logInPrincipal
+from canonical.launchpad.webapp.login import (
+    allowUnauthenticatedSession, logInPrincipal)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
-    canonical_url, Navigation, stepto, redirection)
+    canonical_url, Navigation, redirection, stepto, urlappend)
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
@@ -117,6 +119,7 @@ def shipit_is_open(flavour):
 
 class BaseLoginView(LaunchpadView):
 
+    _openid_session_ns = 'OPENID'
     _flavour = None
 
     def initialize(self):
@@ -127,6 +130,11 @@ class BaseLoginView(LaunchpadView):
             self.flavour = self._flavour
         if self.account is not None:
             self._redirect()
+
+    def _getConsumer(self):
+        session = ISession(self.request)[self._openid_session_ns]
+        store = getUtility(ILaunchpadOpenIDStoreFactory)()
+        return Consumer(session, store)
 
     def _redirect(self):
         """Redirect the logged in user to the request page."""
@@ -169,21 +177,28 @@ class BaseLoginView(LaunchpadView):
 
 
 class ShipitOpenIDLoginView(BaseLoginView):
+    """The OpenID login page for shipit.
+
+    This page will start the OpenID handshake and send the user's browser
+    to the Launchpad Login Service, where he will be asked to authenticate
+    and allow the provider to send his details to shipit.
+    """
+
+    _return_to_page = 'callback'
 
     def render(self):
-        session = ISession(self.request)['OPENID']
-        store = getUtility(ILaunchpadOpenIDStoreFactory)()
-        consumer = Consumer(session, store)
-        #openid_request = consumer.beginWithoutDiscovery(
-        openid_request = consumer.begin(
-            'https://openid.launchpad.dev')
+        # Allow unauthenticated users to have sessions for the OpenID
+        # handshake to work.
+        allowUnauthenticatedSession(self.request)
+        consumer = self._getConsumer()
+        self.openid_request = consumer.begin(
+            allvhosts.configs['openid'].rooturl)
 
-        return_to = self._getReturnToURL()
-        trust_root = self._getTrustRoot()
-        assert not openid_request.shouldSendRedirect(), (
+        return_to = self.return_to_url
+        trust_root = self.request.getApplicationURL()
+        assert not self.openid_request.shouldSendRedirect(), (
             "Our fixed OpenID server should not need us to redirect.")
-        form_html = openid_request.htmlMarkup(
-            trust_root, return_to, form_tag_attrs={'id': 'openid_message'})
+        form_html = self.openid_request.htmlMarkup(trust_root, return_to)
 
         # Need to commit here because the consumer.begin() call above will
         # insert rows into the OpenIDAssociations table.
@@ -192,37 +207,36 @@ class ShipitOpenIDLoginView(BaseLoginView):
 
         return form_html
 
-    def _getReturnToURL(self):
-        return 'https://shipit.ubuntu.dev/callback'
-
-    def _getTrustRoot(self):
-        return 'https://shipit.ubuntu.dev/'
+    @property
+    def return_to_url(self):
+        app_url = self.request.getApplicationURL()
+        return urlappend(app_url, self._return_to_page)
 
 
 class ShipitOpenIDLoginForServerCDsView(ShipitOpenIDLoginView):
 
     _flavour = ShipItFlavour.SERVER
-
-    def _getReturnToURL(self):
-        return 'https://shipit.ubuntu.dev/callback-server'
+    _return_to_page = 'callback-server'
 
 
 class ShipitOpenIDCallbackView(BaseLoginView):
+    """The OpenID callback page for logging into shipit.
 
-    app_url = 'https://shipit.ubuntu.dev/callback'
+    This is the page the OpenID provider will send the user's browser to,
+    after the user has authenticated on the provider.
+    """
 
     def render(self):
-        session = ISession(self.request)['OPENID']
-        store = getUtility(ILaunchpadOpenIDStoreFactory)()
-        consumer = Consumer(session, store)
-
-        response = consumer.complete(self.request.form, self.app_url)
+        consumer = self._getConsumer()
+        response = consumer.complete(self.request.form, self.request.getURL())
         if response.status == SUCCESS:
-            from zope.security.proxy import removeSecurityProxy
             identity = response.identity_url
             account = getUtility(IAccountSet).getByOpenIDIdentifier(
                 response.identity_url.split('/')[-1])
             loginsource = getUtility(IPlacelessLoginSource)
+            # We don't have a logged in principal, so we must remove the
+            # security proxy of the account's preferred email.
+            from zope.security.proxy import removeSecurityProxy
             email = removeSecurityProxy(account.preferredemail).email
             logInPrincipal(
                 self.request, loginsource.getPrincipalByLogin(email), email)
@@ -233,10 +247,8 @@ class ShipitOpenIDCallbackView(BaseLoginView):
 
 
 class ShipitOpenIDCallbackForServerCDsView(ShipitOpenIDCallbackView):
-    """The callback page used when users want Server CDs."""
-
+    """The OpenID callback page used when users want Server CDs."""
     _flavour = ShipItFlavour.SERVER
-    app_url = 'https://shipit.ubuntu.dev/callback-server'
 
 
 class ShipitOpenIDLoginErrorView(LaunchpadView):
