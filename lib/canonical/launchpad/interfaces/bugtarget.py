@@ -11,7 +11,7 @@ __all__ = [
     'IBugTarget',
     'IHasBugs',
     'IOfficialBugTag',
-    'IOfficialBugTagTarget',
+    'IOfficialBugTagTargetMixin',
     ]
 
 from zope.interface import Interface, Attribute
@@ -25,8 +25,8 @@ from canonical.lazr.fields import Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, exported, operation_parameters,
-    operation_returns_collection_of)
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_collection_of)
 
 
 class IHasBugs(Interface):
@@ -191,14 +191,14 @@ class BugDistroSeriesTargetDetails:
         self.status = status
 
 
-class IOfficialBugTagTarget(Interface):
+class IOfficialBugTagTargetMixin(Interface):
     """A mixin interface for targets of official bug tags."""
 
-    def addOfficialBugTag(tag_text):
-        """Add tag_text to the official bug tags of this target."""
+    def addOfficialBugTag(tag):
+        """Add tag to the official bug tags of this target."""
 
-    def removeOfficialBugTag(tag_text):
-        """Remove tag_text from the official bug tags of this target."""
+    def removeOfficialBugTag(tag):
+        """Remove tag from the official bug tags of this target."""
 
 
 class IOfficialBugTag(Interface):
@@ -207,6 +207,7 @@ class IOfficialBugTag(Interface):
         title=u'The official bug tag', required=True)
 
     target = Object(
-        title=u'The target of this bug tag.', schema=IOfficialBugTagTarget,
+        title=u'The target of this bug tag.',
+        schema=IOfficialBugTagTargetMixin,
         description=
             u'The distribution or product having this official bug tag.')

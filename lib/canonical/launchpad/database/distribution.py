@@ -32,7 +32,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import (
-    BugTargetBase, OfficialBugTagTarget)
+    BugTargetBase, OfficialBugTagTargetMixin)
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -76,7 +76,7 @@ from canonical.launchpad.interfaces.archive import (
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
-from canonical.launchpad.interfaces.bugtarget import IOfficialBugTagTarget
+from canonical.launchpad.interfaces.bugtarget import IOfficialBugTagTargetMixin
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.build import IBuildSet
@@ -115,13 +115,14 @@ from canonical.launchpad.webapp.url import urlparse
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
-                   OfficialBugTagTarget, QuestionTargetMixin,
+                   OfficialBugTagTargetMixin, QuestionTargetMixin,
                    StructuralSubscriptionTargetMixin, HasMilestonesMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
         IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IOfficialBugTagTarget, IQuestionTarget, IStructuralSubscriptionTarget)
+        IOfficialBugTagTargetMixin, IQuestionTarget,
+        IStructuralSubscriptionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'

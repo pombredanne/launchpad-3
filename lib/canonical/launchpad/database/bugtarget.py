@@ -8,7 +8,7 @@ __all__ = [
     'BugTargetBase',
     'HasBugsBase',
     'OfficialBugTag',
-    'OfficialBugTagTarget',
+    'OfficialBugTagTargetMixin',
     ]
 
 from storm.locals import Int, Reference, Storm, Unicode
@@ -21,7 +21,7 @@ from canonical.launchpad.database.bugtask import (
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.bugtarget import (
-    IOfficialBugTag, IOfficialBugTagTarget)
+    IOfficialBugTag, IOfficialBugTagTargetMixin)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.bugtask import (
@@ -214,29 +214,48 @@ class BugTargetBase(HasBugsBase):
             Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
 
 
-class OfficialBugTagTarget:
-    """See `IOfficialBugTagTarget`."""
+class OfficialBugTagTargetMixin:
+    """See `IOfficialBugTagTarget`.
 
-    implements(IOfficialBugTagTarget)
+    This class is inteneded to be used as a mixin for the classes
+    Distribution, Product and Project, which can define official
+    bug tags.
 
-    def addOfficialBugTag(self, tag_text):
+    Using this call in Project requires a fix of bug 341203, see
+    below, class OfficialBugTag.
+    """
+
+    def getTag(self, tag):
+        """Return the OfficialBugTag record for the given tag, if it exists.
+
+        If the tag is not defined for this target, None is returned.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        if IDistribution.providedBy(self):
+            target_clause = (OfficialBugTag.distribution == self)
+        else:
+            target_clause = (OfficialBugTag.product == self)
+        return store.find(
+            OfficialBugTag, OfficialBugTag.tag==tag, target_clause).one()
+
+    def addOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""
+        # Tags must be unique per target; adding an existing tag
+        # for a secind time would lead to an exception.
+        if self.getTag(tag) is not None:
+            return
         new_tag = OfficialBugTag()
-        new_tag.tag = tag_text
+        new_tag.tag = tag
         new_tag.target = self
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(new_tag)
 
-    def removeOfficialBugTag(self, tag_text):
+    def removeOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if IDistribution.providedBy(self):
-            target_clause = OfficialBugTag.distribution == self
-        else:
-            target_clause = OfficialBugTag.product == self
-        tags_to_remove = store.find(
-            OfficialBugTag, OfficialBugTag.tag==tag_text, target_clause)
-        tags_to_remove.remove()
+        tag = self.getTag(tag)
+        if tag is not None:
+            store.remove(tag)
 
 
 class OfficialBugTag(Storm):
