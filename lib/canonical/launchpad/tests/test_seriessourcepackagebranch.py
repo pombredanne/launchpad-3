@@ -12,7 +12,10 @@ import pytz
 import transaction
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.ftests import login_person, logout
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
@@ -24,6 +27,15 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
     """Tests for `ISeriesSourcePackageBranch`."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        person = self.factory.makePerson()
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        removeSecurityProxy(ubuntu_branches).addMember(
+            person, ubuntu_branches.teamowner)
+        login_person(person)
+        self.addCleanup(logout)
 
     def test_new_sets_attributes(self):
         # ISeriesSourcePackageBranchSet.new sets all the defined attributes on
