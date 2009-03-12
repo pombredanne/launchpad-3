@@ -16,7 +16,10 @@ import os
 from twisted.application import service, strports
 from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
+from twisted.conch.ssh.transport import SSHServerTransport
 from twisted.internet import defer
+from twisted.protocols.policies import TimeoutFactory
+from twisted.python import log
 from twisted.web.xmlrpc import Proxy
 
 from zope.event import notify
@@ -25,6 +28,13 @@ from canonical.codehosting.sshserver import accesslog
 from canonical.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from canonical.config import config
 from canonical.twistedsupport import gatherResults
+
+
+class KeepAliveSettingSSHServerTransport(SSHServerTransport):
+
+    def connectionMade(self):
+        SSHServerTransport.connectionMade(self)
+        self.transport.setTcpKeepAlive(True)
 
 
 class Factory(SSHFactory):
@@ -49,7 +59,17 @@ class Factory(SSHFactory):
         The protocol object we return is slightly modified so that we can hook
         into the 'connectionLost' event and log the disconnection.
         """
-        transport = SSHFactory.buildProtocol(self, address)
+        # If Conch let us customize the protocol class, we wouldn't need this.
+        # See http://twistedmatrix.com/trac/ticket/3443.
+        transport = KeepAliveSettingSSHServerTransport()
+        transport.supportedPublicKeys = self.privateKeys.keys()
+        if not self.primes:
+            log.msg('disabling diffie-hellman-group-exchange because we '
+                    'cannot find moduli file')
+            ske = transport.supportedKeyExchanges[:]
+            ske.remove('diffie-hellman-group-exchange-sha1')
+            transport.supportedKeyExchanges = ske
+        transport.factory = self
         transport._realConnectionLost = transport.connectionLost
         transport.connectionLost = (
             lambda reason: self.connectionLost(transport, reason))
@@ -118,7 +138,9 @@ class SSHService(service.Service):
         """Return a service that provides an SFTP server. This is called in
         the constructor.
         """
-        ssh_factory = Factory(self.makePortal())
+        ssh_factory = TimeoutFactory(
+            Factory(self.makePortal()),
+            timeoutPeriod=config.codehosting.idle_timeout)
         return strports.service(config.codehosting.port, ssh_factory)
 
     def startService(self):

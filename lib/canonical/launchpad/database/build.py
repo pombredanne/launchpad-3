@@ -16,6 +16,8 @@ from zope.component import getUtility
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
+
+from storm.expr import In, LeftJoin
 from storm.references import Reference
 
 from canonical.config import config
@@ -29,9 +31,12 @@ from canonical.launchpad.components.archivedependencies import (
     get_components_for_building)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
+from canonical.launchpad.database.builder import Builder
 from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
      get_contact_email_addresses, filenameToContentType, get_email_template)
@@ -45,7 +50,9 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
 
@@ -81,6 +88,16 @@ class Build(SQLBase):
 
     upload_log = ForeignKey(
         dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
+
+    @property
+    def upload_log_url(self):
+        """See `IBuild`."""
+        if self.upload_log is None:
+            return None
+
+        url = urlappend(canonical_url(self), "+files")
+        url = urlappend(url, self.upload_log.filename)
+        return url
 
     @property
     def current_component(self):
@@ -527,6 +544,18 @@ class Build(SQLBase):
         """See `IBuild`"""
         return BuildQueue(build=self)
 
+    @property
+    def build_log_url(self):
+        """See `IBuild`."""
+        if self.buildlog is None:
+            return None
+
+        # The librarian URL is explicitly not used here because if
+        # the build is a private one then it would be in the
+        # restricted librarian.  It's proxied through the webapp and
+        # security applied accordingly.
+        return canonical_url(self) + "/+files/" + self.buildlog.filename
+
     def notify(self, extra_info=None):
         """See `IBuild`"""
         if not config.builddmaster.send_build_notification:
@@ -621,8 +650,7 @@ class Build(SQLBase):
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
                 self.buildduration).approximateduration()
-            buildlog_url = (
-                canonical_url(self) + "/+files/" + self.buildlog.filename)
+            buildlog_url = self.build_log_url
             builder_url = canonical_url(self.builder)
 
         if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
@@ -871,16 +899,8 @@ class BuildSet:
             """ % ','.join(
                 sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
-        prejoins = [
-            "sourcepackagerelease",
-            "sourcepackagerelease.sourcepackagename",
-            "buildlog",
-            "buildlog.content",
-            ]
-
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,
-                            prejoins=prejoins,
                             orderBy=orderBy)
 
     def retryDepWaiting(self, distroarchseries):
@@ -974,3 +994,37 @@ class BuildSet:
                 'status': BuildSetStatus.FULLYBUILT,
                 'builds': builds,
                 }
+
+    def prefetchBuildData(self, build_ids):
+        """See `IBuildSet`."""
+        from canonical.launchpad.database.sourcepackagename import (
+            SourcePackageName)
+        from canonical.launchpad.database.sourcepackagerelease import (
+            SourcePackageRelease)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = (
+            Build,
+            LeftJoin(
+                SourcePackageRelease,
+                SourcePackageRelease.id == Build.sourcepackagereleaseID),
+            LeftJoin(
+                SourcePackageName,
+                SourcePackageName.id
+                    == SourcePackageRelease.sourcepackagenameID),
+            LeftJoin(LibraryFileAlias,
+                     LibraryFileAlias.id == Build.buildlogID),
+            LeftJoin(LibraryFileContent,
+                     LibraryFileContent.id == LibraryFileAlias.contentID),
+            LeftJoin(
+                BuildQueue,
+                BuildQueue.buildID == Build.id),
+            LeftJoin(
+                Builder,
+                BuildQueue.builderID == Builder.id),
+            )
+        result_set = store.using(*origin).find(
+            (Build.id, BuildQueue, SourcePackageRelease, LibraryFileAlias,
+             SourcePackageName, LibraryFileContent, Builder),
+            In(Build.id, build_ids))
+
+        return result_set

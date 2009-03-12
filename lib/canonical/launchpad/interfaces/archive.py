@@ -32,15 +32,16 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, Object, List, Text, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.gpg import IGPGKey
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
@@ -101,11 +102,6 @@ class IArchivePublic(IHasOwner):
             title=_("Name"), required=True,
             constraint=name_validator,
             description=_("The name of this archive.")))
-
-    description = exported(
-        Text(
-            title=_("Archive contents description"), required=False,
-            description=_("A short description of this archive's contents.")))
 
     enabled = Bool(
         title=_("Enabled"), required=False,
@@ -557,7 +553,7 @@ class IArchivePublic(IHasOwner):
             are to be copied.
         :param requestor: The `IPerson` who is requesting the package copy
             operation.
-        :param suite: The `IDistroSeries` name with optional pocket, for 
+        :param suite: The `IDistroSeries` name with optional pocket, for
             example, 'hoary-security'. If this is not provided it will
             default to the current series' release pocket.
         :param copy_binaries: Whether or not binary packages should be copied
@@ -570,15 +566,44 @@ class IArchivePublic(IHasOwner):
         :return The new `IPackageCopyRequest`
         """
 
+    # XXX: noodles 2009-03-02 bug=336779: This should be moved into
+    # IArchiveView once the archive permissions are updated to grant
+    # IArchiveView to archive subscribers.
+    def newAuthToken(person, token=None, date_created=None):
+        """Create a new authorisation token.
 
-class IArchiveView(Interface):
+        XXX: noodles 2009-03-12 bug=341600 This method should not be exposed
+        through the API as we do not yet check that the callsite has
+        launchpad.Edit on the person.
+
+        :param person: An IPerson whom this token is for
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given
+        :param date_created: Optional, defaults to now
+
+        :return: A new IArchiveAuthToken
+        """
+
+
+class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
 
     buildd_secret = TextLine(
         title=_("Buildd Secret"), required=False,
         description=_("The password used by the builder to access the "
-                      "archive.")
-        )
+                      "archive."))
+
+    description = exported(
+        Text(
+            title=_("Archive contents description"), required=False,
+            description=_("A short description of this archive's contents.")))
+
+    signing_key_fingerprint = exported(
+        Text(
+            title=_("Archive signing key fingerprint"), required=False,
+            description=_("A OpenPGP signing key fingerprint (40 chars) "
+                          "for this PPA or None if there is no signing "
+                          "key available.")))
 
     @rename_parameters_as(name="source_name", distroseries="distro_series")
     @operation_parameters(
@@ -754,17 +779,6 @@ class IArchiveAppend(Interface):
         :raises CannotCopy: if there is a problem copying.
         """
 
-    def newAuthToken(person, token=None, date_created=None):
-        """Create a new authorisation token.
-
-        :param person: An IPerson whom this token is for
-        :param token: Optional unicode text to use as the token. One will be
-            generated if not given
-        :param date_created: Optional, defaults to now
-
-        :return: A new IArchiveAuthToken
-        """
-
     def newSubscription(subscriber, registrant, date_expires=None,
                         description=None):
         """Create a new subscribtion to this archive.
@@ -874,7 +888,7 @@ class IArchiveSet(Interface):
 
     def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
         """Return a single PPA.
-        
+
         :param distribution: The context IDistribution.
         :param person_name: The context IPerson.
         :param ppa_name: The name of the archive (PPA)

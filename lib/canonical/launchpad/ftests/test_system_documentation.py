@@ -337,6 +337,17 @@ def hwdbDeviceTablesSetup(test):
     LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 
+def updateRemoteProductSetup(test):
+    """Setup to use the 'updateremoteproduct' db user."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.updateremoteproduct.dbuser)
+
+def updateRemoteProductTeardown(test):
+    # Mark the DB as dirty, since we run a script in a sub process.
+    DatabaseLayer.force_dirty_database()
+    tearDown(test)
+
+
 # Files that have special needs can construct their own suite
 special = {
     # No setup or teardown at all, since it is demonstrating these features.
@@ -581,6 +592,12 @@ special = {
             setUp=checkwatchesSetUp,
             tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer
+            ),
+    'answer-tracker-notifications-linked-private-bug.txt':
+            LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-private-bug.txt',
+            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
             ),
     'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
             '../doc/answer-tracker-notifications-linked-bug.txt',
@@ -855,6 +872,10 @@ special = {
             layer=LaunchpadZopelessLayer,
             setUp=setUp, tearDown=tearDown,
             ),
+    'sourceforge-remote-products.txt': LayeredDocFileSuite(
+            '../doc/sourceforge-remote-products.txt',
+            layer=LaunchpadZopelessLayer,
+            ),
     # This test is actually run twice to prove that the AppServerLayer
     # properly isolates the database between tests.
     'launchpadlib.txt': LayeredDocFileSuite(
@@ -878,7 +899,13 @@ special = {
         layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown),
     'filebug-data-parser.txt': LayeredDocFileSuite(
-        '../doc/filebug-data-parser.txt')
+        '../doc/filebug-data-parser.txt'),
+    'product-update-remote-product.txt': LayeredDocFileSuite(
+            '../doc/product-update-remote-product.txt',
+            setUp=updateRemoteProductSetup,
+            tearDown=updateRemoteProductTeardown,
+            layer=LaunchpadZopelessLayer
+            ),
     }
 
 

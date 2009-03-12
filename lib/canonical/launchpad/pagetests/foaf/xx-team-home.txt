@@ -51,6 +51,19 @@ what's the user's involvement with the team. If the user logs in, he'll see
 that, though.
 
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~guadamen')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'your-involvement'))
+    Your involvement
+    You are the owner of this team.
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'your-involvement'))
+    Your involvement
+    You are a member of the team which owns this team.
+    You are not currently an active member.
+
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
@@ -80,7 +93,7 @@ address:
 As teams do not have OpenID Logins, there is not link in the Contact
 details section for help.
 
-    >>> sample_browser.getLink(u"What&#8217;s\xa0this?")
+    >>> sample_browser.getLink('(What\xe2\x80\x99s\xc2\xa0this?)')
     Traceback (most recent call last):
      ...
     LinkNotFoundError

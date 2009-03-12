@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+import os
 import socket
 import threading
 import poplib
@@ -103,3 +104,34 @@ class POP3MailBox:
     def close(self):
         """See IMailBox."""
         self._popbox.quit()
+
+
+class DirectoryMailBox:
+    """Mail box which reads files from a directory."""
+    implements(IMailBox)
+
+    def __init__(self, directory):
+        self.mail_dir = os.path.abspath(directory)
+
+    def open(self):
+        """See IMailBox."""
+        # No-op.
+
+    def items(self):
+        """See IMailBox."""
+        for name in os.listdir(self.mail_dir):
+            filename = os.path.join(self.mail_dir, name)
+            if os.path.isfile(filename):
+                yield (filename, open(filename).read())
+
+    def delete(self, id):
+        """See IMailBox."""
+        if not os.path.isfile(id):
+            raise MailBoxError("No such id: %s" % id)
+        if not os.path.abspath(id).startswith(self.mail_dir):
+            raise MailBoxError("No such id: %s" % id)
+        os.remove(id)
+
+    def close(self):
+        """See IMailBox."""
+        # No-op.

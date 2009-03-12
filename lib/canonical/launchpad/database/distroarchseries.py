@@ -167,7 +167,7 @@ class DistroArchSeries(SQLBase):
         find_spec = (
             BinaryPackageRelease,
             BinaryPackageName,
-            SQL("rank(BinaryPackageRelease.fti, ftq(%s)) AS rank" % 
+            SQL("rank(BinaryPackageRelease.fti, ftq(%s)) AS rank" %
                 sqlvalues(text))
             )
         archives = self.distroseries.distribution.getArchiveIDList()

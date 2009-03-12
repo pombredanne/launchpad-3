@@ -49,7 +49,7 @@ class IBugLinkTarget(Interface):
         """Link the object with this bug. If the object is already linked,
         return the old linker, otherwise return a new IBugLink object.
 
-        If a new IBugLink is created by this method, a SQLObjectCreatedEvent
+        If a new IBugLink is created by this method, a ObjectCreatedEvent
         should be sent.
         """
 
@@ -58,7 +58,7 @@ class IBugLinkTarget(Interface):
         linked to the target, returns None otherwise returns the IBugLink
         object which was removed.
 
-        If an IBugLink is removed by this method, a SQLObjectDeletedEvent
+        If an IBugLink is removed by this method, a ObjectDeletedEvent
         should be sent.
         """
 

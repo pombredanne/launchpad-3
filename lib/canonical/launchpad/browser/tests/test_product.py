@@ -12,18 +12,18 @@ import pytz
 
 from zope.component import getMultiAdapter
 
-from canonical.config import config
 from canonical.launchpad.testing import time_counter, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.testing import login_person
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
+
 
 class TestProductCodeIndexView(TestCaseWithFactory):
     """Tests for the product code home page."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def makeProductAndDevelopmentFocusBranch(self, **branch_args):
         """Make a product that has a development focus branch and return both.
@@ -137,7 +137,6 @@ class TestProductCodeIndexView(TestCaseWithFactory):
             (product, LaunchpadTestRequest()), name='+code-index')
         view.initialize()
         self.assertEqual(view.committer_count, 1)
-
 
 
 def test_suite():

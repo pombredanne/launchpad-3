@@ -42,7 +42,8 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    ASCIILine, Bool, Bytes, Choice, Datetime, Int, TextLine)
+    ASCIILine, Bool, Bytes, Choice, Datetime, Int, List, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -54,7 +55,6 @@ from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
@@ -163,7 +163,6 @@ class IHWSubmission(Interface):
         CollectionField(
             title=_(u"The HWSubmissionDevice records for this submission."),
             value_type=Reference(schema=Interface)))
-
 
 
 class IHWSubmissionForm(Interface):
@@ -409,12 +408,19 @@ class IHWDriverSet(Interface):
         :return: A sequence of IHWDriver instances.
         """
 
-    def getByID(self, id):
+    def getByID(id):
         """Return an IHWDriver record with the given database ID.
 
         :param id: The database ID.
         :return: An IHWDriver instance.
         """
+
+    package_names = List(
+        title=u'Package Names',
+        description=
+            u'All known distinct package names appearing in HWDriver.',
+        value_type=TextLine(),
+        readonly=True)
 
 
 # Identification of a hardware device.
@@ -1023,6 +1029,14 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
         :param bus: A `HWBus` value.
         :return: A list of strings with vendor IDs fr this bus,
         """
+
+    package_names = exported(
+        List(title=u'Package Names',
+             description=
+                 u'All known distinct package names appearing in HWDriver.',
+             value_type=TextLine(),
+             readonly=True))
+
 
 class IllegalQuery(Exception):
     """Exception raised when trying to run an illegal submissions query."""

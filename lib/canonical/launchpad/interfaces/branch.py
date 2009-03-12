@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BadBranchSearchContext',
     'bazaar_identity',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'branch_name_validator',
@@ -19,10 +18,7 @@ __all__ = [
     'BranchFormat',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
-    'BranchListingSort',
     'BranchMergeControlStatus',
-    'BranchPersonSearchContext',
-    'BranchPersonSearchRestriction',
     'BranchType',
     'BranchTypeError',
     'CannotDeleteBranch',
@@ -34,9 +30,7 @@ __all__ = [
     'IBranchCloud',
     'IBranchDelta',
     'IBranchBatchNavigator',
-    'IBranchListingFilter',
     'IBranchNavigationMenu',
-    'IBranchPersonSearchContext',
     'IBranchSet',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
@@ -51,7 +45,7 @@ from cgi import escape
 from datetime import timedelta
 import re
 
-# ensure correct plugins are loaded
+# Ensure correct plugins are loaded. Do not delete this line.
 import canonical.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
@@ -70,11 +64,11 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
 from zope.component import getUtility
-from zope.interface import implements, Interface, Attribute
+from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Int, Choice, Text, TextLine, Datetime)
 
-from canonical.lazr.enum import (
+from lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
@@ -87,6 +81,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.person import IPerson
@@ -104,12 +99,6 @@ class BranchLifecycleStatus(DBEnumeratedType):
     Essentially, this tells us what the author of the branch thinks of the
     code in the branch.
     """
-
-    NEW = DBItem(1, """
-        New
-
-        Has just been created.
-        """)
 
     EXPERIMENTAL = DBItem(10, """
         Experimental
@@ -375,7 +364,6 @@ class UICreatableBranchType(EnumeratedType):
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
-    BranchLifecycleStatus.NEW,
     BranchLifecycleStatus.EXPERIMENTAL,
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
@@ -476,10 +464,6 @@ class NoSuchBranch(NameLookupFailed):
     _message_prefix = "No such branch"
 
 
-class BadBranchSearchContext(Exception):
-    """The context is not valid for a branch search."""
-
-
 def get_blacklisted_hostnames():
     """Return a list of hostnames blacklisted for Branch URLs."""
     hostnames = config.codehosting.blacklisted_hostnames
@@ -514,7 +498,7 @@ class BranchURIField(URIField):
     def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
-        from canonical.launchpad.webapp.uri import URI
+        from lazr.uri import URI
 
         super(BranchURIField, self)._validate(value)
 
@@ -606,7 +590,7 @@ class IBranchNavigationMenu(Interface):
     """A marker interface to indicate the need to show the branch menu."""
 
 
-class IBranch(IHasOwner):
+class IBranch(IHasOwner, IHasBranchTarget):
     """A Bazaar branch."""
     # Mark branches as exported entries for the Launchpad API.
     export_as_webservice_entry()
@@ -746,9 +730,8 @@ class IBranch(IHasOwner):
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
-    # XXX: JonathanLange 2008-12-08 spec=package-branches: decorates blows up
-    # if we call this 'context'!
-    container = Attribute("The context that this branch belongs to.")
+    namespace = Attribute(
+        "The namespace of this branch, as an `IBranchNamespace`.")
 
     # Product attributes
     # ReferenceChoice is Interface rather than IProduct as IProduct imports
@@ -779,7 +762,7 @@ class IBranch(IHasOwner):
     lifecycle_status = exported(
         Choice(
             title=_('Status'), vocabulary=BranchLifecycleStatus,
-            default=BranchLifecycleStatus.NEW))
+            default=BranchLifecycleStatus.DEVELOPMENT))
 
     # Mirroring attributes. For more information about how these all relate to
     # each other, look at
@@ -802,17 +785,22 @@ class IBranch(IHasOwner):
         required=False)
 
     # Scanning attributes
-    last_scanned = Datetime(
-        title=_("Last time this branch was successfully scanned."),
-        required=False)
-    last_scanned_id = Text(
-        title=_("Last scanned revision ID"), required=False,
-        description=_("The head revision ID of the branch when last "
-                      "successfully scanned."))
-    revision_count = Int(
-        title=_("Revision count"),
-        description=_("The revision number of the tip of the branch.")
-        )
+    last_scanned = exported(
+        Datetime(
+            title=_("Last time this branch was successfully scanned."),
+            required=False, readonly=True))
+    last_scanned_id = exported(
+        TextLine(
+            title=_("Last scanned revision ID"),
+            required=False, readonly=True,
+            description=_("The head revision ID of the branch when last "
+                          "successfully scanned.")))
+
+    revision_count = exported(
+        Int(
+            title=_("Revision count"), readonly=True,
+            description=_("The revision number of the tip of the branch.")
+            ))
 
     stacked_on = Attribute('Stacked-on branch')
 
@@ -842,9 +830,16 @@ class IBranch(IHasOwner):
         the revisions that match the revision history from bzrlib for this
         branch.
         """)
-    subscriptions = Attribute(
-        "BranchSubscriptions associated to this branch.")
-    subscribers = Attribute("Persons subscribed to this branch.")
+    subscriptions = exported(
+        CollectionField(
+            title=_("BranchSubscriptions associated to this branch."),
+            readonly=True,
+            value_type=Reference(Interface))) # Really IBranchSubscription
+    subscribers = exported(
+        CollectionField(
+            title=_("Persons subscribed to this branch."),
+            readonly=True,
+            value_type=Reference(IPerson)))
 
     date_created = exported(
         Datetime(
@@ -981,7 +976,7 @@ class IBranch(IHasOwner):
 
         Use this when traversing to this branch in the web UI.
 
-        In particular, add information about the branch's container to the
+        In particular, add information about the branch's target to the
         launchbag. If the branch has a product, add that; if it has a source
         package, add lots of information about that.
 
@@ -1180,7 +1175,8 @@ class IBranchSet(Interface):
         """
 
     def new(branch_type, name, registrant, owner, product=None, url=None,
-            title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            title=None,
+            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
             summary=None, whiteboard=None, date_created=None,
             distroseries=None, sourcepackagename=None):
         """Create a new branch.
@@ -1206,7 +1202,7 @@ class IBranchSet(Interface):
         codehosting URLs of remote branches and mirrors, but not their
         remote URLs.
 
-        :param uri: An instance of webapp.uri.URI
+        :param uri: An instance of lazr.uri.URI
         :return: The unique name if possible, None if the URI is not a valid
             codehosting URI.
         """
@@ -1307,35 +1303,6 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getBranchesForContext(
-        context=None,
-        lifecycle_statuses=None,
-        visible_by_user=None,
-        sort_by=None):
-        """Branches associated with the context.
-
-        :param context: If None, all possible branches are returned, otherwise
-            the results will be appropriately filtered by the type of the
-            context.
-        :type context: Something that implements IProject, IProduct, or
-            IPerson.
-        :param lifecycle_statuses: If lifecycle_statuses evaluates to False
-            then branches of any lifecycle_status are returned, otherwise
-            only branches with a lifecycle_status of one of the
-            lifecycle_statuses are returned.
-        :type lifecycle_statuses: One or more values from the
-            BranchLifecycleStatus enumeration.
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        """
-
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
         """Return the most recently created branches for the product.
 
@@ -1396,7 +1363,7 @@ class BranchLifecycleStatusFilter(EnumeratedType):
     use_template(BranchLifecycleStatus)
 
     sort_order = (
-        'CURRENT', 'ALL', 'NEW', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
+        'CURRENT', 'ALL', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
         'MERGED', 'ABANDONED')
 
     CURRENT = Item("""
@@ -1410,142 +1377,6 @@ class BranchLifecycleStatusFilter(EnumeratedType):
 
         Show all the branches.
         """)
-
-
-class BranchListingSort(EnumeratedType):
-    """Choices for how to sort branch listings."""
-
-    # XXX: MichaelHudson 2007-10-17 bug=153891: We allow sorting on quantities
-    # that are not visible in the listing!
-
-    DEFAULT = Item("""
-        by most interesting
-
-        Sort branches by the default ordering for the view.
-        """)
-
-    PRODUCT = Item("""
-        by project name
-
-        Sort branches by name of the project the branch is for.
-        """)
-
-    LIFECYCLE = Item("""
-        by lifecycle status
-
-        Sort branches by the lifecycle status.
-        """)
-
-    NAME = Item("""
-        by branch name
-
-        Sort branches by the display name of the registrant.
-        """)
-
-    REGISTRANT = Item("""
-        by registrant name
-
-        Sort branches by the display name of the registrant.
-        """)
-
-    MOST_RECENTLY_CHANGED_FIRST = Item("""
-        most recently changed first
-
-        Sort branches from the most recently to the least recently
-        changed.
-        """)
-
-    LEAST_RECENTLY_CHANGED_FIRST = Item("""
-        least recently changed first
-
-        Sort branches from the least recently to the most recently
-        changed.
-        """)
-
-    NEWEST_FIRST = Item("""
-        newest first
-
-        Sort branches from newest to oldest.
-        """)
-
-    OLDEST_FIRST = Item("""
-        oldest first
-
-        Sort branches from oldest to newest.
-        """)
-
-
-class IBranchListingFilter(Interface):
-    """The schema for the branch listing filtering/ordering form."""
-
-    # Stats and status attributes
-    lifecycle = Choice(
-        title=_('Lifecycle Filter'), vocabulary=BranchLifecycleStatusFilter,
-        default=BranchLifecycleStatusFilter.CURRENT,
-        description=_(
-        "The author's assessment of the branch's maturity. "
-        " Mature: recommend for production use."
-        " Development: useful work that is expected to be merged eventually."
-        " Experimental: not recommended for merging yet, and maybe ever."
-        " Merged: integrated into mainline, of historical interest only."
-        " Abandoned: no longer considered relevant by the author."
-        " New: unspecified maturity."))
-
-    sort_by = Choice(
-        title=_('ordered by'), vocabulary=BranchListingSort,
-        default=BranchListingSort.LIFECYCLE)
-
-
-class BranchPersonSearchRestriction(EnumeratedType):
-    """How to further restrict the query for a branch search for people."""
-
-    ALL = Item("""
-        All related branches
-
-        All branches owned, registered or subscribed to by the person.
-        """)
-
-    REGISTERED = Item("""
-        Registered branches
-
-        Only return the branches registered by the person.
-        """)
-
-    OWNED = Item("""
-        Owned branches
-
-        Only return the branches owned by the person.
-        """)
-
-    SUBSCRIBED = Item("""
-        Subscribed branches
-
-        Only return the branches subscribed to by the person.
-        """)
-
-
-class IBranchPersonSearchContext(Interface):
-    """A `Person` with a search restriction."""
-
-    person = PublicPersonChoice(
-        title=_('Person'), required=True,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The person to restrict the branch search to."))
-
-    restriction = Choice(
-        title=_("Search restriction"), required=True,
-        vocabulary=BranchPersonSearchRestriction)
-
-
-class BranchPersonSearchContext:
-    """The simple implementation for the person search context."""
-    implements(IBranchPersonSearchContext)
-
-    def __init__(self, person, restriction=None):
-        self.person = person
-        if restriction is None:
-            restriction = BranchPersonSearchRestriction.ALL
-        self.restriction = restriction
 
 
 class IBranchCloud(Interface):
