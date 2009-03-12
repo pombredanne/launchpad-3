@@ -8,6 +8,9 @@
     <allow
        interface="canonical.launchpad.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"
        />
+    <require
+       permission="launchpad.Edit"
+       set_schema="canonical.launchpad.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch" />
   </class>
 
   <securedutility
