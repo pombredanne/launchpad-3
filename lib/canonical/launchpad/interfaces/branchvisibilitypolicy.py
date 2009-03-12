@@ -9,6 +9,7 @@ __all__ = [
     'BranchVisibilityRule',
     'IHasBranchVisibilityPolicy',
     'IBranchVisibilityTeamPolicy',
+    'InvalidVisibilityPolicy',
     ]
 
 from zope.interface import Interface
@@ -17,6 +18,14 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
+
+
+class InvalidVisibilityPolicy(Exception):
+    """The default policy can only be public or forbidden.
+
+    If an attempt is made to set it to something other than one of these two
+    values, this exception is raised.
+    """
 
 
 class BranchVisibilityRule(DBEnumeratedType):
@@ -74,7 +83,6 @@ class IHasBranchVisibilityPolicy(Interface):
         If there are a number of rules that apply for the owner of the branch
         then the most restrictive rule is retuned.
         """
-
 
     def isUsingInheritedBranchVisibilityPolicy():
         """Return True if using policy from the inherited context.
