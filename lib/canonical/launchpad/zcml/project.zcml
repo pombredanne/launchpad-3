@@ -16,7 +16,7 @@
         <!-- IStructuralSubscriptionTarget -->
         <allow attributes="bug_subscriptions getSubscriptions
                            getSubscription getBugNotificationsRecipients
-                           parent_subscription_target" />
+                           parent_subscription_target target_type_display" />
         <require
             permission="launchpad.AnyPerson"
             attributes="addSubscription addBugSubscription
