@@ -81,7 +81,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         """
         # Create a temporary file that will be a new .htpasswd.
         fd, temp_filename = tempfile.mkstemp()
-        fd.close()
 
         # The first .htpasswd entry is the buildd_secret.
         self.writeHtpasswd(
@@ -92,7 +91,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # entries for them.  Use a consistent sort order so that the
         # generated file can be compared to an existing one later.
         for token in sorted(tokens, key=attrgetter("id")):
-            self.invokeHtpasswd(temp_filename, token.token, "")
+            self.writeHtpasswd(temp_filename, token.person.name, token.token)
 
         return temp_filename
 
