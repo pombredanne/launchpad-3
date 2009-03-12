@@ -11,7 +11,7 @@
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:leftportlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/target/@@+portlet-milestones" />
 </metal:leftportlets>
@@ -20,7 +20,14 @@
     specs view/specifications;
     bugtasks view/bugtasks">
 
-      <h1 tal:content="context/title" />
+      <h1>
+        <tal:title tal:content="context/title" />
+        <a tal:condition="context/required:launchpad.Edit"
+          tal:attributes="href context/fmt:url/+delete"
+          title="Delete this release"
+          ><img src="/@@/trash-icon" alt="delete" /></a>
+      </h1>
+
       <p tal:condition="context/dateexpected">
         Due <tal:date replace="context/dateexpected/fmt:approximatedate" />
       </p>

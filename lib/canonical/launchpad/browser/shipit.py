@@ -724,8 +724,7 @@ class ShippingRequestsView:
 
     @cachedproperty
     def shipitrequests(self):
-        return shortlist(
-            self.batchNavigator.currentBatch(), longest_expected=100)
+        return self.batchNavigator.currentBatch()
 
     @cachedproperty
     def totals_for_shipitrequests(self):

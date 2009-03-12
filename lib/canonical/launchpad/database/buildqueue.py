@@ -293,15 +293,6 @@ class BuildQueueSet(object):
         """See `IBuildQueueSet`."""
         return BuildQueue.select('buildstart is not null')
 
-    def fetchByBuildIds(self, build_ids):
-        """See `IBuildQueueSet`."""
-        if len(build_ids) == 0:
-            return []
-
-        return BuildQueue.select(
-            "buildqueue.build IN %s" % ','.join(sqlvalues(build_ids)),
-            prejoins=['builder'])
-
     def calculateCandidates(self, archseries):
         """See `IBuildQueueSet`."""
         if not archseries:

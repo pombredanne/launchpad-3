@@ -24,11 +24,11 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND
 
 from storm.expr import Or
+from storm.locals import Bool
 from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates)
+from canonical.database.sqlbase import SQLBase, flush_database_updates
 
 from canonical.launchpad.database.bugtrackerperson import BugTrackerPerson
 from canonical.launchpad.helpers import shortlist
@@ -154,6 +154,9 @@ class BugTracker(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=False)
     baseurl = StringCol(notNull=True)
+    active = Bool(
+        name='active', allow_none=False, default=True)
+
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)

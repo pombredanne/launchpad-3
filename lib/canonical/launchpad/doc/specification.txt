@@ -105,7 +105,7 @@ ISpecification.getDelta(). If there are no changes, None will be
 returned:
 
     >>> from canonical.launchpad.interfaces import IBugSet
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from zope.interface import providedBy
     >>> unmodified_spec = Snapshot(ubuspec, providing=providedBy(ubuspec))
     >>> ubuspec.getDelta(unmodified_spec, jdub) is None
