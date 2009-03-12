@@ -5,6 +5,10 @@
     ...     IDistributionSet)
     >>> from canonical.launchpad.interfaces.distroseries import (
     ...     IDistroSeriesSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from canonical.lazr.testing.webservice import pprint_entry
 
 = Source Packages =
@@ -27,6 +31,9 @@ distribution series.
     resource_type_link: ...
     self_link: u'http://.../ubuntu/hoary/+source/evolution'
 
+
+== Getting official branches ==
+
 Then we can get the branches that are bound to various pockets of this
 distribution series. By default, there are none bound to evolution.
 
@@ -34,6 +41,9 @@ distribution series. By default, there are none bound to evolution.
     ...     pocket='Release').jsonBody()
     >>> print branch
     None
+
+
+== Setting official branches ==
 
 We can even set a branch for the series. First we need to *make* a branch
 though.
@@ -50,8 +60,19 @@ though.
     >>> branch_url = '/' + branch.unique_name
     >>> logout()
 
+And actually, when I said "we", I wasn't talking about you. I was talking
+about members of the ubuntu-branches celebrity team.
+
+    >>> login('admin@canonical.com')
+    >>> person = factory.makePerson()
+    >>> ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+    >>> ubuntu_branches.addMember(person, ubuntu_branches.teamowner)
+    >>> logout()
+
 Then we set the branch on the evolution hoary package:
 
+    >>> webservice = webservice_for_person(
+    ...     person, permission=OAuthPermission.WRITE_PRIVATE)
     >>> branch = webservice.get(branch_url).jsonBody()
     >>> response = webservice.named_post(
     ...     evolution['self_link'], 'setBranch', pocket='Release',

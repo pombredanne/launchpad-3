@@ -171,7 +171,6 @@ class ISourcePackage(IBugTarget):
         :return: An `ISeriesSourcePackageBranch`.
         """
 
-
     # 'pocket' should actually be a PackagePublishingPocket, and 'branch'
     # should be IBranch, but we use the base classes to avoid circular
     # imports. Correct interface specific in _schema_circular_imports.
