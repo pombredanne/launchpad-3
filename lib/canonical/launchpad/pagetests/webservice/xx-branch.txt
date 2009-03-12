@@ -178,9 +178,9 @@ It's all possible to access the actual subscriptions for the branch.
 
 A user can subscribe to a branch through the API.
 
-    >>> marley = webservice.get('/~marley')
+    >>> marley = webservice.get('/~marley').jsonBody()
     >>> subscription = webservice.named_post(fooix_trunk['self_link'],
-    ...     'subscribe', person=marley)
+    ...     'subscribe', person=marley['self_link'])
 
     >>> subscribers = webservice.get(
     ...     fooix_trunk['subscribers_collection_link']).jsonBody()
