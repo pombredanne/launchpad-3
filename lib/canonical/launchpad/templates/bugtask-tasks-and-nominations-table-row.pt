@@ -115,9 +115,8 @@
                 var client = new LP.client.Launchpad();
                 var person_uri = LP.client.get_absolute_uri(
                     '/~' + result['value'], true);
+
                 var update_ui_after_save = function (e) {
-                    LP.log_object(e, 'update_ui_after_save');
-                    LP.log_object(result, 'result in update func');
                     assignee_link.set('innerHTML', '');
                     var icon = Y.Node.create('<img/>');
                     icon.set('src', result['image']);
@@ -126,6 +125,19 @@
                         Y.Node.create(' ' + result['title']));
                     assignee_link.set('href',
                         '/~' + result['value'] + '/+assignedbugs');
+                    var anim = Y.lazr.anim.green_flash({node: assignee_link});
+                    anim.run();
+                };
+
+                var display_error = function (xid, response, args) {
+                    big_error = [xid, response, args];
+                    var anim = Y.lazr.anim.red_flash({node: assignee_link});
+                    var error = Y.Node.create(
+                        '<span><br/>' + response.statusText + '<br/>'
+                        + response.responseText + '</span>');
+                    error.setStyle('color', 'red');
+                    assignee_link.ancestor().appendChild(error);
+                    anim.run();
                 };
 
                 // LP.client won't insert 'api/beta' into an absolute url.
@@ -140,11 +152,9 @@
                     {
                       parameters: {assignee: person_uri},
                       on: {
-                      success: update_ui_after_save,
-                      failure: function (e) {
-                          alert('Error');
-                          Y.log(e);
-                     }}}
+                        success: update_ui_after_save,
+                        failure: display_error
+                     }}
                 );
             };
             var config = {header: 'Select assignee'};
