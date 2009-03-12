@@ -11,10 +11,6 @@
 
   <adapter factory="canonical.lazr.rest.example.traversal.TraverseWithGet" />
 
-  <!--<class class="canonical.lazr.rest.example.root">
-    <allow interface="" names="__parent__ __name__" />
-  </class>-->
-
   <adapter
       for="canonical.lazr.rest.example.root.TestWebServiceObject
       canonical.lazr.testing.webservice.WebServiceTestRequest"
