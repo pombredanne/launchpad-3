@@ -7,6 +7,7 @@ __metaclass__ = type
 import unittest
 
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
@@ -80,6 +81,20 @@ class TestSourcePackage(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
+
+
+class TestSourcePackageSecurity(TestCaseWithFactory):
+    """Tests for source package branch linking security."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_cannot_setBranch(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        registrant = self.factory.makePerson()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        self.assertRaises(
+            Unauthorized, sourcepackage.setBranch, pocket, branch, registrant)
 
 
 def test_suite():
