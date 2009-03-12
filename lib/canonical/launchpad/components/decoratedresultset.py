@@ -62,7 +62,8 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned result set.
         """
         new_result_set = self.result_set.copy(*args, **kwargs)
-        return DecoratedResultSet(new_result_set, self.result_decorator)
+        return DecoratedResultSet(
+            new_result_set, self.result_decorator, self.pre_iter_hook)
 
     def config(self, *args, **kwargs):
         """See `IResultSet`.
@@ -90,7 +91,8 @@ class DecoratedResultSet(object):
         # Can be a value or result set...
         value = self.result_set.__getitem__(*args, **kwargs)
         if isinstance(value, type(self.result_set)):
-            return DecoratedResultSet(value, self.result_decorator)
+            return DecoratedResultSet(
+                value, self.result_decorator, self.pre_iter_hook)
         else:
             return self.decorate_or_none(value)
 
@@ -132,7 +134,8 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned result set.
         """
         new_result_set = self.result_set.order_by(*args, **kwargs)
-        return DecoratedResultSet(new_result_set, self.result_decorator)
+        return DecoratedResultSet(
+            new_result_set, self.result_decorator, self.pre_iter_hook)
 
     def count(self, *args, **kwargs):
         """See `IResultSet`.
