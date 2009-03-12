@@ -134,6 +134,7 @@ CONFIG_DEFAULTS = {
     'groups': ''
     }
 
+
 def main(options):
     # Load the config file
     config = SafeConfigParser(CONFIG_DEFAULTS)
@@ -300,10 +301,10 @@ def main(options):
                     'GRANT SELECT ON TABLE %s TO %s'
                     % (obj.fullname, who_ro))
                 if schema.has_key(obj.seqname):
-                    if 'INSERT' in perm or 'UPDATE' in perm:
-                        seqperm = 'SELECT, INSERT, UPDATE'
-                    else:
-                        seqperm = perm
+                    if 'INSERT' in perm:
+                        seqperm = 'USAGE'
+                    elif 'SELECT' in perm:
+                        seqperm = 'SELECT'
                     cur.execute(
                         'GRANT %s ON %s TO %s'
                         % (seqperm, obj.seqname, who))
