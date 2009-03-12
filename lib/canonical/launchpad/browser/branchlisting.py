@@ -864,7 +864,9 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
     @enabled_with_permission('launchpad.Admin')
     def branch_visibility(self):
         text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit')
+        url = canonical_url(
+            self.context, rootsite='mainsite', view_name='+branchvisibility')
+        return Link(url, text, icon='edit')
 
     def code_import(self):
         text = 'Import your project'

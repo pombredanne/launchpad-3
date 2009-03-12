@@ -31,7 +31,10 @@ Allow the Warty Security Team to have private firefox branches.
     >>> admin_browser.open('http://launchpad.dev/firefox/+branchvisibility')
     >>> admin_browser.getLink('Customise policy for Mozilla Firefox').click()
     >>> admin_browser.getControl('Team', index=0).value = 'name20'
-    >>> # Default is private.
+    >>> print_radio_button_field(admin_browser.contents, 'rule')
+    ( ) Public
+    (*) Private
+    ( ) Private only
     >>> admin_browser.getControl('Set Team Policy').click()
 
 Now Sample Person, who is a member of the Warty Security Team should be

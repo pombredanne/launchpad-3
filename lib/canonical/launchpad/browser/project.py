@@ -223,7 +223,9 @@ class ProjectOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Admin')
     def branch_visibility(self):
         text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit')
+        url = canonical_url(
+            self.context, rootsite='mainsite', view_name='+branchvisibility')
+        return Link(url, text, icon='edit')
 
     def subscribe(self):
         text = 'Subscribe to bug mail'

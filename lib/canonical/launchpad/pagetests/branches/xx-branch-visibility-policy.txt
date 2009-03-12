@@ -48,7 +48,7 @@ Launchpad admins however, can get to it.
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> admin_browser.getLink('Define branch visibility').click()
     >>> print admin_browser.url
-    http://code.launchpad.dev/firefox/+branchvisibility
+    http://launchpad.dev/firefox/+branchvisibility
 
 
 == Default policies ==
