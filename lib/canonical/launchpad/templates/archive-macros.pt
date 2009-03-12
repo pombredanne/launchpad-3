@@ -41,11 +41,6 @@ function informFailure(transaction_id, response, args) {
  */
 function doUpdate(transaction_id, response, args) {
     args.container.set('innerHTML', response.responseText);
-
-    var anim = Y.lazr.anim.green_flash({
-        node: args.container
-    });
-    anim.run();
 }
 
 
