@@ -225,7 +225,7 @@ class OfficialBugTagTargetMixin:
     below, class OfficialBugTag.
     """
 
-    def getTag(self, tag):
+    def _getTag(self, tag):
         """Return the OfficialBugTag record for the given tag, if it exists.
 
         If the tag is not defined for this target, None is returned.
@@ -241,19 +241,18 @@ class OfficialBugTagTargetMixin:
     def addOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""
         # Tags must be unique per target; adding an existing tag
-        # for a secind time would lead to an exception.
-        if self.getTag(tag) is not None:
-            return
-        new_tag = OfficialBugTag()
-        new_tag.tag = tag
-        new_tag.target = self
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        store.add(new_tag)
+        # for a second time would lead to an exception.
+        if self._getTag(tag) is None:
+            new_tag = OfficialBugTag()
+            new_tag.tag = tag
+            new_tag.target = self
+            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+            store.add(new_tag)
 
     def removeOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        tag = self.getTag(tag)
+        tag = self._getTag(tag)
         if tag is not None:
             store.remove(tag)
 
