@@ -4,11 +4,9 @@ ShipIt uses the Launchpad Login Service as its OpenID provider.  When a user
 tries to log into shipit, they will be taken to the Login Service, where they
 will be asked to authenticate using their Launchpad account.
 
-    # Manually setup the AppServerLayer and change the rooturl of our openid
-    # vhost.  This is necessary so that the python OpenID library can access
-    # the OpenID provider, made available by the AppServerLayer.
-    >>> from canonical.testing.layers import AppServerLayer
-    >>> AppServerLayer.setUp()
+    # Change the rooturl of our openid vhost.  This is necessary so that the
+    # python OpenID library can access the OpenID provider, made available by
+    # the AppServerLayer.
     >>> from canonical.launchpad.webapp.vhosts import allvhosts
     >>> orig_value = allvhosts.configs['openid'].rooturl
     >>> allvhosts.configs['openid'].rooturl = (
@@ -64,23 +62,6 @@ successful.
     >>> print find_tags_by_class(browser.contents, 'login')
     []
 
-Undo the config change we did and tear down the AppServerLayer.
+Undo the config change we did.
 
     >>> allvhosts.configs['openid'].rooturl = orig_value
-    >>> AppServerLayer.tearDown()
-
-
-== Misc ==
-
-Many people seem to have bookmarked /user.cgi as the shipit homepage.
-We want to redirect from here to the shipit front page, rather than giving
-an unfriendly 404 error.
-
-    >>> print http(r"""
-    ... GET /user.cgi HTTP/1.1
-    ... Host: shipit.ubuntu.dev
-    ... """)  #doctest: -NORMALIZE_WHITESPACE
-    HTTP/1.1 301 Moved Permanently
-    ...
-    Location: .
-    ...
