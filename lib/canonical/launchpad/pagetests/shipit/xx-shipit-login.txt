@@ -14,29 +14,55 @@ will be asked to authenticate using their Launchpad account.
     >>> allvhosts.configs['openid'].rooturl = (
     ...     'http://openid.launchpad.dev:8085/')
 
-    >>> anon_browser.open('http://shipit.ubuntu.dev')
-    >>> anon_browser.getLink('Log In').click()
+    >>> browser.open('http://shipit.ubuntu.dev')
+    >>> browser.getLink('Log In').click()
 
-    >>> print anon_browser.title
+    >>> print browser.title
     OpenID transaction in progress
 
-    >>> anon_browser.getControl('Continue').click()
-
-    >>> print anon_browser.title
+    # In a real browser, this form would have been auto-submitted using
+    # javascript, but here we have to do that manually.
+    >>> browser.getControl('Continue').click()
+    >>> print browser.title
     Launchpad Login Service
 
 After authenticating, the user is sent back to shipit for finishing the
 request.
 
-    >>> anon_browser.getControl(name='field.email').value = 'mark@hbd.com'
-    >>> anon_browser.getControl(name='field.password').value = 'test'
-    >>> anon_browser.getControl('Continue').click()
+    >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl('Continue').click()
 
-    >>> print anon_browser.url
-
-    >>> print extract_text(
-    ...     find_tags_by_class(anon_browser.contents, 'login')[0])
+    >>> print browser.title
+    Your ShipIt Request
+    >>> print extract_text(find_tags_by_class(browser.contents, 'login')[0])
     Logged in as Mark Shuttleworth...
+
+If the user did not authorize the OpenID provider to send his details to
+Shipit, an error message would be shown, explaining that the login was not
+successful.
+
+    >>> browser.open('http://shipit.ubuntu.dev')
+    >>> browser.getControl('Log Out').click()
+    >>> browser.getLink('Log In').click()
+
+    >>> print browser.title
+    OpenID transaction in progress
+
+    # In a real browser, this form would have been auto-submitted using
+    # javascript, but here we have to do that manually.
+    >>> browser.getControl('Continue').click()
+    >>> print browser.title
+    Authenticate to http://shipit.ubuntu.dev
+
+    >>> browser.getControl('Not Now').click()
+    >>> print browser.title
+    ShipIt - Unsuccessful login
+
+    >>> print extract_text(find_tags_by_class(browser.contents, 'error')[0])
+    User cancelled
+    >>> print find_tags_by_class(browser.contents, 'login')
+    []
 
 Undo the config change we did and tear down the AppServerLayer.
 
