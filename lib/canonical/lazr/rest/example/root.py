@@ -5,8 +5,10 @@ __all__ = ['Cookbook',
 
 from zope.interface import implements
 from zope.traversing.browser.interfaces import IAbsoluteURL
+from zope.component import getUtility
 
 from canonical.lazr.rest import ServiceRootResource
+from canonical.lazr.interfaces.rest import IServiceRootResource
 from canonical.lazr.rest.example.interfaces import (
     ICookbook, ICookbookSet, IHasGet)
 
@@ -23,12 +25,28 @@ class Cookbook(TestWebServiceObject):
     def __name__(self):
         return self.name
 
+# Define some globally accessible sample data.
+C1 = Cookbook(u"Mastering the Art of French Cooking")
+C2 = Cookbook(u"The Joy of Cooking")
+C3 = Cookbook(u"James Beard's American Cookery")
+COOKBOOKS = [C1, C2, C3]
 
-class CookbookSet(TestWebServiceObject):
-    implements(ICookbookSet, IAbsoluteURL)
 
-    def __init__(self, cookbooks):
-        self.cookbooks = cookbooks
+class TestTopLevelResource(TestWebServiceObject):
+
+    @property
+    def __parent__(self):
+        return getUtility(IServiceRootResource)
+
+    @property
+    def __name__(self):
+        raise NotImplementedError()
+
+class CookbookSet(TestTopLevelResource):
+    implements(ICookbookSet)
+
+    def __init__(self, cookbooks=COOKBOOKS):
+        self.cookbooks = list(cookbooks)
 
     def getCookbooks(self):
         return self.cookbooks
@@ -42,12 +60,6 @@ class CookbookSet(TestWebServiceObject):
     __name__ = "cookbooks"
 
 
-C1 = Cookbook(u"Mastering the Art of French Cooking")
-C2 = Cookbook(u"The Joy of Cooking")
-C3 = Cookbook(u"James Beard's American Cookery")
-COOKBOOK_SET = CookbookSet([C1, C2, C3])
-
-
 class RootAbsoluteURL:
      """A basic, extensible implementation of IAbsoluteURL."""
      implements(IAbsoluteURL)
@@ -57,17 +69,24 @@ class RootAbsoluteURL:
          self.request = request
 
      def __str__(self):
-         return "http://api.launchpad.dev/beta/"
+         return "http://api.launchpad.dev/beta"
 
      __call__ = __str__
 
+
 class ExampleServiceRootResource(ServiceRootResource):
     implements(IHasGet, IAbsoluteURL)
-    top_level_names = {
-        'cookbooks': COOKBOOK_SET
-        }
+    _top_level_names = None
+    @property
+    def top_level_names(self):
+        if self._top_level_names is None:
+            self._top_level_names = {
+                'cookbooks': getUtility(ICookbookSet)
+                }
+        return self._top_level_names
 
     def get(self, name):
-        return self.top_level_names.get(name)
+        obj = self.top_level_names.get(name)
+        obj.__parent__ = self
+        return obj
 
-    __name__ = ''

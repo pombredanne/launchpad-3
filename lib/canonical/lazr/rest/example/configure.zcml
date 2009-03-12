@@ -5,11 +5,21 @@
   <webservice:register module="canonical.lazr.rest.example.interfaces" />
 
   <utility
-      factory="canonical.launchpad.rest.configuration.LaunchpadWebServiceConfiguration"
+      factory="canonical.lazr.rest.example.configuration.ExampleWebServiceConfiguration"
       provides="canonical.lazr.interfaces.rest.IWebServiceConfiguration">
   </utility>
 
   <adapter factory="canonical.lazr.rest.example.traversal.TraverseWithGet" />
+
+  <utility
+    factory="canonical.lazr.rest.example.root.CookbookSet"
+    provides="canonical.lazr.rest.example.interfaces.ICookbookSet">
+  </utility>
+
+  <utility
+    factory="canonical.lazr.rest.example.root.ExampleServiceRootResource"
+    provides="canonical.lazr.interfaces.rest.IServiceRootResource">
+  </utility>
 
   <adapter
       for="canonical.lazr.rest.example.root.TestWebServiceObject
@@ -18,6 +28,13 @@
       factory="zope.traversing.browser.absoluteurl.AbsoluteURL"
       />
 
+  <adapter
+      for="canonical.lazr.rest.example.root.TestWebServiceObject
+      canonical.lazr.testing.webservice.WebServiceTestRequest"
+      provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+      factory="zope.traversing.browser.absoluteurl.AbsoluteURL"
+      name="absolute_url"
+      />
 
   <adapter
       for="canonical.lazr.rest.example.root.ExampleServiceRootResource
@@ -26,5 +43,12 @@
       factory="canonical.lazr.rest.example.root.RootAbsoluteURL"
       />
 
+  <adapter
+      for="canonical.lazr.rest.example.root.ExampleServiceRootResource
+      canonical.lazr.testing.webservice.WebServiceTestRequest"
+      provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+      factory="canonical.lazr.rest.example.root.RootAbsoluteURL"
+      name="absolute_url"
+      />
 
 </configure>
