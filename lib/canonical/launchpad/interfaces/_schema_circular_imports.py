@@ -21,7 +21,8 @@ from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposal)
 from canonical.launchpad.interfaces.branchsubscription import (
-    IBranchSubscription)
+    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
+    CodeReviewNotificationLevel, IBranchSubscription)
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
@@ -39,6 +40,12 @@ IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
 IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
 IBranch['subscribe'].queryTaggedValue(
     'lazr.webservice.exported')['return_type'].schema = IBranchSubscription
+IBranch['subscribe'].queryTaggedValue('lazr.webservice.exported')['params'][
+    'notification_level'].vocabulary = BranchSubscriptionNotificationLevel
+IBranch['subscribe'].queryTaggedValue('lazr.webservice.exported')['params'][
+    'max_diff_lines'].vocabulary = BranchSubscriptionDiffSize
+IBranch['subscribe'].queryTaggedValue('lazr.webservice.exported')['params'][
+    'code_review_level'].vocabulary = CodeReviewNotificationLevel
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     'lazr.webservice.exported')['return_type'].schema = ICodeReviewComment

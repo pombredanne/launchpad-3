@@ -513,7 +513,7 @@ class Branch(SQLBase):
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
-                  review_level):
+                  code_review_level):
         """See `IBranch`."""
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
@@ -522,7 +522,7 @@ class Branch(SQLBase):
             subscription = BranchSubscription(
                 branch=self, person=person,
                 notification_level=notification_level,
-                max_diff_lines=max_diff_lines, review_level=review_level)
+                max_diff_lines=max_diff_lines, review_level=code_review_level)
             Store.of(subscription).flush()
         else:
             subscription.notification_level = notification_level
