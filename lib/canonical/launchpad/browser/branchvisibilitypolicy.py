@@ -51,17 +51,20 @@ class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     initial_values = {'rule': TeamBranchVisibilityRule.PRIVATE}
     custom_widget('rule', LaunchpadRadioWidgetWithDescription)
 
-    def isDefaultPublic(self, action=None):
-        """Is the default rule Public?"""
-        return not self.isDefaultForbidden(action)
-
-    def isDefaultForbidden(self, action=None):
-        """Is the default rule Forbidden?"""
+    def showSetDefaultPublic(self, action=None):
+        """Show if using inherited policy, or currently forbidden."""
         base_rule = self.context.getBaseBranchVisibilityRule()
-        return base_rule == BranchVisibilityRule.FORBIDDEN
+        return (self.context.isUsingInheritedBranchVisibilityPolicy() or
+                base_rule == BranchVisibilityRule.FORBIDDEN)
+
+    def showSetDefaultForbidden(self, action=None):
+        """Show if using inherited policy, or currently forbidden."""
+        base_rule = self.context.getBaseBranchVisibilityRule()
+        return (self.context.isUsingInheritedBranchVisibilityPolicy() or
+                base_rule != BranchVisibilityRule.FORBIDDEN)
 
     @action(_('Set Default Public'), name='set_default_public',
-            condition=isDefaultForbidden,
+            condition=showSetDefaultPublic,
             validator=LaunchpadFormView.validate_none)
     def set_default_public_action(self, action, data):
         """Make the default policy public."""
@@ -69,7 +72,7 @@ class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
             None, BranchVisibilityRule.PUBLIC)
 
     @action(_('Set Default Forbidden'), name='set_default_forbidden',
-            condition=isDefaultPublic,
+            condition=showSetDefaultForbidden,
             validator=LaunchpadFormView.validate_none)
     def set_default_forbidden_action(self, action, data):
         """Make the default policy forbidden."""
