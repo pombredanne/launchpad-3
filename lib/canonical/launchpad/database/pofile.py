@@ -498,43 +498,45 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return iter(self.currentMessageSets())
 
-    def getTranslationsFilteredBy(self, person):
-        """See `IPOFile`."""
-        assert person is not None, "You must provide a person to filter by."
+    def _getClausesForPOFileMessages(self):
+        """Get TranslationMessages for the POFile via TranslationTemplateItem.
+
+        Call-site will have to have appropriate clauseTables.
+        """
         clauses = [
             'TranslationTemplateItem.potemplate = %s' % sqlvalues(
                 self.potemplate),
             'TranslationTemplateItem.potmsgset = TranslationMessage.potmsgset',
-            'TranslationMessage.language = %s' % sqlvalues(self.language),
-            'TranslationMessage.submitter = %s' % sqlvalues(person)
-            ]
+            'TranslationMessage.language = %s' % sqlvalues(self.language)]
         if self.variant is None:
             clauses.append(
                 'TranslationMessage.variant IS NULL')
         else:
             clauses.append(
                 'TranslationMessage.variant = %s' % sqlvalues(self.variant))
+        return clauses
+
+    def getTranslationsFilteredBy(self, person):
+        """See `IPOFile`."""
+        assert person is not None, "You must provide a person to filter by."
+        clauses = self._getClausesForPOFileMessages()
+        clauses.append(
+            'TranslationMessage.submitter = %s' % sqlvalues(person))
 
         return TranslationMessage.select(
             " AND ".join(clauses),
             clauseTables=['TranslationTemplateItem'],
             orderBy=['sequence', '-date_created'])
 
-    def getPOTMsgSetTranslated(self):
-        """See `IPOFile`."""
-        clauses = [
-            'TranslationTemplateItem.potemplate = %s' % sqlvalues(
-                self.potemplate),
-            'TranslationTemplateItem.potmsgset = TranslationMessage.potmsgset',
-            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.language = %s' % sqlvalues(self.language),
-            'TranslationMessage.is_current IS TRUE']
-        if self.variant is None:
-            clauses.append(
-                'TranslationMessage.variant IS NULL')
-        else:
-            clauses.append(
-                'TranslationMessage.variant = %s' % sqlvalues(self.variant))
+    def _getTranslatedMessagesQuery(self):
+        """Get clauses and clause tables for fetching all POTMsgSets
+        with translations.
+
+        To be used with POTMsgSet.select().
+        """
+        clause_tables = ['TranslationTemplateItem', 'TranslationMessage']
+        clauses = self._getClausesForPOFileMessages()
+        clauses.append('TranslationMessage.is_current IS TRUE')
         self._appendCompletePluralFormsConditions(clauses)
 
         # A message is current in this pofile if:
@@ -560,40 +562,34 @@ class POFile(SQLBase, POFileMixIn):
         translated_query = ('( (' + diverged_translation_query + ') OR ('
                             + shared_translation_query + ') )')
         clauses.append(translated_query)
+        return (clauses, clause_tables)
+
+
+    def getPOTMsgSetTranslated(self):
+        """See `IPOFile`."""
+        clauses, clause_tables = self._getTranslatedMessagesQuery()
+        clauses.append('TranslationTemplateItem.potmsgset = POTMsgSet.id')
 
         return POTMsgSet.select(
-            ' AND '.join(clauses), clauseTables=['TranslationMessage',
-                                               'TranslationTemplateItem'],
+            ' AND '.join(clauses), clauseTables=clause_tables,
             orderBy='POTMsgSet.sequence')
 
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
-        incomplete_check = ['TranslationMessage.msgstr0 IS NULL']
-        # Plural forms only matter if we are in a message with a msgid_plural.
-        incomplete_plurals_check = ['FALSE']
-        for plural_form in range(self.plural_forms)[1:]:
-            incomplete_plurals_check.append(
-                'TranslationMessage.msgstr%d IS NULL' % plural_form)
-        incomplete_check.append(
-            '(POTMsgSet.msgid_plural IS NOT NULL AND (%s))' % ' OR '.join(
-                incomplete_plurals_check))
-
-        # We use a subselect to allow the LEFT OUTER JOIN
-        query = """POTMsgSet.id IN (
-            SELECT POTMsgSet.id
-            FROM POTMsgSet
-            LEFT OUTER JOIN TranslationMessage ON
-                TranslationMessage.potmsgset = POTMsgSet.id AND
-                TranslationMessage.pofile = %s AND
-                TranslationMessage.is_current IS TRUE
-            WHERE
-                POTMsgSet.sequence > 0 AND
-                POTMsgSet.potemplate = %s AND
-                (TranslationMessage.id IS NULL OR
-                 (%s)))
-            """ % (quote(self), quote(self.potemplate),
-                   ' OR '.join(incomplete_check))
-        return POTMsgSet.select(query, orderBy='POTMsgSet.sequence')
+        translated_clauses, clause_tables = self._getTranslatedMessagesQuery()
+        translated_query = (
+            "(SELECT TranslationTemplateItem.potmsgset"
+            "   FROM TranslationTemplateItem, TranslationMessage"
+            "   WHERE " + " AND ".join(translated_clauses) + ")")
+        clauses = [
+            'TranslationTemplateItem.potemplate = %s' % sqlvalues(
+                self.potemplate),
+            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            ]
+        clauses.append('POTMsgSet.id NOT IN (' + translated_query + ')')
+        return POTMsgSet.select(' AND '.join(clauses),
+                                clauseTables=['TranslationTemplateItem'],
+                                orderBy='POTMsgSet.sequence')
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
