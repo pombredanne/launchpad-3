@@ -576,6 +576,8 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
+        # We get all POTMsgSet.ids with translations, and later
+        # exclude them using a NOT IN subselect.
         translated_clauses, clause_tables = self._getTranslatedMessagesQuery()
         translated_query = (
             "(SELECT TranslationTemplateItem.potmsgset"
@@ -593,23 +595,40 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
+        clauses = self._getClausesForPOFileMessages()
+        clauses.extend([
+            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            'TranslationMessage.is_current IS NOT TRUE',
+            ])
+
+        diverged_translation_query = (
+            '''(SELECT COALESCE(diverged.date_reviewed, diverged.date_created)
+                 FROM TranslationMessage AS diverged
+                 WHERE
+                   diverged.is_current IS TRUE AND
+                   diverged.potemplate=%s AND
+                   diverged.potmsgset=POTMsgSet.id)''' % (
+            sqlvalues(self.potemplate)))
+
+        shared_translation_query = (
+            '''(SELECT COALESCE(shared.date_reviewed, shared.date_created)
+                 FROM TranslationMessage AS shared
+                 WHERE
+                   shared.is_current IS TRUE AND
+                   shared.potemplate IS NULL AND
+                   shared.potmsgset=POTMsgSet.id)''')
+        beggining_of_time = "TIMESTAMP '1970-01-01 00:00:00'"
+        newer_than_query = (
+            "TranslationMessage.date_created > COALESCE(" +
+            diverged_translation_query + "," +
+            shared_translation_query + "," +
+            beggining_of_time + ")")
+        clauses.append(newer_than_query)
+
         # A POT set has "new" suggestions if there is a non current
         # TranslationMessage newer than the current reviewed one.
-        results = POTMsgSet.select('''
-            POTMsgSet.potemplate = %s AND
-            POTMsgSet.sequence > 0 AND
-            TranslationMessage.potmsgset = POTMsgSet.id AND
-            TranslationMessage.pofile = %s AND
-            TranslationMessage.is_current IS NOT TRUE AND
-            TranslationMessage.date_created > COALESCE(
-                (SELECT COALESCE(current.date_reviewed, current.date_created)
-                    FROM TranslationMessage current
-                    WHERE current.potmsgset = POTMsgSet.id AND
-                          current.pofile = %s AND
-                          current.is_current IS TRUE),
-                TIMESTAMP '1970-01-01 00:00:00')
-            ''' % sqlvalues(self.potemplate, self, self),
-            clauseTables=['TranslationMessage'],
+        results = POTMsgSet.select(' AND '.join(clauses),
+            clauseTables=['TranslationTemplateItem', 'TranslationMessage'],
             orderBy='POTmsgSet.sequence',
             distinct=True)
 
