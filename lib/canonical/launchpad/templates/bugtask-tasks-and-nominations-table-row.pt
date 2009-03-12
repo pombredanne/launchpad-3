@@ -85,44 +85,72 @@
           </a>
         </div>
       </tal:has_watch>
-      <tal:has_no_watch condition="not: context/bugwatch">
+      <tal:has_no_watch condition="not: context/bugwatch"
+        define="assignee_el_id string:assignee-link-${context/id}">
 
-        <tal:has_assignee condition="context/assignee"
-          define="assignee_el_id string:assignee-link-${context/id}">
-          <a
-            style="padding: 0.25em; text-decoration: none;"
-            tal:attributes="
-              id assignee_el_id;
-              href string:${context/assignee/fmt:url}/+assignedbugs"
-          >
+        <tal:comment condition="nothing">
+          The empty <a> tag is filled in by the in-place assignee editor.
+        </tal:comment>
+        <a
+          style="padding: 0.25em; text-decoration: none;"
+          tal:attributes="
+            id assignee_el_id;
+            href string:${context/assignee/fmt:url}/+assignedbugs"
+        >
+          <tal:has_assignee condition="context/assignee">
             <img tal:replace="structure context/assignee/image:icon"
-                 src="/@@/person" />
+                  src="/@@/person" />
             <span tal:replace="context/assignee/browsername">
               assignee.browsername
             </span>
-          </a>
+          </tal:has_assignee>
+        </a>
           <script tal:content="structure string:
           YUI().use('lp.picker', function(Y) {
-            var lp = Y.lp;
-            var picker = lp.picker;
             var show_widget_node = Y.Node.create('<img/>');
             show_widget_node.set('src', '/@@/edit');
             var assignee_link = Y.get('#${assignee_el_id}');
             assignee_link.ancestor().appendChild(show_widget_node);
             var save = function (result) {
-                assignee_link.set('innerHTML', '');
-                var icon = Y.Node.create('<img/>');
-                icon.set('src', result['image']);
-                assignee_link.appendChild(icon);
-                assignee_link.appendChild(Y.Node.create(result['title']));
-                assignee_link.set('href',
-                    '/~' + result['value'] + '/+assignedbugs');
+                var client = new LP.client.Launchpad();
+                var person_uri = LP.client.get_absolute_uri(
+                    '/~' + result['value'], true);
+                var update_ui_after_save = function (e) {
+                    LP.log_object(e, 'update_ui_after_save');
+                    LP.log_object(result, 'result in update func');
+                    assignee_link.set('innerHTML', '');
+                    var icon = Y.Node.create('<img/>');
+                    icon.set('src', result['image']);
+                    assignee_link.appendChild(icon);
+                    assignee_link.appendChild(
+                        Y.Node.create(' ' + result['title']));
+                    assignee_link.set('href',
+                        '/~' + result['value'] + '/+assignedbugs');
+                };
+
+                // LP.client won't insert 'api/beta' into an absolute url.
+                var bugtask_uri = '${view/bugtask_canonical_url}';
+                var index = bugtask_uri.indexOf('//');
+                index = bugtask_uri.indexOf('/', index+2);
+                bugtask_uri = bugtask_uri.substring(index);
+
+                client.named_post(
+                    bugtask_uri,
+                    'transitionToAssignee',
+                    {
+                      parameters: {assignee: person_uri},
+                      on: {
+                      success: update_ui_after_save,
+                      failure: function (e) {
+                          alert('Error');
+                          Y.log(e);
+                     }}}
+                );
             };
             var config = {header: 'Select assignee'};
             Y.lp.picker.add('ValidAssignee', show_widget_node, save, config);
           });
           "/>
-        </tal:has_assignee>
       </tal:has_no_watch>
     </td>
 

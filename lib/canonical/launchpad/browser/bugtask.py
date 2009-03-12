@@ -2852,6 +2852,11 @@ class BugTaskTableRowView(LaunchpadView):
         # Hide the edit form when the bug is viewed in a CVE context
         return self.request.getNearest(ICveSet) == (None, None)
 
+    @property
+    def bugtask_canonical_url(self):
+        """Return the canonical url for the bugtask."""
+        return canonical_url(self.context)
+
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     """Search all bug reports."""
