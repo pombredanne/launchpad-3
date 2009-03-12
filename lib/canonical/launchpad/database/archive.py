@@ -82,6 +82,13 @@ from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
 
+default_name_by_purpose = {
+    ArchivePurpose.PRIMARY: 'primary',
+    ArchivePurpose.PPA: 'ppa',
+    ArchivePurpose.PARTNER: 'partner',
+    }
+
+
 class Archive(SQLBase):
     implements(IArchive, IHasOwner, IHasBuildRecords)
     _table = 'Archive'
@@ -185,20 +192,26 @@ class Archive(SQLBase):
     def title(self):
         """See `IArchive`."""
         if self.is_ppa:
-            title = 'PPA for %s' % self.owner.displayname
+            default_name = default_name_by_purpose.get(ArchivePurpose.PPA)
+            if self.name == default_name:
+                title = 'PPA for %s' % self.owner.displayname
+            else:
+                title = 'PPA named %s for %s' % (
+                    self.name, self.owner.displayname)
             if self.private:
                 title = "Private %s" % title
             return title
-        elif self.is_copy:
+
+        if self.is_copy:
             if self.private:
-                title = ("Private copy archive %s for %s" %
-                         (self.name, self.owner.displayname))
+                title = "Private copy archive %s for %s" % (
+                    self.name, self.owner.displayname)
             else:
-                title = ("Copy archive %s for %s" %
-                         (self.name, self.owner.displayname))
+                title = "Copy archive %s for %s" % (
+                    self.name, self.owner.displayname)
             return title
-        else:
-            return '%s for %s' % (self.purpose.title, self.distribution.title)
+
+        return '%s for %s' % (self.purpose.title, self.distribution.title)
 
     @property
     def series_with_sources(self):
@@ -1163,17 +1176,11 @@ class ArchiveSet:
 
         :return: the name text to be used as name.
         """
-        name_by_purpose = {
-            ArchivePurpose.PRIMARY: 'primary',
-            ArchivePurpose.PPA: 'ppa',
-            ArchivePurpose.PARTNER: 'partner',
-            }
-
-        if purpose not in name_by_purpose.keys():
+        if purpose not in default_name_by_purpose.keys():
             raise AssertionError(
                 "'%s' purpose has no default name." % purpose.name)
 
-        return name_by_purpose[purpose]
+        return default_name_by_purpose[purpose]
 
     def getByDistroPurpose(self, distribution, purpose, name=None):
         """See `IArchiveSet`."""
