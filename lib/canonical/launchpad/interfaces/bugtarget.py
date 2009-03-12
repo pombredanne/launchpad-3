@@ -66,6 +66,7 @@ class IHasBugs(Interface):
         bug_commenter=Reference(schema=IPerson),
         bug_subscriber=Reference(schema=IPerson),
         owner=Reference(schema=IPerson),
+        affected_user=Reference(schema=IPerson),
         has_patch=copy_field(IBugTaskSearch['has_patch']),
         has_cve=copy_field(IBugTaskSearch['has_cve']),
         tags=copy_field(IBugTaskSearch['tag']),
