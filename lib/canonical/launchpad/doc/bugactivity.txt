@@ -103,7 +103,7 @@ are simple little functions.
     >>> notify(source_package_assignment_edited)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
-    u'mozilla-firefox: status'
+    u'mozilla-firefox (Ubuntu): status'
     >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
     True
     >>> latest_activity.newvalue == BugTaskStatus.CONFIRMED.title

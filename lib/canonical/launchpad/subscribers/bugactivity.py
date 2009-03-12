@@ -124,17 +124,17 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
         task_title = ""
-        obm = sqlobject_modified_event.object_before_modification
+        bug_task_before = sqlobject_modified_event.object_before_modification
         if bug_task_edited.product:
-            if obm.product is None:
+            if bug_task_before.product is None:
                 task_title = None
             else:
-                task_title = obm.product.name
+                task_title = bug_task_before.bugtargetname
         else:
-            if obm.sourcepackagename is None:
+            if bug_task_before.sourcepackagename is None:
                 task_title = None
             else:
-                task_title = obm.sourcepackagename.name
+                task_title = bug_task_before.bugtargetname
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
             if oldvalue is not None:
