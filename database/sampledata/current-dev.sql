@@ -2352,7 +2352,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (77, 'former-user@canonical.com', 70, 3, '2006-05-12 17:38:38.798696', 70);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (78, 'bac@canonical.com', 243623, 4, '2008-06-27 14:49:11.149508', 243623);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (79, 'admin@canonical.com', 16, 2, '2008-08-05 12:01:32.086327', 16);
-INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (80, 'email1@example.com', 243627, 4, '2009-03-12 02:28:43.770801', 243625);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (80, 'ubuntu-branches-owner@example.com', 243627, 4, '2009-03-12 02:28:43.770801', 243625);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
