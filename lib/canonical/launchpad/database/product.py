@@ -37,7 +37,8 @@ from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import (
+    BugTargetBase, OfficialBugTagTarget)
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.launchpad.database.bugwatch import BugWatch
@@ -74,6 +75,7 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
+from canonical.launchpad.interfaces.bugtarget import IOfficialBugTagTarget
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
@@ -159,14 +161,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin):
+              HasMilestonesMixin, OfficialBugTagTarget):
 
     """A Product."""
 
     implements(
-        IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
-        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget,
-        IStructuralSubscriptionTarget)
+    IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo, IHasMugshot,
+    ILaunchpadUsage, IOfficialBugTagTarget, IProduct, IQuestionTarget,
+    IStructuralSubscriptionTarget)
 
     _table = 'Product'
 

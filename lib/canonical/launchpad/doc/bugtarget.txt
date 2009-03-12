@@ -104,3 +104,70 @@ But bug tags must be unique for each product and distribution.
 
     >>> import transaction
     >>> transaction.abort()
+
+
+== Targets of official bug tags ==
+
+Distribution owners and other persons with the permission launchpad.Edit
+can add and remove offical bug tags by calling addOfficialBugTag() resp.
+removeOfficialBugTag().
+
+    >>> login('colin.watson@ubuntulinux.com')
+    >>> ubuntu.addOfficialBugTag(u'foo')
+    >>> ubuntu.addOfficialBugTag(u'bar')
+    >>> result_set = store.find(
+    ...     OfficialBugTag, OfficialBugTag.distribution==ubuntu)
+    >>> result_set.order_by(OfficialBugTag.tag)
+    <storm.store.ResultSet object at...
+    >>> for tag in result_set:
+    ...     print tag.tag
+    bar
+    foo
+
+    >>> ubuntu.removeOfficialBugTag(u'foo')
+    >>> result_set = store.find(
+    ...     OfficialBugTag, OfficialBugTag.distribution==ubuntu)
+    >>> for tag in result_set:
+    ...     print tag.tag
+    bar
+
+    >>> login('test@canonical.com')
+    >>> firefox.addOfficialBugTag(u'foo')
+    >>> result_set = store.find(
+    ...     OfficialBugTag, OfficialBugTag.product==firefox)
+    >>> for tag in result_set:
+    ...     print tag.tag
+    foo
+
+    >>> firefox.removeOfficialBugTag(u'foo')
+    >>> result_set = store.find(
+    ...     OfficialBugTag, OfficialBugTag.product==firefox)
+    >>> print result_set.count()
+    0
+
+    >>> transaction.commit()
+
+Ordinary users cannot add and remove official bug tags.
+
+    >>> login('no-priv@canonical.com')
+    >>> ubuntu.addOfficialBugTag(u'foo')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Distribution at ...>, 'addOfficialBugTag',
+    'launchpad.Edit')
+
+    >>> ubuntu.removeOfficialBugTag(u'foo')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Distribution at ...>, 'removeOfficialBugTag',
+    'launchpad.Edit')
+
+    >>> firefox.addOfficialBugTag(u'foo')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Product at ...>, 'addOfficialBugTag', 'launchpad.Edit')
+
+    >>> firefox.removeOfficialBugTag(u'foo')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Product at ...>, 'removeOfficialBugTag', 'launchpad.Edit')

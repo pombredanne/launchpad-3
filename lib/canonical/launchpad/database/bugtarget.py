@@ -8,6 +8,7 @@ __all__ = [
     'BugTargetBase',
     'HasBugsBase',
     'OfficialBugTag',
+    'OfficialBugTagTarget',
     ]
 
 from storm.locals import Int, Reference, Storm, Unicode
@@ -19,12 +20,15 @@ from canonical.launchpad.database.bugtask import (
     BugTaskSet, get_bug_privacy_filter)
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.interfaces.bugtarget import IOfficialBugTag
+from canonical.launchpad.interfaces.bugtarget import (
+    IOfficialBugTag, IOfficialBugTagTarget)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.bugtask import (
     BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 class HasBugsBase:
     """Standard functionality for IHasBugs.
@@ -38,7 +42,6 @@ class HasBugsBase:
                     importance=None,
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
-                    affected_user=None,
                     has_patch=None, has_cve=None, distribution=None,
                     tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
                     omit_duplicates=True, omit_targeted=None,
@@ -208,6 +211,31 @@ class BugTargetBase(HasBugsBase):
         from canonical.launchpad.database.bug import Bug
         return list(
             Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
+
+
+class OfficialBugTagTarget:
+    """See `IOfficialBugTagTarget`."""
+
+    implements(IOfficialBugTagTarget)
+
+    def addOfficialBugTag(self, tag_text):
+        """See `IOfficialBugTagTarget`."""
+        new_tag = OfficialBugTag()
+        new_tag.tag = tag_text
+        new_tag.target = self
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.add(new_tag)
+
+    def removeOfficialBugTag(self, tag_text):
+        """See `IOfficialBugTagTarget`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        if IDistribution.providedBy(self):
+            target_clause = OfficialBugTag.distribution == self
+        else:
+            target_clause = OfficialBugTag.product == self
+        tags_to_remove = store.find(
+            OfficialBugTag, OfficialBugTag.tag==tag_text, target_clause)
+        tags_to_remove.remove()
 
 
 class OfficialBugTag(Storm):

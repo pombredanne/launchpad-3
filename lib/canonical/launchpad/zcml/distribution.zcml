@@ -63,6 +63,9 @@
     <require
         permission="launchpad.Edit"
         attributes="setBugSupervisor" />
+    <require
+      permission="launchpad.Edit"
+      interface="canonical.launchpad.interfaces.bugtarget.IOfficialBugTagTarget"/>
   </class>
 
   <adapter

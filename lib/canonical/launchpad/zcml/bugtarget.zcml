@@ -86,4 +86,5 @@
        permission="zope.Public"
        template="../templates/bugtarget-macros-search.pt" />
 
+
 </configure>

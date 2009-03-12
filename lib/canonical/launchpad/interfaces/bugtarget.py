@@ -66,7 +66,6 @@ class IHasBugs(Interface):
         bug_commenter=Reference(schema=IPerson),
         bug_subscriber=Reference(schema=IPerson),
         owner=Reference(schema=IPerson),
-        affected_user=Reference(schema=IPerson),
         has_patch=copy_field(IBugTaskSearch['has_patch']),
         has_cve=copy_field(IBugTaskSearch['has_cve']),
         tags=copy_field(IBugTaskSearch['tag']),
@@ -87,9 +86,8 @@ class IHasBugs(Interface):
                     status=None, importance=None,
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
-                    affected_user=None, has_patch=None, has_cve=None,
-                    distribution=None, tags=None,
-                    tags_combinator=BugTagsSearchCombinator.ALL,
+                    has_patch=None, has_cve=None, distribution=None,
+                    tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
@@ -192,7 +190,13 @@ class BugDistroSeriesTargetDetails:
 
 
 class IOfficialBugTagTarget(Interface):
-    """A marker interface for targets of ofccical bug tags."""
+    """A mixin interface for targets of official bug tags."""
+
+    def addOfficialBugTag(tag_text):
+        """Add tag_text to the official bug tags of this target."""
+
+    def removeOfficialBugTag(tag_text):
+        """Remove tag_text from the official bug tags of this target."""
 
 
 class IOfficialBugTag(Interface):
