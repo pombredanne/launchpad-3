@@ -3,10 +3,11 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
-import tempfile, os, subprocess
+import crypt, filecmp, os, random, subprocess, tempfile
 from operator import attrgetter
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
 
@@ -38,23 +39,31 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             help="If set, no transactions are committed.  This will stop "
                  "tokens from being deactivated.")
 
-    def invokeHtpasswd(self, filename, user, password, overwrite=False):
-        """Run the Apache htpasswd utility."""
-        command = ["htpasswd"]
-        flags = ["-b"]
-        args = [filename, user, password]
-        if overwrite:
-            flags.append("-c")
-        command_with_args = command + flags + args
-        proc = subprocess.Popen(command_with_args)
-        return_code = proc.wait()
-        if return_code != 0:
-            raise AssertionError(
-                "Failed to invoke htpasswd, return code %s" % return_code)
+    def writeHtpasswd(self, filename, user, password, overwrite=False,
+                      salt=None):
+        """Append a username/password pair to the filename supplied.
+
+        Optionally overwrite it.
+        """
+        if overwrite and os.path.isfile(filename):
+            os.remove(filename)
+
+        if salt is None:
+            characters = ('0123456789'
+                         'abcdefghijklmnopqrstuvwxyz'
+                         'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+            salt = ''.join(random.choice(characters) for count in range(2))
+        encrypted = crypt.crypt(password, salt)
+
+        file = open(filename, "a")
+        file.write("%s:%s\n" % (user, encrypted))
+        file.close()
 
     def ensureHtaccess(self, ppa):
         """Generate a .htaccess for `ppa`."""
-        pub_config = ppa.getPubConfig()
+        # The publisher Config object does not have an
+        # interface, so we need to remove the security wrapper.
+        pub_config = removeSecurityProxy(ppa.getPubConfig())
         htaccess_filename = os.path.join(pub_config.htaccessroot, ".htaccess")
         if not os.path.isfile(htaccess_filename):
             # It's not there, so create it.
@@ -75,7 +84,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         fd.close()
 
         # The first .htpasswd entry is the buildd_secret.
-        self.invokeHtpasswd(
+        self.writeHtpasswd(
             temp_filename, BUILDD_USER_NAME, ppa.buildd_secret,
             overwrite=True)
 
@@ -92,7 +101,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         
         :return: True if the file was replaced.
         """
-        pub_config = ppa.getPubConfig(
+        pub_config = ppa.getPubConfig()
         htpasswd_filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
 
         if not filecmp.cmp(htpasswd, temp_htpasswd_file):
