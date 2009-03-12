@@ -67,7 +67,7 @@ class FakeRequest:
     """Simple request object for testing purpose."""
     # IHTTPApplicationRequest makes us eligible for
     # get_current_browser_request()
-    implements(IHTTPApplicationRequest, WebServiceLayer)
+    implements(IHTTPApplicationRequest, IWebServiceLayer)
 
     def __init__(self, traversed=None, stack=None):
         self._traversed_names = traversed
@@ -137,6 +137,7 @@ def pprint_collection(json_body):
 
 class WebServiceTestRequest(WebServiceRequestTraversal, BrowserRequest):
     """A test request for the webservice."""
+    implements(IWebServiceLayer)
 
 
 class TestPublication:
