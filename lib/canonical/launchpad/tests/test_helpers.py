@@ -235,11 +235,11 @@ def test_shortlist_returns_all_elements():
     printed.
 
     >>> from canonical.launchpad.helpers import shortlist
-    >>> shortlist(list(range(10)), longest_expected=5) #doctest: +ELLIPIS
+    >>> shortlist(list(range(10)), longest_expected=5) #doctest: +ELLIPSIS
     UserWarning: shortlist() should not...
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-    >>> shortlist(xrange(10), longest_expected=5) #doctest: +ELLIPIS
+    >>> shortlist(xrange(10), longest_expected=5) #doctest: +ELLIPSIS
     UserWarning: shortlist() should not...
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
