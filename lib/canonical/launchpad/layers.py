@@ -11,8 +11,7 @@ from zope.interface import directlyProvides, directlyProvidedBy, Interface
 from zope.publisher.interfaces.browser import (
     IBrowserRequest, IDefaultBrowserLayer)
 
-from canonical.lazr.interfaces.rest import (
-    WebServiceLayer as LazrWebServiceLayer)
+from canonical.lazr.interfaces.rest import IWebServiceLayer
 
 
 def setAdditionalLayer(request, layer):
@@ -101,6 +100,6 @@ class FeedsLayer(LaunchpadLayer):
     """The `FeedsLayer` Layer."""
 
 
-class WebServiceLayer(LazrWebServiceLayer, LaunchpadLayer):
+class WebServiceLayer(IWebServiceLayer, LaunchpadLayer):
     """The layer for web service requests."""
 
