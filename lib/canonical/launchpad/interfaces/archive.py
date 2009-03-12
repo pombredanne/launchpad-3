@@ -572,6 +572,10 @@ class IArchivePublic(IHasOwner):
     def newAuthToken(person, token=None, date_created=None):
         """Create a new authorisation token.
 
+        XXX: noodles 2009-03-12 bug=341600 This method should not be exposed
+        through the API as we do not yet check that the callsite has
+        launchpad.Edit on the person.
+
         :param person: An IPerson whom this token is for
         :param token: Optional unicode text to use as the token. One will be
             generated if not given

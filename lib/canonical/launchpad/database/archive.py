@@ -78,7 +78,6 @@ from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.scripts.packagecopier import (
     CannotCopy, check_copy, do_copy)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -1096,14 +1095,7 @@ class Archive(SQLBase):
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
 
-        # First, users can only create tokens for themselves, or more
-        # generally, for users they can edit:
-        if not check_permission('launchpad.Edit', person):
-            raise Unauthorized(
-                "You cannot create tokens for %s." % (
-                    person.displayname))
-
-        # Second, ensure that a current subscription exists for the
+        # First, ensure that a current subscription exists for the
         # person and archive:
         # XXX: noodles 2009-03-02 bug=336779: This can be removed once
         # newAuthToken() is moved into IArchiveView.
@@ -1113,7 +1105,7 @@ class Archive(SQLBase):
             raise Unauthorized(
                 "You do not have a subscription for %s." % self.title)
 
-        # Third, ensure that the current subscription does not already
+        # Second, ensure that the current subscription does not already
         # have a token:
         token_set = getUtility(IArchiveAuthTokenSet)
         previous_token = token_set.getActiveTokenForArchiveAndPerson(

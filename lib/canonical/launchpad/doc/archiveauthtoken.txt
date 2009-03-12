@@ -18,24 +18,15 @@ Set cprov's PPA to be a private one:
 
 == Creating new tokens ==
 
-New tokens are created using IArchive.newAuthToken(). Users create their own
-tokens for an archive, but this is only possible if there is already a valid
-subscription for the user for that archive.
+New tokens are created using IArchive.newAuthToken() but this is only
+possible if there is already a valid subscription for the user for
+that archive.
 
-First, try to create a token for someone else:
-
-    >>> login("no-priv@canonical.com")
-    >>> name12 = getUtility(IPersonSet).getByName("name12")
-
-    >>> new_token = cprov.archive.newAuthToken(name12)
-    Traceback (most recent call last):
-    ...
-    Unauthorized: You cannot create tokens for Sample Person.
-
-Next, login as name12 and try to create a token for ourselves, even
+First, login as name12 and try to create a token for ourselves, even
 though we do not yet have a subscription:
 
     >>> login("test@canonical.com")
+    >>> name12 = getUtility(IPersonSet).getByName("name12")
     >>> new_token = cprov.archive.newAuthToken(name12)
     Traceback (most recent call last):
     ...
