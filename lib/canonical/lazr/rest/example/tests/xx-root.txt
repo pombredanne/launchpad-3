@@ -1,4 +1,17 @@
->>> from canonical.lazr.testing.webservice import ExampleWebServiceHTTPCaller
->>> http = ExampleWebServiceHTTPCaller()
->>> print http("GET /api/beta HTTP/1.1\nHost: api.launchpad.dev")
-''
+= Introduction =
+
+  >>> from canonical.lazr.testing.webservice import ExampleWebServiceCaller
+  >>> webservice = ExampleWebServiceCaller()
+
+The service root (/[version]/) is a resource that responds to GET by
+describing the web service. The description is a JSON map full of
+links to the top-level web service objects.
+
+  >>> top_level_links = webservice.get("/").jsonBody()
+  >>> sorted(top_level_links.keys())
+  [u'cookbooks_collection_link', u'resource_type_link']
+  >>> top_level_links['cookbooks_collection_link']
+  u'http://.../cookbooks'
+
+  >>> top_level_links['resource_type_link']
+  u'http://...#service-root'
