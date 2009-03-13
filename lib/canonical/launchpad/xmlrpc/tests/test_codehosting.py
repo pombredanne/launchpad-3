@@ -463,7 +463,7 @@ class BranchPullQueueTest(TestCaseWithFactory):
         # details in the tuple.
         default_branch = self.factory.makeAnyBranch(private=True)
         product = removeSecurityProxy(default_branch).product
-        product.development_focus.branch = default_branch
+        product.development_focus.user_branch = default_branch
         mirrored_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=product)
         info = self.storage._getBranchPullInfo(mirrored_branch)

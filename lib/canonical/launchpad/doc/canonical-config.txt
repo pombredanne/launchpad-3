@@ -19,7 +19,7 @@ simple configuration).
     >>> config.database.db_statement_timeout is None
     True
     >>> config.launchpad.dbuser
-    'launchpad_main'
+    'launchpad'
     >>> config.librarian.dbuser
     'librarian'
     >>> config.librarian.upload_host

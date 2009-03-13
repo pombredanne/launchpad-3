@@ -231,7 +231,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         # merged, and the source branch lifecycle status set as merged.
         product = self.factory.makeProduct()
         proposal = self.factory.makeBranchMergeProposal(product=product)
-        product.development_focus.branch = proposal.target_branch
+        product.development_focus.user_branch = proposal.target_branch
         self.assertNotEqual(
             BranchMergeProposalStatus.MERGED, proposal.queue_status)
         self.assertNotEqual(
@@ -276,7 +276,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         product = self.factory.makeProduct()
         source = self.factory.makeProductBranch(product=product)
         target = self.factory.makeProductBranch(product=product)
-        product.development_focus.branch = target
+        product.development_focus.user_branch = target
         self.handler.mergeOfTwoBranches(source, target)
         self.assertEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
@@ -287,9 +287,9 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         product = self.factory.makeProduct()
         source = self.factory.makeProductBranch(product=product)
         target = self.factory.makeProductBranch(product=product)
-        product.development_focus.branch = target
+        product.development_focus.user_branch = target
         series = product.newSeries(product.owner, 'new', '')
-        series.branch = source
+        series.user_branch = source
 
         self.handler.mergeOfTwoBranches(source, target)
         self.assertNotEqual(

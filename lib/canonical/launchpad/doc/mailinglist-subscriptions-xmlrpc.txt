@@ -37,8 +37,7 @@ create and populate some teams to demonstrate.
     >>> for person in people:
     ...     person.join(team_one)
     ...     list_one.subscribe(person)
-    >>> import transaction
-    >>> transaction.commit()
+    >>> flush_database_updates()
 
 Asking for the membership information for team-one's list returns all the
 above people.  We want to see all the email addresses for all the people

@@ -10,8 +10,6 @@ import os
 import mimetypes
 import urlparse
 import urllib
-from datetime import datetime
-import pytz
 
 from cscvs.dircompare import path
 
@@ -111,23 +109,12 @@ class ProductReleaseFinder:
         self.ztm.begin()
         try:
             product = getUtility(IProductSet).getByName(product_name)
-            # XXX: This might match a milestone on a product series that was
-            # not intended, since product release used to have unique
-            # names per product series, but are now dependent on the milestone
-            # name which is unique per product. The series_name method
-            # parameter can be removed.
-            milestone = product.getMilestone(release_name)
-            if milestone is None:
-                series = product.getSeries(series_name)
-                milestone = series.newMilestone(release_name)
-                # Normally, a milestone is deactived when that version is
-                # released. This is only safe to do in an automated script
-                # if we are not using a pre-existing milestone.
-                milestone.active = False
-            release = milestone.product_release
+            series = product.getSeries(series_name)
+            release = series.getRelease(release_name)
             if release is None:
-                release = milestone.createProductRelease(
-                    owner=product.owner, datereleased=datetime.now(pytz.UTC))
+                release = series.addRelease(
+                    owner=product.owner,
+                    version=release_name)
                 self.log.info("Created new release %s for %s/%s",
                               release_name, product_name, series_name)
 

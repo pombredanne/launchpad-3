@@ -21,15 +21,14 @@ class ShipitConstraintsTestCase(unittest.TestCase):
             )
         return cur.fetchone()[0]
 
-    def insert(self, cur, is_admin_request='false'):
+    def insert(self, cur, owner='stub'):
         cur.execute("""
             INSERT INTO ShippingRequest (
                 recipient, recipientdisplayname, addressline1, city,
-                country, status, is_admin_request)
+                country, status)
             VALUES (
-                (SELECT account FROM Person WHERE name='stub'),
-                'whatever', 'whatever', 'whatever', 66, 1,
-                %(is_admin_request)s
+                (SELECT id FROM Person WHERE name=%(owner)s),
+                'whatever', 'whatever', 'whatever', 66, 1
                 )
             """, vars())
         cur.execute("SELECT currval('shippingrequest_id_seq')")
@@ -39,7 +38,7 @@ class ShipitConstraintsTestCase(unittest.TestCase):
         # Duplicate shipments are ignored if the recipient is shipit-admins
         cur = self.layer.connect().cursor()
         for i in range(0, 3):
-            self.insert(cur, is_admin_request='true')
+            self.insert(cur, 'shipit-admins')
 
     def testDupes(self):
         # Only one uncancelled, possibly approved unshipped order
@@ -50,12 +49,12 @@ class ShipitConstraintsTestCase(unittest.TestCase):
         # Clear out any existing requests for user stub
         cur.execute("""
             DELETE FROM RequestedCDs USING ShippingRequest, Person
-            WHERE recipient = Person.account and Person.name = 'stub'
+            WHERE recipient = Person.id and Person.name = 'stub'
                 AND RequestedCDs.request = ShippingRequest.id
             """)
         cur.execute("""
             DELETE FROM ShippingRequest USING Person
-            WHERE recipient = Person.account and Person.name = 'stub'
+            WHERE recipient = Person.id and Person.name = 'stub'
             """)
 
         # Create some denied orders
@@ -88,7 +87,7 @@ class ShipitConstraintsTestCase(unittest.TestCase):
         req1_id = self.insert(cur)
         approved = quote(ShippingRequestStatus.APPROVED)
         cur.execute("""
-            UPDATE ShippingRequest SET status=%(approved)s, whoapproved=11
+            UPDATE ShippingRequest SET status=%(approved)s, whoapproved=1
             WHERE id = %(req1_id)s
             """, vars())
         self.failUnlessRaises(psycopg2.Error, self.insert, cur)

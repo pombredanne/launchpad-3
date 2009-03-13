@@ -37,10 +37,10 @@ class TestExpandURL(TestCaseWithFactory):
         self.api = PublicCodehostingAPI(None, None)
         self.product = self.factory.makeProduct()
         # Associate 'trunk' with the product's development focus. Use
-        # removeSecurityProxy so that we can assign directly to branch.
+        # removeSecurityProxy so that we can assign directly to user_branch.
         trunk_series = removeSecurityProxy(self.product).development_focus
         # BranchType is only signficiant insofar as it is not a REMOTE branch.
-        trunk_series.branch = (
+        trunk_series.user_branch = (
             self.factory.makeProductBranch(
                 branch_type=BranchType.HOSTED, product=self.product))
 
@@ -78,7 +78,7 @@ class TestExpandURL(TestCaseWithFactory):
         # containing a list of these URLs, with the faster and more featureful
         # URLs earlier in the list. We use a dict so we can easily add more
         # information in the future.
-        trunk = self.product.development_focus.branch
+        trunk = self.product.development_focus.user_branch
         results = self.api.resolve_lp_path(self.product.name)
         urls = [
             'bzr+ssh://bazaar.launchpad.dev/%s' % trunk.unique_name,
@@ -88,13 +88,13 @@ class TestExpandURL(TestCaseWithFactory):
     def test_productOnly(self):
         # lp:product expands to the branch associated with development focus
         # of the product.
-        trunk = self.product.development_focus.branch
+        trunk = self.product.development_focus.user_branch
         self.assertResolves(self.product.name, trunk.unique_name)
         trunk_series = removeSecurityProxy(self.product).development_focus
-        trunk_series.branch = self.factory.makeProductBranch(
+        trunk_series.user_branch = self.factory.makeProductBranch(
             branch_type=BranchType.HOSTED, product=self.product)
         self.assertResolves(
-            self.product.name, trunk_series.branch.unique_name)
+            self.product.name, trunk_series.user_branch.unique_name)
 
     def test_productDoesntExist(self):
         # Return a NoSuchProduct fault if the product doesn't exist.
@@ -134,29 +134,29 @@ class TestExpandURL(TestCaseWithFactory):
         # series 'series' on 'product'.
         series = self.factory.makeSeries(
             product=self.product,
-            branch=self.factory.makeProductBranch(product=self.product))
+            user_branch=self.factory.makeProductBranch(product=self.product))
         self.assertResolves(
             '%s/%s' % (self.product.name, series.name),
-            series.branch.unique_name)
+            series.user_branch.unique_name)
 
         # We can also use product/series notation to reach trunk.
         self.assertResolves(
             '%s/%s' % (self.product.name,
                        self.product.development_focus.name),
-            self.product.development_focus.branch.unique_name)
+            self.product.development_focus.user_branch.unique_name)
 
     def test_developmentFocusHasNoBranch(self):
         # Return a NoBranchForSeries fault if the development focus has no
         # branch associated with it.
         product = self.factory.makeProduct()
-        self.assertEqual(None, product.development_focus.branch)
+        self.assertEqual(None, product.development_focus.user_branch)
         self.assertFault(
             product.name, faults.NoBranchForSeries(product.development_focus))
 
     def test_seriesHasNoBranch(self):
         # Return a NoBranchForSeries fault if the series has no branch
         # associated with it.
-        series = self.factory.makeSeries(branch=None)
+        series = self.factory.makeSeries(user_branch=None)
         self.assertFault(
             '%s/%s' % (series.product.name, series.name),
             faults.NoBranchForSeries(series))
@@ -174,7 +174,7 @@ class TestExpandURL(TestCaseWithFactory):
         arbitrary_branch = self.factory.makeAnyBranch()
         self.assertResolves(
             arbitrary_branch.unique_name, arbitrary_branch.unique_name)
-        trunk = self.product.development_focus.branch
+        trunk = self.product.development_focus.user_branch
         self.assertResolves(trunk.unique_name, trunk.unique_name)
 
     def test_mirroredBranch(self):
@@ -267,7 +267,7 @@ class TestExpandURL(TestCaseWithFactory):
             faults.InvalidBranchIdentifier('foo/bar/baz/qux'))
 
         # Should be invalid even if the branch exists.
-        trunk = self.product.development_focus.branch
+        trunk = self.product.development_focus.user_branch
         unique_name = trunk.unique_name.lstrip('~')
         self.assertFault(
             unique_name, faults.InvalidBranchIdentifier(unique_name))
@@ -279,7 +279,7 @@ class TestExpandURL(TestCaseWithFactory):
     def test_trailingSlashes(self):
         # Trailing slashes are trimmed.
         # Trailing slashes on lp:product//
-        trunk = self.product.development_focus.branch
+        trunk = self.product.development_focus.user_branch
         self.assertResolves(self.product.name + '/', trunk.unique_name)
         self.assertResolves(self.product.name + '//', trunk.unique_name)
 
@@ -309,7 +309,7 @@ class TestExpandURL(TestCaseWithFactory):
         # attributes of a private branch and these tests are running as an
         # anonymous user.
         branch = removeSecurityProxy(self.makePrivateBranch())
-        series = self.factory.makeSeries(branch=branch)
+        series = self.factory.makeSeries(user_branch=branch)
         self.assertFault(
             '%s/%s' % (series.product.name, series.name),
             faults.NoBranchForSeries(series))
@@ -320,7 +320,7 @@ class TestExpandURL(TestCaseWithFactory):
         # development focus. If that branch is private, other views will
         # indicate that there is no branch on the development focus. We do the
         # same.
-        trunk = self.product.development_focus.branch
+        trunk = self.product.development_focus.user_branch
         naked_trunk = removeSecurityProxy(trunk)
         naked_trunk.private = True
         self.assertFault(

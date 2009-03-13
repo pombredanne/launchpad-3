@@ -118,10 +118,7 @@ explains the problem.
     ...     email='bad-user@canonical.com',
     ...     name='bad-user',
     ...     password='password')
-    >>> from canonical.launchpad.interfaces import IMasterObject
-    >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
-    >>> import transaction
-    >>> transaction.commit()
+    >>> bad_user.account.status = AccountStatus.SUSPENDED
 
     >>> login(ANONYMOUS, request)
     >>> request = create_request(

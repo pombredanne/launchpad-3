@@ -797,8 +797,6 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
-milestone_delete = ContextTitle('Delete %s')
-
 announcement_add = 'Make an announcement'
 
 announcement_delete = 'Permanently delete this announcement'

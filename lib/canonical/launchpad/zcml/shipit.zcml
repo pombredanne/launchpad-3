@@ -417,14 +417,4 @@
         <allow interface="canonical.launchpad.interfaces.IShipItSurveySet" />
     </securedutility>
 
-    <!-- ShipitAccount -->
-    <class class="canonical.launchpad.database.ShipitAccount">
-        <allow interface="canonical.launchpad.interfaces.IShipitAccount" />
-    </class>
-
-    <adapter for="canonical.launchpad.interfaces.account.IAccount"
-      provides="canonical.launchpad.interfaces.shipit.IShipitAccount"
-      factory="canonical.launchpad.database.shipit.ShipitAccount"
-      />
-
 </configure>

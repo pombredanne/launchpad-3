@@ -109,7 +109,6 @@ individual team members.
     >>> from canonical.launchpad.interfaces import IEmailAddressSet
     >>> emailset = getUtility(IEmailAddressSet)
     >>> email = emailset.new('foo@baz.com', sub_team)
-    >>> transaction.commit()
     >>> sub_team.setContactAddress(email)
     >>> sub_team.preferredemail.email
     u'foo@baz.com'
