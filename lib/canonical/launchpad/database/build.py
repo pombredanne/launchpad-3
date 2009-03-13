@@ -1046,8 +1046,8 @@ class BuildSet:
                      LibraryFileContent.id == LibraryFileAlias.contentID),
             )
         result_set = store.using(*origin).find(
-            (Build.id, BuildQueue, SourcePackageRelease, LibraryFileAlias,
-             SourcePackageName, LibraryFileContent, Builder),
+            (Build.id, SourcePackageRelease, LibraryFileAlias,
+             SourcePackageName, LibraryFileContent),
             In(Build.id, build_ids))
 
         return result_set
