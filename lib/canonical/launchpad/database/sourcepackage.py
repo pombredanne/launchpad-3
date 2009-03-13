@@ -31,7 +31,7 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
-from canonical.launchpad.database.question import (
+from lp.apps.answers.database.question import (
     QuestionTargetMixin, QuestionTargetSearch)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
