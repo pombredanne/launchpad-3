@@ -1,0 +1,28 @@
+= Tracking changes to a bug =
+
+The base class for BugChanges doesn't actually implement anything, so
+you can't actually use it to call Bug.addChangeNotification().
+
+    >>> from datetime import datetime
+    >>> from canonical.launchpad.interfaces.bug import IBugChange
+    >>> from canonical.launchpad.components.bug import BugChangeBase
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> base_instance = BugChangeBase(when=datetime(2009, 3, 13, 10, 9))
+    >>> verifyObject(IBugChange, base_instance)
+    True
+
+    >>> base_instance.getBugNotifications()
+    Traceback (most recent call last):
+      ...
+    NotImplementedError...
+
+    >>> base_instance.getBugActivity()
+    Traceback (most recent call last):
+      ...
+    NotImplementedError...
+
+But the basic attributes are still available.
+
+    >>> print base_instance.when
+    2009-03-13 10:09:00

@@ -649,6 +649,9 @@ class Bug(SQLBase):
              bug=self, is_comment=True,
              message=message, recipients=recipients)
 
+    def addChange(self, change):
+        """See `IBug`."""
+
     def expireNotifications(self):
         """See `IBug`."""
         for notification in BugNotification.selectBy(
