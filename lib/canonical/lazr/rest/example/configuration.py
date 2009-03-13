@@ -4,14 +4,14 @@
 
 __metaclass__ = type
 __all__ = [
-    'ExampleWebServiceConfiguration',
+    'CookbookWebServiceConfiguration',
 ]
 
 from zope.interface import implements
 
 from canonical.lazr.interfaces.rest import IWebServiceConfiguration
 
-class ExampleWebServiceConfiguration:
+class CookbookWebServiceConfiguration:
     implements(IWebServiceConfiguration)
 
     path_override = "api"

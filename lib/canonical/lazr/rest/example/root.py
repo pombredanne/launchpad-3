@@ -1,7 +1,8 @@
 __all__ = ['Cookbook',
+           'CookbookServiceRootResource',
            'CookbookSet',
-           'ExampleServiceRootResource',
-           'TestWebServiceObject']
+           'CookbookWebServiceObject',
+           'CookbookServiceRootAbsoluteURL']
 
 from zope.interface import implements
 from zope.traversing.browser.interfaces import IAbsoluteURL
@@ -14,26 +15,11 @@ from canonical.lazr.rest.example.interfaces import (
     ICookbook, ICookbookSet, IHasGet)
 
 
-class TestWebServiceObject:
+class CookbookWebServiceObject:
     pass
 
-class Cookbook(TestWebServiceObject):
-    implements(ICookbook, IAbsoluteURL)
-    def __init__(self, name):
-        self.name = name
 
-    @property
-    def __name__(self):
-        return self.name
-
-# Define some globally accessible sample data.
-C1 = Cookbook(u"Mastering the Art of French Cooking")
-C2 = Cookbook(u"The Joy of Cooking")
-C3 = Cookbook(u"James Beard's American Cookery")
-COOKBOOKS = [C1, C2, C3]
-
-
-class TestTopLevelResource(TestWebServiceObject):
+class CookbookTopLevelResource(CookbookWebServiceObject):
 
     @property
     def __parent__(self):
@@ -43,7 +29,25 @@ class TestTopLevelResource(TestWebServiceObject):
     def __name__(self):
         raise NotImplementedError()
 
-class CookbookSet(TestTopLevelResource):
+
+class Cookbook(CookbookWebServiceObject):
+    implements(ICookbook, IAbsoluteURL)
+    def __init__(self, name):
+        self.name = name
+
+    @property
+    def __name__(self):
+        return self.name
+
+
+# Define some globally accessible sample data.
+C1 = Cookbook(u"Mastering the Art of French Cooking")
+C2 = Cookbook(u"The Joy of Cooking")
+C3 = Cookbook(u"James Beard's American Cookery")
+COOKBOOKS = [C1, C2, C3]
+
+
+class CookbookSet(CookbookTopLevelResource):
     implements(ICookbookSet)
 
     def __init__(self, cookbooks=None):
@@ -63,7 +67,7 @@ class CookbookSet(TestTopLevelResource):
     __name__ = "cookbooks"
 
 
-class ExampleServiceRootResource(ServiceRootResource):
+class CookbookServiceRootResource(ServiceRootResource):
     implements(IHasGet)
     _top_level_names = None
     @property
@@ -80,10 +84,10 @@ class ExampleServiceRootResource(ServiceRootResource):
         return obj
 
 
-class RootAbsoluteURL:
+class CookbookServiceRootAbsoluteURL:
     """A basic, extensible implementation of IAbsoluteURL."""
     implements(IAbsoluteURL)
-    adapts(ExampleServiceRootResource, IDefaultBrowserLayer)
+    adapts(CookbookServiceRootResource, IDefaultBrowserLayer)
 
 
     def __init__(self, context, request):
@@ -91,6 +95,6 @@ class RootAbsoluteURL:
         self.request = request
 
     def __str__(self):
-        return "http://api.launchpad.dev/beta"
+        return "http://api.cookbooks.dev/beta"
 
     __call__ = __str__

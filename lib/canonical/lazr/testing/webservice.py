@@ -38,7 +38,7 @@ from canonical.lazr.interfaces.rest import (
 from canonical.lazr.rest.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 from canonical.lazr.rest.example.root import (
-    ExampleServiceRootResource)
+    CookbookServiceRootResource)
 
 from lazr.uri import URI
 
@@ -233,9 +233,9 @@ class MockRootFolder:
         pass
 
 
-class ExampleWebServiceTestPublication(WebServiceTestPublication):
+class CookbookWebServiceTestPublication(WebServiceTestPublication):
     def getApplication(self, request):
-        return ExampleServiceRootResource()
+        return CookbookServiceRootResource()
 
 
 class WebServiceCaller:
@@ -431,19 +431,19 @@ class WebServiceResponseWrapper(ProxyBase):
             # JSON.
             raise ValueError(self.getOutput())
 
-class ExampleWebServiceHTTPCaller(HTTPCaller):
+class CookbookWebServiceHTTPCaller(HTTPCaller):
 
     def chooseRequestClass(self, method, path, environment):
-        return WebServiceTestRequest, ExampleWebServiceTestPublication
+        return WebServiceTestRequest, CookbookWebServiceTestPublication
 
 
-class ExampleWebServiceCaller(WebServiceCaller):
+class CookbookWebServiceCaller(WebServiceCaller):
 
     def __init__(self, handle_errors=False):
-        super(ExampleWebServiceCaller, self).__init__(
-            handle_errors, ExampleWebServiceHTTPCaller())
+        super(CookbookWebServiceCaller, self).__init__(
+            handle_errors, CookbookWebServiceHTTPCaller())
 
     def baseURL(self):
-        return "https://api.launchpad.dev/"
+        return "https://cookbooks.dev/"
 
 
