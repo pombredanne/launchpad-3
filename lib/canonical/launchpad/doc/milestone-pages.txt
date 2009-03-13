@@ -2,6 +2,7 @@
 
 Users can directly see and edit milestones through the milestone views.
 
+
 == Editing milestones ==
 
 Persons with launchpad.Edit permissions for milestones may edit them.
@@ -63,6 +64,20 @@ included in the list of field names. The user can change the field values.
     >>> print milestone.productseries.name
     trunk
 
+The view restricts the productseries field to series that belong to the
+product. A series from another product is rejected.
+
+    >>> transaction.commit()
+    >>> view = create_initialized_view(milestone, '+edit')
+    >>> '100' in view.widgets['productseries'].vocabulary
+    False
+
+    >>> form['field.productseries'] = '100'
+    >>> view = create_initialized_view(milestone, '+edit', form=form)
+
+    >>> print milestone.productseries.name
+    trunk
+
 A milestone that belongs to the distroseries has a distroseries field
 instead of a productseries field.
 
@@ -97,6 +112,20 @@ The distroseries milestone can be updated too.
     a summary
     >>> milestone.active
     False
+    >>> print milestone.distroseries.name
+    grumpy
+
+Like the productseries field, the distroseries field only accepts series
+that belong to the distribution.
+
+    >>> transaction.commit()
+    >>> view = create_initialized_view(milestone, '+edit')
+    >>> '100' in view.widgets['distroseries'].vocabulary
+    False
+
+    >>> form['field.distroseries'] = '100'
+    >>> view = create_initialized_view(milestone, '+edit', form=form)
+
     >>> print milestone.distroseries.name
     grumpy
 
