@@ -554,6 +554,10 @@ class POFile(SQLBase, POFileMixIn):
                  SELECT * FROM TranslationMessage AS diverged
                    WHERE
                      diverged.potemplate=%s AND
+                     diverged.is_current IS TRUE AND
+                     diverged.language = TranslationMessage.language AND
+                     diverged.variant IS NOT DISTINCT FROM
+                        TranslationMessage.variant AND
                      diverged.potmsgset=TranslationMessage.potmsgset)''' % (
                 sqlvalues(self.potemplate)),
         ]
@@ -607,6 +611,9 @@ class POFile(SQLBase, POFileMixIn):
                  WHERE
                    diverged.is_current IS TRUE AND
                    diverged.potemplate=%s AND
+                   diverged.language = TranslationMessage.language AND
+                   diverged.variant IS NOT DISTINCT FROM
+                       TranslationMessage.variant AND
                    diverged.potmsgset=POTMsgSet.id)''' % (
             sqlvalues(self.potemplate)))
 
@@ -616,6 +623,9 @@ class POFile(SQLBase, POFileMixIn):
                  WHERE
                    shared.is_current IS TRUE AND
                    shared.potemplate IS NULL AND
+                   shared.language = TranslationMessage.language AND
+                   shared.variant IS NOT DISTINCT FROM
+                       TranslationMessage.variant AND
                    shared.potmsgset=POTMsgSet.id)''')
         beggining_of_time = "TIMESTAMP '1970-01-01 00:00:00'"
         newer_than_query = (
@@ -629,7 +639,7 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage newer than the current reviewed one.
         results = POTMsgSet.select(' AND '.join(clauses),
             clauseTables=['TranslationTemplateItem', 'TranslationMessage'],
-            orderBy='POTmsgSet.sequence',
+            orderBy='POTMsgSet.sequence',
             distinct=True)
 
         return results
@@ -641,22 +651,14 @@ class POFile(SQLBase, POFileMixIn):
         # (iow, it's different from a published translation: this only
         # lists translations which have actually changed in LP, not
         # translations which are 'new' and only exist in LP).
-        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
-        # properly fixed (that is, we no longer create empty
-        # TranslationMessage objects for empty strings in imported files), all
-        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
-        # they will not be needed anymore.
-        not_nulls = make_plurals_sql_fragment(
-            "imported.msgstr%(form)d IS NOT NULL", "OR")
 
         # TranslationMessage:
-        #     is_imported IS FALSE, is_current IS TRUE,
+        #     is_imported IS FALSE (not necessary), is_current IS TRUE,
         #     (diverged AND not empty) OR (shared AND not empty AND no diverged)
         #   exists message (is_imported AND not empty AND (diverged OR shared))
         clauses, clause_tables = self._getTranslatedMessagesQuery()
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.is_imported IS FALSE',
             ])
 
 
@@ -666,6 +668,9 @@ class POFile(SQLBase, POFileMixIn):
                    WHERE
                      diverged.is_imported IS TRUE AND
                      diverged.potemplate=%s AND
+                     diverged.language = TranslationMessage.language AND
+                     diverged.variant IS NOT DISTINCT FROM
+                         TranslationMessage.variant AND
                      diverged.potmsgset=TranslationMessage.potmsgset)''' % (
                 sqlvalues(self.potemplate))
             )
@@ -695,16 +700,17 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetWithErrors(self):
         """See `IPOFile`."""
-        return POTMsgSet.select('''
-            POTMsgSet.potemplate = %s AND
-            POTMsgSet.sequence > 0 AND
-            TranslationMessage.potmsgset = POTMsgSet.id AND
-            TranslationMessage.pofile = %s AND
-            TranslationMessage.is_imported IS TRUE AND
-            TranslationMessage.validation_status <> %s
-            ''' % sqlvalues(self.potemplate.id, self.id,
-                            TranslationValidationStatus.OK),
-            clauseTables=['TranslationMessage'],
+        clauses = self._getClausesForPOFileMessages()
+        clauses.extend([
+            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            'TranslationMessage.is_imported IS TRUE',
+            'TranslationMessage.validation_status <> %s' % sqlvalues(
+                TranslationValidationStatus.OK),
+            ])
+
+        return POTMsgSet.select(
+            ' AND '.join(clauses),
+            clauseTables=['TranslationMessage','TranslationTemplateItem'],
             orderBy='POTmsgSet.sequence')
 
     def hasMessageID(self, messageID):
