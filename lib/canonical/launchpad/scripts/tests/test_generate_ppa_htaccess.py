@@ -211,7 +211,6 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         persons1 = []
         persons2 = []
         name12 = getUtility(IPersonSet).getByName("name12")
-        name16 = getUtility(IPersonSet).getByName("name16")
         team1 = factory.makeTeam(owner=name12)
         team2 = factory.makeTeam(owner=name12)
         for count in range(5):
@@ -225,8 +224,9 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         persons = persons1 + persons2
         team1_person = persons1[0]
 
-        parent_team = factory.makeTeam(owner=name16)
-        parent_team.addMember(team2, name12)
+        parent_team = factory.makeTeam(owner=name12)
+        # This needs to be forced or TeamParticipation is not updated.
+        parent_team.addMember(team2, name12, force_team_add=True)
 
         promiscuous_person = factory.makePerson()
         team1.addMember(promiscuous_person, name12)
@@ -243,7 +243,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
         # Ok now do some subscriptions and ensure everyone has a token.
         self.ppa.newSubscription(team1, self.ppa.owner)
-        self.ppa.newSubscription(team2, self.ppa.owner)
+        self.ppa.newSubscription(parent_team, self.ppa.owner)
         self.ppa.newSubscription(lonely_person, self.ppa.owner)
         tokens = {}
         for person in persons:
@@ -289,7 +289,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         self.assertNotEqual(tokens[promiscuous_person].date_deactivated, None)
 
         # lonely_person still has his token, he's not in any teams.
-        self.assertNotEqual(tokens[lonely_person].date_deactivated, None)
+        self.assertEqual(tokens[lonely_person].date_deactivated, None)
 
 
 def test_suite():
