@@ -55,14 +55,12 @@ only choose the number of CDs from a list of predefined options.
   Request accepted. Please note that requests usually take from 4 to 6 weeks
   to deliver, depending on the country of shipping...
 
-  >>> from canonical.launchpad.interfaces.shipit import IShipitAccount
   >>> from canonical.launchpad.database import Person
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
   >>> login(ANONYMOUS)
-  >>> shipit_account = IShipitAccount(Person.byName('name16').account)
-  >>> shipit_account.currentShipItRequest().isApproved()
+  >>> Person.byName('name16').currentShipItRequest().isApproved()
   True
-  >>> shipit_account.currentShipItRequest().getTotalApprovedCDs()
+  >>> Person.byName('name16').currentShipItRequest().getTotalApprovedCDs()
   10
   >>> logout()
 
@@ -83,9 +81,9 @@ existing request...
 ...and it will still be approved, because it's a standard request.
 
   >>> login(ANONYMOUS)
-  >>> shipit_account.currentShipItRequest().isApproved()
+  >>> Person.byName('name16').currentShipItRequest().isApproved()
   True
-  >>> shipit_account.currentShipItRequest().getTotalApprovedCDs()
+  >>> Person.byName('name16').currentShipItRequest().getTotalApprovedCDs()
   11
   >>> logout()
 
@@ -97,9 +95,9 @@ given distroseries.
   >>> from canonical.launchpad.database import ShippingRequestSet
   >>> login(ANONYMOUS)
   >>> shippingrun = ShippingRequestSet()._create_shipping_run(
-  ...     [shipit_account.currentShipItRequest().id])
-  >>> [request.recipient.displayname for request in shippingrun.requests]
-  [u'Foo Bar']
+  ...     [Person.byName('name16').currentShipItRequest().id])
+  >>> [request.recipient.name for request in shippingrun.requests]
+  [u'name16']
   >>> logout()
 
 name16's shipped request contained Ubuntu and Kubuntu CDs. This means that if
@@ -128,9 +126,9 @@ him.
   'http://shipit.ubuntu.dev/myrequest-server'
 
   >>> login(ANONYMOUS)
-  >>> shipit_account.currentShipItRequest().isApproved()
+  >>> Person.byName('name16').currentShipItRequest().isApproved()
   True
-  >>> shipit_account.currentShipItRequest().getTotalApprovedCDs()
+  >>> Person.byName('name16').currentShipItRequest().getTotalApprovedCDs()
   2
   >>> logout()
 
@@ -147,9 +145,9 @@ pending approval.
   'http://shipit.ubuntu.dev/myrequest'
 
   >>> login(ANONYMOUS)
-  >>> shipit_account.currentShipItRequest().isAwaitingApproval()
+  >>> Person.byName('name16').currentShipItRequest().isAwaitingApproval()
   True
-  >>> shipit_account.currentShipItRequest().getTotalApprovedCDs()
+  >>> Person.byName('name16').currentShipItRequest().getTotalApprovedCDs()
   0
   >>> logout()
 
@@ -157,13 +155,13 @@ Let's pretend Marilize approved his request and it was shipped, so that we
 can make a third one and see what happens.
 
   >>> login('marilize@hbd.com')
-  >>> request = shipit_account.currentShipItRequest()
+  >>> request = Person.byName('name16').currentShipItRequest()
   >>> request.approve()
   >>> shippingrun = ShippingRequestSet()._create_shipping_run(
-  ...     [shipit_account.currentShipItRequest().id])
-  >>> [request.recipient.displayname for request in shippingrun.requests]
-  [u'Foo Bar']
-  >>> shipit_account.currentShipItRequest() is None
+  ...     [Person.byName('name16').currentShipItRequest().id])
+  >>> [request.recipient.name for request in shippingrun.requests]
+  [u'name16']
+  >>> Person.byName('name16').currentShipItRequest() is None
   True
   >>> logout()
 
@@ -177,7 +175,7 @@ can make a third one and see what happens.
   'http://shipit.ubuntu.dev/myrequest'
 
   >>> login(ANONYMOUS)
-  >>> shipit_account.currentShipItRequest().isPendingSpecial()
+  >>> Person.byName('name16').currentShipItRequest().isPendingSpecial()
   True
   >>> logout()
 
@@ -188,7 +186,7 @@ It's also possible to cancel an existing request.
   'http://shipit.ubuntu.dev/myrequest'
 
   >>> login(ANONYMOUS)
-  >>> shipit_account.currentShipItRequest() is None
+  >>> Person.byName('name16').currentShipItRequest() is None
   True
   >>> logout()
 

@@ -5,13 +5,12 @@ or driver. That means that only Sample Person can add releases in the
 Firefox trunk series. No Privileges Person won't see the link to add a
 release nor can access the page directly.
 
-    >>> user_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> user_browser.getLink('Publish release').click()
+    >>> user_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> user_browser.getLink('Register a release').click()
     Traceback (most recent call last):
       ...
     LinkNotFoundError
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/firefox/+milestone/1.0/+addrelease')
+    >>> user_browser.open('http://launchpad.dev/firefox/trunk/+addrelease')
     Traceback (most recent call last):
       ...
     Unauthorized: ...
@@ -20,83 +19,92 @@ But Sample Person can use the 'Register a release' link to create a new
 release in the series.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> browser.getLink('Publish release').click()
+    >>> browser.open('http://launchpad.dev/firefox/trunk')
+    >>> browser.getLink('Register a release').click()
     >>> browser.url
-    'http://launchpad.dev/firefox/+milestone/1.0/+addrelease'
+    'http://launchpad.dev/firefox/trunk/+addrelease'
 
     >>> browser.title
-    'Register a new Milestone 1.0 for Mozilla Firefox release in Launchpad'
+    'Register a new Mozilla Firefox Series: trunk release in Launchpad'
 
-    >>> browser.getControl('Date released').value = '2008-01-01'
-    >>> browser.getControl('Release notes').value = 'Released 1.0'
+    >>> browser.getControl('Version').value = '0.9.3'
+    >>> browser.getControl('Code name').value = 'One Tree Hill the 3rd'
+    >>> browser.getControl('Summary').value = 'Security fix for this version'
+    >>> browser.getControl('Description').value = 'A long description'
     >>> browser.getControl('Changelog').value = 'Fix Foo'
-    >>> browser.getControl('Publish release').click()
+    >>> browser.getControl('Add').click()
+
     >>> browser.url
-    'http://launchpad.dev/firefox/trunk/1.0'
-    >>> print extract_text(find_tag_by_id(browser.contents, 'release_notes'))
-    Released 1.0
-    >>> print extract_text(find_tag_by_id(browser.contents, 'changelog'))
-    Fix Foo
-
-After creating a product release on an active milestone, the user
-will be warned that the milestone has been deactivated.
-
-    >>> print get_feedback_messages(browser.contents)
-    [u'The milestone for this product release was deactivated so that bugs
-    &amp; blueprints cannot be targeted to a milestone in the past.']
-    >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0/+addrelease')
-    >>> print get_feedback_messages(browser.contents)
-    [u'A product release already exists for this milestone.']
-
-The milestone deactivation notice is not shown when the user selects the
-the "Keep the milestone active" checkbox.
-
-    >>> browser.open('http://launchpad.dev/firefox/trunk/+addmilestone')
-    >>> browser.getControl('Name').value = 'bar'
-    >>> browser.getControl('Register milestone').click()
-    >>> browser.open('http://launchpad.dev/firefox/+milestone/bar/+addrelease')
-    >>> browser.getControl("Date released").value = '2009-01-01'
-    >>> browser.getControl("Keep the milestone active.").selected = True
-    >>> browser.getControl('Publish release').click()
-    >>> print get_feedback_messages(browser.contents)
-    []
-    >>> browser.open('http://launchpad.dev/firefox/trunk/bar')
-    >>> print get_feedback_messages(browser.contents)
-    []
+    'http://launchpad.dev/firefox/trunk/0.9.3'
 
 
 == Checking releases with the same version ==
 
-Now let's try to create a productrelease on a milestone that already
-has a productrelease.
+Now we'll add a new product release with the same version of an existing
+product release from another product series
 
-    >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> browser.getLink('Publish release').click()
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-    >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0/+addrelease')
+    >>> browser.getLink('Overview').click()
+    >>> browser.getLink('Register a release').click()
     >>> browser.url
-    'http://launchpad.dev/firefox/trunk/1.0/+edit'
+    'http://launchpad.dev/firefox/trunk/+addrelease'
+
+    >>> browser.getControl('Version').value = '1.0.0'
+    >>> browser.getControl('Code name').value = 'SameName'
+    >>> browser.getControl('Summary').value = 'A test summary'
+    >>> browser.getControl('Description').value = 'A test description'
+    >>> browser.getControl('Changelog').value = 'Fix Foo'
+    >>> browser.getControl('Add').click()
+
+    >>> browser.url
+    'http://launchpad.dev/firefox/trunk/1.0.0'
+
+And we check in the product's overview page, if both links are there pointing 
+to different places.
+
+    >>> browser.getLink('Mozilla Firefox').click()
+    >>> browser.url
+    'http://launchpad.dev/firefox'
+
+    >>> browser.getLink(url='trunk/1.0.0').url
+    'http://launchpad.dev/firefox/trunk/1.0.0'
+
+    >>> browser.getLink(url='1.0/1.0.0').url
+    'http://launchpad.dev/firefox/1.0/1.0.0'
+
+Now let's try to create a productrelease with a dupe version in the same
+series.
+
+    >>> browser.getLink('trunk').click()
+    >>> browser.getLink('Register a release').click()
+    >>> browser.url
+    'http://launchpad.dev/firefox/trunk/+addrelease'
+
+    >>> browser.getControl('Version').value = '1.0.0'
+    >>> browser.getControl('Code name').value = 'SameName'
+    >>> browser.getControl('Summary').value = 'A test summary'
+    >>> browser.getControl('Description').value = 'A test description'
+    >>> browser.getControl('Changelog').value = 'Fix Foo'
+    >>> browser.getControl('Add').click()
+
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     tag.renderContents()
-    'A product release already exists for this milestone.'
+    'There is 1 error.'
+    '1.0.0 is already in use by another version in this release series.'
 
 
 == Editing a product release ==
 
 The release owner can edit the release via its +edit form:
 
-    >>> browser.open('http://launchpad.dev/firefox/trunk/1.0')
+    >>> browser.open('http://launchpad.dev/firefox/trunk/1.0.0')
     >>> browser.getLink('Change details').click()
     >>> print browser.title
-    Edit details of Mozilla Firefox 1.0 in Launchpad
-    >>> browser.getControl('Changelog').value = 'This is not a joke.'
+    Edit details of Mozilla Firefox 1.0.0 in Launchpad
+    >>> browser.getControl('Summary').value = 'This is not a joke.'
+    >>> browser.getControl('Code name').value = 'Portland Oregon part 2'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Mozilla Firefox 1.0 in Launchpad
+    Mozilla Firefox 1.0.0 in Launchpad
 
 
 == Editing permissions extend to product and series owners ==
@@ -112,16 +120,14 @@ release too.
 Let's add a release as Jeff:
 
     >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
-    >>> browser.open('http://launchpad.dev/tomcat/trunk/+addmilestone')
-    >>> browser.getControl('Name').value = '0.6.6.6'
-    >>> browser.getControl('Register milestone').click()
-    >>> browser.getLink(url='+milestone/0.6.6.6').click()
-    >>> browser.getLink('Publish release').click()
-    >>> browser.getControl('Date released').value = '2008-12-01'
+    >>> browser.open('http://launchpad.dev/tomcat/trunk')
+    >>> browser.getLink('Register a release').click()
+    >>> browser.getControl('Version').value = '0.6.6.6'
+    >>> browser.getControl('Code name').value = 'SameName'
+    >>> browser.getControl('Summary').value = 'Fixes 2 bugs.'
+    >>> browser.getControl('Description').value = 'A test description'
     >>> browser.getControl('Changelog').value = 'Fix Foo'
-    >>> browser.getControl('Publish release').click()
-    >>> print browser.url
-    http://launchpad.dev/tomcat/trunk/0.6.6.6
+    >>> browser.getControl('Add').click()
 
 Celso is a member of ubuntu-team, so he can edit this release too:
 
@@ -130,7 +136,7 @@ Celso is a member of ubuntu-team, so he can edit this release too:
     >>> browser.getLink('Change details').click()
     >>> print browser.title
     Edit details of Tomcat 0.6.6.6 in Launchpad
-    >>> browser.getControl('Changelog').value = 'Fixes 3 bugs.'
+    >>> browser.getControl('Summary').value = 'Fixes 3 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
     Tomcat 0.6.6.6 in Launchpad
@@ -150,7 +156,7 @@ others:
     >>> browser.getLink('Change details').click()
     >>> print browser.title
     Edit details of Tomcat 0.6.6.6 in Launchpad
-    >>> browser.getControl('Changelog').value = 'Fixes 4 bugs.'
+    >>> browser.getControl('Summary').value = 'Fixes 4 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
     Tomcat 0.6.6.6 in Launchpad

@@ -19,14 +19,6 @@ import ZConfig
 from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
 
-
-__all__ = [
-    'DatabaseConfig',
-    'dbconfig',
-    'config',
-    ]
-
-
 # The config to use can be specified in one of these files.
 CONFIG_LOOKUP_FILES = ['/etc/launchpad/config']
 if os.environ.get('HOME'):
@@ -325,7 +317,7 @@ class DatabaseConfig:
           ...
         AttributeError: ...
         >>> print config.launchpad.dbuser
-        launchpad_main
+        launchpad
         >>> print config.librarian.dbuser
         librarian
 
@@ -339,7 +331,7 @@ class DatabaseConfig:
         >>> print dbconfig.main_master
         dbname=...
         >>> print dbconfig.dbuser
-        launchpad_main
+        launchpad
 
     Some values are required to have a value, such as dbuser.  So we
     get an exception if they are not set:
@@ -357,8 +349,7 @@ class DatabaseConfig:
     """
     _config_section = None
     _db_config_attrs = frozenset([
-        'dbuser', 'auth_dbuser',
-        'main_master', 'main_slave', 'auth_master', 'auth_slave',
+        'dbuser', 'main_master', 'main_slave', 'auth_master', 'auth_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
         'isolation_level', 'randomise_select_results',
         'soft_request_timeout'])
@@ -367,11 +358,6 @@ class DatabaseConfig:
 
     def setConfigSection(self, section_name):
         self._config_section = section_name
-
-    def getSectionName(self):
-        """The name of the config file section this DatabaseConfig references.
-        """
-        return self._config_section
 
     def _getConfigSections(self):
         """Returns a list of sections to search for database configuration.

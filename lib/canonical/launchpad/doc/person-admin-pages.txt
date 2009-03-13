@@ -131,7 +131,6 @@ password is changed too.
     >>> view = create_initialized_view(user, '+reviewaccount', form=form)
     >>> print view.errors
     []
-    >>> transaction.commit()
     >>> user.account_status
     <DBItem AccountStatus.SUSPENDED, ...>
     >>> print user.account_status_comment

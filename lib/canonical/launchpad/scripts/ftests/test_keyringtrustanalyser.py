@@ -171,7 +171,7 @@ class TestMergeClusters(unittest.TestCase):
 
         address = emailset.getByEmail('newemail@canonical.com')
         self.assertEqual(address.email, 'newemail@canonical.com')
-        self.assertEqual(address.personID, person.id)
+        self.assertEqual(address.person, person)
         self.assertEqual(address.status, EmailAddressStatus.NEW)
 
     def testMergeUnvalidatedAccountWithValidated(self):

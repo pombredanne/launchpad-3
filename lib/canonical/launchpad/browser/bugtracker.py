@@ -24,24 +24,21 @@ from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.formlib import form
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
 from canonical.launchpad.helpers import english_list, shortlist
-from canonical.launchpad.interfaces.bugtracker import (
-    BugTrackerType, IBugTracker, IBugTrackerSet, IRemoteBug)
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces import (
+    BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag,
+    ILaunchpadCelebrities, IRemoteBug)
 from canonical.launchpad.webapp import (
     ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
     redirection, structured)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.widgets import DelimitedListWidget, LaunchpadRadioWidget
+from canonical.widgets import DelimitedListWidget
 
 
 # A set of bug tracker types for which there can only ever be one bug
@@ -130,21 +127,12 @@ class BugTrackerSetView(LaunchpadView):
     PILLAR_LIMIT = 3
 
     def initialize(self):
-        # Sort the bug trackers into active and inactive lists so that
-        # we can display them separately.
-        all_bug_trackers = list(self.context)
-        self.active_bug_trackers = [
-            bug_tracker for bug_tracker in all_bug_trackers
-            if bug_tracker.active]
-        self.inactive_bug_trackers = [
-            bug_tracker for bug_tracker in all_bug_trackers
-            if not bug_tracker.active]
-
+        self.bugtrackers = list(self.context)
         bugtrackerset = getUtility(IBugTrackerSet)
         # The caching of bugtracker pillars here avoids us hitting the
         # database multiple times for each bugtracker.
         self._pillar_cache = bugtrackerset.getPillarsForBugtrackers(
-            all_bug_trackers)
+            self.bugtrackers)
 
     def getPillarData(self, bugtracker):
         """Return dict of pillars and booleans indicating ellipsis.
@@ -186,62 +174,14 @@ class BugTrackerView(LaunchpadView):
                                self.context.products), 100)
 
 
-BUG_TRACKER_ACTIVE_VOCABULARY = SimpleVocabulary.fromItems(
-    [('on', True), ('off', False)])
-
-
 class BugTrackerEditView(LaunchpadEditFormView):
 
     schema = IBugTracker
     field_names = ['name', 'title', 'bugtrackertype',
-                   'summary', 'baseurl', 'aliases', 'contactdetails',
-                   'active']
+                   'summary', 'baseurl', 'aliases', 'contactdetails']
 
     custom_widget('summary', TextAreaWidget, width=30, height=5)
     custom_widget('aliases', DelimitedListWidget, height=3)
-    custom_widget('active', LaunchpadRadioWidget, orientation='vertical')
-
-    @cachedproperty
-    def field_names(self):
-        field_names = [
-            'name',
-            'title',
-            'bugtrackertype',
-            'summary',
-            'baseurl',
-            'aliases',
-            'contactdetails',
-            ]
-
-        # Members of the admin team can set the bug tracker's active
-        # state.
-        if check_permission("launchpad.Admin", self.user):
-            field_names.append('active')
-
-        return field_names
-
-    def setUpFields(self):
-        """Set up the fields for the bug tracker edit form.
-
-        If the `active` field is to be displayed, remove the default
-        Field and replace it with a Choice field for the sake of
-        usability.
-
-        See `LaunchpadFormView`.
-        """
-        super(BugTrackerEditView, self).setUpFields()
-
-        # If we're displaying the 'active' field we need to swap it out
-        # and replace it with a field that uses our custom vocabulary.
-        if 'active' in self.field_names:
-            active_field = Choice(
-                __name__='active',
-                title=_('Updates for this bug tracker are'),
-                vocabulary=BUG_TRACKER_ACTIVE_VOCABULARY,
-                required=True, default=self.context.active)
-
-            self.form_fields = self.form_fields.omit('active')
-            self.form_fields += form.Fields(active_field)
 
     def validate(self, data):
         # Normalise aliases to an empty list if it's None.

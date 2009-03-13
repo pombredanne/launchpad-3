@@ -119,6 +119,11 @@ class ISourcePackage(IBugTarget):
         and record that it was done by the owner.
         """
 
+    shouldimport = Attribute("""Whether we should import this or not.
+        By 'import' we mean sourcerer analysis resulting in a manifest and a
+        set of Bazaar branches which describe the source package release.
+        The attribute is True or False.""")
+
     latest_published_component = Object(
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
