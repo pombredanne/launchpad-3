@@ -15,6 +15,7 @@ from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.app.form.interfaces import MissingInputError
 
+from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import IHasIcon
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
@@ -62,5 +63,13 @@ class VocabularyJSONView:
             elif hasattr(term.value, 'summary'):
                 entry['description'] = term.value.summary
             result.append(entry)
+        if config.devmode:
+            if len(result) < batch_size and len(result) != 0:
+                result.append(dict(
+                    value='bad-value-for-testing-errors-on-dev-system',
+                    title='Bad Value for Testing on Dev System',
+                    description='Intential bad value.',
+                    image='/@@/bug-critical'))
+
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(dict(total_size=total_size, entries=result))
