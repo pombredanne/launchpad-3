@@ -220,19 +220,6 @@ class WebServiceTestPublication(WebServicePublicationMixin, TestPublication):
     """Test publication that mixes in the necessary web service stuff."""
 
 
-class MockRootFolder:
-    """Implement the minimum functionality required by Z3 ZODB dependencies
-
-    Installed as part of FunctionalLayer.testSetUp() to allow the http()
-    method (zope.app.testing.functional.HTTPCaller) to work.
-    """
-    @property
-    def _p_jar(self):
-        return self
-    def sync(self):
-        pass
-
-
 class CookbookWebServiceTestPublication(WebServiceTestPublication):
     def getApplication(self, request):
         return CookbookServiceRootResource()
@@ -430,6 +417,7 @@ class WebServiceResponseWrapper(ProxyBase):
             # string, instead of one that just says the string wasn't
             # JSON.
             raise ValueError(self.getOutput())
+
 
 class CookbookWebServiceHTTPCaller(HTTPCaller):
 

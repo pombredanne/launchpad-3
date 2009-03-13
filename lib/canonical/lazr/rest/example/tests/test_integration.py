@@ -12,7 +12,7 @@ from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
 from zope.app.testing.functional import FunctionalTestSetup
 from zope.configuration import xmlconfig
-from canonical.lazr.testing.webservice import MockRootFolder
+from canonical.lazr.testing.layers import MockRootFolder
 
 
 def tearDown(test):
