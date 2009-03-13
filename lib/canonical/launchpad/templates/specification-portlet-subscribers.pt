@@ -45,10 +45,7 @@
            <img tal:condition="not: subscription/essential"
              src="/@@/subscriber-inessential" />
         </tal:no_edit>
-        <a
-          tal:attributes="href subscription/person/fmt:url"
-          tal:content="subscription/person/displayname"
-        />
+        <a tal:replace="structure subscription/person/fmt:link" />
       </div>
     </div>
   </div>

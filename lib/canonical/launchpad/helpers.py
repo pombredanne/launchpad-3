@@ -335,7 +335,7 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
     if hardlimit is not None:
         last = hardlimit + 1
     else:
-        last = longest_expected + 1
+        last = None
     try:
         results = list(sequence[:last])
     except (TypeError, ForbiddenAttribute):

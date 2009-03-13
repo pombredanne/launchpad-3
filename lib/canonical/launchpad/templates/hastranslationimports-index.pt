@@ -31,7 +31,7 @@
       <p id="description">
         These translation related entries are imported, blocked, deleted or
         waiting to be imported in Launchpad for
-        <tal:displayname replace="context/displayname">Foo</tal:displayname>.
+        <tal:displayname replace="context/displayname">trunk</tal:displayname>.
         <tal:login condition="not:request/lp:person">
           <a href="+login">Log in</a> to change items in this list.
         </tal:login>

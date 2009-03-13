@@ -134,7 +134,7 @@
                 <tr tal:repeat="most_active view/most_active_ppas">
                   <td>
                     <a tal:attributes="href most_active/archive/fmt:url"
-                       tal:content="most_active/archive/owner/displayname">
+                       tal:content="most_active/archive/owner/fmt:displayname">
                       Celso Providelo
                     </a>
                   </td>
@@ -179,4 +179,3 @@
 
 </body>
 </html>
-
