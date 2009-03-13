@@ -57,12 +57,17 @@ def rename_module(src_file, target_file):
 
     target_module = file2module(target_file)
     log("Found %d files with imports to update." % len(files))
+    src_module_re = src_module.replace('.', '\\.')
+    target_module_re = target_module.replace('.', '\\.')
     for f in files:
         # YES! Perl
         cmdline = [
-            'perl', '-i', '-pe', 's/%s/%s/g' % (
-                src_module.replace('.', '\\.'),
-                target_module.replace('.', '\\.')), f]
+            'perl', '-i', '-pe', 
+            's/from %s import/from %s import/g;' % (
+                src_module_re, target_module_re),
+            '-e',
+            's/import %s/import %s/g;' % (src_module_re, target_module_re),
+            f]
         p = subprocess.Popen(cmdline)
         rv = p.wait()
         if rv != 0:
