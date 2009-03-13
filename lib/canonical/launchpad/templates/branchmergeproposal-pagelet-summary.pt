@@ -114,6 +114,21 @@
       <th>Merge into:</th>
       <td tal:content="structure context/target_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
     </tr>
+    <tr>
+      <th>Commit message:</th>
+      <td>
+        <tal:commit-message
+          condition="context/commit_message"
+          replace="structure context/commit_message" />
+        <tal:no-commit-message
+          condition="not: context/commit_message">None</tal:no-commit-message>
+            <a tal:define="link context_menu/edit_commit_message"
+               tal:condition="link/enabled"
+               tal:attributes="href link/url"
+               ><img src="/@@/edit" tal:attributes="title link/text; alt link/text" />
+            </a>
+      </td>
+    </tr>
     <tr tal:condition="context/preview_diff">
       <th>Diff against target:</th>
       <td>

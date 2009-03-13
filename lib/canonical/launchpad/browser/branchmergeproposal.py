@@ -124,6 +124,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
     usedfor = IBranchMergeProposal
     links = [
         'edit',
+        'edit_commit_message',
         'delete',
         'request_review',
         'add_comment',
@@ -146,6 +147,12 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Edit details'
         enabled = self.context.isMergable()
         return Link('+edit', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit_commit_message(self):
+        text = 'Edit commit message'
+        enabled = self.context.isMergable()
+        return Link('+edit-commit-message', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
