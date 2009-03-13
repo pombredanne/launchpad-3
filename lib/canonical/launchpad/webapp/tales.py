@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0613,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -420,8 +420,12 @@ class ObjectFormatterAPI:
         :param view_name: If not None, return the URL to the page with that
             name on this object.
         """
-        url = canonical_url(
-            self._context, path_only_if_possible=True, view_name=view_name)
+        try:
+            url = canonical_url(
+                self._context, path_only_if_possible=True,
+                view_name=view_name)
+        except Unauthorized:
+            url = ""
         return url
 
     def api_url(self, context):
@@ -874,6 +878,11 @@ class BadgeDisplayAPI:
 class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
 
+    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url',
+                         'displayname': 'displayname',
+                         'unique_displayname': 'unique_displayname',
+                         }
+
     final_traversable_names = {'local-time': 'local_time'}
 
     def traverse(self, name, furtherPath):
@@ -907,9 +916,21 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, cgi.escape(person.browsername))
 
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        person = self._context
+        return person.displayname
+
+    def unique_displayname(self, view_name, rootsite=None):
+        """Return the unique_displayname as a string."""
+        person = self._context
+        return person.unique_displayname
+
 
 class TeamFormatterAPI(PersonFormatterAPI):
     """Adapter for `ITeam` objects to a formatted string."""
+
+    hidden = u'<hidden>'
 
     def url(self, view_name=None):
         """See `ObjectFormatterAPI`."""
@@ -927,10 +948,30 @@ class TeamFormatterAPI(PersonFormatterAPI):
 
     def link(self, view_name, rootsite=None):
         """See `ObjectFormatterAPI`."""
-        if not check_permission('launchpad.View', self._context):
+        person = self._context
+        if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            return '&lt;redacted&gt;'
+            image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
+            return u'%s&nbsp;%s' % (
+                image_html, cgi.escape(self.hidden))
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
+
+    def displayname(self, view_name, rootsite=None):
+        """See `PersonFormatterAPI`."""
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            return self.hidden
+        return super(TeamFormatterAPI, self).displayname(view_name, rootsite)
+
+    def unique_displayname(self, view_name, rootsite=None):
+        """See `PersonFormatterAPI`."""
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            return self.hidden
+        return super(TeamFormatterAPI, self).unique_displayname(view_name,
+                                                                rootsite)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):

@@ -11,7 +11,7 @@ __all__ = [
     'IBugTarget',
     'IHasBugs',
     'IOfficialBugTag',
-    'IOfficialBugTagTarget',
+    'IOfficialBugTagTargetMixin',
     ]
 
 from zope.interface import Interface, Attribute
@@ -191,8 +191,14 @@ class BugDistroSeriesTargetDetails:
         self.status = status
 
 
-class IOfficialBugTagTarget(Interface):
-    """A marker interface for targets of ofccical bug tags."""
+class IOfficialBugTagTargetMixin(Interface):
+    """A mixin interface for targets of official bug tags."""
+
+    def addOfficialBugTag(tag):
+        """Add tag to the official bug tags of this target."""
+
+    def removeOfficialBugTag(tag):
+        """Remove tag from the official bug tags of this target."""
 
 
 class IOfficialBugTag(Interface):
@@ -201,6 +207,7 @@ class IOfficialBugTag(Interface):
         title=u'The official bug tag', required=True)
 
     target = Object(
-        title=u'The target of this bug tag.', schema=IOfficialBugTagTarget,
+        title=u'The target of this bug tag.',
+        schema=IOfficialBugTagTargetMixin,
         description=
             u'The distribution or product having this official bug tag.')

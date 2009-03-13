@@ -24,6 +24,8 @@ from canonical.launchpad.interfaces.branchsubscription import (
     IBranchSubscription)
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
+from canonical.launchpad.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from canonical.launchpad.interfaces.person import IPerson, IPersonPublic
@@ -46,6 +48,7 @@ IBranchMergeProposal['createComment'].queryTaggedValue(
     'lazr.webservice.exported')['params']['parent'].schema = \
         ICodeReviewComment
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
+IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
