@@ -79,6 +79,7 @@ __all__ = [
     'archive_to_person',
     ]
 
+import cgi
 import copy
 import itertools
 import pytz
@@ -2399,22 +2400,25 @@ class PersonLanguagesView(LaunchpadView):
         if self.is_current_user:
             subject = "your"
         else:
-            subject = "%s's" % self.context.displayname
+            subject = "%s's" % cgi.escape(self.context.displayname)
 
         # Add languages to the user's preferences.
+        messages = []
         for language in set(new_languages) - set(old_languages):
             self.context.addLanguage(language)
-            self.request.response.addInfoNotification(
+            messages.append(
                 "Added %(language)s to %(subject)s preferred languages." %
                 {'language' : language.englishname, 'subject' : subject})
 
         # Remove languages from the user's preferences.
         for language in set(old_languages) - set(new_languages):
             self.context.removeLanguage(language)
-            self.request.response.addInfoNotification(
+            messages.append(
                 "Removed %(language)s from %(subject)s preferred languages." %
                 {'language' : language.englishname, 'subject' : subject})
-
+        if len(messages) > 0:
+            message = structured('<br />'.join(messages))
+            self.request.response.addInfoNotification(message)
         redirection_url = self.request.get('redirection_url')
         if redirection_url:
             self.request.response.redirect(redirection_url)
