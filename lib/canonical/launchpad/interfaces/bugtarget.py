@@ -11,7 +11,7 @@ __all__ = [
     'IBugTarget',
     'IHasBugs',
     'IOfficialBugTag',
-    'IOfficialBugTagTargetMixin',
+    'IOfficialBugTagTarget',
     ]
 
 from zope.interface import Interface, Attribute
@@ -191,8 +191,8 @@ class BugDistroSeriesTargetDetails:
         self.status = status
 
 
-class IOfficialBugTagTargetMixin(Interface):
-    """A mixin interface for targets of official bug tags."""
+class IOfficialBugTagTarget(Interface):
+    """An entity for which official bug tags can be defined."""
 
     def addOfficialBugTag(tag):
         """Add tag to the official bug tags of this target."""
@@ -208,6 +208,6 @@ class IOfficialBugTag(Interface):
 
     target = Object(
         title=u'The target of this bug tag.',
-        schema=IOfficialBugTagTargetMixin,
+        schema=IOfficialBugTagTarget,
         description=
             u'The distribution or product having this official bug tag.')

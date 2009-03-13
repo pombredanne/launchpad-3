@@ -104,7 +104,7 @@
     <require
         permission="launchpad.Edit"
         interface=
-            "canonical.launchpad.interfaces.bugtarget.IOfficialBugTagTargetMixin" />
+            "canonical.launchpad.interfaces.bugtarget.IOfficialBugTagTarget" />
   </class>
 
   <!-- ProductWithLicenses
