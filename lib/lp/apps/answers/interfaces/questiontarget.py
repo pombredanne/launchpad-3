@@ -18,9 +18,10 @@ from zope.schema import Choice, List, Set, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.interfaces.questioncollection import (
+
+from lp.apps.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.questionenums import (
+from lp.apps.answers.interfaces.questionenums import (
     QuestionSort, QuestionStatus)
 
 

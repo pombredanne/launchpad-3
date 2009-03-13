@@ -57,8 +57,6 @@ from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     BinaryPackageFilePublishing, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, SourcePackagePublishingHistory)
-from canonical.launchpad.database.question import (
-    QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
@@ -84,7 +82,6 @@ from canonical.launchpad.interfaces.distribution import (
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror, MirrorContent, MirrorStatus)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
@@ -92,9 +89,6 @@ from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
-from canonical.launchpad.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName)
 from canonical.launchpad.interfaces.specification import (
@@ -108,6 +102,13 @@ from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.url import urlparse
+
+from canonical.launchpad.database.question import (
+    QuestionTargetSearch, QuestionTargetMixin)
+from lp.apps.answers.interfaces.faqtarget import IFAQTarget
+from lp.apps.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from lp.apps.answers.interfaces.questiontarget import IQuestionTarget
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,

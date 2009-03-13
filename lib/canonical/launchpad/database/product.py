@@ -74,7 +74,6 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
     NotFoundError)
@@ -84,9 +83,6 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
-from canonical.launchpad.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.interfaces.specification import (
@@ -95,7 +91,14 @@ from canonical.launchpad.interfaces.specification import (
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
+        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE) 
+
+
+from lp.apps.answers.interfaces.faqtarget import IFAQTarget
+from lp.apps.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from lp.apps.answers.interfaces.questiontarget import IQuestionTarget
+
 
 def get_license_status(license_approved, license_reviewed, licenses):
     """Decide the license status for an `IProduct`.

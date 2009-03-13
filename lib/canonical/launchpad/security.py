@@ -47,8 +47,6 @@ from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.entitlement import IEntitlement
-from canonical.launchpad.interfaces.faq import IFAQ
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
@@ -76,8 +74,6 @@ from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.question import IQuestion
-from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
     IStandardShipItRequest, IStandardShipItRequestSet)
@@ -102,6 +98,11 @@ from canonical.launchpad.interfaces.translator import (
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
+
+from lp.apps.answers.interfaces.faq import IFAQ
+from lp.apps.answers.interfaces.faqtarget import IFAQTarget
+from lp.apps.answers.interfaces.question import IQuestion
+from lp.apps.answers.interfaces.questiontarget import IQuestionTarget
 
 
 class AuthorizationBase:

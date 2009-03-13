@@ -20,11 +20,12 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.interfaces.faq import IFAQ
-from canonical.launchpad.interfaces.questionenums import (
+
+from lp.apps.answers.interfaces.faq import IFAQ
+from lp.apps.answers.interfaces.questionenums import (
     QuestionPriority, QuestionStatus)
-from canonical.launchpad.interfaces.questionmessage import IQuestionMessage
-from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
+from lp.apps.answers.interfaces.questionmessage import IQuestionMessage
+from lp.apps.answers.interfaces.questiontarget import IQuestionTarget
 
 
 class InvalidQuestionStateError(Exception):

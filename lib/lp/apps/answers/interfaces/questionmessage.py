@@ -13,7 +13,7 @@ from zope.schema import Choice, Field
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.questionenums import (
+from lp.apps.answers.interfaces.questionenums import (
     QuestionAction, QuestionStatus)
 
 

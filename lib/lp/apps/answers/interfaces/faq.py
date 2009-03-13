@@ -16,9 +16,10 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Title
-from canonical.launchpad.interfaces.faqcollection import IFAQCollection
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import IHasOwner
+
+from lp.apps.answers.interfaces.faqcollection import IFAQCollection
+from lp.apps.answers.interfaces.faqtarget import IFAQTarget
 
 
 class IFAQ(IHasOwner):

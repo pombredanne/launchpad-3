@@ -107,8 +107,6 @@ from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
-from canonical.launchpad.interfaces.faq import IFAQ
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.mailinglist import (
@@ -134,6 +132,9 @@ from canonical.launchpad.webapp.tales import (
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
+
+from lp.apps.answers.interfaces.faq import IFAQ
+from lp.apps.answers.interfaces.faqtarget import IFAQTarget
 
 
 class BasePersonVocabulary:

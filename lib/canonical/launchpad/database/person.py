@@ -111,8 +111,6 @@ from canonical.launchpad.interfaces.personnotification import (
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
@@ -160,6 +158,8 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
+from lp.apps.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
