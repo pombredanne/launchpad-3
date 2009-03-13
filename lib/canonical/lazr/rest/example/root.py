@@ -10,7 +10,8 @@ from zope.component import adapts, getUtility
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 from canonical.lazr.rest import ServiceRootResource
-from canonical.lazr.interfaces.rest import IServiceRootResource
+from canonical.lazr.interfaces.rest import (
+    IServiceRootResource, IWebServiceConfiguration)
 from canonical.lazr.rest.example.interfaces import (
     ICookbook, ICookbookSet, IHasGet)
 
@@ -68,10 +69,17 @@ class CookbookSet(CookbookTopLevelResource):
 
 
 class CookbookServiceRootResource(ServiceRootResource):
+    """A service root for the cookbook web service.
+
+    Traversal to top-level resources is handled with the get() method.
+    The top-level objects are stored in the top_level_names dict.
+    """
     implements(IHasGet)
+
     _top_level_names = None
     @property
     def top_level_names(self):
+        """Access or create the list of top-level objects."""
         if self._top_level_names is None:
             self._top_level_names = {
                 'cookbooks': getUtility(ICookbookSet)
@@ -79,22 +87,26 @@ class CookbookServiceRootResource(ServiceRootResource):
         return self._top_level_names
 
     def get(self, name):
+        """Traverse to a top-level object."""
         obj = self.top_level_names.get(name)
         obj.__parent__ = self
         return obj
 
 
 class CookbookServiceRootAbsoluteURL:
-    """A basic, extensible implementation of IAbsoluteURL."""
+    """A basic implementation of IAbsoluteURL for the root object."""
     implements(IAbsoluteURL)
     adapts(CookbookServiceRootResource, IDefaultBrowserLayer)
 
+    HOSTNAME = "http://api.cookbooks.dev/"
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        """Initialize with respect to a context and request."""
+        self.version = getUtility(
+            IWebServiceConfiguration).service_version_uri_prefix
 
     def __str__(self):
-        return "http://api.cookbooks.dev/beta"
+        """Return the semi-hard-coded URL to the service root."""
+        return self.HOSTNAME + self.version
 
     __call__ = __str__

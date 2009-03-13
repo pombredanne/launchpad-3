@@ -15,7 +15,7 @@ class CookbookWebServiceConfiguration:
     implements(IWebServiceConfiguration)
 
     path_override = "api"
-    service_version_uri_prefix = "beta"
+    service_version_uri_prefix = "1.0"
     view_permission = "lazr.View"
     use_https = True
     code_revision = "test.revision"
