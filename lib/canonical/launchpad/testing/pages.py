@@ -83,12 +83,11 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 class LaunchpadWebServiceCaller(WebServiceCaller):
     """A class for making calls to Launchpad web services."""
 
-    def baseURL(self):
-        return 'http://api.launchpad.dev'
+    base_url = 'http://api.launchpad.dev'
 
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
-                 handle_errors=False, *args, **kwargs):
-        """Create a WebServiceCaller.
+                 handle_errors=True, *args, **kwargs):
+        """Create a LaunchpadWebServiceCaller.
         :param oauth_consumer_key: The OAuth consumer key to use.
         :param oauth_access_key: The OAuth access key to use for the request.
         :param handle_errors: Should errors raise exception or be handled by
@@ -113,7 +112,7 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
 
     def addHeadersTo(self, full_url, full_headers):
-        if self.consumer is not None and self.access_token is not None:
+        if (self.consumer is not None and self.access_token is not None):
             request = OAuthRequest.from_consumer_and_token(
                 self.consumer, self.access_token, http_url = full_url,
                 )
@@ -542,7 +541,7 @@ def safe_canonical_url(*args, **kwargs):
 def webservice_for_person(person, consumer_key='launchpad-library',
                           permission=OAuthPermission.READ_PUBLIC,
                           context=None):
-    """Return a valid WebServiceCaller for the person.
+    """Return a valid LaunchpadWebServiceCaller for the person.
 
     Use this method to create a way to test the webservice that doesn't depend
     on sample data.
@@ -558,7 +557,8 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     request_token.review(person, permission, context)
     access_token = request_token.createAccessToken()
     logout()
-    return WebServiceCaller(consumer_key, access_token.key, port=9000)
+    return LaunchpadWebServiceCaller(
+        consumer_key, access_token.key, port=9000)
 
 
 def stop():

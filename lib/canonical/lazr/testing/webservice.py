@@ -243,7 +243,9 @@ class WebServiceCaller:
             http_caller = HTTPCaller(*args, **kwargs)
         self.http_caller = http_caller
 
-    def baseURL(self):
+    @property
+    def base_url(self):
+        import pdb; pdb.set_trace()
         raise NotImplementedError()
 
     def apiVersion(self):
@@ -269,7 +271,7 @@ class WebServiceCaller:
             #   /firefox = http://api.launchpad.dev/beta/firefox
             resource_path = resource_path[1:]
         url_with_version = os.path.join(api_version, resource_path)
-        return urljoin(self.baseURL(), url_with_version)
+        return urljoin(self.base_url, url_with_version)
 
     def addHeadersTo(self, url, headers):
         """Add any neccessary headers to the request.
@@ -427,11 +429,12 @@ class CookbookWebServiceHTTPCaller(HTTPCaller):
 
 class CookbookWebServiceCaller(WebServiceCaller):
 
+    base_url = "https://cookbooks.dev/"
+
     def __init__(self, handle_errors=False):
         super(CookbookWebServiceCaller, self).__init__(
             handle_errors, CookbookWebServiceHTTPCaller())
 
-    def baseURL(self):
-        return "https://cookbooks.dev/"
+
 
 
