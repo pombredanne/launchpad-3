@@ -45,7 +45,9 @@ But the basic attributes are still available.
 Because the base class is abstract, you can't pass it to
 Bug.addChange().
 
-    >>> example_bug = factory.makeBug()
+    >>> example_product = factory.makeProduct(owner=example_person)
+    >>> example_bug = factory.makeBug(
+    ...     product=example_product, owner=example_person)
     >>> example_bug.addChange(base_instance)
     Traceback (most recent call last):
       ...
@@ -136,3 +138,26 @@ And if getBugNotification() returns None, no notification will be added.
     >>> new_latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> new_latest_notification.id == latest_notification.id
     True
+
+If getBugNotificationRecipients() returns None the default recipient
+list for the Bug will be used.
+
+    >>> class NoRecipientsBugChange(TestBugChange):
+    ...
+    ...     bug_notification_data = {
+    ...         'text': "Here's some sample text",
+    ...         'is_comment': False,
+    ...         }
+    ...
+    ...     def getBugNotificationRecipients(self):
+    ...         return None
+
+    >>> example_bug.addChange(
+    ...     NoRecipientsBugChange(when=nowish, person=example_person))
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.text_contents
+    Here's some sample text
+
+    >>> for recipient in latest_notification.recipients:
+    ...     print recipient.person.displayname
+    Ford Prefect
