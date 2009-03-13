@@ -12,6 +12,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.archiveauthtoken import (
+    IArchiveAuthTokenSet)
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.interfaces import (
