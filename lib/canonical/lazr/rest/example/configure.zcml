@@ -9,15 +9,11 @@
       provides="canonical.lazr.interfaces.rest.IWebServiceConfiguration">
   </utility>
 
-  <utility
-    factory="canonical.lazr.rest.example.root.CookbookSet"
-    provides="canonical.lazr.rest.example.interfaces.ICookbookSet">
-  </utility>
+  <utility factory="canonical.lazr.rest.example.root.CookbookSet" />
 
   <utility
-    factory="canonical.lazr.rest.example.root.ExampleServiceRootResource"
-    provides="canonical.lazr.interfaces.rest.IServiceRootResource">
-  </utility>
+    provides="canonical.lazr.interfaces.rest.IServiceRootResource"
+    factory="canonical.lazr.rest.example.root.ExampleServiceRootResource" />
 
   <adapter factory="canonical.lazr.rest.example.traversal.TraverseWithGet" />
 
