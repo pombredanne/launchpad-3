@@ -297,9 +297,6 @@ class POTemplate(SQLBase, RosettaStats):
                                 only_current=False, context=None):
         """See `IPOTemplate`."""
         clauses = self._getPOTMsgSetSelectionClauses()
-        # XXX Danilo 2008-12-04: we are about to start discarding
-        # obsolete POTMsgSets (i.e. they'll be in other POTemplates,
-        # but there should be none for sequence == 0).
         if only_current:
             clauses.append('TranslationTemplateItem.sequence > 0')
         if context is not None:
@@ -638,16 +635,6 @@ class POTemplate(SQLBase, RosettaStats):
 
         language = self._lookupLanguage(language_code)
         return DummyPOFile(self, language, variant=variant, owner=requester)
-
-    def getMaximumSequenceNumber(self):
-        """Get the maximum sequence number that is used in this POTemplate."""
-        clauses = self._getPOTMsgSetSelectionClauses()
-        query = """
-          SELECT MAX(sequence) FROM TranslationTemplateItem
-                               WHERE potemplate=%s""" % sqlvalues(self)
-        cur.execute(query)
-        result = cur.fetchall()
-        return result[0][0]
 
     def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
                                   context=None):
