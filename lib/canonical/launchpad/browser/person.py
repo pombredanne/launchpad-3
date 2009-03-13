@@ -2776,10 +2776,10 @@ class PersonView(LaunchpadView, FeedsMixin):
         """The user's preferred languages, or English is none are set."""
         languages = list(self.context.languages)
         if len(languages) > 0:
-            displaynames = [lang.displayname for lang in languages]
-            return ', '.join(sorted(displaynames))
+            englishnames = [lang.englishname for lang in languages]
+            return ', '.join(sorted(englishnames))
         else:
-            return getUtility(ILaunchpadCelebrities).english.displayname
+            return getUtility(ILaunchpadCelebrities).english.englishname
 
 
 class EmailAddressVisibleState:

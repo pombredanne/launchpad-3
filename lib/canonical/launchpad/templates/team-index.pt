@@ -200,7 +200,7 @@
       </tal:emails>
       <a tal:replace="structure overview_menu/editemail/fmt:icon" />
       <br /><strong>Languages:</strong>
-      <tal:languages content="view/languages">English (en)</tal:languages>
+      <tal:languages content="view/languages">English</tal:languages>
       <a tal:replace="structure overview_menu/editlanguages/fmt:icon"/>
     </div>
   </div>

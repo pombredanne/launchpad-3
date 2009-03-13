@@ -148,7 +148,7 @@
           <th>Languages:</th>
           <td>
             <tal:languages content="view/languages">
-              English (en)
+              English
             </tal:languages>
             <a tal:replace="structure overview_menu/editlanguages/fmt:icon"/>
           </td>
