@@ -64,6 +64,7 @@ def database_import_allowed_into(module_path):
     """
     if (module_path == '__import__ hook' or
         module_path.startswith('canonical.launchpad.database') or
+        '.database' in module_path or
         is_test_module(module_path)):
         return True
     return module_path in permitted_database_imports
