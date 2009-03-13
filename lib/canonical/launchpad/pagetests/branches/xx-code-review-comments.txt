@@ -60,8 +60,11 @@ We can reply to a comment.
 
     >>> eric_browser.open(merge_proposal_url)
     >>> eric_browser.getLink('Reply').click()
-    >>> print repr(eric_browser.getControl(name='field.comment').value)
-    '> This is a very long comment about what things should be done to the source\r\n> branch to land it.  When this comment is replied to, it should wrap the line\r\n> properly.'
+    >>> print eric_browser.getControl(name='field.comment').value.replace(
+    ...     '\r\n', '\n') # doctest: -NORMALIZE_WHITESPACE
+    > This is a very long comment about what things should be done to the source
+    > branch to land it.  When this comment is replied to, it should wrap the line
+    > properly.
 
     >>> eric_browser.getControl(name='field.comment').value = ('I like this.\n'
     ... 'I wish I had time to review it properly\n\n'
