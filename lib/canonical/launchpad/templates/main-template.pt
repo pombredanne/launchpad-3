@@ -95,6 +95,14 @@
         tal:attributes="href
         string:${icingroot}/lazr/build/picker/assets/skins/sam/picker-skin.css"
         />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/activator/assets/activator-core.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/activator/assets/skins/sam/activator-skin.css"
+        />
 
     <tal:devmode define="yui string:${icingroot}/yui/3.0.0pr2/build;
                          lazr_js string:${icingroot}/lazr/build;
@@ -146,6 +154,8 @@
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/overlay/overlay.js"></script>
       <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/activator/activator.js"></script>
+      <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/picker/picker.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/lp/lp.js"></script>
@@ -157,6 +167,8 @@
               tal:attributes="src string:${lp_js}/inlinehelp/inlinehelp.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/client/client.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/client/helpers.js"></script>
     </tal:devmode>
     <tal:production condition="not:devmode">
       <script type="text/javascript"

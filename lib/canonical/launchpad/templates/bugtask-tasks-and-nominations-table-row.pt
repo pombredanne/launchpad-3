@@ -86,81 +86,31 @@
         </div>
       </tal:has_watch>
       <tal:has_no_watch condition="not: context/bugwatch"
-        define="assignee_el_id string:assignee-link-${context/id}">
-
-        <tal:comment condition="nothing">
-          The empty <a> tag is filled in by the in-place assignee editor.
-        </tal:comment>
-        <a
-          style="padding: 0.25em; text-decoration: none;"
-          tal:attributes="
-            id assignee_el_id;
-            href string:${context/assignee/fmt:url}/+assignedbugs"
-        >
-          <tal:has_assignee condition="context/assignee">
-            <img tal:replace="structure context/assignee/image:icon"
-                  src="/@@/person" />
-            <span tal:replace="context/assignee/browsername">
-              assignee.browsername
-            </span>
-          </tal:has_assignee>
-        </a>
-          <script tal:content="structure string:
-          YUI().use('lp.picker', function(Y) {
-            var show_widget_node = Y.Node.create('<img/>');
-            show_widget_node.set('src', '/@@/edit');
-            var assignee_link = Y.get('#${assignee_el_id}');
-            assignee_link.ancestor().appendChild(show_widget_node);
-            var save = function (result) {
-                var client = new LP.client.Launchpad();
-                var person_uri = LP.client.get_absolute_uri(
-                    '/~' + result['value'], true);
-
-                var update_ui_after_save = function (e) {
-                    assignee_link.set('innerHTML', '');
-                    var icon = Y.Node.create('<img/>');
-                    icon.set('src', result['image']);
-                    assignee_link.appendChild(icon);
-                    assignee_link.appendChild(
-                        Y.Node.create(' ' + result['title']));
-                    assignee_link.set('href',
-                        '/~' + result['value'] + '/+assignedbugs');
-                    var anim = Y.lazr.anim.green_flash({node: assignee_link});
-                    anim.run();
-                };
-
-                var display_error = function (xid, response, args) {
-                    big_error = [xid, response, args];
-                    var anim = Y.lazr.anim.red_flash({node: assignee_link});
-                    var error = Y.Node.create(
-                        '<span><br/>' + response.statusText + '<br/>'
-                        + response.responseText + '</span>');
-                    error.setStyle('color', 'red');
-                    assignee_link.ancestor().appendChild(error);
-                    anim.run();
-                };
-
-                // LP.client won't insert 'api/beta' into an absolute url.
-                var bugtask_uri = '${view/bugtask_canonical_url}';
-                var index = bugtask_uri.indexOf('//');
-                index = bugtask_uri.indexOf('/', index+2);
-                bugtask_uri = bugtask_uri.substring(index);
-
-                client.named_post(
-                    bugtask_uri,
-                    'transitionToAssignee',
-                    {
-                      parameters: {assignee: person_uri},
-                      on: {
-                        success: update_ui_after_save,
-                        failure: display_error
-                     }}
-                );
-            };
-            var config = {header: 'Select assignee'};
-            Y.lp.picker.add('ValidAssignee', show_widget_node, save, config);
-          });
-          "/>
+        define="assignee_content_id string:assignee-content-box-${context/id}">
+        <span tal:attributes="id assignee_content_id">
+          <span class="yui-activator-data-box">
+            <tal:has_assignee condition="context/assignee">
+              <a style="padding: 0.25em; text-decoration: none;"
+                 tal:attributes="
+                   href string:${context/assignee/fmt:url}/+assignedbugs"
+              >
+                <img tal:replace="structure context/assignee/image:icon"/>
+                <span tal:content="context/assignee/browsername"/>
+              </a>
+            </tal:has_assignee>
+          </span>
+          <a class="yui-activator-act yui-activator-hidden">
+            <img src="/@@/edit"/>
+          </a>
+          <div class="yui-activator-message-box yui-activator-hidden"/>
+        </span>
+        <script tal:content="structure string:
+        YUI().use('lp.picker', function(Y) {
+            Y.lp.picker.addBugTaskAssigneeEditor(
+                '${view/bugtask_canonical_url}',
+                '${assignee_content_id}');
+        });
+        "/>
       </tal:has_no_watch>
     </td>
 
