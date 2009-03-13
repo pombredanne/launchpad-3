@@ -629,6 +629,14 @@ class BranchMergeProposalEditView(MergeProposalEditView):
 class BranchMergeProposalCommitMessageEditView(MergeProposalEditView):
     """The view to edit the commit message of merge proposals."""
 
+    schema = IBranchMergeProposal
+    label = "Edit merge proposal commit message"
+    field_names = ['commit_message']
+
+    @action('Update', name='update')
+    def update_action(self, action, data):
+        """Update the commit message."""
+
 
 class BranchMergeProposalDeleteView(MergeProposalEditView):
     """The view to control the deletion of merge proposals."""
