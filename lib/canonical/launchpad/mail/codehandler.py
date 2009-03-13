@@ -401,6 +401,8 @@ class CodeHandler:
         """
         if url is not None:
             branches = getUtility(IBranchSet)
+            # XXX: This logic could perhaps be extracted out into something
+            # more useful.
             unique_name = branches.URIToUniqueName(URI(url))
             if unique_name is not None:
                 namespace_name, base = split_unique_name(unique_name)

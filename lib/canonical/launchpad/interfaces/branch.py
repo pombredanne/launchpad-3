@@ -1173,12 +1173,14 @@ class IBranchSet(Interface):
         special case of the ~vcs-imports celebrity.
         """
 
+    # XXX: Split these four methods off to a different utility.
     def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 
         Return None if no match was found.
         """
 
+    # XXX: URIToUniqueName is a non-standards compliant name.
     def URIToUniqueName(uri):
         """Return the unique name for the URL, if the URL is on codehosting.
 
@@ -1199,6 +1201,8 @@ class IBranchSet(Interface):
 
         Return the default value if no match was found.
         """
+        # XXX: This docstring is out of date -- getByUrl also resolves lp:
+        # URLs.
 
     def getByLPPath(path):
         """Find the branch associated with an lp: path.
@@ -1397,6 +1401,8 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
     # product.  In this way +junk branches associated with product
     # series should be self limiting.  We are not looking to enforce
     # extra strictness in this case, but instead let it manage itself.
+
+    # XXX: This should not dispatch on Branch.product is None
     if not branch.private and branch.product is not None:
         if is_dev_focus:
             return lp_prefix + branch.product.name

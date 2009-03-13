@@ -350,6 +350,7 @@ class Branch(SQLBase):
     @property
     def bzr_identity(self):
         """See `IBranch`."""
+        # XXX: This should not dispatch on product is None
         if self.product is not None:
             series_branch = self.product.development_focus.series_branch
             is_dev_focus = (series_branch == self)
@@ -1079,6 +1080,7 @@ class BranchSet:
     @staticmethod
     def URIToUniqueName(uri):
         """See `IBranchSet`."""
+        # XXX: how is this used?
         schemes = ('http', 'sftp', 'bzr+ssh')
         codehosting_host = URI(config.codehosting.supermirror_root).host
         if uri.scheme in schemes and uri.host == codehosting_host:
