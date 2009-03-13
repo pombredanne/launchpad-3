@@ -156,9 +156,6 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
         # Now, template contains a plural form message.
         self.assertEquals(self.devel_potemplate.hasPluralMessage(), True)
 
-        # And as a clean-up, let's remove it from the template.
-        plural_potmsgset.setSequence(self.devel_potemplate, 0)
-
     def test_expireAllMessages(self):
         devel_potmsgsets = list(self.devel_potemplate.getPOTMsgSets())
         self.assertEquals(len(devel_potmsgsets) > 0, True)
@@ -172,9 +169,6 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
         self.devel_potemplate.expireAllMessages()
         devel_potmsgsets = list(self.devel_potemplate.getPOTMsgSets())
         self.assertEquals(len(devel_potmsgsets), 0)
-
-        # Let's restore the POTMsgSet's participation in the template.
-        self.potmsgset.setSequence(self.devel_potemplate, 1)
 
     def test_createPOTMsgSetFromMsgIDs(self):
         # We need a 'naked' potemplate to make use of getOrCreatePOMsgID
@@ -199,9 +193,6 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
             msgid_singular=msgid_singular, context=msgid_context)
         self.assertEquals(potmsgset_context.msgid_singular, msgid_singular)
         self.assertEquals(potmsgset_context.context, msgid_context)
-
-        # Clean up by removing the added POTMsgSet from devel_potemplate.
-        potmsgset.setSequence(self.devel_potemplate, 0)
 
 
 def test_suite():

@@ -856,11 +856,8 @@ class POTMsgSet(SQLBase):
             potmsgset=self, potemplate=potemplate)
         if translation_template_item is not None:
             # Update the sequence for the translation template item.
-            if sequence == 0:
-                translation_template_item.destroySelf()
-            else:
-                translation_template_item.sequence = sequence
-        elif sequence > 0:
+            translation_template_item.sequence = sequence
+        elif sequence >= 0:
             # Introduce this new entry into the TranslationTemplateItem for
             # later usage.
             conflicts, uses_english_msgids = (
@@ -881,7 +878,7 @@ class POTMsgSet(SQLBase):
         else:
             # There is no entry for this potmsgset in TranslationTemplateItem
             # table, neither we need to create one, given that the sequence is
-            # zero.
+            # less than zero.
             pass
 
     def getSequence(self, potemplate):
