@@ -6,10 +6,14 @@ __all__ = [
     'DecoratedResultSet',
     ]
 
+import logging
+import sys
+
 from storm.expr import Column
 from storm.zope.interfaces import IResultSet
 
 from lazr.delegates import delegates
+from optparse import OptionParser
 
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
@@ -45,6 +49,9 @@ class DecoratedResultSet(object):
         self.result_set = result_set
         self.result_decorator = result_decorator
         self.pre_iter_hook = pre_iter_hook
+        self.log = logging.getLogger()
+        self.log.addHandler(logging.StreamHandler(strm=sys.stderr))
+        self.log.setLevel(logging.INFO)
 
     def decorate_or_none(self, result):
         """Decorate a result or return None if the result is itself None"""
@@ -78,6 +85,7 @@ class DecoratedResultSet(object):
 
         Yield a decorated version of the returned value.
         """
+        self.log.info('--> pih = %s' % self.pre_iter_hook)
         if self.pre_iter_hook is not None:
             self.pre_iter_hook(self.result_set)
         for value in self.result_set.__iter__(*args, **kwargs):

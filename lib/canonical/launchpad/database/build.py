@@ -911,8 +911,12 @@ class BuildSet:
         # Grab the native storm result set.
         result_set = removeSecurityProxy(result_set)._result_set
         decorated_results = DecoratedResultSet(
-            result_set, pre_iter_hook=self._prefetchBuildData)
+            result_set, pre_iter_hook=self._forceBuildDataPrefetch)
         return decorated_results
+
+    def _forceBuildDataPrefetch(self, result_set):
+        """Run the query that prefetches ancillary Build data."""
+        list(self._prefetchBuildData(result_set))
 
     def retryDepWaiting(self, distroarchseries):
         """See `IBuildSet`. """
@@ -1019,12 +1023,19 @@ class BuildSet:
         rows (prejoined with the appropriate Builder, SourcePackageName and
         LibraryFileContent respectively).
         """
+        import sys
         from canonical.launchpad.database.sourcepackagename import (
             SourcePackageName)
         from canonical.launchpad.database.sourcepackagerelease import (
             SourcePackageRelease)
 
         build_ids = list(result_set.values(Build.id))
+
+        log = logging.getLogger()
+        log.addHandler(logging.StreamHandler(strm=sys.stderr))
+        log.setLevel(logging.INFO)
+        log.info('--> pbd = %s' % build_ids)
+
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             Build,
