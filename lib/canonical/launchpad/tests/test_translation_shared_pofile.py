@@ -558,7 +558,77 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
 
     def test_getPOTMsgSetChangedInLaunchpad(self):
         """Test listing of POTMsgSets which contain changes from imports."""
-        pass
+
+        # If there are no translations, nothing is listed.
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(found_translations, [])
+
+        # Adding a non-imported current translation doesn't change anything.
+        translation = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Non-imported translation"])
+        self.assertEquals(translation.is_imported, False)
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(found_translations, [])
+
+        # Adding an imported translation which is also current doesn't
+        # indicate any changes.
+        translation = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Imported translation"], is_imported=True)
+        self.assertEquals(translation.is_imported, True)
+        self.assertEquals(translation.is_current, True)
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(found_translations, [])
+
+        # However, changing current translation to a non-imported one
+        # makes this a changed in LP translation.
+        translation = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Changed translation"], is_imported=False)
+        self.assertEquals(translation.is_imported, False)
+        self.assertEquals(translation.is_current, True)
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(found_translations, [self.potmsgset])
+
+        # Adding a diverged, non-imported translation, still lists
+        # it as a changed translation.
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Diverged translation"], is_imported=False)
+        self.assertEquals(translation.is_imported, False)
+        self.assertEquals(translation.is_current, True)
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(found_translations, [self.potmsgset])
+
+        # But adding a diverged current and imported translation means
+        # that it's not changed anymore.
+        translation.is_current = False
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Diverged imported"], is_imported=True)
+        self.assertEquals(translation.is_imported, True)
+        self.assertEquals(translation.is_current, True)
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(found_translations, [])
+
+        # Changing from a diverged, imported translation is correctly
+        # detected.
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Diverged changed"], is_imported=False)
+        self.assertEquals(translation.is_imported, False)
+        self.assertEquals(translation.is_current, True)
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(found_translations, [self.potmsgset])
+
 
     def test_getPOTMsgSetWithErrors(self):
         """Test listing of POTMsgSets with errors in translations."""

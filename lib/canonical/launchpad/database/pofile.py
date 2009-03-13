@@ -620,9 +620,9 @@ class POFile(SQLBase, POFileMixIn):
         beggining_of_time = "TIMESTAMP '1970-01-01 00:00:00'"
         newer_than_query = (
             "TranslationMessage.date_created > COALESCE(" +
-            diverged_translation_query + "," +
-            shared_translation_query + "," +
-            beggining_of_time + ")")
+            ",".join([diverged_translation_query,
+                      shared_translation_query,
+                      beggining_of_time]) + ")")
         clauses.append(newer_than_query)
 
         # A POT set has "new" suggestions if there is a non current
@@ -649,24 +649,47 @@ class POFile(SQLBase, POFileMixIn):
         not_nulls = make_plurals_sql_fragment(
             "imported.msgstr%(form)d IS NOT NULL", "OR")
 
-        results = POTMsgSet.select('''POTMsgSet.id IN (
-            SELECT POTMsgSet.id
-            FROM POTMsgSet
-            JOIN TranslationMessage AS imported ON
-                POTMsgSet.id = imported.potmsgset AND
-                imported.pofile = %s AND
-                imported.is_imported IS TRUE
-            JOIN TranslationMessage AS current ON
-                POTMsgSet.id = current.potmsgset AND
-                imported.id <> current.id AND
-                current.pofile = imported.pofile AND
-                current.is_current IS TRUE
-            WHERE
-                POTMsgSet.sequence > 0 AND
-                POTMsgSet.potemplate = %s AND
-                (%s))
-            ''' % (quote(self), quote(self.potemplate), not_nulls),
-            orderBy='POTmsgSet.sequence')
+        # TranslationMessage:
+        #     is_imported IS FALSE, is_current IS TRUE,
+        #     (diverged AND not empty) OR (shared AND not empty AND no diverged)
+        #   exists message (is_imported AND not empty AND (diverged OR shared))
+        clauses, clause_tables = self._getTranslatedMessagesQuery()
+        clauses.extend([
+            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            'TranslationMessage.is_imported IS FALSE',
+            ])
+
+
+        imported_no_diverged = (
+            '''NOT EXISTS (
+                 SELECT * FROM TranslationMessage AS diverged
+                   WHERE
+                     diverged.is_imported IS TRUE AND
+                     diverged.potemplate=%s AND
+                     diverged.potmsgset=TranslationMessage.potmsgset)''' % (
+                sqlvalues(self.potemplate))
+            )
+
+        imported_clauses = [
+            'imported.potmsgset = POTMsgSet.id',
+            'imported.language = TranslationMessage.language',
+            'imported.variant IS NOT DISTINCT FROM TranslationMessage.variant',
+            'imported.is_imported IS TRUE',
+            '(imported.potemplate=%s OR ' % sqlvalues(self.potemplate) +
+            '   (imported.potemplate IS NULL AND ' + imported_no_diverged
+            + '  ))',
+            ]
+        self._appendCompletePluralFormsConditions(imported_clauses,
+                                                  'imported')
+        exists_imported_query = (
+            'EXISTS ('
+            '  SELECT * FROM TranslationMessage AS imported'
+            '      WHERE ' + ' AND '.join(imported_clauses) + ')')
+        clauses.append(exists_imported_query)
+
+        results = POTMsgSet.select(' AND '.join(clauses),
+                                   clauseTables=clause_tables,
+                                   orderBy='POTmsgSet.sequence')
 
         return results
 
@@ -720,18 +743,22 @@ class POFile(SQLBase, POFileMixIn):
             self.rosettacount,
             self.unreviewed_count)
 
-    def _appendCompletePluralFormsConditions(self, query):
+    def _appendCompletePluralFormsConditions(self, query,
+                                             table_name='TranslationMessage'):
         """Add conditions to implement ITranslationMessage.is_complete in SQL.
 
         :param query: A list of AND SQL conditions where the implementation of
             ITranslationMessage.is_complete will be appended as SQL
             conditions.
         """
-        query.append('TranslationMessage.msgstr0 IS NOT NULL')
+        query.append('%(table_name)s.msgstr0 IS NOT NULL' % {
+            'table_name' : table_name})
         if self.language.pluralforms > 1:
             plurals_query = ' AND '.join(
-                'TranslationMessage.msgstr%d IS NOT NULL' % plural_form
-                    for plural_form in range(1, self.plural_forms))
+                '%(table_name)s.msgstr%(plural_form)d IS NOT NULL' % {
+                  'plural_form' : plural_form,
+                  'table_name' : table_name
+                } for plural_form in range(1, self.plural_forms))
             query.append(
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return query
