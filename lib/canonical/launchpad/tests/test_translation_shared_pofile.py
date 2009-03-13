@@ -668,7 +668,74 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
 
     def test_updateStatistics(self):
         """Test that updating statistics keeps working."""
-        pass
+
+        # We are constructing a POFile with:
+        #  - 2 untranslated message
+        #  - 2 unreviewed suggestions (for translated and untranslated each)
+        #  - 2 imported translations, out of which 1 is changed in LP
+        #  - 1 LP-provided translation
+        # For a total of 6 messages, 4 translated (1 from import, 3 only in LP,
+        # where 1 is changed from imported)
+
+        # First POTMsgSet (self.potmsgset) is untranslated.
+
+        # Second POTMsgSet is untranslated, but with a suggestion.
+        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
+        potmsgset.setSequence(self.devel_potemplate, 2)
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=potmsgset,
+            translations=[u"Unreviewed suggestion"], suggestion=True)
+
+        # Third POTMsgSet is translated, and with a suggestion.
+        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
+        potmsgset.setSequence(self.devel_potemplate, 3)
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=potmsgset,
+            translations=[u"Translation"], suggestion=False,
+            date_updated=datetime.now(pytz.UTC)-timedelta(1))
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=potmsgset,
+            translations=[u"Another suggestion"], suggestion=True)
+
+        # Fourth POTMsgSet is translated in import.
+        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
+        potmsgset.setSequence(self.devel_potemplate, 4)
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=potmsgset,
+            translations=[u"Imported translation"], is_imported=True)
+
+        # Fifth POTMsgSet is translated in import, but changed in LP.
+        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
+        potmsgset.setSequence(self.devel_potemplate, 5)
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=potmsgset,
+            translations=[u"Imported translation"], is_imported=True)
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=potmsgset,
+            translations=[u"LP translation"], is_imported=False)
+
+        # Sixth POTMsgSet is translated in LP only.
+        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
+        potmsgset.setSequence(self.devel_potemplate, 6)
+        translation = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=potmsgset,
+            translations=[u"Imported translation"], is_imported=False)
+
+        removeSecurityProxy(self.devel_potemplate).messagecount = (
+            self.devel_potemplate.getPOTMsgSetsCount())
+
+        stats = self.devel_sr_pofile.updateStatistics()
+        self.assertEquals(stats, (1, 1, 3, 2))
+
+        self.assertEquals(self.devel_sr_pofile.messageCount(), 6)
+        self.assertEquals(self.devel_sr_pofile.translatedCount(), 4)
+        self.assertEquals(self.devel_sr_pofile.untranslatedCount(), 2)
+        self.assertEquals(self.devel_sr_pofile.currentCount(), 1)
+        self.assertEquals(self.devel_sr_pofile.rosettaCount(), 3)
+        self.assertEquals(self.devel_sr_pofile.updatesCount(), 1)
+        self.assertEquals(self.devel_sr_pofile.unreviewedCount(), 2)
+
+
 
 
 def test_suite():
