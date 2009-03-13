@@ -678,6 +678,8 @@ class POFile(SQLBase, POFileMixIn):
                  SELECT * FROM TranslationMessage AS diverged
                    WHERE
                      diverged.is_imported IS TRUE AND
+                     diverged.id <> imported.id AND
+                     diverged.id <> TranslationMessage.id AND
                      diverged.potemplate=%s AND
                      diverged.language = TranslationMessage.language AND
                      diverged.variant IS NOT DISTINCT FROM
@@ -687,6 +689,7 @@ class POFile(SQLBase, POFileMixIn):
             )
 
         imported_clauses = [
+            'imported.id <> TranslationMessage.id',
             'imported.potmsgset = POTMsgSet.id',
             'imported.language = TranslationMessage.language',
             'imported.variant IS NOT DISTINCT FROM TranslationMessage.variant',
@@ -777,48 +780,41 @@ class POFile(SQLBase, POFileMixIn):
         # make sure all the data is in the db
         flush_database_updates()
 
-        # Get the number of translations that we got from imports.
-        query = ['TranslationMessage.pofile = %s' % sqlvalues(self),
-                 'TranslationMessage.is_imported IS TRUE',
-                 'TranslationMessage.potmsgset = POTMsgSet.id',
-                 'POTMsgSet.sequence > 0']
-        self._appendCompletePluralFormsConditions(query)
+
+        # Get number of imported messages that are still current in Launchpad.
+        current_clauses = self._getClausesForPOFileMessages()
+        current_clauses.extend([
+            'TranslationMessage.is_imported IS TRUE',
+            'TranslationMessage.is_current IS TRUE',
+            'TranslationMessage.potmsgset = POTMsgSet.id',
+            ('(TranslationMessage.potemplate = %(template)s OR ('
+             '  TranslationMessage.potemplate IS NULL AND NOT EXISTS ('
+             '    SELECT * FROM TranslationMessage AS current '
+             '      WHERE '
+             '        TranslationMessage.potemplate = %(template)s AND '
+             '        TranslationMessage.language=current.language AND '
+             '        TranslationMessage.variant IS NOT DISTINCT FROM '
+             '           current.variant AND '
+             '        TranslationMessage.potmsgset=current.potmsgset AND '
+             '        TranslationMessage.is_current IS TRUE )))') % (
+              sqlvalues(template=self.potemplate)),
+            ])
+        self._appendCompletePluralFormsConditions(current_clauses)
         current = TranslationMessage.select(
-            ' AND '.join(query), clauseTables=['POTMsgSet']).count()
+            ' AND '.join(current_clauses),
+            clauseTables=['TranslationTemplateItem', 'POTMsgSet']).count()
 
         # Get the number of translations that we have updated from what we got
         # from imports.
         updates = self.getPOTMsgSetChangedInLaunchpad().count()
 
-        # Get the number of new translations in Launchpad that imported ones
-        # were not translated.
-        query = [
-            'TranslationMessage.pofile = %s' % sqlvalues(self),
-            'TranslationMessage.is_current IS TRUE']
-        # Check only complete translations.  For messages with only a single
-        # msgid, that's anything with a singular translation; for ones with a
-        # plural form, it's the number of plural forms the language supports.
-        self._appendCompletePluralFormsConditions(query)
-        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
-        # properly fixed (that is, we no longer create empty
-        # TranslationMessage objects for empty strings in imported files), all
-        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
-        # they will not be needed anymore.
-        not_nulls = make_plurals_sql_fragment(
-            "imported.msgstr%(form)d IS NOT NULL", "OR")
-        query.append('''NOT EXISTS (
-            SELECT TranslationMessage.id
-            FROM TranslationMessage AS imported
-            WHERE
-                imported.potmsgset = TranslationMessage.potmsgset AND
-                imported.pofile = TranslationMessage.pofile AND
-                imported.is_imported IS TRUE AND
-                (%s))''' % not_nulls)
-        query.append('TranslationMessage.potmsgset = POTMsgSet.id')
-        query.append('POTMsgSet.sequence > 0')
-        rosetta = TranslationMessage.select(
-            ' AND '.join(query), clauseTables=['POTMsgSet']).count()
+        # Get number of translations done only in Launchpad.
+        total = self.potemplate.messageCount()
+        untranslated = self.getPOTMsgSetUntranslated().count()
+        translated = total - untranslated
+        rosetta = translated - current
 
+        # Get number of unreviewed translations in Launchpad.
         unreviewed = self.getPOTMsgSetWithNewSuggestions().count()
 
         self.currentcount = current
