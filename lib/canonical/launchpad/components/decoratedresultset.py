@@ -6,13 +6,10 @@ __all__ = [
     'DecoratedResultSet',
     ]
 
-import sys
-
 from storm.expr import Column
 from storm.zope.interfaces import IResultSet
 
 from lazr.delegates import delegates
-from optparse import OptionParser
 
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.

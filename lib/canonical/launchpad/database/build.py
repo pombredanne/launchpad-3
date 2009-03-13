@@ -911,12 +911,8 @@ class BuildSet:
         # Grab the native storm result set.
         result_set = removeSecurityProxy(result_set)._result_set
         decorated_results = DecoratedResultSet(
-            result_set, pre_iter_hook=self._forceBuildDataPrefetch)
+            result_set, pre_iter_hook=self._prefetchBuildData)
         return decorated_results
-
-    def _forceBuildDataPrefetch(self, result_set):
-        """Run the query that prefetches ancillary Build data."""
-        list(self._prefetchBuildData(result_set))
 
     def retryDepWaiting(self, distroarchseries):
         """See `IBuildSet`. """
@@ -1029,7 +1025,6 @@ class BuildSet:
             SourcePackageRelease)
 
         build_ids = list(result_set.values(Build.id))
-
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             Build,
@@ -1046,8 +1041,9 @@ class BuildSet:
                      LibraryFileContent.id == LibraryFileAlias.contentID),
             )
         result_set = store.using(*origin).find(
-            (Build.id, SourcePackageRelease, LibraryFileAlias,
-             SourcePackageName, LibraryFileContent),
+            (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
+             LibraryFileContent),
             In(Build.id, build_ids))
 
-        return result_set
+        # Force query execution.
+        list(result_set)
