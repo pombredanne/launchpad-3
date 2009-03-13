@@ -75,7 +75,6 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
-from canonical.launchpad.interfaces.bugtarget import IOfficialBugTagTarget
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
@@ -167,8 +166,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     implements(
         IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
-        IHasMugshot, ILaunchpadUsage, IOfficialBugTagTarget, IProduct,
-        IQuestionTarget, IStructuralSubscriptionTarget)
+        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget,
+        IStructuralSubscriptionTarget)
 
     _table = 'Product'
 
