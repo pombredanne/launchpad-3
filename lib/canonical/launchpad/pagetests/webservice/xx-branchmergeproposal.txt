@@ -97,7 +97,7 @@ The comments on a branch merge proposal are exposed through the API.
 
 == Check the votes ==
 
-The votes on a branch merge proposal are can be checked through the API.
+The votes on a branch merge proposal can be checked through the API.
 
     >>> votes = webservice.get(
     ...     merge_proposal['votes_collection_link']).jsonBody()['entries']
