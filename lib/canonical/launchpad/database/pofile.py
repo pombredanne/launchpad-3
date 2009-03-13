@@ -724,14 +724,6 @@ class POFile(SQLBase, POFileMixIn):
             clauseTables=['TranslationMessage','TranslationTemplateItem'],
             orderBy='POTmsgSet.sequence')
 
-    def hasMessageID(self, messageID):
-        """See `IPOFile`."""
-        return TranslationMessage.select("""
-            TranslationMessage.pofile = %s AND
-            TranslationMessage.potmsgset = POTMsgSet.id AND
-            POTMsgSet.msgid_singular = %s""" % sqlvalues(
-                self, messageID)).count() > 0
-
     def messageCount(self):
         """See `IRosettaStats`."""
         return self.potemplate.messageCount()

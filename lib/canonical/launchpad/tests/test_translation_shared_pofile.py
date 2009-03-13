@@ -669,10 +669,6 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
             self.devel_sr_pofile.getPOTMsgSetWithErrors())
         self.assertEquals(found_translations, [self.potmsgset])
 
-    def test_hasMessageID(self):
-        """Test that finding messages by English string works."""
-        pass
-
     def test_updateStatistics(self):
         """Test that updating statistics keeps working."""
         pass
