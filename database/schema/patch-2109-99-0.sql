@@ -21,6 +21,11 @@ CREATE INDEX potmsgset__no_context__msgid_singular__no_msgid_plural__idx ON potm
 DROP INDEX potmsgset_potemplate_and_sequence_idx;
 CREATE INDEX translationtemplateitem__potemplate__potmsgset__sequence__idx ON translationtemplateitem USING btree (potemplate, potmsgset, sequence);
 
+-- Replace constraint with one allowing sequence of zero.
+ALTER TABLE TranslationTemplateItem DROP CONSTRAINT translationtemplateitem_sequence_check;
+ALTER TABLE TranslationTemplateItem ADD CONSTRAINT translationtemplateitem_sequence_check CHECK (sequence >= 0);
+
+
 ALTER TABLE potmsgset ALTER COLUMN potemplate DROP NOT NULL;
 
 ALTER TABLE potmsgset ALTER COLUMN sequence DROP NOT NULL;
