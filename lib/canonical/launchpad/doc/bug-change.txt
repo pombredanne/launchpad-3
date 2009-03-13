@@ -8,8 +8,14 @@ The base class for BugChanges doesn't actually implement anything.
     >>> from canonical.launchpad.interfaces.bugchange import IBugChange
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+    >>> login("test@canonical.com")
+    >>> example_person = factory.makePerson(displayname="Ford Prefect")
+
     >>> nowish = datetime(2009, 3, 13, 10, 9, tzinfo=pytz.timezone('UTC'))
-    >>> base_instance = BugChangeBase(when=nowish)
+    >>> base_instance = BugChangeBase(when=nowish, person=example_person)
     >>> verifyObject(IBugChange, base_instance)
     True
 
@@ -33,14 +39,12 @@ But the basic attributes are still available.
     >>> print base_instance.when
     2009-03-13 10:09:00+00:00
 
+    >>> print base_instance.person.displayname
+    Ford Prefect
+
 Because the base class is abstract, you can't pass it to
 Bug.addChange().
 
-    >>> login("test@canonical.com")
-
-    >>> from canonical.launchpad.testing.factory import (
-    ...     LaunchpadObjectFactory)
-    >>> factory = LaunchpadObjectFactory()
     >>> example_bug = factory.makeBug()
     >>> example_bug.addChange(base_instance)
     Traceback (most recent call last):
@@ -51,19 +55,18 @@ We'll create a test class that actually implements the methods we need.
 
     >>> from canonical.launchpad.interfaces.bugactivity import (
     ...     IBugActivitySet)
-    >>> example_person = factory.makePerson()
     >>> class TestBugChange(BugChangeBase):
     ...
     ...     bug_activity_data = {
-    ...         'person': example_person,
     ...         'whatchanged': 'Nothing',
     ...         'oldvalue': 'OldValue',
     ...         'newvalue': 'NewValue',
     ...         'message': 'ExampleMessage',
     ...         }
     ...
-    ...
     ...     bug_notification_data = {
+    ...         'text': 'Some message text',
+    ...         'is_comment': False,
     ...         }
     ...
     ...     def getBugActivity(self):
@@ -71,21 +74,24 @@ We'll create a test class that actually implements the methods we need.
 
     >>> def print_bug_activity(activity):
     ...     for activity in activity:
-    ...         print "%s: %s %s => %s" % (
+    ...         print "%s: %s %s => %s (%s)" % (
     ...             activity.datechanged, activity.whatchanged,
-    ...             activity.oldvalue, activity.newvalue)
+    ...             activity.oldvalue, activity.newvalue,
+    ...             activity.person.displayname)
 
 BugActivity entries are added when addChange() is called.
 
-    >>> example_bug.addChange(TestBugChange(when=nowish))
+    >>> example_bug.addChange(
+    ...     TestBugChange(when=nowish, person=example_person))
     >>> print_bug_activity(example_bug.activity)
-    2009-03-13...: Nothing OldValue => NewValue
+    2009-03-13...: Nothing OldValue => NewValue (Ford Prefect)
 
 Bug if getBugActivity() returns None, no activity entries will be added.
 
     >>> class NoActivityBugChange(TestBugChange):
     ...     bug_activity_data = None
 
-    >>> example_bug.addChange(NoActivityBugChange(when=nowish))
+    >>> example_bug.addChange(
+    ...     TestBugChange(when=nowish, person=example_person))
     >>> print_bug_activity(example_bug.activity)
-    2009-03-13...: Nothing OldValue => NewValue
+    2009-03-13...: Nothing OldValue => NewValue (Ford Prefect)

@@ -14,6 +14,7 @@ class IBugChange(Interface):
     """Represents a change to an `IBug`."""
 
     when = Attribute("The timestamp for the BugChange.")
+    person = Attribute("The Person who made the change.")
 
     def getBugActivity():
         """Return the `BugActivity` data for this change as a dict."""

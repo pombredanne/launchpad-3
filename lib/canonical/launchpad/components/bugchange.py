@@ -18,8 +18,9 @@ class BugChangeBase:
 
     implements(IBugChange)
 
-    def __init__(self, when):
+    def __init__(self, when, person):
         self.when = when
+        self.person = person
 
     def getBugActivity(self):
         """Return the `BugActivity` entry for this change."""
