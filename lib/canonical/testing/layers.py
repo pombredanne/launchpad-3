@@ -751,7 +751,6 @@ class FunctionalLayer(BaseLayer):
     @profiled
     def setUp(cls):
         FunctionalLayer.isSetUp = True
-        import pdb; pdb.set_trace()
         FunctionalTestSetup().setUp()
 
         # Assert that FunctionalTestSetup did what it says it does

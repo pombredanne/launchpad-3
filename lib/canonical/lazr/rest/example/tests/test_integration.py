@@ -15,22 +15,8 @@ from zope.configuration import xmlconfig
 from canonical.lazr.testing.layers import MockRootFolder
 
 
-def tearDown(test):
-    """Run registered clean-up function."""
-    FunctionalTestSetup()._init = False
-
-
-def test_suite():
-    """See `zope.testing.testrunner`."""
-    zcmlcontext = xmlconfig.string("""
-            <configure xmlns="http://namespaces.zope.org/zope">
-              <include package="zope.app.component" file="meta.zcml"/>
-              <include package="canonical.lazr.rest" />
-              <include package="zope.traversing" />
-              <include package="zope.publisher" />
-              <include package="canonical.lazr.rest" file="meta.zcml" />
-              <include package="canonical.lazr.rest.example" />
-            </configure>""")
+def setUp(test):
+    """Set up the functional layer for LAZR tests."""
     fs = FunctionalTestSetup(
         config_file='lib/canonical/lazr/rest/ftesting.zcml')
     fs.setUp()
@@ -39,9 +25,17 @@ def test_suite():
     root = fs.connection.root()
     root[ZopePublication.root_name] = MockRootFolder()
 
+
+def tearDown(test):
+    """Run registered clean-up function."""
+    FunctionalTestSetup()._init = False
+
+
+def test_suite():
+    """See `zope.testing.testrunner`."""
     tests = sorted(
         [name
          for name in os.listdir(os.path.dirname(__file__))
          if name.endswith('.txt')])
     return LayeredDocFileSuite(
-        stdout_logging=True, tearDown=tearDown, *tests)
+        stdout_logging=True, setUp=setUp, tearDown=tearDown, *tests)
