@@ -29,3 +29,6 @@ class BugChangeBase:
         """Return any `BugNotification`s for this event."""
         raise NotImplementedError(self.getBugNotifications)
 
+    def getBugNotificationRecipients(self):
+        """Return any recipients for the `BugNotification`s."""
+        raise NotImplementedError(self.getBugNotificationRecipients)

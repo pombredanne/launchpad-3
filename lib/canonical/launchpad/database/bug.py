@@ -38,6 +38,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
+from canonical.launchpad.interfaces.bugactivity import IBugActivitySet
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
@@ -651,6 +652,16 @@ class Bug(SQLBase):
 
     def addChange(self, change):
         """See `IBug`."""
+        # Only try to add something to the activity log if we have some
+        # data.
+        activity_data = change.getBugActivity()
+        if activity_data is not None:
+            bug_activity = getUtility(IBugActivitySet).new(
+                self, change.when, activity_data['person'],
+                activity_data['whatchanged'],
+                activity_data.get('oldvalue'),
+                activity_data.get('newvalue'),
+                activity_data.get('message'))
 
     def expireNotifications(self):
         """See `IBug`."""

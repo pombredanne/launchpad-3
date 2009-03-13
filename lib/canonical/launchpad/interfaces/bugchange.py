@@ -16,8 +16,10 @@ class IBugChange(Interface):
     when = Attribute("The timestamp for the BugChange.")
 
     def getBugActivity():
-        """Return the `BugActivity` entry for this change."""
+        """Return the `BugActivity` data for this change as a dict."""
 
     def getBugNotifications():
         """Return any `BugNotification`s for this event."""
 
+    def getBugNotificationRecipients():
+        """Return any recipients for the `BugNotification`s."""
