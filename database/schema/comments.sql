@@ -2026,6 +2026,9 @@ COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this en
 COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
 
+-- OpenIdNonce
+COMMENT ON TABLE OpenIdNonce IS 'Nonces for our OpenID consumer.';
+
 -- OpenIdRPConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
 COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';

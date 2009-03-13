@@ -5,8 +5,9 @@ tries to log into shipit, they will be taken to the Login Service, where they
 will be asked to authenticate using their Launchpad account.
 
     # Change the rooturl of our openid vhost.  This is necessary so that the
-    # python OpenID library can access the OpenID provider, made available by
-    # the AppServerLayer.
+    # python OpenID library can access the OpenID provider (made available by
+    # the AppServerLayer) using HTTP requests instead of going directly
+    # through zope3's publication machinery.
     >>> from canonical.launchpad.webapp.vhosts import allvhosts
     >>> orig_value = allvhosts.configs['openid'].rooturl
     >>> allvhosts.configs['openid'].rooturl = (
