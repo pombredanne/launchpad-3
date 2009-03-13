@@ -9,14 +9,24 @@ __all__ = [
     'BranchVisibilityRule',
     'IHasBranchVisibilityPolicy',
     'IBranchVisibilityTeamPolicy',
+    'InvalidVisibilityPolicy',
+    'TeamBranchVisibilityRule',
     ]
 
 from zope.interface import Interface
 from zope.schema import Choice
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, use_template
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
+
+
+class InvalidVisibilityPolicy(Exception):
+    """The default policy can only be public or forbidden.
+
+    If an attempt is made to set it to something other than one of these two
+    values, this exception is raised.
+    """
 
 
 class BranchVisibilityRule(DBEnumeratedType):
@@ -47,6 +57,10 @@ class BranchVisibilityRule(DBEnumeratedType):
         Users are not able to create branches in the context.
         """)
 
+class TeamBranchVisibilityRule(EnumeratedType):
+    """The valid policy rules for teams."""
+    use_template(BranchVisibilityRule, exclude='FORBIDDEN')
+
 
 class IHasBranchVisibilityPolicy(Interface):
     """Implemented by types that need to define default branch visibility."""
@@ -74,7 +88,6 @@ class IHasBranchVisibilityPolicy(Interface):
         If there are a number of rules that apply for the owner of the branch
         then the most restrictive rule is retuned.
         """
-
 
     def isUsingInheritedBranchVisibilityPolicy():
         """Return True if using policy from the inherited context.
@@ -110,13 +123,13 @@ class IBranchVisibilityTeamPolicy(Interface):
     """
 
     team = PublicPersonChoice(
-        title=_('Team'), required=False, vocabulary='ValidPersonOrTeam',
+        title=_('Team'), required=True, vocabulary='ValidPersonOrTeam',
         description=_("Specifies the team that the policy applies to. "
                       "If None then the policy applies to everyone."))
 
     rule = Choice(
-        title=_('Rule'), vocabulary=BranchVisibilityRule,
-        default=BranchVisibilityRule.PUBLIC,
+        title=_('Rule'), vocabulary=TeamBranchVisibilityRule,
+        default=TeamBranchVisibilityRule.PUBLIC,
         description=_(
         "The visibility rule defines the default branch visibility for "
         "members of the team specified."))

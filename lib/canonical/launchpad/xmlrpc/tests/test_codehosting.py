@@ -15,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
     BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranchSet,
@@ -61,12 +61,18 @@ class TestRunWithLogin(TestCaseWithFactory):
         # run_with_login logs in as user given as the first argument
         # to the method being decorated.
         username = run_with_login(self.person.id, get_logged_in_username)
+        # person.name is a protected field so we must be logged in before
+        # attempting to access it.
+        login(ANONYMOUS)
         self.assertEqual(self.person.name, username)
+        logout()
 
     def test_loginAsRequesterName(self):
         # run_with_login can take a username as well as user id.
         username = run_with_login(self.person.name, get_logged_in_username)
+        login(ANONYMOUS)
         self.assertEqual(self.person.name, username)
+        logout()
 
     def test_logoutAtEnd(self):
         # run_with_login logs out once the decorated method is
@@ -88,7 +94,9 @@ class TestRunWithLogin(TestCaseWithFactory):
         # run_with_login passes in the Launchpad Person object of the
         # requesting user.
         user = run_with_login(self.person.id, lambda x: x)
+        login(ANONYMOUS)
         self.assertEqual(self.person.name, user.name)
+        logout()
 
     def test_invalidRequester(self):
         # A method wrapped with run_with_login raises NotFoundError if

@@ -25,7 +25,8 @@
     <div>
       <span style="float: left; width: 15em"
             tal:repeat="person view/unmapped_participants">
-        <a tal:attributes="
+        <a tal:condition="person/name|nothing"
+           tal:attributes="
             href string:${person/fmt:url}/+editlocation?for_team=${context/name}"
            title="Set this person's location"
           ><img src="/@@/edit" />
