@@ -134,6 +134,14 @@
   </browser:pages>
 
   <browser:page
+      name="+edit-commit-message"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalCommitMessageEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/branchmergeproposal-commitmessage-edit.pt" />
+
+  <browser:page
       name="+delete"
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       class="canonical.launchpad.browser.BranchMergeProposalDeleteView"

@@ -9,6 +9,7 @@ __all__ = [
     'BranchMergeProposalAddVoteView',
     'BranchMergeProposalChangeStatusView',
     'BranchMergeProposalContextMenu',
+    'BranchMergeProposalCommitMessageEditView',
     'BranchMergeProposalDeleteView',
     'BranchMergeProposalDequeueView',
     'BranchMergeProposalEditView',
@@ -623,6 +624,10 @@ class BranchMergeProposalEditView(MergeProposalEditView):
     def update_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
         self.updateContextFromData(data)
+
+
+class BranchMergeProposalCommitMessageEditView(MergeProposalEditView):
+    """The view to edit the commit message of merge proposals."""
 
 
 class BranchMergeProposalDeleteView(MergeProposalEditView):
