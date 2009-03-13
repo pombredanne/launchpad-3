@@ -12,6 +12,7 @@ from zope.interface import implements
 from canonical.lazr.interfaces.rest import IWebServiceConfiguration
 
 class CookbookWebServiceConfiguration:
+    """A configuration object for the cookbook web service."""
     implements(IWebServiceConfiguration)
 
     path_override = "api"

@@ -1,4 +1,9 @@
-__all__ = ['TraverseWithGet']
+# Copyright 2009 Canonical Ltd.  All rights reserved.
+
+"""Traversal rules for the LAZR example web service."""
+
+__all__ = [
+    'TraverseWithGet']
 
 
 from urllib import unquote
@@ -8,6 +13,7 @@ from zope.publisher.interfaces import IPublishTraverse, NotFound
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 from canonical.lazr.rest.example.interfaces import IHasGet
+
 
 
 class TraverseWithGet:

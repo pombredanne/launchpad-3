@@ -1,3 +1,7 @@
+# Copyright 2009 Canonical Ltd.  All rights reserved.
+
+"""Data model objects for the LAZR example web service."""
+
 __all__ = ['Cookbook',
            'CookbookServiceRootResource',
            'CookbookSet',
@@ -17,10 +21,12 @@ from canonical.lazr.rest.example.interfaces import (
 
 
 class CookbookWebServiceObject:
+    """A basic object published through the web service."""
     pass
 
 
-class CookbookTopLevelResource(CookbookWebServiceObject):
+class CookbookTopLevelObject(CookbookWebServiceObject):
+    """An object published at the top level of the web service."""
 
     @property
     def __parent__(self):
@@ -32,6 +38,7 @@ class CookbookTopLevelResource(CookbookWebServiceObject):
 
 
 class Cookbook(CookbookWebServiceObject):
+    """An object representing a cookbook"""
     implements(ICookbook, IAbsoluteURL)
     def __init__(self, name):
         self.name = name
@@ -48,7 +55,8 @@ C3 = Cookbook(u"James Beard's American Cookery")
 COOKBOOKS = [C1, C2, C3]
 
 
-class CookbookSet(CookbookTopLevelResource):
+class CookbookSet(CookbookTopLevelObject):
+    """The set of all cookbooks."""
     implements(ICookbookSet)
 
     def __init__(self, cookbooks=None):

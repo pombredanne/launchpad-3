@@ -1,4 +1,7 @@
+# Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
+
+"""Interface objects for the LAZR example web service."""
 
 __all__ = ['ICookbook',
            'ICookbookSet',
@@ -11,6 +14,7 @@ from canonical.lazr.rest.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, exported)
 
+
 class IHasGet(Interface):
     """A marker interface objects that implement traversal with get()."""
     def get(name):
@@ -18,6 +22,7 @@ class IHasGet(Interface):
 
 
 class ICookbook(Interface):
+    """A cookbook, annotated for export to the web service."""
     export_as_webservice_entry()
     name = exported(TextLine(title=u"Name", required=True))
     cuisine = exported(
@@ -25,6 +30,7 @@ class ICookbook(Interface):
 
 
 class ICookbookSet(IHasGet):
+    """The set of all cookbooks, annotated for export to the web service."""
     export_as_webservice_collection(ICookbook)
 
     @collection_default_content()
