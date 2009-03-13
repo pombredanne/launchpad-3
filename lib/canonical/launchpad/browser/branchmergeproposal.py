@@ -643,6 +643,7 @@ class BranchMergeProposalCommitMessageEditView(MergeProposalEditView):
     @action('Update', name='update')
     def update_action(self, action, data):
         """Update the commit message."""
+        self.updateContextFromData(data)
 
 
 class BranchMergeProposalDeleteView(MergeProposalEditView):
