@@ -34,7 +34,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         branch = self.factory.makeProductBranch(
             product=product, **branch_args)
         login(email)
-        product.development_focus.branch = branch
+        product.development_focus.user_branch = branch
         return product, branch
 
     def getBranchSummaryBrowseLinkForProduct(self, product):

@@ -6,8 +6,6 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
-import transaction
-
 from canonical.launchpad.browser.branchmergeproposallisting import (
     BranchMergeProposalListingView, ProductActiveReviewsView)
 from canonical.launchpad.interfaces.codereviewcomment import (
@@ -105,7 +103,6 @@ class TestProposalVoteSummary(TestCaseWithFactory):
     def test_abstain(self):
         # Shown as Abstain: <count>.
         proposal = self.factory.makeBranchMergeProposal()
-        transaction.commit()
         self._createComment(proposal, vote=CodeReviewVote.ABSTAIN)
         summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(

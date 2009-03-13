@@ -148,7 +148,6 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
                          'No author should be set yet.')
         email = harry.guessedemails[0]
         harry.validateAndEnsurePreferredEmail(email)
-        transaction.commit() # Sync all changes
         # The link is now made.
         self.assertEqual(harry, self.author.person,
                          'Harry should now be the author.')

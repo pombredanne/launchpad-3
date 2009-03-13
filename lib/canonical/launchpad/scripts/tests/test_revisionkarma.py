@@ -62,7 +62,6 @@ class TestRevisionKarma(TestCaseWithFactory):
         rev = self.factory.makeRevision(author=email)
         branch = self.factory.makeAnyBranch()
         branch.createBranchRevision(1, rev)
-        transaction.commit()
         self.failIf(rev.karma_allocated)
         # Since the revision author is not known, the revisions do not at this
         # stage need karma allocated.
@@ -100,7 +99,6 @@ class TestRevisionKarma(TestCaseWithFactory):
         # Now link the revision author to the author.
         author.validateAndEnsurePreferredEmail(
             EmailAddressSet().new(email, author))
-        transaction.commit()
         # Now that the revision author is linked to the person, the revision
         # needs karma allocated.
         self.assertEqual(

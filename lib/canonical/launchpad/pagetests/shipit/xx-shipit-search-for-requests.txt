@@ -32,7 +32,7 @@ Let's have a look at the requests that are still pending approval.
       Approved: 10
       Status: pending
     13
-      Recipient: Marilize Coetzee ...
+      Recipient: Marilize Coetzee (info@shipit.ubuntu.com)
       Date: 2006-03-09
       Country: South Africa
       Requested: 5
@@ -61,7 +61,7 @@ Now search for approved requests containing Ubuntu CDs.
       Approved: 10
       Status: approved (unshipped)
     19
-      Recipient: Marilize Coetzee ...
+      Recipient: Marilize Coetzee (info@shipit.ubuntu.com)
       Date: 2006-10-17
       Country: Antarctica
       Requested: 150
@@ -109,7 +109,7 @@ Now check the approved ones containing Kubuntu CDs.
       Approved: 10
       Status: approved (unshipped)
     19
-      Recipient: Marilize Coetzee ...
+      Recipient: Marilize Coetzee (info@shipit.ubuntu.com)
       Date: 2006-10-17
       Country: Antarctica
       Requested: 150

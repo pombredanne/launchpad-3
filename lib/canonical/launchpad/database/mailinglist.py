@@ -268,7 +268,7 @@ class MailingList(SQLBase):
                 # than as a response to a user action.
                 removeSecurityProxy(email).status = (
                     EmailAddressStatus.VALIDATED)
-            assert email.personID == self.teamID, (
+            assert email.person == self.team, (
                 "Email already associated with another team.")
 
     def _setAndNotifyDateActivated(self):
@@ -297,10 +297,8 @@ class MailingList(SQLBase):
             'Only active mailing lists may be deactivated')
         self.status = MailingListStatus.DEACTIVATING
         email = getUtility(IEmailAddressSet).getByEmail(self.address)
-        if email is not None and self.team.preferredemail is not None:
-            if email.id == self.team.preferredemail.id:
-                self.team.setContactAddress(None)
-        assert email.personID == self.teamID, 'Incorrectly linked email.'
+        if email == self.team.preferredemail:
+            self.team.setContactAddress(None)
         email.status = EmailAddressStatus.NEW
 
     def reactivate(self):
@@ -372,7 +370,7 @@ class MailingList(SQLBase):
         if person.isTeam():
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
                                   person.displayname)
-        if address is not None and address.personID != person.id:
+        if address is not None and address.person != person:
             raise CannotSubscribe('%s does not own the email address: %s' %
                                   (person.displayname, address.email))
         subscription = self.getSubscription(person)
@@ -401,14 +399,11 @@ class MailingList(SQLBase):
             raise CannotChangeSubscription(
                 '%s is not a member of the mailing list: %s' %
                 (person.displayname, self.team.displayname))
-        if address is not None and address.personID != person.id:
+        if address is not None and address.person != person:
             raise CannotChangeSubscription(
                 '%s does not own the email address: %s' %
                 (person.displayname, address.email))
-        if address is None:
-            subscription.email_address = None
-        else:
-            subscription.email_addressID = address.id
+        subscription.email_address = address
 
     def getSubscribedAddresses(self):
         """See `IMailingList`."""

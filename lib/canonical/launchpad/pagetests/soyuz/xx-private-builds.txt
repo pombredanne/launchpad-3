@@ -356,9 +356,6 @@ Let's make the iceweasel package available in Warty.  First log in as
 an admin to be able to manipulate the source publishing.
 
     >>> login("foo.bar@canonical.com")
-    >>> from canonical.launchpad.webapp.adapter import (
-    ...     StoreSelector, MASTER_FLAVOR)
-    >>> StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']

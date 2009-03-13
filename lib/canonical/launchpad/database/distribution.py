@@ -76,8 +76,6 @@ from canonical.launchpad.interfaces.archive import (
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
-from canonical.launchpad.interfaces.bugtarget import (
-    IOfficialBugTagTargetMixin)
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.build import IBuildSet
@@ -121,8 +119,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IOfficialBugTagTargetMixin, IQuestionTarget,
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget, 
         IStructuralSubscriptionTarget)
 
     _table = 'Distribution'
@@ -1410,7 +1407,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             list(Product.select("Product.id IN %s" % 
                  sqlvalues(sources_to_products.values()),
                  prejoins=["bug_supervisor", "bugtracker", "project",
-                           "development_focus.branch"]))
+                           "development_focus.user_branch",
+                           "development_focus.import_branch"]))
 
         # Okay, we have all the information good to go, so assemble it
         # in a reasonable data structure.

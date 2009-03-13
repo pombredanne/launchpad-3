@@ -26,16 +26,12 @@
                       getLinkedPersonByName id imported_bug_messages
                       latestwatches name owner products projects
                       summary title watches getBugFilingAndSearchLinks
-                      has_lp_plugin multi_product active" />
+                      has_lp_plugin multi_product" />
       <require
           permission="launchpad.Edit"
           attributes="destroySelf ensurePersonForSelf linkPersonToSelf"
           set_attributes="aliases baseurl bugtrackertype contactdetails
                           name owner summary title has_lp_plugin" />
-      <require
-          permission="launchpad.Admin"
-          set_attributes="active" />
-
     </class>
 
     <adapter
