@@ -34,7 +34,7 @@ from zope.security.management import endInteraction, newInteraction
 
 from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.lazr.interfaces.rest import (
-    IWebServiceConfiguration, WebServiceLayer)
+    IWebServiceConfiguration, IWebServiceLayer)
 from canonical.lazr.rest.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 from canonical.lazr.rest.example.root import (
