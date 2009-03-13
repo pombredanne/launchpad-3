@@ -172,7 +172,7 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
-from canonical.launchpad.browser.questiontarget import SearchQuestionsView
+from lp.apps.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
 

@@ -57,9 +57,9 @@ from canonical.launchpad.browser.distroseries import *
 from canonical.launchpad.browser.distroseriesbinarypackage import *
 from canonical.launchpad.browser.distroserieslanguage import *
 from canonical.launchpad.browser.distroseriessourcepackagerelease import *
-from canonical.launchpad.browser.faq import *
-from canonical.launchpad.browser.faqcollection import *
-from canonical.launchpad.browser.faqtarget import *
+from lp.apps.answers.browser.faq import *
+from lp.apps.answers.browser.faqcollection import *
+from lp.apps.answers.browser.faqtarget import *
 from canonical.launchpad.browser.featuredproject import *
 from canonical.launchpad.browser.feeds import *
 from canonical.launchpad.browser.hastranslationimports import *
@@ -89,8 +89,8 @@ from canonical.launchpad.browser.productseries import *
 from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.publishing import *
-from canonical.launchpad.browser.question import *
-from canonical.launchpad.browser.questiontarget import *
+from lp.apps.answers.browser.question import *
+from lp.apps.answers.browser.questiontarget import *
 from canonical.launchpad.browser.queue import *
 from canonical.launchpad.browser.root import *
 from canonical.launchpad.browser.shipit import *
