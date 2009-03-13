@@ -217,19 +217,14 @@ def setupCompleteBuilds(batch):
     prefetched_data = dict()
     build_ids = [build.id for build in builds]
     results = getUtility(IBuildQueueSet).getForBuilds(build_ids)
-    for result in results:
+    for (buildqueue, builder) in results:
         # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
         # 'buildlog' (from the result set) respectively.
-        (buildqueue, builder) = result
-        prefetched_data[buildqueue.build] = (buildqueue, builder)
+        prefetched_data[buildqueue.build] = buildqueue
 
     complete_builds = []
     for build in builds:
-        prejoins = prefetched_data.get(build.id)
-        if prejoins is not None:
-            (buildqueue, builder) = prejoins
-        else:
-            buildqueue = None
+        buildqueue = prefetched_data.get(build.id)
         complete_builds.append(CompleteBuild(build, buildqueue))
 
     return complete_builds
