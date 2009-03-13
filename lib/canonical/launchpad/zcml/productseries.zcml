@@ -18,8 +18,8 @@
             interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="product name owner driver summary user_branch
-                            status releasefileglob import_branch"
+            set_attributes="product name owner driver summary branch
+                            status releasefileglob"
             />
         <require
             permission="launchpad.AnyPerson"

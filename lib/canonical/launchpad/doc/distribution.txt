@@ -644,7 +644,7 @@ They're ordered by dateexpected.
 Only milestones which have visible=True are returned by the .milestones
 property.
 
-    >>> debian_milestone.visible = False
+    >>> debian_milestone.active = False
     >>> [milestone.name for milestone in debian.milestones]
     [u'3.1', u'3.1-rc1']
 

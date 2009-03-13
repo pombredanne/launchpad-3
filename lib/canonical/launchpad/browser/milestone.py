@@ -5,11 +5,13 @@
 __metaclass__ = type
 
 __all__ = [
-    'MilestoneSetNavigation',
-    'MilestoneNavigation',
-    'MilestoneContextMenu',
     'MilestoneAddView',
+    'MilestoneContextMenu',
+    'MilestoneDeleteView',
     'MilestoneEditView',
+    'MilestoneNavigation',
+    'MilestoneOverviewNavigationMenu',
+    'MilestoneSetNavigation',
     ]
 
 from zope.component import getUtility
@@ -23,7 +25,7 @@ from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, ContextMenu, Link,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    enabled_with_permission, GetitemNavigation, Navigation)
+    enabled_with_permission, GetitemNavigation, Navigation, NavigationMenu)
 
 from canonical.widgets import DateWidget
 
@@ -46,7 +48,7 @@ class MilestoneContextMenu(ContextMenu):
 
     usedfor = IMilestone
 
-    links = ['edit', 'admin', 'subscribe']
+    links = ['edit', 'admin', 'subscribe', 'publish_release', 'view_release']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -68,6 +70,36 @@ class MilestoneContextMenu(ContextMenu):
         enabled = not IProjectMilestone.providedBy(self.context)
         return Link('+subscribe', 'Subscribe to bug mail',
                     icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def publish_release(self):
+        text = 'Publish release'
+        # Releases only exist for products.
+        # A milestone can only have a single product release.
+        enabled = (not IProjectMilestone.providedBy(self.context)
+                   and self.context.product_release is None)
+        return Link('+addrelease', text, icon='add', enabled=enabled)
+
+    def view_release(self):
+        text = 'View release'
+        # Releases only exist for products.
+        if (not IProjectMilestone.providedBy(self.context)
+            and self.context.product_release is not None):
+            enabled = True
+            url = canonical_url(self.context.product_release)
+        else:
+            enabled = False
+            url = '.'
+        return Link(url, text, enabled=enabled)
+
+
+class MilestoneOverviewNavigationMenu(NavigationMenu):
+    """Overview navigation menus for `IProductSeries` objects."""
+    # Suppress the ProductOverviewNavigationMenu from showing on milestones,
+    # pages.
+    usedfor = IMilestone
+    facet = 'overview'
+    links = ()
 
 
 class MilestoneView(LaunchpadView):
@@ -132,7 +164,7 @@ class MilestoneAddView(LaunchpadFormView):
     """A view for creating a new Milestone."""
 
     schema = IMilestone
-    field_names = ['name', 'dateexpected', 'description']
+    field_names = ['name', 'dateexpected', 'summary']
     label = "Register a new milestone"
 
     custom_widget('dateexpected', DateWidget)
@@ -143,7 +175,7 @@ class MilestoneAddView(LaunchpadFormView):
         milestone = self.context.newMilestone(
             name=data.get('name'),
             dateexpected=data.get('dateexpected'),
-            description=data.get('description'))
+            summary=data.get('summary'))
         self.next_url = canonical_url(self.context)
 
     @property
@@ -156,11 +188,11 @@ class MilestoneEditView(LaunchpadEditFormView):
 
     This view supports editing of properties such as the name, the date it is
     expected to complete, the milestone description, and whether or not it is
-    visible (i.e. active).
+    active (i.e. active).
     """
 
     schema = IMilestone
-    field_names = ['name', 'visible', 'dateexpected', 'description']
+    field_names = ['name', 'active', 'dateexpected', 'summary']
     label = "Modify milestone details"
 
     custom_widget('dateexpected', DateWidget)
@@ -188,3 +220,58 @@ class MilestoneAdminEditView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
+class MilestoneDeleteView(LaunchpadFormView):
+    """A view for deleting an `IMilestone`."""
+    schema = IMilestone
+    field_names = []
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Delete %s' % self.context.title
+
+    @cachedproperty
+    def bugtasks(self):
+        """The list `IBugTask`s targeted to the milestone."""
+        params = BugTaskSearchParams(milestone=self.context, user=None)
+        bugtasks = getUtility(IBugTaskSet).search(params)
+        return list(bugtasks)
+
+    @cachedproperty
+    def specifications(self):
+        """The list `ISpecification`s targeted to the milestone."""
+        return list(self.context.specifications)
+
+    @cachedproperty
+    def product_release(self):
+        """The `IProductRelease` associated with the milestone."""
+        return self.context.product_release
+
+    @cachedproperty
+    def product_release_files(self):
+        """The list of `IProductReleaseFile`s related to the milestone."""
+        if self.product_release:
+            return list(self.product_release.files)
+        else:
+            return []
+
+    @action('Delete this Milestone', name='delete')
+    def delete_action(self, action, data):
+        # Any associated bugtasks and specifications are untargeted.
+        for bugtask in self.bugtasks:
+            bugtask.milestone = None
+        for spec in self.context.specifications:
+            spec.milestone = None
+        # Any associated product release and its files are deleted.
+        for release_file in self.product_release_files:
+            release_file.destroySelf()
+        if self.product_release is not None:
+            self.product_release.destroySelf()
+        self.request.response.addInfoNotification(
+            "Milestone %s deleted." % self.context.name)
+        self.next_url = canonical_url(self.context.productseries)
+        self.context.destroySelf()
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)

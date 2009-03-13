@@ -161,8 +161,8 @@ class PackageBugReportData(BugReportData):
             dsp_bugs_url, get_buglisting_search_filter_url())
 
         self.official_malone = bool(product and product.official_malone)
-        self.series_branch = (
-            product and product.development_focus.series_branch)
+        self.branch = (
+            product and product.development_focus.branch)
 
         # If a product is specified, build some convenient links to
         # pages which allow filling out required information. The

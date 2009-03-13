@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Launchpad database policies."""
 
@@ -21,8 +21,9 @@ from canonical.config import config
 from canonical.launchpad.webapp import LaunchpadView
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import (
+    ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR,
     IDatabasePolicy, IStoreSelector,
-    MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR, SLAVE_FLAVOR)
+    MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 
 
 def _now():
@@ -47,12 +48,35 @@ class BaseDatabasePolicy:
     def afterCall(self):
         """See `IDatabasePolicy`.
 
-        Resets the default flavor. In the app server, it isn't necessary to 
-        reset the default store as it will just be selected the next request. 
-        However, changing the default store in the middle of a pagetest 
-        can break things.
+        Resets the default flavor and config section. In the app server,
+        it isn't necessary to reset the default store as it will just be
+        selected the next request. However, changing the default store in
+        the middle of a pagetest can break things.
         """
-        da.StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
+        da.StoreSelector.setGlobalDefaultFlavor(DEFAULT_FLAVOR)
+        da.StoreSelector.setConfigSectionName(None)
+        da.StoreSelector.setAllowedStores(None)
+
+
+class MasterDatabasePolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` that always select the MASTER_FLAVOR.
+
+    This policy is used for XMLRPC and WebService requests which don't
+    support session cookies.
+    """
+    def beforeTraversal(self):
+        """See `IDatabasePolicy`."""
+        da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
+
+
+class SlaveDatabasePolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` that always selects the SLAVE_FLAVOR.
+
+    This policy is used for Feeds requests and other always-read only request.
+    """
+    def beforeTraversal(self):
+        """See `IDatabasePolicy`."""
+        da.StoreSelector.setGlobalDefaultFlavor(SLAVE_FLAVOR)
 
 
 class LaunchpadDatabasePolicy(BaseDatabasePolicy):
@@ -72,7 +96,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
         # If this is a Retry attempt, force use of the master database.
         if getattr(self.request, '_retry_count', 0) > 0:
-            da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+            da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
 
         # Select if the DEFAULT_FLAVOR Store will be the master or a
         # slave. We select slave if this is a readonly request, and
@@ -88,7 +112,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                 # configured threshold. This reduces replication oddities
                 # noticed by users, as well as reducing load on the
                 # slave allowing it to catch up quicker.
-                da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+                da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
             else:
                 session_data = ISession(self.request)['lp.dbpolicy']
                 last_write = session_data.get('last_write', None)
@@ -100,11 +124,11 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                 else:
                     recently = timedelta(minutes=2) + lag
                 if last_write is None or last_write < now - recently:
-                    da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
+                    da.StoreSelector.setGlobalDefaultFlavor(SLAVE_FLAVOR)
                 else:
-                    da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+                    da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
         else:
-            da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+            da.StoreSelector.setGlobalDefaultFlavor(MASTER_FLAVOR)
 
     def afterCall(self):
         """Cleanup.
@@ -158,25 +182,19 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         return store.execute("SELECT replication_lag()").get_one()[0]
 
 
-class SlaveDatabasePolicy(BaseDatabasePolicy):
-    """`IDatabasePolicy` that always selects the SLAVE_FLAVOR.
+class SSODatabasePolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` for the single signon servie.
 
-    This policy is used for Feeds requests and other always-read only request.
+    Only the auth Master and the main Slave are allowed. Requests for
+    other Stores raise exceptions.
     """
     def beforeTraversal(self):
         """See `IDatabasePolicy`."""
-        da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
-
-
-class MasterDatabasePolicy(BaseDatabasePolicy):
-    """`IDatabasePolicy` that always select the MASTER_FLAVOR.
-
-    This policy is used for XMLRPC and WebService requests which don't
-    support session cookies.
-    """
-    def beforeTraversal(self):
-        """See `IDatabasePolicy`."""
-        da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+        da.StoreSelector.setConfigSectionName('sso')
+        da.StoreSelector.setDefaultFlavor(AUTH_STORE, MASTER_FLAVOR)
+        da.StoreSelector.setDefaultFlavor(MAIN_STORE, SLAVE_FLAVOR)
+        da.StoreSelector.setAllowedStores([
+            (AUTH_STORE, MASTER_FLAVOR), (MAIN_STORE, SLAVE_FLAVOR)])
 
 
 class WhichDbView(LaunchpadView):

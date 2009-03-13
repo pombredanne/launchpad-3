@@ -351,7 +351,7 @@ class Branch(SQLBase):
     def bzr_identity(self):
         """See `IBranch`."""
         if self.product is not None:
-            series_branch = self.product.development_focus.series_branch
+            series_branch = self.product.development_focus.branch
             is_dev_focus = (series_branch == self)
         else:
             is_dev_focus = False
@@ -508,8 +508,7 @@ class Branch(SQLBase):
         from canonical.launchpad.database.productseries import ProductSeries
         return Store.of(self).find(
             ProductSeries,
-            Or(ProductSeries.user_branch == self,
-               ProductSeries.import_branch == self))
+            ProductSeries.branch == self)
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
@@ -828,10 +827,8 @@ class ClearSeriesBranch(DeletionOperation):
         self.branch = branch
 
     def __call__(self):
-        if self.affected_object.user_branch == self.branch:
-            self.affected_object.user_branch = None
-        if self.affected_object.import_branch == self.branch:
-            self.affected_object.import_branch = None
+        if self.affected_object.branch == self.branch:
+            self.affected_object.branch = None
         self.affected_object.syncUpdate()
 
 
@@ -1265,7 +1262,7 @@ class BranchSet:
             series = product.getSeries(series_name)
             if series is None:
                 raise faults.NoSuchSeries(series_name, product)
-        branch = series.series_branch
+        branch = series.branch
         if branch is None:
             raise faults.NoBranchForSeries(series)
         return branch, series
