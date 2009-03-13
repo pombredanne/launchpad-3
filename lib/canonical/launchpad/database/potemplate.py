@@ -297,9 +297,6 @@ class POTemplate(SQLBase, RosettaStats):
                                 only_current=False, context=None):
         """See `IPOTemplate`."""
         clauses = self._getPOTMsgSetSelectionClauses()
-        # XXX Danilo 2008-12-04: we are about to start discarding
-        # obsolete POTMsgSets (i.e. they'll be in other POTemplates,
-        # but there should be none for sequence == 0).
         if only_current:
             clauses.append('TranslationTemplateItem.sequence > 0')
         if context is not None:
