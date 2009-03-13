@@ -639,16 +639,6 @@ class POTemplate(SQLBase, RosettaStats):
         language = self._lookupLanguage(language_code)
         return DummyPOFile(self, language, variant=variant, owner=requester)
 
-    def getMaximumSequenceNumber(self):
-        """Get the maximum sequence number that is used in this POTemplate."""
-        clauses = self._getPOTMsgSetSelectionClauses()
-        query = """
-          SELECT MAX(sequence) FROM TranslationTemplateItem
-                               WHERE potemplate=%s""" % sqlvalues(self)
-        cur.execute(query)
-        result = cur.fetchall()
-        return result[0][0]
-
     def createPOTMsgSetFromMsgIDs(self, msgid_singular, msgid_plural=None,
                                   context=None):
         """See `IPOTemplate`."""
