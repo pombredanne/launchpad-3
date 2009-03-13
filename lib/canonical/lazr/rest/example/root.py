@@ -5,7 +5,8 @@ __all__ = ['Cookbook',
 
 from zope.interface import implements
 from zope.traversing.browser.interfaces import IAbsoluteURL
-from zope.component import getUtility
+from zope.component import adapts, getUtility
+from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 from canonical.lazr.rest import ServiceRootResource
 from canonical.lazr.interfaces.rest import IServiceRootResource
@@ -62,22 +63,8 @@ class CookbookSet(TestTopLevelResource):
     __name__ = "cookbooks"
 
 
-class RootAbsoluteURL:
-    """A basic, extensible implementation of IAbsoluteURL."""
-    implements(IAbsoluteURL)
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __str__(self):
-        return "http://api.launchpad.dev/beta"
-
-    __call__ = __str__
-
-
 class ExampleServiceRootResource(ServiceRootResource):
-    implements(IHasGet, IAbsoluteURL)
+    implements(IHasGet)
     _top_level_names = None
     @property
     def top_level_names(self):
@@ -92,3 +79,18 @@ class ExampleServiceRootResource(ServiceRootResource):
         obj.__parent__ = self
         return obj
 
+
+class RootAbsoluteURL:
+    """A basic, extensible implementation of IAbsoluteURL."""
+    implements(IAbsoluteURL)
+    adapts(ExampleServiceRootResource, IDefaultBrowserLayer)
+
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __str__(self):
+        return "http://api.launchpad.dev/beta"
+
+    __call__ = __str__
