@@ -19,7 +19,7 @@ The base class for BugChanges doesn't actually implement anything.
     >>> verifyObject(IBugChange, base_instance)
     True
 
-    >>> base_instance.getBugNotifications()
+    >>> base_instance.getBugNotification()
     Traceback (most recent call last):
       ...
     NotImplementedError...
@@ -55,6 +55,13 @@ We'll create a test class that actually implements the methods we need.
 
     >>> from canonical.launchpad.interfaces.bugactivity import (
     ...     IBugActivitySet)
+    >>> from canonical.launchpad.mailnotification import (
+    ...     BugNotificationRecipients)
+
+    >>> example_message = factory.makeMessage(content="Hello, world")
+    >>> example_person_2 = factory.makePerson(
+    ...     displayname="Zaphod Beeblebrox")
+
     >>> class TestBugChange(BugChangeBase):
     ...
     ...     bug_activity_data = {
@@ -69,8 +76,21 @@ We'll create a test class that actually implements the methods we need.
     ...         'is_comment': False,
     ...         }
     ...
+    ...     recipients = [
+    ...         example_person_2,
+    ...         ]
+    ...
     ...     def getBugActivity(self):
     ...         return self.bug_activity_data
+    ...
+    ...     def getBugNotificationRecipients(self):
+    ...         recipients = BugNotificationRecipients()
+    ...         for recipient in self.recipients:
+    ...             recipients.addDirectSubscriber(recipient)
+    ...         return recipients
+    ...
+    ...     def getBugNotification(self):
+    ...         return self.bug_notification_data
 
     >>> def print_bug_activity(activity):
     ...     for activity in activity:
@@ -86,12 +106,33 @@ BugActivity entries are added when addChange() is called.
     >>> print_bug_activity(example_bug.activity)
     2009-03-13...: Nothing OldValue => NewValue (Ford Prefect)
 
+As are BugNotifications.
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.text_contents
+    Some message text
+
+The notification's recipients are taken from the result of
+getBugNotificationRecipients().
+
+    >>> for recipient in latest_notification.recipients:
+    ...     print recipient.person.displayname
+    Zaphod Beeblebrox
+
 Bug if getBugActivity() returns None, no activity entries will be added.
 
-    >>> class NoActivityBugChange(TestBugChange):
+    >>> class NoActionBugChange(TestBugChange):
     ...     bug_activity_data = None
+    ...     bug_notification_data = None
 
     >>> example_bug.addChange(
-    ...     TestBugChange(when=nowish, person=example_person))
+    ...     NoActionBugChange(when=nowish, person=example_person))
     >>> print_bug_activity(example_bug.activity)
     2009-03-13...: Nothing OldValue => NewValue (Ford Prefect)
+
+And if getBugNotification() returns None, no notification will be added.
+
+    >>> new_latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> new_latest_notification.id == latest_notification.id
+    True

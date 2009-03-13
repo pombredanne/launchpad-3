@@ -26,9 +26,9 @@ class BugChangeBase:
         """Return the `BugActivity` entry for this change."""
         raise NotImplementedError(self.getBugActivity)
 
-    def getBugNotifications(self):
-        """Return any `BugNotification`s for this event."""
-        raise NotImplementedError(self.getBugNotifications)
+    def getBugNotification(self):
+        """Return the `BugNotification` for this event."""
+        raise NotImplementedError(self.getBugNotification)
 
     def getBugNotificationRecipients(self):
         """Return any recipients for the `BugNotification`s."""

@@ -19,7 +19,7 @@ class IBugChange(Interface):
     def getBugActivity():
         """Return the `BugActivity` data for this change as a dict."""
 
-    def getBugNotifications():
+    def getBugNotification():
         """Return any `BugNotification`s for this event."""
 
     def getBugNotificationRecipients():
