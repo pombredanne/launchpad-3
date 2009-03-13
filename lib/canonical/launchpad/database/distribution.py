@@ -120,9 +120,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IOfficialBugTagTarget, IQuestionTarget,
-        IStructuralSubscriptionTarget)
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IOfficialBugTagTarget,
+        IQuestionTarget, IStructuralSubscriptionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'

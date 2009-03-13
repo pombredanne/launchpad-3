@@ -167,8 +167,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     implements(
         IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
-        IHasMugshot, ILaunchpadUsage, IOfficialBugTagTarget,
-        IProduct, IQuestionTarget, IStructuralSubscriptionTarget)
+        IHasMugshot, ILaunchpadUsage, IOfficialBugTagTarget, IProduct,
+        IQuestionTarget, IStructuralSubscriptionTarget)
 
     _table = 'Product'
 

@@ -25,8 +25,8 @@ from canonical.lazr.fields import Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, exported, operation_parameters,
-    operation_returns_collection_of)
+    export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_collection_of)
 
 
 class IHasBugs(Interface):
@@ -194,9 +194,15 @@ class BugDistroSeriesTargetDetails:
 class IOfficialBugTagTarget(Interface):
     """An entity for which official bug tags can be defined."""
 
+    @operation_parameters(
+        tag=Text(title=u'The official bug tag', required=True))
+    @export_write_operation()
     def addOfficialBugTag(tag):
         """Add tag to the official bug tags of this target."""
 
+    @operation_parameters(
+        tag=Text(title=u'The official bug tag', required=True))
+    @export_write_operation()
     def removeOfficialBugTag(tag):
         """Remove tag from the official bug tags of this target."""
 
