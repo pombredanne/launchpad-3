@@ -527,7 +527,7 @@ class Branch(SQLBase):
         else:
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
-            subscription.review_level = review_level
+            subscription.review_level = code_review_level
         return subscription
 
     def getSubscription(self, person):
