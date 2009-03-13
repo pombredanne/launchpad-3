@@ -618,16 +618,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             SeriesSourcePackageBranch.pocket == pocket,
             SeriesSourcePackageBranch.branch == Branch.id).one()
 
-    def getBranchLink(self, pocket):
-        store = Store.of(self.sourcepackagename)
-        return store.find(
-            SeriesSourcePackageBranch,
-            SeriesSourcePackageBranch.distroseries == self.distroseries.id,
-            (SeriesSourcePackageBranch.sourcepackagename
-             == self.sourcepackagename.id),
-            SeriesSourcePackageBranch.pocket == pocket).one()
-
     def setBranch(self, pocket, branch, registrant):
+        """See `ISourcePackage`."""
         getUtility(ISeriesSourcePackageBranchSet).new(
             self.distroseries, pocket, self.sourcepackagename, branch,
             registrant)

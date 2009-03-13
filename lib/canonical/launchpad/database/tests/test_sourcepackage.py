@@ -61,18 +61,6 @@ class TestSourcePackage(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         self.assertEqual(branch, official_branch)
 
-    def test_getBranchLink(self):
-        # getBranchLink returns the `ISeriesSourcePackageBranch` object
-        # associated with the branch link.
-        sourcepackage = self.factory.makeSourcePackage()
-        registrant = self.factory.makePerson()
-        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        pocket = PackagePublishingPocket.RELEASE
-        sspb = getUtility(ISeriesSourcePackageBranchSet).new(
-            sourcepackage.distroseries, pocket,
-            sourcepackage.sourcepackagename, branch, registrant)
-        self.assertEqual(sspb, sourcepackage.getBranchLink(pocket))
-
     def test_setBranch(self):
         # We can set the official branch for a pocket of a source package.
         sourcepackage = self.factory.makeSourcePackage()
