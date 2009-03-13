@@ -210,7 +210,7 @@ To test distroseries, we'll switch from "ubuntu hoary" to "ubuntu warty" and
 then verify it works correctly by checking the portlet details.
 
     >>> admin_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+milestone/milestone3/+admin')
+    ...     'http://launchpad.dev/ubuntu/+milestone/milestone3/+edit')
     >>> admin_browser.getControl(name='field.distroseries').displayValue = [
     ...     'ubuntu warty']
     >>> admin_browser.getControl('Update').click()
@@ -235,7 +235,7 @@ series we just created. For this test, we'll switch from "trunk" to "main"
 and then verify it works correctly by checking the portlet details.
 
     >>> admin_browser.open(
-    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1/+admin')
+    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1/+edit')
     >>> admin_browser.getControl(name='field.productseries').displayValue = [
     ...     'alsa-utils main']
     >>> admin_browser.getControl('Update').click()
