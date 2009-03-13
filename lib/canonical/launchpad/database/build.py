@@ -1023,18 +1023,12 @@ class BuildSet:
         rows (prejoined with the appropriate Builder, SourcePackageName and
         LibraryFileContent respectively).
         """
-        import sys
         from canonical.launchpad.database.sourcepackagename import (
             SourcePackageName)
         from canonical.launchpad.database.sourcepackagerelease import (
             SourcePackageRelease)
 
         build_ids = list(result_set.values(Build.id))
-
-        log = logging.getLogger()
-        log.addHandler(logging.StreamHandler(strm=sys.stderr))
-        log.setLevel(logging.INFO)
-        log.info('--> pbd = %s' % build_ids)
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
@@ -1050,12 +1044,6 @@ class BuildSet:
                      LibraryFileAlias.id == Build.buildlogID),
             LeftJoin(LibraryFileContent,
                      LibraryFileContent.id == LibraryFileAlias.contentID),
-            LeftJoin(
-                BuildQueue,
-                BuildQueue.buildID == Build.id),
-            LeftJoin(
-                Builder,
-                BuildQueue.builderID == Builder.id),
             )
         result_set = store.using(*origin).find(
             (Build.id, BuildQueue, SourcePackageRelease, LibraryFileAlias,
