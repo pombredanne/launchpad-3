@@ -220,6 +220,10 @@ class POFileMixIn(RosettaStats):
     def _getTranslationSearchQuery(self, pofile, plural_form, text):
         """Query for finding `text` in `plural_form` translations of `pofile`.
         """
+        if pofile.variant is None:
+            variant_query = " IS NULL"
+        else:
+            variant_query = " = " + quote(pofile.variant)
         translation_match = """
         -- Find translations containing `text`.
         -- Like in findPOTMsgSetsContaining(), to avoid seqscans on
@@ -229,18 +233,25 @@ class POFileMixIn(RosettaStats):
           SELECT POTMsgSet.id FROM POTMsgSet
             JOIN TranslationMessage
               ON TranslationMessage.potmsgset=POTMsgSet.id
+            JOIN TranslationTemplateItem
+              ON POTMsgSet.id=TranslationTemplateItem.potmsgset
             WHERE
-              TranslationMessage.pofile=%(pofile)s AND
+              TranslationTemplateItem.potemplate = %(potemplate)s AND
+              TranslationMessage.language = %(language)s AND
+              TranslationMessage.variant %(variant_query)s AND
               TranslationMessage.msgstr%(plural_form)d IN (
                 SELECT POTranslation.id FROM POTranslation WHERE
                   POTranslation.id IN (
                     SELECT DISTINCT(msgstr%(plural_form)d)
-                      FROM TranslationMessage
-                      WHERE TranslationMessage.pofile=%(pofile)s
+                      FROM TranslationMessage AS tm_ids
+                      WHERE tm_ids.language=%(language)s AND
+                            tm_ids.variant %(variant_query)s
                   ) AND
                   POTranslation.translation
                     ILIKE '%%' || %(text)s || '%%')
-                  ))""" % dict(pofile=quote(pofile),
+                  ))""" % dict(potemplate=quote(pofile.potemplate),
+                               language=quote(pofile.language),
+                               variant_query=variant_query,
                                plural_form=plural_form,
                                text=quote_like(text))
         return translation_match
