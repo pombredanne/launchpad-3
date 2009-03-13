@@ -34,11 +34,6 @@ YUI().use('io-base', 'lazr.anim', 'node', 'soyuz-base',
  */
 function doUpdate(transaction_id, response, args) {
     args.container.set('innerHTML', response.responseText);
-
-    var anim = Y.lazr.anim.green_flash({
-        node: args.container
-    });
-    anim.run();
 }
 
 
@@ -124,6 +119,10 @@ div#package_counters p {
       <div class="actions" style="float:right;">
         <tal:administer
           define="link context/menu:context/admin"
+          condition="link/enabled"
+          replace="structure link/render" />
+        <tal:manage-subscribers
+          define="link context/menu:context/manage_subscribers"
           condition="link/enabled"
           replace="structure link/render" />
         <tal:edit

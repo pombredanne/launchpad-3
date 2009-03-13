@@ -32,7 +32,7 @@ instance here:
     >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> bug_watch_updater.updateBugWatches(
     ...     issuezilla, mozilla_bugzilla.watches)
-    INFO:...:Updating 4 watches on https://bugzilla.mozilla.org
+    INFO:...:Updating 4 watches for 3 bugs on https://bugzilla.mozilla.org
     WARNING:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
     (local bugs: 1, 2).
     >>> for bug_watch in mozilla_bugzilla.watches:

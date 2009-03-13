@@ -249,3 +249,17 @@ More than one target can be passed to PersonSet.getSubscribersForTargets().
     >>> print_bug_subscribers(ubuntu_or_firefox_subscribers)
     name12
     name16
+
+
+== Target type display ==
+
+Structural subscription targets have a `target_type_display` attribute, which
+can be used to refer to them in display.
+
+    >>> print firefox.target_type_display
+    project
+    >>> print evolution_package.target_type_display
+    package
+    >>> print ff_milestone.target_type_display
+    milestone
+    

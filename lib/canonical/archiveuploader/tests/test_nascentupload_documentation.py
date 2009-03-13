@@ -1,9 +1,10 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Runs the nascentupload-epoch-handling.txt test."""
+"""Runs the doctests for archiveuploader module."""
 
 __metaclass__ = type
 
+import os
 import unittest
 
 from zope.component import getUtility
@@ -84,12 +85,19 @@ def tearDown(test):
 
 
 def test_suite():
-    return LayeredDocFileSuite(
-       'nascentupload-closing-bugs.txt',
-       'nascentupload-epoch-handling.txt',
-       'nascentupload-publishing-accepted-sources.txt',
-       setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer)
+    suite = unittest.TestSuite()
+    tests_dir = os.path.dirname(os.path.realpath(__file__))
 
+    filenames = [
+        filename
+        for filename in os.listdir(tests_dir)
+        if filename.lower().endswith('.txt')
+        ]
 
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')
+    for filename in sorted(filenames):
+        test = LayeredDocFileSuite(
+            filename, setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer)
+        suite.addTest(test)
+
+    return suite
