@@ -37,8 +37,8 @@ distribution series.
 Then we can get the branches that are bound to various pockets of this
 distribution series. By default, there are none bound to evolution.
 
-    >>> branch = webservice.named_get(evolution['self_link'], 'getBranch',
-    ...     pocket='Release').jsonBody()
+    >>> branch = webservice.named_get(
+    ...     evolution['self_link'], 'getBranch', pocket='Release').jsonBody()
     >>> print branch
     None
 
