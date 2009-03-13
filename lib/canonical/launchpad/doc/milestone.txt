@@ -349,11 +349,11 @@ a distribution.
     book
 
     >>> candle_series = bell_distro.newSeries(
-    ...     'candel', 'Candel', 'title', 'summary', 'description',
+    ...     'candle', 'candle', 'title', 'summary', 'description',
     ...     '2.n', book_series, bell_distro.owner)
     >>> ink_milestone.distroseries = candle_series
     >>> print ink_milestone.distroseries.name
-    candel
+    candle
 
 
 == Deleting a milestone ==
