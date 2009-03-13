@@ -724,6 +724,7 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
         removeSecurityProxy(self.devel_potemplate).messagecount = (
             self.devel_potemplate.getPOTMsgSetsCount())
 
+        # Returns current, updates, rosetta, unreviewed counts.
         stats = self.devel_sr_pofile.updateStatistics()
         self.assertEquals(stats, (1, 1, 3, 2))
 
