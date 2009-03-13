@@ -197,6 +197,14 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
         os.remove(filename)
 
+    def assertDeactivated(self, token):
+        """Helper function to test token deactivation state."""
+        return self.assertNotEqual(token.date_deactivated, None)
+
+    def assertNotDeactivated(self, token):
+        """Helper function to test token deactivation state."""
+        self.assertEqual(token.date_deactivated, None)
+
     def testDeactivatingTokens(self):
         """Test that token deactivation happens properly."""
         # Set up some teams.  We need to test a few scenarios:
@@ -253,25 +261,25 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         script = self.getScript()
         script.deactivateTokens(self.ppa)
         for person in tokens:
-            self.assertEqual(tokens[person].date_deactivated, None)
+            self.assertNotDeactivated(tokens[person])
 
         # Now remove someone from team1, he will lose his token but
         # everyone else keeps theirs.
         team1_person.leave(team1)
         script.deactivateTokens(self.ppa)
-        self.assertNotEqual(tokens[team1_person].date_deactivated, None)
-        del tokens[persons1[0]]
+        self.assertDeactivated(tokens[team1_person])
+        del tokens[team1_person]
         for person in tokens:
-            self.assertEqual(tokens[person].date_deactivated, None)
+            self.assertNotDeactivated(tokens[person])
 
         # Promiscuous_person now leaves team1, but does not lose his
         # token because he's also in team2. No other tokens are
         # affected.
         promiscuous_person.leave(team1)
         script.deactivateTokens(self.ppa)
-        self.assertEqual(tokens[promiscuous_person].date_deactivated, None)
+        self.assertNotDeactivated(tokens[promiscuous_person])
         for person in tokens:
-            self.assertEqual(tokens[person].date_deactivated, None)
+            self.assertNotDeactivated(tokens[person])
 
         # Team 2 now leaves parent_team, and all its members lose their
         # tokens.
@@ -282,14 +290,14 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         self.assertFalse(team2.inTeam(parent_team))
         script.deactivateTokens(self.ppa)
         for person in persons2:
-            self.assertNotEqual(tokens[person].date_deactivated, None)
+            self.assertDeactivated(tokens[person])
 
         # promiscuous_person also loses the token because he's not in
         # either team now.
-        self.assertNotEqual(tokens[promiscuous_person].date_deactivated, None)
+        self.assertDeactivated(tokens[promiscuous_person])
 
         # lonely_person still has his token, he's not in any teams.
-        self.assertEqual(tokens[lonely_person].date_deactivated, None)
+        self.assertNotDeactivated(tokens[lonely_person])
 
 
 def test_suite():
