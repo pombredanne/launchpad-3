@@ -4,8 +4,8 @@ The base class for BugChanges doesn't actually implement anything, so
 you can't actually use it to call Bug.addChangeNotification().
 
     >>> from datetime import datetime
-    >>> from canonical.launchpad.interfaces.bug import IBugChange
-    >>> from canonical.launchpad.components.bug import BugChangeBase
+    >>> from canonical.launchpad.components.bugchange import BugChangeBase
+    >>> from canonical.launchpad.interfaces.bugchange import IBugChange
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> base_instance = BugChangeBase(when=datetime(2009, 3, 13, 10, 9))

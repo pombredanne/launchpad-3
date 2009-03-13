@@ -7,6 +7,8 @@ __all__ = [
     'BugChangeBase',
 ]
 
+from zope.interface import implements
+
 from canonical.launchpad.interfaces.bugchange import (
     IBugChange)
 
@@ -16,7 +18,7 @@ class BugChangeBase:
 
     implements(IBugChange)
 
-    def __init__(self, delta, when):
+    def __init__(self, when):
         self.when = when
 
     def getBugActivity(self):

@@ -7,6 +7,8 @@ __all__ = [
     'IBugChange',
     ]
 
+from zope.interface import Interface, Attribute
+
 
 class IBugChange(Interface):
     """Represents a change to an `IBug`."""
