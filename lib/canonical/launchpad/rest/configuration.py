@@ -11,6 +11,8 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+from canonical.launchpad.webapp.servers import (
+    WebServiceClientRequest, WebServicePublication)
 
 from canonical.launchpad import versioninfo
 
@@ -28,3 +30,9 @@ class LaunchpadWebServiceConfiguration:
     @property
     def code_revision(self):
         return str(versioninfo.revno)
+
+    def createRequest(self, body_instream, environ):
+        """See `IWebServiceConfiguration`."""
+        request = WebServiceClientRequest(body_instream, environ)
+        request.setPublication(WebServicePublication(None))
+        return request
