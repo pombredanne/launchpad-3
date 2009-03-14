@@ -201,7 +201,7 @@ class MilestoneEditView(LaunchpadEditFormView):
         """
         names = ['name', 'active', 'dateexpected', 'summary']
         if self.context.product is None:
-            # This is a distribution milestone
+            # This is a distribution milestone.
             names.append('distroseries')
         else:
             names.append('productseries')
@@ -216,7 +216,7 @@ class MilestoneEditView(LaunchpadEditFormView):
         """
         super(MilestoneEditView, self).setUpFields()
         if self.context.product is None:
-            # This is a distribution milestone
+            # This is a distribution milestone.
             choice = Choice(
                 __name__='distroseries', vocabulary="FilteredDistroSeries")
         else:
