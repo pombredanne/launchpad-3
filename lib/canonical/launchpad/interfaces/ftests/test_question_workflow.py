@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.ftests import login, login_person, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.authorization import clear_cache
 
 
@@ -40,7 +40,7 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
     It provides the common fixture and test helper methods.
     """
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         self.now = datetime.now(UTC)
