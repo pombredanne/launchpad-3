@@ -13,7 +13,6 @@ __all__ = [
     'QuestionCreateFAQView',
     'QuestionEditView',
     'QuestionLinkFAQView',
-    'QuestionMakeBugView',
     'QuestionMessageDisplayView',
     'QuestionSetContextMenu',
     'QuestionSetNavigation',
@@ -50,7 +49,7 @@ from canonical.launchpad.helpers import (
     is_english_variant, preferred_or_request_languages)
 
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQ, IFAQTarget,
+    IAnswersFrontPageSearchForm, IFAQ, IFAQTarget,
     ILaunchpadCelebrities, ILaunchpadStatisticSet, IProject, IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
     IQuestionSet, IQuestionTarget, QuestionAction, QuestionStatus,
@@ -539,52 +538,6 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
             return self.template()
         self.updateContextFromData(data)
         self.request.response.redirect(canonical_url(self.context))
-
-
-class QuestionMakeBugView(LaunchpadFormView):
-    """Browser class for adding a bug from a question."""
-
-    schema = IBug
-
-    field_names = ['title', 'description']
-
-    def initialize(self):
-        """Initialize the view when a Bug may be reported for the Question."""
-        question = self.context
-        if question.bugs:
-            # we can't make a bug when we have linked bugs
-            self.request.response.addErrorNotification(
-                _('You cannot create a bug report from a question'
-                  'that already has bugs linked to it.'))
-            self.request.response.redirect(canonical_url(question))
-            return
-        LaunchpadFormView.initialize(self)
-
-    @property
-    def initial_values(self):
-        """Return the initial form values."""
-        question = self.context
-        return {'title': '',
-                'description': question.description}
-
-    @action(_('Create Bug Report'), name='create')
-    def create_action(self, action, data):
-        """Create a Bug from a Question."""
-        question = self.context
-
-        unmodifed_question = Snapshot(
-            question, providing=providedBy(question))
-        params = CreateBugParams(
-            owner=self.user, title=data['title'], comment=data['description'])
-        bug = question.target.createBug(params)
-        question.linkBug(bug)
-        bug.subscribe(question.owner, self.user)
-        bug_added_event = ObjectModifiedEvent(
-            question, unmodifed_question, ['bugs'])
-        notify(bug_added_event)
-        self.request.response.addNotification(
-            _('Thank you! Bug #$bugid created.', mapping={'bugid': bug.id}))
-        self.next_url = canonical_url(bug)
 
 
 class QuestionRejectView(LaunchpadFormView):

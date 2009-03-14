@@ -66,10 +66,4 @@
     />
   </browser:pages>
 
-  <adapter
-    for="canonical.launchpad.interfaces.ISourcePackageRelease"
-    provides="canonical.launchpad.interfaces.IQuestionTarget"
-    factory="canonical.launchpad.components.answertracker.sourcepackagerelease_to_questiontarget"
-    />
-
 </configure>

@@ -8,8 +8,7 @@ from unittest import TestCase, TestLoader
 
 from zope.interface import implements
 
-from canonical.launchpad.mailnotification import (
-    QuestionModifiedDefaultNotification)
+from lp.apps.answers.notification import QuestionModifiedDefaultNotification
 from canonical.launchpad.interfaces.person import IPerson
 
 

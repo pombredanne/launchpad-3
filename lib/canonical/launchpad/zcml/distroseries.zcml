@@ -56,12 +56,6 @@
   </securedutility>
 
   <adapter
-    for="canonical.launchpad.interfaces.IDistroSeries"
-    provides="canonical.launchpad.interfaces.IQuestionTarget"
-    factory="canonical.launchpad.components.answertracker.series_to_questiontarget"
-    />
-
-  <adapter
     provides="canonical.launchpad.interfaces.ILaunchpadUsage"
     for="canonical.launchpad.interfaces.IDistroSeries"
     factory="canonical.launchpad.components.distroseries.distroseries_to_launchpadusage"

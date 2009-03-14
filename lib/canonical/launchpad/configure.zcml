@@ -12,6 +12,9 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
+  <include package="lp.apps.answers" />
+  <include package="lp.extensions.answersbugs" />
+
   <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"
     path_expression="string:people"
