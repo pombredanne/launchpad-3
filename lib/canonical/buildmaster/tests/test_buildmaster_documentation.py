@@ -28,6 +28,7 @@ def setUp(test):
     test.globs['test_dbuser'] = test_dbuser
     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
+
 def tearDown(test):
     logout()
 
@@ -36,7 +37,7 @@ def test_suite():
     """Load doctests in this directory.
 
     Use `LayeredDocFileSuite` with the custom `setUp` and tearDown`,
-    suppresed logging messages (only warnings and errors will be posted)
+    suppressed logging messages (only warnings and errors will be posted)
     on `LaunchpadZopelessLayer`.
     """
     suite = unittest.TestSuite()

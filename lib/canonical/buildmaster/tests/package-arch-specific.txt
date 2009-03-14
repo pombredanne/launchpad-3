@@ -1,4 +1,4 @@
-== Package Architecture Specific ==
+= Package Architecture Specific =
 
 The Package-Architecture-Specific (PAS) module is a parser to a set
 of restrictions to build packages based on archive-admin experiences.
@@ -26,30 +26,30 @@ Publication will be added as 'launchpad' DB user.
     >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
     >>> test_publisher.addFakeChroots()
 
-An architecture-independent source.
+Create an architecture-independent source.
 
     >>> pub_all = test_publisher.getPubSource(
     ...     sourcename='test-buildd', version='667')
 
-An architecture-specific source.
+Create an architecture-specific source.
 
     >>> pub_any = test_publisher.getPubSource(
     ...     sourcename='test-buildd-2', version='668',
     ...     architecturehintlist="any")
 
-An source with a specific list of architectures to be built.
+Create a source with a specific list of architectures to be built.
 
     >>> pub_three = test_publisher.getPubSource(
     ...     sourcename='test-buildd-3', version='669',
     ...     architecturehintlist="i386 hppa amd64")
 
-An source with one single specific architecture to be built.
+Create a source with one single specific architecture to be built.
 
     >>> pub_one = test_publisher.getPubSource(
     ...     sourcename='test-buildd-4', version='670',
     ...     architecturehintlist="hppa")
 
-Sources with 'any-$(ARCH)' and 'linux-$(ARCH)' notation.
+Create sources with 'any-$(ARCH)' and 'linux-$(ARCH)' notation.
 
     >>> pub_any_foo = test_publisher.getPubSource(
     ...     sourcename='test-buildd-6', version='672',
@@ -59,7 +59,7 @@ Sources with 'any-$(ARCH)' and 'linux-$(ARCH)' notation.
     ...     sourcename='test-buildd-7', version='673',
     ...     architecturehintlist="linux-i386")
 
-PPA source publication.
+Create a PPA source publication.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -128,7 +128,7 @@ See bug 73761 and http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=268709
 for further information about this dpkg feature.
 
 Soyuz will consider only 'any-' and 'linux-' elements as the
-corresponding architecture, since only linux is supported in ubuntu.
+corresponding architecture, since only linux is supported in Ubuntu.
 
     >>> print_build_architectures(pub_any_foo)
     hppa
@@ -174,27 +174,28 @@ Revert the PPA changes.
 === Source PAS ===
 
 Source PAS lines are the ones starting with '%' followed by the source
-package name, collon and then a list of architecture tags separated by
+package name, colon and then a list of architecture tags separated by
 space.
 
-A harness that lets us easily test PAS statements:
+Create a harness that lets us easily test PAS statements:
 
     >>> import os
     >>> import tempfile
+    >>> import shutil
     >>> from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 
     >>> def getPASVerifier(pas_string):
     ...   """Build and return a PAS verifier based on the string provided."""
     ...   temp_dir = tempfile.mkdtemp()
     ...   pas_filename = os.path.join(temp_dir, "Packages-arch-specific")
-    ...   pas_file = file(pas_filename, "w")
+    ...   pas_file = open(pas_filename, "w")
     ...   pas_file.write(pas_string)
     ...   pas_file.close()
     ...   pas_verify = BuildDaemonPackagesArchSpecific(temp_dir, hoary)
-    ...   os.unlink(pas_filename)
+    ...   shutil.rmtree(temp_dir)
     ...   return pas_verify
 
-Normally, 'pub_there' would be built on all available architectures in
+Normally, 'pub_three' would be built on all available architectures in
 hoary.
 
     >>> print_build_architectures(pub_three)
@@ -208,12 +209,12 @@ PAS.
     >>> print_build_architectures(pub_three, pas_verify)
     i386
 
-Or even retricted to not be built in any architecture.
+Or even restricted to not be built in any architecture.
 
     >>> pas_verify = getPASVerifier("%test-buildd-3: sparc")
     >>> print_build_architectures(pub_three, pas_verify)
 
-Excluding specific architectures using PAS
+PAS can also be used for excluding specific architectures.
 
     >>> pas_verify = getPASVerifier("%test-buildd-3: !i386")
     >>> print_build_architectures(pub_three, pas_verify)
@@ -235,7 +236,7 @@ subsystem.
 == Binary PAS ==
 
 Binary PAS lines are the ones which does not start with '%'. They
-contain binary package name, collon and then a list of architecture
+contain binary package name, colon and then a list of architecture
 tags separated by space.
 
 Binary PAS lines work as a shortcut to the source when they produce
@@ -263,8 +264,8 @@ produces a single binary.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
-    >>> len(set([pub.binarypackagerelease.name
-    ...          for pub in pub_single.getPublishedBinaries()]))
+    >>> len(set(pub.binarypackagerelease.name
+    ...         for pub in pub_single.getPublishedBinaries()))
     1
 
 Normally the source would be built in all the available architectures
@@ -295,7 +296,10 @@ It's also possible to only block specific architectures.
     i386
 
 Although it's not possible to block the build on the
-'nominatedarchindep' architecture. XXX WHY ?!
+'nominatedarchindep' architecture via a binary PAS line. The reason
+for that is the fact the architecture independent binaries are only
+built in i386, if it gets blacklisted those binaries won't be
+built. This would never be a legitimate use-case.
 
     >>> pas_verify = getPASVerifier("single-bin: !i386 !hppa")
     >>> print_build_architectures(pub_single, pas_verify)
@@ -327,7 +331,7 @@ corresponding PAS binary line.
     hppa
     i386
 
-As mentioned above, PAS binary lines refering to binary packages for
+As mentioned above, PAS binary lines referring to binary packages for
 which the source produce other binaries are completely ignored. Other
 tools use that information but we can't restrict builds in this
 circumstances.
@@ -356,8 +360,8 @@ We will create a 'multiple' source publication build two binaries,
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
-    >>> len(set([pub.binarypackagerelease.name
-    ...          for pub in pub_multiple.getPublishedBinaries()]))
+    >>> len(set(pub.binarypackagerelease.name
+    ...         for pub in pub_multiple.getPublishedBinaries()))
     2
 
 Any attempt to restrict the building architectures on 'multiple'
