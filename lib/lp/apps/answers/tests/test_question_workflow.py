@@ -906,8 +906,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
 
 
 def test_suite():
-    import canonical.launchpad.interfaces.ftests as ftests
-    return unittest.findTestCases(ftests.test_question_workflow)
+    return unittest.TestLoader().loadTestsFromName(__name__)
 
 
 if __name__ == '__main__':

@@ -16,7 +16,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import IDistributionSet, IProductSet
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 def productSetUp(test):
@@ -39,7 +39,7 @@ def test_suite():
     for name, setUpMethod in targets:
         test = LayeredDocFileSuite('faqtarget.txt',
                     setUp=setUpMethod, tearDown=tearDown,
-                    layer=LaunchpadFunctionalLayer)
+                    layer=DatabaseFunctionalLayer)
         suite.addTest(test)
 
     return suite

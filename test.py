@@ -133,6 +133,7 @@ defaults = [
     '--tests-pattern=^f?tests$',
     '--test-path=%s' % os.path.join(here, 'lib'),
     '--package=canonical',
+    '--package=lp',
     ]
 
 # Monkey-patch os.listdir to randomise the results
