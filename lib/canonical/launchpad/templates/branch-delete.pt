@@ -32,7 +32,7 @@
     <ul>
       <tal:actions repeat="row view/branch_deletion_actions/delete">
         <li>
-          <img src="/@@/no" title="Insufficient privilages"
+          <img src="/@@/no" title="Insufficient privileges"
                tal:condition="not:row/allowed"/>
               <tal:item tal:content="structure row/item/fmt:link" />
               (<tal:reason tal:content="row/reason" />)
@@ -45,7 +45,7 @@
     <ul>
       <tal:actions repeat="row view/branch_deletion_actions/break_link">
         <li>
-          <img src="/@@/no" title="Insufficient privilages"
+          <img src="/@@/no" title="Insufficient privileges"
                tal:condition="not:row/allowed"/>
               <tal:item tal:content="structure row/item/fmt:link" />
               (<tal:reason tal:content="row/reason" />)
@@ -58,7 +58,7 @@
     <ul>
       <tal:actions repeat="row view/branch_deletion_actions/alter">
         <li>
-          <img src="/@@/no" title="Insufficient privilages"
+          <img src="/@@/no" title="Insufficient privileges"
                tal:condition="not:row/allowed"/>
               <tal:item tal:content="structure row/item/fmt:link" />
               (<tal:reason tal:content="row/reason" />)

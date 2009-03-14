@@ -104,8 +104,8 @@
                   The maintainer of
                   <tal:security-context content="security_context/displayname">
                     Mozilla Firefox</tal:security-context>,
-                  <a href="" tal:attributes="href maintainer/fmt:url"
-                     tal:content="maintainer/displayname">Sample Person</a>,
+                  <a tal:replace="structure maintainer/fmt:link">
+                    Sample Person</a>,
                   will be notified.
                 </tal:maintainer>
               </div>
@@ -139,7 +139,7 @@
 
         <tal:defines define="bugtracker product_or_distro/getExternalBugTracker">
 
-          <h3>Are you sure this bug is in <acronym class="explain" style="color: inherit" 
+          <h3>Are you sure this bug is in <acronym class="explain" style="color: inherit"
                                 title="the original developer of the software">upstream</acronym>
                                 <span tal:replace="product_or_distro/displayname" />?</h3>
 
@@ -161,7 +161,7 @@
             <li tal:condition="not: product_or_distro/distrosourcepackages">If
               the bug you are reporting is in a package installed by a <a
               href="/distros">distribution registered in Launchpad</a>, you should file the bug
-              against that specific distribution. 
+              against that specific distribution.
 
               <tal:XXX condition="nothing">
                 # XXX: Graham Binns 2007-07-12 bug=125574:
@@ -320,7 +320,7 @@
                     <li class="source package">
                       Source package:
                       <a tal:attributes="href package/fmt:url">
-                        <tal:displayname 
+                        <tal:displayname
                             replace="package/distribution/displayname" />
                         <tal:packagename replace="package/sourcepackagename" />
                       </a>

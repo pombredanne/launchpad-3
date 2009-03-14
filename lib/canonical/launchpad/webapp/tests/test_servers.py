@@ -13,8 +13,9 @@ from canonical.launchpad.webapp.servers import (
     BugsBrowserRequest, BugsPublication, LaunchpadBrowserRequest,
     TranslationsBrowserRequest, VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
-    WEBSERVICE_PATH_OVERRIDE, WebServiceClientRequest, WebServicePublication,
-    WebServiceTestRequest)
+    WebServiceClientRequest, WebServicePublication, WebServiceTestRequest)
+
+from canonical.launchpad.webapp.tests import DummyConfigurationTestCase
 
 class SetInWSGIEnvironmentTestCase(unittest.TestCase):
 
@@ -70,27 +71,27 @@ class TestApplicationServerSettingRequestFactory(unittest.TestCase):
         request = factory(StringIO.StringIO(), {'HTTP_HOST': 'launchpad.dev'})
         self.assertEquals(
             request.get('HTTPS'), 'on', "factory didn't set the HTTPS env")
-        # This is a sanity check ensuring that effect of this works as 
+        # This is a sanity check ensuring that effect of this works as
         # expected with the Zope request implementation.
         self.assertEquals(request.getURL(), 'https://launchpad.dev')
 
     def test___call___should_not_set_HTTPS(self):
-        # Ensure that the factory doesn't put an HTTPS variable in the 
+        # Ensure that the factory doesn't put an HTTPS variable in the
         # request when the protocol is http.
         factory = ApplicationServerSettingRequestFactory(
             LaunchpadBrowserRequest, 'launchpad.dev', 'http', 80)
         request = factory(StringIO.StringIO(), {})
         self.assertEquals(
-            request.get('HTTPS'), None, 
+            request.get('HTTPS'), None,
             "factory should not have set HTTPS env")
 
 
-class TestVhostWebserviceFactory(unittest.TestCase):
+class TestVhostWebserviceFactory(DummyConfigurationTestCase):
 
     def setUp(self):
+        super(TestVhostWebserviceFactory, self).setUp()
         self.factory = VHostWebServiceRequestPublicationFactory(
             'bugs', BugsBrowserRequest, BugsPublication)
-        self.WEBSERVICE_PATH_OVERRIDE = WEBSERVICE_PATH_OVERRIDE
 
     def wsgi_env(self, path, method='GET'):
         """Simulate a WSGI application environment."""
@@ -103,7 +104,7 @@ class TestVhostWebserviceFactory(unittest.TestCase):
     @property
     def working_api_path(self):
         """A path to the webservice API that should work every time."""
-        return '/' + self.WEBSERVICE_PATH_OVERRIDE
+        return '/' + self.config.path_override
 
     @property
     def failing_api_path(self):
@@ -114,7 +115,7 @@ class TestVhostWebserviceFactory(unittest.TestCase):
         """The factory should produce WebService request and publication
         objects for requests to the /api root URL.
         """
-        env = self.wsgi_env('/' + self.WEBSERVICE_PATH_OVERRIDE)
+        env = self.wsgi_env('/' + self.config.path_override)
 
         # Necessary preamble and sanity check.  We need to call
         # the factory's canHandle() method with an appropriate
@@ -199,9 +200,9 @@ class TestVhostWebserviceFactory(unittest.TestCase):
         resource path.
         """
         # This is a sanity check, so I can write '/api/foo' instead
-        # of WEBSERVICE_PATH_OVERRIDE + '/foo' in my tests.  The former's
+        # of PATH_OVERRIDE + '/foo' in my tests.  The former's
         # intention is clearer.
-        self.assertEqual(self.WEBSERVICE_PATH_OVERRIDE, 'api',
+        self.assertEqual(self.config.path_override, 'api',
             "Sanity check: The web service path override should be 'api'.")
 
         self.assert_(
@@ -236,7 +237,7 @@ class TestVhostWebserviceFactory(unittest.TestCase):
             "/api.")
 
 
-class TestWebServiceRequestTraversal(unittest.TestCase):
+class TestWebServiceRequestTraversal(DummyConfigurationTestCase):
 
     def test_traversal_of_api_path_urls(self):
         """Requests that have /api at the root of their path should trim
@@ -244,7 +245,8 @@ class TestWebServiceRequestTraversal(unittest.TestCase):
         """
         # First, we need to forge a request to the API.
         data = ''
-        api_url = '/' + WEBSERVICE_PATH_OVERRIDE + '/' + 'beta' + '/' + 'foo'
+        api_url = ('/' + self.config.path_override +
+                   '/' + 'beta' + '/' + 'foo')
         env = {'PATH_INFO': api_url}
         request = WebServiceClientRequest(data, env)
 
@@ -259,14 +261,14 @@ class TestWebServiceRequestTraversal(unittest.TestCase):
         root = {'foo': object()}
 
         stack = request.getTraversalStack()
-        self.assert_(WEBSERVICE_PATH_OVERRIDE in stack,
+        self.assert_(self.config.path_override in stack,
             "Sanity check: the API path should show up in the request's "
             "traversal stack: %r" % stack)
 
         request.traverse(root)
 
         stack = request.getTraversalStack()
-        self.failIf(WEBSERVICE_PATH_OVERRIDE in stack,
+        self.failIf(self.config.path_override in stack,
             "Web service paths should be dropped from the webservice "
             "request traversal stack: %r" % stack)
 
@@ -356,7 +358,7 @@ class TestLaunchpadBrowserRequest(unittest.TestCase):
 
         self.assertEqual(request.method, 'POST')
         self.assertEqual(
-            request.query_string_params, 
+            request.query_string_params,
             {'a':['1'], 'b': ['2'], 'c': ['3']},
             "The query_string_params dict is populated from the "
             "QUERY_STRING during POST requests.")

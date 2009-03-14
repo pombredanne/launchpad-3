@@ -52,10 +52,10 @@
         <tr>
           <th>Team owner:</th>
           <td>
-            <a
-              tal:attributes="href context/teamowner/fmt:url"
-              tal:content="context/teamowner/browsername"
+            <a tal:replace="structure context/teamowner/fmt:link"
               >sabdfl</a>
+            <a tal:replace="structure overview_menu/reassign/fmt:icon">
+              Change owner</a>
           </td>
         </tr>
         <tr>
@@ -121,14 +121,12 @@
           <tal:participant condition="view/userIsParticipant">
             You are an indirect member of this team:
             <br />
-            <a tal:attributes="href view/user/fmt:url"
-               tal:content="view/user/displayname">
+            <a tal:replace="structure view/user/fmt:link">
               Guilherme Salgado
-            </a>
+              </a>
             <tal:path repeat="team view/findUserPathToTeam">
               &rarr;
-              <a tal:attributes="href team/fmt:url"
-                 tal:content="team/displayname">
+              <a tal:replace="structure team/fmt:link">
                 Launchpad Developers
               </a>
             </tal:path>
@@ -308,8 +306,8 @@
           <li class="person"
               tal:repeat="person view/recently_approved_members">
             <a tal:attributes="href person/fmt:url"
-              tal:content="person/unique_displayname"
-            >Foo Bar (name16)</a>
+              tal:content="person/fmt:unique_displayname"
+              >Foo Bar (name16)</a>
           </li>
         </ul>
         <div>
@@ -333,8 +331,8 @@
           <li class="person"
               tal:repeat="person view/recently_proposed_members">
             <a tal:attributes="href person/fmt:url"
-               tal:content="person/unique_displayname"
-            >Foo Bar (name16)</a>
+              tal:content="person/fmt:unique_displayname"
+              >Foo Bar (name16)</a>
           </li>
         </ul>
       </div>

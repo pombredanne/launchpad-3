@@ -1,11 +1,10 @@
-Bug Targets
-===========
+= Bug Targets =
 
 A bug target is a thing on which a bug can be reported, e.g., an
 IDistributionSourcePackage, an IProduct, etc.
 
-Bug Tasks on Bug Targets
-------------------------
+
+== Bug Tasks on Bug Targets ==
 
 Bug targets have a bugtargetdisplayname attribute, which returns a value
 tailored for human reading (e.g. display in Web pages); and a bugtargetname

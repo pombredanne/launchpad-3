@@ -21,11 +21,15 @@ from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposal)
 from canonical.launchpad.interfaces.branchsubscription import (
-    IBranchSubscription)
+    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
+    CodeReviewNotificationLevel, IBranchSubscription)
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote, ICodeReviewComment)
+from canonical.launchpad.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
 from canonical.launchpad.interfaces.diff import IPreviewDiff
-from canonical.launchpad.interfaces.person import IPersonPublic
+from canonical.launchpad.interfaces.hwdb import IHWSubmission
+from canonical.launchpad.interfaces.person import IPerson, IPersonPublic
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket)
@@ -36,6 +40,14 @@ IBranch['subscriptions'].value_type.schema = IBranchSubscription
 IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
 IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
 IBranch['dependent_branches'].value_type.schema = IBranchMergeProposal
+IBranch['subscribe'].queryTaggedValue(
+    'lazr.webservice.exported')['return_type'].schema = IBranchSubscription
+IBranch['subscribe'].queryTaggedValue('lazr.webservice.exported')['params'][
+    'notification_level'].vocabulary = BranchSubscriptionNotificationLevel
+IBranch['subscribe'].queryTaggedValue('lazr.webservice.exported')['params'][
+    'max_diff_lines'].vocabulary = BranchSubscriptionDiffSize
+IBranch['subscribe'].queryTaggedValue('lazr.webservice.exported')['params'][
+    'code_review_level'].vocabulary = CodeReviewNotificationLevel
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     'lazr.webservice.exported')['return_type'].schema = ICodeReviewComment
@@ -45,6 +57,7 @@ IBranchMergeProposal['createComment'].queryTaggedValue(
     'lazr.webservice.exported')['params']['parent'].schema = \
         ICodeReviewComment
 IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
+IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
 IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 
@@ -64,3 +77,6 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].value_type.schema = IBuild
+
+IPerson['hardware_submissions'].value_type.schema = IHWSubmission
+

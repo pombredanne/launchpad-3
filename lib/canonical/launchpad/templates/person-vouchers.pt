@@ -18,7 +18,7 @@
         <h1>Redeem Vouchers for Commercial Subscriptions</h1>
 
         <tal:not_commercial condition="not: commercial_projects">
-          <tal:name replace="string:${context/displayname} " />
+          <tal:name replace="context/fmt:displayname"/>
           does not own any commercial projects. Only project owners can redeem
           vouchers for a project.
         </tal:not_commercial>
@@ -26,7 +26,7 @@
           <tal:define_vouchers define="vouchers view/unredeemed_vouchers" >
             <tal:no_vouchers condition="not: vouchers">
               <p>
-              <tal:name replace="string:${context/displayname} " />
+              <tal:name replace="context/fmt:displayname" />
               does not have any unredeemed vouchers available.</p>
 
               <tal:voucher-instructions

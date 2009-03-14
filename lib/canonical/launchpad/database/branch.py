@@ -25,6 +25,8 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -39,7 +41,6 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.revision import Revision
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
@@ -512,7 +513,7 @@ class Branch(SQLBase):
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
-                  review_level):
+                  code_review_level):
         """See `IBranch`."""
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
@@ -521,12 +522,12 @@ class Branch(SQLBase):
             subscription = BranchSubscription(
                 branch=self, person=person,
                 notification_level=notification_level,
-                max_diff_lines=max_diff_lines, review_level=review_level)
+                max_diff_lines=max_diff_lines, review_level=code_review_level)
             Store.of(subscription).flush()
         else:
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
-            subscription.review_level = review_level
+            subscription.review_level = code_review_level
         return subscription
 
     def getSubscription(self, person):
@@ -1072,7 +1073,7 @@ class BranchSet:
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.FULL)
 
-        notify(SQLObjectCreatedEvent(branch))
+        notify(ObjectCreatedEvent(branch))
         return branch
 
     @staticmethod

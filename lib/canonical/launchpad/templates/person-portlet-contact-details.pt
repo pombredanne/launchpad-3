@@ -144,7 +144,7 @@
                    >(What&rsquo;s&nbsp;this?)</a></span>
           </td>
         </tr>
-        <tr>
+        <tr id="languages">
           <th>Languages:</th>
           <td>
             <tal:languages content="view/languages">
