@@ -46,7 +46,7 @@ displays his translatable languages.
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
-    Added Welsh to your preferred languages.<br 
+    Added Welsh to your preferred languages.<br
     />Removed Spanish from your preferred languages.
 
     # XXX: salgado 2006-11-21 bug 98437:
