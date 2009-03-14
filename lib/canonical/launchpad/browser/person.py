@@ -2780,7 +2780,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         """The user's preferred languages, or English is none are set."""
         languages = list(self.context.languages)
         if len(languages) > 0:
-            englishnames = [lang.englishname for lang in languages]
+            englishnames = [language.englishname for language in languages]
             return ', '.join(sorted(englishnames))
         else:
             return getUtility(ILaunchpadCelebrities).english.englishname

@@ -154,7 +154,7 @@ his preferred languages, English is used.
 
 This assumption is visible to the user when he views his own profile page,
 and he can set his preferred languages if he wants to make a correction.
-The list of languages is alphabetical.
+The list of languages is alphabetized.
 
     >>> from canonical.launchpad.interfaces.language import ILanguageSet
 
@@ -166,8 +166,18 @@ The list of languages is alphabetical.
     >>> print view.languages
     French, Somali
 
-Teams may have languages too, most often just one that is used for the
-Answers application. If the language is a variant, the variation is shown
+Teams may have languages too. English is the default if the team has not
+set a language.
+
+    >>> landscape_developers.languages
+    []
+
+    >>> view = create_view(landscape_developers, '+portlet-contact-details')
+    >>> print view.languages
+    English
+
+Teams most often set just one language that is used for the Answers
+application. If the language is a variant, the variation is shown
 in parenthesis.
 
     >>> landscape_developers.addLanguage(
