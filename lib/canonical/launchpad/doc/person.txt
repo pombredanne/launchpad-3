@@ -75,6 +75,8 @@ caused the entry to be created.
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
     ...     comment='when importing the Portuguese translation of firefox',
     ...     hide_email_addresses=True)
+    >>> import transaction
+    >>> transaction.commit()
     >>> p.teamowner is None
     True
 
@@ -116,7 +118,7 @@ createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> email.account == p.account
+    >>> email.accountID == p.accountID
     True
 
     >>> p.setPreferredEmail(email)
@@ -143,7 +145,7 @@ to the person, and it updates the email address's status and account.
     >>> validated_email.status
     <DBItem EmailAddressStatus.VALIDATED...
 
-    >>> validated_email.account == p.account
+    >>> validated_email.accountID == p.accountID
     True
 
 The user can add a new address and set it as the preferred address. The
@@ -160,7 +162,7 @@ setPreferredEmail() method updated the address's status and account.
     >>> preferred_email.status
     <DBItem EmailAddressStatus.PREFERRED...
 
-    >>> preferred_email.account == p.account
+    >>> preferred_email.accountID == p.accountID
     True
 
     >>> login(ANONYMOUS)
@@ -232,6 +234,21 @@ A Person may be linked to an Account.
     >>> person = personset.getByEmail('no-priv@canonical.com')
     >>> person.account.openid_identifier
     u'no-priv_oid'
+
+And when the person is linked to an account, it's possible to adapt that
+account into an IPerson.
+
+    >>> IPerson(person.account) == person
+    True
+
+We can't adapt an account which has no person associated with, though.
+
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     AccountCreationRationale, IAccountSet)
+    >>> personless_account = getUtility(IAccountSet).new(
+    ...     AccountCreationRationale.UNKNOWN, 'Display name')
+    >>> print IPerson(personless_account, None)
+    None
 
 
 === Personal standing ===
@@ -382,6 +399,7 @@ entries into teams.
     >>> not_a_person, dummy = personset.createPersonAndEmail(
     ...     'foo@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
     ...     comment='when the ed package was imported into Ubuntu Feisty')
+    >>> transaction.commit()
     >>> not_a_person.isTeam()
     False
 
@@ -586,8 +604,8 @@ team will go to that address.
     >>> ubuntu_team.preferredemail.email
     u'support@ubuntu.com'
 
-    >>> from canonical.launchpad.helpers import contactEmailAddresses
-    >>> contactEmailAddresses(ubuntu_team)
+    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+    >>> get_contact_email_addresses(ubuntu_team)
     set(['support@ubuntu.com'])
 
 On the other hand, if a team doesn't have a contact email address, all
@@ -602,7 +620,7 @@ direct member of that team.
     [u'david.allouche@canonical.com', u'foo.bar@canonical.com',
      u'robertc@robertcollins.net']
 
-    >>> sorted(contactEmailAddresses(vcs_imports))
+    >>> sorted(get_contact_email_addresses(vcs_imports))
     ['david.allouche@canonical.com', 'foo.bar@canonical.com',
      'robertc@robertcollins.net']
 
@@ -636,7 +654,8 @@ BugSubscription.subscribed_by attributes.
     >>> myteam = person_set.getByName('myteam')
     >>> guadamen = person_set.getByName('guadamen')
     >>> bug = bug_set.get(1)
-    >>> BugSubscription(bug=bug, person=myteam, subscribed_by=guadamen)
+    >>> bug_subscription = BugSubscription(bug=bug, person=myteam,
+    ...     subscribed_by=guadamen)
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person
@@ -724,7 +743,7 @@ include them as well.
     >>> from canonical.launchpad.interfaces import AccountStatus
     >>> dave = personset.getByName('justdave')
     >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
-    >>> flush_database_updates()
+    >>> transaction.commit()
     >>> list(personset.findPerson('dave'))
     []
 
@@ -1007,6 +1026,7 @@ for a Person:
 
     >>> for pt in carlos.translation_history:
     ...     print pt.pofile.title
+    English (en) trans... of pkgconf-mozilla in Ubuntu Hoary package "mozilla"
     Spanish (es) translation of alsa-utils in alsa-utils trunk
     Spanish (es) translation of man in Ubuntu Hoary package "evolution"
     Spanish (es) translation of evolution-2.2 in Evolution trunk
@@ -1326,4 +1346,3 @@ be raised.
     Traceback (most recent call last):
       ...
     InvalidName: ThisIsn'tValid is not a valid name for a person.
-

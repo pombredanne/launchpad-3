@@ -53,8 +53,6 @@ class ITranslationExporter(Interface):
 class ITranslationFormatExporter(Interface):
     """Translation file format exporter."""
 
-    # XXX CarlosPerelloMarin 20070905: This should be moved to use the new
-    # Enum infrastructure. See bug #135853 for more information.
     format = Choice(
         title=_('The file format that the translation will be exported to.'),
         vocabulary=TranslationFileFormat,

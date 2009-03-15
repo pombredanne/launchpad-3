@@ -614,7 +614,7 @@ closed after a certain date.
     >>> import pytz
     >>> from datetime import datetime, timedelta
     >>> from canonical.launchpad.searchbuilder import greater_than
-    >>> product = factory.makeProduct()
+    >>> product = factory.makeProductNoCommit()
     >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
     >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
     >>> bug_closed_a_day_ago = factory.makeBug(
@@ -634,6 +634,73 @@ closed after a certain date.
     >>> for bug_task in product.searchTasks(search_params):
     ...     print bug_task.bug.title
     Closed a day ago
+
+
+== Searching for bug with attachments ==
+
+It's possible to search for bugs with an attachment of a certain type.
+
+    >>> from StringIO import StringIO
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
+    ...     IMessageSet)
+    >>> product = factory.makeProductNoCommit()
+    >>> patch_bug = factory.makeBug(
+    ...     product=product)
+    >>> filecontent = 'Some diff data'
+    >>> filealias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='patch.diff', size=len(filecontent),
+    ...     file=StringIO(filecontent), contentType='text/plain')
+    >>> message = getUtility(IMessageSet).fromText(
+    ...     subject="title", content="added a patch.")
+    >>> attachmentset = getUtility(IBugAttachmentSet)
+    >>> attachment = attachmentset.create(
+    ...     bug=patch_bug, filealias=filealias, title='Patch',
+    ...     message=message, attach_type=BugAttachmentType.PATCH)
+    >>> patch_bug.attachments.count()
+    1
+
+We've added an attachment to our new bug with an attachment type
+PATCH. Searching for bugs with that attachment type we get one result.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, attachmenttype=BugAttachmentType.PATCH)
+    >>> product.searchTasks(search_params).count()
+    1
+
+    >>> filecontent = 'Some more diff data'
+    >>> filealias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='patch.diff', size=len(filecontent),
+    ...     file=StringIO(filecontent), contentType='text/plain')
+    >>> message = getUtility(IMessageSet).fromText(
+    ...     subject="title", content="added another patch.")
+    >>> attachmentset = getUtility(IBugAttachmentSet)
+    >>> attachment = attachmentset.create(
+    ...     bug=patch_bug, filealias=filealias, title='Patch 2',
+    ...     message=message, attach_type=BugAttachmentType.PATCH)
+    >>> patch_bug.attachments.count()
+    2
+
+We've added another patch to the bug. Searching for bugs with patch
+attachments still returns a single result, since even though a new
+attachment was added, there is still only one bug with attachments.
+
+    >>> product.searchTasks(search_params).count()
+    1
+
+== Searching for bugs affecting a user ==
+
+We can search for bugs which a user marked as affecting them.
+
+    >>> affecting_bug = factory.makeBug(title='A bug affecting a user')
+    >>> affected_user = factory.makePerson(name='affected-user')
+    >>> affecting_bug.markUserAffected(affected_user)
+    >>> target = affecting_bug.bugtasks[0].target
+    >>> affecting_tasks = target.searchTasks(
+    ...     None, user=None, affected_user=affected_user)
+    >>> for task in affecting_tasks:
+    ...     print task.bug.title
+    A bug affecting a user
 
 
 == Ordering search results ==
@@ -702,7 +769,7 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     1 Firefox does not support SVG [3 comments]
     10 another test bug [2 comments]
     9 Thunderbird crashes [1 comments]
-    19 Bug to be fixed in trunk [0 comments]
+    19 Bug to be fixed in trunk [1 comments]
 
 
 == Searching using a flat interface ==

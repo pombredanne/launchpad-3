@@ -11,6 +11,7 @@ __all__ = [
 import os
 import urlparse
 
+from zope.event import notify
 from zope.interface import implements
 
 from twisted.conch.interfaces import ISession
@@ -20,6 +21,7 @@ from twisted.python import log
 
 from canonical.config import config
 from canonical.codehosting import get_bzr_path
+from canonical.codehosting.sshserver import accesslog
 
 
 class PatchedSSHSession(session.SSHSession, object):
@@ -63,7 +65,12 @@ class PatchedSSHSession(session.SSHSession, object):
         # necessary. See http://twistedmatrix.com/trac/ticket/2754.
         transport = getattr(self.client, 'transport', None)
         if transport is not None:
-            transport.pauseProducing()
+            # For SFTP connections, 'transport' is actually a _DummyTransport
+            # instance. Neither _DummyTransport nor the protocol it wraps
+            # (filetransfer.FileTransferServer) support pausing.
+            pauseProducing = getattr(transport, 'pauseProducing', None)
+            if pauseProducing is not None:
+                pauseProducing()
 
     def startWriting(self):
         """See `session.SSHSession.startWriting`.
@@ -77,7 +84,12 @@ class PatchedSSHSession(session.SSHSession, object):
         # necessary. See http://twistedmatrix.com/trac/ticket/2754.
         transport = getattr(self.client, 'transport', None)
         if transport is not None:
-            transport.resumeProducing()
+            # For SFTP connections, 'transport' is actually a _DummyTransport
+            # instance. Neither _DummyTransport nor the protocol it wraps
+            # (filetransfer.FileTransferServer) support pausing.
+            resumeProducing = getattr(transport, 'resumeProducing', None)
+            if resumeProducing is not None:
+                resumeProducing()
 
 
 class ForbiddenCommand(Exception):
@@ -103,6 +115,7 @@ class ExecOnlySession:
     def closed(self):
         """See ISession."""
         if self._transport is not None:
+            notify(accesslog.BazaarSSHClosed(self.avatar))
             try:
                 self._transport.signalProcess('HUP')
             except (OSError, ProcessExitedAlready):
@@ -135,6 +148,10 @@ class ExecOnlySession:
             log.err(
                 "ERROR: %r already running a command on transport %r"
                 % (self, self._transport))
+        # XXX: JonathanLange 2008-12-23: This is something of an abstraction
+        # violation. Apart from this line, this class knows nothing about
+        # Bazaar.
+        notify(accesslog.BazaarSSHStarted(self.avatar))
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments, env=self.environment)
 

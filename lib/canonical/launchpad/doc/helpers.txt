@@ -74,3 +74,18 @@ The conjunction can be changed:
 
     >>> english_list('123', 'or')
     '1, 2, or 3'
+
+
+== get_contact_email_addresses ==
+
+The get_contact_email_addresses function is used to get a person's preferred
+address as a set for function that require the a set of email addresses.
+
+    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+
+    >>> user = factory.makePerson(
+    ...     email='user@canonical.com',
+    ...     name='user',)
+    >>> get_contact_email_addresses(user)
+    set(['user@canonical.com'])
+

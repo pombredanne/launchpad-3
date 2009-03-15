@@ -11,7 +11,7 @@ Lets start with Firefox product inside trunk revision.
 Since we still don't have any POTemplates assigned, we must use the general
 translations upload link.
 
-  >>> browser.getLink('Upload translations').click()
+  >>> browser.getLink('Upload').click()
   >>> print browser.url
   http://translations.launchpad.dev/firefox/trunk/+translations-upload
 

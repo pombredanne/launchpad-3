@@ -11,8 +11,7 @@
   <ul>
     <li tal:repeat="team view/teams_with_branches">
       <img src="/@@/team" />
-      <a tal:content="team/displayname"
-         tal:attributes="href team/fmt:url">team name</a>
+      <a tal:replace="structure team/fmt:link">team name</a>
     </li>
   </ul>
 </div>

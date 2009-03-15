@@ -68,7 +68,7 @@ First, we do a valid import.
     ... msgid "foo"
     ... msgstr "blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> published = True
+    >>> published = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, published, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
@@ -78,9 +78,11 @@ We must approve the entry to be able to import it.
 
     >>> entry.status = RosettaImportStatus.APPROVED
 
-We do the import.
+We do the import.  This succeeds without errors.
 
     >>> (subject, message) = pofile.importFromQueue(entry)
+    >>> print entry.error_output
+    None
 
 The status is now IMPORTED:
 
@@ -128,10 +130,13 @@ We do the import.
 
     >>> (subject, message) = pofile.importFromQueue(entry)
 
-The status is now FAILED:
+This fails because the file's time stamp was not updated.
 
     >>> entry.status == RosettaImportStatus.FAILED
     True
+
+    >>> print entry.error_output
+    Header's PO-Revision-Date is older than in last imported version.
 
 We can see that the header remains unchanged
 

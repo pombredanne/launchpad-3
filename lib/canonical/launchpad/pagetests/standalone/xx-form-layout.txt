@@ -103,3 +103,48 @@ specifying whether your project uses Launchpad Translations.
     </td>
   </tr>
   ...
+
+
+== Rendering just the form content ==
+
+It may be useful in some situations to simply render the form content for a
+LaunchpadFormView. For example, when displaying the form in a popup overlay
+on the page. This is enabled by a special ++form++ namespace that causes
+just the form content to be rendered for any URL corresponding to an
+LPFormView:
+
+  >>> browser.open('http://launchpad.dev/evolution/+edit/++form++')
+  >>> print browser.contents # Note: not the main content, but whole page
+  <div...
+  <table class="form">
+  ...
+  </div>
+
+Or for another example:
+
+  >>> cprov_browser = setupBrowser(
+  ...     auth='Basic celso.providelo@canonical.com:cprov')
+  >>> cprov_browser.open(
+  ...   'http://launchpad.dev/~cprov/+archive/ppa/+edit/++form++')
+  >>> print browser.contents
+  <div...
+  <table class="form">
+  ...
+  </div>
+
+But it will not work for views that are not LPFormViews - even if they
+display forms:
+
+  >>> cprov_browser.open('http://launchpad.dev/~cprov/+editsshkeys/++form++')
+  Traceback (most recent call last):
+  ...
+  NotFound...
+
+Nor will it allow unautherized access to data that it should not present:
+
+  >>> browser.open('http://launchpad.dev/~cprov/+archive/ppa/+edit/++form++')
+  Traceback (most recent call last):
+  ...
+  Unauthorized...
+
+

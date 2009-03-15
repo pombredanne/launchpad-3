@@ -24,16 +24,18 @@ from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from storm.expr import And, Alias, AutoTables, Join, LeftJoin, SQL
-
+from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, SQL
 from storm.sqlobject import SQLObjectResultSet
+from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 
 import pytz
 
 from zope.component import getUtility
 from zope.interface import implements, alsoProvides
 from zope.interface.interfaces import IMethod
-from zope.security.proxy import isinstance as zope_isinstance
+from zope.security.proxy import (
+    isinstance as zope_isinstance, removeSecurityProxy)
+from lazr.enum import DBItem
 
 from canonical.config import config
 
@@ -44,8 +46,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
-from canonical.lazr.enum import DBItem
-
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.bugnomination import BugNominationStatus
@@ -53,7 +53,7 @@ from canonical.launchpad.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, BugTaskStatusSearch, ConjoinedBugTaskEditError, IBugTask,
     IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
-    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask,
+    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
 from canonical.launchpad.interfaces.distribution import (
@@ -850,8 +850,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # No change to the assignee, so nothing to do.
             return
 
-        UTC = pytz.timezone('UTC')
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(pytz.UTC)
         if self.assignee and not assignee:
             # The assignee is being cleared, so clear the date_assigned
             # value.
@@ -862,6 +861,37 @@ class BugTask(SQLBase, BugTaskMixin):
             self.date_assigned = now
 
         self.assignee = assignee
+
+    def transitionToTarget(self, target):
+        """See `IBugTask`.
+
+        This method allows changing the target of some bug
+        tasks. The rules it follows are similar to the ones
+        enforced implicitly by the code in
+        lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
+        """
+        if (self.milestone is not None and
+            self.milestone.target != target):
+            # If the milestone for this bugtask is set, we
+            # have to make sure that it's a milestone of the
+            # current target, or reset it to None
+            self.milestone = None
+
+        if IUpstreamBugTask.providedBy(self):
+            if IProduct.providedBy(target):
+                self.product = target
+            else:
+                raise IllegalTarget(
+                    "Upstream bug tasks may only be re-targeted "
+                    "to another project.")
+        else:
+            if (IDistributionSourcePackage.providedBy(target) and
+                target.distribution == self.target.distribution):
+                self.sourcepackagename = target.sourcepackagename
+            else:
+                raise IllegalTarget(
+                    "Distribution bug tasks may only be re-targeted "
+                    "to a package in the same distribution.")
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1100,7 +1130,8 @@ class BugTaskSet:
         "date_last_updated": "Bug.date_last_updated",
         "date_closed": "BugTask.date_closed",
         "number_of_duplicates": "Bug.number_of_duplicates",
-        "message_count": "Bug.message_count"
+        "message_count": "Bug.message_count",
+        "users_affected_count": "Bug.users_affected_count",
         }
 
     _open_resolved_upstream = """
@@ -1345,15 +1376,15 @@ class BugTaskSet:
                                  "(SELECT DISTINCT bug FROM BugCve)")
 
         if params.attachmenttype is not None:
-            clauseTables.append('BugAttachment')
+            attachment_clause = (
+                "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
             if isinstance(params.attachmenttype, any):
                 where_cond = "BugAttachment.type IN (%s)" % ", ".join(
                     sqlvalues(*params.attachmenttype.query_values))
             else:
                 where_cond = "BugAttachment.type = %s" % sqlvalues(
                     params.attachmenttype)
-            extra_clauses.append("BugAttachment.bug = BugTask.bug")
-            extra_clauses.append(where_cond)
+            extra_clauses.append(attachment_clause % where_cond)
 
         if params.searchtext:
             extra_clauses.append(self._buildSearchTextClause(params))
@@ -1478,6 +1509,17 @@ class BugTaskSet:
             )
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
+
+        if params.affected_user:
+            affected_user_clause = """
+            BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, BugAffectsPerson
+                WHERE BugTask.bug = BugAffectsPerson.bug
+                AND BugAffectsPerson.person = %(affected_user)s
+                AND BugAffectsPerson.affected = TRUE
+            )
+            """ % sqlvalues(affected_user=params.affected_user)
+            extra_clauses.append(affected_user_clause)
 
         if params.nominated_for:
             mappings = sqlvalues(
@@ -1697,6 +1739,36 @@ class BugTaskSet:
         bugtasks = SQLObjectResultSet(BugTask, orderBy=orderby,
                                       prepared_result_set=result)
         return bugtasks
+
+    def getAssignedMilestonesFromSearch(self, search_results):
+        """See `IBugTaskSet`."""
+        # XXX: Gavin Panella 2009-03-05 bug=338184: There is currently
+        # no clean way to get the underlying Storm ResultSet from an
+        # SQLObjectResultSet, so we must remove the security proxy for
+        # a moment.
+        if ISQLObjectResultSet.providedBy(search_results):
+            search_results = removeSecurityProxy(search_results)._result_set
+        # Check that we have a Storm result set before we start doing
+        # things with it.
+        assert IResultSet.providedBy(search_results), (
+            "search_results must provide IResultSet or ISQLObjectResultSet")
+        # Remove ordering and make distinct.
+        search_results = search_results.order_by().config(distinct=True)
+        # Get milestone IDs.
+        milestone_ids = [
+            milestone_id for milestone_id in (
+                search_results.values(BugTask.milestoneID))
+            if milestone_id is not None]
+        # Query for milestones.
+        if len(milestone_ids) == 0:
+            return []
+        else:
+            # Import here because of cyclic references.
+            from canonical.launchpad.database.milestone import (
+                Milestone, milestone_sort_key)
+            milestones = search_results._store.find(
+                Milestone, In(Milestone.id, milestone_ids))
+            return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,

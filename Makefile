@@ -42,11 +42,13 @@ default: inplace
 
 schema: build clean_codehosting
 	$(MAKE) -C database/schema
-	$(PYTHON) ./utilities/make-dummy-hosted-branches
 	$(RM) -r /var/tmp/fatsam
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
+
+hosted_branches:
+	$(PYTHON) ./utilities/make-dummy-hosted-branches
 
 $(WADL_FILE): $(BZR_VERSION_INFO)
 	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py > $@
@@ -171,25 +173,27 @@ start-gdb: inplace stop support_files
 		-r librarian,google-webservice -C $(CONFFILE) \
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
+run_all: inplace stop hosted_branches
 	$(RM) thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
+
+run_codebrowse: build
+	BZR_PLUGIN_PATH=bzrplugins PYTHONPATH=lib $(PYTHON) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
+
+start_codebrowse: build
+	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins PYTHONPATH=lib $(PYTHON) sourcecode/launchpad-loggerhead/start-loggerhead.py
+
+stop_codebrowse:
+	PYTHONPATH=lib $(PYTHON) sourcecode/launchpad-loggerhead/stop-loggerhead.py
 
 pull_branches: support_files
 	# Mirror the hosted branches in the development upload area to the
 	# mirrored area.
 	$(PYTHON) cronscripts/supermirror-pull.py upload
 
-rewritemap:
-	# Build rewrite map that maps friendly branch names to IDs. Necessary
-	# for http access to branches and for the branch scanner.
-	mkdir -p $(CODEHOSTING_ROOT)/config
-	$(PYTHON) cronscripts/supermirror_rewritemap.py \
-		$(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
-
-scan_branches: rewritemap
+scan_branches:
 	# Scan branches from the filesystem into the database.
 	$(PYTHON) cronscripts/branch-scanner.py
 
@@ -287,9 +291,6 @@ launchpad.pot:
 	    -d launchpad -p lib/canonical/launchpad \
 	    -o locales
 
-sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
-	ln -s ../../loggerhead sourcecode/launchpad-loggerhead/sourcecode/loggerhead
-
 install: reload-apache
 
 copy-certificates:
@@ -298,8 +299,9 @@ copy-certificates:
 	cp configs/development/launchpad.key /etc/apache2/ssl/
 
 copy-apache-config:
-	cp configs/development/local-launchpad-apache \
-	    /etc/apache2/sites-available/local-launchpad
+	# We insert the absolute path to the branch-rewrite script
+	# into the Apache config as we copy the file into position.
+	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
@@ -321,6 +323,6 @@ tags:
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop	\
 	start run ftest_build ftest_inplace test_build test_inplace	\
 	pagetests check check_merge schema default launchpad.pot	\
-	check_launchpad_on_merge check_merge_ui pull rewritemap scan	\
+	check_launchpad_on_merge check_merge_ui pull scan		\
 	sync_branches check_loggerhead_on_merge reload-apache		\
-	check_launchpad_storm_on_merge
+	check_launchpad_storm_on_merge hosted_branches

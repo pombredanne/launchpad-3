@@ -73,6 +73,9 @@ class TestExecOnlySession(AvatarTestCase):
     def setUp(self):
         AvatarTestCase.setUp(self)
         self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
+        # The logging system will try to get the id of avatar.transport, so
+        # let's give it something to take the id of.
+        self.avatar.transport = object()
         self.reactor = MockReactor()
         self.session = ExecOnlySession(self.avatar, self.reactor)
 
@@ -279,16 +282,14 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
 
 
 class TestSessionIntegration(AvatarTestCase):
-    """Tests for how the Conch sessions integrate with the rest of the
-    supermirror.
-    """
+    """Tests for how Conch sessions integrate with the rest of codehosting."""
 
     def setUp(self):
         AvatarTestCase.setUp(self)
         self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
 
     def test_avatarAdaptsToRestrictedExecOnlySession(self):
-        # When Conch tries to adapt the supermirror avatar to ISession, it
+        # When Conch tries to adapt the SSH server avatar to ISession, it
         # adapts to a RestrictedExecOnlySession. This means that a
         # RestrictedExecOnlySession handles any requests to execute a command.
         session = ISession(self.avatar)

@@ -132,7 +132,7 @@ class CodebrowseService(Service):
 
     def launch(self):
         process = subprocess.Popen(
-            ['make', '-C', 'sourcecode/launchpad-loggerhead', 'fg'],
+            ['make', 'run_codebrowse'],
             stdin=subprocess.PIPE)
         process.stdin.close()
         stop_at_exit(process)

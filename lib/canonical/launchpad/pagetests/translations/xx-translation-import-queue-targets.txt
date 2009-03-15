@@ -51,7 +51,7 @@ Ubuntu distro series has also no content.
 The import queue is linked from the translations page for products.
 
     >>> user_browser.open('http://translations.launchpad.dev/evolution')
-    >>> user_browser.getLink('See import queue').click()
+    >>> user_browser.getLink('Import queue').click()
 
 This time, we do have content for this product:
 
@@ -84,7 +84,7 @@ There are two entries in the list.
 The import queue is linked from the translations page for product series.
 
     >>> user_browser.open('http://translations.launchpad.dev/evolution/trunk')
-    >>> user_browser.getLink('See import queue').click()
+    >>> user_browser.getLink('Import queue').click()
 
 This time, we do have content for this product:
 

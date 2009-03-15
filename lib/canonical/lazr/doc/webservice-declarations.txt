@@ -637,16 +637,61 @@ When a method raises an exception, the default is to report the error as
 '500 Internal Server Error'. In many cases, that's not the case and one
 of the 4XX error would be better.
 
-Exceptions can be tagged with the webservice_error() declaration to
-state the proper HTTP status code to use for that kind of error.
+For Python 2.6 or higher, or for annotating an already existing exception,
+you can use error_status.
+
+In Python 2.6, you would spell this as follows:
+
+    from canonical.lazr.rest.declarations import error_status
+    @error_status(400)
+    class InvalidDemo(Exception):
+        """An example exception"""
+
+In earlier Pythons it is still usable.
+
+    >>> from canonical.lazr.rest.declarations import error_status
+    >>> class InvalidDemo(Exception):
+    ...     """An example exception"""
+    ...
+    >>> ignore = error_status(400)(InvalidDemo)
+
+The function sets the __lazr_webservice_error__ attribute on the
+exception, which will be used by the view handling the exception.
+
+    >>> InvalidDemo.__lazr_webservice_error__
+    400
+
+The function raises an exception if it is used for something that already has
+a conflicting __lazr_webservice_error__ attribute.
+
+    >>> ignore = error_status(400)(InvalidDemo) # OK
+    >>> InvalidDemo.__lazr_webservice_error__
+    400
+    >>> error_status(401)(InvalidDemo) # Not OK
+    Traceback (most recent call last):
+    ...
+    ValueError: ('Exception already has an error status', 400)
+
+It also raises an exception if it is used on something that is not an
+Exception.
+
+    >>> error_status(400)(object)
+    Traceback (most recent call last):
+    ...
+    TypeError: Annotated value must be an exception class.
+
+Exceptions can be also be tagged internally to the class definition with the
+webservice_error() declaration to state the proper HTTP status code to use for
+that kind of error.
 
     >>> from canonical.lazr.rest.declarations import webservice_error
     >>> class InvalidEmail(Exception):
     ...     """Error happening when the email is not valid."""
     ...     webservice_error(400)
 
-The directive sets the __lazr_webservice_error__ attribute on the
-exception which will be used by the view handling the exception.
+As with error_status, the directive sets the __lazr_webservice_error__
+attribute on the exception, which will be used by the view handling the
+exception.
 
     >>> InvalidEmail.__lazr_webservice_error__
     400
@@ -976,6 +1021,21 @@ The call() method calls the underlying method and returns its result.
     ...     def new(self, author, base_price, title):
     ...         return Book(author, title, base_price, "unknown")
 
+We're going to create a fake request now, and that requires defining a
+web service configuration object. Each web service needs to have one
+of these registered utilities providing basic information about the web
+service. This one is just a dummy.
+
+    >>> from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+    >>> class MyWebServiceConfiguration:
+    ...     implements(IWebServiceConfiguration)
+    ...     view_permission = "lazr.View"
+    ...     service_version_uri_prefix = "beta"
+    ...     code_revision = "1.0b"
+    >>> provideUtility(MyWebServiceConfiguration(), IWebServiceConfiguration)
+
+Now we can create a fake request that invokes the named operation.
+
     >>> from canonical.lazr.testing.webservice import FakeRequest
     >>> request = FakeRequest()
     >>> read_method_adapter = read_method_adapter_factory(
@@ -1066,23 +1126,28 @@ The adapter's params property also contains the available parameters.
 Factory operations set the 201 Created status code and return the
 URL to the newly created object. The body of the response will be empty.
 
-(For canonical_url() to work, we need to register an ICanonicalUrlData
+(For the URL generation to work, we need to register an IAbsoluteURL
 adapter and set the request as the current interaction.)
 
     >>> from urllib import quote
     >>> from zope.component import provideAdapter
-    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-    >>> class BookUrlData(object):
-    ...     inside = None
-    ...     rootsite = None
+    >>> from zope.traversing.browser.interfaces import IAbsoluteURL
+    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
+    >>> class BookAbsoluteURL(object):
+    ...     """Returns a believable absolute URL for a book."""
+    ...     implements(IAbsoluteURL)
     ...
-    ...     def __init__(self, context):
+    ...     def __init__(self, context, request):
     ...         self.context = context
+    ...         self.request = request
     ...
-    ...     @property
-    ...     def path(self):
-    ...         return "books/%s" % quote(self.context.title)
-    >>> provideAdapter(BookUrlData, [IBook], ICanonicalUrlData)
+    ...     def __str__(self):
+    ...         return ("http://api.example.org/books/" +
+    ...                 quote(self.context.title))
+    ...
+    ...     __call__ = __str__
+    >>> provideAdapter(BookAbsoluteURL,
+    ...     [IBook, IHTTPApplicationRequest], IAbsoluteURL)
 
     >>> from zope.security.management import endInteraction, newInteraction
     >>> endInteraction()
@@ -1343,27 +1408,27 @@ are also available for IBookSetOnSteroids and IBookOnSteroids.
     >>> from zope.component import getGlobalSiteManager
     >>> adapter_registry = getGlobalSiteManager().adapters
 
-    >>> from canonical.lazr.interfaces.rest import WebServiceLayer
+    >>> from canonical.lazr.interfaces.rest import IWebServiceClientRequest
     >>> adapter_registry.lookup(
-    ...     (IBookSetOnSteroids, WebServiceLayer), IResourceGETOperation,
-    ...     'searchBooks')
+    ...     (IBookSetOnSteroids, IWebServiceClientRequest), 
+    ...     IResourceGETOperation, 'searchBooks')
     <class '...GET_IBookSetOnSteroids_searchBooks'>
     >>> adapter_registry.lookup(
-    ...     (IBookSetOnSteroids, WebServiceLayer), IResourcePOSTOperation,
-    ...     'create_book')
+    ...     (IBookSetOnSteroids, IWebServiceClientRequest), 
+    ...     IResourcePOSTOperation, 'create_book')
     <class '...POST_IBookSetOnSteroids_create_book'>
     >>> adapter_registry.lookup(
-    ...     (IBookOnSteroids, WebServiceLayer), IResourcePOSTOperation,
-    ...     'checkout')
+    ...     (IBookOnSteroids, IWebServiceClientRequest), 
+    ...     IResourcePOSTOperation, 'checkout')
     <class '...POST_IBookOnSteroids_checkout'>
 
-There is also a 'index.html' view on the WebServiceLayer registered for the
-InvalidEmail exception.
+There is also a 'index.html' view on the IWebServiceClientRequest 
+registered for the InvalidEmail exception.
 
     >>> from zope.interface import implementedBy
     >>> adapter_registry.lookup(
-    ...     (implementedBy(InvalidEmail), WebServiceLayer), Interface,
-    ...         'index.html')
+    ...     (implementedBy(InvalidEmail), IWebServiceClientRequest), 
+    ...     Interface, 'index.html')
     <class '...WebServiceExceptionView'>
 
 (Clean-up.)

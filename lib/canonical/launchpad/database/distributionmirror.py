@@ -34,7 +34,7 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import (
-    get_email_template, contactEmailAddresses, shortlist)
+    get_email_template, get_contact_email_addresses, shortlist)
 from canonical.launchpad.interfaces import (
     BinaryPackageFileType, IDistributionMirrorSet, IDistributionMirror,
     IDistroArchSeries, IDistroSeries, ILaunchpadCelebrities,
@@ -224,12 +224,12 @@ class DistributionMirror(SQLBase):
         message = template % replacements
         subject = "Launchpad: Verification of %s failed" % self.name
 
-        mirror_admin_address = contactEmailAddresses(
+        mirror_admin_address = get_contact_email_addresses(
             self.distribution.mirror_admin)
         simple_sendmail(fromaddress, mirror_admin_address, subject, message)
 
         if notify_owner:
-            owner_address = contactEmailAddresses(self.owner)
+            owner_address = get_contact_email_addresses(self.owner)
             simple_sendmail(fromaddress, owner_address, subject, message)
 
     def newProbeRecord(self, log_file):

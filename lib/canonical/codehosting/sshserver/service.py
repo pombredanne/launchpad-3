@@ -11,33 +11,39 @@ __all__ = [
     ]
 
 
-import logging
 import os
 
 from twisted.application import service, strports
-from twisted.conch.ssh.connection import SSHConnection
 from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
-from twisted.cred.portal import Portal
+from twisted.conch.ssh.transport import SSHServerTransport
+from twisted.internet import defer
+from twisted.protocols.policies import TimeoutFactory
+from twisted.python import log
 from twisted.web.xmlrpc import Proxy
 
-from canonical.codehosting.sshserver.auth import (
-    PublicKeyFromLaunchpadChecker, Realm, SSHUserAuthServer)
+from zope.event import notify
+
+from canonical.codehosting.sshserver import accesslog
+from canonical.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from canonical.config import config
-from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
+from canonical.twistedsupport import gatherResults
+
+
+class KeepAliveSettingSSHServerTransport(SSHServerTransport):
+
+    def connectionMade(self):
+        SSHServerTransport.connectionMade(self)
+        self.transport.setTcpKeepAlive(True)
 
 
 class Factory(SSHFactory):
     """SSH factory that uses the codehosting custom authentication.
 
     This class tells the SSH service to use our custom authentication service
-    and configures the host keys for the SSH server.
+    and configures the host keys for the SSH server. It also logs connection
+    to and disconnection from the SSH server.
     """
-
-    services = {
-        'ssh-userauth': SSHUserAuthServer,
-        'ssh-connection': SSHConnection
-    }
 
     def __init__(self, portal):
         # Although 'portal' isn't part of the defined interface for
@@ -45,6 +51,49 @@ class Factory(SSHFactory):
         # at it. (Look for the beautiful line "self.portal =
         # self.transport.factory.portal").
         self.portal = portal
+        self.services['ssh-userauth'] = SSHUserAuthServer
+
+    def buildProtocol(self, address):
+        """Build an SSH protocol instance, logging the event.
+
+        The protocol object we return is slightly modified so that we can hook
+        into the 'connectionLost' event and log the disconnection.
+        """
+        # If Conch let us customize the protocol class, we wouldn't need this.
+        # See http://twistedmatrix.com/trac/ticket/3443.
+        transport = KeepAliveSettingSSHServerTransport()
+        transport.supportedPublicKeys = self.privateKeys.keys()
+        if not self.primes:
+            log.msg('disabling diffie-hellman-group-exchange because we '
+                    'cannot find moduli file')
+            ske = transport.supportedKeyExchanges[:]
+            ske.remove('diffie-hellman-group-exchange-sha1')
+            transport.supportedKeyExchanges = ske
+        transport.factory = self
+        transport._realConnectionLost = transport.connectionLost
+        transport.connectionLost = (
+            lambda reason: self.connectionLost(transport, reason))
+        notify(accesslog.UserConnected(transport, address))
+        return transport
+
+    def connectionLost(self, transport, reason):
+        """Call 'connectionLost' on 'transport', logging the event."""
+        try:
+            return transport._realConnectionLost(reason)
+        finally:
+            # Conch's userauth module sets 'avatar' on the transport if the
+            # authentication succeeded. Thus, if it's not there,
+            # authentication failed. We can't generate this event from the
+            # authentication layer since:
+            #
+            # a) almost every SSH login has at least one failure to
+            # authenticate due to multiple keys on the client-side.
+            #
+            # b) the server doesn't normally generate a "go away" event.
+            # Rather, the client simply stops trying.
+            if getattr(transport, 'avatar', None) is None:
+                notify(accesslog.AuthenticationFailed(transport))
+            notify(accesslog.UserDisconnected(transport))
 
     def _loadKey(self, key_filename):
         key_directory = config.codehosting.host_key_pair_path
@@ -83,21 +132,22 @@ class SSHService(service.Service):
         authentication_proxy = Proxy(
             config.codehosting.authentication_endpoint)
         branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
-        portal = Portal(Realm(authentication_proxy, branchfs_proxy))
-        portal.registerChecker(
-            PublicKeyFromLaunchpadChecker(authentication_proxy))
-        return portal
+        return get_portal(authentication_proxy, branchfs_proxy)
 
     def makeService(self):
         """Return a service that provides an SFTP server. This is called in
         the constructor.
         """
-        ssh_factory = Factory(self.makePortal())
+        ssh_factory = TimeoutFactory(
+            Factory(self.makePortal()),
+            timeoutPeriod=config.codehosting.idle_timeout)
         return strports.service(config.codehosting.port, ssh_factory)
 
     def startService(self):
         """Start the SSH service."""
-        set_up_logging()
+        accesslog.LoggingManager().setUp(
+            configure_oops_reporting=True, mangle_stdout=True)
+        notify(accesslog.ServerStarting())
         # By default, only the owner of files should be able to write to them.
         # Perhaps in the future this line will be deleted and the umask
         # managed by the startup script.
@@ -107,18 +157,10 @@ class SSHService(service.Service):
 
     def stopService(self):
         """Stop the SSH service."""
-        service.Service.stopService(self)
-        return self.service.stopService()
-
-
-def set_up_logging(configure_oops_reporting=False):
-    """Set up and return the codehosting logger.
-
-    If configure_oops_reporting is True, install a Twisted log observer that
-    ensures unhandled exceptions get reported as OOPSes.
-    """
-    log = logging.getLogger('codehosting')
-    log.setLevel(logging.CRITICAL)
-    if configure_oops_reporting:
-        set_up_oops_reporting('codehosting')
-    return log
+        deferred = gatherResults([
+            defer.maybeDeferred(service.Service.stopService, self),
+            defer.maybeDeferred(self.service.stopService)])
+        def log_stopped(ignored):
+            notify(accesslog.ServerStopped())
+            return ignored
+        return deferred.addBoth(log_stopped)

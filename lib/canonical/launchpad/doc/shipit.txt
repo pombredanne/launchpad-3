@@ -26,7 +26,6 @@ Let's create a new request for foo.bar@canonical.com.
     >>> X86 = ShipItArchitecture.X86
     >>> AMD64 = ShipItArchitecture.AMD64
     >>> PPC = ShipItArchitecture.PPC
-    >>> recipient = foobar
     >>> country = 31 # Brazil
     >>> city = 'Sao Carlos'
     >>> addressline1 = 'Antonio Rodrigues Cajado 1506'
@@ -34,7 +33,7 @@ Let's create a new request for foo.bar@canonical.com.
     >>> phone = '+551635015218'
     >>> reason = ("I'm going to give away some CDs in the next meeting of my "
     ...           "city's LUG.")
-    >>> request = requestset.new(recipient, name, country, city,
+    >>> request = requestset.new(foobar.account, name, country, city,
     ...                          addressline1, phone, reason=reason)
     >>> quantities = {UBUNTU: {X86: 30, AMD64: 5, PPC: 2}}
     >>> request.setQuantities(quantities, distroseries=feisty)
@@ -60,7 +59,7 @@ for that specific flavour.
 We're not allowed to add a second request for the same recipient, while the
 existing one is not yet exported.
 
-    >>> request = requestset.new(recipient, name, country, city,
+    >>> request = requestset.new(foobar.account, name, country, city,
     ...                          addressline1, phone, reason=reason)
     Traceback (most recent call last):
     ...
@@ -71,7 +70,8 @@ existing one is not yet exported.
  
     >>> request.getTotalCDs()
     37
-    >>> recipient.currentShipItRequest() == request
+    >>> from canonical.launchpad.interfaces.shipit import IShipitAccount
+    >>> IShipitAccount(foobar.account).currentShipItRequest() == request
     True
   
 If a request is not approved yet, it'll have its status == PENDING. If it
@@ -91,7 +91,7 @@ The number of CDs can be altered by the user, if he wants.
 When a request is approved, you must specify the approved quantities.
 
     >>> login('marilize@hbd.com')
-    >>> request.approve(whoapproved=getUtility(ILaunchBag).user)
+    >>> request.approve(whoapproved=getUtility(ILaunchBag).account)
     >>> request.status == ShippingRequestStatus.APPROVED
     True
     >>> request.whoapproved.displayname
@@ -138,7 +138,7 @@ If a request hasn't been exported yet, it can still be denied.
 A request can also be cancelled, and this means the approved and
 quantity*approved will be set back to None.
 
-    >>> request.cancel(getUtility(ILaunchBag).user)
+    >>> request.cancel(getUtility(ILaunchBag).account)
     >>> request.isCancelled()
     True
     >>> request.whocancelled.displayname
@@ -148,32 +148,26 @@ quantity*approved will be set back to None.
 When a request is cancelled it'll not show up as the recipient's current
 request.
 
-    >>> recipient.currentShipItRequest() is None
+    >>> IShipitAccount(foobar.account).currentShipItRequest() is None
     True
 
 Instead, it'll be part of the past requests of that recipient.
 
-    >>> request in recipient.pastShipItRequests()
+    >>> request in IShipitAccount(foobar.account).pastShipItRequests()
     True
 
 
 Searching for requests
 ----------------------
 
-We have 16 requests, and two of them are cancelled
+We have 18 requests, and two of them are cancelled
 
-    >>> sorted((shipreq.id, shipreq.recipient.name) 
-    ...        for shipreq in requestset.search())
-    [(1, u'no-priv'), (2, u'stub'), (3, u'kreutzm'), (4, u'lifeless'),
-     (5, u'ddaa'), (6, u'cprov'), (7, u'debonzi'), (12, u'jdub'),
-     (13, u'shipit-admins'), (14, u'jblack'), (15, u'ddaa'),
-     (16, u'jordi'), (17, u'jblack'), (18, u'ddaa'), (19, u'shipit-admins'),
-     (20, u'sabdfl'), (21, u'karl'), (22, u'name16')]
+    >>> requestset.search().count()
+    18
 
     >>> cancelled = ShippingRequestStatus.CANCELLED
-    >>> sorted((shipreq.id, shipreq.recipient.name) 
-    ...        for shipreq in requestset.search(status=cancelled))
-    [(6, u'cprov'), (22, u'name16')]
+    >>> requestset.search(status=cancelled).count()
+    2
 
 Two of them are pending review, because their recipients asked for extra CDs.
 
@@ -183,22 +177,17 @@ Two of them are pending review, because their recipients asked for extra CDs.
     12 : I want 100 more CDs.
     13 : I need 50 more CDs to give away to my friends.
 
-Eight are approved but not yet shipped.
+Nine are approved but not yet shipped.
   
     >>> approved = ShippingRequestStatus.APPROVED
-    >>> sorted((shipreq.id, shipreq.recipient.name) 
-    ...         for shipreq in requestset.search(status=approved))
-    [(1, u'no-priv'), (2, u'stub'), (3, u'kreutzm'), (4, u'lifeless'),
-     (5, u'ddaa'), (7, u'debonzi'), (16, u'jordi'), (19, u'shipit-admins'),
-     (21, u'karl')]
+    >>> requestset.search(status=approved).count()
+    9
 
 And finally, four of them are already shipped.
 
     >>> shipped = ShippingRequestStatus.SHIPPED
-    >>> sorted((shipreq.id, shipreq.recipient.name) 
-    ...         for shipreq in requestset.search(status=shipped))
-    [(14, u'jblack'), (15, u'ddaa'), (17, u'jblack'), (18, u'ddaa')]
-
+    >>> requestset.search(status=shipped).count()
+    4
 
 It's also possible to search for requests containing CDs of a given flavour or
 of a given distroseries (or both, obviously).
@@ -208,7 +197,7 @@ of a given distroseries (or both, obviously).
     ...  for shipreq in requestset.search(flavour=kubuntu)]
     [(u'Celso Providelo', 6), (u'David Allouche', 5),
      (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
-     (u'James Blackwell', 17), (u'ShipIt Administrators', 19),
+     (u'James Blackwell', 17), (u'Guilherme Salgado', 19),
      (u'Karl Tilbury', 21)]
 
     >>> [(shipreq.recipient.displayname , shipreq.id)
@@ -218,7 +207,7 @@ of a given distroseries (or both, obviously).
      (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
      (u'Daniel Henrique Debonzi', 7), (u'David Allouche', 18),
      (u'Jordi Mallach', 16), (u'Jeff Waugh', 12),
-     (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
+     (u'Guilherme Salgado', 13), (u'James Blackwell', 17),
      (u'Stuart Bishop', 2), (u'Foo Bar', 22)]
 
     >>> edubuntu = ShipItFlavour.EDUBUNTU
@@ -226,12 +215,12 @@ of a given distroseries (or both, obviously).
     ...  for shipreq in requestset.search(
     ...      distroseries=feisty, flavour=edubuntu)]
     [(u'David Allouche', 18), (u'Jordi Mallach', 16),
-     (u'ShipIt Administrators', 13)]
+     (u'Guilherme Salgado', 13)]
 
     >>> edgy = ShipItDistroSeries.EDGY
     >>> [(shipreq.recipient.displayname , shipreq.id)
     ...  for shipreq in requestset.search(distroseries=edgy)]
-    [(u'ShipIt Administrators', 19)]
+    [(u'Guilherme Salgado', 19)]
 
 
 Another way of searching is by using any part of the recipient's name or the
@@ -247,8 +236,8 @@ beginning of his email address.
 
     >>> [shipreq.recipient_email
     ...  for shipreq in requestset.search(status=ShippingRequestStatus.PENDING,
-    ...                                   recipient_text='marilize')]
-    ['info@shipit.ubuntu.com']
+    ...                                   recipient_text='salgado')]
+    [u'guilherme.salgado@canonical.com']
 
 
 == Standard request templates ==
@@ -286,9 +275,9 @@ changes according to the logged in user. That is, some users get to see all
 options while others can see only the options with at most N CDs.
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> sabdfl.is_trusted_on_shipit
+    >>> IShipitAccount(sabdfl.account).is_trusted_on_shipit
     True
-    >>> for option in optionset.getByFlavour(UBUNTU, sabdfl):
+    >>> for option in optionset.getByFlavour(UBUNTU, sabdfl.account):
     ...     print option.description
     1 Ubuntu CD (1 64-bit PC Edition)
     1 Ubuntu CD (1 Mac Edition)
@@ -298,14 +287,15 @@ options while others can see only the options with at most N CDs.
     10 Ubuntu CDs (10 PC Edition)
 
     >>> jdub = getUtility(IPersonSet).getByName('jdub')
-    >>> jdub.is_trusted_on_shipit
+    >>> IShipitAccount(jdub.account).is_trusted_on_shipit
     False
-    >>> for option in optionset.getByFlavour(UBUNTU, jdub):
+    >>> for option in optionset.getByFlavour(UBUNTU, jdub.account):
     ...     print option.description
     1 Ubuntu CD (1 64-bit PC Edition)
     1 Ubuntu CD (1 Mac Edition)
     1 Ubuntu CD (1 PC Edition)
     5 Ubuntu CDs (5 PC Edition)
+
 
 == Exporting requests ==
 
@@ -1212,24 +1202,24 @@ lazr.Item objects.
     ...     'business_sector': None}
     >>> survey_set = getUtility(IShipItSurveySet)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> survey = survey_set.new(salgado, answers)
+    >>> survey = survey_set.new(salgado.account, answers)
     >>> survey
     <ShipItSurvey...
 
 We also have a method to tell us whether or not a given person has
 already answered the survey.
 
-    >>> survey_set.personHasAnswered(salgado)
+    >>> survey_set.personHasAnswered(salgado.account)
     True
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> survey_set.personHasAnswered(sabdfl)
+    >>> survey_set.personHasAnswered(sabdfl.account)
     False
 
 If all answers are None or empty sequences, we won't record the person
 as having answered the survey.
 
     >>> answers = {'environment': None, 'evaluated_uses': []}
-    >>> print survey_set.new(sabdfl, answers)
+    >>> print survey_set.new(sabdfl.account, answers)
     None
-    >>> survey_set.personHasAnswered(sabdfl)
+    >>> survey_set.personHasAnswered(sabdfl.account)
     False

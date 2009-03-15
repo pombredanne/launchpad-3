@@ -9,6 +9,7 @@ __metaclass__ = type
 
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.mail import format_address
+from canonical.launchpad.mailout import append_footer
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 from canonical.launchpad.webapp import canonical_url
 
@@ -21,7 +22,8 @@ def send(comment, event):
 class CodeReviewCommentMailer(BMPMailer):
     """Send email about creation of a CodeReviewComment."""
 
-    def __init__(self, code_review_comment, recipients, original_email):
+    def __init__(self, code_review_comment, recipients, original_email,
+                 message_id=None):
         """Constructor."""
         self.code_review_comment = code_review_comment
         self.message = code_review_comment.message
@@ -31,7 +33,7 @@ class CodeReviewCommentMailer(BMPMailer):
         merge_proposal = code_review_comment.branch_merge_proposal
         BMPMailer.__init__(
             self, self.message.subject, None, recipients, merge_proposal,
-            from_address)
+            from_address, message_id=message_id)
         self.attachments = []
         if original_email is not None:
             # The attachments for the code review comment are actually
@@ -51,6 +53,7 @@ class CodeReviewCommentMailer(BMPMailer):
                     content_type = part['content-type']
                 if (filename, content_type) in include_attachments:
                     self.attachments.append(part)
+        self._generateBodyBits()
 
     @classmethod
     def forCreation(klass, code_review_comment, original_email=None):
@@ -58,11 +61,27 @@ class CodeReviewCommentMailer(BMPMailer):
         merge_proposal = code_review_comment.branch_merge_proposal
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
-        return klass(code_review_comment, recipients, original_email)
+        return klass(
+            code_review_comment, recipients, original_email,
+            code_review_comment.message.rfc822msgid)
 
     def _getSubject(self, email):
         """Don't do any string template insertions on subjects."""
         return self.code_review_comment.message.subject
+
+    def _generateBodyBits(self):
+        """Pre-generate the bits of the body email that don't change."""
+        if self.code_review_comment.vote is None:
+            self.body_prefix = ''
+        else:
+            if self.code_review_comment.vote_tag is None:
+                vote_tag = ''
+            else:
+                vote_tag = ' ' + self.code_review_comment.vote_tag
+            self.body_prefix = 'Review: %s%s\n' % (
+                self.code_review_comment.vote.title, vote_tag)
+        self.body_main = self.message.text_contents
+        self.proposal_url = canonical_url(self.merge_proposal)
 
     def _getBody(self, email):
         """Return the complete body to use for this email.
@@ -72,29 +91,14 @@ class CodeReviewCommentMailer(BMPMailer):
         there is an existing footer, we append it to that.  Otherwise, we
         we insert a new footer.
         """
-        if self.code_review_comment.vote is None:
-            prefix = ''
-        else:
-            if self.code_review_comment.vote_tag is None:
-                vote_tag = ''
-            else:
-                vote_tag = ' ' + self.code_review_comment.vote_tag
-            prefix = 'Review: %s%s\n' % (
-                self.code_review_comment.vote.title, vote_tag)
-        main = self.message.text_contents
-        if '\n-- \n' in main:
-            footer_separator = '\n'
-        else:
-            footer_separator = '\n-- \n'
-
         # Include both the canonical_url for the proposal and the reason
         # in the footer to the email.
         reason, rationale = self._recipients.getReason(email)
         footer = "%(proposal_url)s\n%(reason)s" % {
-            'proposal_url': canonical_url(self.merge_proposal),
+            'proposal_url': self.proposal_url,
             'reason': reason.getReason()}
         return ''.join((
-            prefix, main, footer_separator, footer))
+            self.body_prefix, append_footer(self.body_main, footer)))
 
     def _getHeaders(self, email):
         """Return the mail headers to use."""

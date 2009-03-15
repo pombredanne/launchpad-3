@@ -1,24 +1,57 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
+<tal:root
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:metal="http://xml.zope.org/namespaces/metal"
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-    metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad">
-    <body>
-        <div metal:fill-slot="main">
-            <p>
-            This is the Launchpad login service utilizing
-            <a href="http://openid.net/">OpenID</a> technology.
-            This site allows you to use
-            <a href="https://launchpad.net/people/+me">your Launchpad account</a>
-            to log into OpenID-enabled sites around the Internet including
-            those run by Canonical and Ubuntu.</p>
-            <p>
-            To learn more about using this service, please review the
-            <a href="https://help.launchpad.net/OpenID">instructions</a>.</p>
-            <p>
-            Note that this site is meant to be called from an OpenID-enabled
-            service and therefore has no user-facing functions.</p>
-        </div>
-    </body>
+
+<tal:not-logged-in condition="not:view/account">
+  <tal:block replace="structure context/@@+standalone-login" />
+</tal:not-logged-in>
+
+<tal:logged-in condition="view/account">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master">
+  <body>
+    <div metal:fill-slot="main">
+      <form action="+logout" method="post">
+        <span style="float: left">
+          Logged in as <strong tal:content="view/account/displayname" />
+          (<a href="+edit">edit</a>)
+        </span>
+
+        <span style="float: right">
+          <input type="hidden" name="loggingout" value="1" />
+          <input type="submit" name="logout" value="Log Out" />
+        </span>
+      </form>
+      <br />
+
+      <div id="visited-sites"
+          tal:define="rps view/account/recently_authenticated_rps"
+          tal:condition="rps/count">
+        <h3>Sites you last authenticated to</h3>
+
+        <table class="listing">
+          <thead>
+            <tr>
+              <th>Site</th>
+              <th>First authenticated</th>
+              <th>Last authenticated</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="authenticated_rp rps">
+              <td tal:content="authenticated_rp/trust_root" />
+              <td tal:content="authenticated_rp/date_created/fmt:date" />
+              <td tal:content="authenticated_rp/date_last_used/fmt:date" />
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
 </html>
+</tal:logged-in>
+
+</tal:root>

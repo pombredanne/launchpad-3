@@ -13,9 +13,6 @@
               tal:content="context/queue_status/title">
                     >
         Work in progress</span>
-        <tal:queued condition="nothing">
-          (<a tal:attributes="href view/queue_location">view queue</a>)
-        </tal:queued>
 
         <a tal:define="link context_menu/edit_status"
            tal:condition="link/enabled"
@@ -110,8 +107,20 @@
       </tr>
     </tal:merged>
     <tr>
-      <th>Target branch:</th>
+      <th>Proposed branch:</th>
+      <td tal:content="structure context/source_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
+    </tr>
+    <tr>
+      <th>Merge into:</th>
       <td tal:content="structure context/target_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
+    </tr>
+    <tr tal:condition="context/preview_diff">
+      <th>Diff against target:</th>
+      <td>
+        <tal:diff replace="structure context/preview_diff/fmt:link"/>
+        <pre tal:condition="context/preview_diff/conflicts"
+             tal:content="context/preview_diff/conflicts"/>
+      </td>
     </tr>
   </tbody>
 </table>

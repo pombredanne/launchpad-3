@@ -245,6 +245,53 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             u'bar_1.0-2.dsc: Version older than that in the archive. '
             u'1.0-2 <= 1.0-10')
 
+    def testNamedPPAUpload(self):
+        """Test PPA uploads to a named PPA location.
+
+        PPA uploads can be to a named PPA, but right now only to one
+        called "ppa".  When we switch off the old-style paths, uploading
+        to any named ppa will be possible.
+        """
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        queue_root = self.uploadprocessor.last_processed_upload.queue_root
+        self.assertEqual(queue_root.archive, self.name16.archive)
+        self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
+        self.assertEqual(queue_root.distroseries.name, "breezy")
+
+    def testNamedPPAUploadWithSeries(self):
+        """Test PPA uploads to a named PPA location and with a distroseries.
+
+        As per testNamedPPAUpload above, but we override the distroseries.
+        """
+        # The 'bar' package already targets 'breezy' as can be seen from
+        # the test above, so we'll set up a new distroseries called
+        # farty and override to use that.
+        self.setupBreezy(name="farty")
+        # Allow PPA builds.
+        self.breezy['i386'].supports_virtualized = True
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu/farty")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        queue_root = self.uploadprocessor.last_processed_upload.queue_root
+        self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
+        self.assertEqual(queue_root.distroseries.name, "farty")
+
+    def testNamedPPAUploadWithNonexistentName(self):
+        """Test PPA uploads to a named PPA location that doesn't exist."""
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/BADNAME/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # There's no way of knowing that the BADNAME part is a ppa_name
+        # during the parallel run period, so it can only assume it's a
+        # bad distribution name.
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "Could not find PPA named 'BADNAME' for 'name16'\n"
+            "Further error processing not possible because of a "
+            "critical previous error.")
+
     def testPPAPublisherOverrides(self):
         """Check that PPA components override to main at publishing time,
 
@@ -341,6 +388,17 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         [queue_item] = queue_items
         self.checkFilesRestrictedInLibrarian(queue_item, False)
 
+    def testNamedPPABinaryUploads(self):
+        """Check the usual binary upload life-cycle for named PPAs."""
+        # Source upload.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        queue_root = self.uploadprocessor.last_processed_upload.queue_root
+        self.assertEqual(queue_root.archive, self.name16.archive)
+        self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
+        self.assertEqual(queue_root.distroseries.name, "breezy")
+
     def testPPACopiedSources(self):
         """Check PPA binary uploads for copied sources."""
         # Source upload to name16 PPA.
@@ -408,7 +466,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find PPA for 'spiv'\n"
+            "Could not find PPA named 'ppa' for 'spiv'\n"
             "Further error processing not "
             "possible because of a critical previous error.")
 
@@ -596,7 +654,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA for Celso Providelo only supports uploads to 'ubuntu'\n"
+            "Could not find PPA named 'ubuntutest' for 'cprov'\n"
             "Further error processing not possible because of a "
             "critical previous error.")
 
@@ -618,7 +676,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA upload path must start with '~'.\n"
+            "Could not find distribution 'biscuit'\n"
             "Further error "
             "processing not possible because of a critical previous error.")
 
@@ -642,8 +700,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
             "Path mismatch 'ubuntu/one/two/three/four'. Use "
-            "~<person>/<distro>/[distroseries]/[files] for PPAs and "
-            "<distro>/[files] for normal uploads.\n"
+            "~<person>/<ppa_name>/<distro>[/distroseries]/[files] for PPAs "
+            "and <distro>/[files] for normal uploads.\n"
             "Further error processing "
             "not possible because of a critical previous error.")
 
@@ -1145,15 +1203,17 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         # default quota limit, 1024 MiB.
         self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
 
-        # XXX cprov 20071204: see uploadpolicy.py line 255.
-        # When we change the code to actually reject the upload this
-        # test should also be modified to cope with the rejection
-        # notification.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        upload_results = self.processUpload(self.uploadprocessor, upload_dir)
+
+        # Upload got rejected.
+        self.assertEqual(upload_results, ['rejected'])
+
+        # An email communicating the rejection and the reason why it was
+        # rejected is sent to the uploaders.
         contents = [
-            "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)",
-            "Upload Warnings:",
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Rejected:",
             "PPA exceeded its size limit (1024.00 of 1024.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
@@ -1179,6 +1239,12 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
         self.assertEmail(contents)
+
+        # User was warned about quota limits but the source was accepted
+        # as informed in the upload notification.
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
 
     def testPPADoNotCheckSizeQuotaForBinary(self):
         """Verify the size quota check for internal binary PPA uploads.

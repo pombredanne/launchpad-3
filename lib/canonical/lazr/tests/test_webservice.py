@@ -11,12 +11,12 @@ import unittest
 from zope.component import getGlobalSiteManager
 from zope.configuration import xmlconfig
 from zope.interface import implements, Interface
-from zope.schema import TextLine
+from zope.schema import Date, Datetime, TextLine
 from zope.testing.cleanup import CleanUp
 
 from canonical.lazr.fields import Reference
 from canonical.lazr.interfaces.rest import (
-    ICollection, IEntry, IResourceGETOperation, WebServiceLayer)
+    ICollection, IEntry, IResourceGETOperation, IWebServiceClientRequest)
 from canonical.lazr.rest import ServiceRootResource
 from canonical.lazr.rest.declarations import (
     collection_default_content, exported, export_as_webservice_collection,
@@ -48,8 +48,8 @@ def get_operation_factory(model_interface, name):
         on the webservice.
     """
     return getGlobalSiteManager().adapters.lookup(
-            (model_interface, WebServiceLayer), IResourceGETOperation,
-            name=name)
+            (model_interface, IWebServiceClientRequest),
+            IResourceGETOperation, name=name)
 
 
 class IGenericEntry(Interface):
@@ -160,6 +160,15 @@ class WadlAPITestCase(WebServiceTestCase):
 
     testmodule_objects = [
         IGenericEntry, IGenericCollection, IUndocumentedEntry]
+
+    def test_wadl_field_type(self):
+        """Test the generated XSD field types for various fields."""
+        self.assertEquals(test_tales("field/wadl:type", field=TextLine()),
+                          None)
+        self.assertEquals(test_tales("field/wadl:type", field=Date()),
+                          "xsd:date")
+        self.assertEquals(test_tales("field/wadl:type", field=Datetime()),
+                          "xsd:dateTime")
 
     def test_wadl_entry_doc(self):
         """Test the wadl:doc generated for an entry adapter."""

@@ -15,10 +15,10 @@ __all__ = [
 
 from zope.interface import Attribute
 from zope.schema import Object
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.component import IComponent
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class ISourcePackage(IBugTarget):
@@ -33,6 +33,8 @@ class ISourcePackage(IBugTarget):
                      "SourcePackageName.")
 
     displayname = Attribute("A displayname, constructed, for this package")
+
+    path = Attribute("A path to this package, <distro>/<series>/<package>")
 
     title = Attribute("Title")
 
@@ -116,11 +118,6 @@ class ISourcePackage(IBugTarget):
         record, that links the source package to the given productseries,
         and record that it was done by the owner.
         """
-
-    shouldimport = Attribute("""Whether we should import this or not.
-        By 'import' we mean sourcerer analysis resulting in a manifest and a
-        set of Bazaar branches which describe the source package release.
-        The attribute is True or False.""")
 
     latest_published_component = Object(
         title=u'The component in which the package was last published.',
