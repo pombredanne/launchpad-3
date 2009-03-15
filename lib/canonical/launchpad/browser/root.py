@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 """Browser code for the Launchpad root page."""
 
 __metaclass__ = type
@@ -19,13 +19,17 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
+from canonical.launchpad.interfaces import ILaunchpadStatisticSet
+from canonical.launchpad.interfaces.branch import IBranchSet
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.searchservice import (
     GoogleResponseError, ISearchService)
+from canonical.launchpad.interfaces.specification import ISpecificationSet
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
@@ -33,7 +37,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.launchpad.webapp.z3batching.batch import _Batch
+from lazr.batchnavigator.z3batching import batch
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -66,8 +70,38 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     @property
     def featured_projects_col_b(self):
-        """Return a list of featured projects."""
+        """The list of featured projects."""
         return self.featured_projects[self.FEATURED_PROJECT_ROWS:]
+
+    @property
+    def branch_count(self):
+        """The total branch count in all of Launchpad."""
+        return getUtility(IBranchSet).count()
+
+    @property
+    def bug_count(self):
+        """The total bug count in all of Launchpad."""
+        return getUtility(ILaunchpadStatisticSet).value('bug_count')
+
+    @property
+    def project_count(self):
+        """The total project count in all of Launchpad."""
+        return getUtility(IProductSet).count_all()
+
+    @property
+    def translation_count(self):
+        """The total count of translatable strings in all of Launchpad """
+        return getUtility(ILaunchpadStatisticSet).value('pomsgid_count')
+
+    @property
+    def blueprint_count(self):
+        """The total blueprint count in all of Launchpad."""
+        return getUtility(ISpecificationSet).specification_count
+
+    @property
+    def answer_count(self):
+        """The total blueprint count in all of Launchpad."""
+        return getUtility(ILaunchpadStatisticSet).value('question_count')
 
 
 class LaunchpadSearchFormView(LaunchpadView):
@@ -437,7 +471,7 @@ class WindowedList:
             yield self[index]
 
 
-class WindowedListBatch(_Batch):
+class WindowedListBatch(batch._Batch):
     """A batch class that does not include None objects when iterating."""
 
     def __iter__(self):

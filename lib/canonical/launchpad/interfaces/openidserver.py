@@ -33,8 +33,8 @@ from canonical.lazr.fields import Reference
 class IOpenIDAuthorization(Interface):
     id = Int(title=u'ID', required=True)
 
-    personID = Int(title=u'Person', required=True, readonly=True)
-    person = Attribute('The IPerson this is for')
+    accountID = Int(title=u'Account', required=True, readonly=True)
+    account = Attribute('The IAccount this is for')
 
     client_id = TextLine(title=u'Client ID', required=False)
 
@@ -47,14 +47,14 @@ class IOpenIDAuthorization(Interface):
 
 
 class IOpenIDAuthorizationSet(Interface):
-    def isAuthorized(person, trust_root, client_id):
+    def isAuthorized(account, trust_root, client_id):
         """Check to see if the trust_root is authorized.
 
         Returns True or False.
         """
 
-    def authorize(person, trust_root, expires, client_id=None):
-        """Authorize the trust_root for the given person.
+    def authorize(account, trust_root, expires, client_id=None):
+        """Authorize the trust_root for the given account.
 
         If expires is None, the authorization never expires.
 
@@ -63,7 +63,14 @@ class IOpenIDAuthorizationSet(Interface):
         with the specified client_id (ie. the session cookie token).
 
         This method overrides any existing authorization for the given
-        (person, trust_root, client_id).
+        (account, trust_root, client_id).
+        """
+
+    def getByAccount(account):
+        """Get the `IOpenIDAuthorization` objects for the given account.
+
+        The authorization objects will be sorted in reverse of the
+        order they were created.
         """
 
 

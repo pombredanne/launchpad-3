@@ -54,6 +54,10 @@
       value="-message_count"
       tal:attributes="selected python:orderby == '-message_count'"
     >by number of comments</option>
+    <option
+      value="-users_affected_count"
+      tal:attributes="selected python:orderby == '-users_affected_count'"
+    >by number of users affected</option>
   </select>
 
 </metal:block>

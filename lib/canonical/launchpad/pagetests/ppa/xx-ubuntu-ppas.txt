@@ -257,8 +257,8 @@ Let's see his sources.list entries:
     >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
-    deb http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/cprov/ppa/ubuntu breezy-autotest main
 
 and the select control that lets you update them:
 
@@ -270,16 +270,6 @@ and the select control that lets you update them:
             <option value="warty">The Warty Warthog Release</option>
         </select>
     ...
-
-The page also shows some stats about Celso's PPA (number of sources. binaries
-and estimated size).
-
-XXX cprov 20081126: The 'package counters' page section is disabled
-due to bad performance on large PPAs.
-
-    >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> print extract_text(results)
-    Package counters and estimated archive size temporarily unavailable.
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
@@ -327,17 +317,18 @@ Each data row is expandable to contain some sections containing:
  * Any built packages and their description
  * The list of files for this package
 
-    >>> iceweasel_data = find_tag_by_id(anon_browser.contents, 'pub28')
-    >>> print extract_text(iceweasel_data)
+    >>> expander_url = anon_browser.getLink(id='pub28-expander').url
+    >>> anon_browser.open(expander_url)
+    >>> print extract_text(anon_browser.contents)
     Publishing details
       Published on 2007-07-09
       Copied from ubuntu warty in PPA for Mark Shuttleworth
     Changelog
     Builds
       i386
-    Built Packages
+    Built packages
       mozilla-firefox ff from iceweasel
-    Download files from Librarian
+    Package files
       firefox-0.9.2.orig.tar.gz (9.5 MiB)
       iceweasel-1.0.dsc (123 bytes)
       mozilla-firefox_0.9_i386.deb (3 bytes)
@@ -345,31 +336,42 @@ Each data row is expandable to contain some sections containing:
 The package was copied from a PPA. The archive title will hence link
 back to the source PPA.
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> admin_browser.getLink("PPA for Mark Shuttleworth").url
-    'http://launchpad.dev/~sabdfl/+archive'
+    >>> anon_browser.getLink("PPA for Mark Shuttleworth").url
+    'http://launchpad.dev/~sabdfl/+archive/ppa'
 
 This link is not present if the user does not have permission to view
 the PPA.  If we make sabdfl's PPA private and then browse back as
 an anonymous user, the link will be gone.
 
-    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa/+admin")
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> anon_browser.getLink("PPA for Mark Shuttleworth")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
+While we are there, we can also see that Mark's PPA 'repository-size'
+pagelet isn't publicly available once the PPA was marked private.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/~sabdfl/+archive/ppa/+repository-size")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'launchpad.View')
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+
 Set sabdfl's archive back to public before continuing.
 
-    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/+admin")
+    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa/+admin")
     >>> admin_browser.getControl(name="field.private").value = False
     >>> admin_browser.getControl(name="field.buildd_secret").value = ""
     >>> admin_browser.getControl("Save").click()
+
 
 == Searching an archive ==
 
@@ -460,7 +462,7 @@ any package ever published in the context PPA.
     pmount - 0.1-1     2007-07-09   Deleted    Warty       Editors
 
 The default series filter is 'any' which means that by default the
-results will include packages from any distro series. A user can 
+results will include packages from any distro series. A user can
 explicitly set the 'Any Series' filter and get the same result:
 
     >>> anon_browser.getControl(name='field.series_filter').value = (
@@ -494,13 +496,14 @@ An empty PPA doesn't list any packages and it also doesn't present the
 'apt sources lines ' widget and the repository 'URL' since they would
 link to a repository that doesn't exist yet.
 
-    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive")
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
     >>> print extract_text(anon_browser.contents)
     PPA for No Privileges Person
     ...
     This archive is public
     PPA for No Privileges Person
-    URL: http://ppa.launchpad.dev/no-priv/ubuntu
+    URL: http://ppa.launchpad.dev/no-priv/ppa/ubuntu
+    Description
     I am not allowed to say, I have no privs.
     This PPA does not contain any packages yet.
     ...
@@ -532,14 +535,14 @@ published source.
     >>> sources_list = find_tag_by_id(
     ...     anon_browser.contents, 'sources-list-entries')
     >>> print extract_text(sources_list)
-    deb http://ppa.launchpad.dev/no-priv/ubuntu warty main
-    deb-src http://ppa.launchpad.dev/no-priv/ubuntu warty main
+    deb http://ppa.launchpad.dev/no-priv/ppa/ubuntu warty main
+    deb-src http://ppa.launchpad.dev/no-priv/ppa/ubuntu warty main
 
 Also the repository URL is an actual link.
 
     >>> print anon_browser.getLink(
-    ...     "http://ppa.launchpad.dev/no-priv/ubuntu").url
-    http://ppa.launchpad.dev/no-priv/ubuntu
+    ...     "http://ppa.launchpad.dev/no-priv/ppa/ubuntu").url
+    http://ppa.launchpad.dev/no-priv/ppa/ubuntu
 
 
 == PPA signing key ==
@@ -575,15 +578,14 @@ help wiki are presented in the PPA index page.
     ...     anon_browser.contents, 'signing-key')
 
     >>> print extract_text(signing_key_section)
-    This repository is signed with
-    ABCDEF0123456789ABCDDCBA0000111112345678 OpenPGP key.
+    This repository is signed with 1024D/12345678 OpenPGP key.
     Follow these instructions for installing packages from this PPA.
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
 
     >>> print anon_browser.getLink(
-    ...     'ABCDEF0123456789ABCDDCBA0000111112345678').url
+    ...     '1024D/12345678').url
     http://keyserver.ubuntu.com:11371/pks/lookup?search=0xABCDEF0123456789ABCDDCBA0000111112345678&op=index
 
 Another link in this section point users to the expanded instructions
@@ -599,7 +601,7 @@ Each PPA provides a public page where the users can browse build
 records by name and/or state. See pagetests/soyuz/23-builds-pages.txt
 for more information.
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> anon_browser.getLink("View build records").click()
 
 The only difference introduced in the PPA builds page is the fact that
@@ -619,16 +621,9 @@ status in the PPA workflow.
 Just quickly check if the singular form of this section is handled
 properly.
 
-    >>> anon_browser.open("http://launchpad.dev/~sabdfl/+archive")
+    >>> anon_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa")
     >>> anon_browser.title
     'PPA for Mark Shuttleworth'
-
-XXX cprov 20081126: The 'package counters' page section is disabled
-due to bad performance on large PPAs.
-
-    >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> print extract_text(results)
-    Package counters and estimated archive size temporarily unavailable.
 
 Mark has sources only published in one archive, so he has no
 series-widget-div control to update them:
@@ -641,8 +636,24 @@ And the sources.list entries point to the right distribution release:
     >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
-    deb http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
+    deb http://ppa.launchpad.dev/sabdfl/ppa/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/sabdfl/ppa/ubuntu breezy-autotest main
+
+The repository size information is available in a separate page,
+'+repository-size', which is going be to added to the index page using
+javascript.
+
+    >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
+    >>> print extract_text(results)
+    Repository disk usage
+    Package counters and estimated archive size temporarily unavailable.
+
+    >>> anon_browser.open(
+    ...    "http://launchpad.dev/~sabdfl/+archive/ppa/+repository-size")
+    >>> print extract_text(anon_browser.contents)
+    1 source package (9.5 MiB)
+    1 binary package (0 bytes)
+    Estimated archive size: 9.5 MiB
 
 
 == Other Distribution PPAs ==
@@ -711,8 +722,12 @@ The package row data shows the uploader:
 
 Links from files go to their on-archive locations:
 
-    >>> foo_browser.getLink("orig").url
-    'http://.../firefox-0.9.2.orig.tar.gz'
+    >>> expander_id = find_tags_by_class(
+    ...     foo_browser.contents, 'expander')[0]['id']
+    >>> expander_url = foo_browser.getLink(id=expander_id).url
+    >>> anon_browser.open(expander_url)
+    >>> print anon_browser.getLink("orig").url
+    http://.../firefox-0.9.2.orig.tar.gz
 
 The uploader name is linkified to that user's home page:
 
@@ -738,7 +753,7 @@ for each published source:
 
 Anyone can see the build status for package in Celso's PPA.
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
 
     >>> def print_build_status(contents):
     ...     rows = find_tags_by_class(contents, 'archive_package_row')
@@ -775,7 +790,7 @@ quickly 'retry' the failure.
 
     >>> cprov_browser = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:cprov')
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
 
     >>> cprov_browser.getLink('i386').click()
     >>> cprov_browser.getLink("Retry build").click()
@@ -838,3 +853,28 @@ PPA itself.
     >>> anon_browser.getLink('Celso Providelo').click()
     >>> print anon_browser.title
     PPA for Celso Providelo
+
+
+== Compatibility URL Redirection ==
+
+PPAs are being enhanced to allow multiple named PPAs per owner.  For a
+limited transitional period, specifying a URL without the name in it
+will redirect to the correct URL with the default PPA name, "ppa".
+
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> admin_browser.url
+    'http://launchpad.dev/~cprov/+archive/ppa'
+
+If the user in question doesn't have a PPA, any attempt to access it,
+either via the new-style URL or the compatibility redirection, will
+result in a NotFound error.
+
+    >>> admin_browser.open("http://launchpad.dev/~name16/+archive/ppa")
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <Person at ... name16 (Foo Bar)>, name: u'+archive'
+
+    >>> admin_browser.open("http://launchpad.dev/~name16/+archive")
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <Person at ... name16 (Foo Bar)>, name: u'+archive'

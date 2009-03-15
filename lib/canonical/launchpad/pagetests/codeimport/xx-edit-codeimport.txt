@@ -6,7 +6,7 @@ imported branches.  If the logged in user is an import operator
 to edit the details.
 
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> login(ANONYMOUS)
+    >>> login('test@canonical.com')
     >>> svn_import = factory.makeCodeImport(
     ...     svn_branch_url='svn://svn.example.com/fooix/trunk')
     >>> from canonical.launchpad.webapp import canonical_url
@@ -17,7 +17,7 @@ to edit the details.
     ...     cvs_module="fooix")
     >>> cvs_import_location = str(canonical_url(cvs_import.branch))
     >>> cvs_import_branch_unique_name = cvs_import.branch.unique_name
-    >>> hosted_branch = factory.makeBranch()
+    >>> hosted_branch = factory.makeAnyBranch()
     >>> hosted_branch_location = str(canonical_url(hosted_branch))
     >>> logout()
 

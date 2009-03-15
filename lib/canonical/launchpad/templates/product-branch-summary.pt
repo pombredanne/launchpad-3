@@ -77,12 +77,11 @@
     <div tal:condition="view/has_development_focus_branch"
          style="margin: 1em 0"
          tal:define="config modules/canonical.config/config;
-                     codebrowse_root config/codehosting/codebrowse_root;
-                     dev_focus context/development_focus/series_branch">
+                     dev_focus context/development_focus/branch">
       You can
       <tal:browseable condition="dev_focus/code_is_browseable">
-        <a tal:attributes="href string:${codebrowse_root}${dev_focus/unique_name}"
-           >browse the source code</a> for the development focus branch or get a 
+        <a tal:attributes="href dev_focus/codebrowse_url"
+           >browse the source code</a> for the development focus branch or get a
            copy of the branch</tal:browseable>
       <tal:not-browseable condition="not: dev_focus/code_is_browseable">
         get a copy of the development focus branch

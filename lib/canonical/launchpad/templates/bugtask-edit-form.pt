@@ -30,11 +30,21 @@
     <tal:context replace="context/bugtargetdisplayname">project</tal:context>,
     and therefore cannot edit this bug's status.
   </p>
-  <tal:has_watch condition="context/bugwatch">
-    <p tal:condition="context/bugwatch/last_error_type"
-        class="error message"
-        tal:content="context/bugwatch/getLastErrorMessage"
-    />
+  <tal:has_watch
+      condition="context/bugwatch"
+      define="watch context/bugwatch">
+    <tal:bugtracker-active
+        condition="watch/bugtracker/active">
+      <p tal:condition="watch/last_error_type"
+          class="error message"
+          tal:content="watch/getLastErrorMessage"
+      />
+    </tal:bugtracker-active>
+    <p class="warning message"
+        tal:condition="not:watch/bugtracker/active">
+      Bug watch updates for
+      <tal:bugtracker content="watch/bugtracker/title" /> are disabled.
+    </p>
   </tal:has_watch>
   <table class="summary" style="float: right; margin-left: 1em;">
     <tr>

@@ -70,7 +70,7 @@ class BuilderGroup:
         :param builder: A builder object.
         :param arch: The expected architecture family of the builder.
         """
-        self.logger.info('Checking %s' % builder.name)
+        self.logger.debug('Checking %s' % builder.name)
         try:
             builder.checkSlaveAlive()
             builder.checkCanBuildForDistroArchSeries(arch)
@@ -310,7 +310,8 @@ class BuilderGroup:
             target_path = "%s" % distribution_name
         else:
             archive = queueItem.build.archive
-            target_path = "~%s/%s" % (archive.owner.name, distribution_name)
+            target_path = "~%s/%s/%s" % (
+                archive.owner.name, archive.name, distribution_name)
         upload_path = os.path.join(upload_dir, target_path)
         os.makedirs(upload_path)
 

@@ -41,7 +41,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makeBranch(product=None)
+        branch = self.factory.makePersonalBranch()
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
@@ -60,8 +60,9 @@ class TestRevisionKarma(TestCaseWithFactory):
         # give the karma to the user.
         email = self.factory.getUniqueEmailAddress()
         rev = self.factory.makeRevision(author=email)
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         branch.createBranchRevision(1, rev)
+        transaction.commit()
         self.failIf(rev.karma_allocated)
         # Since the revision author is not known, the revisions do not at this
         # stage need karma allocated.
@@ -84,7 +85,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         email = self.factory.getUniqueEmailAddress()
         rev = self.factory.makeRevision(author=email)
-        branch = self.factory.makeBranch(product=None, owner=author)
+        branch = self.factory.makePersonalBranch(owner=author)
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
         # Now we have a junk branch which has a revision with an email address
@@ -92,13 +93,14 @@ class TestRevisionKarma(TestCaseWithFactory):
 
         # Now create a non junk branch owned by someone else that has the
         # revision.
-        b2 = self.factory.makeBranch()
+        b2 = self.factory.makeProductBranch()
         # Put the author's revision in the ancestry.
         b2.createBranchRevision(None, rev)
 
         # Now link the revision author to the author.
         author.validateAndEnsurePreferredEmail(
             EmailAddressSet().new(email, author))
+        transaction.commit()
         # Now that the revision author is linked to the person, the revision
         # needs karma allocated.
         self.assertEqual(

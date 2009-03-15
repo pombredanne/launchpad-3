@@ -129,8 +129,9 @@ class IGPGHandler(Interface):
         Currently only passwordless, signo-only 1024-bit RSA keys are
         generated.
 
-        :param name: string to be included in the key paramenters, 'comment'
-            and 'email' will be empty.
+        :param name: unicode to be included in the key paramenters, 'comment'
+            and 'email' will be empty. It's content will be encoded to
+            'utf-8' internally.
         :raise AssertionError: if the key generation is not exaclty what
             we expect.
 

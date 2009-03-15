@@ -36,26 +36,31 @@ __all__ = [
     'IHWVendorIDSet',
     'IHWVendorName',
     'IHWVendorNameSet',
+    'IllegalQuery',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    ASCIILine, Bool, Bytes, Choice, Datetime, Int, Object, TextLine)
+    ASCIILine, Bool, Bytes, Choice, Datetime, Int, List, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
-from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of)
+    operation_parameters, operation_returns_collection_of, webservice_error)
 
 
 def validate_new_submission_key(submission_key):
@@ -116,36 +121,48 @@ class IHWSubmission(Interface):
 
     See doc/hwdb.txt for details about the attributes.
     """
+    export_as_webservice_entry()
 
-    date_created = Datetime(
-        title=_(u'Date Created'), required=True)
-    date_submitted = Datetime(
-        title=_(u'Date Submitted'), required=True)
-    format = Choice(
-        title=_(u'Format Version'), required=True,
-        vocabulary=HWSubmissionFormat)
-    status = Choice(
-        title=_(u'Submission Status'), required=True,
-        vocabulary=HWSubmissionProcessingStatus)
-    private = Bool(
-        title=_(u'Private Submission'), required=True)
-    contactable = Bool(
-        title=_(u'Contactable'), required=True)
-    submission_key = ASCIILine(
-        title=_(u'Unique Submission ID'), required=True)
-    owner = Attribute(
-        _(u"The owner's IPerson"))
+    date_created = exported(
+        Datetime(
+            title=_(u'Date Created'), required=True, readonly=True))
+    date_submitted = exported(
+        Datetime(
+            title=_(u'Date Submitted'), required=True, readonly=True))
+    format = exported(
+        Choice(
+            title=_(u'Format Version'), required=True,
+            vocabulary=HWSubmissionFormat, readonly=True))
+    status = exported(
+        Choice(
+            title=_(u'Submission Status'), required=True,
+            vocabulary=HWSubmissionProcessingStatus, readonly=True))
+    private = exported(
+        Bool(
+            title=_(u'Private Submission'), required=True))
+    contactable = exported(
+        Bool(
+            title=_(u'Contactable'), required=True, readonly=True))
+    submission_key = exported(
+        TextLine(
+            title=_(u'Unique Submission ID'), required=True, readonly=True))
+    owner = exported(
+        Reference(
+            IPerson, title=_(u"The owner of this submission"), readonly=True))
     distroarchseries = Attribute(
         _(u'The DistroArchSeries'))
-    raw_submission = Object(
-        schema=ILibraryFileAlias,
-        title=_(u'The raw submission data'),
-        required=True)
+    raw_submission = exported(
+        Bytes(title=_(u'The raw submission data'), required=True,
+              readonly=True))
     system_fingerprint = Attribute(
         _(u'The system this submmission was made on'))
     raw_emailaddress = TextLine(
         title=_('Email address'), required=True)
 
+    devices = exported(
+        CollectionField(
+            title=_(u"The HWSubmissionDevice records for this submission."),
+            value_type=Reference(schema=Interface)))
 
 
 class IHWSubmissionForm(Interface):
@@ -238,7 +255,7 @@ class IHWSubmissionSet(Interface):
         """
 
     def search(user=None, device=None, driver=None, distribution=None,
-               architecture=None):
+               distroseries=None, architecture=None, owner=None):
         """Return the submissions matiching the given parmeters.
 
         :param user: The `IPerson` running the query. Private submissions
@@ -250,8 +267,13 @@ class IHWSubmissionSet(Interface):
             that use this `IHWDriver`.
         :param distribution: Limit results to submissions made for
             this `IDistribution`.
+        :param distroseries: Limit results to submissions made for
+            this `IDistroSeries`.
         :param architecture: Limit results to submissions made for
             a specific architecture.
+        :param owner: Limit results to submissions from this person.
+
+        Only one of :distribution: or :distroseries: may be supplied.
         """
 
 
@@ -273,6 +295,133 @@ class IHWSystemFingerprintSet(Interface):
         """Create an entry in the fingerprint list.
 
         Return the new entry."""
+
+class IHWDriver(Interface):
+    """Information about a device driver."""
+    export_as_webservice_entry()
+
+    id = exported(
+        Int(title=u'Driver ID', required=True, readonly=True))
+
+    package_name = exported(
+        TextLine(
+            title=u'Package Name', required=False,
+            description=_("The name of the package written without spaces in "
+                          "lowercase letters and numbers."),
+            default=u''))
+
+    name = exported(
+        TextLine(
+            title=u'Driver Name', required=True,
+            description=_("The name of the driver written without spaces in "
+                          "lowercase letters and numbers.")))
+
+    license = exported(
+        Choice(
+            title=u'License of the Driver', required=False,
+            vocabulary=License))
+    @operation_parameters(
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution.',
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution series.',
+            required=False),
+        architecture = TextLine(
+            title=u'A processor architecture',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given architecture.',
+            required=False),
+        owner = copy_field(IHWSubmission['owner']))
+    @operation_returns_collection_of(IHWSubmission)
+    @export_read_operation()
+    def getSubmissions(distribution=None, distroseries=None,
+                       architecture=None, owner=None):
+        """List all submissions which mention this driver.
+
+        :param distribution: Limit results to submissions for this
+            `IDistribution`.
+        :param distroseries: Limit results to submissions for this
+            `IDistroSeries`.
+        :param architecture: Limit results to submissions for this
+            architecture.
+        :param owner: Limit results to submissions from this person.
+
+        Only submissions matching all given criteria are returned.
+        Only one of :distribution: or :distroseries: may be supplied.
+        """
+
+
+class IHWDriverSet(Interface):
+    """The set of device drivers."""
+
+    def create(package_name, name, license):
+        """Create a new IHWDriver instance.
+
+        :param package_name: The name of the packages containing the driver.
+        :param name: The name of the driver.
+        :param license: The license of the driver.
+        :return: The new IHWDriver instance.
+        """
+
+    def getByPackageAndName(package_name, name):
+        """Return an IHWDriver instance for the given parameters.
+
+        :param package_name: The name of the packages containing the driver.
+        :param name: The name of the driver.
+        :return: An IHWDriver instance or None, if no record exists for
+            the given parameters.
+        """
+
+    def getOrCreate(package_name, name, license=None):
+        """Return an IHWDriver instance or create one.
+
+        :param package_name: The name of the packages containing the driver.
+        :param name: The name of the driver.
+        :param license: The license of the driver.
+        :return: An IHWDriver instance or None, if no record exists for
+            the given parameters.
+        """
+
+    def search(package_name=None, name=None):
+        """Return the drivers matching the given parameters.
+
+        :param package_name: The name of the packages containing the driver.
+            If package_name is not given or None, the result set is
+            not limited to a specific package name.
+            If package_name == '', those records are returned where
+            record.package_name == '' or record.package_name is None.
+            Otherwise only records matching the given name are returned.
+        :param name: The name of the driver.
+            If name is not given or None, the result set is not limited to
+            a specific driver name.
+            Otherwise only records matching the given name are returned.
+        :return: A sequence of IHWDriver instances.
+        """
+
+    def getByID(id):
+        """Return an IHWDriver record with the given database ID.
+
+        :param id: The database ID.
+        :return: An IHWDriver instance.
+        """
+
+    package_names = List(
+        title=u'Package Names',
+        description=
+            u'All known distinct package names appearing in HWDriver.',
+        value_type=TextLine(),
+        readonly=True)
+
 
 # Identification of a hardware device.
 #
@@ -412,11 +561,18 @@ class IHWVendorNameSet(Interface):
 class IHWVendorID(Interface):
     """A list of vendor IDs for different busses associated with vendor names.
     """
-    bus = Choice(
-        title=u'The bus that connects a device to a computer',
-        required=True, vocabulary=HWBus)
+    export_as_webservice_entry()
+    id = exported(
+        Int(title=u'The Database ID', required=True, readonly=True))
 
-    vendor_id_for_bus = TextLine(title=u'Vendor ID', required=True)
+    bus = exported(
+        Choice(
+            title=u'The bus that connects a device to a computer',
+            required=True, vocabulary=HWBus))
+
+    vendor_id_for_bus = exported(
+        TextLine(title=u'Vendor ID', required=True),
+        exported_as='vendor_id')
 
     vendor_name = Attribute('Vendor Name')
 
@@ -441,6 +597,20 @@ class IHWVendorIDSet(Interface):
             must be represented as a hexadecimal string, prepended by '0x'.
         :return: The found IHWVendorID instance or None, if no instance
             for the given bus and vendor ID exists.
+        """
+
+    def get(id):
+        """Return an IHWVendorID record with the given database ID.
+
+        :param id: The database ID.
+        :return: An IHWVendorID instance.
+        """
+
+    def idsForBus(bus):
+        """Return all known IHWVendorID records with the given bus.
+
+        :param bus: A HWBus instance.
+        :return: A sequence of IHWVendorID instances.
         """
 
 
@@ -508,6 +678,61 @@ class IHWDevice(Interface):
 
     vendor_name = exported(
         TextLine(title=u'The vendor name.', readonly=True))
+
+    @operation_parameters(
+        driver=Reference(
+            IHWDriver,
+            title=u'A driver used for this device in a submission',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution, distroseries or '
+                'distroarchseries.',
+            required=False),
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution.',
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given distribution series.',
+            required=False),
+        architecture = TextLine(
+            title=u'A processor architecture',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for the given architecture.',
+            required=False),
+        owner = copy_field(IHWSubmission['owner']))
+    @operation_returns_collection_of(IHWSubmission)
+    @export_read_operation()
+    def getSubmissions(driver=None, distribution=None,
+                       distroseries=None, architecture=None, owner=None):
+        """List all submissions which mention this device.
+
+        :param driver: Limit results to devices that use the given
+            `IHWDriver`.
+        :param distribution: Limit results to submissions for this
+            `IDistribution`.
+        :param distroseries: Limit results to submissions for this
+            `IDistroSeries`.
+        :param architecture: Limit results to submissions for this
+            architecture.
+        :param owner: Limit results to submissions from this person.
+
+        Only submissions matching all given criteria are returned.
+        Only one of :distribution: or :distroseries: may be supplied.
+        """
+
+    drivers = exported(
+        CollectionField(
+            title=_(u"The IHWDriver records related to this device."),
+            value_type=Reference(schema=IHWDriver)))
 
 
 class IHWDeviceSet(Interface):
@@ -624,87 +849,6 @@ class IHWDeviceNameVariantSet(Interface):
         """
 
 
-class IHWDriver(Interface):
-    """Information about a device driver."""
-    export_as_webservice_entry()
-
-    id = exported(
-        Int(title=u'Driver ID', required=True, readonly=True))
-
-    package_name = exported(
-        TextLine(
-            title=u'Package Name', required=False,
-            description=_("The name of the package written without spaces in "
-                          "lowercase letters and numbers."),
-            default=u''))
-
-    name = exported(
-        TextLine(
-            title=u'Driver Name', required=True,
-            description=_("The name of the driver written without spaces in "
-                          "lowercase letters and numbers.")))
-
-    license = exported(
-        Choice(
-            title=u'License of the Driver', required=False,
-            vocabulary=License))
-
-
-class IHWDriverSet(Interface):
-    """The set of device drivers."""
-
-    def create(package_name, name, license):
-        """Create a new IHWDriver instance.
-
-        :param package_name: The name of the packages containing the driver.
-        :param name: The name of the driver.
-        :param license: The license of the driver.
-        :return: The new IHWDriver instance.
-        """
-
-    def getByPackageAndName(package_name, name):
-        """Return an IHWDriver instance for the given parameters.
-
-        :param package_name: The name of the packages containing the driver.
-        :param name: The name of the driver.
-        :return: An IHWDriver instance or None, if no record exists for
-            the given parameters.
-        """
-
-    def getOrCreate(package_name, name, license=None):
-        """Return an IHWDriver instance or create one.
-
-        :param package_name: The name of the packages containing the driver.
-        :param name: The name of the driver.
-        :param license: The license of the driver.
-        :return: An IHWDriver instance or None, if no record exists for
-            the given parameters.
-        """
-
-    def search(package_name=None, name=None):
-        """Return the drivers matching the given parameters.
-
-        :param package_name: The name of the packages containing the driver.
-            If package_name is not given or None, the result set is
-            not limited to a specific package name.
-            If package_name == '', those records are returned where
-            record.package_name == '' or record.package_name is None.
-            Otherwise only records matching the given name are returned.
-        :param name: The name of the driver.
-            If name is not given or None, the result set is not limited to
-            a specific driver name.
-            Otherwise only records matching the given name are returned.
-        :return: A sequence of IHWDriver instances.
-        """
-
-    def getByID(self, id):
-        """Return an IHWDriver record with the given database ID.
-
-        :param id: The database ID.
-        :return: An IHWDriver instance.
-        """
-
-
 class IHWDeviceDriverLink(Interface):
     """Link a device with a driver."""
 
@@ -744,8 +888,13 @@ class IHWDeviceDriverLinkSet(Interface):
         matches.
         """
 
+
 class IHWSubmissionDevice(Interface):
     """Link a submission to a IHWDeviceDriver row."""
+    export_as_webservice_entry()
+
+    id = exported(
+        Int(title=u'HWSubmissionDevice ID', required=True, readonly=True))
 
     device_driver_link = Attribute(u'A device and driver appearing in a '
                                     'submission.')
@@ -753,12 +902,31 @@ class IHWSubmissionDevice(Interface):
     submission = Attribute(u'The submission the device and driver are '
                             'mentioned in.')
 
-    parent = Attribute(u'The parent IHWSubmissionDevice entry of this '
-                        ' device.')
+    parent = exported(
+        # This is a reference to IHWSubmissionDevice itself, but we can
+        # access the class only when the class has been defined.
+        Reference(Interface, required=True))
 
-    hal_device_id = Int(
-        title=u'The ID of the HAL node of this device in the submitted data',
-        required=True)
+    hal_device_id = exported(
+        Int(
+            title=u'The ID of the HAL node of this device in the submitted '
+                'data',
+            required=True))
+
+    device = exported(
+        Reference(
+            IHWDevice,
+            title=u'The device'))
+
+    driver = exported(
+        Reference(
+            IHWDriver,
+            title=u'The driver used for this device in this submission'))
+
+
+# Fix cyclic references.
+IHWSubmissionDevice['parent'].schema = IHWSubmissionDevice
+IHWSubmission['devices'].value_type.schema = IHWSubmissionDevice
 
 
 class IHWSubmissionDeviceSet(Interface):
@@ -780,6 +948,13 @@ class IHWSubmissionDeviceSet(Interface):
 
         :return: A sequence of IHWSubmissionDevice records.
         :param submission: An IHWSubmission instance.
+        """
+
+    def get(id):
+        """Return an IHWSubmissionDevice record with the given database ID.
+
+        :param id: The database ID.
+        :return: An IHWSubmissionDevice instance.
         """
 
 
@@ -842,3 +1017,27 @@ class IHWDBApplication(ILaunchpadApplication, ITopLevelEntryLink):
     @export_read_operation()
     def drivers(package_name=None, name=None):
         """Return the set of drivers."""
+
+    @operation_parameters(
+        bus=Choice(
+            title=u'A Device Bus.', vocabulary=HWBus, required=True))
+    @operation_returns_collection_of(IHWVendorID)
+    @export_read_operation()
+    def vendorIDs(bus):
+        """Return the known vendor IDs for the given bus.
+
+        :param bus: A `HWBus` value.
+        :return: A list of strings with vendor IDs fr this bus,
+        """
+
+    package_names = exported(
+        List(title=u'Package Names',
+             description=
+                 u'All known distinct package names appearing in HWDriver.',
+             value_type=TextLine(),
+             readonly=True))
+
+
+class IllegalQuery(Exception):
+    """Exception raised when trying to run an illegal submissions query."""
+    webservice_error(400) #Bad request.

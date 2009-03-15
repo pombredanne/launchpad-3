@@ -28,16 +28,17 @@ __all__ = [
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.person import IPerson
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_read_operation,
+    exported, operation_returns_collection_of)
 
 
 #
@@ -320,14 +321,6 @@ class IPublishing(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket, archive):
-        """Copy this publication to another location.
-
-        :return: The publishing in the targeted location, either:
-            `ISourcePackagePublishingHistory` or
-            `IBinaryPackagePublishingHistory`.
-        """
-
 
 class IFilePublishing(Interface):
     """Base interface for *FilePublishing classes"""
@@ -541,13 +534,18 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         """Return all unique binary publications built by this source.
 
         Follow the build record and return every unique binary publishing
-        record for any `DistroArchSeries` in this `DistroSeries` and in
-        the same `IArchive` and Pocket.
+        record in the context `DistroSeries` and in the same `IArchive`
+        and Pocket.
+
+        There will be only one entry for architecture independent binary
+        publications.
 
         :return: a list containing all unique
             `IBinaryPackagePublishingHistory`.
         """
 
+    @operation_returns_collection_of(Interface) # Really IBuild, see below.
+    @export_read_operation()
     def getBuilds():
         """Return a list of `IBuild` objects in this publishing context.
 
@@ -593,6 +591,14 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         Return the overridden publishing record, either a
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
+
+    def copyTo(distroseries, pocket, archive):
+        """Copy this publication to another location.
+
+        :return: a `ISourcePackagePublishingHistory` record representing the
+            source in the destination location.
+        """
+
 
 #
 # Binary package publishing
@@ -718,6 +724,16 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
 
+    def copyTo(distroseries, pocket, archive):
+        """Copy this publication to another location.
+
+        Architecture independent binary publications are copied to all
+        supported architectures in the destination distroseries.
+
+        :return: a list of `IBinaryPackagePublishingHistory` records
+            representing the binaries copied to the destination location.
+        """
+
 
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
@@ -725,7 +741,7 @@ class IPublishingSet(Interface):
     def getByIdAndArchive(id, archive):
         """Return the source publication matching id AND archive."""
 
-    def getBuildsForSourceIds(source_ids):
+    def getBuildsForSourceIds(source_ids, archive=None):
         """Return all builds related with each given source publication.
 
         The returned ResultSet contains entries with the wanted `Build`s
@@ -733,6 +749,9 @@ class IPublishingSet(Interface):
         targeted `DistroArchSeries` in a 3-element tuple. This way the extra
         information will be cached and the callsites can group builds in
         any convenient form.
+
+        The optional archive parameter, if provided, will ensure that only
+        builds corresponding to the archive will be included in the results.
 
         The result is ordered by:
 
@@ -742,6 +761,9 @@ class IPublishingSet(Interface):
         :param source_ids: list of or a single
             `SourcePackagePublishingHistory` object.
         :type source_ids: ``list`` or `SourcePackagePublishingHistory`
+        :param archive: An optional archive with which to filter the source
+                        ids.
+        :type archive: `IArchive`
         :return: a storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
         :rtype: `storm.store.ResultSet`.
@@ -809,6 +831,9 @@ class IPublishingSet(Interface):
         way the extra information will be cached and the callsites can group
         package-diffs in any convenient form.
 
+        `LibraryFileAlias` and `LibraryFileContent` elements might be None in
+        case the `PackageDiff` is not completed yet.
+
         The result is ordered by:
 
          1. Ascending `SourcePackagePublishingHistory.id`,
@@ -857,7 +882,7 @@ class IPublishingSet(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
-    def getBuildStatusSummariesForSourceIds(source_ids):
+    def getBuildStatusSummariesForSourceIdsAndArchive(source_ids, archive):
         """Return a summary of the build statuses for source publishing ids.
 
         This method collects all the builds for the provided source package
@@ -869,8 +894,11 @@ class IPublishingSet(Interface):
 
         :param source_ids: A list of source publishing history record ids.
         :type source_ids: ``list``
-        :returns A dict consisting of the overall status summaries for the
-            given ids. For example:
+        :param archive: The archive which will be used to filter the source
+                        ids.
+        :type archive: `IArchive`
+        :return: A dict consisting of the overall status summaries for the
+            given ids that belong in the archive. For example:
                 {
                     18: {'status': 'succeeded'},
                     25: {'status': 'building', 'builds':[building_builds]},
@@ -900,4 +928,11 @@ inactive_publishing_status = (
     PackagePublishingStatus.OBSOLETE,
     )
 
+
+# Fix circular import problems.
+
+from canonical.launchpad.interfaces.build import IBuild
+ISourcePackagePublishingHistory['getBuilds'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IBuild
 

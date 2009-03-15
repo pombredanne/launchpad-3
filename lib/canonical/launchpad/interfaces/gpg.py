@@ -13,8 +13,7 @@ __all__ = [
 
 from zope.schema import Bool, Int, TextLine, Choice
 from zope.interface import Interface, Attribute
-
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasOwner
@@ -72,7 +71,8 @@ class IGPGKey(IHasOwner):
             constraint=valid_fingerprint)
     active = Bool(title=_("Active"), required=True)
     displayname = Attribute("Key Display Name")
-    keyserverURL = Attribute("The URL to retrieve this key from the keyserver.")
+    keyserverURL = Attribute(
+        "The URL to retrieve this key from the keyserver.")
     can_encrypt = Bool(title=_("Key can be used for encryption"),
                        required=True)
     owner = Int(title=_('Person'), required=True, readonly=True)

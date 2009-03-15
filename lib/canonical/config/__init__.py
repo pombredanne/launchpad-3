@@ -20,10 +20,46 @@ from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
 
 
+__all__ = [
+    'DatabaseConfig',
+    'dbconfig',
+    'config',
+    ]
+
+
+# The config to use can be specified in one of these files.
+CONFIG_LOOKUP_FILES = ['/etc/launchpad/config']
+if os.environ.get('HOME'):
+    CONFIG_LOOKUP_FILES.insert(
+        0, os.path.join(os.environ['HOME'], '.lpconfig'))
+
 # LPCONFIG specifies the config to use, which corresponds to a subdirectory
-# of configs.
+# of configs. It overrides any setting in the CONFIG_LOOKUP_FILES.
 LPCONFIG = 'LPCONFIG'
+
+# If no CONFIG_LOOKUP_FILE is found and there is no LPCONFIG environment
+# variable, we have a fallback. This is what developers normally use.
 DEFAULT_CONFIG = 'development'
+
+
+def find_instance_name():
+    # Pull instance_name from the environment if possible.
+    instance_name = os.environ.get(LPCONFIG, None)
+
+    # Or pull instance_name from a disk file if no environment
+    # variable is set.
+    if instance_name is None:
+        for config_lookup_file in CONFIG_LOOKUP_FILES:
+            if os.path.exists(config_lookup_file):
+                instance_name = file(
+                    config_lookup_file, 'r').read()[:80].strip()
+                break
+
+    # Of instance_name falls back for developers.
+    if instance_name is None:
+        instance_name = DEFAULT_CONFIG
+
+    return instance_name
 
 
 class CanonicalConfig:
@@ -44,7 +80,8 @@ class CanonicalConfig:
        """
         self._config = None
         if instance_name is None:
-            instance_name = os.environ.get(LPCONFIG, DEFAULT_CONFIG)
+            instance_name = find_instance_name()
+
         if process_name is None:
             process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
         self._instance_name = instance_name
@@ -288,7 +325,7 @@ class DatabaseConfig:
           ...
         AttributeError: ...
         >>> print config.launchpad.dbuser
-        launchpad
+        launchpad_main
         >>> print config.librarian.dbuser
         librarian
 
@@ -302,7 +339,7 @@ class DatabaseConfig:
         >>> print dbconfig.main_master
         dbname=...
         >>> print dbconfig.dbuser
-        launchpad
+        launchpad_main
 
     Some values are required to have a value, such as dbuser.  So we
     get an exception if they are not set:
@@ -320,7 +357,8 @@ class DatabaseConfig:
     """
     _config_section = None
     _db_config_attrs = frozenset([
-        'dbuser', 'main_master', 'main_slave', 'auth_master', 'auth_slave',
+        'dbuser', 'auth_dbuser',
+        'main_master', 'main_slave', 'auth_master', 'auth_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
         'isolation_level', 'randomise_select_results',
         'soft_request_timeout'])
@@ -329,6 +367,11 @@ class DatabaseConfig:
 
     def setConfigSection(self, section_name):
         self._config_section = section_name
+
+    def getSectionName(self):
+        """The name of the config file section this DatabaseConfig references.
+        """
+        return self._config_section
 
     def _getConfigSections(self):
         """Returns a list of sections to search for database configuration.

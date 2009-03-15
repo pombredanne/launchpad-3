@@ -20,7 +20,7 @@
       </div>
       <h1>
         Remove
-        <tal:translator replace="context/translator/displayname">
+        <tal:translator replace="context/translator/fmt:displayname">
           Carlos
         </tal:translator> as the
         <tal:language replace="context/language/englishname">
@@ -31,6 +31,6 @@
       <h2>Are you sure you want to remove this translator?</h2>
 
       <div metal:use-macro="context/@@launchpad_form/form" />
-    </div> 
+    </div>
   </body>
 </html>

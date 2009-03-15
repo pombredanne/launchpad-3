@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0613,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -14,9 +14,10 @@ import re
 import rfc822
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
+from lazr.enum import enumerated_type_registry
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
@@ -31,23 +32,24 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IHasIcon, IHasLogo,
-    IHasMugshot, IPerson, IPersonSet, IProduct, IProject, ISprint,
-    LicenseStatus, NotFoundError)
+    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
+    ISprint, LicenseStatus, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot)
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
-from canonical.lazr import enumerated_type_registry
 from canonical.lazr.canonicalurl import nearest_adapter
 
 
@@ -105,6 +107,8 @@ class MenuAPI:
         if not self._has_facet(facet):
             raise AttributeError(facet)
         menu = queryAdapter(self._context, IApplicationMenu, facet)
+        if menu is None:
+            menu = queryAdapter(self._context, INavigationMenu, facet)
         if menu is not None:
             menu.request = self._request
             links_map = dict(
@@ -112,7 +116,7 @@ class MenuAPI:
                 for link in menu.iterlinks(request_url=self._request_url()))
         else:
             # The object has the facet, but does not have a menu, this
-            # is propbably the overview menu with is the default facet.
+            # is probably the overview menu with is the default facet.
             links_map = {}
         object.__setattr__(self, facet, links_map)
         return links_map
@@ -416,8 +420,12 @@ class ObjectFormatterAPI:
         :param view_name: If not None, return the URL to the page with that
             name on this object.
         """
-        url = canonical_url(
-            self._context, path_only_if_possible=True, view_name=view_name)
+        try:
+            url = canonical_url(
+                self._context, path_only_if_possible=True,
+                view_name=view_name)
+        except Unauthorized:
+            url = ""
         return url
 
     def api_url(self, context):
@@ -870,6 +878,11 @@ class BadgeDisplayAPI:
 class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
 
+    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url',
+                         'displayname': 'displayname',
+                         'unique_displayname': 'unique_displayname',
+                         }
+
     final_traversable_names = {'local-time': 'local_time'}
 
     def traverse(self, name, furtherPath):
@@ -902,6 +915,63 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, cgi.escape(person.browsername))
+
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        person = self._context
+        return person.displayname
+
+    def unique_displayname(self, view_name, rootsite=None):
+        """Return the unique_displayname as a string."""
+        person = self._context
+        return person.unique_displayname
+
+
+class TeamFormatterAPI(PersonFormatterAPI):
+    """Adapter for `ITeam` objects to a formatted string."""
+
+    hidden = u'<hidden>'
+
+    def url(self, view_name=None):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).url(view_name)
+
+    def api_url(self, context):
+        """See `ObjectFormatterAPI`."""
+        if not check_permission('launchpad.View', self._context):
+            # This person has no permission to view the team details.
+            return None
+        return super(TeamFormatterAPI, self).api_url(context)
+
+    def link(self, view_name, rootsite=None):
+        """See `ObjectFormatterAPI`."""
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
+            return u'%s&nbsp;%s' % (
+                image_html, cgi.escape(self.hidden))
+        return super(TeamFormatterAPI, self).link(view_name, rootsite)
+
+    def displayname(self, view_name, rootsite=None):
+        """See `PersonFormatterAPI`."""
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            return self.hidden
+        return super(TeamFormatterAPI, self).displayname(view_name, rootsite)
+
+    def unique_displayname(self, view_name, rootsite=None):
+        """See `PersonFormatterAPI`."""
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            return self.hidden
+        return super(TeamFormatterAPI, self).unique_displayname(view_name,
+                                                                rootsite)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
@@ -1010,24 +1080,11 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink'}
-
-    def traverse(self, name, furtherPath):
-        """Special case traversal to support multiple link formats."""
-        for link_name, func in (('project-link', self.projectLink),
-                           ('title-link', self.titleLink),
-                           ('bzr-link', self.bzrLink)):
-            if name == link_name:
-                extra_path = '/'.join(reversed(furtherPath))
-                del furtherPath[:]
-                return func(extra_path)
-        return ObjectFormatterAPI.traverse(self, name, furtherPath)
+        'title-link': 'titleLink', 'bzr-link': 'bzrLink'}
 
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
-        url = canonical_url(branch)
-        url = self.url(view_name)
         if branch.title is not None:
             title = branch.title
         else:
@@ -1038,7 +1095,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             'name': branch.name,
             'title': cgi.escape(title),
             'unique_name' : branch.unique_name,
-            'url': url,
+            'url': self.url(view_name),
             }
 
     def link(self, view_name):
@@ -1049,7 +1106,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             '&nbsp;%(unique_name)s</a>' % self._args(view_name))
 
     def bzrLink(self, view_name):
-        """A hyperlinked branch icon with the unique name."""
+        """A hyperlinked branch icon with the bazaar identity."""
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
@@ -1067,6 +1124,68 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '%(name)s</a>: %(title)s' % self._args(view_name))
+
+
+class PreviewDiffFormatterAPI(ObjectFormatterAPI):
+    """Formatter for preview diffs."""
+
+    def url(self, view_name=None):
+        """Use the url of the librarian file containing the diff.
+        """
+        librarian_alias = self._context.diff_text
+        if librarian_alias is None:
+            return None
+        else:
+            return librarian_alias.getURL()
+
+    def link(self, view_name):
+        """The link to the diff should show the line count.
+
+        Stale diffs will have a stale-diff css class.
+        Diffs with conflicts will have a conflict-diff css class.
+        Diffs with neither will have clean-diff css class.
+
+        The title of the diff will show the number of lines added or removed
+        if available.
+
+        :param view_name: If not None, the link will point to the page with
+            that name on this object.
+        """
+        title_words = []
+        if self._context.conflicts is not None:
+            style = 'conflicts-diff'
+            title_words.append(_('CONFLICTS'))
+        else:
+            style = 'clean-diff'
+        # Stale style overrides conflicts or clean.
+        if self._context.stale:
+            style = 'stale-diff'
+            title_words.append(_('Stale'))
+
+        if self._context.added_lines_count:
+            title_words.append(
+                _("%s added") % self._context.added_lines_count)
+
+        if self._context.removed_lines_count:
+            title_words.append(
+                _("%s removed") % self._context.removed_lines_count)
+
+        args = {
+            'line_count': _('%s lines') % self._context.diff_lines_count,
+            'style': style,
+            'title': ', '.join(title_words),
+            'url': self.url(view_name),
+            }
+        # Under normal circumstances, there will be an associated file,
+        # however if the diff is empty, then there is no alias to link to.
+        if args['url'] is None:
+            return (
+                '<span title="%(title)s" class="%(style)s">'
+                '%(line_count)s</span>' % args)
+        else:
+            return (
+                '<a href="%(url)s" title="%(title)s" class="%(style)s">'
+                '<img src="/@@/download"/>&nbsp;%(line_count)s</a>' % args)
 
 
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):
@@ -1673,6 +1792,42 @@ class DurationFormatterAPI:
         return "%s weeks" % number_name.get(weeks, str(weeks))
 
 
+class LinkFormatterAPI(ObjectFormatterAPI):
+    """Adapter from Link objects to a formatted anchor."""
+    final_traversable_names = {
+        'icon': 'icon',
+        'icon-link': 'icon_link',
+        'link-icon': 'link_icon',
+        }
+
+    def icon(self):
+        """Return the icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-icon")()
+
+    def link_icon(self):
+        """Return the text and icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-suffix")()
+
+    def icon_link(self):
+        """Return the icon and text representation of the link."""
+        return self.link(None)
+
+    def link(self, view_name, rootsite=None):
+        """Return the default representation of the link."""
+        return self._context.render()
+
+    def url(self, view_name=None):
+        """Return the URL representation of the link."""
+        if self._context.enabled:
+            return self._context.url
+        else:
+            return u''
+
+
 def clean_path_segments(request):
     """Returns list of path segments, excluding system-related segments."""
     proto_host_port = request.getApplicationURL()
@@ -1707,8 +1862,9 @@ class PageTemplateContextsAPI:
         underscores, and use this to look up a string, unicode or
         function in the module canonical.launchpad.pagetitles.
 
-        If no suitable object is found in canonical.launchpad.pagetitles, emit a
-        warning that this page has no title, and return the default page title.
+        If no suitable object is found in canonical.launchpad.pagetitles, emit
+        a warning that this page has no title, and return the default page
+        title.
         """
         template = self.contextdict['template']
         filename = os.path.basename(template.filename)
@@ -1947,10 +2103,6 @@ class FormattersAPI:
                 return text
 
             root_url = config.launchpad.oops_root_url
-
-            if not root_url.endswith('/'):
-                root_url += '/'
-
             url = root_url + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
         else:
@@ -2297,7 +2449,9 @@ class FormattersAPI:
         """, re.VERBOSE)
 
     def obfuscate_email(self):
-        """Obfuscate an email address as '<email address hidden>'.
+        """Obfuscate an email address if there's no authenticated user.
+
+        The email address is obfuscated as <email address hidden>.
 
         This formatter is intended to hide possible email addresses from
         unauthenticated users who view this text on the Web. Run this before
@@ -2310,6 +2464,8 @@ class FormattersAPI:
         mailto:person@domain.dom and http://person:password@domain.dom both
         match, though the http match is in fact not an email address.
         """
+        if getUtility(ILaunchBag).user is not None:
+            return self._stringtoformat
         text = self._re_email.sub(
             r'<email address hidden>', self._stringtoformat)
         text = text.replace(
@@ -2352,6 +2508,43 @@ class FormattersAPI:
         else:
             return self._stringtoformat
 
+    def format_diff(self):
+        """Format the string as a diff in a table with line numbers."""
+        # Trim off trailing carriage returns.
+        text = self._stringtoformat.rstrip('\n')
+        if len(text) == 0:
+            return text
+        result = ['<table class="diff">']
+
+        for row, line in enumerate(text.split('\n')):
+            result.append('<tr>')
+            result.append('<td class="line-no">%s</td>' % (row+1))
+            if line.startswith('==='):
+                css_class = 'diff-file text'
+            elif (line.startswith('+++') or
+                  line.startswith('---')):
+                css_class = 'diff-header text'
+            elif line.startswith('@@'):
+                css_class = 'diff-chunk text'
+            elif line.startswith('+'):
+                css_class = 'diff-added text'
+            elif line.startswith('-'):
+                css_class = 'diff-removed text'
+            elif line.startswith('#'):
+                # This doesn't occur in normal unified diffs, but does
+                # appear in merge directives, which use text/x-diff or
+                # text/x-patch.
+                css_class = 'diff-comment text'
+            else:
+                css_class = 'text'
+            result.append(
+                '<td class="%s">%s</td>' % (css_class, escape(line)))
+            result.append('</tr>')
+
+        result.append('</table>')
+        return ''.join(result)
+
+
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
@@ -2377,6 +2570,8 @@ class FormattersAPI:
                     "you need to traverse a number after fmt:shorten")
             maxlength = int(furtherPath.pop())
             return self.shorten(maxlength)
+        elif name == 'diff':
+            return self.format_diff()
         else:
             raise TraversalError(name)
 

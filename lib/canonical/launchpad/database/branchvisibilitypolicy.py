@@ -20,8 +20,11 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-    BranchVisibilityRule, IBranchVisibilityTeamPolicy, IProduct, IProject)
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    BranchVisibilityRule, IBranchVisibilityTeamPolicy,
+    InvalidVisibilityPolicy)
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -139,6 +142,11 @@ class BranchVisibilityPolicyMixin:
 
     def setBranchVisibilityTeamPolicy(self, team, rule):
         """See `IHasBranchVisibilityPolicy`."""
+        if team is None and rule not in (
+            BranchVisibilityRule.PUBLIC, BranchVisibilityRule.FORBIDDEN):
+            raise InvalidVisibilityPolicy
+        if team is not None and rule == BranchVisibilityRule.FORBIDDEN:
+            raise InvalidVisibilityPolicy
         item = BranchVisibilityTeamPolicy.selectOneBy(
             team=team, **self._policy_visibility_context)
         if item is None:

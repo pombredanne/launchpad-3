@@ -17,8 +17,11 @@ import calendar
 import pytz
 import sets
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND)
+    BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
+    StringCol)
+from storm.store import Store
+from storm.expr import And, Join
+from storm.locals import Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -34,8 +37,11 @@ from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import (
+    BugTargetBase, OfficialBugTagTargetMixin)
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.bugtracker import BugTracker
+from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.commercialsubscription import (
     CommercialSubscription)
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -43,7 +49,8 @@ from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.milestone import (
+    HasMilestonesMixin, Milestone)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
@@ -64,7 +71,9 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces.branch import (
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    DEFAULT_BRANCH_STATUS_IN_LISTING)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
@@ -86,6 +95,8 @@ from canonical.launchpad.interfaces.specification import (
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
 
 def get_license_status(license_approved, license_reviewed, licenses):
     """Decide the license status for an `IProduct`.
@@ -148,7 +159,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
-              HasAliasMixin, StructuralSubscriptionTargetMixin):
+              HasAliasMixin, StructuralSubscriptionTargetMixin,
+              HasMilestonesMixin, OfficialBugTagTargetMixin):
 
     """A Product."""
 
@@ -220,6 +232,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+    remote_product = Unicode(
+        name='remote_product', allow_none=True, default=None)
+
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.product == self)
 
     @property
     def official_anything(self):
@@ -280,7 +298,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        default_branch = self.development_focus.series_branch
+        default_branch = self.development_focus.branch
         if default_branch is None:
             return None
         elif default_branch.last_mirrored is None:
@@ -520,12 +538,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def releases(self):
-        return ProductRelease.select(
-            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
-                ProductSeries.q.productID == self.id),
-            clauseTables=['ProductSeries'],
-            orderBy=['version']
-            )
+        store = Store.of(self)
+        origin = [
+            ProductRelease,
+            Join(Milestone, ProductRelease.milestone == Milestone.id),
+            ]
+        result = store.using(*origin)
+        result = result.find(ProductRelease, Milestone.product == self)
+        return result.order_by(Milestone.name)
 
     @property
     def drivers(self):
@@ -545,18 +565,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
-
-    @property
-    def all_milestones(self):
-        """See `IProduct`."""
-        return Milestone.selectBy(
-            product=self, orderBy=['-dateexpected', 'name'])
-
-    @property
-    def milestones(self):
-        """See `IProduct`."""
-        return Milestone.selectBy(
-            product=self, visible=True, orderBy=['-dateexpected', 'name'])
 
     @property
     def sourcepackages(self):
@@ -890,7 +898,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # Set the ID of the new ProductSeries to avoid flush order
         # loops in ProductSet.createProduct()
         return ProductSeries(productID=self.id, owner=owner, name=name,
-                             summary=summary, user_branch=branch)
+                             summary=summary, branch=branch)
 
     def getRelease(self, version):
         return ProductRelease.selectOne("""
@@ -932,6 +940,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
 
+    def getMergeProposals(self, status=None, visible_by_user=None):
+        """See `IProduct`."""
+        if status is None:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self, status, visible_by_user=visible_by_user)
+
+
     def userCanEdit(self, user):
         """See `IProduct`."""
         if user is None:
@@ -941,6 +961,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             user.inTeam(celebs.registry_experts) or
             user.inTeam(celebs.admin) or
             user.inTeam(self.owner))
+
+    def getLinkedBugWatches(self):
+        """See `IProduct`."""
+        store = Store.of(self)
+        return store.find(
+            BugWatch,
+            And(BugTask.product == self.id,
+                BugTask.bugwatch == BugWatch.id,
+                BugWatch.bugtracker == self.getExternalBugTracker()))
 
 
 class ProductSet:
@@ -1004,16 +1033,6 @@ class ProductSet:
         if num_products is not None:
             results = results.limit(num_products)
         return results
-
-    def getProductsWithUserDevelopmentBranches(self):
-        """See `IProductSet`."""
-        return Product.select('''
-            Product.active and
-            Product.development_focus = ProductSeries.id and
-            ProductSeries.user_branch = Branch.id and
-            Branch.branch_type in %s
-            ''' % quote((BranchType.HOSTED, BranchType.MIRRORED)),
-            orderBy='name', clauseTables=['ProductSeries', 'Branch'])
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
@@ -1188,8 +1207,7 @@ class ProductSet:
             queries.append('BugTask.product=Product.id')
         if bazaar:
             clauseTables.add('ProductSeries')
-            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
-                           'ProductSeries.user_branch IS NOT NULL)')
+            queries.append('(ProductSeries.branch IS NOT NULL)')
         if 'ProductSeries' in clauseTables:
             queries.append('ProductSeries.product=Product.id')
         if not show_inactive:
@@ -1257,3 +1275,24 @@ class ProductSet:
 
     def count_codified(self):
         return self.stats.value('products_with_branches')
+
+    def getProductsWithNoneRemoteProduct(self, bugtracker_type=None):
+        """See `IProductSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        conditions = [Product.remote_product == None]
+        if bugtracker_type is not None:
+            conditions.extend([
+                Product.bugtracker == BugTracker.id,
+                BugTracker.bugtrackertype == bugtracker_type,
+                ])
+        return store.find(Product, And(*conditions))
+
+    def getSFLinkedProductsWithNoneRemoteProduct(self):
+        """See `IProductSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        conditions = And(
+            Product.remote_product == None,
+            Product.sourceforgeproject != None)
+
+        return store.find(Product, conditions)
+

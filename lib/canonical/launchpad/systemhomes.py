@@ -40,7 +40,9 @@ from canonical.launchpad.interfaces import (
     IWebServiceApplication)
 from canonical.launchpad.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
-from canonical.launchpad.interfaces.hwdb import IHWDeviceSet, IHWDriverSet
+from canonical.launchpad.interfaces.hwdb import (
+    IHWDeviceSet, IHWDriverSet, IHWVendorIDSet)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.rest import ServiceRootResource
 
 
@@ -255,6 +257,15 @@ class HWDBApplication:
         """See `IHWDBApplication`."""
         return getUtility(IHWDriverSet).search(package_name, name)
 
+    def vendorIDs(self, bus):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWVendorIDSet).idsForBus(bus)
+
+    @property
+    def package_names(self):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWDriverSet).package_names
+
 
 class WebServiceApplication(ServiceRootResource):
     """See `IWebServiceApplication`.
@@ -269,7 +280,11 @@ class WebServiceApplication(ServiceRootResource):
     If the attribute is not set, toWADL will set the attribute on the class
     once it is calculated.
     """
-    implements(IWebServiceApplication)
+    implements(IWebServiceApplication, ICanonicalUrlData)
+
+    inside = None
+    path = ''
+    rootsite = None
 
     _wadl_filename = os.path.join(
         os.path.dirname(os.path.normpath(__file__)),

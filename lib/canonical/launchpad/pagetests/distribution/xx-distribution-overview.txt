@@ -75,3 +75,31 @@ Others do not have any series so the portlet is not shown.
     >>> print find_tag_by_id(anon_browser.contents, 'sandm')
     None
 
+
+== Redirection for webservice URLs ==
+
+The webservice exposes a URL for the archive associated with the distribution.
+Displaying the page for that URL is nonsensical (it looks like the PPA
+index page), so the view redirect it to the distribution index page.
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archive/primary")
+    >>> print anon_browser.url
+    http://launchpad.dev/ubuntu
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archive/partner")
+    >>> print anon_browser.url
+    http://launchpad.dev/ubuntu
+
+Any attempt to access an incomplete URL (missing the archive name
+term) or an unavailable name (only 'primary' and 'partner' exist)
+results in a NotFound error.
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archive")
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <Distribution ...>, name: u'+archive'
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archive/boing")
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <Distribution ...>, name: u'boing'

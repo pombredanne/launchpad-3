@@ -12,7 +12,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost/~ubuntu-team/+poll/never-closes2/+vote-condorcet
-  <BLANKLINE>
+  ...
 
   >>> print http(r"""
   ... GET /~ubuntu-team/+poll/never-closes2/+vote-condorcet HTTP/1.1
@@ -125,7 +125,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost/~ubuntu-team/+poll/never-closes3/+vote-condorcet
-  <BLANKLINE>
+  ...
 
   >>> print http(r"""
   ... GET /~ubuntu-team/+poll/never-closes3/+vote-condorcet HTTP/1.1
@@ -211,7 +211,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost/~ubuntu-team/+poll/never-closes3/+vote-condorcet
-  <BLANKLINE>
+  ...
 
 
   And here we'll see the form which says you haven't voted yet and allows you

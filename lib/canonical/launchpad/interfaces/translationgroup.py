@@ -14,13 +14,13 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int, TextLine
-from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, Summary, Title
+from canonical.launchpad.fields import (
+    PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 
 class TranslationPermission(DBEnumeratedType):
@@ -143,15 +143,23 @@ class ITranslationGroup(IHasOwner):
         'part of project groups for which the group also translates.')
     distributions = Attribute('The distros for which this group translates.')
 
+    translation_guide_url = URIField(
+        title=_('Translation instructions'), required=False,
+        allowed_schemes=['http', 'https', 'ftp'],
+        allow_userinfo=False,
+        description=_("The URL of the generic translation instructions "
+                      "followed by this particular translation group. "
+                      "This should include team policies and "
+                      "recommendations, specific instructions for "
+                      "any non-standard behaviour and other documentation."
+                      "Can be any of http://, https://, or ftp://."))
+
     # accessing the translator list
     def query_translator(language):
         """Retrieve a translator, or None, based on a Language"""
 
     def __getitem__(languagecode):
         """Retrieve the translator for the given language in this group."""
-
-    def __iter__():
-        """Return an iterator over the translators in the group."""
 
     # adding and removing translators
     def remove_translator(language):
@@ -162,7 +170,7 @@ class ITranslationGroup(IHasOwner):
         """Add a new object."""
 
 
-class ITranslationGroupSet(IAddFormCustomization):
+class ITranslationGroupSet(Interface):
     """A container for translation groups."""
 
     title = Attribute('Title')
@@ -173,7 +181,7 @@ class ITranslationGroupSet(IAddFormCustomization):
     def __iter__():
         """Iterate through the translation groups in this set."""
 
-    def new(name, title, summary, owner):
+    def new(name, title, summary, translation_guide_url, owner):
         """Create a new translation group."""
 
     def getByPerson(person):

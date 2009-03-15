@@ -375,3 +375,73 @@ effect remains the same:
 Most practical algorithms will be closer to the linear cost function than they
 are to the exponential one.
 
+
+== Loop cooldown ==
+
+LoopTuner allows inserting a delay between two consecutive operation runs.
+
+Overriding _coolDown method can be used to avoid an actual cooldown,
+but still print out what would happen.
+
+    >>> class CooldownTuner(LoopTuner):
+    ...     def _coolDown(self, bedtime):
+    ...         if self.cooldown_time is None or self.cooldown_time <= 0.0:
+    ...             print "No cooldown"
+    ...         else:
+    ...             print "Cooldown for %.1f seconds." % self.cooldown_time
+    ...         return bedtime
+
+SimpleLoop is a loop that does a constant number of iterations, regardless
+of the actual run-time.
+
+    >>> class SimpleLoop:
+    ...     implements(ITunableLoop)
+    ...     def __init__(self, iterations):
+    ...         self.total_iterations = iterations
+    ...         self.iteration = 0
+    ...         self.clock = 0
+    ...
+    ...     def isDone(self):
+    ...         done = (self.iteration >= self.total_iterations)
+    ...         if done:
+    ...             print "done"
+    ...         return done
+    ...
+    ...     def __call__(self, chunk_size):
+    ...         print "Processing %d items." % (chunk_size)
+    ...         self.iteration += 1
+
+Aim for a low goal_seconds (to reduce test runtime), and only 3 iterations.
+
+    >>> goal_seconds = 0.01
+    >>> body = SimpleLoop(3)
+    >>> loop = CooldownTuner(body, goal_seconds, 1, cooldown_time=0.1)
+    >>> loop.run()
+    Processing...
+    Cooldown for 0.1 seconds.
+    Processing...
+    Cooldown for 0.1 seconds.
+    Processing...
+    Cooldown for 0.1 seconds.
+    done
+
+=== Cooldown bedtime ===
+
+A private _coolDown method on LoopTuner sleeps for cooldown_time, and
+returns time after sleep is done.
+
+    >>> import time
+    >>> cooldown_loop = LoopTuner(body, goal_seconds, cooldown_time=0.2)
+    >>> old_time = time.time()
+    >>> new_time = cooldown_loop._coolDown(old_time)
+    >>> print new_time > old_time
+    True
+
+If no cooldown_time is specified, there's no sleep, and exactly the same
+time is returned.
+
+    >>> no_cooldown_loop = LoopTuner(body, goal_seconds, cooldown_time=None)
+    >>> old_time = time.time()
+    >>> new_time = no_cooldown_loop._coolDown(old_time)
+    >>> print new_time == old_time
+    True

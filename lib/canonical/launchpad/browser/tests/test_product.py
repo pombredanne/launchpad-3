@@ -12,17 +12,18 @@ import pytz
 
 from zope.component import getMultiAdapter
 
-from canonical.config import config
 from canonical.launchpad.testing import time_counter, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.launchpad.testing import login_person
+from canonical.testing import DatabaseFunctionalLayer
+
 
 class TestProductCodeIndexView(TestCaseWithFactory):
     """Tests for the product code home page."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def makeProductAndDevelopmentFocusBranch(self, **branch_args):
         """Make a product that has a development focus branch and return both.
@@ -30,9 +31,10 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         email = self.factory.getUniqueEmailAddress()
         owner = self.factory.makePerson(email=email)
         product = self.factory.makeProduct(owner=owner)
-        branch = self.factory.makeBranch(product=product, **branch_args)
+        branch = self.factory.makeProductBranch(
+            product=product, **branch_args)
         login(email)
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
         return product, branch
 
     def getBranchSummaryBrowseLinkForProduct(self, product):
@@ -64,7 +66,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         link = self.getBranchSummaryBrowseLinkForProduct(product)
         login(ANONYMOUS)
         self.assertEqual(
-            link.url, config.codehosting.codebrowse_root + branch.unique_name)
+            link.url, branch.codebrowse_url())
 
     def test_unbrowseable_branch_does_not_have_link(self):
         # If the product's development focus branch is not browseable, there
@@ -81,7 +83,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             private=True)
         url = canonical_url(product, rootsite='code')
-        self.factory.makeBranch(product=product)
+        self.factory.makeProductBranch(product=product)
         # This is just "assertNotRaises"
         self.getUserBrowser(canonical_url(product, rootsite='code'))
 
@@ -110,6 +112,25 @@ class TestProductCodeIndexView(TestCaseWithFactory):
             timedelta(days=1))
         self.factory.makeRevisionsForBranch(
             branch, author='cthulu@example.com',
+            date_generator=date_generator)
+
+        view = getMultiAdapter(
+            (product, LaunchpadTestRequest()), name='+code-index')
+        view.initialize()
+        self.assertEqual(view.committer_count, 1)
+
+    def test_committers_count_private_branch(self):
+        # Test that calling committer_count will return the proper value
+        # for a private branch.
+        fsm = self.factory.makePerson(email='flyingpasta@example.com')
+        product, branch = self.makeProductAndDevelopmentFocusBranch(
+            private=True, owner=fsm)
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=30),
+            timedelta(days=1))
+        login_person(fsm)
+        self.factory.makeRevisionsForBranch(
+            branch, author='flyingpasta@example.com',
             date_generator=date_generator)
 
         view = getMultiAdapter(

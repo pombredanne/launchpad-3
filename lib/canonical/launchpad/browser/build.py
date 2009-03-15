@@ -19,9 +19,10 @@ from zope.interface import implements
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces.build import (
-    BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords)
-from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
+    BuildStatus, IBuild, IBuildRescoreForm, IBuildSet)
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
+from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, ContextMenu,
     GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
@@ -29,6 +30,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lazr.delegates import delegates
 
 
 class BuildUrl:
@@ -140,6 +142,18 @@ class BuildView(LaunchpadView):
         return (check_permission('launchpad.Edit', self.context)
             and self.context.can_be_retried)
 
+    @property
+    def has_done_upload(self):
+        """Return True if this build's package upload is done."""
+        package_upload = self.context.package_upload
+
+        if package_upload is None:
+            return False
+
+        if package_upload.status == PackageUploadStatus.DONE:
+            return True
+
+        return False
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""
@@ -175,9 +189,23 @@ class BuildRescoringView(LaunchpadFormView):
 
 class CompleteBuild:
     """Super object to store related IBuild & IBuildQueue."""
-    def __init__(self, build, buildqueue_record):
-        self.build = build
-        self.buildqueue_record = buildqueue_record
+    delegates(IBuild)
+    def __init__(
+        self, build, buildqueue_record, sourcepackagerelease, buildlog):
+        self.context = build
+        self._buildqueue_record = buildqueue_record
+        self._sourcepackagerelease = sourcepackagerelease
+        self._buildlog = buildlog
+
+    @property
+    def buildlog(self):
+        return self._buildlog
+
+    def buildqueue_record(self):
+        return self._buildqueue_record
+
+    def sourcepackagerelease(self):
+        return self._sourcepackagerelease
 
 
 def setupCompleteBuilds(batch):
@@ -192,21 +220,22 @@ def setupCompleteBuilds(batch):
     list if no builds were contained in the received batch.
     """
     builds = list(batch)
-
     if not builds:
         return []
 
-    buildqueue_records = {}
-
+    prejoins = dict()
     build_ids = [build.id for build in builds]
-    for buildqueue in getUtility(IBuildQueueSet).fetchByBuildIds(build_ids):
-        buildqueue_records[buildqueue.build.id] = buildqueue
+    results = getUtility(IBuildSet).prefetchBuildData(build_ids)
+    for result in results:
+        # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
+        # 'buildlog' (from the result set) respectively.
+        (build_id, buildqueue, sourcepackagerelease, buildlog,
+         sourcepackagename, buildlog_content, builder) = result
+        prejoins[build_id] = (buildqueue, sourcepackagerelease, buildlog)
 
     complete_builds = []
     for build in builds:
-        proposed_buildqueue = buildqueue_records.get(build.id, None)
-        complete_builds.append(
-            CompleteBuild(build, proposed_buildqueue))
+        complete_builds.append(CompleteBuild(build, *prejoins[build.id]))
 
     return complete_builds
 

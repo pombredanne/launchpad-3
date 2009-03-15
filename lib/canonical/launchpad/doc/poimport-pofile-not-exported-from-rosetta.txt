@@ -19,11 +19,9 @@ warn the uploader about this.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.interfaces import ITranslationImportQueue
     >>> from canonical.launchpad.database import POTemplateSubset
-    >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
@@ -125,6 +123,12 @@ And the method returned an email with a notification of the error.
     The Launchpad team
     <BLANKLINE>
 
+A much shorter version of that information is stored in the entry's
+error_output.
+
+    >>> print entry.error_output
+    File was not exported from Launchpad.
+
 We should also be sure that we don't block any import 'published'. That
 kind of import is not blocked if they lack the 'X-Rosetta-Export-Date'
 header.
@@ -163,5 +167,14 @@ The status is now IMPORTED:
 The import code has also composed an email with the notification of the
 import.
 
-    >>> subject
-    u'Translation import - Welsh (cy) - firefox in Mozilla Firefox trunk'
+    >>> print subject
+    None
+    >>> print message
+    Hello Mark Shuttleworth,
+    ...
+
+There was no error output this time.
+
+    >>> print entry.error_output
+    None
+

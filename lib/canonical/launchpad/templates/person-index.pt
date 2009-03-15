@@ -45,19 +45,18 @@
 
 <body>
 
-<div metal:fill-slot="main" class="pillar">
-  <tal:is-valid-person tal:condition="context/is_valid_person">
-    <div class="actions" style="float:right;">
+<div metal:fill-slot="main" class="pillar"
+  tal:define="overview_menu context/menu:overview">
+  <div class="actions" style="float:right;">
+    <tal:is-person condition="not: context/is_team">
       <tal:administer
-        define="link context/menu:overview/administer"
-        condition="link/enabled"
-        replace="structure link/render" />
-      <tal:edit
-        define="link context/menu:overview/edit"
-        condition="link/enabled"
-        replace="structure link/render" />
-    </div>
+        replace="structure overview_menu/administer/fmt:link-icon" />
+    </tal:is-person>
+    <tal:edit
+      replace="structure overview_menu/edit/fmt:link-icon" />
+  </div>
 
+  <tal:is-valid-person tal:condition="context/is_valid_person">
     <tal:mugshot replace="structure context/image:mugshot" />
 
     <h1 tal:content="context/browsername">Some Person</h1>
@@ -120,17 +119,14 @@
                 replace="context/preferredemail/email">foo@bar.com</tal:email>
               <a
                 tal:condition="context/required:launchpad.Edit"
-                tal:define="link context/menu:overview/editemailaddresses"
-                tal:attributes="href link/url"
+                tal:attributes="href overview_menu/editemailaddresses/url"
               ><img tal:attributes="alt link/text" src="/@@/edit" /></a>
             </li>
           </ul>
           <tal:editable tal:condition="context/required:launchpad.Edit">
             <p tal:condition="not: context/preferredemail">
-              <a
-                tal:define="link context/menu:overview/editemailaddresses"
-                tal:condition="link/enabled"
-                tal:replace="structure link/render">Change email settings</a>
+              <tal:editemailaddresses
+                replace="structure overview_menu/editemailaddresses/fmt:link-icon" />
             </p>
           </tal:editable>
           <a tal:attributes="

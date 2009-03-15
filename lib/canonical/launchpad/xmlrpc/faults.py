@@ -13,6 +13,7 @@ __all__ = [
     'BranchCreationForbidden',
     'BranchNameInUse',
     'BranchUniqueNameConflict',
+    'check_fault',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
     'InvalidBranchIdentifier',
@@ -37,7 +38,20 @@ __all__ = [
     'UnexpectedStatusReport',
     ]
 
+
 import xmlrpclib
+
+
+def check_fault(fault, *fault_classes):
+    """Check if 'fault's faultCode matches any of 'fault_classes'.
+
+    :param fault: An instance of `xmlrpclib.Fault`.
+    :param fault_classes: Any number of `LaunchpadFault` subclasses.
+    """
+    for cls in fault_classes:
+        if fault.faultCode == cls.error_code:
+            return True
+    return False
 
 
 class LaunchpadFault(xmlrpclib.Fault):
@@ -392,3 +406,25 @@ class InvalidPath(LaunchpadFault):
 
     def __init__(self, path):
         LaunchpadFault.__init__(self, path=path)
+
+
+class PermissionDenied(LaunchpadFault):
+    """Raised when a user is denied access to some resource."""
+
+    error_code = 310
+    msg_template = (
+        "%(message)s")
+
+    def __init__(self, message="Permission denied."):
+        LaunchpadFault.__init__(self, message=message)
+
+
+class NotFound(LaunchpadFault):
+    """Raised when a resource is not found."""
+
+    error_code = 320
+    msg_template = (
+        "%(message)s")
+
+    def __init__(self, message="Not found."):
+        LaunchpadFault.__init__(self, message=message)

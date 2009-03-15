@@ -134,6 +134,7 @@ is requested.
       enabled: True
       linked: False
 
+
 Disabled links are only included in the view's links if the server is
 in devmode.
 
@@ -199,3 +200,31 @@ an empty string is rendered.
     >>> nav_menu_view.render()
     ''
 
+== ProductTranslationsMenu ==
+
+    >>> request, translations_nav_menu_view = make_request_for_obj(
+    ...     'http://translations.launchpad.dev',
+    ...     '/evolution',
+    ...     evolution, '+navigationmenutabs')
+
+    >>> request.getURL()
+    'http://translations.../evolution'
+
+    >>> translations_nav_menu_view.initialize()
+    >>> print_menu_view_links(translations_nav_menu_view)
+    http://translations.../evolution
+      name: overview
+      enabled: True
+      linked: False
+    http://translations.../evolution/+changetranslators
+      name: translators
+      enabled: False
+      linked: True
+    http://translations.../evolution/trunk/+export
+      name: translationdownload
+      enabled: False
+      linked: True
+    http://translations.../evolution/+imports
+      name: imports
+      enabled: True
+      linked: True

@@ -2,9 +2,9 @@
 
 When a person joins a team, we store the relationship in the TeamMembership
 table. In this table we store the membership status, the join date and the
-expiry date. TeamMembership stores only direct members. However, when a 
+expiry date. TeamMembership stores only direct members. However, when a
 member of a team is in fact another team (in the case of Team Y is a member
-of Team X), the membership is transitive (members of Team Y are also a 
+of Team X), the membership is transitive (members of Team Y are also a
 member of team X). For this reason the TeamParticipation table exists: it
 represents all the people who are /effective members/ of the team.
 
@@ -50,6 +50,7 @@ XXX: This doctest needs a lot of cleanups!
     >>> removeSecurityProxy(t5).datecreated = oldest + timedelta(hours=4)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
+
 
 == Adding new members ==
 
@@ -232,7 +233,7 @@ Adding t2 as a member of t5 will add all t2 members as t5 members too.
     >>> [m.displayname for m in t5.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
 
-Adding t5 and t1 as members of t4 will add all t5 and t1 members as t4 
+Adding t5 and t1 as members of t4 will add all t5 and t1 members as t4
 members too.
 
     >>> t4.addMember(t5, reviewer, force_team_add=True)
@@ -305,7 +306,7 @@ and t2, but not from t4, because he's a direct member of t4.
     >>> salgado.leave(t3)
     >>> salgado in t1.allmembers
     False
-    >>> salgado in t2.allmembers 
+    >>> salgado in t2.allmembers
     False
     >>> salgado in t4.allmembers
     True
@@ -401,7 +402,7 @@ was approved.
     Approved
     >>> utc_now = datetime.now(pytz.timezone('UTC'))
     >>> membership.datejoined.date() == utc_now.date()
-    True 
+    True
 
 Other status updates won't change datejoined, regardless of the status.
 That's because datejoined stores the date in which the membership was first
@@ -485,6 +486,7 @@ date of other's memberships, not his own.
     ...
     AssertionError: ...
 
+
 == Flagging expired memberships ==
 
 The expired memberships are flagged by a cronscript that runs daily. This
@@ -528,7 +530,8 @@ deactivated, so it should not be flagged as expired.
     True
     >>> sp_on_ubuntu_translators.status.title
     'Deactivated'
-    >>> removeSecurityProxy(sp_on_ubuntu_translators).dateexpires = one_day_ago
+    >>> removeSecurityProxy(
+    ...     sp_on_ubuntu_translators).dateexpires = one_day_ago
     >>> flush_database_updates()
 
     >>> [(membership.person.name, membership.team.name)
@@ -564,7 +567,7 @@ Bug 3989 -- StuarBishop 20060713
     >>> import subprocess
     >>> process = subprocess.Popen(
     ...     'cronscripts/flag-expired-memberships.py -q', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> out, err
@@ -654,7 +657,7 @@ active and set to expire tomorrow).
 
 Now the membership can't be renewed by the member as it's not going to
 expire soon.
-    
+
     >>> karl_on_mirroradmins.dateexpires == tomorrow + timedelta(days=365)
     True
     >>> karl_on_mirroradmins.canBeRenewedByMember()
@@ -709,6 +712,7 @@ We can also change the sort order of the results of getMembersByStatus.
     ...  for person in t3.getMembersByStatus(deactivated, orderBy=orderBy)]
     [u'Celso Providelo (cprov)', u'Guilherme Salgado (salgado)']
 
+
 == Finding team administrators ==
 
 Another convenient method is getDirectAdministrators(), which returns the
@@ -755,6 +759,7 @@ teams for which the person/team has admin rights.
     >>> [team.name for team in cprov.getAdministratedTeams()]
     [u'canonical-partner-dev', u'guadamen', u'launchpad-buildd-admins']
 
+
 == Querying a person for team participation ==
 
 Team membership is direct; team participation is indirect, people being
@@ -800,6 +805,7 @@ for Salgado.
     t1
     t4
 
+
 == Membership caches ==
 
 Person instances have membership caches (_inTeam_cache) to avoid the
@@ -833,4 +839,57 @@ Or changed:
     {}
     >>> no_priv.inTeam(admins)
     False
+
+
+== Email to invalid users ==
+
+There are cases where teams have deactivated or suspended users as members.
+This is a data error that needs fixing, but should not interfere with
+any notification processes. An OOPS is reported in such cases and the
+method ignores the user.
+
+Bad user joins a team, and he is approved. An admin later suspends him.
+
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
+
+    >>> bad_user =  factory.makePerson(
+    ...     email='bad-user@canonical.com',
+    ...     name='bad-user',
+    ...     password='invalid')
+
+    >>> login('bad-user@canonical.com')
+    >>> bad_user.join(t3)
+
+    >>> login_person(t3.teamowner)
+    >>> t3.setMembershipData(
+    ...     bad_user, TeamMembershipStatus.APPROVED, reviewer)
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
+    >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
+    >>> removeSecurityProxy(bad_user)._preferredemail_cached = None
+    >>> transaction.commit()
+
+    >>> [m.displayname for m in t3.allmembers]
+    [u'Bad-user', u'Foo Bar']
+    >>> bad_user.is_valid_person
+    False
+    >>> print bad_user.preferredemail
+    None
+
+The teams's notifications do not fail when they process bad user.
+
+    >>> bad_membership = membershipset.getByPersonAndTeam(bad_user, t3)
+    >>> bad_membership.setExpirationDate(utc_now + timedelta(days=9), foobar)
+    >>> bad_membership.sendExpirationWarningEmail()
+
+    >>> t3.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+    >>> t3.defaultrenewalperiod = 1
+    >>> removeSecurityProxy(bad_membership).dateexpires = utc_now
+    >>> bad_membership.sendAutoRenewalNotification()
+
+    >>> bad_membership.setStatus(TeamMembershipStatus.EXPIRED, bad_user)
 

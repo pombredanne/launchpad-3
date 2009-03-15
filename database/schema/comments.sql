@@ -149,6 +149,7 @@ COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attache
 COMMENT ON COLUMN Bug.number_of_duplicates IS 'The number of bugs marked as duplicates of this bug, populated by a trigger after setting the duplicateof of bugs.';
 COMMENT ON COLUMN Bug.message_count IS 'The number of messages (currently just comments) on this bugbug, maintained by the set_bug_message_count_t trigger.';
 COMMENT ON COLUMN Bug.users_affected_count IS 'The number of users affected by this bug, maintained by the set_bug_users_affected_count_t trigger.';
+COMMENT ON COLUMN Bug.hotness IS 'The relevance of this bug. This value is computed periodically using bug_affects_person and other bug values.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -208,6 +209,8 @@ COMMENT ON COLUMN BugTask.date_triaged IS 'The date when this bug transitioned t
 COMMENT ON COLUMN BugTask.date_fix_committed IS 'The date when this bug transitioned to a status >= FIXCOMMITTED.';
 COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitioned to a FIXRELEASED status.';
 COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
+COMMENT ON COLUMN BugTask.date_milestone_set IS 'The date when this bug was targed to the milestone that is currently set.';
+COMMENT ON COLUMN BugTask.hotness_rank IS 'The hotness bin in which this bugtask appears, as a value from the BugTaskHotnessRank enumeration.';
 
 
 -- BugNotification
@@ -589,6 +592,7 @@ COMMENT ON COLUMN Product.official_blueprints IS 'Whether or not this product up
 COMMENT ON COLUMN Product.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on this product.';
 COMMENT ON COLUMN Product.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 COMMENT ON COLUMN Product.license_approved IS 'The Other/Open Source license has been approved by an administrator.';
+COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remote bug tracker.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -598,11 +602,12 @@ COMMENT ON COLUMN ProductLicense.license IS 'An integer referencing a value in t
 -- ProductRelease
 
 COMMENT ON TABLE ProductRelease IS 'A Product Release. This is table stores information about a specific ''upstream'' software release, like Apache 2.0.49 or Evolution 1.5.4.';
-COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the version string for this release, such as ''1.2.4'' or ''2.0.38'' or ''7.4.3''.';
---COMMENT ON COLUMN ProductRelease.codename IS 'This is the GSV Name of this release, like ''that, and a pair of testicles'' or ''All your base-0 are belong to us''. Many upstream projects are assigning fun names to their releases - these go in this field.';
-COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
-COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
 COMMENT ON COLUMN ProductRelease.milestone IS 'The milestone for this product release. This is scheduled to become a NOT NULL column, so every product release will be linked to a unique milestone.';
+COMMENT ON COLUMN ProductRelease.datecreated IS 'The timestamp when this product release was created.';
+COMMENT ON COLUMN ProductRelease.datereleased IS 'The date when this version of the product was released.';
+COMMENT ON COLUMN ProductRelease.release_notes IS 'Description of changes in this product release.';
+COMMENT ON COLUMN ProductRelease.changelog IS 'Detailed description of changes in this product release.';
+COMMENT ON COLUMN ProductRelease.owner IS 'The person who created this product release.';
 
 -- ProductReleaseFile
 
@@ -674,12 +679,11 @@ COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
 completed an import test or sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last successfully completed a production sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch''s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
-COMMENT ON COLUMN ProductSeries.import_branch IS 'The VCS imports branch for
-this product series.  If user_branch is not set, then this is considered the
-product series branch.';
-COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
-series, as set by the user.  If this is not set, then import_branch is
-considered to be the product series branch';
+COMMENT ON COLUMN ProductSeries.branch IS 'The branch for this product
+series.';
+COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'At what
+level the import of translations from a branch in codehosting will happen:
+None, POT files only, POT and PO files. See also the corresponding Enum.';
 
 -- ProductSeriesCodeImport
 
@@ -1469,6 +1473,17 @@ COMMENT ON COLUMN LibraryFileAlias.expires IS 'The expiry date of this file. If 
 COMMENT ON COLUMN LibraryFileAlias.last_accessed IS 'Roughly when this file was last retrieved from the Librarian. Initially set to this item''s creation date.';
 COMMENT ON COLUMN LibraryFileAlias.date_created IS 'The timestamp when this alias was created.';
 COMMENT ON COLUMN LibraryFileAlias.restricted IS 'Is this file available only from the restricted librarian?';
+COMMENT ON COLUMN LibraryFileAlias.hits IS 'The number of times this file has been downloaded.';
+
+COMMENT ON TABLE LibraryFileDownloadCount IS 'The number of daily downloads for a given LibraryFileAlias.';
+COMMENT ON COLUMN LibraryFileDownloadCount.libraryfilealias IS 'The LibraryFileAlias.';
+COMMENT ON COLUMN LibraryFileDownloadCount.day IS 'The day of the downloads.';
+COMMENT ON COLUMN LibraryFileDownloadCount.count IS 'The number of downloads.';
+COMMENT ON COLUMN LibraryFileDownloadCount.country IS 'The country from where the download requests came from.';
+
+COMMENT ON TABLE ParsedApacheLog IS 'A parsed apache log file for librarian.';
+COMMENT ON COLUMN ParsedApacheLog.first_line IS 'The first line of this log file, smashed to ASCII. This uniquely identifies the log file, even if its filename is changed by log rotation or archival.';
+COMMENT ON COLUMN ParsedApacheLog.bytes_read IS 'The number of bytes from this log file that have been parsed.';
 
 -- SourcePackageReleaseFile
 
@@ -1477,7 +1492,7 @@ COMMENT ON COLUMN SourcePackageReleaseFile.libraryfile IS 'The libraryfilealias 
 COMMENT ON COLUMN SourcePackageReleaseFile.filetype IS 'The type of the file. E.g. TAR, DIFF, DSC';
 COMMENT ON COLUMN SourcePackageReleaseFile.sourcepackagerelease IS 'The sourcepackagerelease that this file belongs to';
 
-COMMENT ON TABLE LoginToken IS 'LoginToken stores one time tokens used for validating email addresses and other tasks that require verifying an email address is valid such as password recovery and account merging. This table will be cleaned occasionally to remove expired tokens. Expiry time is not yet defined.';
+COMMENT ON TABLE LoginToken IS 'LoginToken stores one time tokens used by Launchpad for validating email addresses and other tasks that require verifying an email address is valid such as password recovery and account merging. This table will be cleaned occasionally to remove expired tokens. Expiry time is not yet defined.';
 COMMENT ON COLUMN LoginToken.requester IS 'The Person that made this request. This will be null for password recovery requests.';
 COMMENT ON COLUMN LoginToken.requesteremail IS 'The email address that was used to login when making this request. This provides an audit trail to help the end user confirm that this is a valid request. It is not a link to the EmailAddress table as this may be changed after the request is made. This field will be null for password recovery requests.';
 COMMENT ON COLUMN LoginToken.email IS 'The email address that this request was sent to.';
@@ -1487,15 +1502,27 @@ COMMENT ON COLUMN LoginToken.token IS 'The token (not the URL) emailed used to u
 COMMENT ON COLUMN LoginToken.fingerprint IS 'The GPG key fingerprint to be validated on this transaction, it means that a new register will be created relating this given key with the requester in question. The requesteremail still passing for the same usual checks.';
 COMMENT ON COLUMN LoginToken.date_consumed IS 'The date and time when this token was consumed. It''s NULL if it hasn''t been consumed yet.';
 
+
+COMMENT ON TABLE AuthToken IS 'AuthToken stores one time tokens used by the authentication service for validating email addresses and other tasks that require verifying an email address is valid such as password recovery and account merging. This table will be cleaned occasionally to remove expired tokens. Expiry time is not yet defined.';
+COMMENT ON COLUMN AuthToken.requester IS 'The Account that made this request. This will be null for password recovery requests.';
+COMMENT ON COLUMN AuthToken.requester_email IS 'The email address that was used to login when making this request. This provides an audit trail to help the end user confirm that this is a valid request. It is not a link to the EmailAddress table as this may be changed after the request is made. This field will be null for password recovery requests.';
+COMMENT ON COLUMN AuthToken.email IS 'The email address that this request was sent to.';
+COMMENT ON COLUMN AuthToken.date_created IS 'The timestamp that this request was made.';
+COMMENT ON COLUMN AuthToken.token_type IS 'The type of request, as per dbschema.TokenType.';
+COMMENT ON COLUMN AuthToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
+COMMENT ON COLUMN AuthToken.date_consumed IS 'The date and time when this token was consumed. It''s NULL if it hasn''t been consumed yet.';
+
+
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
 COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
+COMMENT ON COLUMN Milestone.codename IS 'A fun or easier to remember name for the milestone/release.';
 COMMENT ON COLUMN Milestone.distribution IS 'The distribution to which this milestone belongs, if it is a distro milestone.';
 COMMENT ON COLUMN Milestone.distroseries IS 'The distroseries for which this is a milestone. A milestone on a distroseries is ALWAYS also a milestone for the same distribution. This is because milestones started out on products/distributions but are moving to being on series/distroseries.';
 COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this is a milestone. A milestone on a productseries is ALWAYS also a milestone for the same product. This is because milestones started out on products/distributions but are moving to being on series/distroseries.';
 COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This allows for optional sorting by date.';
-COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
-COMMENT ON COLUMN Milestone.description IS 'A description of the milestone. This can be used to summarize the changes included in past milestones and to document the status of current milestones.';
+COMMENT ON COLUMN Milestone.active IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
+COMMENT ON COLUMN Milestone.summary IS 'This can be used to summarize the changes included in past milestones and to document the status of current milestones.';
 
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
@@ -1624,10 +1651,13 @@ then someone else sets it incorrectly, we lose the first setting.';
 -- Translator / TranslationGroup
 
 COMMENT ON TABLE TranslationGroup IS 'This represents an organised translation group that spans multiple languages. Effectively it consists of a list of people (pointers to Person), and each Person is associated with a Language. So, for each TranslationGroup we can ask the question "in this TranslationGroup, who is responsible for translating into Arabic?", for example.';
+COMMENT ON COLUMN TranslationGroup.translation_guide_url IS 'URL with documentation about general rules for translation work done by this translation group.';
+
 COMMENT ON TABLE Translator IS 'A translator is a person in a TranslationGroup who is responsible for a particular language. At the moment, there can only be one person in a TranslationGroup who is the Translator for a particular language. If you want multiple people, then create a launchpad team and assign that team to the language.';
 COMMENT ON COLUMN Translator.translationgroup IS 'The TranslationGroup for which this Translator is working.';
 COMMENT ON COLUMN Translator.language IS 'The language for which this Translator is responsible in this TranslationGroup. Note that the same person may be responsible for multiple languages, but any given language can only have one Translator within the TranslationGroup.';
 COMMENT ON COLUMN Translator.translator IS 'The Person who is responsible for this language in this translation group.';
+COMMENT ON COLUMN Translator.style_guide_url IS 'URL with translation style guide of a particular translation team.';
 
 -- PocketChroot
 COMMENT ON TABLE PocketChroot IS 'PocketChroots: Which chroot belongs to which pocket of which distroarchseries. Any given pocket of any given distroarchseries needs a specific chroot in order to be built. This table links it all together.';
@@ -1859,6 +1889,8 @@ COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were buil
 COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
 COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
 COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archive.';
+COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days before superseded or deleted binary files are expired in the librarian, or zero for never.';
+COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
 
 -- ArchiveAuthToken
 

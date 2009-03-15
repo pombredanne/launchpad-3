@@ -20,52 +20,94 @@ from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
+import os.path
 
 import pytz
+from storm.store import Store
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.autodecorate import AutoDecorate
+from canonical.config import config
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
+from canonical.database.sqlbase import flush_database_updates
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.components.packagelocation import PackageLocation
+from canonical.launchpad.database.account import Account
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.interfaces import (
-    AccountStatus, BranchMergeProposalStatus,
-    BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
-    CodeImportResultStatus, CodeImportReviewStatus,
-    CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
-    EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
-    ICodeImportEventSet, ICodeImportMachineSet, ICodeImportResultSet,
-    ICodeImportSet, ICountrySet, IDistributionSet, IEmailAddressSet,
-    ILibraryFileAliasSet, IPOTemplateSet, IPersonSet, IProductSet,
-    IProjectSet, IRevisionSet, IShippingRequestSet, ISourcePackageNameSet,
-    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
-    License, PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
-    ShippingRequestStatus, SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy, UnknownBranchTypeError)
+from canonical.launchpad.database.processor import ProcessorFamilySet
+from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.account import (
+    AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
+from canonical.launchpad.interfaces.branchmergequeue import (
+    IBranchMergeQueueSet)
+from canonical.launchpad.interfaces.branch import (
+    BranchType, IBranchSet, UnknownBranchTypeError)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus)
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
-from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from canonical.launchpad.interfaces.codeimport import ICodeImportSet
+from canonical.launchpad.interfaces.codeimportevent import ICodeImportEventSet
+from canonical.launchpad.interfaces.codeimportmachine import (
+    CodeImportMachineState, ICodeImportMachineSet)
+from canonical.launchpad.interfaces.codeimportresult import (
+    CodeImportResultStatus, ICodeImportResultSet)
+from canonical.launchpad.interfaces.codeimport import (
+    CodeImportReviewStatus, RevisionControlSystems)
+from canonical.launchpad.interfaces.country import ICountrySet
+from canonical.launchpad.interfaces.distribution import (
+    IDistribution, IDistributionSet)
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.hwdb import (
+    HWSubmissionFormat, IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.poll import (
     IPollSet, PollAlgorithm, PollSecrecy)
-from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad.interfaces.person import (
+    IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet, License)
 from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.project import IProjectSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from canonical.launchpad.interfaces.revision import IRevisionSet
+from canonical.launchpad.interfaces.shipit import (
+    IShippingRequestSet, IStandardShipItRequestSet, ShipItFlavour,
+    ShippingRequestStatus)
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
+from canonical.launchpad.interfaces.specification import (
+    ISpecificationSet, SpecificationDefinitionStatus)
+from canonical.launchpad.interfaces.translationgroup import (
+    ITranslationGroupSet)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
+from canonical.launchpad.webapp.adapter import StoreSelector
+from canonical.launchpad.webapp.interfaces import ALL_STORES, MASTER_FLAVOR
 
 SPACE = ' '
 
@@ -92,6 +134,29 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
+def default_master_store(func):
+    """Decorator to temporarily set the default Store to the master.
+    
+    In some cases, such as in the middle of a page test story,
+    we might be calling factory methods with the default Store set
+    to the slave which breaks stuff. For instance, if we set an account's
+    password that needs to happen on the master store and this is forced.
+    However, if we then read it back the default Store has to be used.
+    """
+    def with_default_master_store(*args, **kw):
+        current_flavors = {}
+        for store in ALL_STORES:
+            current_flavors[store] = StoreSelector.getDefaultFlavor(store)
+        try:
+            for store in ALL_STORES:
+                StoreSelector.setDefaultFlavor(store, MASTER_FLAVOR)
+            return func(*args, **kw)
+        finally:
+            for store in ALL_STORES:
+                StoreSelector.setDefaultFlavor(store, current_flavors[store])
+    return with_default_master_store
+
+
 # We use this for default paramters where None has a specific meaning.  For
 # example, makeBranch(product=None) means "make a junk branch".
 # None, because None means "junk branch".
@@ -100,6 +165,8 @@ _DEFAULT = object()
 
 class ObjectFactory:
     """Factory methods for creating basic Python objects."""
+
+    __metaclass__ = AutoDecorate(default_master_store)
 
     def __init__(self):
         # Initialise the unique identifier.
@@ -157,10 +224,59 @@ class LaunchpadObjectFactory(ObjectFactory):
             pocket)
         return location
 
-    def makePerson(self, email=None, name=None, password=None,
-                   email_address_status=None, hide_email_addresses=False,
-                   displayname=None, time_zone=None, latitude=None,
-                   longitude=None):
+    def makeAccount(self, displayname, email=None, password=None,
+                    status=AccountStatus.ACTIVE,
+                    rationale=AccountCreationRationale.UNKNOWN,
+                    commit=True):
+        """Create and return a new Account.
+
+        If commit is True, we do a transaction.commit() at the end so that the
+        newly created objects can be seen in other stores as well.
+        """
+        account = getUtility(IAccountSet).new(
+            rationale, displayname, password=password)
+        removeSecurityProxy(account).status = status
+        if email is None:
+            email = self.getUniqueEmailAddress()
+        email = self.makeEmail(
+            email, person=None, account=account,
+            email_status=EmailAddressStatus.PREFERRED)
+        if commit:
+            import transaction
+            transaction.commit()
+        return account
+
+    def makePerson(self, *args, **kwargs):
+        """As makePersonNoCommit, except with an implicit transaction commit.
+
+        makePersonNoCommit makes changes to two seperate database connections,
+        and the returned Person can have odd behavior until a commit is
+        made. For example, person.preferredemail will be None as this
+        is looking in the main Store for email address details, not the
+        email address master Store (the auth Store).
+        """
+        person = self.makePersonNoCommit(*args, **kwargs)
+        transaction.commit()
+        self._stuff_preferredemail_cache(person)
+        return person
+
+    def _stuff_preferredemail_cache(self, person):
+        """Stuff the preferredemail cache.
+        
+        cachedproperty does not get reset across transactions,
+        so person.preferredemail can contain a bogus value even after
+        a commit, despite all changes now being available in the main
+        store.
+        """
+        person = removeSecurityProxy(person) # Need to poke person's privates
+        person._preferredemail_cached = Store.of(person).find(
+            EmailAddress, personID=person.id,
+            status=EmailAddressStatus.PREFERRED).one()
+
+    def makePersonNoCommit(
+        self, email=None, name=None, password=None,
+        email_address_status=None, hide_email_addresses=False,
+        displayname=None, time_zone=None, latitude=None, longitude=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -194,25 +310,28 @@ class LaunchpadObjectFactory(ObjectFactory):
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname,
             hide_email_addresses=hide_email_addresses)
+        person = removeSecurityProxy(person)
+        email = removeSecurityProxy(email)
+
+        assert person.password is not None, (
+            'Password not set. Wrong default auth Store?')
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
-            # Remove the security proxy because setLocation() is protected
-            # with launchpad.EditLocation.
-            removeSecurityProxy(person).setLocation(
-                latitude, longitude, time_zone, person)
+            person.setLocation(latitude, longitude, time_zone, person)
 
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.PREFERRED:
             person.validateAndEnsurePreferredEmail(email)
-            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
-        # Make the account ACTIVE if we have a preferred email address now.
-        if (person.preferredemail is not None and
-            person.preferredemail.status == EmailAddressStatus.PREFERRED):
-            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
-        removeSecurityProxy(email).status = email_address_status
-        syncUpdate(email)
+            account = IMasterStore(Account).get(
+                Account, person.accountID)
+            account.status = AccountStatus.ACTIVE
+
+        email.status = email_address_status
+        
+        # Ensure updated ValidPersonCache
+        flush_database_updates()
         return person
 
     def makePersonByName(self, first_name, set_preferred_email=True,
@@ -259,18 +378,23 @@ class LaunchpadObjectFactory(ObjectFactory):
             # over subscriptions in the doctests.
             person.mailing_list_auto_subscribe_policy = \
                 MailingListAutoSubscribePolicy.NEVER
-        getUtility(IEmailAddressSet).new(alternative_address, person,
-                                         EmailAddressStatus.VALIDATED,
-                                         person.account)
+        account = IMasterStore(Account).get(Account, person.accountID)
+        getUtility(IEmailAddressSet).new(
+            alternative_address, person, EmailAddressStatus.VALIDATED, account)
+        transaction.commit()
+        self._stuff_preferredemail_cache(person)
         return person
 
-    def makeEmail(self, address, person, email_status=None):
+    def makeEmail(self, address, person, account=None, email_status=None):
         """Create a new email address for a person.
 
         :param address: The email address to create.
         :type address: string
         :param person: The person to assign the email address to.
         :type person: `IPerson`
+        :param account: The account to assign the email address to.  Will use
+            the given person's account if None is provided.
+        :type person: `IAccount`
         :param email_status: The default status of the email address,
             if given.  If not given, `EmailAddressStatus.VALIDATED`
             will be used.
@@ -280,8 +404,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if email_status is None:
             email_status = EmailAddressStatus.VALIDATED
+        if account is None:
+            account = person.account
         return getUtility(IEmailAddressSet).new(
-            address, person, email_status, person.account)
+            address, person, email_status, account)
 
     def makeTeam(self, owner, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
@@ -308,6 +434,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
+        transaction.commit()
+        self._stuff_preferredemail_cache(team)
         return team
 
     def makePoll(self, team, name, title, proposition):
@@ -320,7 +448,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             poll_type=PollAlgorithm.SIMPLE)
 
     def makeTranslationGroup(
-        self, owner, name=None, title=None, summary=None):
+        self, owner, name=None, title=None, summary=None, url=None):
         """Create a new, arbitrary `TranslationGroup`."""
         if name is None:
             name = self.getUniqueString("translationgroup")
@@ -329,7 +457,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if summary is None:
             summary = self.getUniqueString("summary")
         return getUtility(ITranslationGroupSet).new(
-            name, title, summary, owner)
+            name, title, summary, url, owner)
 
     def makeMilestone(self, product=None, distribution=None, name=None):
         if product is None and distribution is None:
@@ -339,12 +467,23 @@ class LaunchpadObjectFactory(ObjectFactory):
         return Milestone(product=product, distribution=distribution,
                          name=name)
 
-    def makeProduct(self, name=None, project=None, displayname=None,
-                    licenses=None, owner=None, registrant=None,
-                    title=None, summary=None):
+    def makeProduct(self, *args, **kwargs):
+        """As makeProductNoCommit with an implicit transaction commit.
+        
+        This ensures that generated owners and registrants are fully
+        flushed and available from all Stores.
+        """
+        product = self.makeProductNoCommit(*args, **kwargs)
+        transaction.commit()
+        return product
+
+    def makeProductNoCommit(
+        self, name=None, project=None, displayname=None,
+        licenses=None, owner=None, registrant=None,
+        title=None, summary=None, official_malone=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
-            owner = self.makePerson()
+            owner = self.makePersonNoCommit()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
@@ -358,7 +497,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if summary is None:
             summary = self.getUniqueString('summary')
-        return getUtility(IProductSet).createProduct(
+        product = getUtility(IProductSet).createProduct(
             owner,
             name,
             displayname,
@@ -368,6 +507,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             licenses=licenses,
             project=project,
             registrant=registrant)
+        if official_malone is not None:
+            product.official_malone = official_malone
+        return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
                           summary=None):
@@ -411,10 +553,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=description,
             owner=owner)
 
-    def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=_DEFAULT, url=_DEFAULT, registrant=None,
-                   private=False, stacked_on=None, distroseries=None,
-                   sourcepackagename=None, **optional_branch_args):
+    def makeBranch(self, branch_type=None, owner=None,
+                   name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
+                   private=False, stacked_on=None, sourcepackage=None,
+                   **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -424,20 +566,23 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch_type = BranchType.HOSTED
         if owner is None:
             owner = self.makePerson()
-        if registrant is None:
-            registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if distroseries is None and sourcepackagename is None:
+
+        if sourcepackage is None:
             if product is _DEFAULT:
                 product = self.makeProduct()
-        elif distroseries is not None and sourcepackagename is not None:
+            sourcepackagename = None
+            distroseries = None
+        else:
             assert product is _DEFAULT, (
                 "Passed source package AND product details")
             product = None
-        else:
-            raise AssertionError(
-                "Must pass both sourcepackagename and distroseries.")
+            sourcepackagename = sourcepackage.sourcepackagename
+            distroseries = sourcepackage.distroseries
+
+        if registrant is None:
+            registrant = owner
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
@@ -457,6 +602,41 @@ class LaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
+    def makePackageBranch(self, sourcepackage=None, **kwargs):
+        """Make a package branch on an arbitrary package.
+
+        See `makeBranch` for more information on arguments.
+        """
+        if sourcepackage is None:
+            sourcepackage = self.makeSourcePackage()
+        return self.makeBranch(sourcepackage=sourcepackage, **kwargs)
+
+    def makePersonalBranch(self, owner=None, **kwargs):
+        """Make a personal branch on an arbitrary person.
+
+        See `makeBranch` for more information on arguments.
+        """
+        if owner is None:
+            owner = self.makePerson()
+        return self.makeBranch(
+            owner=owner, product=None, sourcepackage=None, **kwargs)
+
+    def makeProductBranch(self, product=None, **kwargs):
+        """Make a product branch on an arbitrary product.
+
+        See `makeBranch` for more information on arguments.
+        """
+        if product is None:
+            product = self.makeProduct()
+        return self.makeBranch(product=product, **kwargs)
+
+    def makeAnyBranch(self, **kwargs):
+        """Make a branch without caring about its container.
+
+        See `makeBranch` for more information on arguments.
+        """
+        return self.makeProductBranch(**kwargs)
+
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
 
@@ -471,53 +651,69 @@ class LaunchpadObjectFactory(ObjectFactory):
         naked_branch = removeSecurityProxy(branch)
         naked_branch.startMirroring()
         naked_branch.mirrorComplete('rev1')
-        # Likewise, we might not have permission to set the user_branch of the
+        # Likewise, we might not have permission to set the branch of the
         # development focus series.
         naked_series = removeSecurityProxy(product.development_focus)
-        naked_series.user_branch = branch
+        naked_series.branch = branch
         return branch
+
+    def makeBranchMergeQueue(self, name=None):
+        """Create a new multi branch merge queue."""
+        if name is None:
+            name = self.getUniqueString('name')
+        return getUtility(IBranchMergeQueueSet).newMultiBranchMergeQueue(
+            registrant=self.makePerson(),
+            owner=self.makePerson(),
+            name=name,
+            summary=self.getUniqueString())
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
                                 product=None, review_diff=None,
-                                initial_comment=None):
+                                initial_comment=None, source_branch=None):
         """Create a proposal to merge based on anonymous branches."""
         if not product:
             product = _DEFAULT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
+            if source_branch is not None:
+                product = source_branch.product
             target_branch = self.makeBranch(product=product)
-        product = target_branch.product
+        if product == _DEFAULT:
+            product = target_branch.product
         if registrant is None:
             registrant = self.makePerson()
-        source_branch = self.makeBranch(product=product)
+        if source_branch is None:
+            source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch,
             review_diff=review_diff, initial_comment=initial_comment)
 
+        unsafe_proposal = removeSecurityProxy(proposal)
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
             # The initial state is work in progress, so do nothing.
             pass
         elif set_state == BranchMergeProposalStatus.NEEDS_REVIEW:
-            proposal.requestReview()
+            unsafe_proposal.requestReview()
         elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
-            proposal.approveBranch(
+            unsafe_proposal.approveBranch(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.REJECTED:
-            proposal.rejectBranch(
+            unsafe_proposal.rejectBranch(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.MERGED:
-            proposal.markAsMerged()
+            unsafe_proposal.markAsMerged()
         elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
-            proposal.mergeFailed(proposal.target_branch.owner)
+            unsafe_proposal.mergeFailed(proposal.target_branch.owner)
         elif set_state == BranchMergeProposalStatus.QUEUED:
-            proposal.commit_message = self.getUniqueString('commit message')
-            proposal.enqueue(
+            unsafe_proposal.commit_message = self.getUniqueString(
+                'commit message')
+            unsafe_proposal.enqueue(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.SUPERSEDED:
-            proposal.resubmit(proposal.registrant)
+            unsafe_proposal.resubmit(proposal.registrant)
         else:
             raise AssertionError('Unknown status: %s' % set_state)
 
@@ -593,6 +789,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent, sequence)
 
+    def makeBranchRevision(self, branch, revision_id, sequence=None):
+        revision = self.makeRevision(rev_id=revision_id)
+        return branch.createBranchRevision(sequence, revision)
+
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
                 date_created=None):
@@ -608,9 +808,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             to this URL.
         """
         if product is None:
-            product = self.makeProduct()
+            product = self.makeProductNoCommit()
         if owner is None:
-            owner = self.makePerson()
+            owner = self.makePersonNoCommit()
         if title is None:
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
@@ -691,7 +891,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, bugtrackertype)
 
-    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
+    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
+                     owner=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -701,7 +902,10 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         if bug is None:
             bug = self.makeBug()
-        owner = self.makePerson()
+
+        if owner is None:
+            owner = self.makePerson()
+
         return getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
 
@@ -909,6 +1113,10 @@ class LaunchpadObjectFactory(ObjectFactory):
                               merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
+            # Until we commit, sender.preferredemail returns None
+            # because the email address changes pending in the auth Store
+            # are not available via the main Store.
+            transaction.commit()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
@@ -936,14 +1144,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         MessageChunk(message=message, sequence=1, content=content)
         return message
 
-    def makeSeries(self, user_branch=None, import_branch=None,
-                   name=None, product=None):
+    def makeSeries(self, branch=None, name=None, product=None):
         """Create a new, arbitrary ProductSeries.
 
-        :param user_branch: If supplied, the branch to set as
-            ProductSeries.user_branch.
-        :param import_branch: If supplied, the branch to set as
-            ProductSeries.import_branch.
+        :param branch: If supplied, the branch to set as
+            ProductSeries.branch.
         :param product: If supplied, the name of the series.
         :param product: If supplied, the series is created for this product.
             Otherwise, a new product is created.
@@ -956,9 +1161,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
         series = naked_product.newSeries(
-            product.owner, name, self.getUniqueString(), user_branch)
-        if import_branch is not None:
-            series.import_branch = import_branch
+            product.owner, name, self.getUniqueString(), branch)
+        if branch is not None:
+            series.branch = branch
         syncUpdate(series)
         return series
 
@@ -1017,17 +1222,36 @@ class LaunchpadObjectFactory(ObjectFactory):
             distribution = self.makeDistribution()
         if name is None:
             name = self.getUniqueString()
+        if version is None:
+            version = "%s.0" % self.getUniqueInteger()
 
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
         naked_distribution = removeSecurityProxy(distribution)
         return naked_distribution.newSeries(
-            version="%s.0" % self.getUniqueInteger(),
+            version=version,
             name=name,
-            displayname=self.getUniqueString(),
+            displayname=name,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
+
+    def makeDistroArchSeries(self, distroseries=None,
+                             architecturetag='powerpc', processorfamily=None,
+                             official=True, owner=None,
+                             supports_virtualized=False):
+        """Create a new distroarchseries"""
+
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        if processorfamily is None:
+            processorfamily = ProcessorFamilySet().getByName('powerpc')
+        if owner is None:
+            owner = self.makePerson()
+
+        return distroseries.newArch(
+            architecturetag, processorfamily, official, owner,
+            supports_virtualized)
 
     def _makeArchive(self, distribution=None, owner=None, name=None,
                     purpose = None):
@@ -1097,12 +1321,11 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       sequence=None):
         """Make a new `POTMsgSet` in the given template."""
-        if sequence is None:
-            sequence = self.getUniqueInteger()
         if singular is None and plural is None:
             singular = self.getUniqueString()
         potmsgset = potemplate.createMessageSetFromText(singular, plural)
-        potmsgset.setSequence(potemplate, sequence)
+        if sequence is not None:
+            potmsgset.setSequence(potemplate, sequence)
         naked_potmsgset = removeSecurityProxy(potmsgset)
         naked_potmsgset.sync()
         return potmsgset
@@ -1110,7 +1333,8 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
                                translator=None, suggestion=False,
                                reviewer=None, translations=None,
-                               date_updated=None, is_imported=False):
+                               lock_timestamp=None, date_updated=None,
+                               is_imported=False):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
             pofile = self.makePOFile('sr')
@@ -1122,7 +1346,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             translations = [self.getUniqueString()]
         translation_message = potmsgset.updateTranslation(
             pofile, translator, translations, is_imported=is_imported,
-            lock_timestamp=None, force_suggestion=suggestion)
+            lock_timestamp=lock_timestamp, force_suggestion=suggestion)
         if date_updated is not None:
             naked_translation_message = removeSecurityProxy(
                 translation_message)
@@ -1142,6 +1366,33 @@ class LaunchpadObjectFactory(ObjectFactory):
             translations=translations, date_updated=date_updated)
         translation_message.potemplate = None
         return translation_message
+
+    def makeTranslation(self, pofile, sequence,
+                        english=None, translated=None,
+                        is_imported=False):
+        """Add a single current translation entry to the given pofile.
+        This should only be used on pristine pofiles with pristine
+        potemplates to avoid conflicts in the sequence numbers.
+        For each entry a new POTMsgSet is created.
+
+        :pofile: The pofile to add to.
+        :sequence: The sequence number for the POTMsgSet.
+        :english: The english string which becomes the msgid in the POTMsgSet.
+        :translated: The translated string which becomes the msgstr.
+        :is_imported: The is_imported flag of the translation message.
+        """
+        if english is None:
+            english = self.getUniqueString('english')
+        if translated is None:
+            translated = self.getUniqueString('translated')
+        naked_pofile = removeSecurityProxy(pofile)
+        potmsgset = self.makePOTMsgSet(naked_pofile.potemplate, english,
+            sequence=sequence)
+        translation = removeSecurityProxy(
+            self.makeTranslationMessage(naked_pofile, potmsgset,
+                translations=[translated]))
+        translation.is_imported = is_imported
+        translation.is_current = True
 
     def makeTeamAndMailingList(self, team_name, owner_name):
         """Make a new active mailing list for the named team.
@@ -1187,6 +1438,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString()
         return getUtility(ISourcePackageNameSet).new(name)
 
+    def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
+        """Make an `ISourcePackage`."""
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+        return SourcePackage(sourcepackagename, distroseries)
+
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None):
         """Make an email message with possible attachments.
@@ -1220,3 +1479,98 @@ class LaunchpadObjectFactory(ObjectFactory):
                     'attachment; filename="%s"' % filename)
                 msg.attach(attachment)
         return msg
+
+    def makeBundleMergeDirectiveEmail(self, source_branch, target_branch):
+        """Create a merge directive email from two bzr branches."""
+        from bzrlib.merge_directive import MergeDirective2
+        md = MergeDirective2.from_objects(
+            source_branch.repository, source_branch.last_revision(),
+            public_branch=source_branch.get_public_branch(),
+            target_branch=target_branch.warehouse_url,
+            local_target_branch=target_branch.warehouse_url, time=0,
+            timezone=0)
+        return self.makeSignedMessage(
+            body='My body', subject='My subject',
+            attachment_contents=''.join(md.to_lines()))
+
+    def makeMergeDirective(self, source_branch=None, target_branch=None,
+        source_branch_url=None, target_branch_url=None):
+        """Return a bzr merge directive object.
+
+        :param source_branch: The source database branch in the merge
+            directive.
+        :param target_branch: The target database branch in the merge
+            directive.
+        :param source_branch_url: The URL of the source for the merge
+            directive.  Overrides source_branch.
+        :param target_branch_url: The URL of the target for the merge
+            directive.  Overrides target_branch.
+        """
+        from bzrlib.merge_directive import MergeDirective2
+        if source_branch_url is not None:
+            assert source_branch is None
+        else:
+            if source_branch is None:
+                source_branch = self.makeAnyBranch()
+            source_branch_url = (
+                config.codehosting.supermirror_root +
+                source_branch.unique_name)
+        if target_branch_url is not None:
+            assert target_branch is None
+        else:
+            if target_branch is None:
+                target_branch = self.makeAnyBranch()
+            target_branch_url = (
+                config.codehosting.supermirror_root +
+                target_branch.unique_name)
+        return MergeDirective2(
+            'revid', 'sha', 0, 0, target_branch_url,
+            source_branch=source_branch_url, base_revision_id='base-revid',
+            patch='booga')
+
+    def makeMergeDirectiveEmail(self, body='Hi!\n'):
+        """Create an email with a merge directive attached.
+
+        :param body: The message body to use for the email.
+        :return: message, file_alias, source_branch, target_branch
+        """
+        target_branch = self.makeProductBranch()
+        source_branch = self.makeProductBranch(
+            product=target_branch.product)
+        md = self.makeMergeDirective(source_branch, target_branch)
+        message = self.makeSignedMessage(body=body,
+            subject='My subject', attachment_contents=''.join(md.to_lines()))
+        message_string = message.as_string()
+        file_alias = getUtility(ILibraryFileAliasSet).create(
+            '*', len(message_string), StringIO(message_string), '*')
+        return message, file_alias, source_branch, target_branch
+
+    def makeHWSubmission(self, date_created=None, submission_key=None,
+                         emailaddress=u'test@canonical.com',
+                         distroarchseries=None, private=False,
+                         contactable=False, system=None,
+                         submission_data=None):
+        """Create a new HWSubmission."""
+        if date_created is None:
+            date_created = datetime.now(pytz.UTC)
+        if submission_key is None:
+            submission_key = self.getUniqueString('submission-key')
+        if distroarchseries is None:
+            distroarchseries = self.makeDistroArchSeries()
+        if system is None:
+            system = self.getUniqueString('system-fingerprint')
+        if submission_data is None:
+            sample_data_path = os.path.join(
+                config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+                'tests', 'simple_valid_hwdb_submission.xml')
+            submission_data = open(sample_data_path).read()
+        filename = self.getUniqueString('submission-file')
+        filesize = len(submission_data)
+        raw_submission = StringIO(submission_data)
+        format = HWSubmissionFormat.VERSION_1
+        submission_set = getUtility(IHWSubmissionSet)
+
+        return submission_set.createSubmission(
+            date_created, format, private, contactable,
+            submission_key, emailaddress, distroarchseries,
+            raw_submission, filename, filesize, system)

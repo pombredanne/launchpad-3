@@ -24,9 +24,15 @@
         just a single paragraph of text really, giving a summary of
         this TranslationGroup.
       </p>
+      <p id="documentation" tal:condition="context/translation_guide_url">
+        <em>Please read <a tal:attributes="
+           href context/translation_guide_url">translation instructions</a>
+          to learn about policies, recommendations and caveats for doing
+          translations in this translation group.</em>
+      </p>
       <p>
         Group owner:
-        <a tal:content="context/owner/displayname"
+        <a tal:content="context/owner/fmt:displayname"
            tal:attributes="href context/owner/fmt:url"
            class="link" />
         <a tal:condition="context/required:launchpad.Edit" href="+reassign">
@@ -52,8 +58,14 @@
                 <tbody>
                   <tr tal:repeat="translator view/translator_list">
                     <td tal:content="translator/lang" />
-                    <td><a tal:content="translator/person/browsername"
+                    <td class="translator_info">
+                        <a tal:content="translator/person/browsername"
                             tal:attributes="href translator/person/fmt:url" />
+                        <a tal:condition="translator/style_guide_url"
+                            tal:attributes="href translator/style_guide_url"
+                             ><img src="/@@/link" alt="Doc"
+                           tal:attributes="title translator/style_guide_url"
+                              /></a>
                     </td>
                     <td><a tal:attributes="href translator/code"><img
                            src="/@@/edit" alt="Change"
