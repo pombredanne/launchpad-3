@@ -48,8 +48,17 @@ class IBranchCollection(Interface):
     def count():
         """The number of branches in this collection."""
 
-    def getBranches():
-        """Return a result set of all branches in this collection."""
+    def getBranches(join_owner=True, join_product=True):
+        """Return a result set of all branches in this collection.
+
+        The returned result set will also join across the specified tables as
+        defined by the arguments to this function.  These extra tables are
+        joined specificly to allow the caller to sort on values not in the
+        Branch table itself.
+
+        :param join_owner: Join the Person table with the Branch.owner.
+        :param join_product: Left Join the Product table with Branch.product.
+        """
 
     def getMergeProposals(statuses=None):
         """Return a result set of merge proposals for the branches in this
