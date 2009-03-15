@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -20,6 +21,7 @@ from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
     IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
     PersonCreationRationale, UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.interfaces.bugtracker import BugTrackerType
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
 from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
@@ -69,7 +71,6 @@ class UtilsTestCase(unittest.TestCase):
         # Test that the get_enum_value() function returns the
         # appropriate enum value, or raises BugXMLSyntaxError if it is
         # not found.
-        from canonical.launchpad.interfaces import BugTaskStatus
         self.assertEqual(bugimport.get_enum_value(BugTaskStatus,
                                                   'FIXRELEASED'),
                          BugTaskStatus.FIXRELEASED)
@@ -152,6 +153,9 @@ class GetPersonTestCase(unittest.TestCase):
         <person xmlns="https://launchpad.net/xmlns/2006/bugs"
                 name="foo" email="foo@example.com">Foo User</person>''')
         person = importer.getPerson(personnode)
+        # Commit as we just made changes to two different stores, and the
+        # rest of these tests require the changes to be visible.
+        transaction.commit()
         self.assertNotEqual(person, None)
         self.assertEqual(person.name, 'foo')
         self.assertEqual(person.displayname, 'Foo User')
@@ -248,9 +252,10 @@ class GetPersonTestCase(unittest.TestCase):
         # email address when verify_users=True.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             'foo@example.com', PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        email = getUtility(IEmailAddressSet).new('foo@preferred.com',
-                                                 person.id)
+        email = getUtility(IEmailAddressSet).new('foo@preferred.com', person)
+        transaction.commit()
         person.setPreferredEmail(email)
+        transaction.commit()
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
 
         product = getUtility(IProductSet).getByName('netapplet')
@@ -758,11 +763,12 @@ class TestBugTracker:
     It exposes two bug watches, one of them is guaranteed to trigger an error.
     """
     baseurl = 'http://example.com/'
+    bugtrackertype = BugTrackerType.BUGZILLA
 
     def __init__(self, test_bug_one, test_bug_two):
         self.test_bug_one = test_bug_one
         self.test_bug_two = test_bug_two
-    
+
     def getBugWatchesNeedingUpdate(self, hours):
         """Returns a sequence of teo bug watches for testing."""
         return TestResultSequence([
@@ -831,9 +837,9 @@ class TestBugWatchUpdater(BugWatchUpdater):
         self.bugtracker = bug_tracker
         super(TestBugWatchUpdater, self).updateBugTracker(bug_tracker)
 
-    def _getExternalBugTracker(self, bug_tracker):
+    def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """See `BugWatchUpdater`."""
-        return TestExternalBugTracker(bug_tracker.baseurl)
+        return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
 
     def _getBugWatch(self, bug_watch_id):
         """Returns a mock bug watch object.

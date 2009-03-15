@@ -17,20 +17,21 @@ import mimetypes
 
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.formlib.form import FormFields
+from zope.schema import Bool
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
-from canonical.launchpad.interfaces.productseries import IProductSeriesSet
+    IProductRelease, IProductReleaseFileAddForm)
 
+from canonical.launchpad import _
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, stepthrough)
+from canonical.widgets import DateTimeWidget
 
 
 class ProductReleaseNavigation(Navigation):
@@ -49,7 +50,7 @@ class ProductReleaseNavigation(Navigation):
 class ProductReleaseContextMenu(ContextMenu):
 
     usedfor = IProductRelease
-    links = ['edit', 'add_file', 'administer', 'download']
+    links = ['edit', 'add_file', 'administer', 'download', 'view_milestone']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -59,7 +60,7 @@ class ProductReleaseContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def add_file(self):
         text = 'Add download file'
-        return Link('+adddownloadfile', text, icon='edit')
+        return Link('+adddownloadfile', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
@@ -70,40 +71,106 @@ class ProductReleaseContextMenu(ContextMenu):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
+    def view_milestone(self):
+        text = 'View milestone'
+        url = canonical_url(self.context.milestone)
+        return Link(url, text)
 
-class ProductReleaseAddView(AddView):
 
-    __used_for__ = IProductRelease
+class ProductReleaseAddView(LaunchpadFormView):
+    """Create a product release.
 
-    _nextURL = '.'
+    Also, deactivate the milestone it is attached to.
+    """
 
-    def nextURL(self):
-        return self._nextURL
+    schema = IProductRelease
+    field_names = [
+        'datereleased',
+        'release_notes',
+        'changelog',
+        ]
 
-    def createAndAdd(self, data):
-        user = getUtility(ILaunchBag).user
-        product_series_set = getUtility(IProductSeriesSet)
-        product_series = product_series_set[data['productseries']]
-        newrelease = product_series.addRelease(
-            data['version'], user, codename=data['codename'],
-            summary=data['summary'], description=data['description'],
-            changelog=data['changelog'])
-        self._nextURL = canonical_url(newrelease)
+    custom_widget('datereleased', DateTimeWidget)
+    custom_widget('release_notes', TextAreaWidget, height=7, width=62)
+    custom_widget('changelog', TextAreaWidget, height=7, width=62)
+
+    def initialize(self):
+        if self.context.product_release is not None:
+            self.request.response.addErrorNotification(
+                _("A product release already exists for this milestone."))
+            self.request.response.redirect(
+                canonical_url(self.context.product_release) + '/+edit')
+        else:
+            super(ProductReleaseAddView, self).initialize()
+
+    def setUpFields(self):
+        super(ProductReleaseAddView, self).setUpFields()
+        if self.context.active is True:
+            self.form_fields += FormFields(
+                Bool(
+                    __name__='keep_milestone_active',
+                    title=_("Keep the milestone active."),
+                    description=_(
+                        "Only select this if bugs or blueprints still need "
+                        "to be targeted to this product release&rsquo;s "
+                        "milestone.")),
+                render_context=self.render_context)
+
+    @action(_('Publish release'), name='publish')
+    def publishRelease(self, action, data):
+        """Publish product release for this milestone."""
+        newrelease = self.context.createProductRelease(
+            self.user, changelog=data['changelog'],
+            release_notes=data['release_notes'],
+            datereleased=data['datereleased'])
+        # Set Milestone.active to false, since bugs & blueprints
+        # should not be targeted to a milestone in the past.
+        if data['keep_milestone_active'] is False:
+            self.context.active = False
+            self.request.response.addWarningNotification(
+                _("The milestone for this product release was deactivated "
+                  "so that bugs & blueprints cannot be targeted "
+                  "to a milestone in the past."))
+        self.next_url = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Register a new %s release' % self.context.product.name
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class ProductReleaseEditView(LaunchpadEditFormView):
     """Edit view for ProductRelease objects"""
 
     schema = IProductRelease
-    label = "Edit project release details"
-    field_names = ["summary", "description", "changelog", "codename"]
-    custom_widget('summary', TextAreaWidget, width=62, height=5)
+    field_names = [
+        "datereleased",
+        "release_notes",
+        "changelog",
+        ]
+
+    custom_widget('datereleased', DateTimeWidget)
+    custom_widget('release_notes', TextAreaWidget, height=7, width=62)
+    custom_widget('changelog', TextAreaWidget, height=7, width=62)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit %s release details' % self.context.title
 
     @action('Change', name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class ProductReleaseRdfView(object):
@@ -140,6 +207,11 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     schema = IProductReleaseFileAddForm
 
     custom_widget('description', TextWidget, width=62)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Add a download file to %s' % self.context.title
 
     @action('Upload', name='add')
     def add_action(self, action, data):
@@ -185,6 +257,10 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
         self.next_url = canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
     """View for ProductRelease overview."""
@@ -201,20 +277,24 @@ class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
 
 class ProductReleaseDeleteView(LaunchpadFormView):
     """A view for deleting an `IProductRelease`."""
-    label = 'Delete release'
     schema = IProductRelease
     field_names = []
 
-    def canBeDeleted(self, action=None):
-        """Can this release be deleted?
+    @property
+    def label(self):
+        """The form label."""
+        return 'Delete %s' % self.context.title
 
-        Only releases which have no files associated with it can be deleted.
-        """
-        return self.context.files.count() == 0
-
-    @action('Yes, Delete it', name='delete', condition=canBeDeleted)
+    @action('Delete this Release', name='delete')
     def add_action(self, action, data):
+        for release_file in self.context.files:
+            release_file.destroySelf()
         self.request.response.addInfoNotification(
             "Release %s deleted." % self.context.version)
         self.next_url = canonical_url(self.context.productseries)
         self.context.destroySelf()
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+

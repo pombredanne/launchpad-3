@@ -6,7 +6,8 @@
 
     <class class="canonical.launchpad.database.EmailAddress">
         <allow interface="canonical.launchpad.interfaces.IHasOwner" />
-        <allow attributes="id person account status rdf_sha1" />
+        <allow attributes="
+            id person personID account accountID status rdf_sha1" />
         <require
             permission="launchpad.View"
             attributes="email" />

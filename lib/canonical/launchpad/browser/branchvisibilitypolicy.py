@@ -19,10 +19,12 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchVisibilityRule, IBranchVisibilityTeamPolicy)
+    BranchVisibilityRule, IBranchVisibilityTeamPolicy,
+    TeamBranchVisibilityRule)
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView)
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
+from canonical.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget, LaunchpadRadioWidgetWithDescription)
 
 
 class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
@@ -38,26 +40,51 @@ class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context) + '/+branchvisibility'
 
+    cancel_url = next_url
+
 
 class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     """Simple form view to add branch visibility policy items."""
 
     pagetitle = "Set branch visibility policy for team"
 
-    initial_values = {'rule': BranchVisibilityRule.PRIVATE}
+    initial_values = {'rule': TeamBranchVisibilityRule.PRIVATE}
+    custom_widget('rule', LaunchpadRadioWidgetWithDescription)
 
-    @action(_('Set team policy'), name='set_team_policy')
+    def showSetDefaultPublic(self, action=None):
+        """Show if using inherited policy, or currently forbidden."""
+        base_rule = self.context.getBaseBranchVisibilityRule()
+        return (self.context.isUsingInheritedBranchVisibilityPolicy() or
+                base_rule == BranchVisibilityRule.FORBIDDEN)
+
+    def showSetDefaultForbidden(self, action=None):
+        """Show if using inherited policy, or currently forbidden."""
+        base_rule = self.context.getBaseBranchVisibilityRule()
+        return (self.context.isUsingInheritedBranchVisibilityPolicy() or
+                base_rule != BranchVisibilityRule.FORBIDDEN)
+
+    @action(_('Set Default Public'), name='set_default_public',
+            condition=showSetDefaultPublic,
+            validator=LaunchpadFormView.validate_none)
+    def set_default_public_action(self, action, data):
+        """Make the default policy public."""
+        self.context.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.PUBLIC)
+
+    @action(_('Set Default Forbidden'), name='set_default_forbidden',
+            condition=showSetDefaultForbidden,
+            validator=LaunchpadFormView.validate_none)
+    def set_default_forbidden_action(self, action, data):
+        """Make the default policy forbidden."""
+        self.context.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+
+    @action(_('Set Team Policy'), name='set_team_policy')
     def set_team_policy_action(self, action, data):
         "Set the branch visibility rule for the team."
         team = data['team']
-        rule = data['rule']
-        if team is not None and rule == BranchVisibilityRule.FORBIDDEN:
-            self.setFieldError(
-                'rule',
-                "Forbidden can only be chosen as a rule for everyone.")
-            self.next_url = None
-        else:
-            self.context.setBranchVisibilityTeamPolicy(team, rule)
+        rule = BranchVisibilityRule.items[data['rule'].name]
+        self.context.setBranchVisibilityTeamPolicy(team, rule)
 
 
 class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
@@ -104,7 +131,7 @@ class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
         """Override the setup to define own fields."""
         self.form_fields = self._currentPolicyItemsField()
 
-    @action(_('Remove selected policy items'), name='remove')
+    @action(_('Remove Selected Policy Items'), name='remove')
     def remove_action(self, action, data):
         """Remove selected policy items."""
         for item in data['policy_items']:

@@ -9,14 +9,14 @@ import textwrap
 from zope.component import getUtility
 
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template)
+    get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeImportReviewStatus,
     ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
 from canonical.launchpad.interfaces.codeimportevent import (
     CodeImportEventDataType, CodeImportEventType)
-from canonical.launchpad.interfaces.productseries import (
-    RevisionControlSystems)
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import canonical_url
 
@@ -28,6 +28,7 @@ def new_import(code_import, event):
         # test.
         return
 
+    user = IPerson(event.user)
     subject = 'New code import: %s/%s' % (
         code_import.product.name, code_import.branch.name)
     body = get_email_template('new-code-import.txt') % {
@@ -35,13 +36,13 @@ def new_import(code_import, event):
         'branch': canonical_url(code_import.branch)}
 
     from_address = format_address(
-        event.user.displayname, event.user.preferredemail.email)
+        user.displayname, user.preferredemail.email)
 
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name,
                'X-Launchpad-Message-Rationale':
                    'Operator @%s' % vcs_imports.name}
-    for address in contactEmailAddresses(vcs_imports):
+    for address in get_contact_email_addresses(vcs_imports):
         simple_sendmail(from_address, address, subject, body, headers)
 
 

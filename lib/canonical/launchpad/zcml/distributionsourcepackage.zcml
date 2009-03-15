@@ -21,7 +21,8 @@
                   getBugCounts bug_subscriptions getSubscriptions
                   getSubscription parent_subscription_target
                   getBugNotificationsRecipients
-                  getReleasesAndPublishingHistory" />
+                  getReleasesAndPublishingHistory
+                  upstream_product target_type_display" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addSubscription addBugSubscription
@@ -104,6 +105,15 @@
       template="../templates/distributionsourcepackage-portlet-pub-details.pt"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.distributionsourcepackage.DistributionSourcePackageEditView"
+    name="+edit"
+    facet="overview"
+    template="../templates/distributionsourcepackage-edit.pt"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"

@@ -27,10 +27,11 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IDistribution, IDistroSeries, IHasTranslationImports, ILanguageSet,
-    IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
-    ISourcePackage, ITranslationImporter, ITranslationImportQueue,
-    ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
-    TranslationFileFormat, TranslationImportQueueConflictError)
+    ILaunchpadCelebrities, IPerson, IPOFileSet, IPOTemplateSet, IProduct,
+    IProductSeries, ISourcePackage, ITranslationImporter,
+    ITranslationImportQueue, ITranslationImportQueueEntry, NotFoundError,
+    RosettaImportStatus, TranslationFileFormat,
+    TranslationImportQueueConflictError)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -78,6 +79,13 @@ class TranslationImportQueueEntry(SQLBase):
         schema=RosettaImportStatus, default=RosettaImportStatus.NEEDS_REVIEW)
     date_status_changed = UtcDateTimeCol(dbName='date_status_changed',
         notNull=True, default=DEFAULT)
+    error_output = StringCol(notNull=False, default=None)
+
+    @property
+    def is_targeted_to_ubuntu(self):
+        return (self.distroseries is not None and
+            self.distroseries.distribution == 
+            getUtility(ILaunchpadCelebrities).ubuntu)
 
     @property
     def sourcepackage(self):
@@ -259,7 +267,8 @@ class TranslationImportQueueEntry(SQLBase):
         potemplate_subset = potemplateset.getSubset(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename,
-            productseries=self.productseries)
+            productseries=self.productseries,
+            iscurrent=True)
         potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
             translation_domain)
 
@@ -270,7 +279,7 @@ class TranslationImportQueueEntry(SQLBase):
             # it in a different source package as a second try. To do it, we
             # need to get a subset of all packages in current distro series.
             potemplate_subset = potemplateset.getSubset(
-                distroseries=self.distroseries)
+                distroseries=self.distroseries, iscurrent=True)
             potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
                 translation_domain)
 
@@ -593,8 +602,8 @@ class TranslationImportQueue:
         """See ITranslationImportQueue."""
         return TranslationImportQueueEntry.select().count()
 
-    def iterNeedsReview(self):
-        """See ITranslationImportQueue."""
+    def _iterNeedsReview(self):
+        """Iterate over all entries in the queue that need review."""
         return iter(TranslationImportQueueEntry.selectBy(
             status=RosettaImportStatus.NEEDS_REVIEW,
             orderBy=['dateimported']))
@@ -730,6 +739,7 @@ class TranslationImportQueue:
                 pofile=pofile, format=format)
         else:
             # It's an update.
+            entry.error_output = None
             entry.content = alias
             entry.is_published = is_published
             if potemplate is not None:
@@ -970,7 +980,7 @@ class TranslationImportQueue:
         """See ITranslationImportQueue."""
         there_are_entries_approved = False
         importer = getUtility(ITranslationImporter)
-        for entry in self.iterNeedsReview():
+        for entry in self._iterNeedsReview():
             if entry.import_into is None:
                 # We don't have a place to import this entry. Try to guess it.
                 if importer.isTranslationName(entry.path):
@@ -1015,7 +1025,7 @@ class TranslationImportQueue:
         """See ITranslationImportQueue."""
         importer = getUtility(ITranslationImporter)
         num_blocked = 0
-        for entry in self.iterNeedsReview():
+        for entry in self._iterNeedsReview():
             if importer.isTemplateName(entry.path):
                 # Templates cannot be managed automatically.  Ignore them and
                 # wait for an admin to do it.

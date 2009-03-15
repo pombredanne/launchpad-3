@@ -7,6 +7,7 @@ __all__ = []
 
 
 import os
+import shutil
 from subprocess import PIPE, Popen
 import sys
 import unittest
@@ -27,7 +28,7 @@ from bzrlib import urlutils
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.branchfs import get_lp_server
+from canonical.codehosting.vfs import get_lp_server
 from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
@@ -48,8 +49,12 @@ class TestBranchPuller(PullerBranchTestCase):
         PullerBranchTestCase.setUp(self)
         self._puller_script = os.path.join(
             config.root, 'cronscripts', 'supermirror-pull.py')
-        self.makeCleanDirectory(config.codehosting.branches_root)
-        self.makeCleanDirectory(config.supermirror.branchesdest)
+        self.makeCleanDirectory(config.codehosting.hosted_branches_root)
+        self.addCleanup(
+            shutil.rmtree, config.codehosting.hosted_branches_root)
+        self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
+        self.addCleanup(
+            shutil.rmtree, config.codehosting.mirrored_branches_root)
 
     def assertMirrored(self, db_branch, source_branch=None,
                        accessing_user=None):
@@ -153,8 +158,8 @@ class TestBranchPuller(PullerBranchTestCase):
         # We use the configured directories because these tests run the puller
         # in a subprocess which would have no way of knowing which directories
         # to look in if we used freshly created temporary directories.
-        upload_directory = config.codehosting.branches_root
-        mirror_directory = config.supermirror.branchesdest
+        upload_directory = config.codehosting.hosted_branches_root
+        mirror_directory = config.codehosting.mirrored_branches_root
         branchfs_endpoint_url = config.codehosting.branchfs_endpoint
 
         upload_url = urlutils.local_path_to_url(upload_directory)
@@ -206,7 +211,7 @@ class TestBranchPuller(PullerBranchTestCase):
 
     def test_mirror_hosted_branch(self):
         # Run the puller on a populated hosted branch pull queue.
-        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        db_branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         transaction.commit()
         self.pushBranch(db_branch)
         command, retcode, output, error = self.runPuller('upload')
@@ -216,7 +221,7 @@ class TestBranchPuller(PullerBranchTestCase):
     def test_remirror_hosted_branch(self):
         # When the format of a branch changes, we completely remirror it.
         # First we push up and mirror the branch in one format.
-        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        db_branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         transaction.commit()
         pack_tree = self.make_branch_and_tree('pack', format='pack-0.92')
         self.pushBranch(db_branch, tree=pack_tree)
@@ -235,7 +240,7 @@ class TestBranchPuller(PullerBranchTestCase):
 
     def test_mirror_hosted_loom_branch(self):
         # Run the puller over a branch with looms enabled.
-        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        db_branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         transaction.commit()
         loom_tree = self.makeLoomBranchAndTree('loom')
         self.pushBranch(db_branch, tree=loom_tree)
@@ -245,7 +250,8 @@ class TestBranchPuller(PullerBranchTestCase):
 
     def test_mirror_private_branch(self):
         # Run the puller with a private branch in the queue.
-        db_branch = self.factory.makeBranch(BranchType.HOSTED, private=True)
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, private=True)
         accessing_user = self.factory.makePerson()
         self.factory.makeBranchSubscription(
             branch=db_branch, person=accessing_user)
@@ -257,7 +263,8 @@ class TestBranchPuller(PullerBranchTestCase):
 
     def test_mirror_mirrored_branch(self):
         # Run the puller on a populated mirrored branch pull queue.
-        db_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
         tree = self.setUpMirroredBranch(db_branch)
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
@@ -277,12 +284,12 @@ class TestBranchPuller(PullerBranchTestCase):
         """
         # Make the branch.
         product = self.factory.makeProduct()
-        default_branch = self.factory.makeBranch(
+        default_branch = self.factory.makeProductBranch(
             product=product, private=private, name='trunk',
             branch_type=branch_type)
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
-        series.user_branch = default_branch
+        series.branch = default_branch
         # Arrange for it to be pulled.
         if branch_type == BranchType.HOSTED:
             puller_type = 'upload'
@@ -309,8 +316,8 @@ class TestBranchPuller(PullerBranchTestCase):
         # Pulling a mirrored branch stacks that branch on the default stacked
         # branch of the product if such a thing exists.
         default_branch = self._makeDefaultStackedOnBranch()
-        db_branch = self.factory.makeBranch(
-            BranchType.MIRRORED, product=default_branch.product)
+        db_branch = self.factory.makeProductBranch(
+            branch_type=BranchType.MIRRORED, product=default_branch.product)
         tree = self.setUpMirroredBranch(db_branch, format='1.6')
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
@@ -328,8 +335,8 @@ class TestBranchPuller(PullerBranchTestCase):
         # version of the branch in the hosted area.
         default_branch = self._makeDefaultStackedOnBranch(
             branch_type=BranchType.MIRRORED)
-        db_branch = self.factory.makeBranch(
-            BranchType.HOSTED, product=default_branch.product)
+        db_branch = self.factory.makeProductBranch(
+            branch_type=BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
         self.pushBranch(db_branch, format='1.6')
         command, retcode, output, error = self.runPuller('upload')
@@ -351,8 +358,8 @@ class TestBranchPuller(PullerBranchTestCase):
         # again so that assertMirrored can work.  The test is still valid
         # though, as the paths are as they should be when the puller is run.
         default_branch = self._makeDefaultStackedOnBranch()
-        db_branch = self.factory.makeBranch(
-            BranchType.HOSTED, product=default_branch.product)
+        db_branch = self.factory.makeProductBranch(
+            branch_type=BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
         self.pushBranch(db_branch, format='1.6')
         # Because Bazaar can't access branches over bzr+ssh in this test, we
@@ -376,8 +383,8 @@ class TestBranchPuller(PullerBranchTestCase):
         # If the default stacked-on branch is private then mirrored branches
         # aren't stacked when they are mirrored.
         default_branch = self._makeDefaultStackedOnBranch(private=True)
-        db_branch = self.factory.makeBranch(
-            BranchType.MIRRORED, product=default_branch.product)
+        db_branch = self.factory.makeProductBranch(
+            branch_type=BranchType.MIRRORED, product=default_branch.product)
 
         tree = self.setUpMirroredBranch(db_branch, format='1.6')
         transaction.commit()
@@ -403,7 +410,8 @@ class TestBranchPuller(PullerBranchTestCase):
     def test_mirror_imported_branch(self):
         # Run the puller on a populated imported branch pull queue.
         # Create the branch in the database.
-        db_branch = self.factory.makeBranch(BranchType.IMPORTED)
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.IMPORTED)
         db_branch.requestMirror()
         transaction.commit()
 

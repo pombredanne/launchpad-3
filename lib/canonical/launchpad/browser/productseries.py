@@ -13,11 +13,12 @@ __all__ = [
     'ProductSeriesLinkBranchFromCodeView',
     'ProductSeriesNavigation',
     'ProductSeriesOverviewMenu',
+    'ProductSeriesOverviewNavigationMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
-    'ProductSeriesTranslationMenu',
+    'ProductSeriesTranslationsMenu',
     'ProductSeriesTranslationsExportView',
     'ProductSeriesView',
     ]
@@ -42,7 +43,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
-    Link, Navigation, StandardLaunchpadFacets, stepto)
+    Link, Navigation, NavigationMenu, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
@@ -60,8 +61,8 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     @stepto('.bzr')
     def dotbzr(self):
-        if self.context.series_branch:
-            return BranchRef(self.context.series_branch)
+        if self.context.branch:
+            return BranchRef(self.context.branch)
         else:
             return None
 
@@ -101,8 +102,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'driver', 'link_branch', 'ubuntupkg',
-        'add_package', 'add_milestone', 'add_release', 'rdf', 'review',
-        'subscribe'
+        'add_package', 'add_milestone', 'rdf', 'subscribe'
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -135,19 +135,9 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
-    @enabled_with_permission('launchpad.Edit')
-    def add_release(self):
-        text = 'Register a release'
-        return Link('+addrelease', text, icon='add')
-
     def rdf(self):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
-
-    @enabled_with_permission('launchpad.Admin')
-    def review(self):
-        text = 'Review details'
-        return Link('+review', text, icon='edit')
 
     def subscribe(self):
         text = 'Subscribe to bug mail'
@@ -219,25 +209,43 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
         return Link('+addspec', text, summary, icon='add')
 
 
-class ProductSeriesTranslationMenu(ApplicationMenu):
+class ProductSeriesTranslationsMenuMixIn:
     """Translation menu for ProductSeries.
     """
+    def overview(self):
+        text = 'Overview'
+        return Link('', text)
 
-    usedfor = IProductSeries
-    facet = 'translations'
-    links = ['translationupload', 'imports', 'translationdownload']
-
-    def imports(self):
-        text = 'See import queue'
-        return Link('+imports', text)
-
+    @enabled_with_permission('launchpad.Edit')
     def translationupload(self):
-        text = 'Upload translations'
+        text = 'Upload'
         return Link('+translations-upload', text, icon='add')
 
     def translationdownload(self):
-        text = 'Download translations'
+        text = 'Download'
         return Link('+export', text, icon='download')
+
+    def imports(self):
+        text = 'Import queue'
+        return Link('+imports', text)
+
+
+class ProductSeriesOverviewNavigationMenu(NavigationMenu):
+    """Overview navigation menus for `IProductSeries` objects."""
+    # Suppress the ProductOverviewNavigationMenu from showing on series,
+    # release, and milestone pages.
+    usedfor = IProductSeries
+    facet = 'overview'
+    links = ()
+
+
+class ProductSeriesTranslationsMenu(NavigationMenu,
+                                    ProductSeriesTranslationsMenuMixIn):
+    """Translations navigation menus for `IProductSeries` objects."""
+    usedfor = IProductSeries
+    facet = 'translations'
+    links = ('overview', 'translationupload', 'translationdownload',
+             'imports')
 
 
 class ProductSeriesTranslationsExportView(BaseExportView):
@@ -528,7 +536,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
     @property
     def user_branch_visible(self):
         """Can the logged in user see the user branch."""
-        branch = self.context.user_branch
+        branch = self.context.branch
         return (branch is not None and
                 check_permission('launchpad.View', branch))
 
@@ -537,16 +545,16 @@ class ProductSeriesEditView(LaunchpadEditFormView):
 
     schema = IProductSeries
     field_names = [
-        'name', 'summary', 'status', 'user_branch', 'releasefileglob']
+        'name', 'summary', 'status', 'branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     def validate(self, data):
-        branch = data.get('user_branch')
+        branch = data.get('branch')
         if branch is not None:
             message = get_series_branch_error(self.context.product, branch)
             if message:
-                self.setFieldError('user_branch', message)
+                self.setFieldError('branch', message)
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -561,16 +569,13 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     """View to set the bazaar branch for a product series."""
 
     schema = IProductSeries
-    field_names = ['user_branch']
+    field_names = ['branch']
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    def not_import(self, action=None):
-        return self.context.import_branch is None
-
-    @action(_('Update'), name='update', condition=not_import)
+    @action(_('Update'), name='update')
     def update_action(self, action, data):
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(

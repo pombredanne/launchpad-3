@@ -159,7 +159,7 @@ class TestMailingListImports(BaseMailingListImportTest):
         importer = Importer('aardvarks')
         # Give Anne a new invalid email address.
         factory.makeEmail('anne.x.person@example.net', self.anne,
-                          EmailAddressStatus.NEW)
+                          email_status=EmailAddressStatus.NEW)
         importer.importAddresses((
             # Import Anne's alternative address.
             'anne.x.person@example.net',
@@ -256,7 +256,7 @@ class TestMailingListImports(BaseMailingListImportTest):
         importer = Importer('aardvarks')
         # Give Anne a new invalid email address.
         factory.makeEmail('anne.x.person@example.net', self.anne,
-                          EmailAddressStatus.NEW)
+                          email_status=EmailAddressStatus.NEW)
         self.writeFile(
             'Anne Person <anne.x.person@example.net>',
             'bart.person@example.com (Bart Q. Person)',
@@ -330,7 +330,7 @@ class TestMailingListImports(BaseMailingListImportTest):
         importer = Importer('aardvarks', self.logger)
         # Give Anne a new invalid email address.
         factory.makeEmail('anne.x.person@example.net', self.anne,
-                          EmailAddressStatus.NEW)
+                          email_status=EmailAddressStatus.NEW)
         importer.importAddresses((
             # Import Anne's alternative address.
             'anne.x.person@example.net',

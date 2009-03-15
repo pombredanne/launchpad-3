@@ -10,7 +10,6 @@ __all__ = [
     'ProjectAddView',
     'ProjectAnswersMenu',
     'ProjectBountiesMenu',
-    'ProjectBranchesView',
     'ProjectBrandingView',
     'ProjectBreadcrumbBuilder',
     'ProjectEditView',
@@ -41,11 +40,9 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, IProductSet, IProject, IProjectSeries, IProjectSet,
-    NotFoundError)
+    IProductSet, IProject, IProjectSeries, IProjectSet, NotFoundError)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
-from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.question import QuestionAddView
@@ -226,7 +223,7 @@ class ProjectOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Admin')
     def branch_visibility(self):
         text = 'Define branch visibility'
-        return Link('+branchvisibility', text, icon='edit')
+        return Link('+branchvisibility', text, icon='edit', site='mainsite')
 
     def subscribe(self):
         text = 'Subscribe to bug mail'
@@ -568,31 +565,6 @@ class ProjectAddQuestionView(QuestionAddView):
             return self.widgets['product'].getInputValue()
         else:
             return None
-
-
-class ProjectBranchesView(BranchListingView):
-    """View for branch listing for a project."""
-
-    no_sort_by = (BranchListingSort.DEFAULT,)
-    extra_columns = ('author', 'product')
-
-    @property
-    def no_branch_message(self):
-        if (self.selected_lifecycle_status is not None
-            and self.hasAnyBranchesVisibleByUser()):
-            message = (
-                'There are branches registered for %s '
-                'but none of them match the current filter criteria '
-                'for this page. Try filtering on "Any Status".')
-        else:
-            message = (
-                'There are no branches registered for %s '
-                'in Launchpad today. We recommend you visit '
-                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
-                'for more information about how you can use the Bazaar '
-                'revision control system to improve community participation '
-                'in this project group.')
-        return message % self.context.displayname
 
 
 class ProjectSeriesSpecificationsMenu(ApplicationMenu):

@@ -142,11 +142,6 @@ timeout being reported by PostgreSQL is actually working:
     TimeoutError: ...SELECT pg_sleep(0.2)...
     >>> clear_request_started()
 
-Turn off the timemachine so nobody hurts themselves:
-
-    >>> import time
-    >>> canonical.launchpad.webapp.adapter.time = time.time
-
 
 Set the timeout to 5000ms for the next tests:
 
@@ -160,6 +155,12 @@ Set the timeout to 5000ms for the next tests:
     >>> print current_statement_timeout(store)
     5000ms
     >>> clear_request_started()
+
+
+Turn off the timemachine so nobody hurts themselves:
+
+    >>> import time
+    >>> canonical.launchpad.webapp.adapter.time = time.time
 
 
 Request Timeout
@@ -310,7 +311,7 @@ connection.  This can be adjusted by choosing a different database
 config section.  By default we connect as "launchpad"
 
     >>> print store.execute("select current_user").get_one()[0]
-    launchpad
+    launchpad_main
 
     >>> from canonical.config import config, dbconfig
     >>> config.statistician.dbuser
@@ -346,7 +347,7 @@ So you need to explicitly set the user back:
     >>> dbconfig.setConfigSection('launchpad')
     >>> reset_store()
     >>> print store.execute("select current_user").get_one()[0]
-    launchpad
+    launchpad_main
     >>> store.execute("""
     ...     INSERT INTO SourcePackageName(name) VALUES ('fnord4')
     ...     """, noresult=True)

@@ -27,10 +27,10 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
+from lazr.lifecycle.interfaces import IObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     IBugTask, IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
-    INotificationRecipientSet, IPersonSet, ISpecification,
+    INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
 from canonical.launchpad.interfaces.message import (
@@ -44,7 +44,7 @@ from canonical.launchpad.mailout.notificationrecipientset import (
     NotificationRecipientSet)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, get_email_template, shortlist)
+    get_contact_email_addresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -306,7 +306,7 @@ def _send_bug_details_to_new_bug_subscribers(
 
     to_addrs = set()
     for new_sub in new_subs:
-        to_addrs.update(contactEmailAddresses(new_sub))
+        to_addrs.update(get_contact_email_addresses(new_sub))
 
     if not to_addrs:
         return
@@ -357,7 +357,7 @@ def update_security_contact_subscriptions(modified_bugtask, event):
         new_product = bugtask_after_modification.product
         if new_product.security_contact:
             bugtask_after_modification.bug.subscribe(
-                new_product.security_contact, event.user)
+                new_product.security_contact, IPerson(event.user))
 
 
 def get_bugmail_from_address(person, bug):
@@ -809,7 +809,7 @@ def get_bug_delta(old_bug, new_bug, user):
 def notify_bug_added(bug, event):
     """Send an email notification that a bug was added.
 
-    Event must be an ISQLObjectCreatedEvent.
+    Event must be an IObjectCreatedEvent.
     """
 
     bug.addCommentNotification(bug.initial_message)
@@ -820,11 +820,11 @@ def notify_bug_modified(modified_bug, event):
     """Notify the Cc'd list that this bug has been modified.
 
     modified_bug bug must be an IBug. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     bug_delta = get_bug_delta(
         old_bug=event.object_before_modification,
-        new_bug=event.object, user=event.user)
+        new_bug=event.object, user=IPerson(event.user))
 
     if bug_delta is not None:
         add_bug_change_notifications(bug_delta)
@@ -898,14 +898,14 @@ def notify_bugtask_added(bugtask, event):
     somewhere else.
 
     bugtask must be in IBugTask. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     bugtask = event.object
 
     bug_delta = BugDelta(
         bug=bugtask.bug,
         bugurl=canonical_url(bugtask.bug),
-        user=event.user,
+        user=IPerson(event.user),
         added_bugtasks=bugtask)
 
     add_bug_change_notifications(bug_delta)
@@ -917,14 +917,14 @@ def notify_bugtask_edited(modified_bugtask, event):
     on this task.
 
     modified_bugtask must be an IBugTask. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     bugtask_delta = event.object.getDelta(event.object_before_modification)
     bug_delta = BugDelta(
         bug=event.object.bug,
         bugurl=canonical_url(event.object.bug),
         bugtask_deltas=bugtask_delta,
-        user=event.user)
+        user=IPerson(event.user))
 
     add_bug_change_notifications(
         bug_delta, old_bugtask=event.object_before_modification)
@@ -941,7 +941,7 @@ def notify_bug_comment_added(bugmessage, event):
     """Notify CC'd list that a message was added to this bug.
 
     bugmessage must be an IBugMessage. event must be an
-    ISQLObjectCreatedEvent. If bugmessage.bug is a duplicate the
+    IObjectCreatedEvent. If bugmessage.bug is a duplicate the
     comment will also be sent to the dup target's subscribers.
     """
     bug = bugmessage.bug
@@ -953,12 +953,12 @@ def notify_bug_watch_added(watch, event):
     """Notify CC'd list that a new watch has been added for this bug.
 
     watch must be an IBugWatch. event must be an
-    ISQLObjectCreatedEvent.
+    IObjectCreatedEvent.
     """
     bug_delta = BugDelta(
         bug=watch.bug,
         bugurl=canonical_url(watch.bug),
-        user=event.user,
+        user=IPerson(event.user),
         bugwatch={'new' : watch})
 
     add_bug_change_notifications(bug_delta)
@@ -969,7 +969,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
     """Notify CC'd bug subscribers that a bug watch was edited.
 
     modified_bug_watch must be an IBugWatch. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     old = event.object_before_modification
     new = event.object
@@ -980,7 +980,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
         bug_delta = BugDelta(
             bug=new.bug,
             bugurl=canonical_url(new.bug),
-            user=event.user,
+            user=IPerson(event.user),
             bugwatch={'old' : old, 'new' : new})
 
         add_bug_change_notifications(bug_delta)
@@ -990,12 +990,12 @@ def notify_bug_watch_modified(modified_bug_watch, event):
 def notify_bug_cve_added(bugcve, event):
     """Notify CC'd list that a new cve ref has been added to this bug.
 
-    bugcve must be an IBugCve. event must be an ISQLObjectCreatedEvent.
+    bugcve must be an IBugCve. event must be an IObjectCreatedEvent.
     """
     bug_delta = BugDelta(
         bug=bugcve.bug,
         bugurl=canonical_url(bugcve.bug),
-        user=event.user,
+        user=IPerson(event.user),
         cve={'new': bugcve.cve})
 
     add_bug_change_notifications(bug_delta)
@@ -1004,12 +1004,12 @@ def notify_bug_cve_added(bugcve, event):
 def notify_bug_cve_deleted(bugcve, event):
     """Notify CC'd list that a cve ref has been removed from this bug.
 
-    bugcve must be an IBugCve. event must be an ISQLObjectDeletedEvent.
+    bugcve must be an IBugCve. event must be an IObjectDeletedEvent.
     """
     bug_delta = BugDelta(
         bug=bugcve.bug,
         bugurl=canonical_url(bugcve.bug),
-        user=event.user,
+        user=IPerson(event.user),
         cve={'old': bugcve.cve})
 
     add_bug_change_notifications(bug_delta)
@@ -1027,7 +1027,7 @@ def notify_bug_became_question(event):
     change_info = '\n'.join([
         '** bug changed to question:\n'
         '   %s' %  canonical_url(question)])
-    bug.addChangeNotification(change_info, person=event.user)
+    bug.addChangeNotification(change_info, person=IPerson(event.user))
 
 
 @block_implicit_flushes
@@ -1035,13 +1035,13 @@ def notify_bug_attachment_added(bugattachment, event):
     """Notify CC'd list that a new attachment has been added.
 
     bugattachment must be an IBugAttachment. event must be an
-    ISQLObjectCreatedEvent.
+    IObjectCreatedEvent.
     """
     bug = bugattachment.bug
     bug_delta = BugDelta(
         bug=bug,
         bugurl=canonical_url(bug),
-        user=event.user,
+        user=IPerson(event.user),
         attachment={'new' : bugattachment})
 
     add_bug_change_notifications(bug_delta)
@@ -1056,7 +1056,7 @@ def notify_bug_attachment_removed(bugattachment, event):
     change_info = '\n'.join([
         '** Attachment removed: "%s"\n' % bugattachment.title,
         '   %s' %  bugattachment.libraryfile.http_url])
-    bug.addChangeNotification(change_info, person=event.user)
+    bug.addChangeNotification(change_info, person=IPerson(event.user))
 
 
 @block_implicit_flushes
@@ -1134,7 +1134,7 @@ def notify_team_join(event):
         reviewer = membership.reviewed_by
         # Somebody added this person as a member, we better send a
         # notification to the person too.
-        member_addrs = contactEmailAddresses(person)
+        member_addrs = get_contact_email_addresses(person)
 
         subject = 'You have been added to %s' % team.name
         templatename = 'new-member-notification.txt'
@@ -1219,6 +1219,7 @@ class QuestionNotification:
         """
         self.question = question
         self.event = event
+        self.user = IPerson(self.event.user)
         self.initialize()
         if self.shouldNotify():
             self.send()
@@ -1230,7 +1231,7 @@ class QuestionNotification:
         Default is Event Person Display Name <question#@answertracker_domain>
         """
         return format_address(
-            self.event.user.displayname,
+            self.user.displayname,
             'question%s@%s' % (
                 self.question.id, config.answertracker.email_domain))
 
@@ -1288,7 +1289,7 @@ class QuestionNotification:
         :return: A `INotificationRecipientSet` containing the recipients and
                  rationale.
         """
-        return self.question.getSubscribers()
+        return self.question.getRecipients()
 
     def initialize(self):
         """Initialization hook for subclasses.
@@ -1588,7 +1589,7 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
         recipients = NotificationRecipientSet()
         owner = self.question.owner
         if self.question.isSubscribed(owner):
-            original_recipients = self.question.getDirectSubscribers()
+            original_recipients = self.question.getDirectRecipients()
             rationale, header = original_recipients.getReason(owner)
             recipients.add(owner, rationale, header)
         return recipients
@@ -1635,8 +1636,8 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
 
     def initialize(self):
         """Create a notifcation for a linked bug status change."""
-        assert ISQLObjectModifiedEvent.providedBy(self.event), (
-            "Should only be subscribed for ISQLObjectModifiedEvent.")
+        assert IObjectModifiedEvent.providedBy(self.event), (
+            "Should only be subscribed for IObjectModifiedEvent.")
         assert IBugTask.providedBy(self.event.object), (
             "Should only be subscribed for IBugTask modification.")
         self.bugtask = self.event.object
@@ -1644,7 +1645,8 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
 
     def shouldNotify(self):
         """Only send notification when the status changed."""
-        return self.bugtask.status != self.old_bugtask.status
+        return (self.bugtask.status != self.old_bugtask.status
+                and self.bugtask.bug.private == False)
 
     def getSubject(self):
         """See QuestionNotification."""
@@ -1658,7 +1660,7 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
             wrapper = MailWrapper()
             statusexplanation = (
                 'Status change explanation given by %s:\n\n%s\n' % (
-                    self.event.user.displayname,
+                    self.user.displayname,
                     wrapper.format(self.bugtask.statusexplanation)))
         else:
             statusexplanation = ''
@@ -1684,10 +1686,11 @@ def specification_notification_subject(spec):
 @block_implicit_flushes
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""
-    spec_delta = spec.getDelta(event.object_before_modification, event.user)
+    user = IPerson(event.user)
+    spec_delta = spec.getDelta(event.object_before_modification, user)
     if spec_delta is None:
         # XXX: Bjorn Tillenius 2006-03-08:
-        #      Ideally, if an ISQLObjectModifiedEvent event is generated,
+        #      Ideally, if an IObjectModifiedEvent event is generated,
         #      spec_delta shouldn't be None. I'm not confident that we
         #      have enough test yet to assert this, though.
         return
@@ -1736,20 +1739,20 @@ def notify_specification_modified(spec, event):
         # sending notification for the change.
         return
     body = get_email_template('specification-modified.txt') % {
-        'editor': event.user.displayname,
+        'editor': user.displayname,
         'info_fields': '\n'.join(info_lines),
         'spec_title': spec.title,
         'spec_url': canonical_url(spec)}
 
     for address in spec.notificationRecipientAddresses():
-        simple_sendmail_from_person(event.user, address, subject, body)
+        simple_sendmail_from_person(user, address, subject, body)
 
 
 
 @block_implicit_flushes
 def notify_specification_subscription_created(specsub, event):
     """Notify a user that they have been subscribed to a blueprint."""
-    user = event.user
+    user = IPerson(event.user)
     spec = specsub.specification
     person = specsub.person
     subject = specification_notification_subject(spec)
@@ -1761,7 +1764,7 @@ def notify_specification_subscription_created(specsub, event):
         {'blueprint_name' : spec.name,
          'blueprint_title' : spec.title,
          'blueprint_url' : canonical_url(spec)})
-    for address in contactEmailAddresses(person):
+    for address in get_contact_email_addresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
 @block_implicit_flushes
@@ -1769,7 +1772,7 @@ def notify_specification_subscription_modified(specsub, event):
     """Notify a subscriber to a blueprint that their
     subscription has changed.
     """
-    user = event.user
+    user = IPerson(event.user)
     spec = specsub.specification
     person = specsub.person
     # Only send a notification if the
@@ -1791,7 +1794,7 @@ def notify_specification_subscription_modified(specsub, event):
          'blueprint_title' : spec.title,
          'specsub_type' : specsub_type,
          'blueprint_url' : canonical_url(spec)})
-    for address in contactEmailAddresses(person):
+    for address in get_contact_email_addresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
 
@@ -1885,13 +1888,14 @@ def encode(value):
     return Header(value.encode(charset), charset)
 
 
-def send_direct_contact_email(sender_email, recipients_email, subject, body):
+def send_direct_contact_email(
+    sender_email, recipients_set, subject, body):
     """Send a direct user-to-user email.
 
     :param sender_email: The email address of the sender.
     :type sender_email: string
-    :param recipients_email: The email address of the recipients.
-    :type recipients_email:' list of strings
+    :param recipients_set: The recipients.
+    :type recipients_set:' A ContactViaWebNotificationSet
     :param subject: The Subject header.
     :type subject: unicode
     :param body: The message body.
@@ -1923,30 +1927,33 @@ def send_direct_contact_email(sender_email, recipients_email, subject, body):
     # uses those anyway!?  The only alternative is to attach the footer as a
     # MIME attachment with a us-ascii charset, but that has it's own set of
     # problems (and user complaints).  Email sucks.
-    additions = [
+    additions = u'\n'.join([
         u'',
         u'-- ',
-        u'This message was sent by Launchpad via the Contact user/team',
-        u'link on your profile page.  For more information see',
+        u'This message was sent from Launchpad by the user',
+        u'%s (%s)' % (sender_name , canonical_url(sender)),
+        u'using %s.',
+        u'For more information see',
         u'https://help.launchpad.net/YourAccount/ContactingPeople',
-        ]
-    body += u'\n'.join(additions)
-    encoded_body = body.encode(charset)
+        ])
     # Craft and send one message per recipient.
+    mailwrapper = MailWrapper(width=72)
     message = None
-    for recipient_email in recipients_email:
-        recipient = person_set.getByEmail(recipient_email)
-        assert recipient is not None, (
-            'No person for recipient %s' % recipient_email)
+    for recipient_email, recipient in recipients_set.getRecipientPersons():
         recipient_name = str(encode(recipient.displayname))
-        message = MIMEText(encoded_body, _charset=charset)
+        reason, rational_header = recipients_set.getReason(recipient_email)
+        reason = str(encode(reason)).replace('\n ', '\n')
+        formatted_body = mailwrapper.format(body, force_wrap=True)
+        formatted_body += additions % reason
+        formatted_body = formatted_body.encode(charset)
+        message = MIMEText(formatted_body, _charset=charset)
         message['From'] = formataddr((sender_name, sender_email))
         message['To'] = formataddr((recipient_name, recipient_email))
         message['Subject'] = subject_header
         message['Message-ID'] = make_msgid('launchpad')
-        message['X-Launchpad-Message-Rationale'] = 'ContactViaWeb'
+        message['X-Launchpad-Message-Rationale'] = rational_header
         # Send the message.
-        sendmail(message)
+        sendmail(message, bulk=False)
     # BarryWarsaw 19-Nov-2008: If any messages were sent, record the fact that
     # the sender contacted the team.  This is not perfect though because we're
     # really recording the fact that the person contacted the last member of

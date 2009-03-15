@@ -842,3 +842,51 @@ $$;
 COMMENT ON FUNCTION replication_lag() IS
 'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
 
+
+CREATE OR REPLACE FUNCTION set_bugtask_date_milestone_set() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- If the inserted row as a milestone set, set date_milestone_set.
+        IF NEW.milestone IS NOT NULL THEN
+            UPDATE BugTask
+            SET date_milestone_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            WHERE BugTask.id = NEW.id;
+        END IF;
+    END IF;
+
+    IF TG_OP = 'UPDATE' THEN
+        IF OLD.milestone IS NULL THEN
+            -- If there was no milestone set, check if the new row has a
+            -- milestone set and set date_milestone_set.
+            IF NEW.milestone IS NOT NULL THEN
+                UPDATE BugTask
+                SET date_milestone_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                WHERE BugTask.id = NEW.id;
+            END IF;
+        ELSE
+            IF NEW.milestone IS NULL THEN
+                -- If the milestone was unset, clear date_milestone_set.
+                UPDATE BugTask
+                SET date_milestone_set = NULL
+                WHERE BugTask.id = NEW.id;
+            ELSE
+                -- Update date_milestone_set if the bug task was
+                -- targeted to another milestone.
+                IF NEW.milestone != OLD.milestone THEN
+                    UPDATE BugTask
+                    SET date_milestone_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                    WHERE BugTask.id = NEW.id;
+                END IF;
+
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN NULL; -- Ignored - this is an AFTER trigger.
+END;
+$$;
+
+COMMENT ON FUNCTION set_bugtask_date_milestone_set() IS
+'Update BugTask.date_milestone_set when BugTask.milestone is changed.';

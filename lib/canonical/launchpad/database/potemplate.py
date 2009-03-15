@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """`SQLObject` implementation of `IPOTemplate` interface."""
@@ -14,10 +14,11 @@ __all__ = [
 import datetime
 import logging
 import os
+from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
@@ -491,7 +492,8 @@ class POTemplate(SQLBase, RosettaStats):
             translation_exporter.getExporterProducingTargetFileFormat(
                 self.source_file_format))
 
-        template_file = ITranslationFileData(self)
+        template_file = getAdapter(
+            self, ITranslationFileData, 'all_messages')
         exported_file = translation_format_exporter.exportTranslationFiles(
             [template_file])
 
@@ -510,10 +512,10 @@ class POTemplate(SQLBase, RosettaStats):
         building them all beforehand and keeping them in memory at the same
         time.
         """
-        for translation_file in self.pofiles:
-            yield ITranslationFileData(translation_file)
+        for pofile in self.pofiles:
+            yield getAdapter(pofile, ITranslationFileData, 'all_messages')
 
-        yield ITranslationFileData(self)
+        yield getAdapter(self, ITranslationFileData, 'all_messages')
 
     def exportWithTranslations(self):
         """See `IPOTemplate`."""
@@ -565,10 +567,10 @@ class POTemplate(SQLBase, RosettaStats):
             path_variant = '@%s' % variant
 
         potemplate_dir = os.path.dirname(self.path)
-        path = '%s/%s-%s%s.po' % (potemplate_dir,
+        path = '%s-%s%s.po' % (
             self.translation_domain, language_code, path_variant)
-        return path
 
+        return os.path.join(potemplate_dir, path)
 
     def newPOFile(self, language_code, variant=None, requester=None):
         """See `IPOTemplate`."""
@@ -677,7 +679,7 @@ class POTemplate(SQLBase, RosettaStats):
         return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
                                               context)
 
-    def importFromQueue(self, entry_to_import, logger=None):
+    def importFromQueue(self, entry_to_import, logger=None, txn=None):
         """See `IPOTemplate`."""
         assert entry_to_import is not None, "Attempt to import None entry."
         assert entry_to_import.import_into.id == self.id, (
@@ -706,8 +708,10 @@ class POTemplate(SQLBase, RosettaStats):
             template_mail = 'poimport-syntax-error.txt'
             entry_to_import.status = RosettaImportStatus.FAILED
             error_text = str(exception)
+            entry_to_import.error_output = error_text
         else:
             error_text = None
+            entry_to_import.error_output = None
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
@@ -743,9 +747,26 @@ class POTemplate(SQLBase, RosettaStats):
             self.messagecount = self.getPOTMsgSetsCount()
 
             # The upload affects the statistics for all translations of this
-            # template.  Recalculate those as well.
+            # template.  Recalculate those as well.  This takes time and
+            # covers a lot of data, so if appropriate, break this up
+            # into smaller transactions.
+            if txn is not None:
+                txn.commit()
+                txn.begin()
+
             for pofile in self.pofiles:
-                pofile.updateStatistics()
+                try:
+                    pofile.updateStatistics()
+                    if txn is not None:
+                        txn.commit()
+                        txn.begin()
+                except TransactionRollbackError, error:
+                    if txn is not None:
+                        txn.abort()
+                        txn.begin()
+                    if logger:
+                        logger.warn(
+                            "Statistics update failed: %s" % unicode(error))
 
         template = helpers.get_email_template(template_mail)
         message = template % replacements
@@ -756,16 +777,18 @@ class POTemplateSubset:
     implements(IPOTemplateSubset)
 
     def __init__(self, sourcepackagename=None, from_sourcepackagename=None,
-                 distroseries=None, productseries=None):
+                 distroseries=None, productseries=None, iscurrent=None):
         """Create a new `POTemplateSubset` object.
 
         The set of POTemplate depends on the arguments you pass to this
         constructor. The sourcepackagename, from_sourcepackagename,
         distroseries and productseries are just filters for that set.
+        In addition, iscurrent sets the filter for the iscurrent flag.
         """
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
         self.productseries = productseries
+        self.iscurrent = iscurrent
         self.clausetables = []
         self.orderby = ['id']
 
@@ -794,6 +817,11 @@ class POTemplateSubset:
                 ' DistroSeries.id = %s' % sqlvalues(distroseries.id))
             self.orderby.append('DistroSeries.name')
             self.clausetables.append('DistroSeries')
+
+        # Add the filter for the iscurrent flag if requested.
+        if iscurrent is not None:
+            self.query += " AND POTemplate.iscurrent=%s" % (
+                            sqlvalues(iscurrent))
 
         # Finally, we sort the query by its path in all cases.
         self.orderby.append('POTemplate.path')
@@ -954,15 +982,16 @@ class POTemplateSet:
         return POTemplate.select(orderBy=['-date_last_updated'])
 
     def getSubset(self, distroseries=None, sourcepackagename=None,
-                  productseries=None):
+                  productseries=None, iscurrent=None):
         """See `IPOTemplateSet`."""
         return POTemplateSubset(
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
-            productseries=productseries)
+            productseries=productseries,
+            iscurrent=iscurrent)
 
     def getSubsetFromImporterSourcePackageName(self, distroseries,
-        sourcepackagename):
+        sourcepackagename, iscurrent=None):
         """See `IPOTemplateSet`."""
         if distroseries is None or sourcepackagename is None:
             raise AssertionError(
@@ -970,7 +999,8 @@ class POTemplateSet:
 
         return POTemplateSubset(
             distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename,
+            iscurrent=iscurrent)
 
     def getPOTemplateByPathAndOrigin(self, path, productseries=None,
         distroseries=None, sourcepackagename=None):

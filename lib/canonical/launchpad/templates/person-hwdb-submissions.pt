@@ -54,7 +54,8 @@
         <div tal:replace="structure batchnav/@@+navigation-links-lower" />
       </tal:results>
       <p tal:condition="not: batch">
-        <span tal:replace="context/displayname" /> has posted no submissions.
+        <span tal:replace="context/fmt:displayname" />
+        has posted no submissions.
       </p>
     </div>
   </body>

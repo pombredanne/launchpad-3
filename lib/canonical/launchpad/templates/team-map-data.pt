@@ -8,7 +8,7 @@
           tal:attributes="
     lat participant/latitude;
     lng participant/longitude;
-    displayname participant/browsername/fmt:escape;
+    displayname participant/fmt:displayname/fmt:escape;
     local_time participant/fmt:local-time;
     logo_html participant/image:logo;
     url participant/fmt:url;

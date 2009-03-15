@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -325,13 +325,8 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return self.builds
 
-    def _is_auto_sync_upload(self, changed_by_email):
-        """Return True if this is a (Debian) auto sync upload.
-
-        Sync uploads are source-only, unsigned and not targeted to
-        the security pocket.  The Changed-By field is also the Katie
-        user (archive@ubuntu.com).
-        """
+    def isAutoSyncUpload(self, changed_by_email):
+        """See `IPackageUpload`."""
         katie = getUtility(ILaunchpadCelebrities).katie
         changed_by = self._emailToPerson(changed_by_email)
         return (not self.signing_key
@@ -810,7 +805,7 @@ class PackageUpload(SQLBase):
         do_sendmail(AcceptedMessage)
 
         # Don't send announcements for Debian auto sync uploads.
-        if self._is_auto_sync_upload(changed_by_email=changes['changed-by']):
+        if self.isAutoSyncUpload(changed_by_email=changes['changed-by']):
             return
 
         if announce_list:
@@ -1525,10 +1520,7 @@ class PackageUploadCustom(SQLBase):
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # XXX: dsilvers 2005-11-15: We should be able to get a
-        # sourcepackagerelease directly.
-        sourcepackagerelease = (
-            self.packageupload.builds[0].build.sourcepackagerelease)
+        sourcepackagerelease = self.packageupload.sourcepackagerelease
 
         # Ignore translation coming from PPA.
         if self.packageupload.isPPA():
@@ -1549,10 +1541,13 @@ class PackageUploadCustom(SQLBase):
             # packages in main.
             return
 
+        # Set the importer to package creator.
+        importer = sourcepackagerelease.creator
+
         # Attach the translation tarball. It's always published.
         try:
             sourcepackagerelease.attachTranslationFiles(
-                self.libraryfilealias, True)
+                self.libraryfilealias, True, importer=importer)
         except DownloadFailed:
             if logger is not None:
                 debug(logger, "Unable to fetch %s to import it into Rosetta" %

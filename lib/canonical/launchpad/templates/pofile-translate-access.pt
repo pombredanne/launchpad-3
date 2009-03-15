@@ -15,7 +15,7 @@
           <a tal:replace="structure manager/team/fmt:link" />,
           assigned by
           <a tal:attributes="href manager/group/fmt:url"
-             tal:content="manager/group/name">
+             tal:content="manager/group/title">
             Ubuntu translators<!-- (nospace)
           --></a><!-- (nospace)
         --></tal:team><!-- (nospace)

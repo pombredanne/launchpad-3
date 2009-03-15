@@ -76,7 +76,7 @@ Distribution or a DistributionSourcePackage.
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
-    <BLANKLINE>
+    ...
 
     >>> print webservice.named_post(
     ...     '/bugs', 'createBug',
@@ -85,7 +85,7 @@ Distribution or a DistributionSourcePackage.
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
-    <BLANKLINE>
+    ...
 
     >>> print webservice.named_post(
     ...     '/bugs', 'createBug',
@@ -94,7 +94,7 @@ Distribution or a DistributionSourcePackage.
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
-    <BLANKLINE>
+    ...
 
 A ProductSeries can't be the target of a new bug.
 
@@ -116,6 +116,22 @@ distribution in which the bug exists.
     HTTP/1.1 400 Bad Request
     ...
     target: Required input is missing.
+
+To mark a bug as private, we patch the `private` attribute of the bug.
+
+  >>> from simplejson import dumps
+  >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
+  >>> bug_twelve['private']
+  False
+  >>> print webservice.patch(
+  ...     bug_twelve['self_link'], 'application/json', dumps(dict(private=True)))
+  HTTP/1.1 209 Content Returned...
+  >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
+  >>> bug_twelve['private']
+  True
+  >>> print webservice.patch(
+  ...     bug_twelve['self_link'], 'application/json', dumps(dict(private=False)))
+  HTTP/1.1 209 Content Returned...
 
 
 == Bugs as message targets ==
@@ -162,7 +178,7 @@ We can add a new message to a bug by calling the newMessage method.
   Content-Length: 0
   Content-Type: text/plain
   Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/1
-  <BLANKLINE>
+  ...
 
   >>> pprint_entry(webservice.get("/firefox/+bug/5/comments/1").jsonBody())
   bug_attachments_collection_link: ...
@@ -202,12 +218,14 @@ data in a bug task is derived from the bug.
   date_triaged: None
   importance: u'Low'
   is_complete: False
+  milestone_link: None
   owner_link: u'http://.../~name12'
   related_tasks_collection_link:
    u'http://api.../debian/+source/mozilla-firefox/+bug/1/related_tasks'
   resource_type_link: u'http://.../#bug_task'
   self_link: u'http://api.../debian/+source/mozilla-firefox/+bug/1'
   status: u'Confirmed'
+  target_link: u'http://api.../debian/+source/mozilla-firefox'
   title: u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"'
 
   >>> bugtask_path = bug_one_bugtasks[0]['self_link']
@@ -228,6 +246,7 @@ It's possible to change the task's assignee.
   HTTP/1.1 200 Ok
   ...
   Content-Type: application/json
+  ...
   <BLANKLINE>
   null
 
@@ -241,10 +260,9 @@ The task's importance can be modified directly...
   >>> body['importance']
   u'Low'
 
-  >>> from simplejson import dumps
   >>> patch = {u'importance': u'High'}
   >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
-  HTTP/1.1 200 Ok...
+  HTTP/1.1 209 Content Returned...
 
   >>> body = webservice.get(bugtask_path).jsonBody()
   >>> body['importance']
@@ -257,6 +275,7 @@ The task's importance can be modified directly...
   HTTP/1.1 200 Ok
   ...
   Content-Type: application/json
+  ...
   <BLANKLINE>
   null
   >>> body = webservice.get(bugtask_path).jsonBody()
@@ -282,7 +301,7 @@ either directly or through a named operation.
 
   >>> patch = {u'status': u'Fix Committed'}
   >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
-  HTTP/1.1 200 Ok...
+  HTTP/1.1 209 Content Returned...
 
   >>> print webservice.get(bugtask_path).jsonBody()['status']
   Fix Committed
@@ -312,6 +331,105 @@ If an error occurs during a request that sets both 'status' and
   New
   >>> print task['importance']
   Low
+
+We can change the task's target. Here we change the task's target from
+the mozilla-firefox package to alsa-utils.
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/debian/+source/alsa-utils'))
+  HTTP/1.1 200 Ok
+  ...
+
+After the operation completed successfully, the task is
+now an alsa-utils task.
+
+  >>> task = webservice.get(
+  ...     task['self_link'].replace(
+  ...         'mozilla-firefox', 'alsa-utils')).jsonBody()
+  >>> print task['target_link']
+  http://api.../debian/+source/alsa-utils
+
+Just like in the web UI, we can't change a distribution task
+into an upstream task.
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/bzr'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Distribution bug tasks may only be re-targeted to
+  a package in the same distribution.
+  <BLANKLINE>
+
+We can't move a task from one distribution to another.
+
+  >>> print webservice.named_post(
+  ...     task['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Distribution bug tasks may only be re-targeted to
+  a package in the same distribution.
+  <BLANKLINE>
+
+We can change an upstream task to target a different project.
+
+  >>> product_bugtask = webservice.get(
+  ...     webservice.getAbsoluteUrl('/jokosher/+bug/14')).jsonBody()
+  >>> print webservice.named_post(
+  ...     product_bugtask['self_link'], 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/bzr'))
+  HTTP/1.1 200 Ok
+  ...
+
+But we can't make it into a distro task.
+
+  >>> print webservice.named_post(
+  ...     product_bugtask['self_link'].replace('jokosher', 'bzr'),
+  ...     'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+  HTTP/1.1 400 Bad Request
+  ...
+  IllegalTarget: Upstream bug tasks may only be re-targeted to
+  another project.
+  <BLANKLINE>
+
+If the milestone of a task is on a target other than the new
+target, we reset it in order to avoid data inconsistencies.
+
+  >>> firefox_bugtask = webservice.get(
+  ...     webservice.getAbsoluteUrl('/firefox/+bug/1')).jsonBody()
+  >>> patch = {u'milestone_link':
+  ...     webservice.getAbsoluteUrl('/firefox/+milestone/1.0')}
+  >>> print webservice.patch(
+  ...     firefox_bugtask['self_link'], 'application/json', dumps(patch))
+  HTTP/1.1 209 Content Returned
+  ...
+  <BLANKLINE>
+  >>> firefox_bugtask = webservice.get(
+  ...     webservice.getAbsoluteUrl('/firefox/+bug/1')).jsonBody()
+  >>> print firefox_bugtask['milestone_link']
+  http://api.../firefox/+milestone/1.0
+  >>> print webservice.named_post(
+  ...     firefox_bugtask['self_link'],
+  ...     'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/jokosher'))
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  >>> jokosher_bugtask = webservice.get(
+  ...     firefox_bugtask['self_link'].replace(
+  ...         'firefox', 'jokosher')).jsonBody()
+  >>> print jokosher_bugtask['milestone_link']
+  None
+
+  >>> print webservice.named_post(
+  ...     jokosher_bugtask['self_link'],
+  ...     'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/firefox'))
+  HTTP/1.1 200 Ok
+  ...
 
 
 == Bug subscriptions ==
@@ -429,6 +547,7 @@ But we can't change other things, like the URL.
   HTTP/1.1 400 Bad Request
   Content-Length: 47
   Content-Type: text/plain
+  ...
   <BLANKLINE>
   url: You tried to modify a read-only attribute.
 
@@ -445,6 +564,7 @@ associated with a bug.
   Content-Length: 0
   Content-Type: text/plain
   Location: http://.../bugs/1/+watch/13
+  ...
 
 Following the redirect, we can see the new bug watch:
 
@@ -473,10 +593,12 @@ Following the redirect, we can see the new bug watch:
   >>> bug_tracker = webservice.get(bug_watch['bug_tracker_link']).jsonBody()
 
   >>> pprint_entry(bug_tracker)
+  active: True
   base_url: u'https://bugzilla.mozilla.org/'
   base_url_aliases: []
   bug_tracker_type: u'Bugzilla'
   contact_details: u'Carrier pigeon only'
+  has_lp_plugin: None
   name: u'mozilla.org'
   registrant_link: u'http://.../~name12'
   resource_type_link: u'http://.../#bug_tracker'
@@ -503,7 +625,7 @@ We can change various aspects of bug trackers.
   Content-Length: 0
   Content-Type: text/plain
   Location: http://.../bugs/bugtrackers/bob
-  <BLANKLINE>
+  ...
 
 Note the 301 response. We changed the name, so the API URL at which
 the bug tracker can be found has changed.
@@ -527,10 +649,12 @@ renamed bug tracker.
   >>> bug_tracker_path = response.getHeader('Location')
   >>> bug_tracker = webservice.get(bug_tracker_path).jsonBody()
   >>> pprint_entry(bug_tracker)
+  active: True
   base_url: u'http://bugs.example.com/'
   base_url_aliases: [u'http://bugs.example.com/bugs/', u'http://www.example.com/bugtracker/']
   bug_tracker_type: u'Bugzilla'
   contact_details: u'bob@example.com'
+  has_lp_plugin: None
   name: u'bob'
   registrant_link: u'http://.../~name12'
   resource_type_link: u'http://.../#bug_tracker'
@@ -538,6 +662,23 @@ renamed bug tracker.
   summary: u'Where Bob files his bugs.'
   title: u"Bob's Tracker"
   watches_collection_link: u'http://.../bugs/bugtrackers/bob/watches'
+
+Non-admins can't disable a bugtracker through the API.
+
+    >>> print public_webservice.patch(
+    ...     bug_tracker_path, 'application/json',
+    ...     dumps(dict(active=False))).jsonBody()
+    Traceback (most recent call last):
+      ...
+    ValueError: HTTP/1.1 401 Unauthorized...
+
+Admins can, however.
+
+    >>> bug_tracker = webservice.patch(
+    ...     bug_tracker_path, 'application/json',
+    ...     dumps(dict(active=False))).jsonBody()
+    >>> pprint_entry(bug_tracker)
+    active: False...
 
 
 == Bug attachments ==
@@ -562,7 +703,8 @@ An attachment can be added to the bug:
   HTTP/1.1 201 Created
   Content-Length: 0
   Content-Type: text/plain
-  Location: http://.../bugs/1/attachments/1
+  Location: http://.../bugs/1/+attachment/1
+  ...
 
 Now, bug 1 has one attachment:
 
@@ -574,10 +716,10 @@ Now, bug 1 has one attachment:
   total_size: 1
   ---
   bug_link: u'http://.../bugs/1'
-  data_link: u'http://.../bugs/1/attachments/1/data'
+  data_link: u'http://.../bugs/1/+attachment/1/data'
   message_link: u'http://.../firefox/+bug/1/comments/2'
   resource_type_link: u'http://.../#bug_attachment'
-  self_link: u'http://.../bugs/1/attachments/1'
+  self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
   ---
@@ -587,10 +729,10 @@ The attachment can be fetched directly:
   >>> [attachment] = attachments['entries']
   >>> pprint_entry(webservice.get(attachment['self_link']).jsonBody())
   bug_link: u'http://.../bugs/1'
-  data_link: u'http://.../bugs/1/attachments/1/data'
+  data_link: u'http://.../bugs/1/+attachment/1/data'
   message_link: u'http://.../firefox/+bug/1/comments/2'
   resource_type_link: u'http://.../#bug_attachment'
-  self_link: u'http://.../bugs/1/attachments/1'
+  self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
 
@@ -603,6 +745,7 @@ we must follow to download the data.
   Content-Length: 0
   Content-Type: text/plain
   Location: http://localhost:58000/.../numbers.txt
+  ...
 
   >>> from urllib2 import urlopen
 
@@ -645,8 +788,43 @@ the same time.
   resource_type_link: u'http://.../#bug_attachment-page-resource'
   start: 0
   total_size: 1
-  ---
   ...
+  ---
+
+Once an attachment is uploaded, it is not possible to change it.
+
+  >>> response = webservice.put(
+  ...     attachment['data_link'], 'text/text', 'abcdefg')
+  >>> print response.getOutput()
+  HTTP/1.1 405 Method Not Allowed
+  ...
+
+  >>> data_response = webservice.get(attachment['data_link'])
+  >>> data = None
+  >>> conn = urlopen(data_response.getHeader('Location'))
+  >>> try:
+  ...     data = conn.read()
+  ... finally:
+  ...     conn.close()
+  >>> data
+  '12345'
+
+But we can remove the attachment altogether.
+
+  >>> response = webservice.named_post(
+  ...     attachment['self_link'], 'removeFromBug')
+  >>> print response.getOutput()
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> attachments = webservice.get(
+  ...     bug_one['attachments_collection_link']).jsonBody()
+  >>> pprint_collection(attachments)
+  resource_type_link: u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'
+  start: None
+  total_size: 0
+  ---
+
 
 == Searching for bugs ==
 
@@ -729,6 +907,41 @@ setting the tags_combinator parameter to 'All'.
     ...     tags_combinator='All').jsonBody())
     start: None
     total_size: 0
+    ---
+
+It is possible to search for bugs targeted to a milestone within a
+project group.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IMilestoneSet, IProductSet
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> product_set = getUtility(IProductSet)
+    >>> milestone_set = getUtility(IMilestoneSet)
+    >>> firefox = product_set.getByName('firefox')
+    >>> firefox_1_0 = milestone_set.getByNameAndProduct(
+    ...     product=firefox, name='1.0')
+    >>> bug = factory.makeBug(product=firefox)
+    >>> bug.bugtasks[0].milestone = firefox_1_0
+    >>> logout()
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/mozilla', 'searchTasks',
+    ...     milestone=webservice.getAbsoluteUrl(
+    ...         '/mozilla/+milestone/1.0')).jsonBody())
+    start: 0
+    total_size: 1
+    ...
+    ---
+
+The same search can be performed directly on the milestone too.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     webservice.getAbsoluteUrl('/mozilla/+milestone/1.0'),
+    ...     'searchTasks').jsonBody())
+    start: 0
+    total_size: 1
+    ...
     ---
 
 Search results can be ordered using the same string values used by
@@ -852,4 +1065,26 @@ And link new CVEs to the bug.
     ---
     ...
     self_link: u'http://.../bugs/cve/2005-2733'
+    ...
+
+Add a new task to the bug.
+
+    >>> bugtasks_url = bug_one['bug_tasks_collection_link']
+    >>> pprint_collection(webservice.get(bugtasks_url).jsonBody())
+    resource_type_link: u'http://.../#bug_task-page-resource'
+    start: 0
+    total_size: 3
+    ...
+
+    >>> redfish = webservice.get('/redfish').jsonBody()
+    >>> print webservice.named_post(
+    ...     bug_one['self_link'], 'addTask',
+    ...     target=redfish['self_link'])
+    HTTP/1.1 201 Created...
+
+    >>> bugtasks_url = bug_one['bug_tasks_collection_link']
+    >>> pprint_collection(webservice.get(bugtasks_url).jsonBody())
+    resource_type_link: u'http://.../#bug_task-page-resource'
+    start: 0
+    total_size: 4
     ...

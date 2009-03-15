@@ -1,16 +1,5 @@
 <configure xmlns="http://namespaces.zope.org/zope">
     <include package="storm.zope" />
 
-    <!--
-    The Stores get created on demand rather than when the ZCML is
-    processed. This means that processes that don't need all these
-    stores do not end up with unnecessary database connections being
-    opened up.
-    -->
-    <store name="main-master" uri="launchpad:main-master" />
-    <store name="main-slave"  uri="launchpad:main-slave" />
-    <store name="auth-master" uri="launchpad:main-master" />
-    <store name="auth-slave"  uri="launchpad:main-slave" />
-
     <store name="session" uri="launchpad-session:" />
 </configure>

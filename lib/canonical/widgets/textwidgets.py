@@ -9,7 +9,6 @@ from zope.app.form.browser.textwidgets import TextAreaWidget, TextWidget
 from zope.app.form.interfaces import ConversionError
 
 from canonical.launchpad.interfaces import UnexpectedFormData
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 # XXX matsubara 2006-05-10: Should I move our NewLineToSpacesWidget to
 # this module?
@@ -135,35 +134,13 @@ class URIWidget(TextWidget):
     displayWidth = 44
     cssClass = 'urlTextType'
 
-    def _toFieldValue(self, input):
-        """Convert the form input value to a field value.
+    def __init__(self, field, request):
+        super(URIWidget, self).__init__(field, request)
+        self.field = field
 
-        This method differs from the standard TextWidget behaviour in
-        the following ways:
-         * whitespace is stripped from the input value
-         * invalid URIs cause a ConversionError
-         * if the field requires (or forbids) a trailing slash on the URI,
-           then the widget ensures that the widget ends in a slash (or
-           doesn't end in a slash).
-         * the URI is canonicalised.
-        """
+    def _toFieldValue(self, input):
         if isinstance(input, list):
             raise UnexpectedFormData('Only a single value is expected')
-        input = input.strip()
-        if input:
-            try:
-                uri = URI(input)
-            except InvalidURIError, exc:
-                raise ConversionError(str(exc))
-            # If there is a policy for whether trailing slashes are
-            # allowed at the end of the path segment, ensure that the
-            # URI conforms.
-            if self.context.trailing_slash is not None:
-                if self.context.trailing_slash:
-                    uri = uri.ensureSlash()
-                else:
-                    uri = uri.ensureNoSlash()
-            input = str(uri)
         return TextWidget._toFieldValue(self, input)
 
 
