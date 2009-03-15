@@ -126,44 +126,44 @@ PPA job.
 This feature is evaluated on the view layer, since it varies according
 to the user who is trying to access a given content.
 
-Before checking if it works as expected we will setup a environment
+Before checking if it works as expected we will setup an environment
 where builder 'Frog' is building a job from Celso's private PPA.
 
     >>> from canonical.launchpad.database.buildqueue import BuildQueue
     >>> from canonical.launchpad.interfaces import (
-    ...    IBuildSet, IBuilderSet, IPersonSet)
+    ...    IBuilderSet, IPersonSet)
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov.archive.buildd_secret = "secret"
     >>> cprov.archive.private = True
 
+SoyuzTestPublisher is used to make a new publication only in Celso's
+PPA.
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+    >>> from canonical.launchpad.interfaces.build import BuildStatus
+
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> private_source_pub = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='privacy-test',
+    ...     archive=cprov.archive)
+    >>> [private_build] = private_source_pub.createMissingBuilds()
+
+Assign the build to the 'frog' builder:
+
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True
-
-    >>> random_build = 2
-    >>> cprov_builds = getUtility(
-    ...     IBuildSet).getBuildsForArchive(cprov.archive)
-    >>> private_job = BuildQueue(
-    ...     build=cprov_builds[random_build], builder=frog)
+    >>> private_build.builder = frog
+    >>> private_job = BuildQueue(build=private_build, builder=frog)
     >>> private_job_id = private_job.id
-
-Finally, we will remove any publications of the source behind our
-build of interest that are not in cprov's archive, so that we know
-we're dealing with a single private source publication.
-
-    >>> random_spr = cprov_builds[random_build].sourcepackagerelease
-    >>> non_cprov_publications = [
-    ...     pub for pub in random_spr.publishings
-    ...     if pub.archive != cprov.archive]
-    >>> for pub in non_cprov_publications:
-    ...     discard = pub.supersede()
-
-flush_database_caches seems to be required because random_spr.publishings
-is an SQLObject MultipleJoin.
 
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
-
 
 At the content class level, all the information about the current job
 is widely available:
@@ -177,13 +177,14 @@ is widely available:
     True
 
     >>> print frog.currentjob.build.title
-    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+    i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
 
     >>> print frog.failnotes
     None
 
     >>> print frog.status
-    Building i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov]
+    Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
+        RELEASE [cprov]
 
 Accessing the view for $builder/+index as a Foo Bar, which has
 launchpad.View permission on the target archive of the 'currentjob',
@@ -203,30 +204,21 @@ all the 'private' information is exposed.
     True
 
     >>> print admin_view.context.currentjob.build.title
-    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+    i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
 
     >>> print admin_view.context.failnotes
     None
 
     >>> print admin_view.context.status
-    Building i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov]
+    Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
+        RELEASE [cprov]
 
 When accessing the same view as a unprivileged user, No-Priv, the
 sensitive information is hidden (the context class is 'cloaked', see
 browser/builder.py for futher information on this) and the builder
 shows up as 'Building private build'.
 
-XXX Julian 2008-09-10
-The Storm store has to be reset here because otherwise the cachedproperty
-used in the security adapter will re-used for the next login with the wrong
-values.  This is only a problem in tests.  This code can be removed after
-bug 268612 is fixed.
-
-    >>> from storm.store import Store
-    >>> store = Store.of(frog)
-    >>> store.reset()
     >>> login('no-priv@canonical.com')
-
     >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
 
     >>> print nopriv_view.context
@@ -251,6 +243,8 @@ before public release.
 Once the private job is gone, Frog 'real' details are exposed publicly
 again.
 
+    >>> from storm.store import Store
+    >>> store = Store.of(frog)
     >>> login("foo.bar@canonical.com")
     >>> private_job = store.get(BuildQueue, private_job_id)
     >>> Store.of(private_job).remove(private_job)
@@ -407,7 +401,7 @@ The 'PPA' builder category is also available in BuilderSetView as a
     True
 
     >>> print_category(builder_category)
-    386 0
+    386 1
     The Hamburger Builder
     The frog builder
     amd64 0
@@ -418,22 +412,18 @@ The 'PPA' builder category is also available in BuilderSetView as a
 We change the sampledata to create a pending build in for the 386
 processor queue in the PPA category.
 
-    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> login('foo.bar@canonical.com')
+
     >>> any_failed_build = cprov.archive.getBuildRecords(
     ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
-
-    >>> login('foo.bar@canonical.com')
     >>> any_failed_build.retry()
-    >>> login(ANONYMOUS)
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
 
 Now the pending build is included in the right category and group.
 
+    >>> login(ANONYMOUS)
     >>> builder_category = builderset_view.ppa_builders
     >>> print_category(builder_category)
-    386 1
+    386 2
     The Hamburger Builder
     The frog builder
     amd64 0

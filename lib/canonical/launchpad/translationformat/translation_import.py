@@ -654,12 +654,19 @@ class POFileImporter(FileImporter):
             self.last_translator = (
                 self.translation_import_queue_entry.importer)
 
-        # Use the importer rights to make sure the imported
-        # translations are actually accepted instead of being just
-        # suggestions.
-        self.is_editor = (
-            self.pofile.canEditTranslations(
-                self.translation_import_queue_entry.importer))
+        if self.translation_import_queue_entry.is_published:
+            # An unprivileged user wouldn't have been able to upload a
+            # published file in the first place.  But for Soyuz uploads,
+            # the "importer" reflects the package upload, not the
+            # translations upload.  So don't check for editing rights.
+            self.is_editor = True
+        else:
+            # Use the importer rights to make sure the imported
+            # translations are actually accepted instead of being just
+            # suggestions.
+            self.is_editor = (
+                self.pofile.canEditTranslations(
+                    self.translation_import_queue_entry.importer))
 
         self.pofile_in_db = (
             ExistingPOFileInDatabase(
@@ -715,11 +722,6 @@ class POFileImporter(FileImporter):
         if 'fuzzy' in message.flags:
             message.flags.remove('fuzzy')
             message._translations = None
-
-        if len(message.flags) > 0:
-            flags_comment = u", "+u", ".join(message.flags)
-        else:
-            flags_comment = u""
 
         translation_message = self.storeTranslationsInDatabase(
             message, potmsgset)

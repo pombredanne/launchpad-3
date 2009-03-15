@@ -178,11 +178,14 @@ system.
 
 The bug data is stored as a list of dicts:
 
-    >>> for bug in sorted(bugzilla._bugs):
-    ...     print "Bug %s:" % bug
-    ...     for key in sorted(bugzilla._bugs[bug]):
-    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
-    ...     print "\n"
+    >>> def print_bugs(bugs):
+    ...     for bug in sorted(bugs):
+    ...         print "Bug %s:" % bug
+    ...         for key in sorted(bugzilla._bugs[bug]):
+    ...             print "    %s: %s" % (key, bugzilla._bugs[bug][key])
+    ...         print "\n"
+
+    >>> print_bugs(bugzilla._bugs)
     Bug 1:
         alias: 
         assigned_to: test@canonical.com
@@ -193,7 +196,7 @@ The bug data is stored as a list of dicts:
         is_open: True
         last_change_time: 20080610T16:19:53
         priority: P1
-        product: HeartOfGold
+        product: Marvin
         resolution: FIXED
         severity: normal
         status: RESOLVED
@@ -356,6 +359,30 @@ error will be raised. We can add a sample bug to demonstrate this.
     UnparseableBugData
 
     >>> del bugzilla._bugs[999]
+
+
+== Getting the remote product ==
+
+getRemoteProduct() returns the product a remote bug is associated with
+in Bugzilla. 
+
+    >>> bugzilla.xmlrpc_transport.bugs[2]['product']
+    'HeartOfGold'
+    >>> bugzilla.getRemoteProduct(2)
+    'HeartOfGold'
+
+A bug alias can also be given to getRemoteProduct().
+
+    >>> bugzilla.getRemoteProduct('bug-two')
+    'HeartOfGold'
+
+If the product is requested for a bug that can't be found, BugNotFound
+is raised.
+
+    >>> bugzilla.getRemoteProduct(12345)
+    Traceback (most recent call last):
+    ...
+    BugNotFound: 12345
 
 
 == Retrieving remote comments ==
@@ -608,3 +635,65 @@ the Launchpad bug ID has been updated for remote bug 1.
     >>> print launchpad_bug_id
     10
 
+
+== Working with a specified set of Bugzilla products ==
+
+BugzillaLPPlugin can be instructed to only get the data for a set of
+bug IDs if those bugs belong to one of a given set of products.
+
+    >>> ids_to_update = [1, 2]
+    >>> products_to_update = ['HeartOfGold']
+    >>> bugzilla = BugzillaLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport())
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+
+    >>> bugzilla.initializeRemoteBugDB(ids_to_update, products_to_update)
+    CALLED Launchpad.get_bugs({'ids': [1, 2], 'permissive': True,
+    'products': ['HeartOfGold']})
+
+    >>> print_bugs(bugzilla._bugs)
+    Bug 2:
+        alias: bug-two
+        assigned_to: marvin@heartofgold.ship
+        component: Crew
+        creation_time: 20080611T09:23:12
+        id: 2
+        internals:...
+        is_open: True
+        last_change_time: 20080611T09:24:29
+        priority: P1
+        product: HeartOfGold
+        resolution: 
+        severity: high
+        status: NEW
+        summary: Collect unknown persons in docking bay 2.
+    <BLANKLINE>
+    <BLANKLINE>
+
+Specifying a set of IDs that don't belong to any of the products will
+result in no bugs being returned.
+
+    >>> del bugzilla._bugs[2]
+    >>> bugzilla.initializeRemoteBugDB([1], products_to_update)
+    CALLED Launchpad.get_bugs({'ids': [1], 'permissive': True,
+    'products': ['HeartOfGold']})
+
+    >>> len(bugzilla._bugs)
+    0
+
+
+== Getting the products for a set of remote bugs ==
+
+BugzillaLPPlugin provides a helper method, getProductsForRemoteBugs(),
+which takes a list of bug IDs or aliases and returns the products to
+which those bugs belong as a dict of (bug_id_or_alias, product)
+mappings.
+
+    >>> product_mappings = bugzilla.getProductsForRemoteBugs([1, 2])
+    CALLED Launchpad.get_bugs({'ids': [1, 2], 'permissive': True})
+
+    >>> for bug_id in sorted(product_mappings):
+    ...     print "%s: %s" % (bug_id, product_mappings[bug_id])
+    1: Marvin
+    2: HeartOfGold

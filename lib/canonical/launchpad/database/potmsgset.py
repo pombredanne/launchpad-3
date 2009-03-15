@@ -5,14 +5,16 @@ __metaclass__ = type
 __all__ = ['POTMsgSet']
 
 import gettextpo
+import logging
 
 from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 
+from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILaunchpadCelebrities, IPOTMsgSet,
@@ -178,6 +180,9 @@ class POTMsgSet(SQLBase):
         A message is used if it's either imported or current, and unused
         otherwise.
         """
+        if not config.rosetta.global_suggestions_enabled:
+            return []
+
         # Return empty list (no suggestions) for translation credit strings
         # because they are automatically translated.
         if self.is_translation_credit:
@@ -375,7 +380,29 @@ class POTMsgSet(SQLBase):
             else:
                 clauses.append('msgstr%s=%s' % (
                     sqlvalues(pluralform, potranslations[pluralform])))
-        return TranslationMessage.selectOne(' AND '.join(clauses))
+
+        remaining_plural_forms = range(
+            pluralforms, TranslationConstants.MAX_PLURAL_FORMS)
+
+        # Normally at most one message should match.  But if there is
+        # more than one, prefer the one that adds the fewest extraneous
+        # plural forms.
+        order = [
+            'msgstr%s NULLS FIRST' % quote(form)
+            for form in remaining_plural_forms
+            ]
+        matches = list(
+            TranslationMessage.select(' AND '.join(clauses), orderBy=order))
+
+        if len(matches) > 0:
+            if len(matches) > 1:
+                logging.warn(
+                    "Translation for POTMsgSet %s into %s "
+                    "matches %s existing translations." % sqlvalues(
+                        self, pofile.language.code, len(matches)))
+            return matches[0]
+        else:
+            return None
 
     def _makeTranslationMessageCurrent(self, pofile, new_message, is_imported,
                                        submitter):

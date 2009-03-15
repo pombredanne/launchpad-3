@@ -27,6 +27,23 @@ external connections.
     DEBUG...No watches to update on http://bugs.debian.org
     DEBUG...No watches to update on http://bugzilla.gnome.org/bugs
 
+If a bug tracker is disabled checkwatches won't try to update it.
+
+    >>> from canonical.config import config
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> login('foo.bar@canonical.com')
+    >>> bug_tracker = LaunchpadObjectFactory().makeBugTracker(
+    ...     'http://example.com')
+    >>> bug_tracker.active = False
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> updater.updateBugTrackers([bug_tracker.name])
+    DEBUG...Updates are disabled for bug tracker at http://example.com
+
 This functionality can also be used with the checkwatches cronscript,
 allowing a user to pass a list of bugtrackers to check at the command
 line.
@@ -34,8 +51,9 @@ line.
     >>> import subprocess
     >>> process = subprocess.Popen(
     ...     ['cronscripts/checkwatches.py', '--bug-tracker=mozilla.org',
-    ...      '--bug-tracker=debbugs', '-v'], stdin=subprocess.PIPE,
-    ...     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ...      '--bug-tracker=debbugs', '-v', '--batch-size=10'],
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> out
     ''
@@ -44,6 +62,7 @@ line.
 
     >>> print err
     INFO    creating lockfile
+    DEBUG   Using a global batch size of 10
     DEBUG   No watches to update on https://bugzilla.mozilla.org/
     DEBUG   No watches to update on http://bugs.debian.org
     INFO    Time for this run: ... seconds.
@@ -67,3 +86,8 @@ tracker option fully.
                             Only check a given bug tracker. Specifying
                             more than one bugtracker using this option
                             will check all the bugtrackers specified...
+      -b BATCH_SIZE, --batch-size=BATCH_SIZE
+                            Set the number of watches to be checked per
+                            bug tracker in this run. If BATCH_SIZE is 0,
+                            all watches on the bug tracker that are
+                            eligible for checking will be checked.

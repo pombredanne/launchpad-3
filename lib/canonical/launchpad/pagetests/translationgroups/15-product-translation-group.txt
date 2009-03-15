@@ -34,16 +34,15 @@ can see that from the translations page.
 
     >>> print extract_text(
     ...     find_tag_by_id(netapplet_owner_browser.contents,
-    ...                    'portlet-translation-permissions'))
-    Translation permissions
-    Translation group: Not assigned
-    Permissions: Open
+    ...                    'translation-permissions'))
+    NetApplet is translated with Open permissions.
+    You can modify permissions on the Settings page.
 
 Now let's make sure we can see the page to let us change translation
 group and permissions.
 
     >>> translations_page_url = netapplet_owner_browser.url
-    >>> netapplet_owner_browser.getLink('Change translators').click()
+    >>> netapplet_owner_browser.getLink('Settings').click()
     >>> change_translators_url = netapplet_owner_browser.url
 
     >>> print netapplet_owner_browser.title
@@ -58,11 +57,11 @@ group and permissions.
     ...     'Translation group').displayValue
     ['(no value)']
 
-Ordinary users cannot see the "Change translators" link or the page it
+Ordinary users cannot see the "Settings" link or the page it
 leads to.
 
     >>> user_browser.open(translations_page_url)
-    >>> user_browser.getLink('Change translators').click()
+    >>> user_browser.getLink('Settings').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -84,17 +83,3 @@ Now let's post to the form. We should be redirected to the product page.
 Now these changes show up in the product page. (XXX mpt 20070126:
 Launchpad should be fixed so that you can't set translation
 group/permissions without using Translations.)
-
-    >>> print extract_text(
-    ...     find_tag_by_id(netapplet_owner_browser.contents,
-    ...                    'portlet-translation-permissions'))
-    Translation permissions
-    Translation group: The PolyGlot Translation Group
-    Permissions: Open
-
-    >>> polyglot_link = netapplet_owner_browser.getLink(
-    ...     'The PolyGlot Translation Group')
-    >>> polyglot_link.click()
-    >>> netapplet_owner_browser.title
-    '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d
-    Launchpad translation group'

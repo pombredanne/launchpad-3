@@ -447,6 +447,25 @@ HWVendorIDSet.getByBusAndVendorID() must be a valid ID for the given bus.
     ...
     ValueError: '8086' is not a valid vendor ID for PCI
 
+HWVendorIDSet.get() returns the HWVendorID record with the given ID...
+
+    >>> vendor_id = vendor_id_set.get(1)
+    >>> print vendor_id.bus.name, vendor_id.vendor_id_for_bus
+    SYSTEM MSI
+
+...or None, if no such record exists.
+
+    >>> print vendor_id_set.get(1000000)
+    None
+
+HWVendorIDSet.idsForBus() returns all known HWVendorIDs for a given bus.
+
+    >>> for vendor_id in vendor_id_set.idsForBus(HWBus.PCI):
+    ...     print vendor_id.bus.name, vendor_id.vendor_id_for_bus
+    PCI 0x10ae
+    PCI 0x10de
+    PCI 0x8086
+
 
 == HWDevice ==
 
@@ -988,6 +1007,123 @@ Searching can be limited to a single product ID.
     USB 0x07b3 0x0017 OpticPro UT16
     USB 0x07b3 0x0017 Some other scanner
 
+HWDevice.getSubmissions() returns submissions which contain this device.
+
+We'll switch the DB user from hwdb-submission-processor to the ordinary
+Launchpad user, because the former has no access to the table
+distribution, which we want to access in this test.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> sata_controller = device_set.getByDeviceID(
+    ...     bus=HWBus.PCI, vendor_id='0x10de', product_id='0x045d')
+    >>> for submission in sata_controller.getSubmissions():
+    ...     print submission.submission_key
+    sample-submission
+
+We can limit the results to a specific driver. (See below for details about
+HWDriver.)
+
+    >>> from canonical.launchpad.interfaces import IHWDriverSet
+    >>> ahci_driver = getUtility(IHWDriverSet).getByPackageAndName(
+    ...     'linux-image-2.6.24-19-generic', 'ahci')
+    >>> for submission in sata_controller.getSubmissions(
+    ...     driver=ahci_driver):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> usb_storage_driver = getUtility(IHWDriverSet).getByPackageAndName(
+    ...     'linux-image-2.6.24-19-generic', 'usb-storage')
+    >>> print list(sata_controller.getSubmissions(
+    ...     driver=usb_storage_driver))
+    []
+
+We can limit the results to a specific distribution.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> distribution_set = getUtility(IDistributionSet)
+    >>> ubuntu = distribution_set.getByName('ubuntu')
+    >>> for submission in sata_controller.getSubmissions(
+    ...     distribution=ubuntu):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> debian = distribution_set.getByName('debian')
+    >>> sata_controller.getSubmissions(distribution=debian).count()
+    0
+
+We can limit the results to a specific architecture.
+
+    >>> for submission in sata_controller.getSubmissions(
+    ...     architecture='i386'):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> sata_controller.getSubmissions(architecture='amd64').count()
+    0
+
+We can limit the results to a specific distro series.
+
+    >>> for submission in sata_controller.getSubmissions(
+    ...     distroseries=ubuntu['hoary']):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> sata_controller.getSubmissions(distroseries=ubuntu['warty']).count()
+    0
+
+We can even limit the results to a specific distro series and architecture.
+
+    >>> for submission in sata_controller.getSubmissions(
+    ...     distroseries=ubuntu['hoary'], architecture='i386'):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> sata_controller.getSubmissions(
+    ...     distroseries=ubuntu['hoary'], architecture='powerpc').count()
+    0
+
+We can also search for submissions from a particular user.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> owner = getUtility(IPersonSet).getByName('name12')
+    >>> for submission in sata_controller.getSubmissions(owner=owner):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> not_owner = getUtility(IPersonSet).getByName('name20')
+    >>> sata_controller.getSubmissions(owner=not_owner).count()
+    0
+
+=== Counting unique results ===
+
+The results of getSubmissions are unique, so the underlying implementation
+uses an SQL DISTINCT directive. The count() call issued by Storm is usually
+incorrect for distinct queries, but we decorate the returning result set
+with a special count implementation which corrects count.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> submissions = sata_controller.getSubmissions()
+
+The original result set returns an incorrect result for count()
+
+    >>> print removeSecurityProxy(submissions).result_set.count()
+    2
+
+But the wrapper issues the modified query and returns the correct result.
+
+    >>> print submissions.count()
+    1
+
+    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+
+HWDevice.drivers is the set of drivers that are associated via
+HWDeviceDriverLink (see below) with this device.
+
+    >>> for driver in sata_controller.drivers:
+    ...     print driver.package_name, driver.name
+    linux-image-2.6.24-19-generic ahci
+
 
 == HWDeviceNameVariant ==
 
@@ -1223,6 +1359,65 @@ HWDriverSet.getByID() returns None if no record with the passed ID exists.
     >>> print driver
     None
 
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+We can search all the submissions related to a driver.
+
+    >>> driver = driver_set.getByID(1)
+    >>> for submission in driver.getSubmissions():
+    ...     print submission.submission_key
+    sample-submission
+
+We can limit our search to submissions for a particular distribution.
+
+    >>> for submission in driver.getSubmissions(distribution=ubuntu):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> print driver.getSubmissions(distribution=debian).count()
+    0
+
+We can limit the results to a specific distro series.
+
+    >>> for submission in driver.getSubmissions(
+    ...     distroseries=ubuntu['hoary']):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> driver.getSubmissions(distroseries=ubuntu['warty']).count()
+    0
+
+We can also limit the results to a specific distro series and architecture.
+
+    >>> for submission in driver.getSubmissions(
+    ...     distroseries=ubuntu['hoary'], architecture='i386'):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> driver.getSubmissions(
+    ...     distroseries=ubuntu['hoary'], architecture='powerpc').count()
+    0
+
+And We can search for submissions from a particular user.
+
+    >>> for submission in driver.getSubmissions(owner=owner):
+    ...     print submission.submission_key
+    sample-submission
+
+    >>> driver.getSubmissions(owner=not_owner).count()
+    0
+
+    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+
+HWDriverSet.packages_names is a distinct list of known package names.
+
+    >>> for name in driver_set.package_names:
+    ...     print name
+    <BLANKLINE>
+    linux-image-2.6.24-19-generic
+    linux-image-generic
+    None
+
 
 == HWDeviceDriverLink ==
 
@@ -1443,10 +1638,16 @@ A HWSubmissionDevice record for a system does not have any parent...
     ...     submission=sample_submission, parent=None, hal_device_id=1)
     >>> print submitted_tuffbook_2600.device_driver_link.device.name
     Tuffbook 2600
+    >>> print submitted_tuffbook_2600.device.name
+    Tuffbook 2600
+    >>> print submitted_tuffbook_2600.driver
+    None
     >>> print submitted_tuffbook_2600.submission.submission_key
     test_submission_id_1
     >>> print submitted_tuffbook_2600.parent
     None
+    >>> print submitted_tuffbook_2600.hal_device_id
+    1
 
 ...while ordinary device entries have the attribute parent set. The
 parent/child relationship may extend to several "generations". For
@@ -1468,6 +1669,16 @@ that we just have created.
     ...      submission=sample_submission,
     ...      parent=submitted_usb_ehci_hcd_controller,
     ...      hal_device_id=3)
+    >>> print submitted_usb_controller.device_driver_link.device.name
+    82801GBM/GHM (ICH7 Family) USB2 EHCI Controller
+    >>> print submitted_usb_controller.device_driver_link.driver.name
+    usb
+    >>> print submitted_usb_controller.device.name
+    82801GBM/GHM (ICH7 Family) USB2 EHCI Controller
+    >>> print submitted_usb_controller.driver.name
+    usb
+    >>> print submitted_usb_controller.hal_device_id
+    3
 
 The USB controller is connected to an (often internal) USB hub. We don't
 yet have HWDevice and HWDeviceDriverLink records for this hub, so we must
@@ -1483,7 +1694,7 @@ create them first.
     ...     device_driver_link=usb_hub_driver_link,
     ...     submission=sample_submission,
     ...     parent=submitted_usb_controller,
-    ...      hal_device_id=4)
+    ...     hal_device_id=4)
 
 Finally, a scanner may be connected to the USB hub.
 
@@ -1491,13 +1702,13 @@ Finally, a scanner may be connected to the USB hub.
     ...     device_driver_link=scanner_usb_driver_link,
     ...     submission=sample_submission,
     ...     parent=submitted_usb_hub,
-    ...      hal_device_id=5)
+    ...     hal_device_id=5)
 
     >>> submitted_scanner_sane = submission_device_set.create(
     ...     device_driver_link=scanner_sane_plustek_link,
     ...     submission=sample_submission,
     ...     parent=submitted_scanner_usb,
-    ...      hal_device_id=6)
+    ...     hal_device_id=6)
 
 IHWSubmissionDevice records belonging to a submission are retrieved by
 IHWSubmissionDeviceSet.getDevices().
@@ -1527,3 +1738,15 @@ IHWSubmissionDeviceSet.getDevices().
     ---> Unknown Intel USB hub usb
     ----> Plustek OpticPro UT12 usb
     -----> Plustek OpticPro UT12 plustek
+
+A single IHWSubmissionDevice record is retrieved by
+IHWSubmissionDeviceSet.get().
+
+    >>> submitted_device = submission_device_set.get(1)
+    >>> print_device(submitted_device)
+    MSI MS-7369 (no driver)
+
+This method returns None if a nonexistent ID is passed.
+
+    >>> print submission_device_set.get(1000000)
+    None

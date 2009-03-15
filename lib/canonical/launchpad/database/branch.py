@@ -5,25 +5,27 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
-    'DEFAULT_BRANCH_LISTING_SORT',
     ]
 
 from datetime import datetime
 
+from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
+from bzrlib import urlutils
 import pytz
 
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import And, Join, LeftJoin, Or
-from storm.info import ClassAlias
+from storm.expr import And, Count, Desc, Join, Max, Or, Select
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
+
+from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -33,44 +35,46 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
+from canonical.launchpad.database.branchmergeproposal import (
+     BranchMergeProposal)
+from canonical.launchpad.database.branchrevision import BranchRevision
+from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.job import Job
+from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
-    BadBranchSearchContext, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    BranchCreationForbidden,
-    BranchCreationNoTeamOwnedJunkBranches,
+    ILaunchpadCelebrities, IProductSet, NotFoundError)
+from canonical.launchpad.interfaces.branch import (
+    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
-    BranchFormat, BranchLifecycleStatus, BranchListingSort,
-    BranchMergeProposalStatus, BranchPersonSearchRestriction,
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, BranchTypeError, BranchVisibilityRule, CannotDeleteBranch,
-    CodeReviewNotificationLevel, ControlFormat,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
-    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
-    IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
-    MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
+    BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
+    BranchType, BranchTypeError, CannotDeleteBranch, ControlFormat,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, NoSuchBranch,
     user_has_special_branch_access)
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+     BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
+     BranchMergeProposalStatus, InvalidBranchMergeProposal)
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    BranchVisibilityRule)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.database.branchcontainer import (
-    PackageContainer, PersonContainer, ProductContainer)
 from canonical.launchpad.interfaces.product import NoSuchProduct
-from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposal)
-from canonical.launchpad.database.branchrevision import BranchRevision
-from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.validators.person import (
-    validate_public_person)
-from canonical.launchpad.database.revision import Revision
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.uri import InvalidURIError, URI
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
+from lazr.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc import faults
 
@@ -80,7 +84,7 @@ class Branch(SQLBase):
 
     implements(IBranch, IBranchNavigationMenu)
     _table = 'Branch'
-    _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
+    _defaultOrder = ['product', '-lifecycle_status', 'owner', 'name']
 
     branch_type = EnumCol(enum=BranchType, notNull=True)
 
@@ -104,9 +108,6 @@ class Branch(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-    author = ForeignKey(
-        dbName='author', foreignKey='Person',
-        storm_validator=validate_public_person, default=None)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
@@ -121,7 +122,7 @@ class Branch(SQLBase):
 
     lifecycle_status = EnumCol(
         enum=BranchLifecycleStatus, notNull=True,
-        default=BranchLifecycleStatus.NEW)
+        default=BranchLifecycleStatus.DEVELOPMENT)
 
     last_mirrored = UtcDateTimeCol(default=None)
     last_mirrored_id = StringCol(default=None)
@@ -139,16 +140,37 @@ class Branch(SQLBase):
         return '<Branch %r (%d)>' % (self.unique_name, self.id)
 
     @property
-    def container(self):
+    def target(self):
         """See `IBranch`."""
         if self.product is None:
             if self.distroseries is None:
-                return PersonContainer(self.owner)
+                target = self.owner
             else:
-                return PackageContainer(
-                    self.distroseries, self.sourcepackagename)
+                target = self.sourcepackage
         else:
-            return ProductContainer(self.product)
+            target = self.product
+        return IBranchTarget(target)
+
+    @property
+    def namespace(self):
+        """See `IBranch`."""
+        return self.target.getNamespace(self.owner)
+
+    @property
+    def distribution(self):
+        """See `IBranch`."""
+        if self.distroseries is None:
+            return None
+        return self.distroseries.distribution
+
+    @property
+    def sourcepackage(self):
+        """See `IBranch`."""
+        # Avoid circular imports.
+        from canonical.launchpad.database.sourcepackage import SourcePackage
+        if self.distroseries is None:
+            return None
+        return SourcePackage(self.sourcepackagename, self.distroseries)
 
     @property
     def revision_history(self):
@@ -234,7 +256,7 @@ class Branch(SQLBase):
             """ % sqlvalues(self, target_branch,
                             BRANCH_MERGE_PROPOSAL_FINAL_STATES))
         if target.count() > 0:
-            raise InvalidBranchMergeProposal(
+            raise BranchMergeProposalExists(
                 'There is already a branch merge proposal registered for '
                 'branch %s to land on %s that is still active.'
                 % (self.unique_name, target_branch.unique_name))
@@ -270,6 +292,23 @@ class Branch(SQLBase):
         notify(NewBranchMergeProposalEvent(bmp))
         return bmp
 
+    # XXX: Tim Penhey, 2008-06-18, bug 240881
+    merge_queue = ForeignKey(
+        dbName='merge_robot', foreignKey='MultiBranchMergeQueue',
+        default=None)
+
+    merge_control_status = EnumCol(
+        enum=BranchMergeControlStatus, notNull=True,
+        default=BranchMergeControlStatus.NO_QUEUE)
+
+    def addToLaunchBag(self, launchbag):
+        """See `IBranch`."""
+        launchbag.add(self.product)
+        if self.distroseries is not None:
+            launchbag.add(self.distroseries)
+            launchbag.add(self.distribution)
+            launchbag.add(self.sourcepackage)
+
     def getStackedBranches(self):
         """See `IBranch`."""
         store = Store.of(self)
@@ -298,14 +337,21 @@ class Branch(SQLBase):
     @property
     def code_is_browseable(self):
         """See `IBranch`."""
-        return ((self.revision_count > 0  or self.last_mirrored != None)
-            and not self.private)
+        return (self.revision_count > 0  or self.last_mirrored != None)
+
+    def codebrowse_url(self, *extras):
+        """See `IBranch`."""
+        if self.private:
+            root = config.codehosting.secure_codebrowse_root
+        else:
+            root = config.codehosting.codebrowse_root
+        return urlutils.join(root, self.unique_name, *extras)
 
     @property
     def bzr_identity(self):
         """See `IBranch`."""
         if self.product is not None:
-            series_branch = self.product.development_focus.series_branch
+            series_branch = self.product.development_focus.branch
             is_dev_focus = (series_branch == self)
         else:
             is_dev_focus = False
@@ -322,21 +368,18 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return 'lp-mirrored:///%s' % self.unique_name
 
-    def _getContainerName(self):
-        if self.product is not None:
-            return self.product.name
-        if (self.distroseries is not None
-            and self.sourcepackagename is not None):
-            return '%s/%s/%s' % (
-                self.distroseries.distribution.name,
-                self.distroseries.name, self.sourcepackagename.name)
-        return '+junk'
+    def getBzrBranch(self):
+        """Return the BzrBranch for this database Branch.
+
+        This provides the mirrored copy of the branch.
+        """
+        return BzrBranch.open(self.warehouse_url)
 
     @property
     def unique_name(self):
         """See `IBranch`."""
         return u'~%s/%s/%s' % (
-            self.owner.name, self._getContainerName(), self.name)
+            self.owner.name, self.target.name, self.name)
 
     @property
     def displayname(self):
@@ -371,7 +414,8 @@ class Branch(SQLBase):
 
     def canBeDeleted(self):
         """See `IBranch`."""
-        if (len(self.deletionRequirements()) != 0):
+        if ((len(self.deletionRequirements()) != 0) or
+            self.getStackedBranches().count() > 0):
             # Can't delete if the branch is associated with anything.
             return False
         else:
@@ -413,11 +457,6 @@ class Branch(SQLBase):
             dependent_branch=self):
             alteration_operations.append(ClearDependentBranch(merge_proposal))
 
-        for subscription in self.subscriptions:
-            deletion_operations.append(
-                DeletionCallable(subscription,
-                    _('This is a subscription to this branch.'),
-                    subscription.destroySelf))
         for bugbranch in self.bug_branches:
             deletion_operations.append(
                 DeletionCallable(bugbranch,
@@ -467,14 +506,13 @@ class Branch(SQLBase):
         """See `IBranch`."""
         # Imported here to avoid circular import.
         from canonical.launchpad.database.productseries import ProductSeries
-        return ProductSeries.select("""
-            ProductSeries.user_branch = %s OR
-            ProductSeries.import_branch = %s
-            """ % sqlvalues(self, self))
+        return Store.of(self).find(
+            ProductSeries,
+            ProductSeries.branch == self)
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
-                  review_level):
+                  code_review_level):
         """See `IBranch`."""
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
@@ -483,12 +521,12 @@ class Branch(SQLBase):
             subscription = BranchSubscription(
                 branch=self, person=person,
                 notification_level=notification_level,
-                max_diff_lines=max_diff_lines, review_level=review_level)
+                max_diff_lines=max_diff_lines, review_level=code_review_level)
             Store.of(subscription).flush()
         else:
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
-            subscription.review_level = review_level
+            subscription.review_level = code_review_level
         return subscription
 
     def getSubscription(self, person):
@@ -518,6 +556,14 @@ class Branch(SQLBase):
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
         store.flush()
+
+    def getMainlineBranchRevisions(self, revision_ids):
+        return Store.of(self).find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            BranchRevision.revision == Revision.id,
+            Revision.revision_id.is_in(revision_ids))
 
     def getBranchRevision(self, sequence=None, revision=None,
                           revision_id=None):
@@ -659,8 +705,8 @@ class Branch(SQLBase):
             prefix = config.launchpad.bzr_imports_root_url
             return urlappend(prefix, '%08x' % self.id)
         elif self.branch_type == BranchType.HOSTED:
-            # This is a push branch, hosted on the supermirror
-            # (pushed there by users via SFTP).
+            # This is a push branch, hosted on Launchpad (pushed there by
+            # users via sftp or bzr+ssh).
             return 'lp-hosted:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
@@ -710,36 +756,31 @@ class Branch(SQLBase):
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
+        from canonical.launchpad.database.branchjob import BranchJob
         if break_references:
             self._breakReferences()
         if self.canBeDeleted():
             # BranchRevisions are taken care of a cascading delete
             # in the database.
-            # XXX: TimPenhey 28-Nov-2008, bug 302956
-            # cascading delete removed by accident, adding explicit delete
-            # back in temporarily.
-            Store.of(self).find(
-                BranchRevision, BranchRevision.branch == self).remove()
+            store = Store.of(self)
+            # Delete the branch subscriptions.
+            subscriptions = store.find(
+                BranchSubscription, BranchSubscription.branch == self)
+            subscriptions.remove()
+            # Delete any linked jobs.
+            # Using a sub-select here as joins in delete statements is not
+            # valid standard sql.
+            jobs = store.find(
+                Job,
+                Job.id.is_in(Select([BranchJob.jobID],
+                                    And(BranchJob.job == Job.id,
+                                        BranchJob.branch == self))))
+            jobs.remove()
+            # Now destroy the branch.
             SQLBase.destroySelf(self)
         else:
             raise CannotDeleteBranch(
                 "Cannot delete branch: %s" % self.unique_name)
-
-
-LISTING_SORT_TO_COLUMN = {
-    BranchListingSort.PRODUCT: 'product.name',
-    BranchListingSort.LIFECYCLE: '-lifecycle_status',
-    BranchListingSort.NAME: 'branch.name',
-    BranchListingSort.REGISTRANT: 'owner.name',
-    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-date_last_modified',
-    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: 'date_last_modified',
-    BranchListingSort.NEWEST_FIRST: '-date_created',
-    BranchListingSort.OLDEST_FIRST: 'date_created',
-    }
-
-
-DEFAULT_BRANCH_LISTING_SORT = [
-    'product.name', '-lifecycle_status', 'owner.name', 'branch.name']
 
 
 class DeletionOperation:
@@ -786,10 +827,8 @@ class ClearSeriesBranch(DeletionOperation):
         self.branch = branch
 
     def __call__(self):
-        if self.affected_object.user_branch == self.branch:
-            self.affected_object.user_branch = None
-        if self.affected_object.import_branch == self.branch:
-            self.affected_object.import_branch = None
+        if self.affected_object.branch == self.branch:
+            self.affected_object.branch = None
         self.affected_object.syncUpdate()
 
 
@@ -819,6 +858,9 @@ class BranchSet:
 
     def __iter__(self):
         """See `IBranchSet`."""
+        # XXX: JonathanLange 2009-02-10 spec=package-branches: Prejoining
+        # product is probably not the best idea, given that there'll be a lot
+        # of package branches.
         return iter(Branch.select(prejoins=['owner', 'product']))
 
     def count(self):
@@ -962,10 +1004,12 @@ class BranchSet:
             return PRIVATE_BRANCH
 
     def new(self, branch_type, name, registrant, owner, product=None,
-            url=None, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
-            author=None, summary=None, whiteboard=None, date_created=None,
+            url=None, title=None,
+            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
+            summary=None, whiteboard=None, date_created=None,
             branch_format=None, repository_format=None, control_format=None,
-            distroseries=None, sourcepackagename=None):
+            distroseries=None, sourcepackagename=None,
+            merge_control_status=BranchMergeControlStatus.NO_QUEUE):
         """See `IBranchSet`."""
         if date_created is None:
             date_created = UTC_NOW
@@ -976,10 +1020,14 @@ class BranchSet:
 
         # Not all code paths that lead to branch creation go via a
         # schema-validated form (e.g. the register_branch XML-RPC call or
-        # pushing a new branch to the supermirror), so we validate the branch
-        # name here to give a nicer error message than 'ERROR: new row for
-        # relation "branch" violates check constraint "valid_name"...'.
+        # pushing a new branch to codehosting), so we validate the branch name
+        # here to give a nicer error message than 'ERROR: new row for relation
+        # "branch" violates check constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
+
+        # Run any necessary data massage on the branch URL.
+        if url is not None:
+            url = IBranch['url'].normalize(url)
 
         # Make sure that the new branch has a unique name if not a junk
         # branch.
@@ -992,14 +1040,16 @@ class BranchSet:
 
         branch = Branch(
             registrant=registrant,
-            name=name, owner=owner, author=author, product=product, url=url,
+            name=name, owner=owner, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard, private=private,
             date_created=date_created, branch_type=branch_type,
             date_last_modified=date_created, branch_format=branch_format,
             repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename,
+            merge_control_status=merge_control_status)
+
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
         # a later date if desired.
@@ -1020,20 +1070,29 @@ class BranchSet:
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.FULL)
 
-        notify(SQLObjectCreatedEvent(branch))
+        notify(ObjectCreatedEvent(branch))
         return branch
+
+    @staticmethod
+    def URIToUniqueName(uri):
+        """See `IBranchSet`."""
+        schemes = ('http', 'sftp', 'bzr+ssh')
+        codehosting_host = URI(config.codehosting.supermirror_root).host
+        if uri.scheme in schemes and uri.host == codehosting_host:
+            return uri.path.lstrip('/')
+        else:
+            return None
 
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""
         assert not url.endswith('/')
-        schemes = ('http', 'sftp', 'bzr+ssh')
         try:
             uri = URI(url)
         except InvalidURIError:
             return None
-        codehosting_host = URI(config.codehosting.supermirror_root).host
-        if uri.scheme in schemes and uri.host == codehosting_host:
-            branch = self.getByUniqueName(uri.path.lstrip('/'))
+        unique_name = self.URIToUniqueName(uri)
+        if unique_name is not None:
+            branch = self.getByUniqueName(unique_name)
         elif uri.scheme == 'lp':
             branch = None
             allowed_hosts = set()
@@ -1149,48 +1208,49 @@ class BranchSet:
     def _getByPath(self, path):
         """Given a path within a branch, return the branch and the path."""
         namespace_set = getUtility(IBranchNamespaceSet)
-        parsed = namespace_set.parseBranchPath(path)
-        for parsed_path, branch_name, suffix in parsed:
-            branch = self._getBranchInNamespace(parsed_path, branch_name)
-            if branch is not None:
-                return branch, suffix
-        # This will raise an interesting error if any of the given objects
-        # don't exist.
-        namespace_set.interpret(
-            person=parsed_path['person'],
-            product=parsed_path['product'],
-            distribution=parsed_path['distribution'],
-            distroseries=parsed_path['distroseries'],
-            sourcepackagename=parsed_path['sourcepackagename'])
-        raise NoSuchBranch(path)
+        if not path.startswith('~'):
+            raise InvalidNamespace(path)
+        segments = iter(path.lstrip('~').split('/'))
+        branch = namespace_set.traverse(segments)
+        return branch, '/'.join(segments)
 
     def getByLPPath(self, path):
         """See `IBranchSet`."""
+        branch = suffix = series = None
         try:
             branch, suffix = self._getByPath(path)
-        except InvalidNamespace:
-            pass
-        else:
             if suffix == '':
                 suffix = None
-            return branch, suffix, None
+        except NoSuchBranch:
+            raise
+        except InvalidNamespace:
+            # If the first element doesn't start with a tilde, then maybe
+            # 'path' is a shorthand notation for a branch.
+            branch, series = self._getDefaultProductBranch(path)
+        return branch, suffix, series
 
-        path_segments = path.split('/')
-        if len(path_segments) < 3:
-            branch, series = self._getDefaultProductBranch(*path_segments)
+    def _getDefaultProductBranch(self, path):
+        """Return the branch with the shortcut 'path'.
+
+        :param path: A shortcut to a branch.
+        :raise InvalidBranchIdentifier: if 'path' has too many segments to be
+            a shortcut.
+        :raise InvalidProductIdentifier: if 'path' starts with an invalid
+            name for a product.
+        :raise NoSuchProduct: if 'path' starts with a non-existent product.
+        :raise NoSuchSeries: if 'path' refers to a product series and that
+            series does not exist.
+        :raise NoBranchForSeries: if 'path' refers to a product series that
+            exists, but does not have a branch.
+        :return: The branch.
+        """
+        segments = path.split('/')
+        if len(segments) == 1:
+            product_name, series_name = segments[0], None
+        elif len(segments) == 2:
+            product_name, series_name = tuple(segments)
         else:
             raise faults.InvalidBranchIdentifier(path)
-        return branch, None, series
-
-    def _getDefaultProductBranch(self, product_name, series_name=None):
-        """Return the branch for a product.
-
-        :param product_name: The name of the branch's product.
-        :param series_name: The name of the branch's series.  If not supplied,
-            the product development focus will be used.
-        :return: The branch.
-        :raise: A subclass of LaunchpadFault.
-        """
         if not valid_name(product_name):
             raise faults.InvalidProductIdentifier(product_name)
         product = getUtility(IProductSet).getByName(product_name)
@@ -1202,26 +1262,10 @@ class BranchSet:
             series = product.getSeries(series_name)
             if series is None:
                 raise faults.NoSuchSeries(series_name, product)
-        branch = series.series_branch
+        branch = series.branch
         if branch is None:
             raise faults.NoBranchForSeries(series)
         return branch, series
-
-    def getRewriteMap(self):
-        """See `IBranchSet`."""
-        # Avoid circular imports.
-        from canonical.launchpad.database import Person, Product
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        # Left-join Product so that we still publish +junk branches.
-        prejoin = store.using(
-            LeftJoin(Branch, Product, Branch.product == Product.id), Person)
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This pre-join
-        # isn't good enough to handle source package branches.
-        return (branch for (owner, product, branch) in prejoin.find(
-            (Person, Product, Branch),
-            Branch.branch_type != BranchType.REMOTE,
-            Branch.owner == Person.id,
-            Branch.private == False))
 
     def getBranchesToScan(self):
         """See `IBranchSet`"""
@@ -1238,88 +1282,51 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''' % quote(BranchType.REMOTE))
 
-    def getActiveUserBranchSummaryForProducts(self, products):
-        """See `IBranchSet`."""
-        product_ids = [product.id for product in products]
-        if not product_ids:
-            return []
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        lifecycle_clause = self._lifecycleClause(
-            DEFAULT_BRANCH_STATUS_IN_LISTING)
-        cur = cursor()
-        cur.execute("""
-            SELECT
-                Branch.product, COUNT(Branch.id), MAX(Revision.revision_date)
-            FROM Branch
-            LEFT OUTER JOIN Revision
-            ON Branch.last_scanned_id = Revision.revision_id
-            WHERE Branch.product in %s
-            AND Branch.owner <> %d %s
-            GROUP BY Product
-            """ % (quote(product_ids), vcs_imports.id, lifecycle_clause))
-        result = {}
-        product_map = dict([(product.id, product) for product in products])
-        for product_id, branch_count, last_commit in cur.fetchall():
-            product = product_map[product_id]
-            result[product] = {'branch_count' : branch_count,
-                               'last_commit' : last_commit}
-        return result
-
     def getRecentlyChangedBranches(
         self, branch_count=None,
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """See `IBranchSet`."""
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        query = ('''
-            Branch.branch_type <> %s AND
-            Branch.last_scanned IS NOT NULL %s
-            '''
-            % (quote(BranchType.IMPORTED), lifecycle_clause))
-        results = Branch.select(
-            self._generateBranchClause(query, visible_by_user),
-            orderBy=['-last_scanned', '-id'],
-            prejoins=['author', 'product'])
+        all_branches = getUtility(IAllBranches)
+        branches = all_branches.visibleByUser(
+            visible_by_user).withLifecycleStatus(*lifecycle_statuses)
+        branches = branches.withBranchType(
+            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches()
+        branches.order_by(
+            Desc(Branch.last_scanned), Desc(Branch.id))
         if branch_count is not None:
-            results = results.limit(branch_count)
-        return results
+            branches.config(limit=branch_count)
+        return branches
 
     def getRecentlyImportedBranches(
         self, branch_count=None,
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """See `IBranchSet`."""
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        query = ('''
-            Branch.branch_type = %s AND
-            Branch.last_scanned IS NOT NULL %s
-            '''
-            % (quote(BranchType.IMPORTED), lifecycle_clause))
-        results = Branch.select(
-            self._generateBranchClause(query, visible_by_user),
-            orderBy=['-last_scanned', '-id'],
-            prejoins=['author', 'product'])
+        all_branches = getUtility(IAllBranches)
+        branches = all_branches.visibleByUser(
+            visible_by_user).withLifecycleStatus(*lifecycle_statuses)
+        branches = branches.withBranchType(
+            BranchType.IMPORTED).scanned().getBranches()
+        branches.order_by(
+            Desc(Branch.last_scanned), Desc(Branch.id))
         if branch_count is not None:
-            results = results.limit(branch_count)
-        return results
+            branches.config(limit=branch_count)
+        return branches
 
     def getRecentlyRegisteredBranches(
         self, branch_count=None,
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """See `IBranchSet`."""
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        # Since the lifecycle_clause may or may not contain anything,
-        # we need something that is valid if the lifecycle clause starts
-        # with 'AND', so we choose true.
-        query = 'true %s' % lifecycle_clause
-        results = Branch.select(
-            self._generateBranchClause(query, visible_by_user),
-            orderBy=['-date_created', '-id'],
-            prejoins=['author', 'product'])
+        all_branches = getUtility(IAllBranches)
+        branches = all_branches.withLifecycleStatus(
+            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches()
+        branches.order_by(
+            Desc(Branch.date_created), Desc(Branch.id))
         if branch_count is not None:
-            results = results.limit(branch_count)
-        return results
+            branches.config(limit=branch_count)
+        return branches
 
     @staticmethod
     def _getBranchVisibilitySubQuery(visible_by_user):
@@ -1371,62 +1378,17 @@ class BranchSet:
 
         return clause
 
-    def _lifecycleClause(self, lifecycle_statuses):
-        lifecycle_clause = ''
-        if lifecycle_statuses:
-            lifecycle_clause = (
-                ' AND Branch.lifecycle_status in %s' %
-                quote(lifecycle_statuses))
-        return lifecycle_clause
-
-    @staticmethod
-    def _listingSortToOrderBy(sort_by):
-        """Compute a value to pass as orderBy to Branch.select().
-
-        :param sort_by: an item from the BranchListingSort enumeration.
-        """
-        order_by = DEFAULT_BRANCH_LISTING_SORT[:]
-        if sort_by is None:
-            return order_by
-        else:
-            column = LISTING_SORT_TO_COLUMN[sort_by]
-            if column.startswith('-'):
-                variant_column = column[1:]
-            else:
-                variant_column = '-' + column
-            if column in order_by:
-                order_by.remove(column)
-            if variant_column in order_by:
-                order_by.remove(variant_column)
-            order_by.insert(0, column)
-            return order_by
-
-    def getBranchesForContext(self,  context=None, lifecycle_statuses=None,
-                              visible_by_user=None, sort_by=None):
-        """See `IBranchSet`."""
-        builder = BranchQueryBuilder(context, lifecycle_statuses)
-        clause = self._generateBranchClause(builder.query, visible_by_user)
-        # Local import to avoid cycles
-        from canonical.launchpad.database import Person, Product
-        Owner = ClassAlias(Person, "owner")
-        clauseTables = [
-            LeftJoin(
-                Join(Branch, Owner, Branch.owner == Owner.id),
-                Product, Branch.product == Product.id)]
-        return Branch.select(clause, clauseTables=clauseTables,
-                             orderBy=self._listingSortToOrderBy(sort_by))
-
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):
         """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
-        lifecycle_clause = self._lifecycleClause(
-            DEFAULT_BRANCH_STATUS_IN_LISTING)
-        query = "Branch.product = %d%s" % (product.id, lifecycle_clause)
-        return Branch.select(
-            self._generateBranchClause(query, visible_by_user),
-            limit=quantity,
-            orderBy=['-date_created', '-id'])
+        all_branches = getUtility(IAllBranches)
+        latest = all_branches.visibleByUser(visible_by_user).inProduct(
+            product).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
+        latest_branches = latest.getBranches().order_by(
+            Desc(Branch.date_created), Desc(Branch.id))
+        latest_branches.config(limit=quantity)
+        return latest_branches
 
     def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
@@ -1449,111 +1411,31 @@ class BranchSet:
             orderBy=['owner', 'name'], distinct=True)
 
 
-class BranchQueryBuilder:
-    """A utility class to help build branch query strings."""
+class BranchCloud:
+    """See `IBranchCloud`."""
 
-    def __init__(self, context, lifecycle_statuses):
-        self._tables = ['Branch']
-        self._where_clauses = []
-
-        if lifecycle_statuses:
-            self._where_clauses.append(
-                'Branch.lifecycle_status in %s' % quote(lifecycle_statuses))
-
-        if context is None:
-            pass
-        elif IProduct.providedBy(context):
-            self._searchByProduct(context)
-        elif IProject.providedBy(context):
-            self._searchByProject(context)
-        elif IPerson.providedBy(context):
-            self._searchByPerson(context)
-        elif IBranchPersonSearchContext.providedBy(context):
-            self._searchByPersonSearchContext(context)
-        else:
-            raise BadBranchSearchContext(context)
-
-    def _searchByProduct(self, product):
-        """Add restrictions to a particular product."""
-        self._where_clauses.append('Branch.product = %s' % quote(product))
-
-    def _searchByProject(self, project):
-        """Add restrictions to a particular project."""
-        self._tables.append('Product')
-        self._where_clauses.append("""
-            Branch.product = Product.id
-            AND Product.project = %s
-            """ % quote(project))
-
-    def _searchByPerson(self, person):
-        """Add restrictions to a particular person.
-
-        Branches related to a person are those registered by the person,
-        owned by the person, or subscribed to by the person.
-        """
-        self._where_clauses.append("""
-            Branch.id in (
-                SELECT Branch.id
-                FROM Branch, BranchSubscription
-                WHERE
-                    Branch.id = BranchSubscription.branch
-                AND BranchSubscription.person = %(person)s
-
-                UNION
-
-                SELECT Branch.id
-                FROM Branch
-                WHERE
-                    Branch.owner = %(person)s
-                OR Branch.registrant = %(person)s
-                )
-            """ % {'person': quote(person)})
-
-    def _searchByPersonRegistered(self, person):
-        """Branches registered by the person."""
-        self._where_clauses.append('Branch.registrant = %s' % quote(person))
-
-    def _searchByPersonOwned(self, person):
-        """Branches owned by the person."""
-        self._where_clauses.append('Branch.owner = %s' % quote(person))
-
-    def _searchByPersonSubscribed(self, person):
-        """Branches registered by the person."""
-        self._tables.append('BranchSubscription')
-        self._where_clauses.append('''
-            Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person = %s
-            '''  % quote(person))
-
-    def _searchByPersonSearchContext(self, context):
-        """Determine the subquery based on the restriction."""
-        person = context.person
-        if context.restriction == BranchPersonSearchRestriction.ALL:
-            self._searchByPerson(person)
-        elif context.restriction == BranchPersonSearchRestriction.REGISTERED:
-            self._searchByPersonRegistered(person)
-        elif context.restriction == BranchPersonSearchRestriction.OWNED:
-            self._searchByPersonOwned(person)
-        elif context.restriction == BranchPersonSearchRestriction.SUBSCRIBED:
-            self._searchByPersonSubscribed(person)
-        else:
-            raise BadBranchSearchContext(context)
-
-    @property
-    def query(self):
-        """Return a query string."""
-        if len(self._tables) == 1:
-            # Just the Branch table.
-            query = ' AND '.join(self._where_clauses)
-        else:
-            # More complex query needed.
-            query = ("""
-                Branch.id IN (
-                    SELECT Branch.id
-                    FROM %(tables)s
-                    WHERE %(where_clause)s)
-                """ % {'tables': ', '.join(self._tables),
-                       'where_clause': ' AND '.join(self._where_clauses)})
-        return query
-
-
+    def getProductsWithInfo(self, num_products=None, store_flavor=None):
+        """See `IBranchCloud`."""
+        # Circular imports are fun.
+        from canonical.launchpad.database.product import Product
+        # It doesn't matter if this query is even a whole day out of date, so
+        # use the slave store by default.
+        if store_flavor is None:
+            store_flavor = SLAVE_FLAVOR
+        store = getUtility(IStoreSelector).get(MAIN_STORE, store_flavor)
+        # Get all products, the count of all hosted & mirrored branches and
+        # the last revision date.
+        result = store.find(
+            (Product, Count(Branch.id), Max(Revision.revision_date)),
+            Branch.private == False,
+            Branch.product == Product.id,
+            Or(Branch.branch_type == BranchType.HOSTED,
+               Branch.branch_type == BranchType.MIRRORED),
+            Branch.last_scanned_id == Revision.revision_id).group_by(Product)
+        result = result.order_by(Desc(Count(Branch.id)))
+        if num_products:
+            result.config(limit=num_products)
+        # XXX: JonathanLange 2009-02-10: The revision date in the result set
+        # isn't timezone-aware. Not sure why this is. Doesn't matter too much
+        # for the purposes of cloud calculation though.
+        return result

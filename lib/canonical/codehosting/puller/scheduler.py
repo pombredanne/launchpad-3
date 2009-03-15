@@ -26,7 +26,7 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
 from canonical.cachedproperty import cachedproperty
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from canonical.codehosting.puller import get_lock_id_for_branch_id

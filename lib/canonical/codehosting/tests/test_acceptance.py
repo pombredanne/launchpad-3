@@ -1,6 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Acceptance tests for Supermirror SFTP server's bzr support."""
+"""Acceptance tests for the codehosting server."""
 
 __metaclass__ = type
 
@@ -21,7 +21,7 @@ from canonical.codehosting.tests.helpers import (
 from canonical.codehosting.tests.servers import (
     CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
 from canonical.codehosting import get_bzr_path, get_bzr_plugins_path
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
@@ -40,8 +40,8 @@ class SSHServerLayer(ZopelessAppServerLayer):
     def getTacHandler(cls):
         if cls._tac_handler is None:
             cls._tac_handler = CodeHostingTac(
-                config.codehosting.branches_root,
-                config.supermirror.branchesdest)
+                config.codehosting.hosted_branches_root,
+                config.codehosting.mirrored_branches_root)
         return cls._tac_handler
 
     @classmethod
@@ -315,7 +315,8 @@ class AcceptanceTests(SSHTestCase):
         return database.Branch(
             registrant=owner,
             name=branch_name, owner=owner, author=owner, product=product,
-            url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            url=url, title=None,
+            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
             summary=None, whiteboard=None, private=private,
             date_created=UTC_NOW, branch_type=branch_type)
 
@@ -613,7 +614,6 @@ def make_server_tests(base_suite, servers):
 
 
 def make_smoke_tests(base_suite):
-    from bzrlib import tests
     from bzrlib.tests.per_repository import (
         all_repository_format_scenarios,
         )
@@ -626,19 +626,23 @@ def make_smoke_tests(base_suite):
         'RepositoryFormat5',
         'RepositoryFormat6',
         'RepositoryFormat7',
-        # Using RemoteRepositoryFormat doesn't make sense when testing push to
-        # remote server.
-        'RemoteRepositoryFormat',
         ]
     scenarios = all_repository_format_scenarios()
     scenarios = [
         scenario for scenario in scenarios
         if scenario[0] not in excluded_scenarios
         and not scenario[0].startswith('RemoteRepositoryFormat')]
-    adapter = tests.TestScenarioApplier()
-    adapter.scenarios = scenarios
     new_suite = unittest.TestSuite()
-    tests.adapt_tests(base_suite, adapter, new_suite)
+    try:
+        from bzrlib.tests import multiply_tests
+        multiply_tests(base_suite, scenarios, new_suite)
+    except ImportError:
+        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
+        # once sourcecode/bzr has bzr.dev r4102.
+        from bzrlib.tests import adapt_tests, TestScenarioApplier
+        adapter = TestScenarioApplier()
+        adapter.scenarios = scenarios
+        adapt_tests(base_suite, adapter, new_suite)
     return new_suite
 
 

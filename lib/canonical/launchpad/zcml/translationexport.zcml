@@ -66,4 +66,16 @@
         factory="canonical.launchpad.translationformat.xpi_po_exporter.XPIPOExporter"
         />
 
+    <class
+        class="canonical.launchpad.translationformat.gettext_po_exporter.GettextPOChangedExporter">
+        <allow
+          interface="canonical.launchpad.interfaces.ITranslationFormatExporter" />
+    </class>
+
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationFormatExporter"
+        factory="canonical.launchpad.translationformat.gettext_po_exporter.GettextPOChangedExporter"
+        />
+
 </configure>

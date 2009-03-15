@@ -24,7 +24,6 @@ __all__ = [
 from datetime import datetime, timedelta
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
-import operator
 import re
 
 import pytz
@@ -32,14 +31,18 @@ import pytz
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
+from zope import formlib
 from zope.interface import implements, providedBy, Interface
-from zope.schema import Choice
+from zope.schema import Bool, Choice
 from zope.security.interfaces import Unauthorized
+from lazr.enum import EnumeratedType, Item
+
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BugTaskStatus,
     BugTaskSearchParams,
@@ -57,14 +60,11 @@ from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
 from canonical.launchpad.searchbuilder import any, greater_than
 from canonical.launchpad.webapp import (
-    custom_widget, action, canonical_url, ContextMenu,
-    LaunchpadFormView, LaunchpadView, LaunchpadEditFormView, stepthrough,
-    Link, Navigation, structured, StandardLaunchpadFacets)
+    ContextMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
+    custom_widget, redirection, stepthrough, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.snapshot import Snapshot
-
-from canonical.lazr import EnumeratedType, Item
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
@@ -102,6 +102,17 @@ class BugNavigation(Navigation):
 
     @stepthrough('attachments')
     def traverse_attachments(self, name):
+        """Retrieve a BugAttachment by ID.
+
+        If an attachment is found, redirect to its canonical URL.
+        """
+        if name.isdigit():
+            attachment = getUtility(IBugAttachmentSet)[name]
+            if attachment is not None and attachment.bug == self.context:
+                return redirection(canonical_url(attachment), status=301)
+
+    @stepthrough('+attachment')
+    def traverse_attachment(self, name):
         """Retrieve a BugAttachment by ID.
 
         Only return a attachment if it is related to this bug.
@@ -437,9 +448,8 @@ class BugWithoutContextView:
     def redirectToNewBugPage(self):
         """Redirect the user to the 'first' report of this bug."""
         # An example of practicality beating purity.
-        bugtasks = sorted(
-            self.context.bugtasks, key=operator.attrgetter('id'))
-        self.request.response.redirect(canonical_url(bugtasks[0]))
+        self.request.response.redirect(
+            canonical_url(self.context.default_bugtask))
 
 
 class BugEditViewBase(LaunchpadEditFormView):
@@ -538,6 +548,26 @@ class BugSecrecyEditView(BugEditViewBase):
     field_names = ['private', 'security_related']
     label = "Bug visibility and security"
 
+    def setUpFields(self):
+        """Make the read-only version of `private` writable."""
+        private_field = Bool(
+            __name__='private',
+            title=_("This bug report should be private"),
+            required=False,
+            description=_("Private bug reports are visible only to "
+                          "their subscribers."),
+            default=False)
+        super(BugSecrecyEditView, self).setUpFields()
+        self.form_fields = self.form_fields.omit('private')
+        self.form_fields = (
+            formlib.form.Fields(private_field) + self.form_fields)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'private': self.context.bug.private,
+                'security_related': self.context.bug.security_related}
+
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the bug."""
@@ -559,7 +589,7 @@ class BugSecrecyEditView(BugEditViewBase):
             # makes the change. We have applied the 'private' change
             # already, so updateBugFromData will only send an event if
             # 'security_related' is changed, and we can't have that.
-            notify(SQLObjectModifiedEvent(
+            notify(ObjectModifiedEvent(
                     bug, bug_before_modification, ['private']))
 
         # Apply other changes.

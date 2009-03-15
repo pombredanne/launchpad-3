@@ -1,7 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-from canonical.lazr import BaseItem
 from zope.security.proxy import isinstance as zope_isinstance
+from lazr.enum import BaseItem
 
 def value_string(item):
     """Return a unicode string representing an SQLObject value."""
@@ -47,3 +47,23 @@ def text_delta(instance_delta, delta_names, state_names, interface):
             output.append('')
         output.append('%s changed to:\n\n%s' % (title, delta))
     return '\n'.join(output)
+
+
+def append_footer(main, footer):
+    """Append a footer to an email, following signature conventions.
+
+    If there is no footer, do nothing.
+    If there is already a signature, append an additional footer.
+    If there is no existing signature, append '-- \n' and a footer.
+
+    :param main: The main content, which may have a signature.
+    :param footer: An additional footer to append.
+    :return: a new version of main that includes the footer.
+    """
+    if footer == '':
+        footer_separator = ''
+    elif '\n-- \n' in main:
+        footer_separator = '\n'
+    else:
+        footer_separator = '\n-- \n'
+    return ''.join((main, footer_separator, footer))

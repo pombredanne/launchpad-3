@@ -29,6 +29,8 @@ permitted_database_imports = text_lines_to_set("""
     canonical.archivepublisher.domination
     canonical.archivepublisher.deathrow
     canonical.codehosting.inmemory
+    canonical.launchpad.browser.branchlisting
+    canonical.launchpad.feed.branch
     canonical.launchpad.vocabularies.dbobjects
     canonical.launchpad.validators.person
     canonical.librarian.client
@@ -215,6 +217,11 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
             # (and foo actually has an __all__).  Unless foo is within a tests
             # or ftests module or bar is itself a module.
             for attrname in fromlist:
+                if (attrname == 'adapter' 
+                    and module.__name__ == 'zope.component'):
+                    # 'adapter' is not in zope.component.__all__, but that's
+                    # where it should be imported from.
+                    continue
                 if attrname != '__doc__' and attrname not in module.__all__:
                     if not isinstance(
                         getattr(module, attrname, None), types.ModuleType):

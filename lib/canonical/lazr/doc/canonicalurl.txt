@@ -132,14 +132,14 @@ First we need a named adapter to use:
     >>> print queryAdapter(cookbook, ILabelledCookbook)
     None
     >>> queryAdapter(cookbook, ILabelledCookbook, name='foo')
-    <...LabelledCookbook instance ...>
+    <...LabelledCookbook ...>
 
 nearest_adapter() behaves as it would with a regular adapter.  The named
 adapter for the next highest object in the canonical URL is returned.
 For a recipe, this is the adapter for the cookbook:
 
     >>> nearest_adapter(recipe, ILabelledCookbook, name='foo')
-    <...LabelledCookbook instance ...>
+    <...LabelledCookbook ...>
 
 We can verify that the adapter is for the Cookbook using
 nearest_context_with_adapter():
@@ -158,7 +158,7 @@ If we search for the adapter on the cookbook object, the lookup works as
 expected:
 
     >>> nearest_adapter(cookbook, ILabelledCookbook, name='foo')
-    <...LabelledCookbook instance ...>
+    <...LabelledCookbook ...>
 
 And searching for the adapter on the root object returns nothing:
 

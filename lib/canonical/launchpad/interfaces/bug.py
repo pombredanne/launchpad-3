@@ -42,7 +42,8 @@ from canonical.launchpad.validators.bugattachment import (
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_write_operation,
-    exported, operation_parameters, rename_parameters_as, webservice_error)
+    exported, mutator_for, operation_parameters, rename_parameters_as,
+    webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 
@@ -166,7 +167,7 @@ class IBug(ICanBeMentored):
              max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
-        Reference(IPerson, title=_("The owner's IPerson")))
+        Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
     duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False),
         exported_as='duplicate_of')
@@ -174,7 +175,8 @@ class IBug(ICanBeMentored):
         Bool(title=_("This bug report should be private"), required=False,
              description=_("Private bug reports are visible only to "
                            "their subscribers."),
-             default=False))
+             default=False,
+             readonly=True))
     date_made_private = exported(
         Datetime(title=_('Date Made Private'), required=False, readonly=True))
     who_made_private = exported(
@@ -198,10 +200,11 @@ class IBug(ICanBeMentored):
             value_type=Reference(schema=IBugTask),
             readonly=True),
         exported_as='bug_tasks')
+    default_bugtask = Reference(
+        title=_("The first bug task to have been filed."),
+        schema=IBugTask)
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
-    productinfestations = Attribute('List of product release infestations.')
-    packageinfestations = Attribute('List of package release infestations.')
     watches = exported(
         CollectionField(
             title=_("All bug watches associated with this bug."),
@@ -398,6 +401,12 @@ class IBug(ICanBeMentored):
         tracker, owned by the person given as the owner.
         """
 
+    @call_with(owner=REQUEST_USER)
+    @operation_parameters(target=copy_field(IBugTask['target']))
+    @export_factory_operation(IBugTask, [])
+    def addTask(owner, target):
+        """Create a new bug task on this bug."""
+
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
@@ -563,14 +572,19 @@ class IBug(ICanBeMentored):
 
             :target: The target of the bugtask that should be modified.
             :status: The status the bugtask should be set to.
-            :user: The IPerson doing the change.
+            :user: The `IPerson` doing the change.
 
-        If a bug task was edited, emit a SQLObjectModifiedEvent and
+        If a bug task was edited, emit a 
+        `lazr.lifecycle.interfaces.IObjectModifiedEvent` and
         return the edited bugtask.
 
         Return None if no bugtask was edited.
         """
 
+    @mutator_for(private)
+    @operation_parameters(private=copy_field(private))
+    @call_with(who=REQUEST_USER)
+    @export_write_operation()
     def setPrivate(private, who):
         """Set bug privacy.
 

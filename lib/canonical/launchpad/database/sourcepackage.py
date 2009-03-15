@@ -150,6 +150,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
 
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, self.path)
+
     def _get_ubuntu(self):
         # XXX: kiko 2006-03-20: Ideally, it would be possible to just do
         # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -230,6 +233,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     self.distroseries, latest_package.sourcepackagerelease)
         else:
             return None
+
+    @property
+    def path(self):
+        """See `ISourcePackage`."""
+        return '/'.join([
+            self.distribution.name,
+            self.distroseries.name,
+            self.sourcepackagename.name])
 
     @property
     def displayname(self):
@@ -373,23 +384,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             return sp.packaging
         # capitulate
         return None
-
-
-    @property
-    def shouldimport(self):
-        """Note that this initial implementation of the method knows that we
-        are only interested in importing ubuntu packages initially. Also, it
-        knows that we should only import packages where the upstream
-        revision control is in place and working.
-        """
-
-        ubuntu = self._get_ubuntu()
-        if self.distribution != ubuntu:
-            return False
-        ps = self.productseries
-        if ps is None:
-            return False
-        return ps.import_branch is not None
 
     @property
     def published_by_pocket(self):

@@ -7,8 +7,8 @@ __all__ = [ 'BugLinkTargetMixin' ]
 from zope.event import notify
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+from lazr.lifecycle.event import ObjectCreatedEvent, ObjectDeletedEvent
+
 from canonical.launchpad.webapp.authorization import check_permission
 
 class BugLinkTargetMixin:
@@ -40,7 +40,7 @@ class BugLinkTargetMixin:
             if buglink.bug.id == bug.id:
                 return buglink
         buglink = self.createBugLink(bug)
-        notify(SQLObjectCreatedEvent(buglink))
+        notify(ObjectCreatedEvent(buglink))
         return buglink
 
     def unlinkBug(self, bug):
@@ -58,7 +58,7 @@ class BugLinkTargetMixin:
         # see if a relevant bug link exists, and if so, delete it
         for buglink in self.bug_links:
             if buglink.bug.id == bug.id:
-                notify(SQLObjectDeletedEvent(buglink))
+                notify(ObjectDeletedEvent(buglink))
                 self.buglinkClass.delete(buglink.id)
                 # XXX: Bjorn Tillenius 2005-11-21: We shouldn't return the
                 #      object that we just deleted from the db.

@@ -21,7 +21,6 @@ from bzrlib.transport import get_transport, Server
 from twisted.python.filepath import FilePath
 from twisted.python.util import sibpath
 
-from canonical.codehosting import get_rocketfuel_root
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
@@ -71,7 +70,7 @@ class CodeHostingTac(TacTestSetup):
     def __init__(self, hosted_area, mirrored_area):
         super(CodeHostingTac, self).__init__()
         # The hosted area.
-        self._branches_root = hosted_area
+        self._hosted_root = hosted_area
         # The mirrored area.
         self._mirror_root = mirrored_area
         # Where the pidfile, logfile etc will go.
@@ -79,9 +78,9 @@ class CodeHostingTac(TacTestSetup):
 
     def clear(self):
         """Clear the branch areas."""
-        if os.path.isdir(self._branches_root):
-            shutil.rmtree(self._branches_root)
-        os.makedirs(self._branches_root, 0700)
+        if os.path.isdir(self._hosted_root):
+            shutil.rmtree(self._hosted_root)
+        os.makedirs(self._hosted_root, 0700)
         if os.path.isdir(self._mirror_root):
             shutil.rmtree(self._mirror_root)
         os.makedirs(self._mirror_root, 0700)
@@ -91,7 +90,7 @@ class CodeHostingTac(TacTestSetup):
         set_up_host_keys_for_testing()
 
     def tearDownRoot(self):
-        shutil.rmtree(self._branches_root)
+        shutil.rmtree(self._hosted_root)
         shutil.rmtree(self._server_root)
 
     @property
@@ -101,7 +100,7 @@ class CodeHostingTac(TacTestSetup):
     @property
     def tacfile(self):
         return os.path.abspath(
-            os.path.join(get_rocketfuel_root(), 'daemons/sftp.tac'))
+            os.path.join(config.root, 'daemons', 'sftp.tac'))
 
     @property
     def logfile(self):

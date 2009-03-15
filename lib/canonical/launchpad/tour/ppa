@@ -15,8 +15,8 @@
 </head>
 <body>
     <div id="container">
-        <p class="page-number">7 of 10</p>
-        <ul id="navigation-drop-down">
+        <p class="page-number">7 of 11</p>
+<ul id="navigation-drop-down">
             <li class="button-next"><a id="btnNext" href="community-support" tabindex="1" accesskey="1">Next</a></li>
             <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
@@ -26,8 +26,9 @@
             <li><a href="community" accesskey="7">Community building</a></li>
             <li class="current"><a href="ppa" accesskey="8">Software distribution</a></li>
             <li><a href="community-support" accesskey="9">Community support</a></li>
-            <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
-            <li><a href="release-management" accesskey="b">Release management</a></li>
+            <li><a href="api" accesskey="a">Beta: web services API</a></li>
+            <li><a href="feature-tracking" accesskey="b">Lightweight specifications</a></li>
+            <li><a href="release-management" accesskey="c">Release management</a></li>
             
         </ul>
         <div id="page-intro-top"></div>
@@ -98,7 +99,7 @@ When you publish a new version of one of your packages, Ubuntu notifies all of y
                 <a href="community-support" accesskey="e" tabindex="3">Next</a>
             </li>
              <li class="copyright">
-                &copy; 2004-2008 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="h" tabindex="6">FAQ</a>
+                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="h" tabindex="6">FAQ</a>
  
             </li>
         </ul>

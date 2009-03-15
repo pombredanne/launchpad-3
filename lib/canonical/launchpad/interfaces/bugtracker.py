@@ -11,13 +11,17 @@ __all__ = [
     'IBugTrackerAlias',
     'IBugTrackerAliasSet',
     'IBugTrackerSet',
-    'IRemoteBug']
+    'IRemoteBug',
+    'SINGLE_PRODUCT_BUGTRACKERTYPES',
+    ]
 
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Choice, Int, List, Object, Text, TextLine)
+    Bool, Choice, Int, List, Object, Text, TextLine)
 from zope.schema.interfaces import IObject
+from zope.schema.vocabulary import SimpleVocabulary
 from zope.component import getUtility
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -26,7 +30,6 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
 from canonical.lazr.fields import CollectionField, Reference
@@ -141,6 +144,19 @@ class BugTrackerType(DBEnumeratedType):
         """)
 
 
+# A list of the BugTrackerTypes that don't need a remote product to be
+# able to return a bug filing URL. We use a whitelist rather than a
+# blacklist approach here; if it's not in this list LP will assume that
+# a remote product is required. This saves us from presenting
+# embarrassingly useless URLs to users.
+SINGLE_PRODUCT_BUGTRACKERTYPES = [
+    BugTrackerType.MANTIS,
+    BugTrackerType.PHPPROJECT,
+    BugTrackerType.ROUNDUP,
+    BugTrackerType.TRAC,
+    ]
+
+
 class IBugTracker(Interface):
     """A remote bug system."""
     export_as_webservice_entry()
@@ -205,23 +221,40 @@ class IBugTracker(Interface):
         CollectionField(
             title=_('The remote watches on this bug tracker.'),
             value_type=Reference(schema=IObject)))
+    has_lp_plugin = exported(
+        Bool(
+            title=_('This bug tracker has a Launchpad plugin installed.'),
+            required=False, default=False))
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
     latestwatches = Attribute('The last 10 watches created.')
     imported_bug_messages = Attribute(
         'Bug messages that have been imported from this bug tracker.')
+    multi_product = Attribute(
+        "This bug tracker tracks multiple remote products.")
+    active = exported(
+        Bool(
+            title=_('Updates for this bug tracker are enabled'),
+            required=True, default=True))
 
-    def getBugFilingLink(remote_product):
-        """Return the bug filing link for a given product on the tracker.
+    def getBugFilingAndSearchLinks(remote_product, summary=None,
+                                   description=None):
+        """Return the bug filing and search links for the tracker.
 
         :param remote_product: The name of the product on which the bug
-            is to be filed. This is usually a string but can also take
-            other forms. For example, SourceForge requires a GroupID and
-            an ATID in order to be able to file a bug. These are passed
-            in as a tuple of (group_id, at_id).
-        :return: The absolute URL of the bug filing form for
-            `remote_product` on the remote tracker or None if one doesn't
-            exist for the current BugTrackerType.
+            is to be filed or search for.
+        :param summary: The string with which to pre-filly the summary
+            field of the upstream bug tracker's search and bug filing forms.
+        :param description: The string with which to pre-filly the description
+            field of the upstream bug tracker's bug filing form.
+        :return: A dict of the absolute URL of the bug filing form and
+            the search form for `remote_product` on the remote tracker,
+            in the form {'bug_filing_url': foo, 'search_url': bar}. If
+            either or both of the URLs is unavailable for the current
+            BugTrackerType the relevant values in the dict will be set
+            to None. If the bug tracker requires a `remote_product` but
+            None is passed, None will be returned for both values in the
+            dict.
         """
 
     def getBugsWatching(remotebug):
