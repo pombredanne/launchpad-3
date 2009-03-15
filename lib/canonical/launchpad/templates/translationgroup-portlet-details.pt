@@ -8,9 +8,7 @@
   <h2>Current details</h2>
   <div class="portletBody portletContent">
     Owner:
-    <a tal:content="context/owner/displayname"
-      tal:attributes="href context/owner/fmt:url"
-      class="link" />
+    <a tal:replace="structure context/owner/fmt:link" />
   </div>
 </div>
 </tal:root>

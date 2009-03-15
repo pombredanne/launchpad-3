@@ -107,6 +107,7 @@ class ILaunchpadCelebrities(Interface):
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
     english = Attribute("The English language.")
+    gnome_bugzilla = Attribute("The Gnome Bugzilla.")
     janitor = Attribute("The Launchpad Janitor.")
     katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")
@@ -124,6 +125,7 @@ class ILaunchpadCelebrities(Interface):
     vcs_imports = Attribute("The 'vcs-imports' team.")
     lp_translations = Attribute("The Launchpad Translations product.")
     ppa_key_guard = Attribute("The PPA signing keys owner.")
+
 
 
 class ICrowd(Interface):

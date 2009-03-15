@@ -4,6 +4,7 @@
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
@@ -11,7 +12,6 @@ from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet
 from canonical.launchpad.interfaces.potranslation import IPOTranslation
-from canonical.lazr import DBEnumeratedType, DBItem
 
 __metaclass__ = type
 __all__ = [
@@ -249,3 +249,14 @@ class ITranslationMessageSet(Interface):
 
     def getByID(id):
         """Return the TranslationMessage with the given ID or None."""
+
+    def selectDirect(where=None, order_by=None):
+        """Return sequence of `TranslationMessage`s matching arguments.
+
+        This is meant for maintenance use.  If you find yourself using
+        it anywhere except in a manually-run script, try something else.
+
+        :param where: An SQL WHERE clause describing which messages to
+            return.
+        :param order_by: An SQL ORDER BY clause.
+        """

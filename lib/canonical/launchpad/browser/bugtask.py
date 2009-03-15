@@ -61,6 +61,11 @@ from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
+from lazr.delegates import delegates
+from lazr.enum import EnumeratedType, Item
+
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -73,7 +78,7 @@ from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugnomination import (
@@ -109,8 +114,6 @@ from canonical.launchpad.searchbuilder import all, any, NULL
 
 from canonical.launchpad import helpers
 
-from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
-
 from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
@@ -121,13 +124,11 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
-from canonical.lazr import EnumeratedType, Item
-from lazr.delegates import delegates
 from canonical.lazr.interfaces import IObjectPrivacy
+from canonical.lazr.interfaces.rest import IJSONRequestCache
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -135,6 +136,7 @@ from canonical.widgets.bugtask import (
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -382,7 +384,17 @@ class BugTaskNavigation(Navigation):
     def traverse_attachments(self, name):
         """traverse to an attachment by id."""
         if name.isdigit():
-            return getUtility(IBugAttachmentSet)[name]
+            attachment = getUtility(IBugAttachmentSet)[name]
+            if attachment is not None and attachment.bug == self.context.bug:
+                return redirection(canonical_url(attachment), status=301)
+
+    @stepthrough('+attachment')
+    def traverse_attachment(self, name):
+        """traverse to an attachment by id."""
+        if name.isdigit():
+            attachment = getUtility(IBugAttachmentSet)[name]
+            if attachment is not None and attachment.bug == self.context.bug:
+                return attachment
 
     @stepthrough('comments')
     def traverse_comments(self, name):
@@ -450,8 +462,14 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
+        IJSONRequestCache(self.request).objects['bug'] = bug
+
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
+
+        self.bug_title_edit_widget = TextLineEditorWidget(
+            bug, 'title', canonical_url(self.context, view_name='+edit'),
+            id="bug-title", title="Edit this summary")
 
         if self.user is None:
             return
@@ -750,9 +768,36 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         assert len(comments) > 0, "A bug should have at least one comment."
         return comments
 
-    def getBugCommentsForDisplay(self):
-        """Return all the bug comments together with their index."""
+    @cachedproperty
+    def visible_comments(self):
+        """All visible comments.
+
+        See `get_visible_comments` for the definition of a "visible"
+        comment.
+        """
         return get_visible_comments(self.comments)
+
+    @cachedproperty
+    def visible_comments_for_display(self):
+        """The list of visible comments to be rendered.
+
+        This considers truncating the comment list if there are tons
+        of comments, but also obeys any explicitly requested ways to
+        display comments (currently only "all" is recognised).
+        """
+        show_all = (self.request.form_ng.getOne('comments') == 'all')
+        max_comments = config.malone.comments_list_max_length
+        if show_all or len(self.visible_comments) <= max_comments:
+            return self.visible_comments
+        else:
+            truncate_to = config.malone.comments_list_truncate_to
+            return self.visible_comments[:truncate_to]
+
+    @property
+    def visible_comments_truncated_for_display(self):
+        """Wether the visible comment list truncated for display."""
+        return (len(self.visible_comments) >
+                len(self.visible_comments_for_display))
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
@@ -1276,7 +1321,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                 bugtask.statusexplanation = ""
 
             notify(
-                SQLObjectModifiedEvent(
+                ObjectModifiedEvent(
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))

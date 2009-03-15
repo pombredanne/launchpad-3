@@ -5,13 +5,15 @@
 __metaclass__ = type
 
 __all__ = [
-    'execute_zcml_for_scripts',
-    'logger_options',
-    'logger',
-    'log',
     'db_options',
+    'execute_zcml_for_scripts',
+    'log',
+    'logger',
+    'logger_options',
+    'BufferLogger',
     'FakeLogger',
     'QuietFakeLogger',
+    'WatchedFileHandler',
     ]
 
 import atexit
@@ -33,7 +35,9 @@ from canonical.config import config
 
 from canonical.launchpad.scripts.logger import (
     # these are intentional re-exports, apparently, used by *many* files.
-    logger_options, logger, log, FakeLogger, QuietFakeLogger)
+    logger_options, logger, log, BufferLogger, FakeLogger, QuietFakeLogger)
+# Intentional re-export, following along the lines of the logger module.
+from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
 
 # XXX StuartBishop 2005-06-02:
 # We should probably split out all the stuff in this directory that

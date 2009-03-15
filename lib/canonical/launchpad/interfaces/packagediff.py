@@ -9,10 +9,12 @@ __all__ = [
     'IPackageDiff',
     'IPackageDiffSet',
     'PackageDiffAlreadyRequested',
+    'PackageDiffStatus',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Object
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
@@ -20,6 +22,29 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
 class PackageDiffAlreadyRequested(Exception):
     """Raised on attempts to request an already recorded diff request. """
+
+
+class PackageDiffStatus(DBEnumeratedType):
+    """The status of a PackageDiff request."""
+
+
+    PENDING = DBItem(0, """
+        Pending
+
+        This diff request is pending processing.
+        """)
+
+    COMPLETED = DBItem(1, """
+        Completed
+
+        This diff request was successfully completed.
+        """)
+
+    FAILED = DBItem(2, """
+        Failed
+
+        This diff request has failed.
+        """)
 
 
 class IPackageDiff(Interface):
@@ -48,6 +73,13 @@ class IPackageDiff(Interface):
         schema=ILibraryFileAlias,
         title=_("The ILibraryFileAlias containing the diff."),
         required=False)
+
+    status = Choice(
+        title=_('Status'),
+        description=_('The status of this package diff request.'),
+        vocabulary='PackageDiffStatus',
+        required=False, default=PackageDiffStatus.PENDING
+        )
 
     title = Attribute("The Package diff title.")
 

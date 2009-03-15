@@ -6,7 +6,7 @@ DEV_CONFIG=replicated-development
 NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
 STAGING_CONFIG=staging # For swapping fresh db into place.
 STAGING_DUMP=launchpad.dump # Dumpfile to build new staging from.
-STAGING_TABLESPACE=launchpad_replication # 'pg_default' for default
+STAGING_TABLESPACE=pg_default # 'pg_default' for default
 
 _CONFIG=overridden-on-command-line
 _SLAVE_TABLESPACE=pg_default
@@ -42,7 +42,7 @@ stagingsetup:
 	# Restore the DB schema. Don't restore permissions - it will blow
 	# up when roles don't exist in this cluster, and we rebuild it later
 	# with security.py anyway.
-	pg_restore -1 --dbname=lpmain_staging_new \
+	pg_restore --dbname=lpmain_staging_new \
 	    --no-acl --exit-on-error ${STAGING_DUMP}
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.

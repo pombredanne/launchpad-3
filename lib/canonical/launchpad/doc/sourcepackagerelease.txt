@@ -261,7 +261,9 @@ Before the final upload, the queue should be empty.
    ...     target=spr_test.sourcepackage).count()
    0
 
-   >>> spr_test.attachTranslationFiles(file_alias, True)
+   >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+   >>> katie = getUtility(ILaunchpadCelebrities).katie
+   >>> spr_test.attachTranslationFiles(file_alias, True, katie)
 
 The commit is needed to see the new entries
 
@@ -271,9 +273,9 @@ And the queue should have a new entry.
 
    >>> for entry in translation_import_queue.getAllEntries(
    ...     target=spr_test.sourcepackage):
-   ...     print entry.path
-   something/en-US.xpi
-   po/es.po
+   ...     print entry.path, entry.importer.name
+   something/en-US.xpi  katie
+   po/es.po             katie
 
 Now, we need to do the final import. It's done as a two steps procedure.
 
@@ -352,3 +354,130 @@ Verify that empty packages have a size of zero.
     ...     sourcepackagename=linux_src, version='2.6.15.3')
     >>> spr._getPackageSize()
     0.0
+
+
+== Accessing SourcePackageReleases ==
+
+SourcePackageReleases are accessible according to the archives where
+they are published.
+
+We will use SoyuzTestPublisher to create new publications.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+
+    >>> test_publisher = SoyuzTestPublisher()
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> test_publisher.addFakeChroots(hoary)
+    >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
+
+If a SourcePackageRelease is only published in a private PPA, only
+users with access (launchpad.View) to that archive will be able to get
+the same permission on it.
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.buildd_secret = 'boing'
+    >>> cprov.archive.private = True
+
+    >>> private_publication = test_publisher.getPubSource(
+    ...     archive=cprov.archive)
+
+    >>> test_sourcepackagerelease = private_publication.sourcepackagerelease
+    >>> print test_sourcepackagerelease.title
+    foo - 666
+
+    >>> published_archives = test_sourcepackagerelease.published_archives
+    >>> for archive in published_archives:
+    ...     print archive.title
+    Private PPA for Celso Providelo
+
+'foo - 666' sourcepackagerelease is only published in Celso's Private
+PPA. So, Only Celso and administrators can get 'launchpad.View' on it.
+
+    >>> from canonical.launchpad.webapp.authorization import (
+    ...     check_permission)
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.View', test_sourcepackagerelease)
+    False
+
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.View', test_sourcepackagerelease)
+    True
+
+    >>> login('foo.bar@canonical.com')
+    >>> check_permission('launchpad.View', test_sourcepackagerelease)
+    True
+
+Once the SourcePackageRelease in question gets copied to a public
+archive, let's say Ubuntu primary archive, it will become publicly
+available.
+
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...     PackagePublishingPocket)
+
+    >>> public_publication = private_publication.copyTo(
+    ...     hoary, PackagePublishingPocket.RELEASE, ubuntu.main_archive)
+
+'foo - 666' is now published in Celso's private PPA and the Ubuntu
+primary archive, which is public.
+
+    >>> published_archives = test_sourcepackagerelease.published_archives
+    >>> for archive in published_archives:
+    ...     print archive.title
+    Primary Archive for Ubuntu Linux
+    Private PPA for Celso Providelo
+
+And we can see it's publicly available now, as expected.
+
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.View', test_sourcepackagerelease)
+    True
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.View', test_sourcepackagerelease)
+    True
+
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.View', test_sourcepackagerelease)
+    True
+
+    >>> login('foo.bar@canonical.com')
+    >>> check_permission('launchpad.View', test_sourcepackagerelease)
+    True
+
+Another common scenario is that once the package is unembargoed from the
+private PPA, it gets deleted from that private PPA.  At this point the
+package is still public:
+
+    >>> unused = private_publication.requestDeletion(cprov)
+    >>> transaction.commit()
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.View', test_sourcepackagerelease)
+    True
+
+The next stage of the lifecycle is for the remaining publication to be
+superseded.  The package will still be public after that happens.
+
+    >>> login('foo.bar@canonical.com')
+    >>> unused = public_publication.supersede()
+    >>> transaction.commit()
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.View', test_sourcepackagerelease)
+    True
+
+published_archives shows the superseded/deleted publications still:
+
+    >>> published_archives = test_sourcepackagerelease.published_archives
+    >>> for archive in published_archives:
+    ...     print archive.title
+    Primary Archive for Ubuntu Linux
+    Private PPA for Celso Providelo
+

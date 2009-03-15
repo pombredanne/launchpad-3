@@ -65,8 +65,11 @@ class TranslationExporterTestCase(unittest.TestCase):
 
         self.assertEqual(
             sorted(exporter_formats, key=attrgetter('name')),
-            [TranslationFileFormat.MO, TranslationFileFormat.PO],
-            'PO source file should be exported as PO and MO formats')
+            [TranslationFileFormat.MO,
+             TranslationFileFormat.PO,
+             ],
+            'PO source file should be exported as '
+            'PO and MO formats')
 
         exporter_formats = []
         exporters_available = (

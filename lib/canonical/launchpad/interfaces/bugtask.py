@@ -24,6 +24,7 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
+    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
     'IPersonBugTaskSearch',
@@ -44,6 +45,8 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
+from lazr.enum import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -59,14 +62,12 @@ from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.lazr import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
     mutator_for, rename_parameters_as, webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -321,6 +322,9 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
+class IllegalTarget(Exception):
+    """Exception raised when trying to set an illegal bug task target."""
+    webservice_error(400) #Bad request.
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
@@ -341,8 +345,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary='DistroSeries')
-    milestone = Choice(
-        title=_('Milestone'), required=False, vocabulary='Milestone')
+    milestone = exported(ReferenceChoice(
+        title=_('Milestone'),
+        required=False,
+        vocabulary='Milestone',
+        schema=Interface)) # IMilestone
+
     # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
@@ -370,8 +378,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
              readonly=True),
         exported_as='bug_target_name')
     bugwatch = exported(
-        Choice(
+        ReferenceChoice(
             title=_("Remote Bug Details"), required=False,
+            schema=IBugWatch,
             vocabulary='BugWatch', description=_(
                 "Select the bug watch that "
                 "represents this task in the relevant bug tracker. If none "
@@ -446,10 +455,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                  "length of time between the creation date "
                                  "and now."))
     owner = exported(
-        Reference(title=_("The owner"), schema=IPerson))
-    target = Reference(
+        Reference(title=_("The owner"), schema=IPerson, readonly=True))
+    target = exported(Reference(
         title=_('Target'), required=True, schema=Interface, # IBugTarget
-        description=_("The software in which this bug should be fixed."))
+        readonly=True,
+        description=_("The software in which this bug should be fixed.")))
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
     title = exported(
@@ -589,6 +599,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         object, the date_assigned is set on the task. If the assignee
         value is set to None, date_assigned is also set to None.
         """
+
+    @operation_parameters(
+        target=copy_field(target))
+    @export_write_operation()
+    def transitionToTarget(target):
+        """Convert the bug task to a different bug target."""
 
     def updateTargetNameCache():
         """Update the targetnamecache field in the database.
@@ -930,7 +946,7 @@ class BugTaskSearchParams:
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
                  bug_commenter=None, omit_targeted=False,
-                 date_closed=None):
+                 date_closed=None, affected_user=None):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -959,6 +975,7 @@ class BugTaskSearchParams:
         self.nominated_for = nominated_for
         self.bug_commenter = bug_commenter
         self.date_closed = date_closed
+        self.affected_user = affected_user
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1000,8 +1017,10 @@ class BugTaskSearchParams:
         Otherwise, return value as is, or None if it's a zero-length sequence.
         """
         if zope_isinstance(value, (list, tuple)):
-            if len(value) > 0:
+            if len(value) > 1:
                 return any(*value)
+            elif len(value) == 1:
+                return value[0]
             else:
                 return None
         else:
@@ -1015,8 +1034,9 @@ class BugTaskSearchParams:
                        importance=None,
                        assignee=None, bug_reporter=None, bug_supervisor=None,
                        bug_commenter=None, bug_subscriber=None, owner=None,
-                       has_patch=None, has_cve=None, distribution=None,
-                       tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
+                       affected_user=None, has_patch=None, has_cve=None,
+                       distribution=None, tags=None,
+                       tags_combinator=BugTagsSearchCombinator.ALL,
                        omit_duplicates=True, omit_targeted=None,
                        status_upstream=None, milestone_assignment=None,
                        milestone=None, component=None, nominated_for=None,
@@ -1033,6 +1053,7 @@ class BugTaskSearchParams:
         search_params.bug_commenter = bug_commenter
         search_params.subscriber = bug_subscriber
         search_params.owner = owner
+        search_params.affected_user = affected_user
         search_params.distribution = distribution
         if has_patch:
             # Import this here to avoid circular imports
@@ -1138,6 +1159,13 @@ class IBugTaskSet(Interface):
         If more than one BugTaskSearchParams is given, return the union of
         IBugTasks which match any of them, with the results ordered by the
         orderby specified in the first BugTaskSearchParams object.
+        """
+
+    def getAssignedMilestonesFromSearch(search_results):
+        """Returns distinct milestones for the given tasks.
+
+        :param search_results: A result set yielding BugTask objects,
+            typically the result of calling `BugTaskSet.search()`.
         """
 
     def createTask(bug, product=None, productseries=None, distribution=None,
@@ -1268,10 +1296,6 @@ class IAddBugTaskForm(Interface):
     bug_url = StrippedTextLine(
         title=_('URL'), required=False, constraint=valid_remote_bug_url,
         description=_("The URL of this bug in the remote bug tracker."))
-    visited_steps = TextLine(
-        title=_('Visited steps'), required=False,
-        description=_("Used to keep track of the steps we visited in a "
-                      "wizard-like form."))
 
 
 class IAddBugTaskWithProductCreationForm(Interface):

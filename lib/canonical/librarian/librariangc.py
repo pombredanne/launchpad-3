@@ -220,6 +220,7 @@ def delete_unreferenced_aliases(con):
     references = [
         tuple(ref[:2])
         for ref in listReferences(cur, 'libraryfilealias', 'id')
+        if ref[0] != 'libraryfiledownloadcount'
         ]
     assert len(references) > 10, 'Database introspection returned nonsense'
     log.info("Found %d columns referencing LibraryFileAlias", len(references))
@@ -363,6 +364,7 @@ def flag_expired_files(connection):
             connection.commit()
     connection.commit()
     log.info("Flagged %d expired files for removal." % len(expired_ids))
+
 
 def delete_unwanted_files(con):
     """Delete files found on disk that have no corresponding record in the

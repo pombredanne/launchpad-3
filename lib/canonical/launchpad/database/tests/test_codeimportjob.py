@@ -552,11 +552,16 @@ class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
     def test_wrongJobState(self):
         # CodeImportJobWorkflow.requestJob fails if the state of the
         # CodeImportJob is different from PENDING.
+        person = self.factory.makePerson()
         code_import = self.factory.makeCodeImport()
         import_job = self.factory.makeCodeImportJob(code_import)
-        person = self.factory.makePerson()
         # ICodeImportJob does not allow setting 'state', so we must
         # use removeSecurityProxy.
+        # XXX: StuartBishop 20090302 - This test is creating invalid
+        # CodeImportJob instances here - the object cannot be flushed
+        # to the database as database constraints are violated.
+        # This is a problem, as flushing can happen implicitly by Storm,
+        # so minor changes to this test can make it explode.
         removeSecurityProxy(import_job).state = CodeImportJobState.RUNNING
         self.assertFailure(
             "The CodeImportJob associated with %s is "
@@ -638,8 +643,8 @@ class TestCodeImportJobWorkflowStartJob(TestCaseWithFactory,
 
     def test_wrongJobState(self):
         # Calling startJob with a job whose state is not PENDING is an error.
-        machine = self.factory.makeCodeImportMachine()
         code_import = self.factory.makeCodeImport()
+        machine = self.factory.makeCodeImportMachine()
         job = self.factory.makeCodeImportJob(code_import)
         # ICodeImportJob does not allow setting 'state', so we must
         # use removeSecurityProxy.

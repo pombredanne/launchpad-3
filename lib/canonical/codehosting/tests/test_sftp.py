@@ -62,7 +62,7 @@ class TestFatLocalTransport(TestCaseInTempDir):
     def test_localRealPath(self):
         # localRealPath takes a URL-encoded relpath and returns a URL-encoded
         # absolute path.
-        filename = '~foo'
+        filename = 'foo bar'
         escaped_filename = urlutils.escape(filename)
         self.assertNotEqual(filename, escaped_filename)
         realpath = self.transport.local_realPath(escaped_filename)
@@ -113,6 +113,10 @@ class TestSFTPAdapter(TrialTestCase):
 
     def test_canAdaptToSFTPServer(self):
         avatar = self.makeLaunchpadAvatar()
+        # The adapter logs the SFTPStarted event, which gets the id of the
+        # transport attribute of 'avatar'. Here we set transport to an
+        # arbitrary object that can have its id taken.
+        avatar.transport = object()
         server = ISFTPServer(avatar)
         self.assertIsInstance(server, TransportSFTPServer)
         product = self.factory.makeProduct()

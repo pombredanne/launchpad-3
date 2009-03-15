@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """OpenID related database classes."""
@@ -22,7 +22,8 @@ from openid.store.sqlstore import PostgreSQLStore
 import psycopg2
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
-from storm.expr import Or
+from storm.expr import Desc, Or
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements, classProvides
 
@@ -30,6 +31,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIDStoreFactory, IOpenIDAuthorization,
@@ -37,7 +39,7 @@ from canonical.launchpad.interfaces.openidserver import (
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector, MASTER_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -54,9 +56,9 @@ class OpenIDAuthorization(SQLBase):
         The authorization check should always use the master flavor,
         principally because +rp-preauthorize will create them on GET requests.
         """
-        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        return getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR)
 
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    account = ForeignKey(dbName='account', foreignKey='Account', notNull=True)
     client_id = StringCol()
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_expires = UtcDateTimeCol(notNull=True)
@@ -66,38 +68,50 @@ class OpenIDAuthorization(SQLBase):
 class OpenIDAuthorizationSet:
     implements(IOpenIDAuthorizationSet)
 
-    def isAuthorized(self, person, trust_root, client_id):
-        """See IOpenIDAuthorizationSet."""
-        return  OpenIDAuthorization.select("""
-            person = %s
-            AND trust_root = %s
-            AND date_expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-            AND (client_id IS NULL OR client_id = %s)
-            """ % sqlvalues(person.id, trust_root, client_id)).count() > 0
+    def isAuthorized(self, account, trust_root, client_id):
+        """See IOpenIDAuthorizationSet.
+        
+        The use of the master Store is forced to avoid replication
+        race conditions.
+        """
+        return IMasterStore(OpenIDAuthorization).find(
+            OpenIDAuthorization,
+            # Use account.id here just incase it is from a different Store.
+            OpenIDAuthorization.accountID == account.id,
+            OpenIDAuthorization.trust_root == trust_root,
+            OpenIDAuthorization.date_expires >= UTC_NOW,
+            Or(
+                OpenIDAuthorization.client_id == None,
+                OpenIDAuthorization.client_id == client_id)).count() > 0
 
-    def authorize(self, person, trust_root, expires, client_id=None):
+    def authorize(self, account, trust_root, expires, client_id=None):
         """See IOpenIDAuthorizationSet."""
         if expires is None:
             expires = NEVER_EXPIRES
 
-        assert not person.isTeam(), 'Attempting to authorize a team.'
+        # It's likely that the account can come from the slave.
+        # That's why we are using the ID to create the reference.
+        existing = IMasterStore(OpenIDAuthorization).find(
+            OpenIDAuthorization,
+            accountID=account.id,
+            trust_root=trust_root,
+            client_id=client_id).one()
 
-        existing = OpenIDAuthorization.selectOneBy(
-                personID=person.id,
-                trust_root=trust_root,
-                client_id=client_id
-                )
         if existing is not None:
             existing.date_created = UTC_NOW
             existing.date_expires = expires
         else:
-            # Even though OpenIDAuthorizationSet always uses the master
-            # store, it's likely that the person can come from the slave.
-            # That's why we are using the ID to create the reference.
             OpenIDAuthorization(
-                    personID=person.id, trust_root=trust_root,
-                    date_expires=expires, client_id=client_id
-                    )
+                accountID=account.id, trust_root=trust_root,
+                date_expires=expires, client_id=client_id
+                )
+
+    def getByAccount(self, account):
+        """See `IOpenIDAuthorizationSet`."""
+        store = Store.of(account)
+        result = store.find(OpenIDAuthorization, account=account)
+        result.order_by(Desc(OpenIDAuthorization.date_created))
+        return result
 
 
 class OpenIDRPConfig(SQLBase):
@@ -174,11 +188,10 @@ class OpenIDRPConfigSet:
     def getByTrustRoot(self, trust_root):
         """See `IOpenIDRPConfigSet`"""
         trust_root = self._normalizeTrustRoot(trust_root)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         # XXX: BradCrittenden 2008-09-26 bug=274774: Until the database is
         # updated to normalize existing data the query must look for
         # trust_roots that end in '/' and those that do not.
-        return store.find(
+        return IStore(OpenIDRPConfig).find(
             OpenIDRPConfig,
             Or(OpenIDRPConfig.trust_root==trust_root,
                OpenIDRPConfig.trust_root==trust_root[:-1])).one()
@@ -210,7 +223,8 @@ class LaunchpadOpenIDStore(PostgreSQLStore):
         No transactional semantics in Launchpad because Z3 is already
         fully transactional so there is no need to reinvent the wheel.
         """
-        self.cur = cursor()
+        self.cur = IMasterStore(
+            OpenIDAuthorization)._connection._raw_connection.cursor()
         try:
             return func(*args, **kwargs)
         finally:
@@ -274,7 +288,7 @@ class OpenIDRPSummarySet:
         summaries = OpenIDRPSummary.select("""
             account != %s
             AND openid_identifier = %s
-            """ % sqlvalues(account.id, identifier))
+            """ % sqlvalues(account, identifier))
         if summaries.count() > 0:
             raise AssertionError(
                 'More than 1 account has the OpenID identifier of %s.' %

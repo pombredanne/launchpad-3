@@ -154,8 +154,8 @@ class IQuestion(IHasOwner):
 
         Return the created IQuestionMessage.
 
-        This method should fire an ISQLObjectCreatedEvent for the created
-        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+        This method should fire an IObjectCreatedEvent for the created
+        IQuestionMessage and an IObjectModifiedEvent for the question.
 
         :user: The IPerson making the change.
         :new_status: The new QuestionStatus
@@ -184,8 +184,8 @@ class IQuestion(IHasOwner):
 
         Return the created IQuestionMessage.
 
-        This method should fire an ISQLObjectCreatedEvent for the created
-        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+        This method should fire an IObjectCreatedEvent for the created
+        IQuestionMessage and an IObjectModifiedEvent for the question.
 
         :user: IPerson requesting for the information.
         :question: A string or IMessage containing the question.
@@ -209,8 +209,8 @@ class IQuestion(IHasOwner):
 
         Return the created IQuestionMessage.
 
-        This method should fire an ISQLObjectCreatedEvent for the created
-        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+        This method should fire an IObjectCreatedEvent for the created
+        IQuestionMessage and an IObjectModifiedEvent for the question.
 
         :reply: A string or IMessage containing the new information.
         :datecreated: Date for the message. Defaults to the current time.
@@ -241,8 +241,8 @@ class IQuestion(IHasOwner):
 
         Return the created IQuestionMessage.
 
-        This method should fire an ISQLObjectCreatedEvent for the created
-        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+        This method should fire an IObjectCreatedEvent for the created
+        IQuestionMessage and an IObjectModifiedEvent for the question.
 
         :user: IPerson giving the answer.
         :answer: A string or IMessage containing the answer.
@@ -257,8 +257,8 @@ class IQuestion(IHasOwner):
 
         Return the created IQuestionMessage.
 
-        This method should fire an ISQLObjectCreatedEvent for the created
-        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+        This method should fire an IObjectCreatedEvent for the created
+        IQuestionMessage and an IObjectModifiedEvent for the question.
 
         :param user: IPerson linking the faq.
         :param faq: The IFAQ containing the answer.
@@ -288,8 +288,8 @@ class IQuestion(IHasOwner):
 
         Return the created IQuestionMessage.
 
-        This method should fire an ISQLObjectCreatedEvent for the created
-        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+        This method should fire an IObjectCreatedEvent for the created
+        IQuestionMessage and an IObjectModifiedEvent for the question.
 
        :comment: A string or IMessage containing a comment.
         :answer: The IQuestionMessage that contain the answer to the question.
@@ -318,8 +318,8 @@ class IQuestion(IHasOwner):
 
         Return the created IQuestionMessage.
 
-        This method should fire an ISQLObjectCreatedEvent for the created
-        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+        This method should fire an IObjectCreatedEvent for the created
+        IQuestionMessage and an IObjectModifiedEvent for the question.
 
         :user: The user rejecting the request.
         :comment: A string or IMessage containing an explanation of the
@@ -343,8 +343,8 @@ class IQuestion(IHasOwner):
         (Note this method is named expireQuestion and not expire because of
         conflicts with SQLObject.)
 
-        This method should fire an ISQLObjectCreatedEvent for the created
-        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+        This method should fire an IObjectCreatedEvent for the created
+        IQuestionMessage and an IObjectModifiedEvent for the question.
 
         :user: IPerson expiring the request.
         :comment: A string or IMessage containing an explanation for the
@@ -370,8 +370,8 @@ class IQuestion(IHasOwner):
 
         Return the created IQuestionMessage.
 
-        This method should fire an ISQLObjectCreatedEvent for the created
-        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+        This method should fire an IObjectCreatedEvent for the created
+        IQuestionMessage and an IObjectModifiedEvent for the question.
 
         :comment: A string or IMessage containing more information about the
                   request.
@@ -384,8 +384,8 @@ class IQuestion(IHasOwner):
         Create an IQuestionMessage with action COMMENT. It leaves the question
         status unchanged.
 
-        This method should fire an ISQLObjectCreatedEvent for the created
-        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+        This method should fire an IObjectCreatedEvent for the created
+        IQuestionMessage and an IObjectModifiedEvent for the question.
 
         :user: The IPerson making the comment.
         :comment: A string or IMessage containing the comment.
@@ -402,7 +402,18 @@ class IQuestion(IHasOwner):
     def unsubscribe(person):
         """Remove the person's subscription to this question."""
 
-    def getSubscribers():
+    def getDirectSubscribers():
+        """Return the persons who are subscribed to this question.
+
+        :return: A list of persons sorted by displayname.
+        """
+    def getIndirectSubscribers():
+        """Return the persons who are implicitly subscribed to this question.
+
+        :return: A list of persons sorted by displayname.
+        """
+
+    def getRecipients():
         """Return the set of person to notify about changes in this question.
 
         That is the union of getDirectSubscribers() and
@@ -412,16 +423,15 @@ class IQuestion(IHasOwner):
             notify along the rationale for doing so.
         """
 
-    def getDirectSubscribers():
+    def getDirectRecipients():
         """Return the set of persons who are subscribed to this question.
 
         :return: An `INotificationRecipientSet` containing the persons to
             notify along the rationale for doing so.
         """
 
-    def getIndirectSubscribers():
-        """Return the set of persons who are implicitely subscribed to this
-        question.
+    def getIndirectRecipients():
+        """Return the set of persons implicitly subscribed to this question.
 
         That includes  the answer contacts for the question's target as well
         as the question's assignee.

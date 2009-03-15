@@ -85,7 +85,7 @@ registerLaunchpadFunction(hookUpFilterSubmission);
              tal:content="branch/bzr_identity">
                Name
           </a>
-          <tal:associated-series repeat="series branch/associated_product_series"
+          <tal:associated-series repeat="series branch/active_series"
                                  condition="context/view/show_series_links">
             <tal:first-series condition="repeat/series/start">
             <br/><strong style="margin-left: 2.5em;">Series:</strong>
@@ -158,14 +158,8 @@ registerLaunchpadFunction(hookUpFilterSubmission);
           <td tal:attributes="onmouseover string:show_commit(${branch/id});
                               onmouseout string:hide_commit(${branch/id});">
             <div class="lastCommit">
-              <tal:browsable-code condition="not: branch/private">
-                <a tal:attributes="href branch/revision_codebrowse_link"
-                   tal:content="branch/revision_count">1234</a>.
-              </tal:browsable-code>
-              <tal:not-browsable-code condition="branch/private"
-                                      replace="branch/revision_count">
-                1243
-              </tal:not-browsable-code>
+              <a tal:attributes="href branch/revision_codebrowse_link"
+                 tal:content="branch/revision_count">1234</a>.
               <tal:revision-log replace="branch/revision_log/fmt:shorten/40"/>
             </div>
             <div class="popupTitle"

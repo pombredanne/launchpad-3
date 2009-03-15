@@ -20,7 +20,8 @@ registered branches.
     ...     name of the owner is `person_name`.
     ...     """
     ...     owner = factory.makePerson(displayname=person_name)
-    ...     factory.makeBranch(product=product, owner=owner, name=branch_name)
+    ...     factory.makeProductBranch(
+    ...         product=product, owner=owner, name=branch_name)
 
 First we make a product that has three branches registered on it.
 

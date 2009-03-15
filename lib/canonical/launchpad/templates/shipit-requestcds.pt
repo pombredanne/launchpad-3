@@ -24,7 +24,7 @@
 
 <div metal:fill-slot="body">
 
-<tal:shipit-is-open condition="view/is_open" define="user view/user">
+<tal:shipit-is-open condition="view/is_open">
 
   <div class="error message"
     tal:repeat="top_of_page_error view/form_wide_errors"
@@ -51,7 +51,8 @@
     </div>
   </tal:current_request>
 
-  <tal:pastrequests condition="user/pastShipItRequests">
+  <tal:pastrequests condition="view/shipit_account/pastShipItRequests"
+                    define="account view/shipit_account">
     <h1>Shipped/Cancelled requests</h1>
 
     <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
@@ -271,8 +272,8 @@
   <span tal:replace="view/series/title" /> CDs.
   </p>
 
-  <tal:pastrequests condition="view/user/pastShipItRequests"
-                    define="user view/user">
+  <tal:pastrequests condition="view/shipit_account/pastShipItRequests"
+                    define="account view/shipit_account">
     <h2>Shipped/Cancelled requests</h2>
 
     <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />

@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'IPOFileSet',
     'IPOFile',
-    'IPOFileTranslator',
     'IPOFileAlternativeLanguage',
     ]
 
@@ -153,41 +152,8 @@ class IPOFile(IRosettaStats):
         Return an iterator over untranslated message sets in this PO file.
         """
 
-    def __iter__():
-        """Return an iterator over Current `IPOMessageSets` in this PO file.
-        """
-
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
-
-    def getCurrentTranslationMessage(msgid_text, context=None,
-                                     ignore_obsolete=False):
-        """Return the `ITranslationMessage` in this `IPOFile` by msgid_text.
-
-        :param msgid_text: is an unicode string.
-        :param context: Disambiguating context for the message set.
-        :param ignore_obsolete: Whether we should ignore obsolete entries.
-        :return: The `ITranslationMessage` for `msgid_text` or None.
-        """
-
-    def getCurrentTranslationMessageFromPOTMsgSet(potmsgset,
-                                                  ignore_obsolete=False):
-        """Return mapping between potmsgset and `ITranslationMessage`.
-
-        :param potmsgset: An `IPOTMsgSet`.
-        :param ignore_obsolete: Whether we should ignore obsolete messages
-            when looking for the current translation message.
-        :return: The translation message for this translation file and the
-            given potmsgset or None.
-        """
-
-    def __getitem__(msgid_text):
-        """Return the current `ITranslationMessage` by msgid_text.
-
-        :param msgid_text: is an unicode string.
-
-        Raise NotFoundError if it does not exist.
-        """
 
     def findPOTMsgSetsContaining(text):
         """Get POTMsgSets where English text or translation contain `text`."""
@@ -273,12 +239,14 @@ class IPOFile(IRosettaStats):
         If the new path is not unique, the old path will be retained instead.
         """
 
-    def importFromQueue(entry_to_import, logger=None):
+    def importFromQueue(entry_to_import, logger=None, txn=None):
         """Import given queue entry.
 
         :param entry_to_import: `TranslationImportQueueEntry` specifying an
             approved import for this `POFile`
         :param logger: optional logger to report problems to.
+        :param txn: optionally, a transaction manager.  It will not be
+            used; it's here only for API symmetry with `IPOTemplate`.
 
         :return: a tuple of the subject line and body for a notification email
             to be sent to the uploader.
@@ -366,20 +334,3 @@ class IPOFileSet(Interface):
         The number of items in the sequence will only be less than batch_size
         if the end of the table has been reached.
         """
-
-class IPOFileTranslator(Interface):
-    """Represents contributions from people to POFiles."""
-
-    person = Object(
-        title=_('The Person this record represents'), required=True,
-        schema=IPerson)
-
-    pofile = Object(
-        title=_('The `IPOFile` modified by the translator'), required=True,
-        schema=IPOFile)
-
-    latest_message = Attribute(
-        _("Latest translation message added to the translation file."))
-
-    date_last_touched = Datetime(
-        title=_('When was added latest translation message'), required=True)

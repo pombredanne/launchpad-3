@@ -14,9 +14,10 @@ from zope.interface import implements
 
 from sqlobject import (
     AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
-from storm.expr import In
+from storm.expr import And, In, SQL
+from storm.store import Store
 
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
@@ -24,7 +25,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct, IProject,
     IProjectSeries, IProjectSet, ISearchableByQuestionOwner,
-    IStructuralSubscriptionTarget, ImportStatus, NotFoundError,
+    IStructuralSubscriptionTarget,NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     SprintSpecificationStatus, TranslationPermission)
@@ -40,7 +41,8 @@ from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.milestone import ProjectMilestone
+from canonical.launchpad.database.milestone import (
+    Milestone, ProjectMilestone, milestone_sort_key)
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.product import Product
@@ -347,37 +349,33 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
-    def _getMilestones(self, only_visible):
+    def _getMilestones(self, only_active):
         """Return a list of milestones for this project.
 
-        If only_visible is True, only visible milestones are returned,
+        If only_active is True, only active milestones are returned,
         else all milestones.
 
         A project has a milestone named 'A', if at least one of its
         products has a milestone named 'A'.
         """
-        if only_visible:
-            having_clause = 'HAVING bool_or(Milestone.visible)=True'
-        else:
-            having_clause = ''
-        query = """
-            SELECT Milestone.name, min(Milestone.dateexpected),
-                bool_or(Milestone.visible)
-                FROM Milestone, Product
-                WHERE Product.project = %s
-                    AND Milestone.product = product.id
-                    AND Product.active
-                GROUP BY Milestone.name
-                %s
-                ORDER BY min(Milestone.dateexpected), Milestone.name
-            """ % (self.id, having_clause)
-        cur = cursor()
-        cur.execute(query)
-        result = cur.fetchall()
-        # bool_or returns an integer, but we want visible to be a boolean
-        return shortlist(
-            [ProjectMilestone(self, name, dateexpected, bool(visible))
-             for name, dateexpected, visible in result])
+        store = Store.of(self)
+
+        columns = (
+            Milestone.name,
+            SQL('MIN(Milestone.dateexpected)'),
+            SQL('BOOL_OR(Milestone.active)'),
+            )
+        conditions = And(Milestone.product == Product.id,
+                         Product.project == self,
+                         Product.active == True)
+        result = store.find(columns, conditions)
+        result.group_by(Milestone.name)
+        if only_active:
+            result.having('BOOL_OR(Milestone.active) = TRUE')
+        milestones = shortlist(
+            [ProjectMilestone(self, name, dateexpected, active)
+             for name, dateexpected, active in result])
+        return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     @property
     def milestones(self):
@@ -473,21 +471,6 @@ class ProjectSet:
     def forReview(self):
         return Project.select("reviewed IS FALSE")
 
-    def forSyncReview(self):
-        query = """Product.project=Project.id AND
-                   Product.reviewed IS TRUE AND
-                   Product.active IS TRUE AND
-                   Product.id=ProductSeries.product AND
-                   ProductSeries.importstatus IS NOT NULL AND
-                   ProductSeries.importstatus <> %s
-                   """ % sqlvalues(ImportStatus.SYNCING)
-        clauseTables = ['Project', 'Product', 'ProductSeries']
-        results = []
-        for project in Project.select(query, clauseTables=clauseTables):
-            if project not in results:
-                results.append(project)
-        return results
-
     def search(self, text=None, soyuz=None,
                      rosetta=None, malone=None,
                      bazaar=None,
@@ -514,8 +497,7 @@ class ProjectSet:
         if bazaar:
             clauseTables.add('Product')
             clauseTables.add('ProductSeries')
-            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
-                           'ProductSeries.user_branch IS NOT NULL)')
+            queries.append('(ProductSeries.branch IS NOT NULL)')
             queries.append('ProductSeries.product=Product.id')
 
         if text:

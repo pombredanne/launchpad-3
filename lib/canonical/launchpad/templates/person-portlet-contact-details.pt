@@ -4,7 +4,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="contact-details">
+<div class="portlet" id="contact-details"
+  tal:define="overview_menu context/menu:overview">
 
   <h2 tal:condition="context/is_team">Contact details</h2>
 
@@ -108,8 +109,8 @@
         <tr tal:condition="context/jabberids">
           <th>Jabber:</th>
           <td>
-            <tal:block repeat="jabberid view/htmlJabberIDs">
-              <span tal:replace="structure jabberid"
+            <tal:block repeat="jabberid context/jabberids">
+              <span tal:replace="jabberid/jabberid/fmt:obfuscate-email"
                 /><span tal:condition="not: repeat/jabberid/end">,</span>
             </tal:block>
           </td>
@@ -117,11 +118,12 @@
         <tr tal:condition="context/gpgkeys">
           <th>OpenPGP keys:</th>
           <td>
-            <tal:block repeat="key context/gpgkeys">
-              <a tal:attributes="href key/keyserverURL">
-                <span tal:replace="key/keyid"
+            <tal:keys repeat="key context/gpgkeys">
+              <a tal:attributes="href key/keyserverURL"
+                 tal:omit-tag="not: request/lp:person">
+                <tal:keyid replace="key/keyid"
                   /></a><span tal:condition="not: repeat/key/end">,</span>
-            </tal:block>
+            </tal:keys>
           </td>
         </tr>
 
@@ -139,7 +141,7 @@
           </tr>
         </tal:keys>
 
-        <tr tal:condition="not: context/is_team">
+        <tr tal:condition="view/viewing_own_page" id="openid-info">
           <th>OpenID login:</th>
           <td>
             <img src="/@@/private" alt="" />
@@ -149,7 +151,15 @@
                    >(What&rsquo;s&nbsp;this?)</a></span>
           </td>
         </tr>
-
+        <tr id="languages">
+          <th>Languages:</th>
+          <td>
+            <tal:languages content="view/languages">
+              English
+            </tal:languages>
+            <a tal:replace="structure overview_menu/editlanguages/fmt:icon"/>
+          </td>
+        </tr>
       </tbody>
     </table>
 

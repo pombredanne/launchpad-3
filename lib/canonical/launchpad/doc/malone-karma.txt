@@ -23,30 +23,30 @@ Karma Actions
 
 Create a bug:
 
-    >>> from canonical.launchpad.event import (SQLObjectCreatedEvent,
-    ...     SQLObjectModifiedEvent)
+    >>> from lazr.lifecycle.event import (
+    ...     ObjectCreatedEvent, ObjectModifiedEvent)
     >>> from canonical.launchpad.interfaces import CreateBugParams
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> params = CreateBugParams(
     ...     comment=u"Give me some karma!", title=u"New Bug", owner=foo_bar)
     >>> bug = debian.createBug(params)
-    >>> notify(SQLObjectCreatedEvent(bug))
+    >>> notify(ObjectCreatedEvent(bug))
     Karma added: action=bugcreated, distribution=debian
 
 Change the title of a bug:
 
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IBug
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.title = "Better Title"
-    >>> notify(SQLObjectModifiedEvent(bug, old_bug, ['title']))
+    >>> notify(ObjectModifiedEvent(bug, old_bug, ['title']))
     Karma added: action=bugtitlechanged, distribution=debian
 
 Change the description of a bug:
 
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.description = "Description of bug"
-    >>> notify(SQLObjectModifiedEvent(bug, old_bug, ['description']))
+    >>> notify(ObjectModifiedEvent(bug, old_bug, ['description']))
     Karma added: action=bugdescriptionchanged, distribution=debian
 
 Add a CVE reference to a bug:
@@ -56,7 +56,7 @@ Add a CVE reference to a bug:
     >>> cve = getUtility(ICveSet).new('2003-1234', description="Blah blah",
     ...     status=CveStatus.CANDIDATE)
     >>> bugcve = BugCve(cve=cve, bug=bug)
-    >>> notify(SQLObjectCreatedEvent(bugcve))
+    >>> notify(ObjectCreatedEvent(bugcve))
     Karma added: action=bugcverefadded, distribution=debian
 
 Add watch for external bug to the bug:
@@ -66,7 +66,7 @@ Add watch for external bug to the bug:
     >>> debbugs = getUtility(IBugTrackerSet)['debbugs']
     >>> bugwatch = BugWatch(
     ...     bug=bug,bugtracker=debbugs, remotebug=u'42', owner=foo_bar)
-    >>> notify(SQLObjectCreatedEvent(bugwatch))
+    >>> notify(ObjectCreatedEvent(bugwatch))
     Karma added: action=bugwatchadded, distribution=debian
 
 Mark a bug task as fixed:
@@ -77,7 +77,7 @@ Mark a bug task as fixed:
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
+    >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugfixed, distribution=debian
 
 Reject a bug task:
@@ -85,7 +85,7 @@ Reject a bug task:
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
-    >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
+    >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugrejected, distribution=debian
 
 Accept a bug task:
@@ -93,7 +93,7 @@ Accept a bug task:
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
-    >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
+    >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugaccepted, distribution=debian
 
 Change a bug task's importance:
@@ -106,7 +106,7 @@ Change a bug task's importance:
     ...     bugtask.transitionToImportance(
     ...         importance, getUtility(ILaunchBag).user)
     ...     print importance.name
-    ...     notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['importance']))
+    ...     notify(ObjectModifiedEvent(bugtask, old_bugtask, ['importance']))
     UNKNOWN
     Karma added: action=bugtaskimportancechanged, distribution=debian
     CRITICAL
@@ -128,7 +128,7 @@ Create a new bug task on a product:
     >>> evolution = getUtility(IProductSet)['evolution']
     >>> evolution_task = getUtility(IBugTaskSet).createTask(
     ...     bug, product=evolution, owner=foo_bar)
-    >>> notify(SQLObjectCreatedEvent(evolution_task))
+    >>> notify(ObjectCreatedEvent(evolution_task))
     Karma added: action=bugtaskcreated, product=evolution
 
 Create a new bug task on a product series:
@@ -136,7 +136,7 @@ Create a new bug task on a product series:
     >>> evolution_trunk = evolution.getSeries('trunk')
     >>> evolution_trunk_task = getUtility(IBugTaskSet).createTask(
     ...     bug, productseries=evolution_trunk, owner=foo_bar)
-    >>> notify(SQLObjectCreatedEvent(evolution_trunk_task))
+    >>> notify(ObjectCreatedEvent(evolution_trunk_task))
     Karma added: action=bugtaskcreated, product=evolution
 
 Create a new bug task on a distroseries:
@@ -144,7 +144,7 @@ Create a new bug task on a distroseries:
     >>> debian_woody = debian.getSeries("woody")
     >>> debian_woody_task = getUtility(IBugTaskSet).createTask(
     ...     bug, distroseries=debian_woody, owner=foo_bar)
-    >>> notify(SQLObjectCreatedEvent(debian_woody_task))
+    >>> notify(ObjectCreatedEvent(debian_woody_task))
     Karma added: action=bugtaskcreated, distribution=debian
 
 Accept a distro series task.
@@ -156,7 +156,7 @@ Accept a distro series task.
     ...     debian_woody_task, providing=IDistroSeriesBugTask)
     >>> debian_woody_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
-    >>> notify(SQLObjectModifiedEvent(debian_woody_task, old_bugtask, ['status']))
+    >>> notify(ObjectModifiedEvent(debian_woody_task, old_bugtask, ['status']))
     Karma added: action=bugaccepted, distribution=debian
 
 Accept a productseries task.
@@ -168,7 +168,7 @@ Accept a productseries task.
     ...     evolution_trunk_task, providing=IProductSeriesBugTask)
     >>> evolution_trunk_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     evolution_trunk_task, old_bugtask, ['status']))
     Karma added: action=bugaccepted, product=evolution
 
@@ -181,7 +181,7 @@ Mark a bug as a duplicate:
     (Notice how changing a bug with multiple bugtasks will assign karma to you
     once for each bugtask. This is so because we consider changes in a bug to
     be actual contributions to all bugtasks of that bug)
-    >>> notify(SQLObjectModifiedEvent(bug, old_bug, ['duplicateof']))
+    >>> notify(ObjectModifiedEvent(bug, old_bug, ['duplicateof']))
     Karma added: action=bugmarkedasduplicate, product=evolution
     Karma added: action=bugmarkedasduplicate, product=evolution
     Karma added: action=bugmarkedasduplicate, distribution=debian
@@ -192,7 +192,7 @@ Adding a comment generates a karma event, but gives no points:
     >>> from canonical.launchpad.interfaces import IBugMessageSet
     >>> comment = getUtility(IBugMessageSet).createMessage(
     ...     subject="foo", bug=bug, owner=foo_bar, content="bar")
-    >>> notify(SQLObjectCreatedEvent(comment))
+    >>> notify(ObjectCreatedEvent(comment))
     Karma added: action=bugcommentadded, product=evolution
     Karma added: action=bugcommentadded, product=evolution
     Karma added: action=bugcommentadded, distribution=debian

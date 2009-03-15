@@ -104,7 +104,7 @@ will only accept suggestions.
     >>> managers = get_detail_tag(browser, 'translation-managers')
     >>> print managers
     This translation is managed by <...>...Hoary Gnome Team<...>, assigned
-    by <...>polyglot<...>.
+    by <...>The PolyGlot Translation Group<...>.
 
 The ability to upload files is restricted to those with full edit
 privileges.
@@ -151,7 +151,7 @@ not yet translated.
 
     >>> print get_detail_tag(browser, 'translation-managers')
     This translation is managed by <...No Privileges Person<...>, assigned by
-    <...>polyglot<...>.
+    <...>The PolyGlot Translation Group<...>.
 
     >>> print get_detail_tag(browser, 'translation-access')
     You have full access to this translation.
@@ -181,4 +181,3 @@ has been added.
 
     >>> print find_main_content(browser.contents).renderContents()
     <...evolution minikaart...
-

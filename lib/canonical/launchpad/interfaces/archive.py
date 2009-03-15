@@ -32,15 +32,16 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, Object, List, Text, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.gpg import IGPGKey
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
@@ -101,11 +102,6 @@ class IArchivePublic(IHasOwner):
             title=_("Name"), required=True,
             constraint=name_validator,
             description=_("The name of this archive.")))
-
-    description = exported(
-        Text(
-            title=_("Archive contents description"), required=False,
-            description=_("A short description of this archive's contents.")))
 
     enabled = Bool(
         title=_("Enabled"), required=False,
@@ -172,14 +168,15 @@ class IArchivePublic(IHasOwner):
 
     is_copy = Attribute("True if this archive is a copy archive.")
 
+    is_main = Bool(
+        title=_("True if archive is a main archive type"), required=False)
+
     title = exported(
         Text(title=_("Archive Title."), required=False))
 
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     number_of_sources = Attribute(
-        'The total number of sources in the context archive.')
-    number_of_sources_published = Attribute(
         'The number of sources published in the context archive.')
     number_of_binaries = Attribute(
         'The number of binaries published in the context archive.')
@@ -228,11 +225,12 @@ class IArchivePublic(IHasOwner):
         paths to cope with non-primary and PPA archives publication workflow.
         """
 
-    def getSourcesForDeletion(name=None, status=None):
+    def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
         :param: name: optional source name filter (SQL LIKE)
         :param: status: `PackagePublishingStatus` filter, can be a sequence.
+        :param: distroseries: `IDistroSeries` filter.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
@@ -275,34 +273,6 @@ class IArchivePublic(IHasOwner):
                              matching.
 
         :return: SelectResults containing `IBinaryPackagePublishingHistory`.
-        """
-
-    @operation_parameters(
-        include_needsbuild=Bool(
-            title=_("Include builds with state NEEDSBUILD"), required=False))
-    @export_read_operation()
-    def getBuildCounters(include_needsbuild=True):
-        """Return a dictionary containing the build counters for an archive.
-
-        This is necessary currently because the IArchive.failed_builds etc.
-        counters are not in use.
-
-        The returned dictionary contains the follwoing keys and values:
-
-         * 'total': total number of builds (includes SUPERSEDED);
-         * 'pending': number of builds in BUILDING or NEEDSBUILD state;
-         * 'failed': number of builds in FAILEDTOBUILD, MANUALDEPWAIT,
-           CHROOTWAIT and FAILEDTOUPLOAD state;
-         * 'succeeded': number of SUCCESSFULLYBUILT builds.
-         * 'superseded': number of SUPERSEDED builds.
-
-        :param include_needsbuild: Indicates whether to include builds with
-            the status NEEDSBUILD in the pending and total counts. This is
-            useful in situations where a build that hasn't started isn't
-            considered a build by the user.
-        :type include_needsbuild: ``bool``
-        :return: a dictionary with the 4 keys specified above.
-        :rtype: ``dict``.
         """
 
     def allowUpdatesToReleasePocket():
@@ -583,7 +553,7 @@ class IArchivePublic(IHasOwner):
             are to be copied.
         :param requestor: The `IPerson` who is requesting the package copy
             operation.
-        :param suite: The `IDistroSeries` name with optional pocket, for 
+        :param suite: The `IDistroSeries` name with optional pocket, for
             example, 'hoary-security'. If this is not provided it will
             default to the current series' release pocket.
         :param copy_binaries: Whether or not binary packages should be copied
@@ -596,15 +566,44 @@ class IArchivePublic(IHasOwner):
         :return The new `IPackageCopyRequest`
         """
 
+    # XXX: noodles 2009-03-02 bug=336779: This should be moved into
+    # IArchiveView once the archive permissions are updated to grant
+    # IArchiveView to archive subscribers.
+    def newAuthToken(person, token=None, date_created=None):
+        """Create a new authorisation token.
 
-class IArchiveView(Interface):
+        XXX: noodles 2009-03-12 bug=341600 This method should not be exposed
+        through the API as we do not yet check that the callsite has
+        launchpad.Edit on the person.
+
+        :param person: An IPerson whom this token is for
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given
+        :param date_created: Optional, defaults to now
+
+        :return: A new IArchiveAuthToken
+        """
+
+
+class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
 
     buildd_secret = TextLine(
         title=_("Buildd Secret"), required=False,
         description=_("The password used by the builder to access the "
-                      "archive.")
-        )
+                      "archive."))
+
+    description = exported(
+        Text(
+            title=_("Archive contents description"), required=False,
+            description=_("A short description of this archive's contents.")))
+
+    signing_key_fingerprint = exported(
+        Text(
+            title=_("Archive signing key fingerprint"), required=False,
+            description=_("A OpenPGP signing key fingerprint (40 chars) "
+                          "for this PPA or None if there is no signing "
+                          "key available.")))
 
     @rename_parameters_as(name="source_name", distroseries="distro_series")
     @operation_parameters(
@@ -650,6 +649,53 @@ class IArchiveView(Interface):
                              matching.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
+        """
+
+    @operation_parameters(
+        include_needsbuild=Bool(
+            title=_("Include builds with state NEEDSBUILD"), required=False))
+    @export_read_operation()
+    def getBuildCounters(include_needsbuild=True):
+        """Return a dictionary containing the build counters for an archive.
+
+        This is necessary currently because the IArchive.failed_builds etc.
+        counters are not in use.
+
+        The returned dictionary contains the follwoing keys and values:
+
+         * 'total': total number of builds (includes SUPERSEDED);
+         * 'pending': number of builds in BUILDING or NEEDSBUILD state;
+         * 'failed': number of builds in FAILEDTOBUILD, MANUALDEPWAIT,
+           CHROOTWAIT and FAILEDTOUPLOAD state;
+         * 'succeeded': number of SUCCESSFULLYBUILT builds.
+         * 'superseded': number of SUPERSEDED builds.
+
+        :param include_needsbuild: Indicates whether to include builds with
+            the status NEEDSBUILD in the pending and total counts. This is
+            useful in situations where a build that hasn't started isn't
+            considered a build by the user.
+        :type include_needsbuild: ``bool``
+        :return: a dictionary with the 4 keys specified above.
+        :rtype: ``dict``.
+        """
+
+    @operation_parameters(
+        source_ids=List(
+            title=_("A list of source publishing history record ids."),
+            value_type=TextLine()))
+    @export_read_operation()
+    def getBuildSummariesForSourceIds(source_ids):
+        """Return a dictionary containing a summary of the build statuses.
+
+        Only information for sources belonging to the current archive will
+        be returned. See
+        `IPublishingSet`.getBuildStatusSummariesForSourceIdsAndArchive() for
+        details.
+
+        :param source_ids: A list of source publishing history record ids.
+        :type source_ids: ``list``
+        :return: A dict consisting of the overall status summaries for the
+            given ids that belong in the archive.
         """
 
 
@@ -733,6 +779,24 @@ class IArchiveAppend(Interface):
         :raises CannotCopy: if there is a problem copying.
         """
 
+    def newSubscription(subscriber, registrant, date_expires=None,
+                        description=None):
+        """Create a new subscribtion to this archive.
+
+        Create an `ArchiveSubscriber` record which allows an `IPerson` to
+        access a private repository.
+
+        :param subscriber: An `IPerson` who is allowed to access the
+        repository for this archive.
+        :param registrant: An `IPerson` who created this subscription.
+        :param date_expires: When the subscription should expire; None if
+            it should not expire (default).
+        :param description: An option textual description of the subscription
+            being created.
+
+        :return: The `IArchiveSubscriber` that was created.
+        """
+
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveView):
     """Main Archive interface."""
@@ -763,11 +827,6 @@ class IPPAActivateForm(Interface):
 
 class IArchiveSourceSelectionForm(Interface):
     """Schema used to select sources within an archive."""
-
-    name_filter = TextLine(
-        title=_("Package name"), required=False, default=None,
-        description=_("Display packages only with name matching the given "
-                      "filter."))
 
 
 class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
@@ -821,13 +880,19 @@ class IArchiveSet(Interface):
             description;
 
         :return: an `IArchive` object.
+        :raises AssertionError if name is already taken within distribution.
         """
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
 
-    def getPPAByDistributionAndOwnerName(distribution, person_name):
-        """Return a single PPA the given (distribution, name) pair."""
+    def getPPAByDistributionAndOwnerName(distribution, person_name, ppa_name):
+        """Return a single PPA.
+
+        :param distribution: The context IDistribution.
+        :param person_name: The context IPerson.
+        :param ppa_name: The name of the archive (PPA)
+        """
 
     def getByDistroPurpose(distribution, purpose, name=None):
         """Return the IArchive with the given distribution and purpose.
@@ -893,21 +958,27 @@ class IArchiveSet(Interface):
         :return a dictionary with the 4 keys specified above.
         """
 
-    def getArchivesForDistribution(distribution, name=None, purposes=None):
+    def getArchivesForDistribution(distribution, name=None, purposes=None,
+        user=None):
         """Return a list of all the archives for a distribution.
-        
+
         This will return all the archives for the given distribution, with
         the following parameters:
-        
+
         :param distribution: target `IDistribution`
         :param name: An optional archive name which will further restrict
             the results to only those archives with this name.
         :param purposes: An optional achive purpose or list of purposes with
             which to filter the results.
+        :param user: An optional `IPerson` who is requesting the archives,
+            which is used to include private archives for which the user
+            has permission. If it is not supplied, only public archives
+            will be returned.
 
         :return: A queryset of all the archives for the given
             distribution matching the given params.
         """
+
 
 class ArchivePurpose(DBEnumeratedType):
     """The purpose, or type, of an archive.

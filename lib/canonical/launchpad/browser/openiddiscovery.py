@@ -19,9 +19,9 @@ from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.launchpad import (
     IOpenIDApplication, NotFoundError)
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.authtoken import IAuthTokenSet
 from canonical.launchpad.interfaces.openidserver import (
-    IOpenIDRPConfigSet, IOpenIDPersistentIdentity)
+    IOpenIDAuthorizationSet, IOpenIDRPConfigSet, IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -72,11 +72,11 @@ class OpenIDApplicationNavigation(Navigation):
 
     @stepto('token')
     def token(self):
-        """Traverse to login tokens."""
+        """Traverse to auth tokens."""
         # We need to traverse the 'token' namespace in order to allow people
         # to create new accounts and reset their passwords. This can't clash
         # with a person's name because it's a blacklisted name.
-        return getUtility(ILoginTokenSet)
+        return getUtility(IAuthTokenSet)
 
     def traverse(self, name):
         """Traverse to the `IOpenIDPersistentIdentity`.
@@ -176,5 +176,7 @@ class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
 class OpenIDApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):
     """Render the OpenID index page."""
 
+    template = ViewPageTemplateFile(
+        "../templates/openid-index.pt")
     xrds_template = ViewPageTemplateFile(
         "../templates/openidapplication-xrds.pt")

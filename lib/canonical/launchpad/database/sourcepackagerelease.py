@@ -35,7 +35,8 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packagediff import (
     PackageDiffAlreadyRequested)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingStatus)
 from canonical.launchpad.interfaces.sourcepackage import (
     SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
@@ -56,7 +57,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 def _filter_ubuntu_translation_file(filename):
     """Filter for translation filenames in tarball.
-    
+
     Grooms filenames of translation files in tarball, returning None or
     empty string for files that should be ignored.
 
@@ -264,30 +265,9 @@ class SourcePackageRelease(SQLBase):
     @property
     def published_archives(self):
         """See `ISourcePacakgeRelease`."""
-        archives = set()
-        publishings = self.publishings.prejoin(['archive'])
-        live_states = (PackagePublishingStatus.PENDING,
-                       PackagePublishingStatus.PUBLISHED)
-        for pub in publishings:
-            if pub.status in live_states:
-                archives.add(pub.archive)
-
+        archives = set(
+            pub.archive for pub in self.publishings.prejoin(['archive']))
         return sorted(archives, key=operator.attrgetter('id'))
-
-    @cachedproperty
-    def _cached_published_archives(self):
-        """Return a cached list of published archives.
-
-        This is intended for the security adapter as it calls
-        published_archives a lot which makes private PPA index pages
-        unrenderable in the timeout allowed if they have more than a
-        handful of packages.
-
-        XXX Julian 2008-09-10
-        This code should be removed when security adapter caching is done.
-        See bug 268612.
-        """
-        return self.published_archives
 
     def addFile(self, file):
         """See ISourcePackageRelease."""
@@ -305,10 +285,9 @@ class SourcePackageRelease(SQLBase):
                                         filetype=determined_filetype,
                                         libraryfile=file)
 
-
     def _getPackageSize(self):
         """Get the size total (in KB) of files comprising this package.
-        
+
         Please note: empty packages (i.e. ones with no files or with
         files that are all empty) have a size of zero.
         """
@@ -321,7 +300,7 @@ class SourcePackageRelease(SQLBase):
                     SourcePackageReleaseFile.sourcepackagerelease =
                     SourcePackageRelease.id
                 JOIN LibraryFileAlias ON
-                    SourcePackageReleaseFile.libraryfile = 
+                    SourcePackageReleaseFile.libraryfile =
                     LibraryFileAlias.id
                 JOIN LibraryFileContent ON
                     LibraryFileAlias.content = LibraryFileContent.id

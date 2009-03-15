@@ -7,8 +7,7 @@ from storm.properties import SimpleProperty
 from storm.variables import Variable
 
 from zope.security.proxy import isinstance as zope_isinstance
-
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 __all__ = [
 'DBEnum',
@@ -33,7 +32,7 @@ class DBEnumVariable(Variable):
             return self._enum.items[value]
         else:
             if not zope_isinstance(value, DBItem):
-                raise TypeError("Not a DBItem: %r" % type(value))
+                raise TypeError("Not a DBItem: %r" % (value,))
             if self._enum != value.enum:
                 raise TypeError("DBItem from wrong type, %r != %r" % (
                         self._enum.name, value.enum.name))

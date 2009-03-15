@@ -3,7 +3,7 @@
 From Launchpad's front page, you can access the tour.
 
     >>> browser.open('http://launchpad.dev/')
-    >>> tour_link = browser.getLink('Take a tour')
+    >>> tour_link = browser.getLink('Take the tour')
     >>> print tour_link.url
     http://launchpad.dev/+tour
     >>> tour_link.click()
@@ -30,6 +30,7 @@ back to the tour start.
     http://launchpad.dev/+tour/community
     http://launchpad.dev/+tour/ppa
     http://launchpad.dev/+tour/community-support
+    http://launchpad.dev/+tour/api
     http://launchpad.dev/+tour/feature-tracking
     http://launchpad.dev/+tour/release-management
     http://launchpad.dev/+tour/index

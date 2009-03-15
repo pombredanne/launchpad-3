@@ -20,7 +20,7 @@ from canonical.launchpad.database.karma import Karma
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
-    IBranchSet, IRevisionSet)
+    IBranchSet, IMasterObject, IRevisionSet)
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
@@ -49,7 +49,7 @@ class TestRevisionKarma(TestCaseWithFactory):
     def test_noKarmaForUnknownAuthor(self):
         # If the revision author is unknown, karma isn't allocated.
         rev = self.factory.makeRevision()
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeProductBranch()
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
 
@@ -64,7 +64,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         rev = self.factory.makeRevision(
             author=author.preferredemail.email,
             revision_date=datetime.now(pytz.UTC) - timedelta(days=5))
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeProductBranch()
         branch.createBranchRevision(1, rev)
         self.failUnless(rev.karma_allocated)
         # Get the karma event.
@@ -84,8 +84,8 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        author.account.status = AccountStatus.SUSPENDED
-        branch = self.factory.makeBranch()
+        IMasterObject(author.account).status = AccountStatus.SUSPENDED
+        branch = self.factory.makeProductBranch()
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
         # Even though the revision author is connected to the person, since
@@ -99,7 +99,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makeBranch(product=None)
+        branch = self.factory.makePersonalBranch()
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
         # Nor is this revision identified as needing karma allocated.
@@ -111,7 +111,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makeBranch(product=None)
+        branch = self.factory.makePersonalBranch()
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
@@ -126,7 +126,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         # allocated.
         email = self.factory.getUniqueEmailAddress()
         rev = self.factory.makeRevision(author=email)
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeProductBranch()
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
         # Since the revision author is not known, the revisions do not at this
@@ -146,7 +146,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         rev = self.factory.makeRevision(
             author=author.preferredemail.email,
             revision_date=datetime.now(pytz.UTC) + timedelta(days=5))
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeProductBranch()
         branch.createBranchRevision(1, rev)
         # Get the karma event.
         [karma] = list(Store.of(author).find(
@@ -169,7 +169,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
             author=self.author.preferredemail.email)
 
     def makeBranchWithRevision(self, sequence, **kwargs):
-        branch = self.factory.makeBranch(**kwargs)
+        branch = self.factory.makeAnyBranch(**kwargs)
         branch.createBranchRevision(sequence, self.revision)
         return branch
 
@@ -221,9 +221,10 @@ class TestRevisionGetBranch(TestCaseWithFactory):
     def testGetBranchNotJunk(self):
         # If allow_junk is set to False, then branches without products are
         # not returned.
-        b1 = self.makeBranchWithRevision(1)
-        b2 = self.makeBranchWithRevision(
-            1, owner=self.author, product=None)
+        b1 = self.factory.makeProductBranch()
+        b1.createBranchRevision(1, self.revision)
+        b2 = self.factory.makePersonalBranch(owner=self.author)
+        b2.createBranchRevision(1, self.revision)
         self.assertEqual(
             b1, self.revision.getBranch(allow_private=True, allow_junk=False))
 
@@ -260,15 +261,13 @@ class GetPublicRevisionsTestCase(TestCaseWithFactory):
             # If the test defines a product, use that, otherwise
             # have the factory generate one.
             product = getattr(self, 'product', None)
-        return self.factory.makeBranch(product=product)
+        return self.factory.makeProductBranch(product=product)
 
     def _makeRevisionInBranch(self, product=None):
         # Make a revision, and associate it with a branch.  The branch is made
         # with the product passed in, which means that if there was no product
         # passed in, the factory makes a new one.
-        if product is None:
-            product = self.factory.makeProduct()
-        branch = self.factory.makeBranch(product=product)
+        branch = self.factory.makeProductBranch(product=product)
         rev = self._makeRevision()
         branch.createBranchRevision(1, rev)
         return rev
@@ -371,7 +370,7 @@ class TestGetPublicRevisionsForPerson(GetPublicRevisionsTestCase,
         rev1 = self._makeRevision()
         rev2 = self._makeRevision(team_member)
         rev3 = self._makeRevision(self.factory.makePerson())
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeAnyBranch()
         self._addRevisionsToBranch(branch, rev1, rev2, rev3)
         self.assertEqual([rev2, rev1],
                          list(RevisionSet.getPublicRevisionsForPerson(team)))
@@ -482,7 +481,7 @@ class TestTipRevisionsForBranches(TestCase):
         login('test@canonical.com')
 
         factory = LaunchpadObjectFactory()
-        branches = [factory.makeBranch() for count in range(5)]
+        branches = [factory.makeAnyBranch() for count in range(5)]
         branch_ids = [branch.id for branch in branches]
         for branch in branches:
             factory.makeRevisionsForBranch(branch)

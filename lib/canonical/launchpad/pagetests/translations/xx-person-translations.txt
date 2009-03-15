@@ -8,24 +8,25 @@ translations and translation groups related to the person in question.
     u'Applications and packages translated'
 
 The user can see in the page navigation that Carlos has so far worked
-on five files.
+on six files, five of which are shown on this page.
 
     >>> extract_text(find_tag_by_id(anon_browser.contents, 'top-navigation'))
-    u'1...5...of...5...results...'
+    u'1...5...of...6...results...'
 
 The user sees a table with four columns with headings, with five POFiles
 listed which Carlos has contributed to.
 
     # Prints a heading and formatted list of POFiles and latest submissions.
+    >>> import re
     >>> def print_list_of_contributions(listing):
     ...     listing_head = listing.findAll('thead')[0].findAll('tr')[0]
     ...     heading_cells = listing_head.findAll('th')
-    ...     print "%-24s %-10s %-10s %-26s" % (
+    ...     print "%-24s %-8s %-8s %-26s" % (
     ...         extract_text(heading_cells[0]),
-    ...         extract_text(heading_cells[1])[:7] + '...',
-    ...         extract_text(heading_cells[2])[:7] + '...',
+    ...         extract_text(heading_cells[1])[:6] + '...',
+    ...         extract_text(heading_cells[2])[:6] + '...',
     ...         extract_text(heading_cells[3]))
-    ...     listing_body = listing.findAll('tbody')[0]
+    ...     listing_body = listing.find('tbody')
     ...     for row in listing_body.findAll('tr'):
     ...         cells = row.findAll('td')
     ...         pofile = extract_text(cells[0])
@@ -33,7 +34,7 @@ listed which Carlos has contributed to.
     ...             pofile = pofile[:21] + '...'
     ...         untranslated = extract_text(cells[1])
     ...         needs_review = extract_text(cells[2])
-    ...         message = extract_text(cells[3])
+    ...         message = re.sub(' +', ' ', extract_text(cells[3]))
     ...         if len(message) > 26:
     ...             message = message[:23] + '...'
     ...         print "%-24s %-10s %-10s %-26s" % (
@@ -41,12 +42,12 @@ listed which Carlos has contributed to.
 
     >>> listing = find_tags_by_class(anon_browser.contents, 'listing')[0]
     >>> print_list_of_contributions(listing)
-    Translation file         Untrans... Needs r... Latest translation
-    Spanish (es) translat... 2          0          2007-04-07    _: EMAIL OF ...
-    Spanish (es) translat... 0          0          2007-01-24    test man pag...
-    Spanish (es) translat... 14         2          2006-12-22    have    lalalala
-    Japanese (ja) transla... 21         0          2005-10-11    %d contact    %...
-    Spanish (es) translat... 15         1          2005-05-06    cards    tarjetas
+    Translation file         Untra... Needs... Latest translation
+    English (en) translat... 6        0        2007-07-12    auto, esddsp...
+    Spanish (es) translat... 2        0        2007-04-07    _: EMAIL OF ...
+    Spanish (es) translat... 0        0        2007-01-24    test man pag...
+    Spanish (es) translat... 14       2        2006-12-22    have    lalalala
+    Japanese (ja) transla... 21       0        2005-10-11    %d contact    %...
 
 When the user clicks one of the entries, he is shown a page listing
 all translations done by Carlos in this file.
@@ -61,12 +62,12 @@ containing only untranslated or only translations that need reviewing.
 
     >>> anon_browser.goBack()
     >>> untranslated_link = find_tags_by_class(anon_browser.contents,
-    ...                                        'untranslated-count')[0]
+    ...                                        'untranslated-count')[1]
     >>> extract_link_from_tag(untranslated_link)
     u'/alsa-utils/trunk/+pots/alsa-utils/es/+translate?show=untranslated'
 
     >>> unreviewed_link = find_tags_by_class(anon_browser.contents,
-    ...                                      'unreviewed-count')[0]
+    ...                                      'unreviewed-count')[1]
     >>> extract_link_from_tag(unreviewed_link)
     u'/alsa-utils/trunk/+pots/alsa-utils/es/+translate?show=new_suggestions'
 
