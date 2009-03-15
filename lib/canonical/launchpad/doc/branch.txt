@@ -649,7 +649,7 @@ show this the landscape trunk branch will be associated as the primary
 development focus branch.
 
     >>> landscape = branch.product
-    >>> landscape.development_focus.user_branch = branch
+    >>> landscape.development_focus.branch = branch
     >>> syncUpdate(landscape.development_focus)
 
 Private branches still show the full branch name.
@@ -670,7 +670,7 @@ names if possible.
     2
     >>> print branch.bzr_identity
     lp://dev/landscape
-    >>> landscape.development_focus.user_branch = None
+    >>> landscape.development_focus.branch = None
     >>> syncUpdate(landscape.development_focus)
     >>> print branch.bzr_identity
     lp://dev/landscape/experimental
@@ -680,7 +680,7 @@ bzr_identity.
 
     >>> print junkcode.product
     None
-    >>> series.user_branch = junkcode
+    >>> series.branch = junkcode
     >>> syncUpdate(series)
     >>> print junkcode.bzr_identity
     lp://dev/~junkowner/+junk/junkcode
@@ -749,8 +749,7 @@ scanned ID is.
 == Associated product series ==
 
 A branch is able to return a list of product series that the branch is
-associated with through either ProductSeries.user_branch or
-ProductSeries.import_branch.
+associated with through ProductSeries.branch.
 
     >>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
     >>> series = list(branch.associatedProductSeries())
@@ -886,8 +885,7 @@ The current references to the branch table are shown here.
     branchsubscription.branch
     bugbranch.branch
     codeimport.branch
-    productseries.import_branch
-    productseries.user_branch
+    productseries.branch
     seriessourcepackagebranch.branch
     specificationbranch.branch
 

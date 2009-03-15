@@ -69,7 +69,7 @@
   for this release series:</p>
 
   <ul class="branch" id="branch-details"
-      tal:content="structure context/user_branch/@@+product-summary-listing" />
+      tal:content="structure context/branch/@@+product-summary-listing" />
 </tal:block>
 
 </tal:root>
