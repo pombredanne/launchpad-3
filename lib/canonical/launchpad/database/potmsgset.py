@@ -184,7 +184,8 @@ class POTMsgSet(SQLBase):
             pofileset = getUtility(IPOFileSet)
             pofile = pofileset.getDummy(potemplate, language)
         else:
-            assert pofile.getCurrentTranslationMessage(self) is None, (
+            assert self.getCurrentTranslationMessage(potemplate,
+                                                     language) is None, (
                 'There is already a translation message in our database.')
         return DummyTranslationMessage(pofile, self)
 
@@ -242,9 +243,8 @@ class POTMsgSet(SQLBase):
             is_current IS NOT TRUE AND
             is_imported IS NOT TRUE AND
             potmsgset = %s AND
-            language = %s AND
-            potemplate=%s
-            """ % sqlvalues(self, language, potemplate)
+            language = %s
+            """ % sqlvalues(self, language)
         current = self.getCurrentTranslationMessage(potemplate, language)
         if current is not None:
             if current.date_reviewed is None:
@@ -253,8 +253,7 @@ class POTMsgSet(SQLBase):
                 comparing_date = current.date_reviewed
             query += " AND date_created > %s" % sqlvalues(comparing_date)
 
-        result = TranslationMessage.select(query)
-        return shortlist(result, longest_expected=20, hardlimit=100)
+        return TranslationMessage.select(query)
 
     def _getExternalTranslationMessages(self, language, used):
         """Return external suggestions for this message.
