@@ -72,11 +72,11 @@
         </td>
       </tr>
 
-      <tal:has_branch condition="series/series_branch">
+      <tal:has_branch condition="series/branch">
         <tr>
           <th>Branch:</th>
           <td>
-            <tal:branch replace="structure series/series_branch/fmt:project-link"/>
+            <tal:branch replace="structure series/branch/fmt:project-link"/>
             <tal:edit-link condition="series/required:launchpad.Edit">
               (<a tal:attributes="href edit_link"
               >change</a>)
@@ -103,7 +103,7 @@
         </tr>
       </tal:has_branch>
 
-      <tal:no_branch condition="not: series/series_branch">
+      <tal:no_branch condition="not: series/branch">
         <tr>
           <th>Branch:</th>
           <td>
