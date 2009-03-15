@@ -3,18 +3,150 @@
 Users can directly see and edit milestones through the milestone views.
 
 
-== Deleting milestones ==
+== Editing milestones ==
 
-The DeleteMilestoneView allows users to edit permissions to delete Milestones.
-The view is restricted to owners of the project and drivers of the series.
+Persons with launchpad.Edit permissions for milestones may edit them.
+The MilestoneEditView is responsible for controlling the fields that
+the user may edit.
 
     >>> from canonical.launchpad.interfaces.product import IProductSet
     >>> from canonical.launchpad.webapp.authorization import check_permission
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> login_person(firefox.owner)
+    >>> firefox_1_0 =  firefox.getSeries('1.0')
+    >>> milestone = firefox_1_0.newMilestone('1.0.8')
+
+    >>> view = create_initialized_view(milestone, '+edit')
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+The view allows the user to modify the mutable milestone fields.
+
+    >>> print view.label
+    Modify milestone details
+
+    >>> view.field_names
+    ['name', 'active', 'dateexpected', 'summary', 'productseries']
+
+This milestone belongs to a product, so the productseries field is
+included in the list of field names. The user can change the field values.
+
+    >>> print milestone.name
+    1.0.8
+    >>> print milestone.dateexpected
+    None
+    >>> print milestone.summary
+    None
+    >>> milestone.active
+    True
+    >>> print milestone.productseries.name
+    1.0
+
+    >>> form = {
+    ...     'field.name': '1.0.9',
+    ...     'field.dateexpected': '2007-05-11',
+    ...     'field.summary': 'a summary',
+    ...     'field.active': 'False',
+    ...     'field.productseries': '1',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(milestone, '+edit', form=form)
+
+    >>> print milestone.name
+    1.0.9
+    >>> print milestone.dateexpected
+    2007-05-11
+    >>> print milestone.summary
+    a summary
+    >>> milestone.active
+    False
+    >>> print milestone.productseries.name
+    trunk
+
+The view restricts the productseries field to series that belong to the
+product. A series from another product is rejected.
+
+    >>> transaction.commit()
+    >>> view = create_initialized_view(milestone, '+edit')
+    >>> '100' in view.widgets['productseries'].vocabulary
+    False
+
+    >>> form['field.productseries'] = '100'
+    >>> view = create_initialized_view(milestone, '+edit', form=form)
+
+    >>> print milestone.productseries.name
+    trunk
+
+A milestone that belongs to the distroseries has a distroseries field
+instead of a productseries field.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+
+    >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> login_person(ubuntu_distro.owner.teamowner)
+    >>> hoary_series =  ubuntu_distro.getSeries('hoary')
+    >>> milestone = hoary_series.newMilestone('alpha')
+    >>> view = create_initialized_view(milestone, '+edit')
+    >>> view.field_names
+    ['name', 'active', 'dateexpected', 'summary', 'distroseries']
+
+The distroseries milestone can be updated too.
+
+    >>> form = {
+    ...     'field.name': 'omega',
+    ...     'field.dateexpected': '2007-05-11',
+    ...     'field.summary': 'a summary',
+    ...     'field.active': 'False',
+    ...     'field.distroseries': '5',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(milestone, '+edit', form=form)
+
+    >>> print milestone.name
+    omega
+    >>> print milestone.dateexpected
+    2007-05-11
+    >>> print milestone.summary
+    a summary
+    >>> milestone.active
+    False
+    >>> print milestone.distroseries.name
+    grumpy
+
+Like the productseries field, the distroseries field only accepts series
+that belong to the distribution.
+
+    >>> transaction.commit()
+    >>> view = create_initialized_view(milestone, '+edit')
+    >>> '100' in view.widgets['distroseries'].vocabulary
+    False
+
+    >>> form['field.distroseries'] = '100'
+    >>> view = create_initialized_view(milestone, '+edit', form=form)
+
+    >>> print milestone.distroseries.name
+    grumpy
+
+Users without launchpad.Edit permissions cannot access the view
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> login_person(no_priv)
+    >>> view = create_initialized_view(milestone, '+edit')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
+== Deleting milestones ==
+
+The DeleteMilestoneView allows users to edit permissions to delete Milestones.
+The view is restricted to owners of the project and drivers of the series.
+
     >>> owner = firefox.owner
     >>> login_person(owner)
-    >>> firefox_1_0 =  firefox.getSeries('1.0')
     >>> milestone = firefox_1_0.newMilestone('1.0.10')
     >>> print milestone.name
     1.0.10
@@ -93,10 +225,7 @@ milestone.
 No Privileges Person cannot access this view because he is neither the
 project owner or series driver..
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-
     >>> milestone = firefox_1_0.newMilestone('1.0.12')
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> login_person(no_priv)
     >>> view = create_initialized_view(milestone, '+delete')
     >>> check_permission('launchpad.Edit', view)

@@ -18,10 +18,7 @@
         <require
             permission="launchpad.Edit"
             set_attributes="name dateexpected summary active
-                            product_release" />
-        <require
-            permission="launchpad.Admin"
-            set_attributes="productseries distroseries" />
+                            product_release productseries distroseries" />
         <!-- IStructuralSubscriptionTarget -->
         <allow attributes="bug_subscriptions getSubscriptions
                            getSubscription getBugNotificationsRecipients
@@ -70,15 +67,6 @@
         class="canonical.launchpad.browser.milestone.MilestoneEditView"
         facet="overview"
         permission="launchpad.Edit"
-        template="../templates/milestone-edit.pt"
-        />
-
-    <browser:page
-        name="+admin"
-        for="canonical.launchpad.interfaces.IMilestone"
-        class="canonical.launchpad.browser.milestone.MilestoneAdminEditView"
-        facet="overview"
-        permission="launchpad.Admin"
         template="../templates/milestone-edit.pt"
         />
 
