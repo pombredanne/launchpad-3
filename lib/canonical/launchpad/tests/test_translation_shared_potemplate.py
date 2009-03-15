@@ -60,7 +60,6 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
     def test_getPOTMsgSetByMsgIDText(self):
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
                                                singular="Open file")
-        potmsgset.setSequence(self.devel_potemplate, 0)
 
         # It's still not present in the PO template.
         read_potmsgset = self.devel_potemplate.getPOTMsgSetByMsgIDText(
@@ -97,7 +96,6 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
 
     def test_getPOTMsgSetByID(self):
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
-        potmsgset.setSequence(self.devel_potemplate, 0)
         id = potmsgset.id
 
         # It's still not present in the PO template.
@@ -133,7 +131,6 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
         # A new POTMsgSet that is not part of the POTemplate cannot
         # be gotten using hasMessageID on a POTemplate.
         absent_potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
-        absent_potmsgset.setSequence(self.devel_potemplate, 0)
         absent_msgid_singular = absent_potmsgset.msgid_singular
         absent_msgid_plural = absent_potmsgset.msgid_plural
         absent_context = absent_potmsgset.msgid_plural
