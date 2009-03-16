@@ -4,7 +4,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="contact-details">
+<div class="portlet" id="contact-details"
+  tal:define="overview_menu context/menu:overview">
 
   <h2 tal:condition="context/is_team">Contact details</h2>
 
@@ -150,7 +151,15 @@
                    >(What&rsquo;s&nbsp;this?)</a></span>
           </td>
         </tr>
-
+        <tr id="languages">
+          <th>Languages:</th>
+          <td>
+            <tal:languages content="view/languages">
+              English
+            </tal:languages>
+            <a tal:replace="structure overview_menu/editlanguages/fmt:icon"/>
+          </td>
+        </tr>
       </tbody>
     </table>
 

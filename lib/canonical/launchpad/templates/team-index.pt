@@ -21,14 +21,16 @@
 </head>
 
 <body>
+<div metal:fill-slot="main" class="pillar"
+  tal:define="overview_menu context/menu:overview">
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-latestquestions" />
-</metal:leftportlets>
-
-<div metal:fill-slot="main">
+  <div class="actions" style="float:right;"
+    tal:condition="overview_menu/edit/enabled"
+    tal:content="structure overview_menu/edit/fmt:link-icon">
+  </div>
 
   <tal:icon replace="structure context/image:mugshot" />
+
   <h1 tal:content="context/browsername" />
 
   <div
