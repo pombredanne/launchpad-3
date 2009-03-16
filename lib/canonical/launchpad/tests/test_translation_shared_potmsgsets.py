@@ -9,8 +9,11 @@ import unittest
 import transaction
 
 from zope.component import getUtility
+from zope.security.proxy import isinstance as zope_isinstance
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.database.translationmessage import (
+    DummyTranslationMessage)
 from canonical.launchpad.database.translationtemplateitem import (
     TranslationTemplateItem)
 from canonical.launchpad.interfaces import (
@@ -146,6 +149,32 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
             translations=[DIVERGED_ENGLISH_STRING])
         translation.potemplate = None
         self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
+
+    def test_getCurrentDummyTranslationMessage(self):
+        """Test that a DummyTranslationMessage is correctly returned."""
+
+        # When there is no POFile, we get a DummyTranslationMessage inside
+        # a DummyPOFile.
+        serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
+        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
+            self.devel_potemplate, serbian)
+        self.assertTrue(zope_isinstance(dummy, DummyTranslationMessage))
+
+        # If a POFile exists, but there is no current translation message,
+        # a dummy translation message is returned.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
+            self.devel_potemplate, serbian)
+        self.assertTrue(zope_isinstance(dummy, DummyTranslationMessage))
+
+        # When there is a current translation message, an exception
+        # is raised.
+        translation = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset)
+        self.assertTrue(translation.is_current)
+        self.assertRaises(AssertionError,
+                          self.potmsgset.getCurrentDummyTranslationMessage,
+                          self.devel_potemplate, serbian)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
