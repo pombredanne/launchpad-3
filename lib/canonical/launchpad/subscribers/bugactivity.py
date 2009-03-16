@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import (
 vocabulary_registry = getVocabularyRegistry()
 
 
+
 def get_string_representation(obj):
     """Returns a string representation of an object.
 
@@ -79,11 +80,20 @@ def record_bug_added(bug, object_created_event):
 @block_implicit_flushes
 def record_bug_edited(bug_edited, sqlobject_modified_event):
     # If the event was triggered by a web service named operation, its
-    # edited_fields will be empty. We'll need to check all fields to
-    # see which were actually changed.
-    sqlobject_modified_event.edited_fields = IBug.names(all=True)
-    changes = what_changed(sqlobject_modified_event)
+    # edited_fields will be empty. We'll need to check all interesting
+    # fields to see which were actually changed.
+    sqlobject_modified_event.edited_fields = [
+        'description',
+        'displayname',
+        'duplicateof',
+        'name',
+        'private',
+        'security_related',
+        'tags',
+        'title',
+        ]
 
+    changes = what_changed(sqlobject_modified_event)
     if changes:
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
