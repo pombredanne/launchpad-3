@@ -130,10 +130,15 @@ class BzrSync:
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
         self.trans_manager.begin()
-        # XXX: Event
         self.setFormats(bzr_branch)
         db_ancestry, db_history, db_branch_revision_map = (
             self.retrieveDatabaseAncestry())
+        notify(
+            events.DatabaseBranchLoaded(
+                self.db_branch, bzr_branch, db_ancestry, db_history,
+                db_branch_revision_map))
+        initial_scan = (len(db_history) == 0)
+        self._branch_mailer.initializeEmailQueue(initial_scan)
 
         (added_ancestry, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges(
@@ -249,8 +254,6 @@ class BzrSync:
         self.logger.info("Retrieving ancestry from database.")
         db_ancestry, db_history, db_branch_revision_map = (
             self.db_branch.getScannerData())
-        initial_scan = (len(db_history) == 0)
-        self._branch_mailer.initializeEmailQueue(initial_scan)
         return db_ancestry, db_history, db_branch_revision_map
 
     def retrieveBranchDetails(self, bzr_branch):
