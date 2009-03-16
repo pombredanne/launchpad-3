@@ -28,10 +28,22 @@ class BazaarBranchLoaded(ScannerEvent):
 
 
 class DatabaseBranchLoaded(ScannerEvent):
+    """The old branch ancestry has been loaded from the database."""
 
-    db_ancestry = None
-    db_history = None
-    db_branch_revision_map = None
+    def __init__(self, db_branch, bzr_branch, db_ancestry, db_history,
+                 db_branch_revision_map):
+        """Construct a `DatabaseBranchLoaded` event.
+
+        :param db_branch: The database IBranch.
+        :param bzr_branch: The Bazaar branch being scanned.
+        :param db_ancestry: ???
+        :param db_history: ???
+        :param db_branch_revision_map: None
+        """
+        super(DatabaseBranchLoaded, self).__init__(db_branch, bzr_branch)
+        self.db_ancestry = db_ancestry
+        self.db_history = db_history
+        self.db_branch_revision_map = db_branch_revision_map
 
 
 class NewRevision(ScannerEvent):
