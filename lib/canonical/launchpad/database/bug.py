@@ -648,12 +648,16 @@ class Bug(SQLBase):
 
     def addChange(self, change):
         """See `IBug`."""
+        when = change.when
+        if when is None:
+            when = UTC_NOW
+
         # Only try to add something to the activity log if we have some
         # data.
         activity_data = change.getBugActivity()
         if activity_data is not None:
             bug_activity = getUtility(IBugActivitySet).new(
-                self, change.when, change.person,
+                self, when, change.person,
                 activity_data['whatchanged'],
                 activity_data.get('oldvalue'),
                 activity_data.get('newvalue'),
@@ -662,32 +666,12 @@ class Bug(SQLBase):
         notification_data = change.getBugNotification()
         if notification_data is not None:
             recipients = change.getBugNotificationRecipients()
+            assert notification_data.get('text') is not None, (
+                "notification_data must include a `text` value.")
 
-            if notification_data['is_comment']:
-                # If a list of recipients isn't provided, use the Bug's list
-                if recipients is None:
-                    recipients = self.getBugNotificationRecipients(
-                        level=BugNotificationLevel.COMMENTS)
-
-                # If this is a comment a Message should have been
-                # provided.
-                message = notification_data['message']
-            else:
-                if recipients is None:
-                    recipients = self.getBugNotificationRecipients(
-                        level=BugNotificationLevel.METADATA)
-
-                # If there isn't a message, create one from the text
-                # field of notification_data.
-                message = notification_data.get('message')
-                if message is None:
-                    message = MessageSet().fromText(
-                        self.followup_subject(), notification_data['text'],
-                        owner=change.person, datecreated=change.when)
-
-            getUtility(IBugNotificationSet).addNotification(
-                 bug=self, is_comment=notification_data['is_comment'],
-                 message=message, recipients=recipients)
+            self.addChangeNotification(
+                notification_data['text'], change.person, recipients,
+                change.when)
 
     def expireNotifications(self):
         """See `IBug`."""
