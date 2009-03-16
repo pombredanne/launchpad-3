@@ -170,3 +170,12 @@ class IArchiveSubscriberUI(Interface):
         title=_("Description"), required=False,
         description=_("Free text describing this subscription."))
 
+def archive_subscriber_ui(archive_subscriber):
+    """Adapt an archive subscriber to the UI interface.
+
+    Note to reviewer: did I miss something? it seems strange that this should
+    be required instead of some kind of default for adaption?
+    """
+    return archive_subscriber
+
+

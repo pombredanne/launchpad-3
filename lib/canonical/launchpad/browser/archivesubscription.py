@@ -24,14 +24,13 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.archive import ArchiveViewBase
 from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriberUI, IArchiveSubscriberSet)
+    IArchiveSubscriber, IArchiveSubscriberUI, IArchiveSubscriberSet)
 from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView)
+    action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
 from canonical.widgets import DateWidget
-
 
 
 class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
@@ -117,6 +116,19 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
 
         # Just ensure a redirect happens (back to ourselves).
         self.next_url = str(self.request.URL)
+
+class ArchiveSubscriptionEditView(LaunchpadEditFormView):
+    """A view for editing and canceling an archive subscriber."""
+
+    schema = IArchiveSubscriberUI
+    field_names = ['date_expires', 'description']
+    custom_widget('description', TextWidget, displayWidth=40)
+    custom_widget('date_expires', CustomWidgetFactory(DateWidget))
+
+#    schema = IArchiveSubscriber
+#    field_names = ['date_expires', 'description']
+#    custom_widget('description', TextWidget, displayWidth=40)
+#    custom_widget('date_expires', CustomWidgetFactory(DateWidget))
 
 
 class PersonArchiveSubscriptionsView(LaunchpadView):
@@ -252,5 +264,3 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
                 "Please update your custom sources.list as "
                 "described below." % archive.title))
             redirectToSelf()
-
-
