@@ -145,7 +145,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         if self.options.dryrun:
             self.txn.abort()
-            self.logger.info('Dry run, so not comitting transaction.')
+            self.logger.info('Dry run, so not committing transaction.')
         else:
             self.txn.commit()
             self.logger.info('Committing transaction...')
