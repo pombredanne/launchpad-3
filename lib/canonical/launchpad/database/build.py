@@ -1039,10 +1039,13 @@ class BuildSet:
                      LibraryFileAlias.id == Build.buildlogID),
             LeftJoin(LibraryFileContent,
                      LibraryFileContent.id == LibraryFileAlias.contentID),
+            LeftJoin(
+                Builder,
+                Builder.id == Build.builderID),
             )
         result_set = store.using(*origin).find(
             (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
-             LibraryFileContent),
+             LibraryFileContent, Builder),
             In(Build.id, build_ids))
 
         # Force query execution.
