@@ -173,34 +173,3 @@ notification you'll get an error.
     Traceback (most recent call last):
       ...
     AssertionError: notification_data must include a `text` value.
-
-If BugChange.when is None, Bug.addChange() will assume that `when`
-should be UTC_NOW.
-
-    >>> from canonical.database.constants import UTC_NOW
-    >>> change = TestBugChange(when=None, person=example_person)
-    >>> example_bug.addChange(change)
-    >>> latest_activity = example_bug.activity[-1]
-    >>> latest_activity.datechanged is not None
-    True
-
-
-== Legacy bug changes ==
-
-The LegacyBugChange class is used for describing old-style bug changes.
-
-    >>> from canonical.launchpad.components.bugchange import LegacyBugChange
-    >>> verifyObject(
-    ...     IBugChange, LegacyBugChange(when=nowish, person=None,
-    ...     text=None, recipients=None))
-    True
-
-LegacyBugChange.getBugActivity() returns None, since for legacy bug
-changes we don't add a BugActivity record.
-
-    >>> change = LegacyBugChange(
-    ...     when=nowish, person=example_person, text="Things changed",
-    ...     recipients=None)
-
-    >>> print change.getBugActivity()
-    None

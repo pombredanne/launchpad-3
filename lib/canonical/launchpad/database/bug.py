@@ -35,7 +35,6 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.components.bugchange import LegacyBugChange
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -671,20 +670,12 @@ class Bug(SQLBase):
         notification_data = change.getBugNotification()
         if notification_data is not None:
             recipients = change.getBugNotificationRecipients()
-
-            if recipients is None:
-                recipients = self.getBugNotificationRecipients(
-                    level=BugNotificationLevel.METADATA)
-
             assert notification_data.get('text') is not None, (
                 "notification_data must include a `text` value.")
-            message = MessageSet().fromText(
-                self.followup_subject(), notification_data['text'],
-                owner=change.person, datecreated=when)
 
-            getUtility(IBugNotificationSet).addNotification(
-                 bug=self, is_comment=False, message=message,
-                 recipients=recipients)
+            self.addChangeNotification(
+                notification_data['text'], change.person, recipients,
+                change.when)
 
     def expireNotifications(self):
         """See `IBug`."""

@@ -5,7 +5,6 @@
 __metaclass__ = type
 __all__ = [
     'BugChangeBase',
-    'LegacyBugChange',
 ]
 
 from zope.interface import implements
@@ -34,12 +33,3 @@ class BugChangeBase:
     def getBugNotificationRecipients(self):
         """Return any recipients for the `BugNotification`s."""
         raise NotImplementedError(self.getBugNotificationRecipients)
-
-
-class LegacyBugChange(BugChangeBase):
-    """A class for describing bug changes using existing code."""
-
-    def __init__(self, when, person, text, recipients):
-        super(LegacyBugChange, self).__init__(when, person)
-        self.text = text
-        self.recipients = recipients
