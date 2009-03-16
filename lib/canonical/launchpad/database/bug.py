@@ -667,31 +667,19 @@ class Bug(SQLBase):
         if notification_data is not None:
             recipients = change.getBugNotificationRecipients()
 
-            if notification_data['is_comment']:
-                # If a list of recipients isn't provided, use the Bug's list
-                if recipients is None:
-                    recipients = self.getBugNotificationRecipients(
-                        level=BugNotificationLevel.COMMENTS)
+            if recipients is None:
+                recipients = self.getBugNotificationRecipients(
+                    level=BugNotificationLevel.METADATA)
 
-                # If this is a comment a Message should have been
-                # provided.
-                message = notification_data['message']
-            else:
-                if recipients is None:
-                    recipients = self.getBugNotificationRecipients(
-                        level=BugNotificationLevel.METADATA)
-
-                # If there isn't a message, create one from the text
-                # field of notification_data.
-                message = notification_data.get('message')
-                if message is None:
-                    message = MessageSet().fromText(
-                        self.followup_subject(), notification_data['text'],
-                        owner=change.person, datecreated=change.when)
+            assert notification_data.get('text') is not None, (
+                "notification_data must include a `text` value.")
+            message = MessageSet().fromText(
+                self.followup_subject(), notification_data['text'],
+                owner=change.person, datecreated=change.when)
 
             getUtility(IBugNotificationSet).addNotification(
-                 bug=self, is_comment=notification_data['is_comment'],
-                 message=message, recipients=recipients)
+                 bug=self, is_comment=False, message=message,
+                 recipients=recipients)
 
     def expireNotifications(self):
         """See `IBug`."""
