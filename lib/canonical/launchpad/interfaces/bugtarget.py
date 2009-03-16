@@ -13,6 +13,7 @@ __all__ = [
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
     'IOfficialBugTagTargetPublic',
+    'IOfficialBugTagTargetRestricted',
     ]
 
 from zope.interface import Interface, Attribute
@@ -194,7 +195,7 @@ class BugDistroSeriesTargetDetails:
 
 
 class IOfficialBugTagTargetPublic(Interface):
-    """An entity for which official bug tags can be defined."""
+    """Public attributes for `IOfficialBugTagTarget`."""
 
     official_bug_tags = exported(List(
         title=_("Official Bug Tags"),
@@ -202,7 +203,8 @@ class IOfficialBugTagTargetPublic(Interface):
         value_type=Tag()))
 
 
-class IOfficialBugTagTarget(Interface):
+class IOfficialBugTagTargetRestricted(Interface):
+    """Restricted methods for `IOfficialBugTagTarget`."""
 
     @operation_parameters(
         tag=Tag(title=u'The official bug tag', required=True))
@@ -215,6 +217,15 @@ class IOfficialBugTagTarget(Interface):
     @export_write_operation()
     def removeOfficialBugTag(tag):
         """Remove tag from the official bug tags of this target."""
+
+
+class IOfficialBugTagTarget(IOfficialBugTagTargetPublic,
+                            IOfficialBugTagTargetRestricted):
+    """An entity for which official bug tags can be defined."""
+    # XXX intellectronica 2009-03-16 bug=342413
+    # We can start using straight inheritance once it becomes possible
+    # to export objects implementing multiple interfaces in the
+    # webservice API.
 
 
 class IOfficialBugTag(Interface):
