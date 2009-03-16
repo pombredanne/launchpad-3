@@ -52,14 +52,6 @@ class Cookbook(CookbookWebServiceObject):
     def __parent__(self):
         return getUtility(ICookbookSet)
 
-# Define some globally accessible sample data.
-C1 = Cookbook(u"Mastering the Art of French Cooking", "French")
-C2 = Cookbook(u"The Joy of Cooking", "General")
-C3 = Cookbook(u"James Beard's American Cookery", "American")
-C4 = Cookbook(u"Everyday Greens", "Vegetarian")
-C5 = Cookbook(u"I'm Just Here For The Food", "American")
-C6 = Cookbook(u"Cooking Without Recipes", "General")
-COOKBOOKS = [C1, C2, C3, C4, C5, C6]
 
 class CookbookSet(CookbookTopLevelObject):
     """The set of all cookbooks."""
@@ -82,6 +74,17 @@ class CookbookSet(CookbookTopLevelObject):
     __name__ = "cookbooks"
 
 
+# Define some globally accessible sample data.
+C1 = Cookbook(u"Mastering the Art of French Cooking", "French")
+C2 = Cookbook(u"The Joy of Cooking", "General")
+C3 = Cookbook(u"James Beard's American Cookery", "American")
+C4 = Cookbook(u"Everyday Greens", "Vegetarian")
+C5 = Cookbook(u"I'm Just Here For The Food", "American")
+C6 = Cookbook(u"Cooking Without Recipes", "General")
+COOKBOOKS = [C1, C2, C3, C4, C5, C6]
+
+
+# Define classes for the service root.
 class CookbookServiceRootResource(ServiceRootResource):
     """A service root for the cookbook web service.
 

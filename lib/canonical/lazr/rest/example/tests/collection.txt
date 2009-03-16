@@ -82,3 +82,30 @@ results in a 400 error.
     Maximum for "ws.size" parameter is ...
 
 
+== Visibility ==
+
+TBA
+
+
+== Element lookup ==
+
+The elements of a collection can be looked up by unique identifier:
+
+  >>> from canonical.lazr.testing.webservice import pprint_entry
+  >>> from urllib import quote
+  >>> url = quote("/cookbooks/The Joy of Cooking")
+  >>> cookbook = webservice.get(url).jsonBody()
+  >>> pprint_entry(cookbook)
+  cuisine: u'General'
+  name: u'The Joy of Cooking'
+  resource_type_link: u'http://api.cookbooks.dev/1.0#cookbook'
+  self_link: u'http://api.cookbooks.dev/1.0/cookbooks/The%20Joy%20of%20Cooking'
+
+A collection may be scoped to an element:
+
+  XXX get some recipes.
+
+
+== Named operations ==
+
+TBA
