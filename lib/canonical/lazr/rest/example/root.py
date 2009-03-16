@@ -84,15 +84,10 @@ class CookbookServiceRootResource(ServiceRootResource):
     """
     implements(IHasGet)
 
-    _top_level_names = None
     @property
     def top_level_names(self):
         """Access or create the list of top-level objects."""
-        if self._top_level_names is None:
-            self._top_level_names = {
-                'cookbooks': getUtility(ICookbookSet)
-                }
-        return self._top_level_names
+        return {'cookbooks': getUtility(ICookbookSet)}
 
     def get(self, name):
         """Traverse to a top-level object."""
