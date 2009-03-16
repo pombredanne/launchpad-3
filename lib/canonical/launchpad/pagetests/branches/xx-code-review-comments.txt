@@ -16,7 +16,10 @@ Set up required objects
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
     >>> eric_browser.open(merge_proposal_url)
     >>> eric_browser.getLink('Add a comment').click()
-    >>> eric_browser.getControl(name='field.comment').value = 'my body'
+    >>> eric_browser.getControl(name='field.comment').value = ('This is a '
+    ... 'very long comment about what things should be done to the source '
+    ... 'branch to land it.  When this comment is replied to, it '
+    ... 'should wrap the line properly.')
     >>> eric_browser.getControl(name='field.actions.add').click()
     >>> eric_browser.url == merge_proposal_url
     True
@@ -36,7 +39,9 @@ to the main merge proposal page.
     >>> print_comments('boardCommentDetails')
     Eric the Viking wrote ...
     >>> print_comments('boardCommentBody')
-    my body
+    This is a very long comment about what things should be done to the
+    source branch to land it. When this comment is replied to, it should
+    wrap the line properly.
     >>> print_comments('commentSuffix')
     Reply
 
@@ -55,8 +60,11 @@ We can reply to a comment.
 
     >>> eric_browser.open(merge_proposal_url)
     >>> eric_browser.getLink('Reply').click()
-    >>> print eric_browser.getControl(name='field.comment').value
-    "my body"
+    >>> print eric_browser.getControl(name='field.comment').value.replace(
+    ...     '\r\n', '\n') # doctest: -NORMALIZE_WHITESPACE
+    > This is a very long comment about what things should be done to the source
+    > branch to land it.  When this comment is replied to, it should wrap the line
+    > properly.
 
     >>> eric_browser.getControl(name='field.comment').value = ('I like this.\n'
     ... 'I wish I had time to review it properly\n\n'

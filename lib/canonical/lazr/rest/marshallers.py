@@ -37,11 +37,8 @@ from zope.traversing.browser import absoluteURL
 
 from lazr.uri import URI, InvalidURIError
 
-from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
-
 from canonical.lazr.interfaces.rest import (
-    IFieldMarshaller, IUnmarshallingDoesntNeedValue,
-    IWebServiceConfiguration)
+    IFieldMarshaller, IUnmarshallingDoesntNeedValue, IWebServiceConfiguration)
 from canonical.lazr.utils import safe_hasattr
 
 
@@ -61,7 +58,8 @@ class URLDereferencingMixin:
         :raise NotFound: If the URL does not designate a
             published object.
         """
-        if getUtility(IWebServiceConfiguration).use_https:
+        config = getUtility(IWebServiceConfiguration)
+        if config.use_https:
             site_protocol = 'https'
             default_port = '443'
         else:
@@ -92,15 +90,10 @@ class URLDereferencingMixin:
         path_parts.pop(0)
         path_parts.reverse()
 
-        # Import here is necessary to avoid circular import.
-        from canonical.launchpad.webapp.servers import WebServiceClientRequest
-        request = WebServiceClientRequest(StringIO(), {'PATH_INFO' : path})
-        setFirstLayer(request, WebServiceLayer)
+        request = config.createRequest(StringIO(), {'PATH_INFO' : path})
         request.setTraversalStack(path_parts)
-
-        publication = self.request.publication
-        request.setPublication(publication)
-        return request.traverse(publication.getApplication(self.request))
+        root = request.publication.getApplication(self.request)
+        return request.traverse(root)
 
 
 class SimpleFieldMarshaller:

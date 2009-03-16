@@ -43,7 +43,7 @@
        replace="structure view/batchnav/@@+navigation-links-lower" />
 
   <tal:no_packages condition="not: sourcepackagereleases">
-    <tal:name replace="context/displayname"/> has no related PPA packages.
+    <tal:name replace="context/fmt:displayname"/> has no related PPA packages.
   </tal:no_packages>
 
   </tal:ppa-packages>

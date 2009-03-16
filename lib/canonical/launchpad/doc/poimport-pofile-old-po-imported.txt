@@ -68,7 +68,7 @@ First, we do a valid import.
     ... msgid "foo"
     ... msgstr "blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> published = True
+    >>> published = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, published, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)

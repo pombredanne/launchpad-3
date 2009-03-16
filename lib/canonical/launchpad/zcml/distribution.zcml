@@ -18,7 +18,8 @@
                       driver members owner security_contact mirror_admin
                       homepage_content icon logo mugshot enable_bug_expiration
                       bug_reporting_guidelines official_blueprints
-                      official_malone official_rosetta official_answers"
+                      official_malone official_rosetta official_answers
+                      official_bug_tags"
       />
     <require
       permission="launchpad.TranslationsAdmin"
