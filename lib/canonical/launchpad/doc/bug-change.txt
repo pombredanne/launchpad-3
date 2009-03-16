@@ -192,4 +192,6 @@ By default, get_bug_change_class() will return BugChangeBase.
 For fields it knows about, it will return a more suitable class.
 
     >>> get_bug_change_class(example_bug, 'title')
-    <class '...BugTextChange'>
+    <class '...BugTextualChange'>
+
+See component/ftests/test_bugchange.py for some sanity checks.

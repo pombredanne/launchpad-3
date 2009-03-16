@@ -44,4 +44,12 @@ class BugChangeBase:
         raise NotImplementedError(self.getBugNotificationRecipients)
 
 
-BUG_CHANGE_LOOKUP = {}
+class BugTextualChange(BugChangeBase):
+    """Describes a textual attribute change to a bug."""
+
+
+BUG_CHANGE_LOOKUP = {
+    'description': BugTextualChange,
+    'name': BugTextualChange,
+    'title': BugTextualChange,
+    }
