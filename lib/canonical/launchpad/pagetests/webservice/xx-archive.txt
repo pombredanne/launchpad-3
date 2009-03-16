@@ -19,6 +19,7 @@ We publish a subset of their attributes.
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
+    private: False
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: None
@@ -80,6 +81,7 @@ The archive has the following attributes:
     distribution_link: u'http://.../ubuntutest'
     name: u'primary'
     owner_link: u'http://.../~ubuntu-team'
+    private: False
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../ubuntutest/+archive/primary'
     signing_key_fingerprint: None
@@ -619,6 +621,7 @@ the IArchive context, in this case only Celso has it.
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
+    private: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
@@ -629,6 +632,7 @@ the IArchive context, in this case only Celso has it.
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
+    private: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
