@@ -224,6 +224,33 @@ class OfficialBugTagTargetMixin:
     below, class OfficialBugTag.
     """
 
+    def _getOfficialTags(self):
+        """Get the official bug tags as a sorted list of strings."""
+        if IDistribution.providedBy(self):
+            target_arg = 'distribution'
+        elif IProduct.providedBy(self):
+            target_arg = 'product'
+        else:
+            raise AssertionError('%s is not a valid official bug target' % self)
+        tags = [
+            obt.tag for obt
+            in OfficialBugTag.selectBy(**target_arg, orderBy='tag')]
+        return tags
+
+    def _setOfficialTags(self, tags):
+        """Set the official bug tags from a list of strings."""
+        new_tags = set([tag.lower() for tag in tags])
+        old_tags = set(self.official_bug_tags)
+        added_tags = new_tags.difference(old_tags)
+        removed_tags = old_tags.difference(new_tags)
+        for removed_tag in removed_tags:
+            self.removeOfficialBugTag(tag)
+        for added_tag in added_tags:
+            self.addOfficialBugTag(tag)
+        Store.of(self).flush()
+
+    official_bug_tags = property(_getOfficialTags, _setOfficialTags)
+
     def _getTag(self, tag):
         """Return the OfficialBugTag record for the given tag, if it exists.
 
@@ -297,3 +324,4 @@ class OfficialBugTag(Storm):
                 'IDistribution instance or an IProduct instance.')
 
     target = property(target, _settarget, doc=target.__doc__)
+
