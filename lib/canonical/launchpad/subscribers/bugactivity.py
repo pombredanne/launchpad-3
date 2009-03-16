@@ -124,17 +124,17 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
         task_title = ""
-        obm = sqlobject_modified_event.object_before_modification
+        bug_task_before = sqlobject_modified_event.object_before_modification
         if bug_task_edited.product:
-            if obm.product is None:
+            if bug_task_before.product is None:
                 task_title = None
             else:
-                task_title = obm.product.name
+                task_title = bug_task_before.bugtargetname
         else:
-            if obm.sourcepackagename is None:
+            if bug_task_before.sourcepackagename is None:
                 task_title = None
             else:
-                task_title = obm.sourcepackagename.name
+                task_title = bug_task_before.bugtargetname
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
             if oldvalue is not None:
@@ -174,72 +174,6 @@ def record_product_task_edited(product_task_edited, sqlobject_modified_event):
                 datechanged=UTC_NOW,
                 person=IPerson(sqlobject_modified_event.user),
                 whatchanged="%s: %s" % (product.name, changed_field),
-                oldvalue=oldvalue,
-                newvalue=newvalue)
-
-@block_implicit_flushes
-def record_package_infestation_added(package_infestation,
-                                     object_created_event):
-    package_release_name = "%s %s" % (
-        package_infestation.sourcepackagerelease.sourcepackagename.name,
-        package_infestation.sourcepackagerelease.version)
-    message = "added infestation of package release " + package_release_name
-    getUtility(IBugActivitySet).new(
-        bug=package_infestation.bug,
-        datechanged=UTC_NOW,
-        person=package_infestation.creatorID,
-        whatchanged="bug",
-        message=message)
-
-@block_implicit_flushes
-def record_package_infestation_edited(package_infestation_edited,
-                                      sqlobject_modified_event):
-    changes = what_changed(sqlobject_modified_event)
-    if changes:
-        event = sqlobject_modified_event
-        srcpkgrelease = event.object_before_modification.sourcepackagerelease
-        package_release_name = "%s %s" % (
-            srcpkgrelease.sourcepackagename.name, srcpkgrelease.version)
-        for changed_field in changes.keys():
-            oldvalue, newvalue = changes[changed_field]
-            getUtility(IBugActivitySet).new(
-                bug=package_infestation_edited.bug.id,
-                datechanged=UTC_NOW,
-                person=IPerson(event.user),
-                whatchanged="%s: %s" % (package_release_name, changed_field),
-                oldvalue=oldvalue,
-                newvalue=newvalue)
-
-@block_implicit_flushes
-def record_product_infestation_added(product_infestation,
-                                     object_created_event):
-    product_release_name = "%s %s" % (
-        product_infestation.productrelease.product.name,
-        product_infestation.productrelease.version)
-    message = "added infestation of product release " + product_release_name
-    getUtility(IBugActivitySet).new(
-        bug=product_infestation.bug,
-        datechanged=UTC_NOW,
-        person=product_infestation.creatorID,
-        whatchanged="bug",
-        message=message)
-
-@block_implicit_flushes
-def record_product_infestation_edited(product_infestation_edited,
-                                      sqlobject_modified_event):
-    changes = what_changed(sqlobject_modified_event)
-    if changes:
-        event = sqlobject_modified_event
-        productrelease = event.object_before_modification.productrelease
-        product_release_name = "%s %s" % (productrelease.product.name,
-                                          productrelease.version)
-        for changed_field in changes.keys():
-            oldvalue, newvalue = changes[changed_field]
-            getUtility(IBugActivitySet).new(
-                bug=product_infestation_edited.bug.id,
-                datechanged=UTC_NOW,
-                person=IPerson(event.user),
-                whatchanged="%s: %s" % (product_release_name, changed_field),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
 

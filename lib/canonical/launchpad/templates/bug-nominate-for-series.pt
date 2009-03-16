@@ -44,7 +44,7 @@
         or declined for fixing in a release.
         </p>
       </tal:nomination-mode>
-      
+
       <p tal:condition="view/getReleaseManager"
          tal:define="release_context view/getReleaseContext;
                      release_manager view/getReleaseManager">
@@ -60,13 +60,11 @@
            Ubuntu release manager
         </span>
         is
-        <a href="#"
-           tal:content="release_manager/displayname"
-           tal:attributes="href release_manager/fmt:url">
+        <a tal:replace="structure release_manager/fmt:link">
            Foo Bar
         </a>.
       </p>
-  
+
       <p tal:condition="not:view/getReleaseManager"
          tal:define="release_context view/getReleaseContext">
         There is no
@@ -78,7 +76,7 @@
       </p>
 
       <h3 tal:condition="view/userIsReleaseManager">Release Targets</h3>
-      <h3 tal:condition="not:view/userIsReleaseManager">Nominate</h3>      
+      <h3 tal:condition="not:view/userIsReleaseManager">Nominate</h3>
     </div>
 
   </div>
