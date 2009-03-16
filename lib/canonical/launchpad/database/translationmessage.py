@@ -151,7 +151,8 @@ def validate_is_current(self, attr, value):
             self.potmsgset.getCurrentTranslationMessage(
                 self.pofile.potemplate,
                 self.pofile.language, self.pofile.variant))
-        if current_translation_message is not None:
+        if (current_translation_message is not None and
+            self.potemplate == current_translation_message.potemplate):
             current_translation_message.is_current = False
             # We need to flush the old current message before the
             # new one because the database constraints prevent two
@@ -178,7 +179,8 @@ def validate_is_imported(self, attr, value):
             self.potmsgset.getImportedTranslationMessage(
                 self.pofile.potemplate,
                 self.pofile.language, self.pofile.variant))
-        if imported_translation_message is not None:
+        if (imported_translation_message is not None and
+            self.potemplate == imported_translation_message.potemplate):
             imported_translation_message.is_imported = False
             # We need to flush the old imported message before the
             # new one because the database constraints prevent two
