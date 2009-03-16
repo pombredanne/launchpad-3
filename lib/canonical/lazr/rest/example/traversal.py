@@ -2,6 +2,7 @@
 
 """Traversal rules for the LAZR example web service."""
 
+__metaclass__ = type
 __all__ = [
     'TraverseWithGet']
 
@@ -27,9 +28,9 @@ class TraverseWithGet:
     def publishTraverse(self, request, name):
         name = unquote(name)
         value = self.context.get(name)
-        # Set __parent__ so that absoluteURL will work.
-        value.__parent__ = self.context
         if value is None:
             raise NotFound(self, name)
+        # Set __parent__ so that absoluteURL will work.
+        value.__parent__ = self.context
         return value
 

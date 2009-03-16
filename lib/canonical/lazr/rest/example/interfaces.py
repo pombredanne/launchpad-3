@@ -3,6 +3,7 @@
 
 """Interface objects for the LAZR example web service."""
 
+__metaclass__ = type
 __all__ = ['ICookbook',
            'ICookbookSet',
            'IHasGet']
@@ -35,4 +36,4 @@ class ICookbookSet(IHasGet):
 
     @collection_default_content()
     def getCookbooks():
-        pass
+        """Return the list of cookbooks."""

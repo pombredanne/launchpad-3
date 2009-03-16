@@ -2,6 +2,7 @@
 
 """Data model objects for the LAZR example web service."""
 
+__metaclass__ = type
 __all__ = ['Cookbook',
            'CookbookServiceRootResource',
            'CookbookSet',
@@ -22,7 +23,6 @@ from canonical.lazr.rest.example.interfaces import (
 
 class CookbookWebServiceObject:
     """A basic object published through the web service."""
-    pass
 
 
 class CookbookTopLevelObject(CookbookWebServiceObject):
