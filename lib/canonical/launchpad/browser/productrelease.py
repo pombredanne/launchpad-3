@@ -112,7 +112,7 @@ class ProductReleaseAddView(LaunchpadFormView):
                     title=_("Keep the milestone active."),
                     description=_(
                         "Only select this if bugs or blueprints still need "
-                        "to be targeted to this product release&rsquo;s "
+                        "to be targeted to this project release's "
                         "milestone.")),
                 render_context=self.render_context)
 
@@ -128,16 +128,24 @@ class ProductReleaseAddView(LaunchpadFormView):
         if data['keep_milestone_active'] is False:
             self.context.active = False
             self.request.response.addWarningNotification(
-                _("The milestone for this product release was deactivated "
-                  "so that bugs & blueprints cannot be targeted "
-                  "to a milestone in the past."))
+                _("The milestone for this project release was deactivated "
+                  "so that bugs and blueprints cannot be associated with "
+                  "this release."))
         self.next_url = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
 
     @property
     def label(self):
         """The form label."""
-        return 'Register a new %s release' % self.context.product.name
+        return 'Register a new %s release' % self.context.product.displayname
+
+    @property
+    def releases(self):
+        """The releases in this series, or None."""
+        releases = self.context.productseries.releases
+        if releases.count() == 0:
+            return None
+        return releases
 
     @property
     def cancel_url(self):
