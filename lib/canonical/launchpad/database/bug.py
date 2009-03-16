@@ -631,11 +631,16 @@ class Bug(SQLBase):
 
     def addChangeNotification(self, text, person, recipients=None, when=None):
         """See `IBug`."""
-#        message = MessageSet().fromText(
-#            self.followup_subject(), text, owner=person, datecreated=when)
-#        getUtility(IBugNotificationSet).addNotification(
-#             bug=self, is_comment=False,
-#             message=message, recipients=recipients)
+        if recipients is None:
+            recipients = self.getBugNotificationRecipients(
+                level=BugNotificationLevel.METADATA)
+        if when is None:
+            when = UTC_NOW
+        message = MessageSet().fromText(
+            self.followup_subject(), text, owner=person, datecreated=when)
+        getUtility(IBugNotificationSet).addNotification(
+             bug=self, is_comment=False,
+             message=message, recipients=recipients)
 
     def addCommentNotification(self, message, recipients=None):
         """See `IBug`."""
