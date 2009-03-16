@@ -19,32 +19,30 @@
 
       <table>
         <tbody>
-	  <tr>
+          <tr>
             <th>Date Created:</th>
             <td tal:content="context/date_created/fmt:datetime">
               2007
             </td>
-	  </tr>
-	  <tr>
+          </tr>
+          <tr>
             <th>Registrant:</th>
             <td>
-              <a href=""
-                 tal:content="context/registrant/displayname"
-                 tal:attributes="href context/registrant/fmt:url">
+              <a tal:replace="structure context/registrant/fmt:link">
                 Some Person.
               </a>
             </td>
-	  </tr>
+          </tr>
           <tal:block condition="context/rcs_type/enumvalue:CVS">
-	    <tr>
+            <tr>
               <th>CVS Root:</th>
               <td id="cvs-root" tal:content="context/cvs_root">
                 :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome
               </td>
-	    </tr>
-	    <tr>
-	      <th>Module:</th>
-	      <td id="cvs-module" tal:content="context/cvs_module">evolution</td>
+            </tr>
+            <tr>
+              <th>Module:</th>
+              <td id="cvs-module" tal:content="context/cvs_module">evolution</td>
             </tr>
           </tal:block>
           <tal:block condition="context/rcs_type/enumvalue:SVN">

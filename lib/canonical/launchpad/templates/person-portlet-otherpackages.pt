@@ -8,7 +8,8 @@
     My other packages
   </h2>
   <h2 tal:condition="python:not view.user == context"
-      tal:content="string: ${context/displayname}'s other packages">
+      tal:define="name context/fmt:displayname"
+      tal:content="string: ${name}'s other packages">
     Sample Person's other packages
   </h2>
   <div class="portletBody portletContent"
