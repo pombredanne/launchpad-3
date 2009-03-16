@@ -35,25 +35,35 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         self.parser.add_option(
             "-n", "--dry-run", action="store_true",
             dest="dryrun", default=False,
-            help="If set, no transactions are committed.  This will stop "
-                 "tokens from being deactivated.")
+            help="If set, no files are changed and no tokens are "
+                 "deactivated.")
+        self.parser.add_option(
+            "-d", "--no-deactivation", action="store_true",
+            dest="no_deactivation", default=False,
+            help="If set, tokens are not deactivated.")
 
-    def writeHtpasswd(self, filename, user, password, salt, overwrite=False):
-        """Append a username/password pair to the filename supplied.
+    def writeHtpasswd(self, filename, list_of_users):
+        """Write out a new htpasswd file.
 
-        Optionally overwrite it.
+        :param filename: The file to create.
+        :param list_of_users: A list of (user, password, salt) tuples.
         """
-        if overwrite and os.path.isfile(filename):
+        if os.path.isfile(filename):
             os.remove(filename)
 
-        encrypted = crypt.crypt(password, salt)
-
         file = open(filename, "a")
-        file.write("%s:%s\n" % (user, encrypted))
+        for entry in list_of_users:
+            user, password, salt = entry
+            encrypted = crypt.crypt(password, salt)
+            file.write("%s:%s\n" % (user, encrypted))
+
         file.close()
 
     def ensureHtaccess(self, ppa):
         """Generate a .htaccess for `ppa`."""
+        if self.options.dryrun:
+            return
+
         # The publisher Config object does not have an
         # interface, so we need to remove the security wrapper.
         pub_config = removeSecurityProxy(ppa.getPubConfig())
@@ -76,17 +86,17 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         fd, temp_filename = tempfile.mkstemp()
 
         # The first .htpasswd entry is the buildd_secret.
-        self.writeHtpasswd(
-            temp_filename, BUILDD_USER_NAME, ppa.buildd_secret,
-            overwrite=True, salt=BUILDD_USER_NAME[:2])
+        list_of_users = [
+            (BUILDD_USER_NAME, ppa.buildd_secret, BUILDD_USER_NAME[:2])]
 
         # Iterate over tokens and write the appropriate htpasswd
         # entries for them.  Use a consistent sort order so that the
         # generated file can be compared to an existing one later.
         for token in sorted(tokens, key=attrgetter("id")):
-            self.writeHtpasswd(
-                temp_filename, token.person.name, token.token,
-                salt=token.person.name[:2])
+            entry = (token.person.name, token.token, token.person.name[:2])
+            list_of_users.append(entry)
+
+        self.writeHtpasswd(temp_filename, list_of_users)
 
         return temp_filename
 
@@ -95,6 +105,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         
         :return: True if the file was replaced.
         """
+        if self.options.dryrun:
+            return False
+
         # The publisher Config object does not have an
         # interface, so we need to remove the security wrapper.
         pub_config = removeSecurityProxy(ppa.getPubConfig())
@@ -143,12 +156,12 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             if not self.replaceUpdatedHtpasswd(ppa, temp_htpasswd):
                 os.remove(temp_htpasswd)
 
-        if self.options.dryrun:
-            self.txn.abort()
+        if self.options.no_deactivation or self.options.dryrun:
             self.logger.info('Dry run, so not committing transaction.')
+            self.txn.abort()
         else:
-            self.txn.commit()
             self.logger.info('Committing transaction...')
+            self.txn.commit()
 
         self.logger.info('Finished PPA .htaccess generation')
 

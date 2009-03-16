@@ -90,4 +90,3 @@ class ArchiveAuthTokenSet:
             ArchiveAuthToken.archive == archive,
             ArchiveAuthToken.person == person,
             ArchiveAuthToken.date_deactivated == None).one()
-

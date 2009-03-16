@@ -53,7 +53,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         """
         script = os.path.join(
             config.root, "cronscripts", "generate-ppa-htaccess.py")
-        args = [sys.executable, script]
+        args = [sys.executable, script, "-v"]
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
@@ -91,12 +91,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
     def testWriteHtpasswd(self):
         """Test that writing the .htpasswd file works properly."""
-        # Set up a bogus file that will get overwritten on the first
-        # pass.
         fd, filename = tempfile.mkstemp()
-        file = os.fdopen(fd, "w")
-        file.write("overwrite me")
-        file.close()
         script = self.getScript()
 
         TEST_PASSWORD = "password"
@@ -106,15 +101,14 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # can test the encrypted result.
         SALT = "XX"
 
-        # First run, overwrite the bogus file.
-        script.writeHtpasswd(
-            filename, "user", TEST_PASSWORD, overwrite=True, salt=SALT)
+        user1 = ("user", TEST_PASSWORD, SALT)
+        user2 = ("user2", TEST_PASSWORD2, SALT)
+        list_of_users = [user1]
+        list_of_users.append(user2)
 
-        # Second run, add another user:token pair.
-        script.writeHtpasswd(filename, "user2", TEST_PASSWORD2, salt=SALT)
+        # Run the script
+        script.writeHtpasswd(filename, list_of_users)
 
-        # The expected contents should not contain the "overwrite me"
-        # line from above.
         expected_contents = [
             "user:XXq2wKiyI43A2",
             "user2:XXaQB8b5Gtwi."
@@ -211,8 +205,8 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         """Helper function to test token deactivation state."""
         self.assertEqual(token.date_deactivated, None)
 
-    def testDeactivatingTokens(self):
-        """Test that token deactivation happens properly."""
+    def setupSubscriptionsAndTokens(self):
+        """Set up a few subscriptions and test tokens and return them."""
         # Set up some teams.  We need to test a few scenarios:
         # - someone in one subscribed team and leaving that team loses
         #    their token.
@@ -235,8 +229,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
             team2.addMember(person, name12)
             persons2.append(person)
 
-        persons = persons1 + persons2
-        team1_person = persons1[0]
+        all_persons = persons1 + persons2
 
         parent_team = factory.makeTeam(owner=name12)
         # This needs to be forced or TeamParticipation is not updated.
@@ -245,10 +238,10 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         promiscuous_person = factory.makePerson()
         team1.addMember(promiscuous_person, name12)
         team2.addMember(promiscuous_person, name12)
-        persons.append(promiscuous_person)
+        all_persons.append(promiscuous_person)
 
         lonely_person = factory.makePerson()
-        persons.append(lonely_person)
+        all_persons.append(lonely_person)
 
         # At this point we have team1, with 5 people in it, team2 with 5
         # people in it, team3 with only team2 in it, promiscuous_person
@@ -260,8 +253,19 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         self.ppa.newSubscription(parent_team, self.ppa.owner)
         self.ppa.newSubscription(lonely_person, self.ppa.owner)
         tokens = {}
-        for person in persons:
+        for person in all_persons:
             tokens[person] = self.ppa.newAuthToken(person)
+
+        return (
+            team1, team2, parent_team, lonely_person,
+            promiscuous_person, all_persons, persons1, persons2, tokens)
+
+    def testDeactivatingTokens(self):
+        """Test that token deactivation happens properly."""
+        data = self.setupSubscriptionsAndTokens()
+        (team1, team2, parent_team, lonely_person, promiscuous_person,
+            all_persons, persons1, persons2, tokens) = data
+        team1_person = persons1[0]
 
         # Initially, nothing is eligible for deactivation.
         script = self.getScript()
@@ -296,6 +300,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # Team 2 now leaves parent_team, and all its members lose their
         # tokens.
         self.layer.switchDbUser("launchpad")
+        name12 = getUtility(IPersonSet).getByName("name12")
         parent_team.setMembershipData(
             team2, TeamMembershipStatus.APPROVED, name12)
         parent_team.setMembershipData(
@@ -314,12 +319,38 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # lonely_person still has his token, he's not in any teams.
         self.assertNotDeactivated(tokens[lonely_person])
 
+    def setupDummyTokens(self):
+        """Helper function to set up some tokens."""
+        name12 = getUtility(IPersonSet).getByName("name12")
+        name16 = getUtility(IPersonSet).getByName("name16")
+        sub1 = self.ppa.newSubscription(name12, self.ppa.owner)
+        sub2 = self.ppa.newSubscription(name16, self.ppa.owner)
+        token1 = self.ppa.newAuthToken(name12)
+        token2 = self.ppa.newAuthToken(name16)
+        self.layer.txn.commit()
+        subs = []
+        subs.append(sub1)
+        subs.append(sub2)
+        tokens = []
+        tokens.append(token1)
+        tokens.append(token2)
+        return subs, tokens
+
+    def ensureNoFiles(self):
+        """Ensure the .ht* files don't already exist."""
+        pub_config = removeSecurityProxy(self.ppa.getPubConfig())
+        htaccess = os.path.join(pub_config.htaccessroot, ".htaccess")
+        htpasswd = os.path.join(pub_config.htaccessroot, ".htpasswd")
+        if os.path.isfile(htaccess):
+            os.remove(htaccess)
+        if os.path.isfile(htpasswd):
+            os.remove(htpasswd)
+        return htaccess, htpasswd
+
     def testBasicOperation(self):
         """Invoke the actual script and make sure it generates some files."""
-        # First, set up a dummy token.
-        name12 = getUtility(IPersonSet).getByName("name12")
-        self.ppa.newSubscription(name12, self.ppa.owner)
-        self.ppa.newAuthToken(name12)
+        self.setupDummyTokens()
+        htaccess, htpasswd = self.ensureNoFiles()
 
         # Call the script and check that we have a .htaccess and a
         # .htpasswd.
@@ -327,12 +358,45 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         self.assertEqual(
             return_code, 0, "Got a bad return code of %s\nOutput:\n%s" % 
                 (return_code, stderr))
-        pub_config = removeSecurityProxy(self.ppa.getPubConfig())
-        htaccess = os.path.join(pub_config.htaccessroot, ".htaccess")
-        htpasswd = os.path.join(pub_config.htaccessroot, ".htpasswd")
-
         self.assertTrue(os.path.isfile(htaccess))
         self.assertTrue(os.path.isfile(htpasswd))
+        os.remove(htaccess)
+        os.remove(htpasswd)
+
+    def _setupOptionsData(self):
+        """Setup test data for option testing."""
+        subs, tokens = self.setupDummyTokens()
+
+        # Cancel the first subscription.
+        subs[0].cancel(self.ppa.owner)
+        self.assertNotDeactivated(tokens[0])
+        return subs, tokens
+
+    def testDryrunOption(self):
+        """Test that the dryrun and no-deactivation option works."""
+        subs, tokens = self._setupOptionsData()
+
+        htaccess, htpasswd = self.ensureNoFiles()
+        script = self.getScript(test_args=["--dry-run"])
+        script.main()
+
+        # Assert no files were written.
+        self.assertFalse(os.path.isfile(htaccess))
+        self.assertFalse(os.path.isfile(htpasswd))
+
+        # Assert that the cancelled subscription did not cause the token
+        # to get deactivated.
+        self.assertNotDeactivated(tokens[0])
+
+    def testNoDeactivationOption(self):
+        """Test that the --no-deactivation option works."""
+        subs, tokens = self._setupOptionsData()
+        script = self.getScript(test_args=["--no-deactivation"])
+        script.main()
+        self.assertNotDeactivated(tokens[0])
+        script = self.getScript()
+        script.main()
+        self.assertDeactivated(tokens[0])
 
 
 def test_suite():

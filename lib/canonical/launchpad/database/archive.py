@@ -287,6 +287,7 @@ class Archive(SQLBase):
                     pubconf.distroroot, self.owner.name, self.name)
             else:
                 pubconf.distroroot = ppa_config.root
+                pubconf.htaccessroot = None
             pubconf.archiveroot = os.path.join(
                 pubconf.distroroot, self.owner.name, self.name,
                 self.distribution.name)
@@ -1418,7 +1419,6 @@ class ArchiveSet:
     def getPrivatePPAs(self):
         """See `IArchiveSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
         return store.find(
             Archive,
             Archive.private == True,
