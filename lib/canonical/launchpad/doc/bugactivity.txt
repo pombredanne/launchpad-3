@@ -270,12 +270,15 @@ First we have to create the file itself, and upload it to the Librarian:
     >>> bug_snap = Snapshot(bug, providing=IBug)
     >>> bug.setPrivate(True, owner)
     True
+
     >>> notify(ObjectModifiedEvent(
     ...     bug, bug_snap, ['private'], user=owner))
-    >>> latest_activity = bug_one.activity[-1]
+    >>> latest_activity = bug.activity[-1]
     >>> print latest_activity.whatchanged
     Privacy
+
     >>> print latest_activity.oldvalue, '==>', latest_activity.newvalue
     Public ==> Private
+
     >>> print latest_activity.person.displayname
     Arthur Dent
