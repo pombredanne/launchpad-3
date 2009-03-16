@@ -109,7 +109,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         pub_config = removeSecurityProxy(ppa.getPubConfig())
         htpasswd_filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
 
-        if not filecmp.cmp(htpasswd_filename, temp_htpasswd_file):
+        if (not os.path.isfile(htpasswd_filename) or
+            not filecmp.cmp(htpasswd_filename, temp_htpasswd_file)):
             # Atomically replace the old file or create a new file.
             os.rename(temp_htpasswd_file, htpasswd_filename)
             self.logger.debug("Replaced htpasswd for %s" % ppa.title)
@@ -143,16 +144,13 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
     def main(self):
         """Script entry point."""
         self.logger.info('Starting the PPA .htaccess generation')
-        self.store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
-
-        ppas = store.find(Archive, Archive.private == True)
+        ppas = getUtility(IArchiveSet).getPrivatePPAs()
         for ppa in ppas:
             valid_tokens = self.deactivateTokens(ppa)
             self.ensureHtaccess(ppa)
             temp_htpasswd = self.generateHtpasswd(ppa, valid_tokens)
-            self.replaceUpdatedHtpasswd(ppa, temp_htpasswd)
-            os.remove(temp_htpasswd)
+            if not self.replaceUpdatedHtpasswd(ppa, temp_htpasswd):
+                os.remove(temp_htpasswd)
 
         if self.options.dryrun:
             self.txn.abort()

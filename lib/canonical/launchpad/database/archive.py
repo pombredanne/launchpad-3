@@ -1415,6 +1415,15 @@ class ArchiveSet:
 
         return status_and_counters
 
+    def getPrivatePPAs(self):
+        """See `IArchiveSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        return store.find(
+            Archive,
+            Archive.private == True,
+            Archive.purpose == ArchivePurpose.PPA)
+
     def getArchivesForDistribution(self, distribution, name=None,
                                    purposes=None, user=None):
         """See `IArchiveSet`."""

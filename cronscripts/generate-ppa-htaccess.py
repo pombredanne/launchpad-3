@@ -14,6 +14,6 @@ from canonical.launchpad.scripts.generate_ppa_htaccess import (
 
 if __name__ == '__main__':
     script = HtaccessTokenGenerator(
-        'generate-ppa-htaccess', dbuser=config.generate_ppa_htaccess.dbuser)
+        'generate-ppa-htaccess', dbuser=config.generateppahtaccess.dbuser)
     script.lock_and_run()
 

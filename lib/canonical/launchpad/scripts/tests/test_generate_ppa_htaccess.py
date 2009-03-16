@@ -4,6 +4,8 @@
 import crypt
 import os
 import pytz
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -27,7 +29,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
     """Test the generate_ppa_htaccess.py script."""
 
     layer = LaunchpadZopelessLayer
-    dbuser = config.binaryfile_expire.dbuser
+    dbuser = config.generateppahtaccess.dbuser
 
     def setUp(self):
         self.ppa = getUtility(IPersonSet).getByName('cprov').archive
@@ -44,14 +46,22 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         script = HtaccessTokenGenerator("test tokens", test_args=test_args)
         script.logger = QuietFakeLogger()
         script.txn = self.layer.txn
+        self.layer.txn.commit()
+        self.layer.switchDbUser(self.dbuser)
         return script
 
     def runScript(self):
-        """Run the expiry script and return."""
-        script = self.getScript()
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
-        script.main()
+        """Run the expiry script.
+        
+        :return: a tuple of return code, stdout and stderr.
+        """
+        script = os.path.join(
+            config.root, "cronscripts", "generate-ppa-htaccess.py")
+        args = [sys.executable, script]
+        process = subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        return process.returncode, stdout, stderr
 
     def testEnsureHtaccess(self):
         """Ensure that the .htaccess file is generated correctly."""
@@ -153,13 +163,13 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         self.assertEqual(len(file_contents), 3)
         [user1, password1] = file_contents[1].split(":", 1)
         [user2, password2] = file_contents[2].split(":", 1)
-        self.assertEqual(user1, "name16")
-        self.assertEqual(user2, "name12")
+        self.assertEqual(user1, "name12")
+        self.assertEqual(user2, "name16")
 
         # For the names to appear in the order above, the dabatase IDs
         # for the tokens have to be in that order.  (To ensure a
         # consistent ordering)
-        self.assertTrue(tokens[0].id > tokens[1].id) 
+        self.assertTrue(tokens[0].id < tokens[1].id) 
 
         os.remove(filename)
 
@@ -265,7 +275,10 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
         # Now remove someone from team1, he will lose his token but
         # everyone else keeps theirs.
+        self.layer.switchDbUser("launchpad")
         team1_person.leave(team1)
+        self.layer.txn.commit()
+        self.layer.switchDbUser(self.dbuser)
         script.deactivateTokens(self.ppa)
         self.assertDeactivated(tokens[team1_person])
         del tokens[team1_person]
@@ -275,7 +288,10 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # Promiscuous_person now leaves team1, but does not lose his
         # token because he's also in team2. No other tokens are
         # affected.
+        self.layer.switchDbUser("launchpad")
         promiscuous_person.leave(team1)
+        self.layer.txn.commit()
+        self.layer.switchDbUser(self.dbuser)
         script.deactivateTokens(self.ppa)
         self.assertNotDeactivated(tokens[promiscuous_person])
         for person in tokens:
@@ -283,11 +299,14 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
         # Team 2 now leaves parent_team, and all its members lose their
         # tokens.
+        self.layer.switchDbUser("launchpad")
         parent_team.setMembershipData(
             team2, TeamMembershipStatus.APPROVED, name12)
         parent_team.setMembershipData(
             team2, TeamMembershipStatus.DEACTIVATED, name12)
         self.assertFalse(team2.inTeam(parent_team))
+        self.layer.txn.commit()
+        self.layer.switchDbUser(self.dbuser)
         script.deactivateTokens(self.ppa)
         for person in persons2:
             self.assertDeactivated(tokens[person])
@@ -298,6 +317,26 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
         # lonely_person still has his token, he's not in any teams.
         self.assertNotDeactivated(tokens[lonely_person])
+
+    def testBasicOperation(self):
+        """Invoke the actual script and make sure it generates some files."""
+        # First, set up a dummy token.
+        name12 = getUtility(IPersonSet).getByName("name12")
+        self.ppa.newSubscription(name12, self.ppa.owner)
+        self.ppa.newAuthToken(name12)
+
+        # Call the script and check that we have a .htaccess and a
+        # .htpasswd.
+        return_code, stdout, stderr = self.runScript()
+        self.assertEqual(
+            return_code, 0, "Got a bad return code of %s\nOutput:\n%s" % 
+                (return_code, stderr))
+        pub_config = removeSecurityProxy(self.ppa.getPubConfig())
+        htaccess = os.path.join(pub_config.htaccessroot, ".htaccess")
+        htpasswd = os.path.join(pub_config.htaccessroot, ".htpasswd")
+
+        self.assertTrue(os.path.isfile(htaccess))
+        self.assertTrue(os.path.isfile(htpasswd))
 
 
 def test_suite():
