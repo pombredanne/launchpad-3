@@ -78,17 +78,17 @@ def initialize_cluster():
     helpers.execute_slonik("""
         try {
             echo 'Initializing Slave#1 node.';
-            store node (id=@slave1_node, comment='Slave Node #1');
+            store node (id=@node2_node, comment='Slave Node #2');
 
             echo 'Storing Master -> Slave#1 path.';
             store path (
-                server=@master_node, client=@slave1_node,
+                server=@master_node, client=@node2_node,
                 conninfo=@master_node_conninfo);
 
             echo 'Storing Slave#1 -> Master path.';
             store path (
-                server=@slave1_node, client=@master_node,
-                conninfo=@slave1_node_conninfo);
+                server=@node2_node, client=@master_node,
+                conninfo=@node2_node_conninfo);
             }
         on success { echo 'Slave#1 initialized.'; }
         on error { echo 'Slave#1 initialization failed.'; exit 1; }
@@ -187,11 +187,11 @@ def subscribe_slaves():
     helpers.execute_slonik("""
         # subscribe set (
         #     id=@authdb_set,
-        #     provider=@master_node, receiver=@slave1_node,
+        #     provider=@master_node, receiver=@node2_node,
         #     forward=yes);
         subscribe set (
             id=@lpmain_set,
-            provider=@master_node, receiver=@slave1_node,
+            provider=@master_node, receiver=@node2_node,
             forward=yes);
         """)
     helpers.validate_replication(cur) # Explode now if we have messed up.

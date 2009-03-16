@@ -15,7 +15,7 @@ from canonical.database.sqlbase import connect, sqlvalues
 from canonical.database.postgresql import (
     fqn, all_tables_in_schema, all_sequences_in_schema, ConnectionString
     )
-from canonical.launchpad.scripts.logger import log
+from canonical.launchpad.scripts.logger import log, DEBUG2
 
 
 # The Slony-I clustername we use with Launchpad. Hardcoded because there
@@ -148,7 +148,7 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
 
     # Run slonik
     log.debug("Executing slonik script %s" % script_on_disk.name)
-    #log.debug(script) # We need a log level < DEBUG :-(
+    log.log(DEBUG2, script)
     returncode = subprocess.call(['slonik', script_on_disk.name])
 
     if returncode != 0:
@@ -177,9 +177,10 @@ def _get_nodes(con, query):
     nodes = []
     for node_id, nickname, connection_string, is_master in cur.fetchall():
         nodes.append(Node(node_id, nickname, connection_string, is_master))
+    return nodes
 
 
-def get_master_node(con, set_id):
+def get_master_node(con, set_id=1):
     """Return the master Node, or None if the cluster is still being setup."""
     nodes = _get_nodes(con, """
         SELECT
@@ -197,12 +198,12 @@ def get_master_node(con, set_id):
     return nodes[0]
 
 
-def get_slave_nodes(con, set_id):
+def get_slave_nodes(con, set_id=1):
     """Return the list of slave Nodes."""
-    nodes = _get_nodes(con, """
+    return _get_nodes(con, """
         SELECT
             pa_server AS node_id,
-            'slave' || node_id,
+            'slave' || pa_server,
             pa_conninfo AS connection_string,
             False
         FROM _sl.sl_set
@@ -212,10 +213,9 @@ def get_slave_nodes(con, set_id):
             set_id = %d
         ORDER BY node_id
         """ % set_id)
-    return nodes
 
 
-def get_nodes(con, set_id):
+def get_nodes(con, set_id=1):
     """Return a list of all Nodes."""
     master_node = get_master_node(con, set_id)
     if master_node is None:
@@ -224,39 +224,65 @@ def get_nodes(con, set_id):
         return [master_node] + get_slave_nodes(con, set_id)
 
 
+def get_all_cluster_nodes(con):
+    """Return a list of all Nodes in the cluster.
+
+    node.is_master will be None, as this boolean doesn't make sense
+    in the context of a cluster rather than a single replication set.
+    """
+    return _get_nodes(con, """
+        SELECT DISTINCT
+            pa_server AS node_id,
+            'node' || pa_server || '_node',
+            pa_conninfo AS connection_string,
+            NULL
+        FROM _sl.sl_path
+        ORDER BY node_id
+        """)
+
+
 def preamble(con=None):
     """Return the preable needed at the start of all slonik scripts."""
 
     if con is None:
         con = connect('slony')
 
-    master_node = get_master_node(con, 1)
+    master_node = get_master_node(con)
     if master_node is not None:
-        nodes = [master_node] + get_slave_nodes(con, 1)
+        nodes = get_all_cluster_nodes(con)
 
     else:
         # We are bootstrapping. Generate what we can from the config.
         #
+        master_node = Node(
+            1, 'master_node',
+            ConnectionString(config.database.main_master), True)
         nodes = [
             Node(
-                1, 'master_node',
-                ConnectionString(config.database.main_master), True),
+                1, 'node1_node',
+                ConnectionString(config.database.main_master), None),
             Node(
-                2, 'slave1_node',
-                ConnectionString(config.database.main_slave), False)]
+                2, 'node2_node',
+                ConnectionString(config.database.main_slave), None)]
         for node in nodes:
             node.connection_string.user = 'slony'
 
     preamble = [dedent("""\
+        #
         # Every slonik script must start with a clustername, which cannot
         # be changed once the cluster is initialized.
+        #
         cluster name = sl;
 
         # Symbolic ids for replication sets.
         define lpmain_set  1;
         define authdb_set  2;
         define holding_set 666;
-        """)]
+
+        # Symbolic id for the main replication set master node.
+        define master_node %d;
+        define master_node_conninfo '%s';
+        """ % (master_node.node_id, master_node.connection_string))]
 
     for node in nodes:
         preamble.append(dedent("""\

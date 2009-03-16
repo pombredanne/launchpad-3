@@ -29,8 +29,16 @@ devsetup:
 	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave
 	# Build the master database
 	LPCONFIG=${DEV_CONFIG} make -C ../schema
+	# Replicate it
 	make _replicate _CONFIG=${DEV_CONFIG} \
-	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave
+	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave LAG="0 seconds"
+
+	# Add a new slave to the existant cluster
+	##LPCONFIG=${DEV_CONFIG} ./new-slave.py "dbname=launchpad_dev_slave2"
+	# Regenerate our preamble for the new slave
+	##LPCONFIG=${DEV_CONFIG} ./preamble.py > preamble.sk
+	# Restart slon daemons with lag setting
+	##LPCONFIG=${DEV_CONFIG} make restart LAG="${LAG}"
 
 # Build _new staging databases from a production dump.
 stagingsetup:
