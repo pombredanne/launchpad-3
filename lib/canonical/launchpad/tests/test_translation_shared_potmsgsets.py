@@ -369,5 +369,56 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
             self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
             [external_suggestion])
 
+    def test_hasTranslationChangedInLaunchpad(self):
+        """Make sure checking whether a translation is changed in LP works."""
+
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        serbian = sr_pofile.language
+
+        # When there is no translation, it's not considered changed.
+        self.assertEquals(
+            self.potmsgset.hasTranslationChangedInLaunchpad(
+                self.devel_potemplate, serbian),
+            False)
+
+        # If only a current, non-imported translation exists, it's not
+        # changed in LP.
+        current_shared = self.factory.makeSharedTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset,
+            is_imported=False)
+        self.assertEquals(
+            self.potmsgset.hasTranslationChangedInLaunchpad(
+                self.devel_potemplate, serbian),
+            False)
+
+        # If imported translation is current, it's not changed in LP.
+        current_shared.is_current = False
+        imported_shared = self.factory.makeSharedTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset,
+            is_imported=True)
+        self.assertEquals(
+            self.potmsgset.hasTranslationChangedInLaunchpad(
+                self.devel_potemplate, serbian),
+            False)
+
+        # If there's a current, diverged translation, and an imported
+        # non-current one, it's changed in LP.
+        imported_shared.is_current = False
+        current_diverged = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset,
+            is_imported=False)
+        self.assertEquals(
+            self.potmsgset.hasTranslationChangedInLaunchpad(
+                self.devel_potemplate, serbian),
+            True)
+
+        # If imported one is shared and current, yet there is a diverged
+        # current translation as well, it is changed in LP.
+        imported_shared.is_current = False
+        self.assertEquals(
+            self.potmsgset.hasTranslationChangedInLaunchpad(
+                self.devel_potemplate, serbian),
+            True)
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -353,8 +353,10 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         imported_translation = self.getImportedTranslationMessage(
             potemplate, language)
+        current_translation = self.getCurrentTranslationMessage(
+            potemplate, language)
         return (imported_translation is not None and
-                not imported_translation.is_current)
+                imported_translation != current_translation)
 
     def isTranslationNewerThan(self, pofile, timestamp):
         """See `IPOTMsgSet`."""
