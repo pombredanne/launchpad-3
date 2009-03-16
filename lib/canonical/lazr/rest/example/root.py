@@ -25,6 +25,12 @@ class CookbookWebServiceObject:
     """A basic object published through the web service."""
 
 
+class CookbookWebServiceEntry(CookbookWebServiceObject):
+    """A basic object published through the web service."""
+    def __init__(self):
+        # This will be set later, by get().
+        self.__parent__ = None
+
 class CookbookTopLevelObject(CookbookWebServiceObject):
     """An object published at the top level of the web service."""
 
@@ -100,7 +106,6 @@ class CookbookServiceRootResource(ServiceRootResource):
     def get(self, name):
         """Traverse to a top-level object."""
         obj = self.top_level_names.get(name)
-        obj.__parent__ = self
         return obj
 
 
