@@ -12,6 +12,7 @@ __all__ = [
     'IHasBugs',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
+    'IOfficialBugTagTargetPublic',
     ]
 
 from zope.interface import Interface, Attribute
@@ -26,8 +27,8 @@ from canonical.lazr.fields import Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, exported, operation_parameters,
-    operation_returns_collection_of)
+    export_read_operation, exported, export_write_operation, 
+    operation_parameters, operation_returns_collection_of)
 
 
 class IHasBugs(Interface):
@@ -192,24 +193,33 @@ class BugDistroSeriesTargetDetails:
         self.status = status
 
 
-class IOfficialBugTagTarget(Interface):
+class IOfficialBugTagTargetPublic(Interface):
     """An entity for which official bug tags can be defined."""
 
-    official_bug_tags = List(
+    official_bug_tags = exported(List(
         title=_("Official Bug Tags"),
         description=_("The list of bug tags defined as official."),
-        value_type=Tag())
+        value_type=Tag()))
 
+
+class IOfficialBugTagTarget(Interface):
+
+    @operation_parameters(
+        tag=Tag(title=u'The official bug tag', required=True))
+    @export_write_operation()
     def addOfficialBugTag(tag):
         """Add tag to the official bug tags of this target."""
 
+    @operation_parameters(
+        tag=Tag(title=u'The official bug tag', required=True))
+    @export_write_operation()
     def removeOfficialBugTag(tag):
         """Remove tag from the official bug tags of this target."""
 
 
 class IOfficialBugTag(Interface):
     """Official bug tags for a product, a project or a distribution."""
-    tag = Text(
+    tag = Tag(
         title=u'The official bug tag', required=True)
 
     target = Object(

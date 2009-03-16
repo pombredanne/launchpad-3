@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 from storm.locals import Int, Reference, Storm, Unicode
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -226,15 +227,16 @@ class OfficialBugTagTargetMixin:
 
     def _getOfficialTags(self):
         """Get the official bug tags as a sorted list of strings."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         if IDistribution.providedBy(self):
-            target_arg = 'distribution'
+            target_clause = (OfficialBugTag.distribution == self)
         elif IProduct.providedBy(self):
-            target_arg = 'product'
+            target_clause = (OfficialBugTag.product == self)
         else:
             raise AssertionError('%s is not a valid official bug target' % self)
         tags = [
             obt.tag for obt
-            in OfficialBugTag.selectBy(**target_arg, orderBy='tag')]
+            in store.find(OfficialBugTag, target_clause).order_by('tag')]
         return tags
 
     def _setOfficialTags(self, tags):
@@ -244,10 +246,10 @@ class OfficialBugTagTargetMixin:
         added_tags = new_tags.difference(old_tags)
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
-            self.removeOfficialBugTag(tag)
+            self.removeOfficialBugTag(removed_tag)
         for added_tag in added_tags:
-            self.addOfficialBugTag(tag)
-        Store.of(self).flush()
+            self.addOfficialBugTag(added_tag)
+        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR).flush()
 
     official_bug_tags = property(_getOfficialTags, _setOfficialTags)
 
