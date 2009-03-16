@@ -281,15 +281,16 @@ class POTMsgSet(SQLBase):
             query = [in_use_clause]
         else:
             query = ["(NOT %s)" % in_use_clause]
-        query.append('POFile.language = %s' % sqlvalues(language))
-        query.append('POFile.id = TranslationMessage.pofile')
+        query.append('TranslationMessage.language = %s' % sqlvalues(language))
 
         query.append('''
             potmsgset IN (
                 SELECT POTMsgSet.id
                 FROM POTMsgSet
+                JOIN TranslationTemplateItem ON
+                    TranslationTemplateItem.potmsgset = POTMsgSet.id
                 JOIN POTemplate ON
-                    POTMsgSet.potemplate = POTemplate.id
+                    TranslationTemplateItem.potemplate = POTemplate.id
                 LEFT JOIN ProductSeries ON
                     POTemplate.productseries = ProductSeries.id
                 LEFT JOIN Product ON
@@ -308,7 +309,7 @@ class POTMsgSet(SQLBase):
         # Subquery to find the ids of TranslationMessages that are
         # matching suggestions.
         # We're going to get a lot of duplicates, sometimes resulting in
-        # thousands of suggstions.  Weed out most of that duplication by
+        # thousands of suggestions.  Weed out most of that duplication by
         # excluding older messages that are identical to newer ones in
         # all translated forms.  The Python code can later sort out the
         # distinct translations per form.
@@ -323,7 +324,6 @@ class POTMsgSet(SQLBase):
             SELECT DISTINCT ON (%(msgstrs)s)
                 TranslationMessage.id
             FROM TranslationMessage
-            JOIN POFile ON POFile.id = TranslationMessage.pofile
             WHERE %(where)s
             ORDER BY %(msgstrs)s, date_created DESC
             ''' % ids_query_params
