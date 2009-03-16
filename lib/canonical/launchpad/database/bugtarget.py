@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 from storm.locals import Int, Reference, Storm, Unicode
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -233,7 +232,8 @@ class OfficialBugTagTargetMixin:
         elif IProduct.providedBy(self):
             target_clause = (OfficialBugTag.product == self)
         else:
-            raise AssertionError('%s is not a valid official bug target' % self)
+            raise AssertionError(
+                '%s is not a valid official bug target' % self)
         tags = [
             obt.tag for obt
             in store.find(OfficialBugTag, target_clause).order_by('tag')]
