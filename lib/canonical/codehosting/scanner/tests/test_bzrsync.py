@@ -23,6 +23,8 @@ from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.interfaces import IRevisionSet
 from canonical.launchpad.interfaces.branch import IBranchSet
+from canonical.launchpad.interfaces.branchjob import
+    IRosettaUploadJobSource)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, InvalidStackedBranchURL)
@@ -582,6 +584,23 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
         revision = getUtility(IRevisionSet).getByRevisionId(
             fake_rev.revision_id)
         self.assertEqual(old_date, revision.revision_date)
+
+
+class TestBzrTranslationsUploadJob(BzrSyncTestCase):
+    """Tests BzrSync support for generating TranslationsUploadJobs."""
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+
+    def test_upload_on_new_revision(self):
+        # Syncing a branch with a changed tip creates a new RosettaUploadJob.
+        self.commitRevision()
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        ready_jobs = list(getUtility(IRosettaUploadJobSource).iterReady())
+        self.assertEqual(len(ready_jobs), 1)
+        job = ready_jobs[0]
+        # The right job will have our branch.
+        self.assertEqual(job.branch, self.db_branch)
 
 
 class TestRevisionProperty(BzrSyncTestCase):

@@ -14,6 +14,8 @@ __all__ = [
     'IRevisionMailJob',
     'IRevisionMailJobSource',
     'IRevisionsAddedJobSource',
+    'IRosettaUploadJob',
+    'IRosettaUploadJobSource',
     ]
 
 
@@ -108,3 +110,26 @@ class IRevisionsAddedJobSource(Interface):
 
     def iterReady():
         """Iterate through ready IRevisionsAddedJobSource."""
+
+
+class IRosettaUploadJob(Interface):
+    """A job to upload translation files to Rosetta."""
+
+    def run():
+        """Extract translation files from the branch passed in by the factory
+        (see IRosettaUploadJobSource) and put them into the translations
+        import queue.
+        """
+
+
+class IRosettaUploadJobSource(Interface):
+
+    def create(branch):
+        """Construct a new object that implements IRosettaUploadJob.
+
+        :param branch: The database branch to exract files from.
+        """
+
+    def iterReady():
+        """Iterate through ready IRosettaUploadJobs."""
+
