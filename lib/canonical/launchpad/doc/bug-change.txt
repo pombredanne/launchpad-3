@@ -175,7 +175,9 @@ notification you'll get an error.
     AssertionError: notification_data must include a `text` value.
 
 
-== Getting the right bug change class ==
+== BugChange subclasses ==
+
+=== Getting the right bug change class ===
 
 Given that we know what's changing and the name of the field that is
 being changed, we can find a suitable IBugChange implementation to
@@ -192,6 +194,13 @@ By default, get_bug_change_class() will return BugChangeBase.
 For fields it knows about, it will return a more suitable class.
 
     >>> get_bug_change_class(example_bug, 'title')
-    <class '...BugTextualChange'>
+    <class '...TextualBugChange'>
 
 See component/ftests/test_bugchange.py for some sanity checks.
+
+
+=== TextualBugChange ===
+
+The TextualBugChange class can be used to represent a change in the
+value of a textual field on a Bug, such as its description, title or
+name.
