@@ -15,11 +15,7 @@
         <allow interface='canonical.lazr.interfaces.IJSONPublishable' />
     </class>
 
-    <adapter
-        for="zope.publisher.interfaces.browser.IBrowserRequest"
-        provides="canonical.lazr.interfaces.rest.WebServiceLayer"
-        factory="canonical.launchpad.webapp.servers.website_request_to_web_service_request"
-        />
+    <adapter factory="canonical.lazr.rest.publisher.browser_request_to_web_service_request" />
 
     <adapter factory="canonical.lazr.rest.jsoncache.JSONRequestCache" />
 
@@ -33,12 +29,9 @@
         />
 
     <adapter
-        for="zope.publisher.interfaces.browser.IBrowserRequest"
-        provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WebServiceRequestAPI"
         name="webservicerequest"
         />
-
 
     <!-- TALES namespaces for WADL generation -->
     <adapter
@@ -268,7 +261,7 @@
 
     <view
         for="zope.interface.Interface"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceClientRequest"
         factory="canonical.lazr.rest.resource.EntryHTMLView"
         name="canonical.lazr.rest.resource.EntryResource"
         />
@@ -278,7 +271,7 @@
     <!-- System Errors -->
     <view
         for="zope.interface.common.interfaces.IException"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.SystemErrorView"
         name="index.html"
         />
@@ -286,7 +279,7 @@
     <!-- Unauthorized -->
     <view
         for="zope.exceptions.IUnauthorized"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.UnauthorizedView"
         name="index.html"
         />
@@ -294,7 +287,7 @@
     <!-- NotFound -->
     <view
         for="zope.publisher.interfaces.NotFound"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.NotFoundView"
         name="index.html"
         />
@@ -306,7 +299,7 @@
     -->
     <view
         for="canonical.database.interfaces.IRequestExpired"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.RequestExpiredView"
         name="index.html"
         />
@@ -314,7 +307,7 @@
     <!-- TimeoutError -->
     <view
         for="canonical.lazr.timeout.TimeoutError"
-        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.RequestExpiredView"
         name="index.html"
         />

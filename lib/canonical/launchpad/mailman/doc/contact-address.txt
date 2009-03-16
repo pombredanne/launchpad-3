@@ -25,6 +25,7 @@ The team is set as the project's answer contact.
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()
 
+    >>> browser.getLink('Change details').click()
     >>> browser.getLink('Change contact address').click()
     >>> control = browser.getControl(name='field.contact_method')
     >>> [strip_label(label) for label in control.displayValue]
@@ -235,6 +236,7 @@ Notifications will no longer be sent to the mailing list.
     >>> browser.getControl('Each member individually').selected = True
     >>> browser.getControl('Change').click()
 
+    >>> browser.getLink('Change details').click()
     >>> browser.getLink('Change contact address').click()
     >>> control = browser.getControl(name='field.contact_method')
     >>> [strip_label(label) for label in control.displayValue]

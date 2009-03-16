@@ -205,8 +205,6 @@ class IBug(ICanBeMentored):
         schema=IBugTask)
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
-    productinfestations = Attribute('List of product release infestations.')
-    packageinfestations = Attribute('List of package release infestations.')
     watches = exported(
         CollectionField(
             title=_("All bug watches associated with this bug."),

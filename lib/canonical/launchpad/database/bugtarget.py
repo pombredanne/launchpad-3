@@ -8,6 +8,7 @@ __all__ = [
     'BugTargetBase',
     'HasBugsBase',
     'OfficialBugTag',
+    'OfficialBugTagTargetMixin',
     ]
 
 from storm.locals import Int, Reference, Storm, Unicode
@@ -25,6 +26,8 @@ from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.bugtask import (
     BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 class HasBugsBase:
     """Standard functionality for IHasBugs.
@@ -208,6 +211,49 @@ class BugTargetBase(HasBugsBase):
         from canonical.launchpad.database.bug import Bug
         return list(
             Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
+
+
+class OfficialBugTagTargetMixin:
+    """See `IOfficialBugTagTarget`.
+
+    This class is inteneded to be used as a mixin for the classes
+    Distribution, Product and Project, which can define official
+    bug tags.
+
+    Using this call in Project requires a fix of bug 341203, see
+    below, class OfficialBugTag.
+    """
+
+    def _getTag(self, tag):
+        """Return the OfficialBugTag record for the given tag, if it exists.
+
+        If the tag is not defined for this target, None is returned.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        if IDistribution.providedBy(self):
+            target_clause = (OfficialBugTag.distribution == self)
+        else:
+            target_clause = (OfficialBugTag.product == self)
+        return store.find(
+            OfficialBugTag, OfficialBugTag.tag==tag, target_clause).one()
+
+    def addOfficialBugTag(self, tag):
+        """See `IOfficialBugTagTarget`."""
+        # Tags must be unique per target; adding an existing tag
+        # for a second time would lead to an exception.
+        if self._getTag(tag) is None:
+            new_tag = OfficialBugTag()
+            new_tag.tag = tag
+            new_tag.target = self
+            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+            store.add(new_tag)
+
+    def removeOfficialBugTag(self, tag):
+        """See `IOfficialBugTagTarget`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        tag = self._getTag(tag)
+        if tag is not None:
+            store.remove(tag)
 
 
 class OfficialBugTag(Storm):

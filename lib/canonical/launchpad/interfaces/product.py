@@ -121,7 +121,7 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProductEditRestricted(Interface):
+class IProductEditRestricted(IOfficialBugTagTarget):
     """`IProduct` properties which require launchpad.Edit permission."""
 
     def newSeries(owner, name, summary, branch=None):
@@ -178,8 +178,7 @@ class IProductPublic(
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTarget, IPillar,
-    ISpecificationTarget):
+    ILaunchpadUsage, IMakesAnnouncements, IPillar, ISpecificationTarget):
     """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces

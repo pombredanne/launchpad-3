@@ -31,7 +31,8 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import (
+    BugTargetBase, OfficialBugTagTargetMixin)
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -113,13 +114,13 @@ from canonical.launchpad.webapp.url import urlparse
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
-                   QuestionTargetMixin, StructuralSubscriptionTargetMixin,
-                   HasMilestonesMixin):
+                   OfficialBugTagTargetMixin, QuestionTargetMixin,
+                   StructuralSubscriptionTargetMixin, HasMilestonesMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IQuestionTarget, IStructuralSubscriptionTarget)
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget, 
+        IStructuralSubscriptionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
