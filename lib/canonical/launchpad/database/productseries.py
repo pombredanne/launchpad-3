@@ -48,6 +48,8 @@ from canonical.launchpad.interfaces import (
     SpecificationSort)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.interfaces.translations import (
+    TranslationsBranchImportMode)
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
@@ -75,6 +77,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         storm_validator=validate_public_person, notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
+    translations_autoimport_mode = EnumCol(
+        dbName='translations_autoimport_mode',
+        notNull=True,
+        schema=TranslationsBranchImportMode,
+        default=TranslationsBranchImportMode.NO_IMPORT)
     # where are the tarballs released from this branch placed?
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)

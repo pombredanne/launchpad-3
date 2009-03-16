@@ -1105,6 +1105,8 @@ productseries_review = ContextTitle('Review %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
+productseries_translations_settings = 'Settings for translations'
+
 productseries_ubuntupkg = 'Ubuntu source package'
 
 project_add = 'Register a project group with Launchpad'

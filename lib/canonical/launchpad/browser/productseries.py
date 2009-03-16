@@ -20,6 +20,7 @@ __all__ = [
     'ProductSeriesSpecificationsMenu',
     'ProductSeriesTranslationsMenu',
     'ProductSeriesTranslationsExportView',
+    'ProductSeriesTranslationsSettingsView',
     'ProductSeriesView',
     ]
 
@@ -48,6 +49,9 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.widgets.itemswidgets import (
+    LaunchpadRadioWidgetWithDescription)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -217,6 +221,11 @@ class ProductSeriesTranslationsMenuMixIn:
         return Link('', text)
 
     @enabled_with_permission('launchpad.Edit')
+    def settings(self):
+        text = 'Settings'
+        return Link('+translations-settings', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def translationupload(self):
         text = 'Upload'
         return Link('+translations-upload', text, icon='add')
@@ -244,7 +253,8 @@ class ProductSeriesTranslationsMenu(NavigationMenu,
     """Translations navigation menus for `IProductSeries` objects."""
     usedfor = IProductSeries
     facet = 'translations'
-    links = ('overview', 'translationupload', 'translationdownload',
+    links = ('overview', 'settings',
+             'translationupload', 'translationdownload',
              'imports')
 
 
@@ -319,7 +329,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
         dispatch_table = {
             'set_ubuntu_pkg': self.setCurrentUbuntuPackage,
-            'translations_upload': self.translationsUpload
+            'translations_upload': self.translationsUpload,
         }
         dispatch_to = [(key, method)
                         for key,method in dispatch_table.items()
@@ -657,3 +667,22 @@ class ProductSeriesFileBugRedirect(LaunchpadView):
     def initialize(self):
         filebug_url = "%s/+filebug" % canonical_url(self.context.product)
         self.request.response.redirect(filebug_url)
+
+
+class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView):
+    """Edit settings for translations import and export."""
+
+    schema = IProductSeries
+    field_names = ['translations_autoimport_mode']
+    custom_widget('translations_autoimport_mode',
+                  LaunchpadRadioWidgetWithDescription)
+
+    def __init__(self, context, request):
+        LaunchpadEditFormView.__init__(self, context, request)
+        self.cancel_url = canonical_url(self.context)
+
+    @action(u"Save settings", name="save_settings")
+    def change_settings_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            "The settings have been updated.")
