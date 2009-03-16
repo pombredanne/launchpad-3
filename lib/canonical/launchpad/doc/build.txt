@@ -480,9 +480,13 @@ First we'll define a helper to print the build summary:
 The build set class furthermore provides a mechanism to load build-related
 data from the database for a given set of builds:
 
-    >>> build_ids = sorted(
-    ...     [build.id for build in ubuntu.getBuildRecords()])[:4]
-    >>> rset = bs.prefetchBuildData(build_ids)
+    >>> from storm.expr import In
+    >>> from canonical.launchpad.database.build import Build
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    >>> results = list(store.find(Build, In(Build.id, (2,6,7,8))))
+    >>> rset = removeSecurityProxy(bs)._prefetchBuildData(results)
     >>> def filename_or_none(item):
     ...     if item is not None:
     ...         return '%s' % item.filename
@@ -494,16 +498,16 @@ data from the database for a given set of builds:
     ...     else:
     ...         return 'n/a'
     >>> for row in rset:
-    ...     (build_id, buildqueue, sourcepackagerelease, buildlog,
+    ...     (sourcepackagerelease, buildlog,
     ...      sourcepackagename, buildlog_content, builder) = row
     ...     print(
-    ...         'id: %s, queue: %s, spr: %s, log: %s' %
-    ...         (build_id, id_or_none(buildqueue),
+    ...         'builder: %s, spr: %s, log: %s' %
+    ...         (id_or_none(builder),
     ...          sourcepackagerelease.title, filename_or_none(buildlog)))
-    id: 2, queue: n/a, spr: mozilla-firefox - 0.9, log: netapplet-1.0.0.tar.gz
-    id: 6, queue: n/a, spr:          foobar - 1.0, log: netapplet-1.0.0.tar.gz
-    id: 7, queue: n/a, spr:        pmount - 0.1-1, log: netapplet-1.0.0.tar.gz
-    id: 8, queue:   1, spr: mozilla-firefox - 0.9, log: n/a
+    builder:   1, spr: mozilla-firefox - 0.9, log: netapplet-1.0.0.tar.gz
+    builder:   1, spr:          foobar - 1.0, log: netapplet-1.0.0.tar.gz
+    builder:   1, spr:        pmount - 0.1-1, log: netapplet-1.0.0.tar.gz
+    builder: n/a, spr: mozilla-firefox - 0.9, log: n/a
 
 
 == IHadBuildRecords.getBuildRecords() Implementations ==
