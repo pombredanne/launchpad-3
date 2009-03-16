@@ -55,8 +55,6 @@ Bug.addChange().
 
 We'll create a test class that actually implements the methods we need.
 
-    >>> from canonical.launchpad.interfaces.bugactivity import (
-    ...     IBugActivitySet)
     >>> from canonical.launchpad.mailnotification import (
     ...     BugNotificationRecipients)
 
