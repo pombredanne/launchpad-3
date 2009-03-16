@@ -135,3 +135,47 @@ Ordinary users cannot add and remove official bug tags.
     Traceback (most recent call last):
     ...
     Unauthorized: (<Product at ...>, 'removeOfficialBugTag', 'launchpad.Edit')
+
+Official tags are accessible as a list property of official tag targets.
+
+    >>> ubuntu.official_bug_tags
+    [u'bar']
+
+To set the list, the user must have edit permissions for the target.
+
+    >>> login('colin.watson@ubuntulinux.com')
+
+Setting the list creates any new tags appearing in the list.
+
+    >>> ubuntu.official_bug_tags = [u'foo', u'bar']
+    >>> ubuntu.official_bug_tags
+    [u'bar', u'foo']
+
+Any existing tags missing from the list are removed.
+
+    >>> ubuntu.official_bug_tags = [u'foo']
+    >>> ubuntu.official_bug_tags
+    [u'foo']
+
+The list is publicly readable.
+
+    >>> logout()
+    >>> ubuntu.official_bug_tags
+    [u'foo']
+
+But only writable for users with edit permissions.
+
+    >>> login('no-priv@canonical.com')
+    >>> ubuntu.official_bug_tags = [u'foo', u'bar']
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Distribution at ...>, 'official_bug_tags', 'launchpad.Edit')
+
+The same is available for products.
+
+    >>> login('test@canonical.com')
+    >>> firefox.official_bug_tags = [u'foo', u'bar']
+    >>> logout()
+    >>> firefox.official_bug_tags
+    [u'bar', u'foo']
+
