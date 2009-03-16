@@ -190,5 +190,17 @@ should be UTC_NOW.
 The LegacyBugChange class is used for describing old-style bug changes.
 
     >>> from canonical.launchpad.components.bugchange import LegacyBugChange
-    >>> verifyObject(IBugChange, LegacyBugChange(when=nowish, person=None))
+    >>> verifyObject(
+    ...     IBugChange, LegacyBugChange(when=nowish, person=None,
+    ...     text=None, recipients=None))
     True
+
+LegacyBugChange.getBugActivity() returns None, since for legacy bug
+changes we don't add a BugActivity record.
+
+    >>> change = LegacyBugChange(
+    ...     when=nowish, person=example_person, text="Things changed",
+    ...     recipients=None)
+
+    >>> print change.getBugActivity()
+    None

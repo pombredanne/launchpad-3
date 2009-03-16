@@ -38,3 +38,8 @@ class BugChangeBase:
 
 class LegacyBugChange(BugChangeBase):
     """A class for describing bug changes using existing code."""
+
+    def __init__(self, when, person, text, recipients):
+        super(LegacyBugChange, self).__init__(when, person)
+        self.text = text
+        self.recipients = recipients
