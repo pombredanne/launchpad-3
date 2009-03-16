@@ -124,13 +124,25 @@ def record_bug_task_added(bug_task, object_created_event):
         whatchanged='bug',
         message='assigned to ' + bug_task.bugtargetname)
 
+
+BUGTASK_INTERESTING_FIELDS = [
+    'assignee',
+    'bugwatch',
+    'importance',
+    'milestone',
+    'status',
+    'target',
+    'title',
+    ]
+
+
 @block_implicit_flushes
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     """Make an activity note that a bug task was edited."""
     # If the event was triggered by a web service named operation, its
     # edited_fields will be empty. We'll need to check all fields to
-    # see which were actually changed.
-    sqlobject_modified_event.edited_fields = IBugTask.names(all=True)
+   # see which were actually changed.
+    sqlobject_modified_event.edited_fields = BUGTASK_INTERESTING_FIELDS
     changes = what_changed(sqlobject_modified_event)
     if changes:
         task_title = ""
@@ -173,7 +185,7 @@ def record_product_task_edited(product_task_edited, sqlobject_modified_event):
     # If the event was triggered by a web service named operation, its
     # edited_fields will be empty. We'll need to check all fields to
     # see which were actually changed.
-    sqlobject_modified_event.edited_fields = IBugTask.names(all=True)
+    sqlobject_modified_event.edited_fields = BUGTASK_INTERESTING_FIELDS
     changes = what_changed(sqlobject_modified_event)
     if changes:
         product = sqlobject_modified_event.object_before_modification.product
