@@ -68,12 +68,10 @@ We'll create a test class that actually implements the methods we need.
     ...         'whatchanged': 'Nothing',
     ...         'oldvalue': 'OldValue',
     ...         'newvalue': 'NewValue',
-    ...         'message': 'ExampleMessage',
     ...         }
     ...
     ...     bug_notification_data = {
     ...         'text': 'Some message text',
-    ...         'is_comment': False,
     ...         }
     ...
     ...     recipients = [
@@ -144,7 +142,6 @@ list for the Bug will be used.
     ...
     ...     bug_notification_data = {
     ...         'text': "Here's some sample text",
-    ...         'is_comment': False,
     ...         }
     ...
     ...     def getBugNotificationRecipients(self):
@@ -159,3 +156,18 @@ list for the Bug will be used.
     >>> for recipient in latest_notification.recipients:
     ...     print recipient.person.displayname
     Ford Prefect
+
+If you try to send a notification without adding a text body for the
+notification you'll get an error.
+
+    >>> class NoNotificationTextBugChange(TestBugChange):
+    ...
+    ...     bug_notification_data = {
+    ...         'text': None,
+    ...         }
+
+    >>> example_bug.addChange(
+    ...     NoNotificationTextBugChange(when=nowish, person=example_person))
+    Traceback (most recent call last):
+      ...
+    AssertionError: notification_data must include a `text` value.
