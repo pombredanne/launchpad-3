@@ -124,6 +124,14 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
             privacy_values = {'True': 'private', 'False': 'public'}
             oldvalue = privacy_values[oldvalue]
             newvalue = privacy_values[newvalue]
+        elif changed_field == 'security_related':
+            whatchanged = 'security'
+            security_values = {
+                'True': 'security related',
+                'False': 'not security related',
+                }
+            oldvalue = security_values[oldvalue]
+            newvalue = security_values[newvalue]
         else:
             whatchanged = changed_field
 
