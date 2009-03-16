@@ -152,6 +152,16 @@ class BzrSync:
                 self.syncOneRevision(revision, branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
+
+        # Generate emails for the revisions in the revision_history
+        # for the branch.
+        if self.db_branch.last_scanned_id is not None:
+            # XXX: Event
+            job = getUtility(IRevisionsAddedJobSource).create(
+                self.db_branch, self.db_branch.last_scanned_id,
+                bzr_branch.last_revision(),
+                config.canonical.noreply_from_address)
+
         self.trans_manager.commit()
 
         # XXX: Event
@@ -408,15 +418,6 @@ class BzrSync:
         revid_seq_pairs = branchrevisions_to_insert.items()
         for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 1000):
             self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
-
-        # Generate emails for the revisions in the revision_history
-        # for the branch.
-        if self.db_branch.last_scanned_id is not None:
-            # XXX: Event
-            job = getUtility(IRevisionsAddedJobSource).create(
-                self.db_branch, self.db_branch.last_scanned_id,
-                bzr_branch.last_revision(),
-                config.canonical.noreply_from_address)
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
