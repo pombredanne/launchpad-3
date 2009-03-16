@@ -639,6 +639,26 @@ the IArchive context, in this case only Celso has it.
     title: u'Private PPA for Celso Providelo'
 
 
+== Modifying privacy ==
+
+Modifying the privacy flag through the API is not allowed except for admins.
+
+    >>> import simplejson
+    >>> def modify_archive(service, archive):
+    ...     headers = {'Content-type': 'application/json'}
+    ...     return service(
+    ...         archive['self_link'], 'PUT', simplejson.dumps(archive),
+    ...         headers)
+
+    >>> sabdfl_archive = webservice.get("/~sabdfl/+archive/ppa").jsonBody()
+    >>> sabdfl_archive['private'] = True
+    >>> print modify_archive(user_webservice, sabdfl_archive)
+    HTTP/1.1 401 Unauthorized
+    ...
+    Unauthorized: (<Archive at ...>, 'private', 'launchpad.Admin')
+    <BLANKLINE>
+
+
 === Copy privacy mismatch ===
 
 A CannotCopy error, giving the reason "Cannot copy private source into
