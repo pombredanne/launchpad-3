@@ -5,12 +5,21 @@
 __metaclass__ = type
 __all__ = [
     'BugChangeBase',
+    'get_bug_change_class',
 ]
 
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.bugchange import (
     IBugChange)
+
+
+def get_bug_change_class(obj, field_name):
+    """Return a suitable IBugChange to describe obj and field_name."""
+    try:
+        return BUG_CHANGE_LOOKUP[field_name]
+    except KeyError:
+        return BugChangeBase
 
 
 class BugChangeBase:
@@ -33,3 +42,6 @@ class BugChangeBase:
     def getBugNotificationRecipients(self):
         """Return any recipients for the `BugNotification`s."""
         raise NotImplementedError(self.getBugNotificationRecipients)
+
+
+BUG_CHANGE_LOOKUP = {}
