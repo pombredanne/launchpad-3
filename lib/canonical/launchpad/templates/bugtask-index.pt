@@ -76,8 +76,8 @@ function createBugDuplicateFormOverlay(id, response_object){
         form_content: 'Marking the bug as a duplicate will, by default, ' +
                       'hide it from search results listings.' + form_content,
         form_submit_button: Y.Node.create(
-            '<input type=\'submit\' name=\'field.actions.change\' ' +
-            'value=\'Change\' />'),
+            '<button type=\'submit\' name=\'field.actions.change\' ' +
+            'value=\'Change\' class=\'lazr-pos lazr-btn\' >OK</button>'),
         align: {
             points: 
                 [Y.WidgetPositionExt.CC, Y.WidgetPositionExt.CC]
