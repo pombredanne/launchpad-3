@@ -13,12 +13,14 @@ The helper functions in this file make that easy.
 __metaclass__ = type
 
 __all__ = [
-    patch_entry_return_type,
-    patch_collection_return_type,
-    patch_plain_parameter_type,
-    patch_choice_parameter_type,
-    patch_reference_property,
+    'patch_entry_return_type',
+    'patch_collection_return_type',
+    'patch_plain_parameter_type',
+    'patch_choice_parameter_type',
+    'patch_reference_property',
     ]
+
+EXPORTED_TAG = 'lazr.webservice.exported'
 
 def patch_entry_return_type(exported_class, method_name, return_type):
     """Update return type for a webservice method that returns entries.
@@ -28,8 +30,7 @@ def patch_entry_return_type(exported_class, method_name, return_type):
     :param return_type: The new return type for the method.
     """
     exported_class[method_name].queryTaggedValue(
-        'lazr.webservice.exported')[
-            'return_type'].schema = return_type
+        EXPORTED_TAG)['return_type'].schema = return_type
 
 def patch_collection_return_type(exported_class, method_name, return_type):
     """Update return type for a webservice method that returns a collection.
@@ -39,8 +40,7 @@ def patch_collection_return_type(exported_class, method_name, return_type):
     :param return_type: The new return type for the method.
     """
     exported_class[method_name].queryTaggedValue(
-        'lazr.webservice.exported')[
-            'return_type'].value_type.schema = return_type
+        EXPORTED_TAG)['return_type'].value_type.schema = return_type
 
 def patch_plain_parameter_type(exported_class, method_name, param_name,
                                param_type):
@@ -52,8 +52,7 @@ def patch_plain_parameter_type(exported_class, method_name, param_name,
     :param param_type: The new type for the parameter.
     """
     exported_class[method_name].queryTaggedValue(
-        'lazr.webservice.exported')[
-            'params'][param_name] = param_type
+        EXPORTED_TAG)['params'][param_name] = param_type
 
 def patch_choice_parameter_type(exported_class, method_name, param_name,
                                 choice_type):
@@ -65,8 +64,7 @@ def patch_choice_parameter_type(exported_class, method_name, param_name,
     :param choice_type: The new choice type for the parameter.
     """
     exported_class[method_name].queryTaggedValue(
-        'lazr.webservice.exported')[
-            'params'][param_name].vocabulary = param_type
+        EXPORTED_TAG)['params'][param_name].vocabulary = choice_type
 
 def patch_reference_property(exported_class, property, property_type):
     """Update a `Reference` property type.
