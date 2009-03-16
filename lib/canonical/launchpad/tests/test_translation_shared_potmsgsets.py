@@ -196,11 +196,35 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         # current in it.
         diverged_translation = self.factory.makeTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset)
-        self.assertTrue(shared_translation.is_current)
-        self.assertTrue(diverged_translation.is_current)
         self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
             self.devel_potemplate, serbian), diverged_translation)
         self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
+            self.stable_potemplate, serbian), shared_translation)
+
+    def test_getImportedTranslationMessage(self):
+        """Test how shared and diverged current translation messages
+        interact."""
+        # Share a POTMsgSet in two templates, and get a Serbian POFile.
+        self.potmsgset.setSequence(self.stable_potemplate, 1)
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        sr_stable_pofile = self.factory.makePOFile('sr', self.stable_potemplate)
+        serbian = sr_pofile.language
+
+        # A shared translation is imported in both templates.
+        shared_translation = self.factory.makeSharedTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset, is_imported=True)
+        self.assertEquals(self.potmsgset.getImportedTranslationMessage(
+            self.devel_potemplate, serbian), shared_translation)
+        self.assertEquals(self.potmsgset.getImportedTranslationMessage(
+            self.stable_potemplate, serbian), shared_translation)
+
+        # Adding a diverged translation in one template makes that one
+        # an imported translation there.
+        diverged_translation = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset, is_imported=True)
+        self.assertEquals(self.potmsgset.getImportedTranslationMessage(
+            self.devel_potemplate, serbian), diverged_translation)
+        self.assertEquals(self.potmsgset.getImportedTranslationMessage(
             self.stable_potemplate, serbian), shared_translation)
 
 def test_suite():
