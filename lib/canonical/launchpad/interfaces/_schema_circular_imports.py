@@ -92,6 +92,6 @@ ISourcePackage['setBranch'].queryTaggedValue(
     'lazr.webservice.exported')[
         'params']['pocket'].vocabulary = PackagePublishingPocket
 ISourcePackage['setBranch'].queryTaggedValue(
-    'lazr.webservice.exported')['params']['branch'].vocabulary = IBranch
+    'lazr.webservice.exported')['params']['branch'].schema = IBranch
 
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
