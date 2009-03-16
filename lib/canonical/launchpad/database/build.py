@@ -1006,7 +1006,7 @@ class BuildSet:
                 'builds': builds,
                 }
 
-    def _prefetchBuildData(self, result_set):
+    def _prefetchBuildData(self, results):
         """Used to pre-populate the cache with build related data.
 
         When dealing with a group of Build records we can't use the
@@ -1024,7 +1024,7 @@ class BuildSet:
         from canonical.launchpad.database.sourcepackagerelease import (
             SourcePackageRelease)
 
-        build_ids = list(result_set.values(Build.id))
+        build_ids = [build.id for build in results]
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             Build,
@@ -1049,4 +1049,4 @@ class BuildSet:
             In(Build.id, build_ids))
 
         # Force query execution.
-        list(result_set)
+        return list(result_set)

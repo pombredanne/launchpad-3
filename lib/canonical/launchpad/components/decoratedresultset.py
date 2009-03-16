@@ -11,6 +11,7 @@ from storm.zope.interfaces import IResultSet
 
 from lazr.delegates import delegates
 
+
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
 
@@ -78,9 +79,11 @@ class DecoratedResultSet(object):
 
         Yield a decorated version of the returned value.
         """
+        # Execute/evaluate the result set query.
+        results = list(self.result_set.__iter__(*args, **kwargs))
         if self.pre_iter_hook is not None:
-            self.pre_iter_hook(self.result_set)
-        for value in self.result_set.__iter__(*args, **kwargs):
+            self.pre_iter_hook(results)
+        for value in results:
             yield self.decorate_or_none(value)
 
     def __getitem__(self, *args, **kwargs):

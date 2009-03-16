@@ -137,7 +137,7 @@ The pre_iter_hook() method is only called once when iteration begins.
     ...         return FakeResultSet(self)
     >>> rs = FakeResultSet(range(1,5))
     >>> def my_pih(result_set):
-    ...     print('this should run once only, count: %s' % result_set.count())
+    ...     print('this should run once only, count: %s' % len(result_set))
     >>> def my_deco(result):
     ...     print('> original value : %s' % result)
     ...     return (result * 2)
