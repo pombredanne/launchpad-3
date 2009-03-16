@@ -1,0 +1,51 @@
+= ProductSeriesTranslationsSettingsView =
+
+Special settings for translations of a ProductSeries are set through
+this view.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> evolution_trunk = productset['evolution'].getSeries('trunk')
+
+    >>> from canonical.launchpad.browser.productseries import (
+    ...     ProductSeriesTranslationsSettingsView)
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+The only setting currently available is for the import of translation
+templates from bazaar branches hosted on Launchpad.
+
+    >>> request = LaunchpadTestRequest()
+    >>> view = ProductSeriesTranslationsSettingsView(
+    ...     evolution_trunk, request)
+    >>> view.setUpFields()
+    >>> [field.__name__ for field in view.form_fields]
+    ['translations_autoimport_mode']
+
+This setting is represented by a LaunchpadRadioWidgetWithDescription.
+
+    >>> view.setUpWidgets()
+    >>> view.widgets['translations_autoimport_mode']
+    <...LaunchpadRadioWidgetWithDescription object at...>
+
+Submitting the form via "Change settings" will update the corresponding
+attribute of the ProductSeries. This can only be done by the product
+maintainer.
+
+    >>> from zope.security.interfaces import Unauthorized
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST',
+    ...     form={'field.translations_autoimport_mode': 'IMPORT_TEMPLATES',
+    ...           'field.actions.save_settings': 'Save Settings'})
+    >>> view = ProductSeriesTranslationsSettingsView(
+    ...     evolution_trunk, request)
+    >>> try: view.initialize()
+    ... except Unauthorized, e: print e
+    (...'translations_autoimport_mode', 'launchpad.Edit')
+
+    >>> login('test@canonical.com')
+    >>> print evolution_trunk.translations_autoimport_mode.title
+    No import.
+    >>> view.initialize()
+    >>> print evolution_trunk.translations_autoimport_mode.title
+    Import PO templates.
