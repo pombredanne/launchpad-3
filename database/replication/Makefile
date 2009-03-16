@@ -64,8 +64,6 @@ stagingsetup:
 	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/fti.py
 	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/security.py \
 		 -d lpmain_staging_new -U slony
-	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/security.py \
-		 -d lpmain_staging_slave_new -U slony
 
 # Switch the _new staging databases into place.
 stagingswitch:

@@ -215,6 +215,15 @@ def get_slave_nodes(con, set_id):
     return nodes
 
 
+def get_nodes(con, set_id):
+    """Return a list of all Nodes."""
+    master_node = get_master_node(con, set_id)
+    if master_node is None:
+        return []
+    else:
+        return [master_node] + get_slave_nodes(con, set_id)
+
+
 def preamble(con=None):
     """Return the preable needed at the start of all slonik scripts."""
 

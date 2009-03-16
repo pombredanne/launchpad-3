@@ -15,6 +15,7 @@ from optparse import OptionParser
 from fti import quote_identifier
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import logger_options, logger, db_options
+import replication.helpers
 
 
 class DbObject(object):
@@ -142,9 +143,27 @@ def main(options):
     config.read([configfile_name])
 
     con = connect(options.dbuser)
-
     cur = CursorWrapper(con.cursor())
+
+    nodes = replication.helpers.get_nodes(con, 1)
+    if nodes:
+        # If we have a replicated environment, reset permissions on all
+        # Nodes.
+        del con
+        for node in nodes:
+            log.info("Resetting permissions on %s (%s)" % (
+                node.nickname, node.connection_string))
+            reset_permissions(
+                psycopg2.connect(node.connection_string), config, options)
+    else:
+        # Otherwise, just reset permissions on the stand alone database.
+        log.info("Resetting permissions on standalone database")
+        reset_permissions(con, config, options)
+
+
+def reset_permissions(con, config, options):
     schema = DbSchema(con)
+    cur = CursorWrapper(con.cursor())
 
     # Add our two automatically maintained groups
     for group in ['read', 'admin']:
