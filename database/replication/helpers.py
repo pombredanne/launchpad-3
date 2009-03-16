@@ -230,7 +230,9 @@ def get_all_cluster_nodes(con):
     node.is_master will be None, as this boolean doesn't make sense
     in the context of a cluster rather than a single replication set.
     """
-    return _get_nodes(con, """
+    if not slony_installed(con):
+        return []
+    nodes = _get_nodes(con, """
         SELECT DISTINCT
             pa_server AS node_id,
             'node' || pa_server || '_node',
@@ -239,6 +241,23 @@ def get_all_cluster_nodes(con):
         FROM _sl.sl_path
         ORDER BY node_id
         """)
+    if not nodes:
+        # There are no subscriptions yet, so no paths. Generate the
+        # master Node.
+        cur = con.cursor()
+        cur.execute("SELECT no_id from _sl.sl_node")
+        node_ids = [row[0] for row in cur.fetchall()]
+        if len(node_ids) == 0:
+            return []
+        assert len(node_ids) == 1, "Multiple nodes but no paths."
+        master_node_id = node_ids[0]
+        master_connection_string = ConnectionString(
+            config.database.main_master)
+        master_connection_string.user = 'slony'
+        return [Node(
+            master_node_id, 'node%d_node' % master_node_id,
+            master_connection_string, True)]
+    return nodes
 
 
 def preamble(con=None):
@@ -248,24 +267,9 @@ def preamble(con=None):
         con = connect('slony')
 
     master_node = get_master_node(con)
-    if master_node is not None:
-        nodes = get_all_cluster_nodes(con)
-
-    else:
-        # We are bootstrapping. Generate what we can from the config.
-        #
-        master_node = Node(
-            1, 'master_node',
-            ConnectionString(config.database.main_master), True)
-        nodes = [
-            Node(
-                1, 'node1_node',
-                ConnectionString(config.database.main_master), None),
-            Node(
-                2, 'node2_node',
-                ConnectionString(config.database.main_slave), None)]
-        for node in nodes:
-            node.connection_string.user = 'slony'
+    nodes = get_all_cluster_nodes(con)
+    if master_node is None and len(nodes) == 1:
+        master_node = nodes[0]
 
     preamble = [dedent("""\
         #
@@ -278,11 +282,14 @@ def preamble(con=None):
         define lpmain_set  1;
         define authdb_set  2;
         define holding_set 666;
+        """)]
 
+    if master_node is not None:
+        preamble.append(dedent("""\
         # Symbolic id for the main replication set master node.
         define master_node %d;
         define master_node_conninfo '%s';
-        """ % (master_node.node_id, master_node.connection_string))]
+        """ % (master_node.node_id, master_node.connection_string)))
 
     for node in nodes:
         preamble.append(dedent("""\

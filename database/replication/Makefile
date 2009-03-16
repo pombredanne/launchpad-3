@@ -20,7 +20,7 @@ start:
 	./slon_ctl.py --lag="${LAG}" start
 
 stop:
-	./slon_ctl.py stop
+	-./slon_ctl.py stop
 
 restart: stop start
 
@@ -103,7 +103,7 @@ stagingswitch:
 
 _prelim:
 	# Create the slony PostgreSQL superuser if necessary.
-	createuser --superuser slony || true
+	-createuser --superuser slony
 	# Stop the slon daemons and wait a bit for connections to drop.
 	LPCONFIG=${_CONFIG} make stop
 	sleep 5
@@ -112,17 +112,26 @@ _prelim:
 	${PGMASSACRE} ${_SLAVE}
 
 _replicate:
-	# Create the slave database, empty at this point.
-	createdb --encoding=UTF8 --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
-	# Start the slon daemons with 0 lag for quick setup.
-	LPCONFIG=${_CONFIG} make start LAG="0 seconds"
-	# Generate a preamble for manual slonik(1) usage.
-	LPCONFIG=${_CONFIG} ./preamble.py > preamble.sk
-	# Turn the slave into a replica.
+	# Start the slon daemon for the master.
+	LPCONFIG=${_CONFIG} ./slon_ctl.py start \
+		 node1_node 'dbname=launchpad_dev user=slony'
+	# Initialize the cluster and create replication sets.
 	LPCONFIG=${_CONFIG} ./initialize.py -vv
-	# Generate a preamble for manual slonik(1) usage.
-	LPCONFIG=${_CONFIG} ./preamble.py > preamble.sk
+	# Create the soon-to-be-slave database, empty at this point.
+	createdb --encoding=UTF8 --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
+	# Duplicate the schema of the master
+	pg_dump -U postgres --schema-only --no-privileges ${_MASTER} \
+	    | psql -1 -q -U postgres -d ${_SLAVE}
+	-psql -1 -q -U postgres -d ${_SLAVE} -c 'DROP SCHEMA _sl CASCADE' \
+	    2>&1 | grep -v 'NOTICE:  drop cascades'
+	# Start the slon daemon for the slave
+	LPCONFIG=${_CONFIG} ./slon_ctl.py start \
+		 node2_node 'dbname=launchpad_dev_slave user=slony'
+	# Setup the slave
+	LPCONFIG=${_CONFIG} ./new-slave.py 2 "dbname=${_SLAVE}"
 	# Restart slon daemons with default lag setting.
 	LPCONFIG=${_CONFIG} make restart LAG="${LAG}"
+	# Generate a preamble for manual slonik(1) usage.
+	LPCONFIG=${_CONFIG} ./preamble.py > preamble.sk
 
 
