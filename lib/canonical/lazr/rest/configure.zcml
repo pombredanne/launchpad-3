@@ -2,6 +2,8 @@
     xmlns="http://namespaces.zope.org/zope"
     i18n_domain="lazr">
 
+    <adapter factory="zope.publisher.http.HTTPCharsets" />
+
     <class class="canonical.lazr.rest.CollectionResource">
         <allow interface='canonical.lazr.interfaces.ICollectionResource' />
     </class>

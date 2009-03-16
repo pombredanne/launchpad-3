@@ -4,6 +4,12 @@
 
   <webservice:register module="canonical.lazr.rest.example.interfaces" />
 
+  <class class="canonical.lazr.rest.example.root.CookbookSet">
+      <allow interface='canonical.lazr.rest.example.interfaces.ICookbookSet' />
+  </class>
+
+  <permission id="lazr.View" title="Viewing something" />
+
   <utility
       factory="canonical.lazr.rest.example.configuration.CookbookWebServiceConfiguration"
       provides="canonical.lazr.interfaces.rest.IWebServiceConfiguration">

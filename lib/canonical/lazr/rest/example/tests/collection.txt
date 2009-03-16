@@ -1,0 +1,85 @@
+= Introduction =
+
+All collections published by a lazr.restful web service work pretty
+much the same way. This document illustrates the general features of
+collections, using the cookbook service's collections of cookbooks and
+authors as examples.
+
+  >>> from canonical.lazr.testing.webservice import CookbookWebServiceCaller
+  >>> webservice = CookbookWebServiceCaller()
+
+
+== Collections and pagination ===
+
+A collection responds to GET by serving one page of the objects in the
+collection.
+
+  >>> cookbooks_collection = webservice.get("/cookbooks").jsonBody()
+  >>> cookbooks_collection['resource_type_link']
+  u'http://...#cookbooks'
+  >>> cookbooks_collection['total_size']
+  6
+  >>> cookbooks_collection['next_collection_link']
+  u'http://.../cookbooks?ws.start=5&ws.size=5'
+  >>> cookbooks_collection.get('prev_collection_link') is None
+  True
+
+  >>> from operator import itemgetter
+  >>> cookbooks_entries = sorted(
+  ...     cookbooks_collection['entries'], key=itemgetter('name'))
+  >>> len(cookbooks_entries)
+  5
+  >>> cookbooks_entries[0]['name']
+  u'Copy, Cut and Delete operations should work on selections'
+  >>> cookbooks_entries[0]['self_link']
+  u'http://.../bugs/12'
+  >>> cookbooks_entries[-1]['name']
+  u'jokosher exposes personal details in its actions portlet'
+
+There are no XHTML representations available for collections.
+
+  >>> print webservice.get('/cookbooks, 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  ...
+
+You can get other pages of the collection by following links:
+
+  >>> result = webservice.get("/cookbooks?ws.start=5&ws.size=5")
+  >>> second_batch = result.jsonBody()
+  >>> second_batch['next_collection_link']
+  u'http://.../cookbooks?ws.start=10&ws.size=5'
+  >>> second_batch['prev_collection_link']
+  u'http://.../cookbooks?ws.start=0&ws.size=5'
+
+  >>> cookbooks_entries = sorted(
+  ...     second_batch['entries'], key=itemgetter('title'))
+  >>> cookbooks_entries[0]['title']
+  u'A test cookbook'
+
+You can also get a larger batch than the default:
+
+  >>> big_batch = webservice.get("/cookbooks?ws.size=10").jsonBody()
+  >>> len(big_batch['entries'])
+  10
+  >>> big_batch.get('next_collection_link')
+  u'http://.../cookbooks?ws.start=10&ws.size=10'
+
+  >>> bigger_batch = webservice.get("/cookbooks?ws.size=20").jsonBody()
+  >>> len(bigger_batch['entries'])
+  15
+  >>> bigger_batch.get('next_collection_link') is None
+  True
+
+But requesting a batch size higher than the maximum configured value
+results in a 400 error.
+
+    >>> print webservice.get("/cookbooks?ws.start=0&ws.size=1000")
+    HTTP/1.1 400 Bad Request
+    ...
+    Content-Type: text/plain...
+    <BLANKLINE>
+    Maximum for "ws.size" parameter is ...
+
+

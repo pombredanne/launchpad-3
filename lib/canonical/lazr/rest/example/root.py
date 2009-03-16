@@ -52,7 +52,10 @@ class Cookbook(CookbookWebServiceObject):
 C1 = Cookbook(u"Mastering the Art of French Cooking")
 C2 = Cookbook(u"The Joy of Cooking")
 C3 = Cookbook(u"James Beard's American Cookery")
-COOKBOOKS = [C1, C2, C3]
+C4 = Cookbook(u"Everyday Greens")
+C5 = Cookbook(u"I'm Just Here For The Food")
+C6 = Cookbook(u"Cooking Without Recipes")
+COOKBOOKS = [C1, C2, C3, C4, C5, C6]
 
 
 class CookbookSet(CookbookTopLevelObject):
