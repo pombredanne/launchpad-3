@@ -181,7 +181,6 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         # Share a POTMsgSet in two templates, and get a Serbian POFile.
         self.potmsgset.setSequence(self.stable_potemplate, 1)
         sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
-        sr_stable_pofile = self.factory.makePOFile('sr', self.stable_potemplate)
         serbian = sr_pofile.language
 
         # A shared translation is current in both templates.
@@ -207,7 +206,6 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         # Share a POTMsgSet in two templates, and get a Serbian POFile.
         self.potmsgset.setSequence(self.stable_potemplate, 1)
         sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
-        sr_stable_pofile = self.factory.makePOFile('sr', self.stable_potemplate)
         serbian = sr_pofile.language
 
         # A shared translation is imported in both templates.
@@ -226,6 +224,54 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
             self.devel_potemplate, serbian), diverged_translation)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
             self.stable_potemplate, serbian), shared_translation)
+
+    def test_getLocalTranslationMessages(self):
+        """Test retrieval of local suggestions."""
+        # Share a POTMsgSet in two templates, and get a Serbian POFile.
+        self.potmsgset.setSequence(self.stable_potemplate, 1)
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        sr_stable_pofile = self.factory.makePOFile(
+            'sr', self.stable_potemplate)
+        serbian = sr_pofile.language
+
+        # When there are no suggestions, empty list is returned.
+        self.assertEquals(
+            list(self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, serbian)),
+            [])
+
+        # A shared suggestion is shown in both templates.
+        shared_suggestion = self.factory.makeSharedTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=True)
+        self.assertEquals(
+            list(self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, serbian)),
+            [shared_suggestion])
+        self.assertEquals(
+            list(self.potmsgset.getLocalTranslationMessages(
+                self.stable_potemplate, serbian)),
+            [shared_suggestion])
+
+        # A suggestion on another PO file is still shown in both templates.
+        another_suggestion = self.factory.makeSharedTranslationMessage(
+            pofile=sr_stable_pofile, potmsgset=self.potmsgset, suggestion=True)
+        self.assertEquals(
+            list(self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, serbian)),
+            [shared_suggestion, another_suggestion])
+        self.assertEquals(
+            list(self.potmsgset.getLocalTranslationMessages(
+                self.stable_potemplate, serbian)),
+            [shared_suggestion, another_suggestion])
+
+        # Setting one of the suggestions as current will leave make
+        # them both 'reviewed' and thus hidden.
+        shared_suggestion = self.factory.makeSharedTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=False)
+        self.assertEquals(
+            list(self.potmsgset.getLocalTranslationMessages(
+                self.devel_potemplate, serbian)),
+            [])
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
