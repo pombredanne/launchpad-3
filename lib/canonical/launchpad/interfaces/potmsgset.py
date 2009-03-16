@@ -123,9 +123,10 @@ class IPOTMsgSet(Interface):
         :param language: language we want translations for.
         """
 
-    def hasTranslationChangedInLaunchpad(language):
+    def hasTranslationChangedInLaunchpad(potemplate, language):
         """Whether an imported translation differs from the current one.
 
+        :param potemplate: potemplate we are asking about.
         :param language: language for which translations we are asking about.
 
         There has to be an imported translation: if there isn't, this is
