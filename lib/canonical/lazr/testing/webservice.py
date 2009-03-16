@@ -234,7 +234,7 @@ class CookbookWebServiceTestPublication(WebServiceTestPublication):
 class WebServiceCaller:
     """A class for making calls to lazr.restful web services."""
 
-    def __init__(self, handle_errors=False, http_caller=None,
+    def __init__(self, handle_errors=True, http_caller=None,
                  *args, **kwargs):
         """Create a WebServiceCaller.
         :param handle_errors: Should errors raise exception or be handled by
@@ -436,7 +436,7 @@ class CookbookWebServiceCaller(WebServiceCaller):
 
     base_url = "https://cookbooks.dev/"
 
-    def __init__(self, handle_errors=False):
+    def __init__(self, handle_errors=True):
         super(CookbookWebServiceCaller, self).__init__(
             handle_errors, CookbookWebServiceHTTPCaller())
 

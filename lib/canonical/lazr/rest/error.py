@@ -57,6 +57,7 @@ class WebServiceExceptionView:
             result.append('\n\n')
             result.append(traceback.format_exc())
 
+        import pdb; pdb.set_trace()
         return ''.join(result)
 
 

@@ -43,8 +43,8 @@
     <!--
     XXX flacoste 2008/05/09 bug=185958:
     Ideally, we would use webservice_error() to register the view,
-    but cyclic imports prevents us from doing so. This should be fixed once we
-    move webapp stuff into LAZR.
+    but InvalidBatchSizeError is in lazr.batchnavigator and webservice_error()
+    can only be called from within a class definition.
     -->
     <view
         for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"

@@ -42,7 +42,7 @@ from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
 from zope.publisher.interfaces.browser import (
     IBrowserRequest, IDefaultBrowserLayer)
-
+from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 
 # The namespace prefix for LAZR web service-related tags.
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
@@ -391,3 +391,5 @@ class IWebBrowserInitiatedRequest(Interface):
     know when a request was initiated by a web browser so that
     responses can be tweaked for their benefit.
     """
+
+InvalidBatchSizeError.__lazr_webservice_error__ = 400
