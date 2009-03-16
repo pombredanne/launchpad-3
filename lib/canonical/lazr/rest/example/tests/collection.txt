@@ -103,8 +103,10 @@ The elements of a collection can be looked up by unique identifier:
 
 A collection may be scoped to an element:
 
-  XXX get some recipes.
-
+  >>> url = quote("/dishes/Roast chicken/recipes")
+  >>> recipes = webservice.get(url).jsonBody()
+  >>> print recipes
+  ''
 
 == Named operations ==
 

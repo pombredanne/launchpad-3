@@ -12,6 +12,18 @@
       <allow interface='canonical.lazr.rest.example.interfaces.ICookbook' />
   </class>
 
+  <class class="canonical.lazr.rest.example.root.Dish">
+      <allow interface='canonical.lazr.rest.example.interfaces.IDish' />
+  </class>
+
+  <class class="canonical.lazr.rest.example.root.DishSet">
+      <allow interface='canonical.lazr.rest.example.interfaces.IDishSet' />
+  </class>
+
+  <class class="canonical.lazr.rest.example.root.Recipe">
+      <allow interface='canonical.lazr.rest.example.interfaces.IRecipe' />
+  </class>
+
   <permission id="lazr.View" title="Viewing something" />
 
   <utility
@@ -20,6 +32,7 @@
   </utility>
 
   <utility factory="canonical.lazr.rest.example.root.CookbookSet" />
+  <utility factory="canonical.lazr.rest.example.root.DishSet" />
 
   <utility
     provides="canonical.lazr.interfaces.rest.IServiceRootResource"

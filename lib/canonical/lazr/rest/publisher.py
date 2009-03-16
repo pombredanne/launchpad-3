@@ -139,6 +139,7 @@ class WebServicePublicationMixin:
             return ob
         else:
             # This object should not be published on the web service.
+            import pdb; pdb.set_trace()
             raise NotFound(ob, '')
 
         # Wrap the resource in a security proxy.
