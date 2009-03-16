@@ -17,6 +17,7 @@ __all__ = [
 from zope.schema import Bool, Choice, Datetime, Text, TextLine
 from zope.interface import Attribute, Interface
 
+from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
    collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_operation_as,
@@ -492,6 +493,13 @@ class IDistribution(IDistributionEditRestricted, IDistributionPublic):
 
 # We are forced to define this now to avoid circular import problems.
 IMessage['distribution'].schema = IDistribution
+
+# Patch the official_bug_tags field to make sure that it's
+# writable from the API, and not readonly like its definition
+# in IHasBugs.
+writable_obt_field = copy_field(IDistribution['official_bug_tags'])
+writable_obt_field.readonly = False
+IDistribution._v_attrs['official_bug_tags'] = writable_obt_field
 
 
 class IDistributionSet(Interface):

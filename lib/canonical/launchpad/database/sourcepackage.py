@@ -426,6 +426,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
 
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.distroseries.official_bug_tags
+
     def getUsedBugTags(self):
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
