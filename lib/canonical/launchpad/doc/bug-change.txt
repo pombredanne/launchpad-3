@@ -15,7 +15,9 @@ The base class for BugChanges doesn't actually implement anything.
     >>> example_person = factory.makePerson(displayname="Ford Prefect")
 
     >>> nowish = datetime(2009, 3, 13, 10, 9, tzinfo=pytz.timezone('UTC'))
-    >>> base_instance = BugChangeBase(when=nowish, person=example_person)
+    >>> base_instance = BugChangeBase(
+    ...     when=nowish, person=example_person, what_changed="Nothing",
+    ...     old_value=None, new_value=None)
     >>> verifyObject(IBugChange, base_instance)
     True
 
@@ -47,7 +49,9 @@ Bug.addChange().
 
     >>> example_product = factory.makeProduct(owner=example_person)
     >>> example_bug = factory.makeBug(
-    ...     product=example_product, owner=example_person)
+    ...     product=example_product, owner=example_person,
+    ...     title="Reality is on the blink again",
+    ...     description="I'm tired of thinking up funny strings for tests")
     >>> example_bug.addChange(base_instance)
     Traceback (most recent call last):
       ...
@@ -79,6 +83,10 @@ We'll create a test class that actually implements the methods we need.
     ...     recipients = [
     ...         example_person_2,
     ...         ]
+    ...
+    ...     def __init__(self, when, person):
+    ...         super(TestBugChange, self).__init__(
+    ...             when, person, None, None, None)
     ...
     ...     def getBugActivity(self):
     ...         return self.bug_activity_data
@@ -204,3 +212,41 @@ See component/ftests/test_bugchange.py for some sanity checks.
 The TextualBugChange class can be used to represent a change in the
 value of a textual field on a Bug, such as its description, title or
 name.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     TextualBugChange)
+
+    >>> textual_change = TextualBugChange(
+    ...     when=nowish, person=example_person, what_changed='title',
+    ...     old_value=example_bug.title, new_value='Spam')
+
+In its getBugActivity() method TextualBugChange merely returns the field
+name, old value and new value as passed to its __init__() method.
+
+    >>> activity_data = textual_change.getBugActivity()
+    >>> print pretty(activity_data)
+    {'newvalue': 'Spam',
+     'oldvalue': u'Reality is on the blink again',
+     'whatchanged': 'title'}
+
+TextualBugChange.getBugNotification(), on the other hand, returns a
+formatted description of the change.
+
+    >>> print textual_change.getBugNotification()['text']
+    ** Summary changed:
+    <BLANKLINE>
+    - Reality is on the blink again
+    + Spam
+
+If the Bug's description, rather than its title, is changed, this will
+also produce formatted notification text.
+
+    >>> textual_change = TextualBugChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='description', old_value=example_bug.description,
+    ...     new_value='Well, maybe not')
+    >>> print textual_change.getBugNotification()['text']
+    ** Description changed:
+    <BLANKLINE>
+    - I'm tired of thinking up funny strings for tests
+    + Well, maybe not

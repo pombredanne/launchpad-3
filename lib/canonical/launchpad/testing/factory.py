@@ -716,7 +716,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
-                date_created=None):
+                date_created=None, description=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -736,7 +736,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString(), private=private,
-            datecreated=date_created)
+            datecreated=date_created, description=description)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
