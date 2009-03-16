@@ -11,7 +11,7 @@ from lazr.enum import BaseItem
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
-    IBug, IBugActivitySet, IBugTask, IMilestone, IPerson, IProductRelease,
+    IBug, IBugActivitySet, IMilestone, IPerson, IProductRelease,
     ISourcePackageRelease)
 
 vocabulary_registry = getVocabularyRegistry()
