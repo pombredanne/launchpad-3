@@ -135,6 +135,8 @@ archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
 
 archive_index = ContextTitle('%s')
 
+archive_subscribers = ContextTitle('Manage subscriptions for %s')
+
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Code'
@@ -306,10 +308,6 @@ def bugwatch_comments(context, view):
     """Return the title for a page of imported comments for a bug watch."""
     return "Bug #%d - Comments imported from bug watch %s on %s" % (
         context.bug.id, context.remotebug, context.bugtracker.title)
-
-# bugpackageinfestations_index is a redirect
-
-# bugproductinfestations_index is a redirect
 
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
@@ -729,6 +727,8 @@ logintoken_newaccount = 'Create a new Launchpad account'
 
 logintoken_resetpassword = 'Forgotten your password?'
 
+loginservice_standalone_login = loginservice_login
+
 logintoken_validateemail = 'Confirm e-mail address'
 
 logintoken_validategpg = 'Confirm OpenPGP key'
@@ -833,7 +833,15 @@ object_translations = ContextDisplayName('Translation templates for %s')
 
 oops = 'Oops!'
 
-openid_index = 'Launchpad OpenID Server'
+openid_account_change_password = 'Change your password'
+
+def openid_account_edit(context, view):
+    return smartquote("%s's details") % view.account.displayname
+
+openid_default = 'OpenID Endpoint'
+
+def openid_index(context, view):
+    return 'Welcome %s' % view.account.displayname
 
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
@@ -867,6 +875,9 @@ people_newteam = 'Register a new team in Launchpad'
 people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
+
+person_archive_subscriptions = ContextDisplayName(
+    'Private archive subscriptions for %s')
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
@@ -1263,6 +1274,8 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
+
+sourcepackage_branches = ContextDisplayName('Branches in %s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 

@@ -2274,3 +2274,39 @@ to a single IArchive.
 
     >>> print sabdfl.archive.name
     ppa
+
+The ppas named differently than the default ('ppa') have a slightly
+different title format, including their names.
+
+    >>> print another_ppa.title
+    PPA named nightly for Mark Shuttleworth
+
+
+== Looking up named PPAs ==
+
+Additionally to the locked 'archive' property, `IPerson` also offers
+`ppas` property and `getPPAByName` method.
+
+`IPerson.ppas` returns a list with all PPA owned by the context person
+or team ordered by name.
+
+    >>> for ppa in sabdfl.ppas:
+    ...     print ppa.name
+    nightly
+    ppa
+
+`IPerson.getPPAByName` allows call sites to look up PPAs owned by the
+context person with a given name (exact match).
+
+    >>> default_ppa = sabdfl.getPPAByName('ppa')
+    >>> default_ppa == sabdfl.archive
+    True
+
+    >>> nightly_ppa = sabdfl.getPPAByName('nightly')
+    >>> another_ppa == nightly_ppa
+    True
+
+When there are not matching PPAs, None is returned.
+
+    >>> print sabdfl.getPPAByName('not-found')
+    None

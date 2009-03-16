@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0613,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -14,9 +14,10 @@ import re
 import rfc822
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
+from lazr.enum import enumerated_type_registry
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
@@ -34,23 +35,21 @@ from canonical.launchpad.interfaces import (
     BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
     ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.person import (
-    IPerson, IPersonSet, PersonVisibility)
+    IHasIcon, IHasLogo, IHasMugshot)
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
-from canonical.lazr import enumerated_type_registry
 from canonical.lazr.canonicalurl import nearest_adapter
 
 
@@ -421,8 +420,12 @@ class ObjectFormatterAPI:
         :param view_name: If not None, return the URL to the page with that
             name on this object.
         """
-        url = canonical_url(
-            self._context, path_only_if_possible=True, view_name=view_name)
+        try:
+            url = canonical_url(
+                self._context, path_only_if_possible=True,
+                view_name=view_name)
+        except Unauthorized:
+            url = ""
         return url
 
     def api_url(self, context):
@@ -875,6 +878,11 @@ class BadgeDisplayAPI:
 class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
 
+    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url',
+                         'displayname': 'displayname',
+                         'unique_displayname': 'unique_displayname',
+                         }
+
     final_traversable_names = {'local-time': 'local_time'}
 
     def traverse(self, name, furtherPath):
@@ -908,9 +916,21 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, cgi.escape(person.browsername))
 
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        person = self._context
+        return person.displayname
+
+    def unique_displayname(self, view_name, rootsite=None):
+        """Return the unique_displayname as a string."""
+        person = self._context
+        return person.unique_displayname
+
 
 class TeamFormatterAPI(PersonFormatterAPI):
     """Adapter for `ITeam` objects to a formatted string."""
+
+    hidden = u'<hidden>'
 
     def url(self, view_name=None):
         """See `ObjectFormatterAPI`."""
@@ -928,10 +948,30 @@ class TeamFormatterAPI(PersonFormatterAPI):
 
     def link(self, view_name, rootsite=None):
         """See `ObjectFormatterAPI`."""
-        if not check_permission('launchpad.View', self._context):
+        person = self._context
+        if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            return '&lt;redacted&gt;'
+            image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
+            return u'%s&nbsp;%s' % (
+                image_html, cgi.escape(self.hidden))
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
+
+    def displayname(self, view_name, rootsite=None):
+        """See `PersonFormatterAPI`."""
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            return self.hidden
+        return super(TeamFormatterAPI, self).displayname(view_name, rootsite)
+
+    def unique_displayname(self, view_name, rootsite=None):
+        """See `PersonFormatterAPI`."""
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            # This person has no permission to view the team details.
+            return self.hidden
+        return super(TeamFormatterAPI, self).unique_displayname(view_name,
+                                                                rootsite)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
@@ -1752,6 +1792,42 @@ class DurationFormatterAPI:
         return "%s weeks" % number_name.get(weeks, str(weeks))
 
 
+class LinkFormatterAPI(ObjectFormatterAPI):
+    """Adapter from Link objects to a formatted anchor."""
+    final_traversable_names = {
+        'icon': 'icon',
+        'icon-link': 'icon_link',
+        'link-icon': 'link_icon',
+        }
+
+    def icon(self):
+        """Return the icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-icon")()
+
+    def link_icon(self):
+        """Return the text and icon representation of the link."""
+        request = get_current_browser_request()
+        return getMultiAdapter(
+            (self._context, request), name="+inline-suffix")()
+
+    def icon_link(self):
+        """Return the icon and text representation of the link."""
+        return self.link(None)
+
+    def link(self, view_name, rootsite=None):
+        """Return the default representation of the link."""
+        return self._context.render()
+
+    def url(self, view_name=None):
+        """Return the URL representation of the link."""
+        if self._context.enabled:
+            return self._context.url
+        else:
+            return u''
+
+
 def clean_path_segments(request):
     """Returns list of path segments, excluding system-related segments."""
     proto_host_port = request.getApplicationURL()
@@ -2461,7 +2537,8 @@ class FormattersAPI:
                 css_class = 'diff-comment text'
             else:
                 css_class = 'text'
-            result.append('<td class="%s">%s</td>' % (css_class, escape(line)))
+            result.append(
+                '<td class="%s">%s</td>' % (css_class, escape(line)))
             result.append('</tr>')
 
         result.append('</table>')

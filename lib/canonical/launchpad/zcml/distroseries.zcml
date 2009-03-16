@@ -6,7 +6,6 @@
 
   <class class="canonical.launchpad.database.DistroSeries">
     <allow interface="canonical.launchpad.interfaces.IDistroSeriesPublic"/>
-    <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
@@ -43,7 +42,7 @@
     <!-- IStructuralSubscriptionTarget -->
     <allow attributes="bug_subscriptions getBugNotificationsRecipients
                        getSubscription getSubscriptions
-                       parent_subscription_target" />
+                       parent_subscription_target target_type_display" />
     <require
         permission="launchpad.AnyPerson"
         attributes="addBugSubscription addSubscription

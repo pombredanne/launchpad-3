@@ -24,16 +24,18 @@ from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from storm.expr import And, Alias, AutoTables, Join, LeftJoin, SQL
-
+from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, SQL
 from storm.sqlobject import SQLObjectResultSet
+from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 
 import pytz
 
 from zope.component import getUtility
 from zope.interface import implements, alsoProvides
 from zope.interface.interfaces import IMethod
-from zope.security.proxy import isinstance as zope_isinstance
+from zope.security.proxy import (
+    isinstance as zope_isinstance, removeSecurityProxy)
+from lazr.enum import DBItem
 
 from canonical.config import config
 
@@ -43,8 +45,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
-
-from canonical.lazr.enum import DBItem
 
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
@@ -1511,6 +1511,17 @@ class BugTaskSet:
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
 
+        if params.affected_user:
+            affected_user_clause = """
+            BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, BugAffectsPerson
+                WHERE BugTask.bug = BugAffectsPerson.bug
+                AND BugAffectsPerson.person = %(affected_user)s
+                AND BugAffectsPerson.affected = TRUE
+            )
+            """ % sqlvalues(affected_user=params.affected_user)
+            extra_clauses.append(affected_user_clause)
+
         if params.nominated_for:
             mappings = sqlvalues(
                 target=params.nominated_for,
@@ -1729,6 +1740,36 @@ class BugTaskSet:
         bugtasks = SQLObjectResultSet(BugTask, orderBy=orderby,
                                       prepared_result_set=result)
         return bugtasks
+
+    def getAssignedMilestonesFromSearch(self, search_results):
+        """See `IBugTaskSet`."""
+        # XXX: Gavin Panella 2009-03-05 bug=338184: There is currently
+        # no clean way to get the underlying Storm ResultSet from an
+        # SQLObjectResultSet, so we must remove the security proxy for
+        # a moment.
+        if ISQLObjectResultSet.providedBy(search_results):
+            search_results = removeSecurityProxy(search_results)._result_set
+        # Check that we have a Storm result set before we start doing
+        # things with it.
+        assert IResultSet.providedBy(search_results), (
+            "search_results must provide IResultSet or ISQLObjectResultSet")
+        # Remove ordering and make distinct.
+        search_results = search_results.order_by().config(distinct=True)
+        # Get milestone IDs.
+        milestone_ids = [
+            milestone_id for milestone_id in (
+                search_results.values(BugTask.milestoneID))
+            if milestone_id is not None]
+        # Query for milestones.
+        if len(milestone_ids) == 0:
+            return []
+        else:
+            # Import here because of cyclic references.
+            from canonical.launchpad.database.milestone import (
+                Milestone, milestone_sort_key)
+            milestones = search_results._store.find(
+                Milestone, In(Milestone.id, milestone_ids))
+            return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,

@@ -1,0 +1,206 @@
+= Field resources =
+
+It's possible to get the value of one particular field. You can get a
+JSON or XHTML-fragment representation.
+
+    >>> import simplejson
+    >>> def set_display_name(name):
+    ...     """Sets salgado's display name."""
+    ...     representation = {'display_name': name}
+    ...     ignore = webservice('/~salgado', 'PATCH',
+    ...                         simplejson.dumps(representation))
+
+    >>> set_display_name("<b>Guilherme Salgado</b>")
+
+    >>> print webservice.get('/~salgado/display_name')
+    HTTP/1.1 200 Ok
+    ...
+    Content-Type: application/json
+    ...
+
+    >>> print webservice.get('/~salgado/display_name').jsonBody()
+    <b>Guilherme Salgado</b>
+
+    >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
+    HTTP/1.1 200 Ok
+    ...
+    Content-Type: application/xhtml+xml
+    ...
+    &lt;b&gt;Guilherme Salgado&lt;/b&gt;
+
+    >>> set_display_name("Guilherme Salgado")
+
+
+= Supported methods =
+
+Field resources are read-only.
+
+    >>> for method in ['HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']:
+    ...     print webservice("/~salgado/display_name", method)
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+
+
+= Conditional GET =
+
+Field resources have ETags independent of their parent entries. They
+respond to conditional GET.
+
+    >>> response = webservice.get('/~salgado')
+    >>> salgado_etag = response._response.getHeader('ETag')
+
+    >>> response = webservice.get('/~salgado/display_name')
+    >>> etag = response._response.getHeader('ETag')
+
+    >>> salgado_etag == etag
+    False
+
+    >>> print webservice.get('/~salgado/display_name',
+    ...                      headers={'If-None-Match': etag})
+    HTTP/1.1 304 Not Modified
+    ...
+
+    >>> set_display_name("new display name")
+    >>> print webservice.get('/~salgado/display_name',
+    ...                      headers={'If-None-Match': etag})
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> set_display_name("Guilherme Salgado")
+
+
+= Custom representations =
+
+Every entry has an XHTML representation. The default representation is
+a simple text node.
+
+  >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  Guilherme Salgado
+
+But it's possible to define a custom HTML renderer for a particular
+object and field type. Here's a simple renderer that bolds whatever
+value it's given.
+
+  >>> from zope import component
+  >>> from zope.interface import implementer
+  >>> from zope.schema.interfaces import IText
+  >>> from canonical.launchpad.interfaces import IPerson
+  >>> from canonical.lazr.interfaces.rest import (
+  ...     IFieldHTMLRenderer, IWebServiceClientRequest)
+
+  >>> @component.adapter(IPerson, IText, IWebServiceClientRequest)
+  ... @implementer(IFieldHTMLRenderer)
+  ... def dummy_renderer(context, field, request):
+  ...     """Create a simple renderer that bolds the original string."""
+  ...     def render(value):
+  ...         return "<b>%s</b>" % value.encode("utf-8")
+  ...     return render
+
+Register the renderer as the IFieldHTMLRenderer adapter for an
+IText field of an IPerson entry...
+
+  >>> from zope.component import getGlobalSiteManager
+  >>> manager = getGlobalSiteManager()
+  >>> manager.registerAdapter(dummy_renderer)
+
+...and the XHTML representation of an IPerson will be the result of
+calling a dummy_renderer object.
+
+  >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <b>Guilherme Salgado</b>
+
+In fact, that adapter will be used for every IText field of an IPerson.
+
+  >>> print webservice.get('/~salgado/name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <b>salgado</b>
+
+Note that the XHTML is not escaped, as it is when the default adapter
+is used. Escaping user-entered XHTML, and distinguishing it from
+system-generated XHTML, is the responsibility of each adapter.
+
+The adapter will not be used for IText fields of other interfaces:
+
+  >>> print webservice.get('/firefox/name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  firefox
+
+It will not be used for non-text fields of IPerson.
+
+  >>> print webservice.get('/~salgado/date_created', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  2005-06-06 08:59:51.596025+00:00
+
+Before we continue, here's some cleanup code to remove the custom
+renderer we just defined.
+
+  >>> from zope.component import getGlobalSiteManager
+  >>> ignored = getGlobalSiteManager().unregisterAdapter(dummy_renderer)
+
+  >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  Guilherme Salgado
+
+
+== Defining a custom representation for a single field ==
+
+It's also possible to define a custom HTML representation of one
+particular field, by registering a view on the field. This code
+creates a custom renderer for IPerson.display_name, by registering
+a view on IPerson called "display_name".
+
+  >>> manager.registerAdapter(dummy_renderer, name='display_name')
+
+  >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <b>Guilherme Salgado</b>
+
+Unlike what happened when we registered an renderer for
+IPerson/IText, other IText fields of IPerson are not affected.
+
+  >>> print webservice.get('/~salgado/name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  salgado
+
+The XHTML representation of an entry incorporates any custom XHTML
+representations of that entry's fields.
+
+  >>> print webservice.get('/~salgado', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <dt>display_name</dt>
+  <dd><b>Guilherme Salgado</b></dd>
+  ...
+
+Before we continue, here's some code to unregister the view.
+
+  >>> ignored = getGlobalSiteManager().unregisterAdapter(
+  ...      dummy_renderer, name='display_name')
+
+  >>> print webservice.get('/~salgado/display_name', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  Guilherme Salgado

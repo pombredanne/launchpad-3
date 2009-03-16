@@ -70,7 +70,7 @@
       </table>
 
       <div id="application-summary">
-        <p class="error" 
+        <p class="error"
            tal:condition="not: view/searchresults">
           No projects matching
           &#8220;<span tal:replace="view/search_string">moz</span>&#8221;
@@ -122,9 +122,7 @@
         <table>
           <tbody>
             <tr tal:repeat="team context/people/latest_teams">
-              <td tal:content="structure team/image:icon" />
-              <td><a tal:content="team/displayname"
-                     tal:attributes="href team/fmt:url">A-Team</a>
+              <td><a tal:replace="structure team/fmt:link">A-Team</a>
                   registered
                   <span tal:attributes="title team/datecreated/fmt:datetime"
                         tal:content="team/datecreated/fmt:displaydate">

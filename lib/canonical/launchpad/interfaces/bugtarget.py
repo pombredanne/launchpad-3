@@ -10,10 +10,12 @@ __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
+    'IOfficialBugTag',
+    'IOfficialBugTagTarget',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import List, Text
+from zope.schema import List, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtask import (
@@ -23,8 +25,8 @@ from canonical.lazr.fields import Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, exported, operation_parameters,
-    operation_returns_collection_of)
+    export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_collection_of)
 
 
 class IHasBugs(Interface):
@@ -64,6 +66,7 @@ class IHasBugs(Interface):
         bug_commenter=Reference(schema=IPerson),
         bug_subscriber=Reference(schema=IPerson),
         owner=Reference(schema=IPerson),
+        affected_user=Reference(schema=IPerson),
         has_patch=copy_field(IBugTaskSearch['has_patch']),
         has_cve=copy_field(IBugTaskSearch['has_cve']),
         tags=copy_field(IBugTaskSearch['tag']),
@@ -84,8 +87,9 @@ class IHasBugs(Interface):
                     status=None, importance=None,
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
-                    has_patch=None, has_cve=None, distribution=None,
-                    tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
+                    affected_user=None, has_patch=None, has_cve=None,
+                    distribution=None, tags=None,
+                    tags_combinator=BugTagsSearchCombinator.ALL,
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
@@ -185,3 +189,31 @@ class BugDistroSeriesTargetDetails:
         self.sourcepackage = sourcepackage
         self.assignee = assignee
         self.status = status
+
+
+class IOfficialBugTagTarget(Interface):
+    """An entity for which official bug tags can be defined."""
+
+    @operation_parameters(
+        tag=Text(title=u'The official bug tag', required=True))
+    @export_write_operation()
+    def addOfficialBugTag(tag):
+        """Add tag to the official bug tags of this target."""
+
+    @operation_parameters(
+        tag=Text(title=u'The official bug tag', required=True))
+    @export_write_operation()
+    def removeOfficialBugTag(tag):
+        """Remove tag from the official bug tags of this target."""
+
+
+class IOfficialBugTag(Interface):
+    """Official bug tags for a product, a project or a distribution."""
+    tag = Text(
+        title=u'The official bug tag', required=True)
+
+    target = Object(
+        title=u'The target of this bug tag.',
+        schema=IOfficialBugTagTarget,
+        description=
+            u'The distribution or product having this official bug tag.')

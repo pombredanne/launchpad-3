@@ -51,6 +51,7 @@ from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.builder import *
+from canonical.launchpad.interfaces.buildrecords import *
 from canonical.launchpad.interfaces.buildqueue import *
 from canonical.launchpad.interfaces.codeimport import *
 from canonical.launchpad.interfaces.codeimportevent import *
@@ -94,7 +95,6 @@ from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
 from canonical.launchpad.interfaces.hwdb import *
-from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *

@@ -18,9 +18,9 @@ from canonical.launchpad.database.codeimportjob import (
     CodeImportJob, CodeImportJobSet)
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
-    CodeImportReviewStatus, ICodeImportSet, IPersonSet,
-    RevisionControlSystems)
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    CodeImportReviewStatus, ICodeImportSet, IPersonSet)
+from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
+from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 from canonical.testing import (
@@ -35,7 +35,7 @@ class TestCodeImportCreation(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.factory = LaunchpadObjectFactory()
-        login(ANONYMOUS)
+        login('no-priv@canonical.com')
 
     def tearDown(self):
         logout()
@@ -290,7 +290,7 @@ class TestCodeImportResultsAttribute(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
-        login(ANONYMOUS)
+        login('no-priv@canonical.com')
         self.factory = LaunchpadObjectFactory()
         self.code_import = self.factory.makeCodeImport()
 
@@ -405,6 +405,11 @@ class TestGetActiveImports(TestCaseWithFactory):
         """
         super(TestGetActiveImports, self).setUp()
         nuke_codeimport_sample_data()
+        login('no-priv@canonical.com')
+
+    def tearDown(self):
+        super(TestGetActiveImports, self).tearDown()
+        logout()
 
     def testEmpty(self):
         # We start out with no code imports, so getActiveImports() returns no

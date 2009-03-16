@@ -61,6 +61,11 @@ from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
+from lazr.delegates import delegates
+from lazr.enum import EnumeratedType, Item
+
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -73,7 +78,7 @@ from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugnomination import (
@@ -109,8 +114,6 @@ from canonical.launchpad.searchbuilder import all, any, NULL
 
 from canonical.launchpad import helpers
 
-from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
-
 from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
@@ -121,12 +124,9 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
-from canonical.lazr import EnumeratedType, Item
-from lazr.delegates import delegates
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.interfaces.rest import IJSONRequestCache
 
@@ -1321,7 +1321,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                 bugtask.statusexplanation = ""
 
             notify(
-                SQLObjectModifiedEvent(
+                ObjectModifiedEvent(
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))

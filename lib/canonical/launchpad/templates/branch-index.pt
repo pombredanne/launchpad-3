@@ -241,7 +241,7 @@
                 condition="job/requesting_user">
                 (requested by
                 <tal:requested-by-user
-                   content="structure job/requesting_user/fmt:link">
+                   replace="structure job/requesting_user/fmt:link">
                   Some user.
                 </tal:requested-by-user>)</tal:requested-by>.
             </tal:overdue>
@@ -402,20 +402,25 @@
   <h2>Nearby</h2>
   <ul>
     <li tal:condition="context/product">
-      <a tal:attributes="href string:${context/product/fmt:url}/+branches">
+      <a tal:attributes="href context/product/fmt:url">
         Other <tal:product replace="context/product/displayname" /> branches
       </a>
     </li>
+    <li tal:condition="context/sourcepackage">
+      <a tal:attributes="href context/sourcepackage/fmt:url">
+        Other <tal:product replace="context/sourcepackage/displayname" /> branches
+      </a>
+    </li>
     <li>
-      <a tal:attributes="href string:${context/owner/fmt:url}/+ownedbranches">
+      <a tal:attributes="href context/owner/fmt:url">
         Other branches owned by <tal:person
-        replace="context/owner/displayname">Owner</tal:person>
+        replace="context/owner/fmt:displayname">Owner</tal:person>
       </a>
     </li>
     <li tal:condition="not:view/owner_is_registrant">
       <a tal:attributes="href string:${context/registrant/fmt:url}/+registeredbranches">
         Other branches registered by <tal:person
-        replace="context/registrant/displayname">Registrant</tal:person>
+        replace="context/registrant/fmt:displayname">Registrant</tal:person>
       </a>
     </li>
   </ul>

@@ -90,7 +90,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -291,6 +291,7 @@ class ProductNavigationMenu(NavigationMenu):
     links = [
         'details',
         'announcements',
+        'branchvisibility',
         'downloads',
         ]
 
@@ -305,6 +306,11 @@ class ProductNavigationMenu(NavigationMenu):
     def downloads(self):
         text = 'Downloads'
         return Link('+download', text)
+
+    @enabled_with_permission('launchpad.Admin')
+    def branchvisibility(self):
+        text = 'Branch Visibility Policy'
+        return Link('+branchvisibility', text)
 
 
 class ProductEditNavigationMenu(NavigationMenu):

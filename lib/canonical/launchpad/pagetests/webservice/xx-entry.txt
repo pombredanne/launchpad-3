@@ -154,16 +154,16 @@ type. Here's a simple view that serves some hard-coded HTML.
   ...     def __call__(*args):
   ...         return "<html>foo</html>"
 
-Register the view as the WebServiceLayer view for an IPerson entry...
+Register the view as the IWebServiceClientRequest view for an IPerson entry...
 
-  >>> from canonical.lazr.interfaces.rest import WebServiceLayer
+  >>> from canonical.lazr.interfaces.rest import IWebServiceClientRequest
   >>> from canonical.launchpad.interfaces import IPerson
   >>> from zope.interface.interfaces import IInterface
   >>> view_name = "canonical.lazr.rest.resource.EntryResource"
   >>> from zope.component import getGlobalSiteManager
   >>> manager = getGlobalSiteManager()
   >>> manager.registerAdapter(
-  ...      factory=DummyView, required=[IPerson, WebServiceLayer],
+  ...      factory=DummyView, required=[IPerson, IWebServiceClientRequest],
   ...      provided=IInterface, name=view_name)
 
 ...and the XHTML representation of an IPerson will be the result of
@@ -179,7 +179,7 @@ we just defined.
 
   >>> from zope.component import getGlobalSiteManager
   >>> ignored = getGlobalSiteManager().unregisterAdapter(
-  ...      factory=DummyView, required=[IPerson, WebServiceLayer],
+  ...      factory=DummyView, required=[IPerson, IWebServiceClientRequest],
   ...      provided=IInterface, name=view_name)
 
   >>> print webservice.get('/~salgado', 'application/xhtml+xml')
@@ -668,7 +668,7 @@ string won't work.
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  team_owner_link: No such object "A random string".
+  team_owner_link: "A random string" is not a valid URI.
 
 But not just any URL will do. It has to identify an object in the web
 service.

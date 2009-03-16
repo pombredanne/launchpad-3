@@ -48,7 +48,7 @@ Launchpad admins however, can get to it.
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> admin_browser.getLink('Define branch visibility').click()
     >>> print admin_browser.url
-    http://code.launchpad.dev/firefox/+branchvisibility
+    http://launchpad.dev/firefox/+branchvisibility
 
 
 == Default policies ==
@@ -108,9 +108,7 @@ it new policy item just specifies public branches for everyone.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+branchvisibility')
     >>> admin_browser.getLink('Customise policy for Mozilla Firefox').click()
-    >>> admin_browser.getControl('Team', index=0).value = ''
-    >>> admin_browser.getControl('Rule').value = ['PUBLIC']
-    >>> admin_browser.getControl('Set Team Policy').click()
+    >>> admin_browser.getControl('Set Default Public').click()
     >>> print admin_browser.url
     http://launchpad.dev/firefox/+branchvisibility
 
@@ -128,22 +126,27 @@ either.
     Set policy for a team -> +addbranchvisibilitypolicy
     Remove policy items -> +removebranchvisibilitypolicy
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'policy-items'))
+    >>> print_tag_with_id(admin_browser.contents, 'policy-items')
     Default branch visibility for all branches in Mozilla Firefox is Public.
 
 Once real teams are added, they are shown on the page.
 
     >>> admin_browser.getLink('Set policy for a team').click()
     >>> admin_browser.getControl('Team', index=0).value = 'launchpad'
-    >>> admin_browser.getControl('Rule').value = ['PRIVATE']
+
+The rules are shown as radio buttons.
+
+    >>> print_radio_button_field(admin_browser.contents, 'rule')
+    ( ) Public
+    (*) Private
+    ( ) Private only
     >>> admin_browser.getControl('Set Team Policy').click()
 
     >>> admin_browser.getLink('Set policy for a team').click()
     >>> admin_browser.getControl('Team', index=0).value = 'name18'
-    >>> admin_browser.getControl('Rule').value = ['PRIVATE']
     >>> admin_browser.getControl('Set Team Policy').click()
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'policy-items'))
+    >>> print_tag_with_id(admin_browser.contents, 'policy-items')
     Default branch visibility for all branches in Mozilla Firefox is Public.
     Except for the following teams:
     Launchpad Developers: Private
@@ -186,7 +189,7 @@ Now to remove two.  The override for Everyone, and Launchpad Devs.
     >>> admin_browser.getControl('Launchpad Developers: Private').click()
     >>> admin_browser.getControl('Remove Selected Policy Items').click()
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'policy-items'))
+    >>> print_tag_with_id(admin_browser.contents, 'policy-items')
     Default branch visibility for all branches in Mozilla Firefox is Public.
     Except for the following teams:
     Ubuntu Gnome Team: Private
@@ -200,5 +203,5 @@ Firefox will go back to inheriting the polices of Mozilla.
     >>> admin_browser.getControl('Ubuntu Gnome Team: Private').click()
     >>> admin_browser.getControl('Remove Selected Policy Items').click()
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'inherited'))
+    >>> print_tag_with_id(admin_browser.contents, 'inherited')
     Using inherited policy from the Mozilla Project.

@@ -23,7 +23,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Date, Datetime, Int, List, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
-
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -35,7 +35,8 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal, BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import (
+    IBugTarget, IOfficialBugTagTarget)
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
@@ -57,8 +58,9 @@ from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.validators.sourceforgeproject import (
+    sourceforge_project_name_validator)
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, collection_default_content,
@@ -119,7 +121,7 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProductEditRestricted(Interface):
+class IProductEditRestricted(IOfficialBugTagTarget):
     """`IProduct` properties which require launchpad.Edit permission."""
 
     def newSeries(owner, name, summary, branch=None):
@@ -176,7 +178,7 @@ class IProductPublic(
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, ISpecificationTarget, IPillar):
+    ILaunchpadUsage, IMakesAnnouncements, IPillar, ISpecificationTarget):
     """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
@@ -322,6 +324,7 @@ class IProductPublic(
         TextLine(
             title=_('Sourceforge Project'),
             required=False,
+            constraint=sourceforge_project_name_validator,
             description=_("""The SourceForge project name for
                 this project, if it is in sourceforge.""")),
         exported_as='sourceforge_project')
@@ -830,7 +833,7 @@ class NoSuchProduct(NameLookupFailed):
     _message_prefix = "No such product"
 
 
-# Fix a circular import.
+# Fix circular imports.
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 IDistributionSourcePackage['upstream_product'].schema = IProduct
