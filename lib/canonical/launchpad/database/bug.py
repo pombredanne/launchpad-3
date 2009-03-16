@@ -35,6 +35,7 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.launchpad.components.bugchange import LegacyBugChange
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -630,16 +631,17 @@ class Bug(SQLBase):
 
     def addChangeNotification(self, text, person, recipients=None, when=None):
         """See `IBug`."""
-        if recipients is None:
-            recipients = self.getBugNotificationRecipients(
-                level=BugNotificationLevel.METADATA)
-        if when is None:
-            when = UTC_NOW
-        message = MessageSet().fromText(
-            self.followup_subject(), text, owner=person, datecreated=when)
-        getUtility(IBugNotificationSet).addNotification(
-             bug=self, is_comment=False,
-             message=message, recipients=recipients)
+        
+#        if recipients is None:
+#            recipients = self.getBugNotificationRecipients(
+#                level=BugNotificationLevel.METADATA)
+#        if when is None:
+#            when = UTC_NOW
+#        message = MessageSet().fromText(
+#            self.followup_subject(), text, owner=person, datecreated=when)
+#        getUtility(IBugNotificationSet).addNotification(
+#             bug=self, is_comment=False,
+#             message=message, recipients=recipients)
 
     def addCommentNotification(self, message, recipients=None):
         """See `IBug`."""
@@ -652,12 +654,16 @@ class Bug(SQLBase):
 
     def addChange(self, change):
         """See `IBug`."""
+        when = change.when
+        if when is None:
+            when = UTC_NOW
+
         # Only try to add something to the activity log if we have some
         # data.
         activity_data = change.getBugActivity()
         if activity_data is not None:
             bug_activity = getUtility(IBugActivitySet).new(
-                self, change.when, change.person,
+                self, when, change.person,
                 activity_data['whatchanged'],
                 activity_data.get('oldvalue'),
                 activity_data.get('newvalue'),
@@ -675,7 +681,7 @@ class Bug(SQLBase):
                 "notification_data must include a `text` value.")
             message = MessageSet().fromText(
                 self.followup_subject(), notification_data['text'],
-                owner=change.person, datecreated=change.when)
+                owner=change.person, datecreated=when)
 
             getUtility(IBugNotificationSet).addNotification(
                  bug=self, is_comment=False, message=message,
