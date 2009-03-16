@@ -4,13 +4,16 @@ __metaclass__ = type
 
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.interfaces import SpecificationGoalStatus
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.specification import (
+    SpecificationGoalStatus)
 
 
 @block_implicit_flushes
 def specification_goalstatus(spec, event):
     """Update goalstatus if productseries or distroseries is changed."""
-    delta = spec.getDelta(event.object_before_modification, event.user)
+    delta = spec.getDelta(
+        event.object_before_modification, IPerson(event.user))
     if delta is None:
         return
     if delta.productseries is not None or delta.distroseries is not None:

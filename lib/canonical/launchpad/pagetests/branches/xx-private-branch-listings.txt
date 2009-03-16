@@ -148,7 +148,7 @@ viewable branches.
     ...         print "No landscape branches"
 
     >>> print_person_code_listing(anon_browser)
-    Total of 10 branches listed
+    Total of 9 branches listed
     No landscape branches
     >>> print_person_code_listing(anon_browser, '/+ownedbranches')
     Total of 9 branches listed
@@ -158,7 +158,7 @@ viewable branches.
     No landscape branches
 
     >>> print_person_code_listing(no_priv_browser)
-    Total of 10 branches listed
+    Total of 9 branches listed
     No landscape branches
     >>> print_person_code_listing(no_priv_browser, '/+ownedbranches')
     Total of 9 branches listed
@@ -168,8 +168,7 @@ viewable branches.
     No landscape branches
 
     >>> print_person_code_listing(landscape_dev_browser)
-    Total of 12 branches listed
-    lp://dev/~landscape-developers/landscape/trunk  Development   ...
+    Total of 10 branches listed
     lp://dev/~name12/landscape/feature-x            Development   ...
     >>> print_person_code_listing(landscape_dev_browser, '/+ownedbranches')
     Total of 10 branches listed
@@ -180,8 +179,7 @@ viewable branches.
     lp://dev/~name12/landscape/feature-x            Development   ...
 
     >>> print_person_code_listing(admin_browser)
-    Total of 12 branches listed
-    lp://dev/~landscape-developers/landscape/trunk  Development   ...
+    Total of 10 branches listed
     lp://dev/~name12/landscape/feature-x            Development   ...
     >>> print_person_code_listing(admin_browser, '/+ownedbranches')
     Total of 10 branches listed

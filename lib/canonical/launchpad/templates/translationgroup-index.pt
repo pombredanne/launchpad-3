@@ -32,7 +32,7 @@
       </p>
       <p>
         Group owner:
-        <a tal:content="context/owner/displayname"
+        <a tal:content="context/owner/fmt:displayname"
            tal:attributes="href context/owner/fmt:url"
            class="link" />
         <a tal:condition="context/required:launchpad.Edit" href="+reassign">

@@ -44,6 +44,7 @@ the watch.
 
     >>> print err
     INFO    creating lockfile
+    DEBUG   Using a global batch size of None
     DEBUG   No watches to update on http://bugs.debian.org
     DEBUG   No watches to update on mailto:bugs@example.com
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
@@ -252,6 +253,7 @@ requests are actually made.
     ...     updater.log = original_log
     ...     externalbugtracker.Roundup.batch_size = batch_size
     ...     urllib2.urlopen = urlopen
-    INFO Updating 5 watches on http://bugs.example.com
+    DEBUG Using a global batch size of None
+    INFO Updating 5 watches for 5 bugs on http://bugs.example.com
     ERROR Connection timed out when updating ... (OOPS-...)
 

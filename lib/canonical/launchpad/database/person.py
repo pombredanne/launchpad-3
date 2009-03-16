@@ -27,7 +27,6 @@ import pytz
 import random
 import re
 
-from zope.error.interfaces import IErrorReportingUtility
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import alsoProvides, implementer, implements
 from zope.component import adapter, getUtility
@@ -80,6 +79,8 @@ from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -116,8 +117,7 @@ from canonical.launchpad.interfaces.questioncollection import (
 from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
-from canonical.launchpad.interfaces.shipit import (
-    ShipItConstants, ShippingRequestStatus)
+from canonical.launchpad.interfaces.shipit import ShippingRequestStatus
 from canonical.launchpad.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
@@ -143,7 +143,6 @@ from canonical.launchpad.database.pillar import PillarName
 from canonical.launchpad.database.pofiletranslator import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import (
@@ -161,9 +160,6 @@ from canonical.launchpad.database.question import QuestionPersonSearch
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.validators.person import validate_public_person
-
-
-MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 class ValidPersonCache(SQLBase):
@@ -987,74 +983,21 @@ class Person(
         """Deprecated. Use is_team instead."""
         return self.teamowner is not None
 
+    def getMergeProposals(self, status=None, visible_by_user=None):
+        """See `IPerson`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self, status, visible_by_user=None)
+
     @property
     def mailing_list(self):
         """See `IPerson`."""
         return getUtility(IMailingListSet).get(self.name)
-
-    @cachedproperty
-    def is_trusted_on_shipit(self):
-        """See `IPerson`."""
-        min_entries = MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT
-        if Karma.selectBy(person=self).count() >= min_entries:
-            return True
-        ubuntu_members = Person.selectOneBy(name='ubuntumembers')
-        if ubuntu_members is None:
-            error = AssertionError(
-                "No team named 'ubuntumembers' found; it's likely it has "
-                "been renamed.")
-            info = (error.__class__, error, None)
-            globalErrorUtility = getUtility(IErrorReportingUtility)
-            globalErrorUtility.raising(info)
-            return False
-        return self.inTeam(ubuntu_members)
-
-    def shippedShipItRequestsOfCurrentSeries(self):
-        """See `IPerson`."""
-        query = '''
-            ShippingRequest.recipient = %s
-            AND ShippingRequest.id = RequestedCDs.request
-            AND RequestedCDs.distroseries = %s
-            AND ShippingRequest.shipment IS NOT NULL
-            ''' % sqlvalues(self.id, ShipItConstants.current_distroseries)
-        return ShippingRequest.select(
-            query, clauseTables=['RequestedCDs'], distinct=True,
-            orderBy='-daterequested')
-
-    def lastShippedRequest(self):
-        """See `IPerson`."""
-        query = ("recipient = %s AND status = %s"
-                 % sqlvalues(self.id, ShippingRequestStatus.SHIPPED))
-        return ShippingRequest.selectFirst(query, orderBy=['-daterequested'])
-
-    def pastShipItRequests(self):
-        """See `IPerson`."""
-        query = """
-            recipient = %(id)s AND (
-                status IN (%(denied)s, %(cancelled)s, %(shipped)s))
-            """ % sqlvalues(id=self.id, denied=ShippingRequestStatus.DENIED,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            shipped=ShippingRequestStatus.SHIPPED)
-        return ShippingRequest.select(query, orderBy=['id'])
-
-    def currentShipItRequest(self):
-        """See `IPerson`."""
-        query = """
-            recipient = %(id)s
-            AND status NOT IN (%(denied)s, %(cancelled)s, %(shipped)s)
-            """ % sqlvalues(id=self.id, denied=ShippingRequestStatus.DENIED,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            shipped=ShippingRequestStatus.SHIPPED)
-        results = shortlist(
-            ShippingRequest.select(query, orderBy=['id'], limit=2))
-        count = len(results)
-        assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
-                count <= 1), ("Only the shipit-admins team is allowed to "
-                              "have more than one open shipit request")
-        if count == 1:
-            return results[0]
-        else:
-            return None
 
     def _customizeSearchParams(self, search_params):
         """No-op, to satisfy a requirement of HasBugsBase."""
@@ -1882,10 +1825,9 @@ class Person(
             cur.execute("DELETE FROM %s WHERE %s=%d"
                         % (table, person_id_column, self.id))
 
-        # Update the account's status, password, preferred email and name.
+        # Update the account's status, preferred email and name.
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
-        self.password = None
         IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'
@@ -2476,6 +2418,12 @@ class Person(
             # We don't want to subscribe to the list.
             return False
 
+    @property
+    def hardware_submissions(self):
+        """See `IPerson`."""
+        from canonical.launchpad.database.hwdb import HWSubmissionSet
+        return HWSubmissionSet().search(owner=self)
+
 
 class PersonSet:
     """The set of persons."""
@@ -2979,45 +2927,6 @@ class PersonSet:
             'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
         skip.append(('gpgkey','owner'))
-
-        # Update shipit shipments.
-        cur.execute('''
-            UPDATE ShippingRequest SET recipient=%(to_id)s
-            WHERE recipient = %(from_id)s AND (
-                shipment IS NOT NULL
-                OR status IN (%(cancelled)s, %(denied)s)
-                OR NOT EXISTS (
-                    SELECT TRUE FROM ShippingRequest
-                    WHERE recipient = %(to_id)s
-                        AND status = %(shipped)s
-                    LIMIT 1
-                    )
-                )
-            ''' % sqlvalues(to_id=to_id, from_id=from_id,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            denied=ShippingRequestStatus.DENIED,
-                            shipped=ShippingRequestStatus.SHIPPED))
-        # Technically, we don't need the not cancelled nor denied
-        # filter, as these rows should have already been dealt with.
-        # I'm using it anyway for added paranoia.
-        cur.execute('''
-            DELETE FROM RequestedCDs USING ShippingRequest
-            WHERE RequestedCDs.request = ShippingRequest.id
-                AND recipient = %(from_id)s
-                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
-            ''' % sqlvalues(from_id=from_id,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            denied=ShippingRequestStatus.DENIED,
-                            shipped=ShippingRequestStatus.SHIPPED))
-        cur.execute('''
-            DELETE FROM ShippingRequest
-            WHERE recipient = %(from_id)s
-                AND status NOT IN (%(cancelled)s, %(denied)s, %(shipped)s)
-            ''' % sqlvalues(from_id=from_id,
-                            cancelled=ShippingRequestStatus.CANCELLED,
-                            denied=ShippingRequestStatus.DENIED,
-                            shipped=ShippingRequestStatus.SHIPPED))
-        skip.append(('shippingrequest', 'recipient'))
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.

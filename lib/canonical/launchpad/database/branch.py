@@ -25,6 +25,8 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -39,21 +41,17 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.revision import Revision
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProject,
-    NotFoundError)
+    ILaunchpadCelebrities, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import (
-    BadBranchSearchContext, BranchCreationForbidden,
-    BranchCreationNoTeamOwnedJunkBranches,
+    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
     BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
-    BranchPersonSearchRestriction, BranchType, BranchTypeError,
-    CannotDeleteBranch, ControlFormat, DEFAULT_BRANCH_STATUS_IN_LISTING,
-    IBranch, IBranchPersonSearchContext, IBranchSet, MAXIMUM_MIRROR_FAILURES,
-    MIRROR_TIME_INCREMENT, RepositoryFormat)
+    BranchType, BranchTypeError, CannotDeleteBranch, ControlFormat,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, NoSuchBranch,
     user_has_special_branch_access)
@@ -71,13 +69,12 @@ from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.interfaces.product import NoSuchProduct
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
-from canonical.launchpad.webapp.uri import InvalidURIError, URI
+from lazr.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc import faults
 
@@ -354,7 +351,7 @@ class Branch(SQLBase):
     def bzr_identity(self):
         """See `IBranch`."""
         if self.product is not None:
-            series_branch = self.product.development_focus.series_branch
+            series_branch = self.product.development_focus.branch
             is_dev_focus = (series_branch == self)
         else:
             is_dev_focus = False
@@ -511,12 +508,11 @@ class Branch(SQLBase):
         from canonical.launchpad.database.productseries import ProductSeries
         return Store.of(self).find(
             ProductSeries,
-            Or(ProductSeries.user_branch == self,
-               ProductSeries.import_branch == self))
+            ProductSeries.branch == self)
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
-                  review_level):
+                  code_review_level):
         """See `IBranch`."""
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
@@ -525,12 +521,12 @@ class Branch(SQLBase):
             subscription = BranchSubscription(
                 branch=self, person=person,
                 notification_level=notification_level,
-                max_diff_lines=max_diff_lines, review_level=review_level)
+                max_diff_lines=max_diff_lines, review_level=code_review_level)
             Store.of(subscription).flush()
         else:
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
-            subscription.review_level = review_level
+            subscription.review_level = code_review_level
         return subscription
 
     def getSubscription(self, person):
@@ -560,6 +556,14 @@ class Branch(SQLBase):
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
         store.flush()
+
+    def getMainlineBranchRevisions(self, revision_ids):
+        return Store.of(self).find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            BranchRevision.revision == Revision.id,
+            Revision.revision_id.is_in(revision_ids))
 
     def getBranchRevision(self, sequence=None, revision=None,
                           revision_id=None):
@@ -823,10 +827,8 @@ class ClearSeriesBranch(DeletionOperation):
         self.branch = branch
 
     def __call__(self):
-        if self.affected_object.user_branch == self.branch:
-            self.affected_object.user_branch = None
-        if self.affected_object.import_branch == self.branch:
-            self.affected_object.import_branch = None
+        if self.affected_object.branch == self.branch:
+            self.affected_object.branch = None
         self.affected_object.syncUpdate()
 
 
@@ -1068,7 +1070,7 @@ class BranchSet:
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.FULL)
 
-        notify(SQLObjectCreatedEvent(branch))
+        notify(ObjectCreatedEvent(branch))
         return branch
 
     @staticmethod
@@ -1260,7 +1262,7 @@ class BranchSet:
             series = product.getSeries(series_name)
             if series is None:
                 raise faults.NoSuchSeries(series_name, product)
-        branch = series.series_branch
+        branch = series.branch
         if branch is None:
             raise faults.NoBranchForSeries(series)
         return branch, series
@@ -1375,43 +1377,6 @@ class BranchSet:
             % (query, self._getBranchVisibilitySubQuery(visible_by_user)))
 
         return clause
-
-    def _filter_by_context(self, context, branches):
-        if context is None:
-            return branches
-        elif IProduct.providedBy(context):
-            return branches.inProduct(context)
-        elif IProject.providedBy(context):
-            return branches.inProject(context)
-        elif IPerson.providedBy(context):
-            return branches.relatedTo(context)
-        elif ISourcePackage.providedBy(context):
-            return branches.inSourcePackage(context)
-        elif IBranchPersonSearchContext.providedBy(context):
-            restriction = context.restriction
-            person = context.person
-            if restriction == BranchPersonSearchRestriction.ALL:
-                return branches.relatedTo(person)
-            elif restriction == BranchPersonSearchRestriction.REGISTERED:
-                return branches.registeredBy(person)
-            elif restriction == BranchPersonSearchRestriction.OWNED:
-                return branches.ownedBy(person)
-            elif restriction == BranchPersonSearchRestriction.SUBSCRIBED:
-                return branches.subscribedBy(person)
-            else:
-                raise BadBranchSearchContext(context)
-        else:
-            raise BadBranchSearchContext(context)
-
-    def getBranchesForContext(self, context=None, lifecycle_statuses=None,
-                              visible_by_user=None):
-        """See `IBranchSet`."""
-        all_branches = getUtility(IAllBranches)
-        branches = self._filter_by_context(context, all_branches)
-        if lifecycle_statuses:
-            branches = branches.withLifecycleStatus(*lifecycle_statuses)
-        branches = branches.visibleByUser(visible_by_user)
-        return branches.getBranches()
 
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):

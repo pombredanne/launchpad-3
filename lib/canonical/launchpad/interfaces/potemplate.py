@@ -4,6 +4,7 @@
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, Object, Text, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
@@ -17,7 +18,6 @@ from canonical.launchpad.interfaces.sourcepackagename import (
 from canonical.launchpad.interfaces.translationfileformat import (
     TranslationFileFormat)
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 __metaclass__ = type
@@ -493,7 +493,7 @@ class IPOTemplateSubset(Interface):
     def __getitem__(name):
         """Get a POTemplate by its name."""
 
-    def new(name, translation_domain, title, contents, owner):
+    def new(name, translation_domain, path, owner):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):

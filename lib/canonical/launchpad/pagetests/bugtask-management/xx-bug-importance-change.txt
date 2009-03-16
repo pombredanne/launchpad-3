@@ -22,7 +22,7 @@ product or distro, can edit Importance.
     >>> import transaction
     >>> from zope.component import getUtility
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IProductSet, IDistributionSet)
 
@@ -62,8 +62,10 @@ For a product bug supervisor.
 
 For a product owner.
 
+    >>> login(ANONYMOUS)
     >>> print firefox.owner.name
     name12
+    >>> logout()
 
     >>> login("foo.bar@canonical.com")
     >>> sample_person = personset.getByName("name12")

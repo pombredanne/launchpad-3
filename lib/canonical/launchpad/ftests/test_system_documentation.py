@@ -415,12 +415,6 @@ special = {
             setUp=builddmasterSetUp,
             layer=LaunchpadZopelessLayer,
             ),
-    'buildd-queuebuilder.txt': LayeredDocFileSuite(
-            '../doc/buildd-queuebuilder.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
-            stdout_logging_level=logging.WARNING
-            ),
     'close-account.txt': LayeredDocFileSuite(
             '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
             layer=LaunchpadZopelessLayer
@@ -596,6 +590,12 @@ special = {
             tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'answer-tracker-notifications-linked-private-bug.txt':
+            LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-private-bug.txt',
+            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
+            ),
     'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
             '../doc/answer-tracker-notifications-linked-bug.txt',
             setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
@@ -696,14 +696,13 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
-    # XXX: salgado, 2009-03-05: Disabled as because of spurious failures.
-    # 'externalbugtracker-comment-pushing.txt':
-    #         LayeredDocFileSuite(
-    #             '../doc/externalbugtracker-comment-pushing.txt',
-    #             setUp=checkwatchesSetUp,
-    #             tearDown=tearDown,
-    #             layer=LaunchpadZopelessLayer
-    #             ),
+    'externalbugtracker-comment-pushing.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-comment-pushing.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-debbugs.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-debbugs.txt',

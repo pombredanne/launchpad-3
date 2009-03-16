@@ -205,8 +205,6 @@ class IBug(ICanBeMentored):
         schema=IBugTask)
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
-    productinfestations = Attribute('List of product release infestations.')
-    packageinfestations = Attribute('List of package release infestations.')
     watches = exported(
         CollectionField(
             title=_("All bug watches associated with this bug."),
@@ -574,9 +572,10 @@ class IBug(ICanBeMentored):
 
             :target: The target of the bugtask that should be modified.
             :status: The status the bugtask should be set to.
-            :user: The IPerson doing the change.
+            :user: The `IPerson` doing the change.
 
-        If a bug task was edited, emit a SQLObjectModifiedEvent and
+        If a bug task was edited, emit a 
+        `lazr.lifecycle.interfaces.IObjectModifiedEvent` and
         return the edited bugtask.
 
         Return None if no bugtask was edited.

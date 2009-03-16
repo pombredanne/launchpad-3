@@ -37,7 +37,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.launchpad.webapp.z3batching.batch import _Batch
+from lazr.batchnavigator.z3batching import batch
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -471,7 +471,7 @@ class WindowedList:
             yield self[index]
 
 
-class WindowedListBatch(_Batch):
+class WindowedListBatch(batch._Batch):
     """A batch class that does not include None objects when iterating."""
 
     def __iter__(self):

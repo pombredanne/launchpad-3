@@ -16,7 +16,7 @@ from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PasswordField
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 
 class LoginTokenType(DBEnumeratedType):
