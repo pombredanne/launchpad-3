@@ -145,8 +145,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         if self.options.dryrun:
             self.txn.abort()
+            self.logger.info('Dry run, so not comitting transaction.')
         else:
             self.txn.commit()
+            self.logger.info('Committing transaction...')
 
         self.logger.info('Finished PPA .htaccess generation')
 
