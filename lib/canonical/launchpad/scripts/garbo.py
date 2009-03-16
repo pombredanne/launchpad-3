@@ -1,0 +1,124 @@
+# Copyright 2009 Canonical Ltd.  All rights reserved.
+
+"""Database garbage collection."""
+
+__metaclass__ = type
+__all__ = []
+
+import transaction
+from zope.interface import implements
+from storm.locals import SQL
+
+from canonical.launchpad.database.codeimportresult import CodeImportResult
+from canonical.launchpad.database.oauth import OAuthNonce
+from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
+from canonical.launchpad.scripts.base import LaunchpadCronScript
+from canonical.launchpad.utilities.looptuner import LoopTuner
+
+
+class HourlyDatabaseGarbageCollector(LaunchpadCronScript):
+    def main(self):
+        self.logger.info("Pruning OAuthNonce")
+        OAuthNoncePruner().run()
+
+
+class DailyDatabaseGarbageCollector(LaunchpadCronScript):
+    def main(self):
+        self.logger.info("Pruning CodeImportResult")
+        CodeImportResultPruner().run()
+
+
+class TunableLoop:
+    implements(ITunableLoop)
+    
+    goal_seconds = 4
+    minimum_chunk_size = 1
+    maximum_chunk_size = None # Override
+    cooldown_time = 0
+
+    def run(self):
+        assert self.maximum_chunk_size is not None, "Did not override."
+        LoopTuner(
+            self, self.goal_seconds,
+            minimum_chunk_size = self.minimum_chunk_size,
+            maximum_chunk_size = self.maximum_chunk_size,
+            cooldown_time = self.cooldown_time).run()
+
+
+class OAuthNoncePruner(TunableLoop):
+    """An ITunableLoop to prune old OAuthNonce records.
+
+    We remove all OAuthNonce records older than 1 day.
+    """
+    maximum_chunk_size = 6*60*60 # 6 hours in seconds.
+
+    ONE_DAY_IN_SECONDS = 24*60*60
+
+    def __init__(self):
+        self.store = IMasterStore(OAuthNonce)
+        self.oldest_age = self.store.execute("""
+            SELECT COALESCE(EXTRACT(EPOCH FROM
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - MIN(request_timestamp)), 0)
+            FROM OAuthNonce
+            """).get_one()[0]
+
+    def isDone(self):
+        return self.oldest_age <= self.ONE_DAY_IN_SECONDS
+
+    def __call__(self, chunk_size):
+        self.oldest_age = max(
+            self.ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
+
+        self.store.find(
+            OAuthNonce,
+            OAuthNonce.request_timestamp < SQL(
+                "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%d seconds'"
+                % self.oldest_age)).remove()
+        transaction.commit()
+
+
+class CodeImportResultPruner(TunableLoop):
+    """A TunableLoop to prune unwanted CodeImportResult rows.
+
+    Removes CodeImportResult rows if they are older than 30 days
+    and they are not one of the 4 most recent results for that
+    CodeImport.
+    """
+    maximum_chunk_size = 100
+    def __init__(self):
+        self.store = IMasterStore(CodeImportResult)
+        self.min_code_import, self.max_code_import = self.store.execute("""
+            SELECT
+                coalesce(min(code_import),0),
+                coalesce(max(code_import),-1)
+            FROM CodeImportResult
+            """).get_one()
+        self.next_code_import_id = self.min_code_import
+
+    def isDone(self):
+        return self.next_code_import_id > self.max_code_import
+
+    def __call__(self, chunk_size):
+        self.store.execute("""
+            DELETE FROM CodeImportResult
+            WHERE
+                CodeImportResult.date_created
+                    < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                        - interval '30 days'
+                AND CodeImportResult.code_import >= %d
+                AND CodeImportResult.code_import < %d + %d
+                AND CodeImportResult.id NOT IN (
+                    SELECT LatestResult.id
+                    FROM CodeImportResult AS LatestResult
+                    WHERE
+                        LatestResult.code_import
+                            = CodeImportResult.code_import
+                    ORDER BY LatestResult.id DESC
+                    LIMIT 4)
+            """ % sqlvalues(
+                self.code_import_id, self.code_import_id, chunk_size))
+        self.code_import_id += chunk_size
+        transaction.commit()
+
