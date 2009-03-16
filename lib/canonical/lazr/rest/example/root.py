@@ -62,7 +62,7 @@ class Dish(CookbookWebServiceObject):
 class Recipe(CookbookWebServiceObject):
     implements(IRecipe)
 
-    def __init__(self, id, dish, cookbook, instructions):
+    def __init__(self, id, cookbook, dish, instructions):
         self.id = id
         self.dish = dish
         self.dish.recipes.append(self)

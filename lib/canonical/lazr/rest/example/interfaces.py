@@ -24,8 +24,9 @@ class IDish(Interface):
     """A dish, annotated for export to the web service."""
     export_as_webservice_entry()
     name = exported(TextLine(title=u"Name", required=True))
-    recipes = CollectionField(title=u"Recipes in this cookbook",
-                              value_type=Reference(schema=Interface))
+    recipes = exported(CollectionField(
+            title=u"Recipes in this cookbook",
+            value_type=Reference(schema=Interface)))
 
 
 class IRecipe(Interface):
@@ -36,8 +37,8 @@ class IRecipe(Interface):
     cookbook = exported(Reference(title=u"Cookbook", schema=Interface))
     instructions = exported(Text(title=u"How to prepare the recipe",
                                  required=True))
-    #private = Bool(title=u"Whether the public can see this recipe.",
-    #               default=False)
+    #private = exported(Bool(title=u"Whether the public can see this recipe.",
+    #                   default=False))
 
 
 class ICookbook(Interface):
@@ -46,8 +47,8 @@ class ICookbook(Interface):
     name = exported(TextLine(title=u"Name", required=True))
     cuisine = exported(
         TextLine(title=u"Cuisine", required=False, default=None))
-    recipes = CollectionField(title=u"Recipes in this cookbook",
-                              value_type=Reference(schema=IRecipe))
+    recipes = exported(CollectionField(title=u"Recipes in this cookbook",
+                                       value_type=Reference(schema=IRecipe)))
 
 
 # Resolve dangling references

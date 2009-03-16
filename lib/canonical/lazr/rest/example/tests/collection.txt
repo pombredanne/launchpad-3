@@ -81,6 +81,14 @@ results in a 400 error.
     <BLANKLINE>
     Maximum for "ws.size" parameter is ...
 
+A collection may be empty.
+
+  >>> from urllib import quote
+  >>> url = quote("/cookbooks/Cooking Without Recipes/recipes")
+  >>> result = webservice.get(url)
+  >>> list(result.jsonBody()['entries'])
+  []
+
 
 == Visibility ==
 
@@ -92,21 +100,30 @@ TBA
 The elements of a collection can be looked up by unique identifier:
 
   >>> from canonical.lazr.testing.webservice import pprint_entry
-  >>> from urllib import quote
   >>> url = quote("/cookbooks/The Joy of Cooking")
   >>> cookbook = webservice.get(url).jsonBody()
   >>> pprint_entry(cookbook)
   cuisine: u'General'
   name: u'The Joy of Cooking'
-  resource_type_link: u'http://api.cookbooks.dev/1.0#cookbook'
-  self_link: u'http://api.cookbooks.dev/1.0/cookbooks/The%20Joy%20of%20Cooking'
+  recipes_collection_link: u'http://.../cookbooks/The%20Joy%20of%20Cooking/recipes'
+  resource_type_link: u'http://...#cookbook'
+  self_link: u'http://.../cookbooks/The%20Joy%20of%20Cooking'
 
 A collection may be scoped to an element:
 
   >>> url = quote("/dishes/Roast chicken/recipes")
-  >>> recipes = webservice.get(url).jsonBody()
-  >>> print recipes
-  ''
+  >>> result = webservice.get(url).jsonBody()
+  >>> print result['resource_type_link']
+  http://...#recipe-page-resource
+  >>> cookbooks_with_recipe = sorted(
+  ...     [r['cookbook_link'] for r in result['entries']])
+  >>> len(cookbooks_with_recipe)
+  3
+  >>> print cookbooks_with_recipe[0]
+  http://.../cookbooks/James%20Beard%27s%20American%20Cookery
+  >>> print cookbooks_with_recipe[-1]
+  http://.../cookbooks/The%20Joy%20of%20Cooking
+
 
 == Named operations ==
 
