@@ -386,8 +386,8 @@ class IBug(ICanBeMentored):
     def addChange(change):
         """Record a change to the bug.
 
-        :param change: An `IBugChange` or `IBugTaskChange` instance from
-            which to take the change data.
+        :param change: An `IBugChange` instance from which to take the
+            change data.
         """
 
     def expireNotifications():
