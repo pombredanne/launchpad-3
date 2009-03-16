@@ -136,10 +136,9 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
 
         # POTMsgSet singular_text is read from a shared English translation.
         en_pofile = self.factory.makePOFile('en', self.devel_potemplate)
-        translation = self.factory.makeTranslationMessage(
+        translation = self.factory.makeSharedTranslationMessage(
             pofile=en_pofile, potmsgset=potmsgset,
             translations=[ENGLISH_STRING])
-        translation.potemplate = None
         self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
 
         # A diverged (translation.potemplate != None) English translation
@@ -147,7 +146,7 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         translation = self.factory.makeTranslationMessage(
             pofile=en_pofile, potmsgset=potmsgset,
             translations=[DIVERGED_ENGLISH_STRING])
-        translation.potemplate = None
+        translation.potemplate = self.devel_potemplate
         self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
 
     def test_getCurrentDummyTranslationMessage(self):
@@ -175,6 +174,34 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         self.assertRaises(AssertionError,
                           self.potmsgset.getCurrentDummyTranslationMessage,
                           self.devel_potemplate, serbian)
+
+    def test_getCurrentTranslationMessage(self):
+        """Test how shared and diverged current translation messages
+        interact."""
+        # Share a POTMsgSet in two templates, and get a Serbian POFile.
+        self.potmsgset.setSequence(self.stable_potemplate, 1)
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        sr_stable_pofile = self.factory.makePOFile('sr', self.stable_potemplate)
+        serbian = sr_pofile.language
+
+        # A shared translation is current in both templates.
+        shared_translation = self.factory.makeSharedTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset)
+        self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, serbian), shared_translation)
+        self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
+            self.stable_potemplate, serbian), shared_translation)
+
+        # Adding a diverged translation in one template makes that one
+        # current in it.
+        diverged_translation = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset)
+        self.assertTrue(shared_translation.is_current)
+        self.assertTrue(diverged_translation.is_current)
+        self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, serbian), diverged_translation)
+        self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
+            self.stable_potemplate, serbian), shared_translation)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
