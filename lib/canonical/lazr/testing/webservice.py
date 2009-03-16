@@ -245,7 +245,6 @@ class WebServiceCaller:
 
     @property
     def base_url(self):
-        import pdb; pdb.set_trace()
         raise NotImplementedError()
 
     def apiVersion(self):
@@ -276,12 +275,12 @@ class WebServiceCaller:
     def addHeadersTo(self, url, headers):
         """Add any neccessary headers to the request.
 
-        For instance
+        For instance, this is where a subclass might create an OAuth
+        signature for a request.
 
         :param: The headers that will go into the HTTP request. Modify
         this value in place.
         """
-        pass
 
     def __call__(self, path_or_url, method='GET', data=None, headers=None,
                  api_version=None):
@@ -304,7 +303,7 @@ class WebServiceCaller:
         fragment = uri.fragment
 
         # Make an HTTP request.
-        full_headers = {'Host' : host}
+        full_headers = {'Host': host}
         if headers is not None:
             full_headers.update(headers)
         self.addHeadersTo(full_url, full_headers)

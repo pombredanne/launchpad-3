@@ -1,11 +1,11 @@
 = Introduction =
 
-  >>> from canonical.lazr.testing.webservice import CookbookWebServiceCaller
-  >>> webservice = CookbookWebServiceCaller()
-
 The service root (/[version]/) is a resource that responds to GET by
 describing the web service. The description is a JSON map full of
 links to the top-level web service objects.
+
+  >>> from canonical.lazr.testing.webservice import CookbookWebServiceCaller
+  >>> webservice = CookbookWebServiceCaller()
 
   >>> top_level_response = webservice.get("/")
   >>> top_level_links = top_level_response.jsonBody()
