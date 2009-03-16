@@ -215,3 +215,8 @@ Project series gets the union of all the tags available for its products.
     [u'bar', u'baz', u'foo']
     >>> logout()
 
+Milestone gets the tags of the relevant product.
+
+    >>> firefox.getMilestone('1.0').official_bug_tags
+    [u'bar', u'foo']
+
