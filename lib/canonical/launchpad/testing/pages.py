@@ -9,11 +9,9 @@ __metaclass__ = type
 import os
 import pdb
 import re
-import simplejson
 import transaction
 import sys
 import unittest
-import urllib
 
 # pprint25 is a copy of pprint.py from Python 2.5, which is almost
 # identical to that in 2.4 except that it resolves an ordering issue
@@ -28,7 +26,6 @@ from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
-from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
@@ -41,7 +38,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
-
+from canonical.lazr.testing.webservice import WebServiceCaller
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
     """HTTPCaller subclass that do not carry cookies across requests.
@@ -83,15 +80,14 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         self.cookies = SimpleCookie()
 
 
-class WebServiceCaller:
+class LaunchpadWebServiceCaller(WebServiceCaller):
     """A class for making calls to Launchpad web services."""
 
-    DEV_SERVER_URL = 'http://api.launchpad.dev'
-    DEFAULT_API_VERSION = 'beta'
+    base_url = 'http://api.launchpad.dev'
 
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
                  handle_errors=True, *args, **kwargs):
-        """Create a WebServiceCaller.
+        """Create a LaunchpadWebServiceCaller.
         :param oauth_consumer_key: The OAuth consumer key to use.
         :param oauth_access_key: The OAuth access key to use for the request.
         :param handle_errors: Should errors raise exception or be handled by
@@ -115,156 +111,14 @@ class WebServiceCaller:
         # Set up a delegate to make the actual HTTP calls.
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
 
-    def getAbsoluteUrl(self, resource_path, api_version=DEFAULT_API_VERSION):
-        """Convenience method for creating a url in tests.
-
-        :param resource_path: This is the url section to be joined to hostname
-                              and api version.
-        :param api_version: This is the first part of the absolute
-                            url after the hostname.
-        """
-        if resource_path.startswith('/'):
-            # Prevent os.path.join() from interpreting resource_path as an
-            # absolute url. This allows paths that appear consistent with urls
-            # from other *.launchpad.dev virtual hosts.
-            # For example:
-            #   /firefox = http://launchpad.dev/firefox
-            #   /firefox = http://api.launchpad.dev/beta/firefox
-            resource_path = resource_path[1:]
-        url_with_version = os.path.join(api_version, resource_path)
-        return urljoin(self.DEV_SERVER_URL, url_with_version)
-
-    def __call__(self, path_or_url, method='GET', data=None, headers=None,
-                 api_version=DEFAULT_API_VERSION):
-        path_or_url = str(path_or_url)
-        if path_or_url.startswith('http:'):
-            full_url = path_or_url
-        else:
-            full_url = self.getAbsoluteUrl(path_or_url,
-                                           api_version=api_version)
-        scheme, netloc, path, query, fragment = urlsplit(full_url)
-        # Make an HTTP request.
-        full_headers = {'Host' : netloc}
-        if self.consumer is not None and self.access_token is not None:
+    def addHeadersTo(self, full_url, full_headers):
+        if (self.consumer is not None and self.access_token is not None):
             request = OAuthRequest.from_consumer_and_token(
                 self.consumer, self.access_token, http_url = full_url,
                 )
             request.sign_request(OAuthSignatureMethod_PLAINTEXT(),
                                  self.consumer, self.access_token)
             full_headers.update(request.to_header(OAUTH_REALM))
-        if headers is not None:
-            full_headers.update(headers)
-        header_strings = ["%s: %s" % (header, str(value))
-                          for header, value in full_headers.items()]
-        path_and_query = path
-        if len(query) != 0:
-            path_and_query += '?%s' % query
-        request_string = "%s %s HTTP/1.1\n%s\n" % (method, path_and_query,
-                                                   "\n".join(header_strings))
-        if data:
-            request_string += "\n" + data
-
-        response = self.http_caller(
-            request_string, handle_errors=self.handle_errors)
-        return WebServiceResponseWrapper(response)
-
-    def get(self, path, media_type='application/json', headers=None,
-            api_version=DEFAULT_API_VERSION):
-        """Make a GET request."""
-        full_headers = {'Accept': media_type}
-        if headers is not None:
-            full_headers.update(headers)
-        return self(path, 'GET', headers=full_headers,
-                    api_version=api_version)
-
-    def head(self, path, headers=None,
-             api_version=DEFAULT_API_VERSION):
-        """Make a HEAD request."""
-        return self(path, 'HEAD', headers=headers, api_version=api_version)
-
-    def delete(self, path, headers=None,
-               api_version=DEFAULT_API_VERSION):
-        """Make a DELETE request."""
-        return self(path, 'DELETE', headers=headers, api_version=api_version)
-
-    def put(self, path, media_type, data, headers=None,
-            api_version=DEFAULT_API_VERSION):
-        """Make a PUT request."""
-        return self._make_request_with_entity_body(
-            path, 'PUT', media_type, data, headers, api_version=api_version)
-
-    def post(self, path, media_type, data, headers=None,
-             api_version=DEFAULT_API_VERSION):
-        """Make a POST request."""
-        return self._make_request_with_entity_body(
-            path, 'POST', media_type, data, headers, api_version=api_version)
-
-    def _convertArgs(self, operation_name, args):
-        """Encode and convert keyword arguments."""
-        args['ws.op'] = operation_name
-        # To be properly marshalled all values must be strings or converted to
-        # JSON.
-        for key, value in args.items():
-            if not isinstance(value, basestring):
-                args[key] = simplejson.dumps(value)
-        return urllib.urlencode(args)
-
-    def named_get(self, path_or_url, operation_name, headers=None,
-                  api_version=DEFAULT_API_VERSION, **kwargs):
-        kwargs['ws.op'] = operation_name
-        data = '&'.join(['%s=%s' % (key, self._quote_value(value))
-                         for key, value in kwargs.items()])
-        return self.get("%s?%s" % (path_or_url, data), data, headers,
-                        api_version=api_version)
-
-    def named_post(self, path, operation_name, headers=None,
-                   api_version=DEFAULT_API_VERSION, **kwargs):
-        data = self._convertArgs(operation_name, kwargs)
-        return self.post(path, 'application/x-www-form-urlencoded', data,
-                         headers, api_version=api_version)
-
-    def patch(self, path, media_type, data, headers=None,
-              api_version=DEFAULT_API_VERSION):
-        """Make a PATCH request."""
-        return self._make_request_with_entity_body(
-            path, 'PATCH', media_type, data, headers, api_version=api_version)
-
-    def _quote_value(self, value):
-        """Quote a value for inclusion in a named GET.
-
-        This may mean turning the value into a JSON string.
-        """
-        if not isinstance(value, basestring):
-            value = simplejson.dumps(value)
-        return urllib.quote(value)
-
-    def _make_request_with_entity_body(self, path, method, media_type, data,
-                                       headers, api_version):
-        """A helper method for requests that include an entity-body.
-
-        This means PUT, PATCH, and POST requests.
-        """
-        real_headers = {'Content-type' : media_type }
-        if headers is not None:
-            real_headers.update(headers)
-        return self(path, method, data, real_headers, api_version=api_version)
-
-
-class WebServiceResponseWrapper(ProxyBase):
-    """A response from the web service with easy access to the JSON body."""
-
-    def jsonBody(self):
-        """Return the body of the web service request as a JSON document."""
-        try:
-            json = simplejson.loads(self.getBody())
-            if isinstance(json, list):
-                json = sorted(json)
-            return json
-        except ValueError:
-            # Return a useful ValueError that displays the problematic
-            # string, instead of one that just says the string wasn't
-            # JSON.
-            raise ValueError(self.getOutput())
 
 
 def extract_url_parameter(url, parameter):
@@ -687,7 +541,7 @@ def safe_canonical_url(*args, **kwargs):
 def webservice_for_person(person, consumer_key='launchpad-library',
                           permission=OAuthPermission.READ_PUBLIC,
                           context=None):
-    """Return a valid WebServiceCaller for the person.
+    """Return a valid LaunchpadWebServiceCaller for the person.
 
     Use this method to create a way to test the webservice that doesn't depend
     on sample data.
@@ -703,7 +557,8 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     request_token.review(person, permission, context)
     access_token = request_token.createAccessToken()
     logout()
-    return WebServiceCaller(consumer_key, access_token.key, port=9000)
+    return LaunchpadWebServiceCaller(
+        consumer_key, access_token.key, port=9000)
 
 
 def stop():
@@ -719,11 +574,11 @@ def stop():
 def setUpGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['http'] = UnstickyCookieHTTPCaller()
-    test.globs['webservice'] = WebServiceCaller(
+    test.globs['webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', 'salgado-change-anything')
-    test.globs['public_webservice'] = WebServiceCaller(
+    test.globs['public_webservice'] = LaunchpadWebServiceCaller(
         'foobar123451432', 'salgado-read-nonprivate')
-    test.globs['user_webservice'] = WebServiceCaller(
+    test.globs['user_webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()

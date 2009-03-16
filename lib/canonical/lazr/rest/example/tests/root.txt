@@ -4,21 +4,18 @@ The service root (/[version]/) is a resource that responds to GET by
 describing the web service. The description is a JSON map full of
 links to the top-level web service objects.
 
+  >>> from canonical.lazr.testing.webservice import CookbookWebServiceCaller
+  >>> webservice = CookbookWebServiceCaller()
+
   >>> top_level_response = webservice.get("/")
   >>> top_level_links = top_level_response.jsonBody()
   >>> sorted(top_level_links.keys())
-  [u'bugs_collection_link', u'cves_collection_link',
-   u'distributions_collection_link', u'hwdb_link', u'me_link',
-   u'people_collection_link', u'pillars_link',
-   u'project_groups_collection_link',
-   u'projects_collection_link',
-   u'resource_type_link']
-  >>> top_level_links['bugs_collection_link']
-  u'http://.../bugs'
-  >>> top_level_links['me_link']
-  u'http://.../people/+me'
+  [u'cookbooks_collection_link', u'resource_type_link']
+  >>> top_level_links['cookbooks_collection_link']
+  u'http://api.cookbooks.dev/1.0/cookbooks'
+
   >>> top_level_links['resource_type_link']
-  u'http://.../#service-root'
+  u'http://api.cookbooks.dev/1.0#service-root'
 
 The client can explore the entire web service by following these links
 to other resources, and following the links served in those resources'
@@ -57,12 +54,13 @@ HEAD and OPTIONS.
   Allow: GET
   ...
 
+
 == Conditional GET ==
 
-The service root never changes except when Launchpad is upgraded. To
-avoid getting it more often than that, a client can store the value of
-the 'ETag' response header the first time it retrieves the service
-root.
+The service root never changes except when the web service is
+upgraded. To avoid getting it more often than that, a client can store
+the value of the 'ETag' response header the first time it retrieves
+the service root.
 
   >>> etag = top_level_response.getHeader('ETag')
   >>> etag is None

@@ -1,0 +1,42 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:webservice="http://namespaces.canonical.com/webservice">
+
+  <webservice:register module="canonical.lazr.rest.example.interfaces" />
+
+  <utility
+      factory="canonical.lazr.rest.example.configuration.CookbookWebServiceConfiguration"
+      provides="canonical.lazr.interfaces.rest.IWebServiceConfiguration">
+  </utility>
+
+  <utility factory="canonical.lazr.rest.example.root.CookbookSet" />
+
+  <utility
+    provides="canonical.lazr.interfaces.rest.IServiceRootResource"
+    factory="canonical.lazr.rest.example.root.CookbookServiceRootResource" />
+
+  <adapter factory="canonical.lazr.rest.example.traversal.TraverseWithGet" />
+
+  <adapter
+      for="canonical.lazr.rest.example.root.CookbookWebServiceObject
+      canonical.lazr.testing.webservice.WebServiceTestRequest"
+      provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+      factory="zope.traversing.browser.absoluteurl.AbsoluteURL"
+      />
+
+  <adapter
+      for="canonical.lazr.rest.example.root.CookbookWebServiceObject
+      canonical.lazr.testing.webservice.WebServiceTestRequest"
+      provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+      factory="zope.traversing.browser.absoluteurl.AbsoluteURL"
+      name="absolute_url"
+      />
+
+  <adapter factory="canonical.lazr.rest.example.root.CookbookServiceRootAbsoluteURL" />
+
+  <adapter
+      factory="canonical.lazr.rest.example.root.CookbookServiceRootAbsoluteURL"
+      name="absolute_url"
+      />
+
+</configure>
