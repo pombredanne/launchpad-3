@@ -60,19 +60,10 @@ class SignedMessage(email.Message.Message):
         assert self.parsed_string is not None, (
             'Use signed_message_from_string() to create the message.')
         signed_content = signature = None
-        for part in self.walk():
-            if part.is_multipart():
-                continue
-            match = clearsigned_re.search(part.get_payload())
-            if match is not None:
-                signed_content_unescaped = match.group(1)
-                signed_content = dash_escaped.sub('', signed_content_unescaped)
-                signature = match.group(2)
-                return signature, signed_content
+        payload = self.get_payload()
         if self.is_multipart():
-            payload = self.get_payload()
-            if len(payload) > 1:
-                content_part, signature_part = payload[:2]
+            if len(payload) == 2:
+                content_part, signature_part = payload
                 sig_content_type = signature_part.get_content_type()
                 if sig_content_type == 'application/pgp-signature':
                     # We need to extract the signed content from the
@@ -86,6 +77,13 @@ class SignedMessage(email.Message.Message):
                         self.parsed_string, re.DOTALL)
                     signed_content = match.group('signed_content')
                     signature = signature_part.get_payload()
+        else:
+            match = clearsigned_re.search(payload)
+            if match is not None:
+                signed_content_unescaped = match.group(1)
+                signed_content = dash_escaped.sub('', signed_content_unescaped)
+                signature = match.group(2)
+
         return signature, signed_content
 
     @property
