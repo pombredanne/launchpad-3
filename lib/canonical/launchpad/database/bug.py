@@ -38,6 +38,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
+from canonical.launchpad.interfaces.bugactivity import IBugActivitySet
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
@@ -644,6 +645,49 @@ class Bug(SQLBase):
         getUtility(IBugNotificationSet).addNotification(
              bug=self, is_comment=True,
              message=message, recipients=recipients)
+
+    def addChange(self, change):
+        """See `IBug`."""
+        # Only try to add something to the activity log if we have some
+        # data.
+        activity_data = change.getBugActivity()
+        if activity_data is not None:
+            bug_activity = getUtility(IBugActivitySet).new(
+                self, change.when, change.person,
+                activity_data['whatchanged'],
+                activity_data.get('oldvalue'),
+                activity_data.get('newvalue'),
+                activity_data.get('message'))
+
+        notification_data = change.getBugNotification()
+        if notification_data is not None:
+            recipients = change.getBugNotificationRecipients()
+
+            if notification_data['is_comment']:
+                # If a list of recipients isn't provided, use the Bug's list
+                if recipients is None:
+                    recipients = self.getBugNotificationRecipients(
+                        level=BugNotificationLevel.COMMENTS)
+
+                # If this is a comment a Message should have been
+                # provided.
+                message = notification_data['message']
+            else:
+                if recipients is None:
+                    recipients = self.getBugNotificationRecipients(
+                        level=BugNotificationLevel.METADATA)
+
+                # If there isn't a message, create one from the text
+                # field of notification_data.
+                message = notification_data.get('message')
+                if message is None:
+                    message = MessageSet().fromText(
+                        self.followup_subject(), notification_data['text'],
+                        owner=change.person, datecreated=change.when)
+
+            getUtility(IBugNotificationSet).addNotification(
+                 bug=self, is_comment=notification_data['is_comment'],
+                 message=message, recipients=recipients)
 
     def expireNotifications(self):
         """See `IBug`."""
