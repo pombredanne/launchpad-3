@@ -64,7 +64,7 @@ class DistributionNameField(PillarNameField):
         return IDistribution
 
 
-class IDistributionEditRestricted(Interface):
+class IDistributionEditRestricted(IOfficialBugTagTarget):
     """IDistribution properties requiring launchpad.Edit permission."""
 
     def newSeries(name, displayname, title, summary, description,
@@ -77,7 +77,7 @@ class IDistributionPublic(
     IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
     IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationGroup,
     IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTarget, IPillar, ISpecificationTarget):
+    IPillar, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
