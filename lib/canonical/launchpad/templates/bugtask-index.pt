@@ -93,14 +93,6 @@ function createBugDuplicateFormOverlay(id, response_object){
     form_node.setAttribute('method', 'post');
     form_node.setAttribute('action', update_dupe_url);
     form_node.setAttribute('enctype', 'multipart/form-data');
-
-    // XXX: noodles 2009-03-11 bug=341034.
-    // Currently the FormOverlay sets a default
-    // submit_callback when none is provided by the user, disabling
-    // the default submit behaviour of the event. Therefore at the moment
-    // we need to explicitly remove any listeners on the form's submit event,
-    // so we can just submit the form by clicking on the button as per normal:
-    Y.Event.purgeElement(Y.Node.getDOMNode(form_node, false, 'submit'));
 }
 
 });
