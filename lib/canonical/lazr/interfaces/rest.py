@@ -357,6 +357,12 @@ class IWebServiceConfiguration(Interface):
         running the webservice. This may be a revision number from version
         control, or a hand-chosen version number.""")
 
+    show_tracebacks = Bool(
+        title=u"Show tracebacks to end-users",
+        default=True,
+        description=u"Whether or not to show tracebacks in an HTTP response "
+        "for a request that raised an exception.")
+
     def createRequest(body_instream, environ):
         """A factory method that creates a request for the web service.
 

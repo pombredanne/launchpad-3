@@ -17,11 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.app.exception.interfaces import ISystemErrorView
 
-from canonical.config import config
-# XXX flacoste 2008-01-25 bug=185958:
-# ILaunchBag code should be moved into lazr.
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
+from canonical.lazr.interfaces.rest import IWebServiceConfiguration
 
 class WebServiceExceptionView:
     """Generic view handling exceptions on the web service."""
@@ -47,13 +43,11 @@ class WebServiceExceptionView:
         if getattr(self.request, 'oopsid', None) is not None:
             response.setHeader('X-Lazr-OopsId', self.request.oopsid)
 
-        is_developer = getUtility(ILaunchBag).developer
-        show_tracebacks = (is_developer or config.canonical.show_tracebacks)
+        show_tracebacks = getUtility(
+            IWebServiceConfiguration).show_tracebacks
         if (not show_tracebacks and self.status / 100 == 5):
-            # People who aren't developers shouldn't be shown the
-            # exception message for an exception that caused an
-            # internal server error--unless it's going to show up
-            # anyway in a traceback.
+            # Don't show the exception message; it might contain
+            # private information.
             result = [self.context.__class__.__name__]
         else:
             # It's okay to show the exception message

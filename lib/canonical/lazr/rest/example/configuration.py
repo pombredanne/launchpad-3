@@ -21,3 +21,4 @@ class CookbookWebServiceConfiguration:
     view_permission = CheckerPublic
     use_https = False
     code_revision = "test.revision"
+    show_tracebacks = True
