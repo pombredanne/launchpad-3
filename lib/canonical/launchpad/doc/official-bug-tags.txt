@@ -154,6 +154,8 @@ Setting the list creates any new tags appearing in the list.
 Any existing tags missing from the list are removed.
 
     >>> ubuntu.official_bug_tags = [u'foo']
+    >>> ubuntu.official_bug_tags
+    [u'foo']
 
 The list is publicly readable.
 

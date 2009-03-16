@@ -249,7 +249,6 @@ class OfficialBugTagTargetMixin:
             self.removeOfficialBugTag(removed_tag)
         for added_tag in added_tags:
             self.addOfficialBugTag(added_tag)
-        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR).flush()
 
     official_bug_tags = property(_getOfficialTags, _setOfficialTags)
 
