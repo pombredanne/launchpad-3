@@ -12,7 +12,12 @@ __all__ = [
 import logging
 
 import pytz
-from zope.component import getUtility
+
+# This non-standard import is necessary to hook up the event system.
+import zope.component.event
+from zope.component import getUtility, provideHandler
+from zope.event import notify
+
 from bzrlib.branch import BzrBranchFormat4
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
@@ -23,7 +28,7 @@ from lazr.uri import URI
 
 from canonical.codehosting import iter_list_chunks
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
-from canonical.codehosting.scanner.buglinks import BugBranchLinker
+from canonical.codehosting.scanner import buglinks, events
 from canonical.codehosting.scanner.email import BranchMailer
 from canonical.codehosting.scanner.mergedetection import (
     BranchMergeDetectionHandler)
@@ -81,7 +86,7 @@ class BzrSync:
         self.logger = logger
 
         self.db_branch = branch
-        self._bug_linker = BugBranchLinker(self.db_branch)
+        provideHandler(buglinks.got_new_revision)
         self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
         self._merge_handler = BranchMergeDetectionHandler(self.logger)
 
@@ -125,6 +130,7 @@ class BzrSync:
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
         self.trans_manager.begin()
+        # XXX: Event
         self.setFormats(bzr_branch)
         db_ancestry, db_history, db_branch_revision_map = (
             self.retrieveDatabaseAncestry())
@@ -148,6 +154,7 @@ class BzrSync:
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
 
+        # XXX: Event
         self._branch_mailer.sendRevisionNotificationEmails(bzr_history)
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
@@ -158,6 +165,7 @@ class BzrSync:
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
+        # XXX: Event
         self.autoMergeProposals(bzr_ancestry)
         self.autoMergeBranches(bzr_ancestry)
         self.trans_manager.commit()
@@ -196,6 +204,7 @@ class BzrSync:
                 # branch, not one merged into the other.
                 pass
             elif last_scanned in bzr_ancestry:
+                # XXX: EVENT
                 self._merge_handler.mergeOfTwoBranches(
                     branch, self.db_branch)
 
@@ -222,6 +231,7 @@ class BzrSync:
                 branch_revision = proposal.target_branch.getBranchRevision(
                     revision_id=tip_rev_id)
                 if branch_revision is not None:
+                    # XXX: EVENT
                     self._merge_handler.mergeProposalMerge(proposal)
 
     def retrieveDatabaseAncestry(self):
@@ -316,6 +326,7 @@ class BzrSync:
         removed_history = db_history[common_len:]
         added_history = bzr_history[common_len:]
 
+        # XXX: Event
         self._branch_mailer.generateEmailForRemovedRevisions(removed_history)
 
         # Merged (non-history) revisions in the database and the bzr branch.
@@ -362,10 +373,11 @@ class BzrSync:
         revision_set = getUtility(IRevisionSet)
         # Revision not yet in the database. Load it.
         self.logger.debug("Inserting revision: %s", revision_id)
-        revision_set.newFromBazaarRevision(bzr_revision)
-        # If a mainline revision, add the bug branch link.
-        if branchrevisions_to_insert[revision_id] is not None:
-            self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
+        db_revision = revision_set.newFromBazaarRevision(bzr_revision)
+        notify(
+            events.NewRevision(
+                self.db_branch, None, db_revision, bzr_revision,
+                branchrevisions_to_insert[revision_id]))
 
     def getRevisions(self, bzr_history, revision_subset):
         """Generate revision IDs that make up the branch's ancestry.
@@ -403,6 +415,7 @@ class BzrSync:
             revid for (revid, sequence)
             in branchrevisions_to_insert.iteritems() if sequence is not None]
         if self.db_branch.last_scanned_id is not None:
+            # XXX: Event
             job = getUtility(IRevisionsAddedJobSource).create(
                 self.db_branch, self.db_branch.last_scanned_id,
                 bzr_branch.last_revision(),
