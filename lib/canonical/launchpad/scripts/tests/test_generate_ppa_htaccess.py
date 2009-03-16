@@ -3,13 +3,10 @@
 
 import crypt
 import os
-import pytz
 import subprocess
 import sys
 import tempfile
 import unittest
-
-from datetime import datetime, timedelta
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -20,7 +17,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator)
-from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import LaunchpadZopelessLayer
 

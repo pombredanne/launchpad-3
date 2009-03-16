@@ -3,23 +3,18 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
-import crypt, filecmp, os, random, subprocess, tempfile
+import crypt, filecmp, os, tempfile
 from operator import attrgetter
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import sqlvalues
-
-from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
-from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 HTACCESS_TEMPLATE = """
