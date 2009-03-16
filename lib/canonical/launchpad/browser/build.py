@@ -220,7 +220,7 @@ def setupCompleteBuilds(batch):
     for (buildqueue, builder) in results:
         # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
         # 'buildlog' (from the result set) respectively.
-        prefetched_data[buildqueue.build] = buildqueue
+        prefetched_data[buildqueue.build.id] = buildqueue
 
     complete_builds = []
     for build in builds:
