@@ -43,8 +43,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             help="If set, no transactions are committed.  This will stop "
                  "tokens from being deactivated.")
 
-    def writeHtpasswd(self, filename, user, password, overwrite=False,
-                      salt=None):
+    def writeHtpasswd(self, filename, user, password, salt, overwrite=False):
         """Append a username/password pair to the filename supplied.
 
         Optionally overwrite it.
@@ -52,11 +51,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         if overwrite and os.path.isfile(filename):
             os.remove(filename)
 
-        if salt is None:
-            characters = ('0123456789'
-                         'abcdefghijklmnopqrstuvwxyz'
-                         'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-            salt = ''.join(random.choice(characters) for count in range(2))
         encrypted = crypt.crypt(password, salt)
 
         file = open(filename, "a")
@@ -89,13 +83,15 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # The first .htpasswd entry is the buildd_secret.
         self.writeHtpasswd(
             temp_filename, BUILDD_USER_NAME, ppa.buildd_secret,
-            overwrite=True)
+            overwrite=True, salt=BUILDD_USER_NAME[:2])
 
         # Iterate over tokens and write the appropriate htpasswd
         # entries for them.  Use a consistent sort order so that the
         # generated file can be compared to an existing one later.
         for token in sorted(tokens, key=attrgetter("id")):
-            self.writeHtpasswd(temp_filename, token.person.name, token.token)
+            self.writeHtpasswd(
+                temp_filename, token.person.name, token.token,
+                salt=token.person.name[:2])
 
         return temp_filename
 
