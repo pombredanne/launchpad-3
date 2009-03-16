@@ -1014,10 +1014,11 @@ class BuildSet:
         and LibraryFileAlias records in a single query because the
         result set is too large and the queries time out too often.
 
-        So this method receives a Build (storm) result set and fetches the
-        corresponding BuildQueue, SourcePackageRelease and LibraryFileAlias
-        rows (prejoined with the appropriate Builder, SourcePackageName and
-        LibraryFileContent respectively).
+        So this method receives a list of Build instances and fetches the
+        corresponding SourcePackageRelease and LibraryFileAlias rows
+        (prejoined with the appropriate SourcePackageName and
+        LibraryFileContent respectively) as well as builders related to the
+        Builds at hand.
         """
         from canonical.launchpad.database.sourcepackagename import (
             SourcePackageName)
