@@ -7,9 +7,6 @@
 __metaclass__ = type
 
 import _pythonpath
-
-import os
-
 from zope.component import getUtility
 
 from canonical.config import config
@@ -25,9 +22,6 @@ class RunCreateMergeProposalJobs(LaunchpadCronScript):
 
     def main(self):
         globalErrorUtility.configure('create_merge_proposals')
-        if os.environ.get('import_public_test_keys') == '1':
-            from canonical.launchpad.ftests import import_public_test_keys
-            import_public_test_keys()
         job_source = getUtility(ICreateMergeProposalJobSource)
         runner = JobRunner.fromReady(job_source)
         runner.runAll()
