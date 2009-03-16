@@ -120,8 +120,8 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
             elif oldvalue is not None and newvalue is None:
                 whatchanged = 'removed duplicate marker'
         elif changed_field == 'private':
-            whatchanged = 'Privacy'
-            privacy_values = {'True': 'Private', 'False': 'Public'}
+            whatchanged = 'privacy'
+            privacy_values = {'True': 'private', 'False': 'public'}
             oldvalue = privacy_values[oldvalue]
             newvalue = privacy_values[newvalue]
         else:
