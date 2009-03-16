@@ -9,7 +9,7 @@ __all__ = [
 
 import urlparse
 
-from zope.component import adapter, getUtility, provideHandler
+from zope.component import adapter, getUtility
 
 from canonical.codehosting.scanner import events
 from canonical.launchpad.interfaces import (
