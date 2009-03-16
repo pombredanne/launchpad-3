@@ -909,4 +909,9 @@ class POTMsgSet(SQLBase):
 
     def getSequence(self, potemplate):
         """See `IPOTMsgSet`."""
-        return self.sequence
+        translation_template_item = TranslationTemplateItem.selectOneBy(
+            potmsgset=self, potemplate=potemplate)
+        if translation_template_item is not None:
+            return translation_template_item.sequence
+        else:
+            return 0

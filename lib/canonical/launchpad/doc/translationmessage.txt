@@ -24,7 +24,7 @@ DummyTranslationMessage both implement ITranslationMessage interface:
 
     >>> serbian = getUtility(ILanguageSet)['sr']
     >>> dummy_message = potmsgset.getCurrentDummyTranslationMessage(
-    ...     serbian)
+    ...     potemplate, serbian)
     >>> verifyObject(ITranslationMessage, dummy_message)
     True
 
@@ -47,7 +47,7 @@ language:
     >>> serbian.pluralforms
     3
     >>> current_sr = potmsgset.getCurrentDummyTranslationMessage(
-    ...     serbian)
+    ...     potemplate, serbian)
     >>> current_sr.plural_forms
     1
 
@@ -55,7 +55,7 @@ language:
     >>> print divehi.pluralforms
     None
     >>> current_dv = potmsgset.getCurrentDummyTranslationMessage(
-    ...     divehi)
+    ...     potemplate, divehi)
     >>> current_dv.plural_forms
     1
 
@@ -70,7 +70,7 @@ forms per language (3 for Serbian, as specified in the language).
     >>> serbian.pluralforms
     3
     >>> current_sr = potmsgset_plural.getCurrentDummyTranslationMessage(
-    ...     serbian)
+    ...     potemplate, serbian)
     >>> current_sr.plural_forms
     3
 
@@ -80,7 +80,7 @@ a default of 2, which is the most common number of plural forms:
     >>> print divehi.pluralforms
     None
     >>> current_dv = potmsgset_plural.getCurrentDummyTranslationMessage(
-    ...     divehi)
+    ...     potemplate, divehi)
     >>> current_dv.plural_forms
     2
 
@@ -206,7 +206,7 @@ for the message, up to and including the last plural form it can have.
 For a regular single-form message, that's always one.
 
     >>> login('foo.bar@canonical.com')
-    >>> message = potmsgset.getCurrentTranslationMessage(serbian)
+    >>> message = potmsgset.getCurrentTranslationMessage(potemplate, serbian)
     >>> message.translations
     [u'new']
 
