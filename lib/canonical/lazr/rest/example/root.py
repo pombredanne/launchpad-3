@@ -25,12 +25,6 @@ class CookbookWebServiceObject:
     """A basic object published through the web service."""
 
 
-class CookbookWebServiceEntry(CookbookWebServiceObject):
-    """A basic object published through the web service."""
-    def __init__(self):
-        # This will be set later, by get().
-        self.__parent__ = None
-
 class CookbookTopLevelObject(CookbookWebServiceObject):
     """An object published at the top level of the web service."""
 
@@ -46,23 +40,26 @@ class CookbookTopLevelObject(CookbookWebServiceObject):
 class Cookbook(CookbookWebServiceObject):
     """An object representing a cookbook"""
     implements(ICookbook, IAbsoluteURL)
-    def __init__(self, name):
+    def __init__(self, name, cuisine):
         self.name = name
+        self.cuisine = cuisine
 
     @property
     def __name__(self):
         return self.name
 
+    @property
+    def __parent__(self):
+        return getUtility(ICookbookSet)
 
 # Define some globally accessible sample data.
-C1 = Cookbook(u"Mastering the Art of French Cooking")
-C2 = Cookbook(u"The Joy of Cooking")
-C3 = Cookbook(u"James Beard's American Cookery")
-C4 = Cookbook(u"Everyday Greens")
-C5 = Cookbook(u"I'm Just Here For The Food")
-C6 = Cookbook(u"Cooking Without Recipes")
+C1 = Cookbook(u"Mastering the Art of French Cooking", "French")
+C2 = Cookbook(u"The Joy of Cooking", "General")
+C3 = Cookbook(u"James Beard's American Cookery", "American")
+C4 = Cookbook(u"Everyday Greens", "Vegetarian")
+C5 = Cookbook(u"I'm Just Here For The Food", "American")
+C6 = Cookbook(u"Cooking Without Recipes", "General")
 COOKBOOKS = [C1, C2, C3, C4, C5, C6]
-
 
 class CookbookSet(CookbookTopLevelObject):
     """The set of all cookbooks."""

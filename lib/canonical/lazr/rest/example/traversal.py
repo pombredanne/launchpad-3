@@ -30,8 +30,5 @@ class TraverseWithGet:
         value = self.context.get(name)
         if value is None:
             raise NotFound(self, name)
-        # Set __parent__ so that absoluteURL will work.
-        if getattr(value, '__parent__', None) is None:
-            value.__parent__ = self.context
         return value
 

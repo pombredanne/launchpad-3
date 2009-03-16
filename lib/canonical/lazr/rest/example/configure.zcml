@@ -8,6 +8,10 @@
       <allow interface='canonical.lazr.rest.example.interfaces.ICookbookSet' />
   </class>
 
+  <class class="canonical.lazr.rest.example.root.Cookbook">
+      <allow interface='canonical.lazr.rest.example.interfaces.ICookbook' />
+  </class>
+
   <permission id="lazr.View" title="Viewing something" />
 
   <utility

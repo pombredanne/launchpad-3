@@ -30,15 +30,15 @@ collection.
   >>> len(cookbooks_entries)
   5
   >>> cookbooks_entries[0]['name']
-  u'Copy, Cut and Delete operations should work on selections'
+  u'Everyday Greens'
   >>> cookbooks_entries[0]['self_link']
-  u'http://.../bugs/12'
+  u'http://.../cookbooks/Everyday%20Greens'
   >>> cookbooks_entries[-1]['name']
-  u'jokosher exposes personal details in its actions portlet'
+  u'The Joy of Cooking'
 
 There are no XHTML representations available for collections.
 
-  >>> print webservice.get('/cookbooks, 'application/xhtml+xml')
+  >>> print webservice.get('/cookbooks', 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
   Content-Type: application/json
@@ -48,29 +48,28 @@ You can get other pages of the collection by following links:
 
   >>> result = webservice.get("/cookbooks?ws.start=5&ws.size=5")
   >>> second_batch = result.jsonBody()
-  >>> second_batch['next_collection_link']
-  u'http://.../cookbooks?ws.start=10&ws.size=5'
-  >>> second_batch['prev_collection_link']
-  u'http://.../cookbooks?ws.start=0&ws.size=5'
+  >>> 'next_collection_link' in second_batch
+  False
 
   >>> cookbooks_entries = sorted(
-  ...     second_batch['entries'], key=itemgetter('title'))
-  >>> cookbooks_entries[0]['title']
-  u'A test cookbook'
+  ...     second_batch['entries'], key=itemgetter('name'))
+  >>> cookbooks_entries[0]['name']
+  u'Cooking Without Recipes'
 
-You can also get a larger batch than the default:
-
-  >>> big_batch = webservice.get("/cookbooks?ws.size=10").jsonBody()
-  >>> len(big_batch['entries'])
-  10
-  >>> big_batch.get('next_collection_link')
-  u'http://.../cookbooks?ws.start=10&ws.size=10'
+You can also get a larger or smaller batch than the default:
 
   >>> bigger_batch = webservice.get("/cookbooks?ws.size=20").jsonBody()
   >>> len(bigger_batch['entries'])
-  15
-  >>> bigger_batch.get('next_collection_link') is None
-  True
+  6
+  >>> 'next_collection_link' in bigger_batch
+  False
+
+  >>> smaller_batch = webservice.get("/cookbooks?ws.size=2").jsonBody()
+  >>> len(smaller_batch['entries'])
+  2
+  >>> smaller_batch['next_collection_link']
+  u'http://.../cookbooks?ws.start=2&ws.size=2'
+
 
 But requesting a batch size higher than the maximum configured value
 results in a 400 error.
