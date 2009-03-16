@@ -9,8 +9,11 @@ import unittest
 import transaction
 
 from zope.component import getUtility
+from zope.security.proxy import isinstance as zope_isinstance
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.database.translationmessage import (
+    DummyTranslationMessage)
 from canonical.launchpad.database.translationtemplateitem import (
     TranslationTemplateItem)
 from canonical.launchpad.interfaces import (
@@ -94,9 +97,6 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         self.assertRaises(POTMsgSetInIncompatibleTemplatesError,
                           naked_potmsgset.__getattribute__, "singular_text")
 
-        # Revert source_file_format to the default one.
-        self.stable_potemplate.source_file_format = TranslationFileFormat.PO
-
 
     def test_POTMsgSetUsesEnglishMsgids(self):
         """Test that `uses_english_msgids` property works correctly."""
@@ -111,9 +111,70 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         transaction.commit()
         self.assertEquals(self.potmsgset.uses_english_msgids, False)
 
-        # Revert the source_file_format to what other tests might expect.
-        self.devel_potemplate.source_file_format = TranslationFileFormat.PO
+    def test_POTMsgSet_singular_text(self):
+        """Test that `singular_text` property works correctly."""
 
+        BASE_STRING = u"Base string"
+        ENGLISH_STRING = u"English string"
+        DIVERGED_ENGLISH_STRING = u"Diverged English string"
+
+        # We create a POTMsgSet with a base English string.
+        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
+                                               BASE_STRING)
+        potmsgset.setSequence(self.devel_potemplate, 2)
+
+        # Gettext PO format uses English strings as msgids.
+        self.devel_potemplate.source_file_format = TranslationFileFormat.PO
+        transaction.commit()
+        self.assertEquals(potmsgset.singular_text, BASE_STRING)
+
+        # Mozilla XPI format doesn't use English strings as msgids,
+        # unless there is no English POFile object.
+        self.devel_potemplate.source_file_format = TranslationFileFormat.XPI
+        transaction.commit()
+        self.assertEquals(potmsgset.singular_text, BASE_STRING)
+
+        # POTMsgSet singular_text is read from a shared English translation.
+        en_pofile = self.factory.makePOFile('en', self.devel_potemplate)
+        translation = self.factory.makeTranslationMessage(
+            pofile=en_pofile, potmsgset=potmsgset,
+            translations=[ENGLISH_STRING])
+        translation.potemplate = None
+        self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
+
+        # A diverged (translation.potemplate != None) English translation
+        # is not used as a singular_text.
+        translation = self.factory.makeTranslationMessage(
+            pofile=en_pofile, potmsgset=potmsgset,
+            translations=[DIVERGED_ENGLISH_STRING])
+        translation.potemplate = None
+        self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
+
+    def test_getCurrentDummyTranslationMessage(self):
+        """Test that a DummyTranslationMessage is correctly returned."""
+
+        # When there is no POFile, we get a DummyTranslationMessage inside
+        # a DummyPOFile.
+        serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
+        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
+            self.devel_potemplate, serbian)
+        self.assertTrue(zope_isinstance(dummy, DummyTranslationMessage))
+
+        # If a POFile exists, but there is no current translation message,
+        # a dummy translation message is returned.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
+            self.devel_potemplate, serbian)
+        self.assertTrue(zope_isinstance(dummy, DummyTranslationMessage))
+
+        # When there is a current translation message, an exception
+        # is raised.
+        translation = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset)
+        self.assertTrue(translation.is_current)
+        self.assertRaises(AssertionError,
+                          self.potmsgset.getCurrentDummyTranslationMessage,
+                          self.devel_potemplate, serbian)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
