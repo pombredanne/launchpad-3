@@ -839,7 +839,7 @@ class BuildSet:
         clause = " AND ".join(queries)
 
         return self._decorate_with_prejoins(
-            Build.select(clause, clauseTables=clauseTables,orderBy=orderBy))
+            Build.select(clause, clauseTables=clauseTables, orderBy=orderBy))
 
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
@@ -1049,5 +1049,9 @@ class BuildSet:
              LibraryFileContent, Builder),
             In(Build.id, build_ids))
 
-        # Force query execution.
+        # Force query execution so that the ancillary data gets fetched
+        # and added to StupidCache.
+        # We are doing this here because there is no "real" caller of
+        # this (pre_iter_hook()) method that will iterate over the
+        # result set and force the query execution that way.
         return list(result_set)
