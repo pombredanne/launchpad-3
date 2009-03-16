@@ -411,9 +411,6 @@ class BzrSync:
 
         # Generate emails for the revisions in the revision_history
         # for the branch.
-        mainline_revids = [
-            revid for (revid, sequence)
-            in branchrevisions_to_insert.iteritems() if sequence is not None]
         if self.db_branch.last_scanned_id is not None:
             # XXX: Event
             job = getUtility(IRevisionsAddedJobSource).create(
