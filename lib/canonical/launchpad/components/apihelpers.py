@@ -52,7 +52,7 @@ def patch_plain_parameter_type(exported_class, method_name, param_name,
     :param param_type: The new type for the parameter.
     """
     exported_class[method_name].queryTaggedValue(
-        EXPORTED_TAG)['params'][param_name] = param_type
+        EXPORTED_TAG)['params'][param_name].schema = param_type
 
 def patch_choice_parameter_type(exported_class, method_name, param_name,
                                 choice_type):
