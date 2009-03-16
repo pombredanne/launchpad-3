@@ -1329,8 +1329,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         return potmsgset
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
-                               translator=None, reviewer=None,
-                               translations=None, lock_timestamp=None):
+                               translator=None, suggestion=False,
+                               reviewer=None, translations=None,
+                               lock_timestamp=None, date_updated=None,
+                               is_imported=False):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
             pofile = self.makePOFile('sr')
@@ -1340,10 +1342,28 @@ class LaunchpadObjectFactory(ObjectFactory):
             translator = self.makePerson()
         if translations is None:
             translations = [self.getUniqueString()]
+        translation_message = potmsgset.updateTranslation(
+            pofile, translator, translations, is_imported=is_imported,
+            lock_timestamp=lock_timestamp, force_suggestion=suggestion)
+        if date_updated is not None:
+            naked_translation_message = removeSecurityProxy(
+                translation_message)
+            naked_translation_message.date_created = date_updated
+            if translation_message.reviewer is not None:
+                naked_translation_message.date_reviewed = date_updated
+            naked_translation_message.sync()
+        return translation_message
 
-        return potmsgset.updateTranslation(pofile, translator, translations,
-                                           is_imported=False,
-                                           lock_timestamp=lock_timestamp)
+    def makeSharedTranslationMessage(self, pofile=None, potmsgset=None,
+                                     translator=None, suggestion=False,
+                                     reviewer=None, translations=None,
+                                     date_updated=None, is_imported=False):
+        translation_message = self.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translator=translator,
+            suggestion=suggestion, reviewer=reviewer, is_imported=is_imported,
+            translations=translations, date_updated=date_updated)
+        translation_message.potemplate = None
+        return translation_message
 
     def makeTranslation(self, pofile, sequence,
                         english=None, translated=None,
