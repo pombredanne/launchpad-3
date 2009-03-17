@@ -147,8 +147,7 @@
       <tal:public_bug tal:condition="not: context/bug/private">
 
       <p tal:condition="product/bug_supervisor">
-        <a tal:attributes="href product/bug_supervisor/fmt:url"
-           tal:content="product/bug_supervisor/displayname">Sample Person</a>,
+        <a tal:replace="structure product/bug_supervisor/fmt:link">Sample Person</a>,
            the bug supervisor for
            <tal:product tal:replace="product/displayname">Firefox</tal:product>,
            will be notified about this bug.
@@ -156,8 +155,7 @@
 
       <tal:no_bug_supervisor tal:condition="not:product/bug_supervisor">
         <p tal:condition="product/official_malone">
-          <a tal:attributes="href product/owner/fmt:url"
-             tal:content="product/owner/displayname">Sample Person</a>, the
+          <a tal:replace="structure product/owner/fmt:link">Sample Person</a>, the
              <tal:product tal:replace="product/displayname">Firefox</tal:product>
              registrant, will be notified about this bug.
 
@@ -178,8 +176,7 @@
 
       <p tal:condition="product/bug_supervisor">
         This is a private bug report,
-        so <a tal:attributes="href product/bug_supervisor/fmt:url"
-           tal:content="product/bug_supervisor/displayname">Sample Person</a>,
+        so <a tal:replace="structure product/bug_supervisor/fmt:link">Sample Person</a>,
          the bug supervisor for
          <tal:product tal:replace="product/displayname">Firefox</tal:product>,
          won&rsquo;t be notified. You can also set up

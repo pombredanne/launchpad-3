@@ -73,7 +73,9 @@
       permission="launchpad.Edit"
       set_schema="canonical.launchpad.interfaces.person.IPersonPublic
                   canonical.launchpad.interfaces.person.ITeamPublic"
+      set_attributes="name displayname"
       />
+
     <require
       permission="launchpad.Commercial"
       set_schema="canonical.launchpad.interfaces.person.IPersonCommAdminWriteRestricted"
@@ -732,7 +734,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
-    permission="launchpad.Edit"
+    permission="zope.Public"
     name="+mailing-list-subscribers"
     template="../templates/team-mailinglist-subscribers.pt"
     />

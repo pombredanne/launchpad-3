@@ -311,10 +311,6 @@ def bugwatch_comments(context, view):
     return "Bug #%d - Comments imported from bug watch %s on %s" % (
         context.bug.id, context.remotebug, context.bugtracker.title)
 
-# bugpackageinfestations_index is a redirect
-
-# bugproductinfestations_index is a redirect
-
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
     if view.user:

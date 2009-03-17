@@ -8,6 +8,7 @@ with the Zope publisher.
 
 __metaclass__ = type
 __all__ = [
+    'browser_request_to_web_service_request',
     'WebServicePublicationMixin',
     'WebServiceRequestTraversal',
     ]
@@ -15,9 +16,10 @@ __all__ = [
 import urllib
 
 from zope.component import (
-    getMultiAdapter, getUtility, queryAdapter, queryMultiAdapter)
-from zope.interface import alsoProvides, implements
+    adapter, getMultiAdapter, getUtility, queryAdapter, queryMultiAdapter)
+from zope.interface import alsoProvides, implementer, implements
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.schema.interfaces import IBytes
 from zope.security.checker import ProxyFactory
 
@@ -25,7 +27,8 @@ from lazr.uri import URI
 
 from canonical.lazr.interfaces.rest import (
     IByteStorage, ICollection, IEntry, IEntryField, IHTTPResource,
-    IWebBrowserInitiatedRequest, IWebServiceConfiguration, WebServiceLayer)
+    IWebBrowserInitiatedRequest, IWebServiceClientRequest,
+    IWebServiceConfiguration)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
     CollectionResource, EntryField, EntryFieldResource,
@@ -33,7 +36,7 @@ from canonical.lazr.rest.resource import (
 
 
 class WebServicePublicationMixin:
-    """A mixin for webservice publication. 
+    """A mixin for webservice publication.
 
     This should usually be mixed-in with ZopePublication, or Browser,
     or HTTPPublication"""
@@ -179,7 +182,7 @@ class WebServiceRequestTraversal:
 
     This should be mixed in the request using to the base publication used.
     """
-    implements(WebServiceLayer)
+    implements(IWebServiceClientRequest)
 
     def traverse(self, ob):
         """See `zope.publisher.interfaces.IPublisherRequest`.
@@ -227,4 +230,26 @@ class WebServiceRequestTraversal:
             self.setTraversalStack(stack)
             return item
         return None
+
+
+@implementer(IWebServiceClientRequest)
+@adapter(IBrowserRequest)
+def browser_request_to_web_service_request(website_request):
+    """An adapter from a browser request to a web service request.
+
+    Used to instantiate Resource objects when handling normal web
+    browser requests.
+    """
+    config = getUtility(IWebServiceConfiguration)
+    body = website_request.bodyStream.getCacheStream().read()
+    environ = dict(website_request.environment)
+    # Zope picks up on SERVER_URL when setting the _app_server attribute
+    # of the new request.
+    environ['SERVER_URL'] = website_request.getApplicationURL()
+    web_service_request = config.createRequest(body, environ)
+    web_service_request.setVirtualHostRoot(
+        names=[config.path_override, config.service_version_uri_prefix])
+    web_service_request._vh_root = website_request.getVirtualHostRoot()
+    return web_service_request
+
 

@@ -14,10 +14,8 @@
        </tal:displayname>
     </a>
     by
-    <a tal:attributes="href source/sourcepackagerelease/creator/fmt:url">
-       <tal:creator replace="source/sourcepackagerelease/creator/displayname">
-           Mark Shuttleworth
-       </tal:creator>
+    <a tal:replace="structure source/sourcepackagerelease/creator/fmt:link">
+      Mark Shuttleworth
     </a>
     <tal:dateuploaded replace="source/dateuploaded/fmt:displaydate">
        3 minutes ago

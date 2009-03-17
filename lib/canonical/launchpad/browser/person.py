@@ -79,6 +79,7 @@ __all__ = [
     'archive_to_person',
     ]
 
+import cgi
 import copy
 import itertools
 import pytz
@@ -147,7 +148,7 @@ from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.launchpad import (
-    INotificationRecipientSet, UnknownRecipientError)
+    ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.product import IProduct
@@ -2399,22 +2400,25 @@ class PersonLanguagesView(LaunchpadView):
         if self.is_current_user:
             subject = "your"
         else:
-            subject = "%s's" % self.context.displayname
+            subject = "%s's" % cgi.escape(self.context.displayname)
 
         # Add languages to the user's preferences.
+        messages = []
         for language in set(new_languages) - set(old_languages):
             self.context.addLanguage(language)
-            self.request.response.addInfoNotification(
+            messages.append(
                 "Added %(language)s to %(subject)s preferred languages." %
                 {'language' : language.englishname, 'subject' : subject})
 
         # Remove languages from the user's preferences.
         for language in set(old_languages) - set(new_languages):
             self.context.removeLanguage(language)
-            self.request.response.addInfoNotification(
+            messages.append(
                 "Removed %(language)s from %(subject)s preferred languages." %
                 {'language' : language.englishname, 'subject' : subject})
-
+        if len(messages) > 0:
+            message = structured('<br />'.join(messages))
+            self.request.response.addInfoNotification(message)
         redirection_url = self.request.get('redirection_url')
         if redirection_url:
             self.request.response.redirect(redirection_url)
@@ -2770,6 +2774,16 @@ class PersonView(LaunchpadView, FeedsMixin):
             return mailing_list.archive_url
         else:
             return None
+
+    @cachedproperty
+    def languages(self):
+        """The user's preferred languages, or English is none are set."""
+        languages = list(self.context.languages)
+        if len(languages) > 0:
+            englishnames = [language.englishname for language in languages]
+            return ', '.join(sorted(englishnames))
+        else:
+            return getUtility(ILaunchpadCelebrities).english.englishname
 
 
 class EmailAddressVisibleState:
