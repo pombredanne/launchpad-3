@@ -612,21 +612,14 @@ def get_bug_edit_notification_texts(bug_delta):
             change_info += '   %s' % new_bug_dupe.title
             changes.append(change_info)
 
-    if bug_delta.title is not None:
-        bug_change_class = get_bug_change_class(bug_delta.bug, 'title')
-        change_info = bug_change_class(
-            when=None, person=bug_delta.user, what_changed='title',
-            old_value=bug_delta.title['old'],
-            new_value=bug_delta.title['new'])
-        changes.append(change_info)
-
-    if bug_delta.description is not None:
-        bug_change_class = get_bug_change_class(bug_delta.bug, 'description')
-        change_info = bug_change_class(
-            when=None, person=bug_delta.user, what_changed='description',
-            old_value=bug_delta.description['old'],
-            new_value=bug_delta.description['new'])
-        changes.append(change_info)
+    for field_name in ['title', 'description']:
+        field_delta = getattr(bug_delta, field_name)
+        if field_delta is not None:
+            bug_change_class = get_bug_change_class(bug_delta.bug, field_name)
+            change_info = bug_change_class(
+                when=None, person=bug_delta.user, what_changed=field_name,
+                old_value=field_delta['old'], new_value=field_delta['new'])
+            changes.append(change_info)
 
     if bug_delta.private is not None:
         if bug_delta.private['new']:
