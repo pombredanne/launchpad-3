@@ -57,7 +57,7 @@ are simple little functions.
     >>> notify(bug_edited)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
-    u'title'
+    u'summary'
     >>> latest_activity.oldvalue
     u'a test bug'
     >>> latest_activity.newvalue
