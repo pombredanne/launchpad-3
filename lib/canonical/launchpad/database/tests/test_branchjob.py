@@ -481,7 +481,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
 
     def _makeProductSeries(self, branch, mode):
         series = self.factory.makeProductSeries()
-        series.user_branch = branch
+        series.branch = branch
         series.translations_autoimport_mode = mode
         return series
 

@@ -455,7 +455,7 @@ class RosettaUploadJob(BranchJobDerived):
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         productseries = store.find(
             (ProductSeries),
-            ProductSeries.user_branch == self.branch,
+            ProductSeries.branch == self.branch,
             ProductSeries.translations_autoimport_mode !=
                TranslationsBranchImportMode.NO_IMPORT)
         translation_import_queue = getUtility(ITranslationImportQueue)
