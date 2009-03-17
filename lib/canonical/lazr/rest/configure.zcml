@@ -23,7 +23,7 @@
     -->
     <view
         for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.WebServiceExceptionView"
         name="index.html"
         />
