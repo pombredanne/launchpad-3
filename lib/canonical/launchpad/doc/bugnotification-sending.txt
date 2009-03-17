@@ -1733,15 +1733,62 @@ BugNotification and the BugActivity tables for the bug.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(
     ...     config.malone.bugnotification_dbuser)
+    >>> config.push('bugnotification_interval', bugnotification_interval)
 
     >>> bug_delta = BugDelta(
     ...     example_bug, canonical_url(example_bug),
     ...     user=example_person,
-    ...     title={'old': example_bug.title, 'new': 'The world'})
+    ...     title={'old': example_bug.title, 'new': 'The world'},
+    ...     description={
+    ...         'old': example_bug.description,
+    ...         'new': "Existential",
+    ...         })
     >>> add_bug_change_notifications(bug_delta)
 
-    >>> for activity in example_bug.activity:
+The activity log shows that the description and summary were changed.
+
+    >>> from operator import attrgetter
+    >>> activity_list = sorted(
+    ...     example_bug.activity, key=attrgetter('whatchanged'))
+    >>> for activity in activity_list:
     ...     print "%s: %s => %s (%s)" % (
     ...         activity.whatchanged, activity.oldvalue, activity.newvalue,
     ...         activity.person.displayname)
+    description: Exists => Existential (Trillian)
     summary: Marvin => The world (Trillian)
+
+Nicely formatted notifications were sent to all interested
+subscribers.
+
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> example_bug_notifications = [
+    ...     notification for notification in pending_notifications
+    ...     if notification.bug == example_bug]
+    >>> len(example_bug_notifications)
+    2
+
+    >>> notifications = sorted(
+    ...     example_bug_notifications,
+    ...     key=lambda notification: notification.message.text_contents)
+    >>> for notification in notifications:
+    ...     print notification.message.text_contents
+    ...     print '--'
+    ...     print 'Recipients:', ', '.join(
+    ...         recipient.person.displayname
+    ...         for recipient in notification.recipients)
+    ...     print '-----------------'
+    ** Description changed:
+    <BLANKLINE>
+    - Exists
+    + Existential
+    --
+    Recipients: Trillian
+    -----------------
+    ** Summary changed:
+    <BLANKLINE>
+    - Marvin
+    + The world
+    --
+    Recipients: Trillian
+    -----------------
