@@ -12,9 +12,10 @@ import pytz
 import transaction
 
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
@@ -82,6 +83,23 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
             distroseries, PackagePublishingPocket.RELEASE, sourcepackagename,
             branch, registrant)
         self.assertProvides(sspb, ISeriesSourcePackageBranch)
+
+    def test_cannot_edit_branch_link(self):
+        # You can only edit an ISeriesSourcePackageBranch if you have edit
+        # permissions, which almost no one has.
+        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        registrant = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch()
+        sspb = series_set.new(
+            distroseries, PackagePublishingPocket.RELEASE, sourcepackagename,
+            branch, registrant)
+        logout()
+        login(ANONYMOUS)
+        self.assertRaises(
+            Unauthorized, setattr, sspb, 'pocket',
+            PackagePublishingPocket.BACKPORTS)
 
 
 def test_suite():

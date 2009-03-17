@@ -165,13 +165,6 @@ class ISourcePackage(IBugTarget):
         :return: An `IBranch`.
         """
 
-    def getBranchLink(pocket):
-        """Get the linking object for the  official branch for this package.
-
-        :param pocket: The `PackagePublishingPocket` of the link you want.
-        :return: An `ISeriesSourcePackageBranch`.
-        """
-
     # 'pocket' should actually be a PackagePublishingPocket, and 'branch'
     # should be IBranch, but we use the base classes to avoid circular
     # imports. Correct interface specific in _schema_circular_imports.

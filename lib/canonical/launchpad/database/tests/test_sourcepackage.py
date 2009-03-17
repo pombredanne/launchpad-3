@@ -84,21 +84,6 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
         self.assertRaises(
             Unauthorized, sourcepackage.setBranch, pocket, branch, registrant)
 
-    def test_cannot_edit_branch_link(self):
-        sourcepackage = self.factory.makeSourcePackage()
-        registrant = self.factory.makePerson()
-        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        pocket = PackagePublishingPocket.RELEASE
-        series_set = removeSecurityProxy(
-            getUtility(ISeriesSourcePackageBranchSet))
-        series_set.new(
-            sourcepackage.distroseries, pocket,
-            sourcepackage.sourcepackagename, branch, registrant)
-        branch_link = sourcepackage.getBranchLink(pocket)
-        self.assertRaises(
-            Unauthorized, setattr, branch_link, 'pocket',
-            PackagePublishingPocket.BACKPORTS)
-
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
