@@ -16,7 +16,6 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces.bugchange import (
     IBugChange)
-from canonical.launchpad.mailnotification import get_unified_diff
 
 
 def get_bug_change_class(obj, field_name):
@@ -25,6 +24,14 @@ def get_bug_change_class(obj, field_name):
         return BUG_CHANGE_LOOKUP[field_name]
     except KeyError:
         return BugChangeBase
+
+
+def get_unified_diff(old_value, new_value, line_length):
+    """Return a unified diff of old_value and new_value."""
+    # We've created this local version to avoid circular import
+    # problems.
+    from canonical.launchpad.mailnotification import get_unified_diff
+    return get_unified_diff(old_value, new_value, line_length)
 
 
 class BugChangeBase:
@@ -89,7 +96,7 @@ class BugTitleChange(TextualBugChange):
 
 
 BUG_CHANGE_LOOKUP = {
-    'description': TextualBugChange,
+    'description': BugDescriptionChange,
     'name': TextualBugChange,
-    'title': TextualBugChange,
+    'title': BugTitleChange,
     }

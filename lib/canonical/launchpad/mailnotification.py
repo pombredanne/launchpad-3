@@ -25,6 +25,8 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.components.bugchange import (
+    get_bug_change_class)
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
@@ -610,18 +612,19 @@ def get_bug_edit_notification_texts(bug_delta):
             changes.append(change_info)
 
     if bug_delta.title is not None:
-        change_info = u"** Summary changed:\n\n"
-        change_info += u"- %s\n" % bug_delta.title['old']
-        change_info += u"+ %s" % bug_delta.title['new']
+        bug_change_class = get_bug_change_class(None, 'title')
+        change_info = bug_change_class(
+            when=None, person=None, what_changed='title',
+            old_value=bug_delta.title['old'],
+            new_value=bug_delta.title['new'])
         changes.append(change_info)
 
     if bug_delta.description is not None:
-        description_diff = get_unified_diff(
-            bug_delta.description['old'],
-            bug_delta.description['new'], 72)
-
-        change_info = u"** Description changed:\n\n"
-        change_info += description_diff
+        bug_change_class = get_bug_change_class(None, 'description')
+        change_info = bug_change_class(
+            when=None, person=None, what_changed='description',
+            old_value=bug_delta.description['old'],
+            new_value=bug_delta.description['new'])
         changes.append(change_info)
 
     if bug_delta.private is not None:
