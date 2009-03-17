@@ -26,6 +26,8 @@ __all__ = [
 
 import cgi
 import os.path
+
+from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -37,10 +39,21 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
-from canonical.launchpad.interfaces import (
-    ICodeImportSet, ICountry, ILaunchpadCelebrities, IPOTemplateSet,
-    IProductSeries, ISourcePackageNameSet, ITranslationImportQueue,
-    ITranslationImporter, NotFoundError)
+from canonical.launchpad.interfaces.codeimport import (
+    ICodeImportSet)
+from canonical.launchpad.interfaces.branchjob import IRosettaUploadJobSource
+from canonical.launchpad.interfaces.country import ICountry
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
+from canonical.launchpad.interfaces.translationimporter import (
+    ITranslationImporter)
+from canonical.launchpad.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
+from canonical.launchpad.interfaces.translations import (
+    TranslationsBranchImportMode)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
@@ -48,6 +61,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription)
@@ -586,7 +600,13 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
-        self.updateContextFromData(data)
+        if data['branch'] != context.branch:
+            self.updateContextFromData(data)
+            # Request an initial upload of translation files.
+            getUtility(IRosettaUploadJobSource).create(
+                context.branch, NULL_REVISION)
+        else:
+            self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
@@ -682,6 +702,14 @@ class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView):
 
     @action(u"Save settings", name="save_settings")
     def change_settings_action(self, action, data):
-        self.updateContextFromData(data)
+        if (self.context.translations_autoimport_mode !=
+            data['translations_autoimport_mode']
+            ):
+            self.updateContextFromData(data)
+            # Request an initial upload of translation files.
+            getUtility(IRosettaUploadJobSource).create(
+                self.context.branch, NULL_REVISION)
+        else:
+            self.updateContextFromData(data)
         self.request.response.addInfoNotification(
-            "The settings have been updated.")
+            _("The settings have been updated."))

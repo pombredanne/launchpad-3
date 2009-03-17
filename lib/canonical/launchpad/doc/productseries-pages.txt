@@ -1,23 +1,66 @@
+= Set Up =
+
+We will have to check for a BranchJob being created for a usser_branch, so
+let's put this check in a convenient function.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.branchjob import (
+    ...     IRosettaUploadJobSource)
+    >>> job_counter = 0
+    >>> def isUploadJobCreatedForUserBranch(productseries):
+    ...     global job_counter
+    ...     ready_jobs = list(getUtility(IRosettaUploadJobSource).iterReady())
+    ...     if len(ready_jobs) <= job_counter:
+    ...         return False
+    ...     job = ready_jobs[job_counter]
+    ...     print repr(job)
+    ...     job_counter += 1
+    ...     return productseries.branch == job.branch
+
+We also need a product series with a branch for the tests, so let's create
+one.
+
+    >>> productseries = factory.makeProductSeries()
+
+The ProductSeries instance has a branch set that contains the source
+code. The last_mirrored_id and the last_scanned_id is set to the same value
+to pretend that the branch has been mirrored and scanned.
+
+    >>> productseries.branch = factory.makeProductBranch(
+    ...     productseries.product)
+    >>> productseries.branch.last_mirrored_id = "some_rev_id"
+    >>> productseries.branch.last_scanned_id = "some_rev_id"
+
+
+= ProductSeriesEditView =
+
+This is not a full documentation and test of the view. Please see the
+pagetest for more information.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.browser.productseries import (
+    ...     ProductSeriesEditView)
+    >>> request = LaunchpadTestRequest()
+    >>> view = ProductSeriesEditView(
+    ...     productseries, request)
+    >>> view.setUpFields()
+
+Still incomplete ...
+
 = ProductSeriesTranslationsSettingsView =
 
 Special settings for translations of a ProductSeries are set through
 this view.
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> evolution_trunk = productset['evolution'].getSeries('trunk')
-
     >>> from canonical.launchpad.browser.productseries import (
     ...     ProductSeriesTranslationsSettingsView)
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 The only setting currently available is for the import of translation
 templates from bazaar branches hosted on Launchpad.
 
     >>> request = LaunchpadTestRequest()
     >>> view = ProductSeriesTranslationsSettingsView(
-    ...     evolution_trunk, request)
+    ...     productseries, request)
     >>> view.setUpFields()
     >>> [field.__name__ for field in view.form_fields]
     ['translations_autoimport_mode']
@@ -29,23 +72,22 @@ This setting is represented by a LaunchpadRadioWidgetWithDescription.
     <...LaunchpadRadioWidgetWithDescription object at...>
 
 Submitting the form via "Change settings" will update the corresponding
-attribute of the ProductSeries. This can only be done by the product
-maintainer.
+attribute of the ProductSeries.
 
-    >>> from zope.security.interfaces import Unauthorized
     >>> request = LaunchpadTestRequest(
     ...     method='POST',
     ...     form={'field.translations_autoimport_mode': 'IMPORT_TEMPLATES',
     ...           'field.actions.save_settings': 'Save Settings'})
     >>> view = ProductSeriesTranslationsSettingsView(
-    ...     evolution_trunk, request)
-    >>> try: view.initialize()
-    ... except Unauthorized, e: print e
-    (...'translations_autoimport_mode', 'launchpad.Edit')
-
-    >>> login('test@canonical.com')
-    >>> print evolution_trunk.translations_autoimport_mode.title
+    ...     productseries, request)
+    >>> print productseries.translations_autoimport_mode.title
     No import.
     >>> view.initialize()
-    >>> print evolution_trunk.translations_autoimport_mode.title
+    >>> print productseries.translations_autoimport_mode.title
     Import PO templates.
+
+Also, a branch job to upload the full set of translation files has been
+created to create the initial database entries from the files in the branch.
+
+    >>> print isUploadJobCreatedForUserBranch(productseries)
+    True
