@@ -96,6 +96,9 @@ class IPOTMsgSet(Interface):
     def getImportedTranslationMessage(potemplate, language, variant=None):
         """Returns a TranslationMessage as imported from the package."""
 
+    def getSharedTranslationMessage(language, variant=None):
+        """Returns a shared TranslationMessage."""
+
     def getLocalTranslationMessages(potemplate, language):
         """Return all local unused translation messages for the POTMsgSet.
 

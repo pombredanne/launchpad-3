@@ -226,6 +226,27 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
             self.stable_potemplate, serbian), shared_translation)
 
+    def test_getSharedTranslationMessage(self):
+        """Test how shared and diverged current translation messages
+        interact."""
+        # Share a POTMsgSet in two templates, and get a Serbian POFile.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        serbian = sr_pofile.language
+
+        # A shared translation matches the current one.
+        shared_translation = self.factory.makeSharedTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset)
+        self.assertEquals(
+            self.potmsgset.getSharedTranslationMessage(serbian),
+            shared_translation)
+
+        # Adding a diverged translation doesn't break getSharedTM.
+        diverged_translation = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset, force_diverged=True)
+        self.assertEquals(
+            self.potmsgset.getSharedTranslationMessage(serbian),
+            shared_translation)
+
     def test_getLocalTranslationMessages(self):
         """Test retrieval of local suggestions."""
         # Share a POTMsgSet in two templates, and get a Serbian POFile.
