@@ -403,7 +403,7 @@ class CodeHandler:
             branches = getUtility(IBranchSet)
             # XXX: This logic could perhaps be extracted out into something
             # more useful.
-            unique_name = branches.URIToUniqueName(URI(url))
+            unique_name = branches.uriToUniqueName(URI(url))
             if unique_name is not None:
                 namespace_name, base = split_unique_name(unique_name)
                 return lookup_branch_namespace(namespace_name), base

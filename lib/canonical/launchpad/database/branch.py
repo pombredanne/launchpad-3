@@ -1078,9 +1078,8 @@ class BranchSet:
         return branch
 
     @staticmethod
-    def URIToUniqueName(uri):
+    def uriToUniqueName(uri):
         """See `IBranchSet`."""
-        # XXX: how is this used?
         schemes = ('http', 'sftp', 'bzr+ssh')
         codehosting_host = URI(config.codehosting.supermirror_root).host
         if uri.scheme in schemes and uri.host == codehosting_host:
@@ -1095,7 +1094,7 @@ class BranchSet:
             uri = URI(url)
         except InvalidURIError:
             return None
-        unique_name = self.URIToUniqueName(uri)
+        unique_name = self.uriToUniqueName(uri)
         if unique_name is not None:
             branch = self.getByUniqueName(unique_name)
         elif uri.scheme == 'lp':

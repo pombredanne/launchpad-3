@@ -1308,8 +1308,8 @@ class TestGetByUrl(TestCaseWithFactory):
         branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
         self.assertEqual(branch, branch2)
 
-    def test_URIToUniqueName(self):
-        """Ensure URIToUniqueName works.
+    def test_uriToUniqueName(self):
+        """Ensure uriToUniqueName works.
 
         Only codehosting-based using http, sftp or bzr+ssh URLs will
         be handled. If any other URL gets passed the returned will be
@@ -1320,18 +1320,18 @@ class TestGetByUrl(TestCaseWithFactory):
         uri.path = '/~foo/bar/baz'
         # Test valid schemes
         uri.scheme = 'http'
-        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        self.assertEqual('~foo/bar/baz', branch_set.uriToUniqueName(uri))
         uri.scheme = 'sftp'
-        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        self.assertEqual('~foo/bar/baz', branch_set.uriToUniqueName(uri))
         uri.scheme = 'bzr+ssh'
-        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
+        self.assertEqual('~foo/bar/baz', branch_set.uriToUniqueName(uri))
         # Test invalid scheme
         uri.scheme = 'ftp'
-        self.assertIs(None, branch_set.URIToUniqueName(uri))
+        self.assertIs(None, branch_set.uriToUniqueName(uri))
         # Test valid scheme, invalid domain
         uri.scheme = 'sftp'
         uri.host = 'example.com'
-        self.assertIs(None, branch_set.URIToUniqueName(uri))
+        self.assertIs(None, branch_set.uriToUniqueName(uri))
 
 
 class TestGetByLPPath(TestCaseWithFactory):
