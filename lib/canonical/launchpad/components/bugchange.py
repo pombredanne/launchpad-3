@@ -5,6 +5,8 @@
 __metaclass__ = type
 __all__ = [
     'BugChangeBase',
+    'BugDescriptionChange',
+    'BugTitleChange',
     'get_bug_change_class',
 ]
 
@@ -61,22 +63,29 @@ class TextualBugChange(BugChangeBase):
             'whatchanged': self.what_changed,
             }
 
+
+class BugDescriptionChange(TextualBugChange):
+    """Describes a change to a bug's description."""
+
     def getBugNotification(self):
-        if self.what_changed == 'title':
-            notification_text = dedent("""\
-                ** Summary changed:
-
-                - %s
-                + %s""" % (self.old_value, self.new_value))
-
-        if self.what_changed == 'description':
-            description_diff = get_unified_diff(
-                self.old_value, self.new_value, 72)
-
-            notification_text = (
-                u"** Description changed:\n\n%s" % description_diff)
-
+        description_diff = get_unified_diff(
+            self.old_value, self.new_value, 72)
+        notification_text = (
+            u"** Description changed:\n\n%s" % description_diff)
         return {'text': notification_text}
+
+
+class BugTitleChange(TextualBugChange):
+    """Describes a change to a bug's title, aka summary."""
+
+    def getBugNotification(self):
+        notification_text = dedent("""\
+            ** Summary changed:
+
+            - %s
+            + %s""" % (self.old_value, self.new_value))
+        return {'text': notification_text}
+
 
 
 BUG_CHANGE_LOOKUP = {
