@@ -261,6 +261,26 @@ First we have to create the file itself, and upload it to the Librarian:
     u'added subscriber Tim Penhey'
 
 
+== Unsubscribe someone from a bug ==
+
+    >>> bug = factory.makeBug()
+    >>> user = factory.makePerson(displayname='Arthur Dent')
+    >>> unsubscriber = factory.makePerson(displayname='Mom')
+    >>> bug_subscription = bug.subscribe(user, unsubscriber)
+    >>> bug.unsubscribe(user, unsubscriber)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'removed subscriber Arthur Dent'
+    >>> latest_activity.person.displayname
+    u'Mom'
+    >>> print latest_activity.oldvalue
+    None
+    >>> print latest_activity.newvalue
+    None
+    >>> print latest_activity.message
+    None
+
+
 == Bug privacy changed ==
 
     >>> owner = factory.makePerson(displayname='Arthur Dent')
