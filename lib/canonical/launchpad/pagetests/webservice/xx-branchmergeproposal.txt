@@ -61,6 +61,7 @@ We use the webservice as an unrelated, unprivileged user.
     superseded_by_link: None
     supersedes_link: None
     target_branch_link: u'http://.../~target/fooix/trunk'
+    votes_collection_link: u'http://.../~source/fooix/fix-it/+merge/.../votes'
 
 
 == Read the comments ==
@@ -92,6 +93,25 @@ The comments on a branch merge proposal are exposed through the API.
     title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
     vote: u'Abstain'
     vote_tag: None
+
+
+== Check the votes ==
+
+The votes on a branch merge proposal can be checked through the API.
+
+    >>> votes = webservice.get(
+    ...     merge_proposal['votes_collection_link']).jsonBody()['entries']
+    >>> print len(votes)
+    2
+    >>> pprint_entry(votes[0])
+    branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    comment_link: u'http://.../~source/fooix/fix-it/+merge/1/comments/...'
+    date_created: u'...'
+    registrant_link: u'http://.../~person-name20'
+    resource_type_link: u'http://.../#code_review_vote_reference'
+    review_type: u'code'
+    reviewer_link: u'http://.../~person-name20'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/.../+review/...'
 
 
 == Performing a Review ==

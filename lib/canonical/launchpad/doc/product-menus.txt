@@ -131,6 +131,8 @@ facet is not applied correctly before using getMultiAdapter().
         ProductNavigation: unknown template
     announcements: http://launchpad.dev/firefox/+announcements
         SimpleViewClass: hasannouncements-index.pt
+    branchvisibility: http://launchpad.dev/firefox/+branchvisibility
+        SimpleViewClass: branch-visibility.pt
     downloads: http://launchpad.dev/firefox/+download
         SimpleViewClass: product-files.pt
 

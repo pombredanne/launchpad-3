@@ -124,6 +124,17 @@ And retrieve the token by id and by token data:
     >>> print token_set.getByToken(u"testtoken").person.name
     name12
 
+It's also possible to retrieve a set of all the tokens for an archive.
+
+    >>> tokens = token_set.getByArchive(cprov.archive)
+    >>> print tokens.count()
+    2
+
+    >>> for token in tokens:
+    ...     print token.person.name
+    name12
+    name12
+
 Tokens can also be retreived by archive and person:
 
     >>> print token_set.getActiveTokenForArchiveAndPerson(
@@ -156,8 +167,14 @@ We can do this as an admin too:
     >>> login("admin@canonical.com")
     >>> new_token.deactivate()
 
+Deactivating a token stops it being returned from getByArchive().  The
+previous count of 2 is now reduced to 1.
+
+    >>> token_set.getByArchive(cprov.archive).count()
+    1
+
 The IArchiveAuthTokenSet.getActiveTokenForArchiveAndPerson() method will
-not return tokens that have been deactivated:
+also not return tokens that have been deactivated:
 
     >>> print token_set.getActiveTokenForArchiveAndPerson(
     ...     new_token.archive, new_token.person)
