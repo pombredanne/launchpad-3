@@ -1180,7 +1180,6 @@ class IBranchSet(Interface):
         Return None if no match was found.
         """
 
-    # XXX: URIToUniqueName is a non-standards compliant name.
     def uriToUniqueName(uri):
         """Return the unique name for the URI, if the URI is on codehosting.
 
@@ -1196,13 +1195,11 @@ class IBranchSet(Interface):
     def getByUrl(url, default=None):
         """Find a branch by URL.
 
-        Either from the external specified in Branch.url, or from the URL on
-        http://bazaar.launchpad.net/.
+        Either from the external specified in Branch.url, from the URL on
+        http://bazaar.launchpad.net/ or the lp: URL.
 
         Return the default value if no match was found.
         """
-        # XXX: This docstring is out of date -- getByUrl also resolves lp:
-        # URLs.
 
     def getByLPPath(path):
         """Find the branch associated with an lp: path.
