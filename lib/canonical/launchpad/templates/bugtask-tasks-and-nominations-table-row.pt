@@ -99,9 +99,9 @@
               </a>
             </tal:has_assignee>
           </span>
-          <a class="yui-activator-act yui-activator-hidden">
-            <img src="/@@/edit"/>
-          </a>
+          <button class="lazr-btn yui-activator-act yui-activator-hidden">
+          Edit
+          </button>
           <div class="yui-activator-message-box yui-activator-hidden"/>
         </span>
         <script tal:content="structure string:
