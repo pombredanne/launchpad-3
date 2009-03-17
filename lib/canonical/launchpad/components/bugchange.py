@@ -53,27 +53,29 @@ class BugChangeBase:
         raise NotImplementedError(self.getBugNotificationRecipients)
 
 
-<<<<<<< TREE
 class SimpleBugChangeMixin:
     """A mixin class that provides basic functionality for `IBugChange`s."""
-=======
-class UnsubscribedFromBug(BugChangeBase):
-    """A user got unsubscribed from a bug."""
-
-    def __init__(self, when, person, unsubscribed_user):
-        super(UnsubscribedFromBug, self).__init__(when, person)
-        self.unsubscribed_user = unsubscribed_user
->>>>>>> MERGE-SOURCE
 
     def getBugActivity(self):
-<<<<<<< TREE
         """Return the BugActivity data for the textual change."""
         return {
             'newvalue': self.new_value,
             'oldvalue': self.old_value,
             'whatchanged': self.what_changed,
             }
-=======
+
+    def getBugNotificationRecipients(self):
+        return self.recipients
+
+
+class UnsubscribedFromBug(BugChangeBase):
+    """A user got unsubscribed from a bug."""
+
+    def __init__(self, when, person, unsubscribed_user):
+        super(UnsubscribedFromBug, self).__init__(when, person)
+        self.unsubscribed_user = unsubscribed_user
+
+    def getBugActivity(self)
         """See `IBugChange`."""
         return dict(
             whatchanged='removed subscriber %s' % (
@@ -82,11 +84,6 @@ class UnsubscribedFromBug(BugChangeBase):
     def getBugNotification(self):
         """See `IBugChange`."""
         return None
->>>>>>> MERGE-SOURCE
-
-    def getBugNotificationRecipients(self):
-<<<<<<< TREE
-        return self.recipients
 
 
 class BugDescriptionChange(SimpleBugChangeMixin, BugChangeBase):
@@ -126,7 +123,3 @@ BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'title': BugTitleChange,
     }
-=======
-        """See `IBugChange`."""
-        return None
->>>>>>> MERGE-SOURCE
