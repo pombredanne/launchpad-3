@@ -326,6 +326,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
 
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.product.official_bug_tags
+
     def getUsedBugTags(self):
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
