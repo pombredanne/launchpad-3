@@ -22,7 +22,7 @@
     can only be called from within a class definition.
     -->
     <view
-        for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
+        for="lazr.batchnavigator.interfaces.InvalidBatchSizeError"
         type="canonical.lazr.interfaces.rest.IWebServiceLayer"
         factory="canonical.lazr.rest.error.WebServiceExceptionView"
         name="index.html"

@@ -28,7 +28,7 @@ class CookbookWebServiceObject:
 
 class Cookbook(CookbookWebServiceObject):
     """An object representing a cookbook"""
-    implements(ICookbook, IAbsoluteURL)
+    implements(ICookbook)
     def __init__(self, name, cuisine):
         self.name = name
         self.cuisine = cuisine
