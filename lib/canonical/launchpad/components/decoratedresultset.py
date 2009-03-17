@@ -11,6 +11,7 @@ from storm.zope.interfaces import IResultSet
 
 from lazr.delegates import delegates
 
+
 class DecoratedResultSet(object):
     """A decorated Storm ResultSet for 'Magic' (presenter) classes.
 
@@ -34,22 +35,27 @@ class DecoratedResultSet(object):
     """
     delegates(IResultSet, context='result_set')
 
-    def __init__(self, result_set, result_decorator):
+    def __init__(self, result_set, result_decorator=None, pre_iter_hook=None):
         """
         :param result_set: The original result set to be decorated.
         :param result_decorator: The method with which individual results
-                                 will be passed through before being
-                                 returned.
+            will be passed through before being returned.
+        :param pre_iter_hook: The method to be called (with the 'result_set')
+            immediately before iteration starts.
         """
         self.result_set = result_set
         self.result_decorator = result_decorator
+        self.pre_iter_hook = pre_iter_hook
 
     def decorate_or_none(self, result):
         """Decorate a result or return None if the result is itself None"""
         if result is None:
             return None
         else:
-            return self.result_decorator(result)
+            if self.result_decorator is None:
+                return result
+            else:
+                return self.result_decorator(result)
 
     def copy(self, *args, **kwargs):
         """See `IResultSet`.
@@ -57,7 +63,8 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned result set.
         """
         new_result_set = self.result_set.copy(*args, **kwargs)
-        return DecoratedResultSet(new_result_set, self.result_decorator)
+        return DecoratedResultSet(
+            new_result_set, self.result_decorator, self.pre_iter_hook)
 
     def config(self, *args, **kwargs):
         """See `IResultSet`.
@@ -72,7 +79,11 @@ class DecoratedResultSet(object):
 
         Yield a decorated version of the returned value.
         """
-        for value in self.result_set.__iter__(*args, **kwargs):
+        # Execute/evaluate the result set query.
+        results = list(self.result_set.__iter__(*args, **kwargs))
+        if self.pre_iter_hook is not None:
+            self.pre_iter_hook(results)
+        for value in results:
             yield self.decorate_or_none(value)
 
     def __getitem__(self, *args, **kwargs):
@@ -83,7 +94,8 @@ class DecoratedResultSet(object):
         # Can be a value or result set...
         value = self.result_set.__getitem__(*args, **kwargs)
         if isinstance(value, type(self.result_set)):
-            return DecoratedResultSet(value, self.result_decorator)
+            return DecoratedResultSet(
+                value, self.result_decorator, self.pre_iter_hook)
         else:
             return self.decorate_or_none(value)
 
@@ -125,7 +137,8 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned result set.
         """
         new_result_set = self.result_set.order_by(*args, **kwargs)
-        return DecoratedResultSet(new_result_set, self.result_decorator)
+        return DecoratedResultSet(
+            new_result_set, self.result_decorator, self.pre_iter_hook)
 
     def count(self, *args, **kwargs):
         """See `IResultSet`.

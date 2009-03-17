@@ -12,12 +12,15 @@ __all__ = [
     'IHasBugs',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
+    'IOfficialBugTagTargetPublic',
+    'IOfficialBugTagTargetRestricted',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import List, Object, Text
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import Tag
 from canonical.launchpad.interfaces.bugtask import (
     BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
 from canonical.launchpad.interfaces.person import IPerson
@@ -25,8 +28,8 @@ from canonical.lazr.fields import Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_collection_of)
+    export_read_operation, exported, export_write_operation, 
+    operation_parameters, operation_returns_collection_of)
 
 
 class IHasBugs(Interface):
@@ -50,6 +53,11 @@ class IHasBugs(Interface):
         "A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute(
         "A list of all BugTasks ever reported for this target.")
+    official_bug_tags = exported(List(
+        title=_("Official Bug Tags"),
+        description=_("The list of bug tags defined as official."),
+        value_type=Tag(),
+        readonly=True))
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(
@@ -191,25 +199,43 @@ class BugDistroSeriesTargetDetails:
         self.status = status
 
 
-class IOfficialBugTagTarget(Interface):
-    """An entity for which official bug tags can be defined."""
+class IOfficialBugTagTargetPublic(Interface):
+    """Public attributes for `IOfficialBugTagTarget`."""
+
+    official_bug_tags = exported(List(
+        title=_("Official Bug Tags"),
+        description=_("The list of bug tags defined as official."),
+        value_type=Tag()))
+
+
+class IOfficialBugTagTargetRestricted(Interface):
+    """Restricted methods for `IOfficialBugTagTarget`."""
 
     @operation_parameters(
-        tag=Text(title=u'The official bug tag', required=True))
+        tag=Tag(title=u'The official bug tag', required=True))
     @export_write_operation()
     def addOfficialBugTag(tag):
         """Add tag to the official bug tags of this target."""
 
     @operation_parameters(
-        tag=Text(title=u'The official bug tag', required=True))
+        tag=Tag(title=u'The official bug tag', required=True))
     @export_write_operation()
     def removeOfficialBugTag(tag):
         """Remove tag from the official bug tags of this target."""
 
 
+class IOfficialBugTagTarget(IOfficialBugTagTargetPublic,
+                            IOfficialBugTagTargetRestricted):
+    """An entity for which official bug tags can be defined."""
+    # XXX intellectronica 2009-03-16 bug=342413
+    # We can start using straight inheritance once it becomes possible
+    # to export objects implementing multiple interfaces in the
+    # webservice API.
+
+
 class IOfficialBugTag(Interface):
     """Official bug tags for a product, a project or a distribution."""
-    tag = Text(
+    tag = Tag(
         title=u'The official bug tag', required=True)
 
     target = Object(

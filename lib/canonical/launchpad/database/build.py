@@ -12,6 +12,7 @@ import logging
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
@@ -29,6 +30,8 @@ from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.components.archivedependencies import (
     get_components_for_building)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import Builder
@@ -835,8 +838,8 @@ class BuildSet:
         queries.append("archive=%s" % sqlvalues(archive))
         clause = " AND ".join(queries)
 
-        return Build.select(
-            clause, clauseTables=clauseTables,orderBy=orderBy)
+        return self._decorate_with_prejoins(
+            Build.select(clause, clauseTables=clauseTables, orderBy=orderBy))
 
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
@@ -899,9 +902,17 @@ class BuildSet:
             """ % ','.join(
                 sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
-        return Build.select(' AND '.join(condition_clauses),
-                            clauseTables=clauseTables,
-                            orderBy=orderBy)
+        return self._decorate_with_prejoins(
+            Build.select(' AND '.join(condition_clauses),
+            clauseTables=clauseTables, orderBy=orderBy))
+
+    def _decorate_with_prejoins(self, result_set):
+        """Decorate build records with related data prefetch functionality."""
+        # Grab the native storm result set.
+        result_set = removeSecurityProxy(result_set)._result_set
+        decorated_results = DecoratedResultSet(
+            result_set, pre_iter_hook=self._prefetchBuildData)
+        return decorated_results
 
     def retryDepWaiting(self, distroarchseries):
         """See `IBuildSet`. """
@@ -995,12 +1006,26 @@ class BuildSet:
                 'builds': builds,
                 }
 
-    def prefetchBuildData(self, build_ids):
-        """See `IBuildSet`."""
+    def _prefetchBuildData(self, results):
+        """Used to pre-populate the cache with build related data.
+
+        When dealing with a group of Build records we can't use the
+        prejoin facility to also fetch BuildQueue, SourcePackageRelease
+        and LibraryFileAlias records in a single query because the
+        result set is too large and the queries time out too often.
+
+        So this method receives a list of Build instances and fetches the
+        corresponding SourcePackageRelease and LibraryFileAlias rows
+        (prejoined with the appropriate SourcePackageName and
+        LibraryFileContent respectively) as well as builders related to the
+        Builds at hand.
+        """
         from canonical.launchpad.database.sourcepackagename import (
             SourcePackageName)
         from canonical.launchpad.database.sourcepackagerelease import (
             SourcePackageRelease)
+
+        build_ids = [build.id for build in results]
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             Build,
@@ -1016,15 +1041,17 @@ class BuildSet:
             LeftJoin(LibraryFileContent,
                      LibraryFileContent.id == LibraryFileAlias.contentID),
             LeftJoin(
-                BuildQueue,
-                BuildQueue.buildID == Build.id),
-            LeftJoin(
                 Builder,
-                BuildQueue.builderID == Builder.id),
+                Builder.id == Build.builderID),
             )
         result_set = store.using(*origin).find(
-            (Build.id, BuildQueue, SourcePackageRelease, LibraryFileAlias,
-             SourcePackageName, LibraryFileContent, Builder),
+            (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
+             LibraryFileContent, Builder),
             In(Build.id, build_ids))
 
-        return result_set
+        # Force query execution so that the ancillary data gets fetched
+        # and added to StupidCache.
+        # We are doing this here because there is no "real" caller of
+        # this (pre_iter_hook()) method that will iterate over the
+        # result set and force the query execution that way.
+        return list(result_set)

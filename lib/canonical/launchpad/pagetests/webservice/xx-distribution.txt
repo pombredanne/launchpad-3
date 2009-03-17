@@ -35,6 +35,7 @@ And for every distribution we publish most of its attributes.
     main_archive_link: u'http://.../ubuntu/+archive/primary'
     mugshot_link: u'http://.../ubuntu/mugshot'
     name: u'ubuntu'
+    official_bug_tags: []
     owner_link: u'http://.../~ubuntu-team'
     resource_type_link: u'http://.../#distribution'
     self_link: u'http://.../ubuntu'

@@ -29,7 +29,7 @@
                       license_info licenses
                       bug_reporting_guidelines
                       commercial_subscription redeemSubscriptionVoucher
-                      remote_product"
+                      remote_product official_bug_tags"
       />
 <!-- sabdfl 2006-04-10 I put "name" in the admin group because
       with Bazaar now in place, lots of people can have personal

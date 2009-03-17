@@ -178,8 +178,9 @@ to a different host.
 Requests on these hosts also honor the standard Launchpad authorization
 scheme (and don't require OAuth).
 
-    >>> from canonical.launchpad.testing.pages import WebServiceCaller
-    >>> noauth_webservice = WebServiceCaller()
+    >>> from canonical.launchpad.testing.pages import (
+    ...     LaunchpadWebServiceCaller)
+    >>> noauth_webservice = LaunchpadWebServiceCaller()
     >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
     >>> print noauth_webservice.get(
     ...     'http://bugs.launchpad.dev/api/beta/people/+me',
