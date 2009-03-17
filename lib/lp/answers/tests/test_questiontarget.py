@@ -1,13 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Tests related to IQuestionTarget.
-
-It contains both unit tests and a test harness for running
-the questiontarget.txt interface test
-
-That harness will run the interface test against the Product, Distribution,
-DistributionSourcePackage and SourcePackage implementations of that interface.
-"""
+"""Tests related to IQuestionTarget."""
 
 __metaclass__ = type
 
@@ -22,7 +15,6 @@ from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.testing import TestCaseWithFactory
@@ -87,42 +79,8 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         self.failUnlessEqual(langs, [u'English', u'Portuguese (Brazil)'])
 
 
-def productSetUp(test):
-    setUp(test)
-    test.globs['target'] = getUtility(IProductSet).getByName('thunderbird')
-
-
-def distributionSetUp(test):
-    setUp(test)
-    test.globs['target'] = getUtility(IDistributionSet).getByName('kubuntu')
-
-
-def sourcepackageSetUp(test):
-    setUp(test)
-    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    test.globs['target'] = ubuntu.currentseries.getSourcePackage('evolution')
-
-
-def distributionsourcepackageSetUp(test):
-    setUp(test)
-    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    test.globs['target'] = ubuntu.getSourcePackage('evolution')
-
-
 def test_suite():
     suite = unittest.TestLoader().loadTestsFromName(__name__)
-
-    targets = [('product', productSetUp),
-               ('distribution', distributionSetUp),
-               ('sourcepackage', sourcepackageSetUp),
-               ('distributionsourcepackage', distributionsourcepackageSetUp),
-               ]
-
-    for name, setUpMethod in targets:
-        test = LayeredDocFileSuite('questiontarget.txt',
-                    setUp=setUpMethod, tearDown=tearDown,
-                    layer=DatabaseFunctionalLayer)
-        suite.addTest(test)
 
     test = LayeredDocFileSuite('questiontarget-sourcepackage.txt',
                 setUp=setUp, tearDown=tearDown,
