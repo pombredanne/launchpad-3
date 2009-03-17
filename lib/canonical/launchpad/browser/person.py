@@ -173,7 +173,7 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
-from lp.apps.answers.browser.questiontarget import SearchQuestionsView
+from lp.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
 
@@ -199,7 +199,7 @@ from canonical.launchpad import _
 
 from canonical.lazr.utils import smartquote
 
-from lp.apps.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):

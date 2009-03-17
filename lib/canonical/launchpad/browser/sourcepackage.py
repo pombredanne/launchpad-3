@@ -22,7 +22,7 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
-from lp.apps.answers.browser.questiontarget import (
+from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces import (

@@ -99,10 +99,10 @@ from canonical.launchpad.interfaces.translator import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
-from lp.apps.answers.interfaces.faq import IFAQ
-from lp.apps.answers.interfaces.faqtarget import IFAQTarget
-from lp.apps.answers.interfaces.question import IQuestion
-from lp.apps.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 
 class AuthorizationBase:

@@ -166,7 +166,7 @@ two months, so no projects are initially returned:
 
 Create recent questions on a number of projects.
 
-    >>> from lp.apps.answers.testing import (
+    >>> from lp.answers.testing import (
     ...     QuestionFactory)
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, ILaunchBag, IProductSet)

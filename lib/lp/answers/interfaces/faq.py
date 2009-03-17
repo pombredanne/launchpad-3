@@ -18,8 +18,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Title
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 
-from lp.apps.answers.interfaces.faqcollection import IFAQCollection
-from lp.apps.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.faqcollection import IFAQCollection
+from lp.answers.interfaces.faqtarget import IFAQTarget
 
 
 class IFAQ(IHasOwner):

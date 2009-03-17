@@ -47,7 +47,7 @@ last 60 days, this list is empty):
 
 Add some recent questions so that this listing contains something.
 
-    >>> from lp.apps.answers.testing import QuestionFactory
+    >>> from lp.answers.testing import QuestionFactory
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('no-priv@canonical.com')
     >>> QuestionFactory.createManyByProject([

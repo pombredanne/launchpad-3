@@ -15,8 +15,8 @@ from zope.schema import Choice, Datetime, Object
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
 
-from lp.apps.answers.interfaces.question import IQuestion
-from lp.apps.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questionenums import QuestionStatus
 
 class IQuestionReopening(Interface):
     """A record of the re-opening of a question.

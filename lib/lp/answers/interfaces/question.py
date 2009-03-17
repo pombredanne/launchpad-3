@@ -21,11 +21,11 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
 
-from lp.apps.answers.interfaces.faq import IFAQ
-from lp.apps.answers.interfaces.questionenums import (
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.questionenums import (
     QuestionPriority, QuestionStatus)
-from lp.apps.answers.interfaces.questionmessage import IQuestionMessage
-from lp.apps.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.interfaces.questionmessage import IQuestionMessage
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 
 class InvalidQuestionStateError(Exception):

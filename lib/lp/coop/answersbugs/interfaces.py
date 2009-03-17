@@ -13,7 +13,7 @@ from zope.schema import Object
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.buglink import IBugLink
-from lp.apps.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.question import IQuestion
 
 class IQuestionBug(IBugLink):
     """A link between an IBug and an IQuestion."""

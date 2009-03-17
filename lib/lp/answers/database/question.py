@@ -51,13 +51,13 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
-from lp.apps.answers.database.answercontact import AnswerContact
+from lp.answers.database.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
 from lp.coop.answersbugs.database import QuestionBug
-from lp.apps.answers.database.questionmessage import QuestionMessage
-from lp.apps.answers.database.questionsubscription import (
+from lp.answers.database.questionmessage import QuestionMessage
+from lp.answers.database.questionsubscription import (
     QuestionSubscription)
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (

@@ -133,8 +133,8 @@ from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 
-from lp.apps.answers.interfaces.faq import IFAQ
-from lp.apps.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqtarget import IFAQTarget
 
 
 class BasePersonVocabulary:

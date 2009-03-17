@@ -177,18 +177,18 @@ from canonical.launchpad.interfaces.packagediff import *
 
 
 # Backward-compatible imports
-from lp.apps.answers.interfaces.answercontact import *
-from lp.apps.answers.interfaces.faq import *
-from lp.apps.answers.interfaces.faqcollection import *
-from lp.apps.answers.interfaces.faqtarget import *
-from lp.apps.answers.interfaces.question import *
+from lp.answers.interfaces.answercontact import *
+from lp.answers.interfaces.faq import *
+from lp.answers.interfaces.faqcollection import *
+from lp.answers.interfaces.faqtarget import *
+from lp.answers.interfaces.question import *
 from lp.coop.answersbugs.interfaces import *
-from lp.apps.answers.interfaces.questioncollection import *
-from lp.apps.answers.interfaces.questionenums import *
-from lp.apps.answers.interfaces.questionmessage import *
-from lp.apps.answers.interfaces.questionreopening import *
-from lp.apps.answers.interfaces.questionsubscription import *
-from lp.apps.answers.interfaces.questiontarget import *
+from lp.answers.interfaces.questioncollection import *
+from lp.answers.interfaces.questionenums import *
+from lp.answers.interfaces.questionmessage import *
+from lp.answers.interfaces.questionreopening import *
+from lp.answers.interfaces.questionsubscription import *
+from lp.answers.interfaces.questiontarget import *
 
 from canonical.launchpad.interfaces._schema_circular_imports import *
 

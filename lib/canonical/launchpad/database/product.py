@@ -47,7 +47,7 @@ from canonical.launchpad.database.commercialsubscription import (
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
-from lp.apps.answers.database.faq import FAQ, FAQSearch
+from lp.answers.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import (
     HasMilestonesMixin, Milestone)
@@ -59,7 +59,7 @@ from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.productseries import ProductSeries
-from lp.apps.answers.database.question import (
+from lp.answers.database.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -95,10 +95,10 @@ from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE) 
 
 
-from lp.apps.answers.interfaces.faqtarget import IFAQTarget
-from lp.apps.answers.interfaces.questioncollection import (
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
-from lp.apps.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 
 def get_license_status(license_approved, license_reviewed, licenses):

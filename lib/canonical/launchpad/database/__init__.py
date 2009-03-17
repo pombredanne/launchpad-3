@@ -24,7 +24,7 @@ from canonical.launchpad.database.project import *
 from canonical.launchpad.database.projectbounty import *
 from canonical.launchpad.database.poll import *
 from canonical.launchpad.database.announcement import *
-from lp.apps.answers.database.answercontact import *
+from lp.answers.database.answercontact import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugbranch import *
 from canonical.launchpad.database.bugcve import *
@@ -90,7 +90,7 @@ from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *
 from canonical.launchpad.database.buildqueue import *
 from canonical.launchpad.database.publishing import *
-from lp.apps.answers.database.faq import *
+from lp.answers.database.faq import *
 from canonical.launchpad.database.featuredproject import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
@@ -122,11 +122,11 @@ from canonical.launchpad.database.vpotexport import *
 from canonical.launchpad.database.karma import *
 from canonical.launchpad.database.teammembership import *
 from canonical.launchpad.database.temporaryblobstorage import *
-from lp.apps.answers.database.question import *
+from lp.answers.database.question import *
 from lp.coop.answersbugs.database import *
-from lp.apps.answers.database.questionmessage import *
-from lp.apps.answers.database.questionreopening import *
-from lp.apps.answers.database.questionsubscription import *
+from lp.answers.database.questionmessage import *
+from lp.answers.database.questionreopening import *
+from lp.answers.database.questionsubscription import *
 from canonical.launchpad.database.poexportrequest import *
 from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *

@@ -110,7 +110,7 @@ from canonical.widgets.project import ProjectScopeWidget
 #     Same for MenuAPI.
 from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
 
-from lp.apps.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class MaloneApplicationNavigation(Navigation):

@@ -35,7 +35,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import (
     browserLanguages, is_english_variant, preferred_or_request_languages)
-from lp.apps.answers.browser.faqcollection import FAQCollectionMenu
+from lp.answers.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.interfaces import (
     IDistribution, IFAQCollection, ILanguageSet, ILaunchpadCelebrities,
     IProject, IQuestionCollection, IQuestionSet, IQuestionTarget,

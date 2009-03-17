@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IDistributionSourcePackageRelease,
     IPackageDiffSet, IPackagingUtil, pocketsuffix)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from lp.apps.answers.browser.questiontarget import (
+from lp.answers.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,

@@ -12,7 +12,7 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
-  <include package="lp.apps.answers" />
+  <include package="lp.answers" />
   <include package="lp.coop.answersbugs" />
 
   <browser:url

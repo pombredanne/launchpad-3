@@ -44,7 +44,7 @@ from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.apps.answers.browser.questiontarget import SearchQuestionsView
+from lp.answers.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.helpers import (
     is_english_variant, preferred_or_request_languages)
 

@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
-from lp.apps.answers.browser.faqcollection import FAQCollectionMenu
+from lp.answers.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.interfaces import IFAQ
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, LaunchpadEditFormView,

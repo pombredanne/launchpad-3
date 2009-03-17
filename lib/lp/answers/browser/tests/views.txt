@@ -554,7 +554,7 @@ mapped to South Africa in the tests).
     >>> login(ANONYMOUS)
     >>> request = LaunchpadTestRequest(
     ...     HTTP_ACCEPT_LANGUAGE='pt_BR')
-    >>> from lp.apps.answers.browser.question import (
+    >>> from lp.answers.browser.question import (
     ...     QuestionLanguageVocabularyFactory)
     >>> view = getMultiAdapter((firefox, request), name='+addticket')
     >>> vocab = QuestionLanguageVocabularyFactory(view)(None)

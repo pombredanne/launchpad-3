@@ -23,7 +23,7 @@
 
   <browser:page
     name="+makebug"
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class=".browser.QuestionMakeBugView"
     permission="launchpad.AnyPerson"
     template="templates/question-makebug.pt"
@@ -31,7 +31,7 @@
 
   <browser:page
     name="+linkbug"
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class="canonical.launchpad.browser.buglinktarget.BugLinkView"
     permission="launchpad.AnyPerson"
     template="templates/question-linkbug.pt"
@@ -39,7 +39,7 @@
 
   <browser:page
     name="+unlinkbug"
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class="canonical.launchpad.browser.buglinktarget.BugsUnlinkView"
     permission="launchpad.AnyPerson"
     template="templates/question-unlinkbugs.pt"

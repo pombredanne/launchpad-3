@@ -55,7 +55,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.database.account import Account
-from lp.apps.answers.database.answercontact import AnswerContact
+from lp.answers.database.answercontact import AnswerContact
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
@@ -152,13 +152,13 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
-from lp.apps.answers.database.question import QuestionPersonSearch
+from lp.answers.database.question import QuestionPersonSearch
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
-from lp.apps.answers.interfaces.questioncollection import (
+from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 
 MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10

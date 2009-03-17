@@ -3,7 +3,7 @@ QuestionContextMenu
 
 This file tests the QuestionContextMenu implementation.
 
-    >>> from lp.apps.answers.browser.question import QuestionContextMenu
+    >>> from lp.answers.browser.question import QuestionContextMenu
 
 QuestionContextMenu is for a Question context. Since it only uses a few
 attributes, we can use mock objects:

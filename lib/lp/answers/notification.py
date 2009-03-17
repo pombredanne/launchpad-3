@@ -19,7 +19,7 @@ from canonical.launchpad.mailout.notificationrecipientset import (
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.publisher import canonical_url
 
-from lp.apps.answers.interfaces.questionenums import QuestionAction
+from lp.answers.interfaces.questionenums import QuestionAction
 
 
 def get_email_template(filename):

@@ -14,7 +14,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from lp.apps.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.interfaces.questionenums import QuestionStatus
 
 
 QUESTION_STATUS_DEFAULT_SEARCH = (

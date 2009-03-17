@@ -39,7 +39,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lazr.batchnavigator.z3batching import batch
 from canonical.launchpad.webapp.vhosts import allvhosts
 
-from lp.apps.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):

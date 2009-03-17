@@ -87,7 +87,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.authorization import check_permission
 
-from lp.apps.answers.interfaces.questioncollection import (
+from lp.answers.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 
 PRIVATE_TEAM_PREFIX = 'private-'

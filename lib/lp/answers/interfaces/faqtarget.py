@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 
-from lp.apps.answers.interfaces.faqcollection import IFAQCollection
+from lp.answers.interfaces.faqcollection import IFAQCollection
 
 
 class IFAQTarget(IFAQCollection):

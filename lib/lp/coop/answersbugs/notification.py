@@ -12,7 +12,7 @@ from canonical.launchpad.mailout.mailwrapper import MailWrapper
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.webapp.publisher import canonical_url
 
-from lp.apps.answers.notification import QuestionNotification
+from lp.answers.notification import QuestionNotification
 
 
 def get_email_template(filename):

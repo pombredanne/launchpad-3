@@ -9,99 +9,99 @@
        be added for specific content object that also provides
        IQuestionCollection. -->
   <browser:defaultView
-    for="lp.apps.answers.interfaces.questioncollection.IQuestionCollection"
+    for="lp.answers.interfaces.questioncollection.IQuestionCollection"
     layer="canonical.launchpad.layers.AnswersLayer"
     name="+tickets"
     />
   <browser:page
-    for="lp.apps.answers.interfaces.questioncollection.IQuestionCollection"
+    for="lp.answers.interfaces.questioncollection.IQuestionCollection"
     class=".questiontarget.SearchQuestionsView"
     name="+questions"
     permission="zope.Public"
     />
   <browser:renamed-page
-    for="lp.apps.answers.interfaces.questioncollection.IQuestionCollection"
+    for="lp.answers.interfaces.questioncollection.IQuestionCollection"
     name="+tickets"
     new_name="+questions"
     rootsite="answers"
     />
   <browser:page
-    for="lp.apps.answers.interfaces.questioncollection.IQuestionCollection"
+    for="lp.answers.interfaces.questioncollection.IQuestionCollection"
     class=".questiontarget.QuestionCollectionOpenCountView"
     name="+open_questions_count"
     permission="zope.Public"
     />
   <browser:page
-    for="lp.apps.answers.interfaces.questioncollection.IQuestionCollection"
+    for="lp.answers.interfaces.questioncollection.IQuestionCollection"
     class=".questiontarget.QuestionCollectionLatestQuestionsView"
     name="+portlet-latestquestions"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-latestquestions.pt"
     />
   <browser:page
-    for="lp.apps.answers.interfaces.questioncollection.ISearchableByQuestionOwner"
+    for="lp.answers.interfaces.questioncollection.ISearchableByQuestionOwner"
     class=".questiontarget.QuestionCollectionMyQuestionsView"
     name="+myquestions"
     permission="launchpad.AnyPerson"
     />
   <browser:renamed-page
-    for="lp.apps.answers.interfaces.questioncollection.ISearchableByQuestionOwner"
+    for="lp.answers.interfaces.questioncollection.ISearchableByQuestionOwner"
     name="+mytickets"
     new_name="+myquestions"
     rootsite="answers"
     />
   <browser:page
-    for="lp.apps.answers.interfaces.questioncollection.ISearchableByQuestionOwner"
+    for="lp.answers.interfaces.questioncollection.ISearchableByQuestionOwner"
     class=".questiontarget.QuestionCollectionNeedAttentionView"
     name="+need-attention"
     permission="launchpad.AnyPerson"
     />
   <browser:page
-    for="lp.apps.answers.interfaces.questiontarget.IQuestionTarget"
+    for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     class=".questiontarget.QuestionCollectionByLanguageView"
     name="+by-language"
     permission="launchpad.AnyPerson"
     />
   <browser:renamed-page
-    for="lp.apps.answers.interfaces.questiontarget.IQuestionTarget"
+    for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+unsupported"
     new_name="+questions"
     rootsite="answers"
     />
   <browser:page
-    for="lp.apps.answers.interfaces.questiontarget.IQuestionTarget"
+    for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+answer-contact"
     permission="launchpad.AnyPerson"
     class="canonical.launchpad.browser.ManageAnswerContactView"
     template="../templates/questiontarget-manage-answercontacts.pt"
     />
   <browser:renamed-page
-    for="lp.apps.answers.interfaces.questiontarget.IQuestionTarget"
+    for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+support-contact"
     new_name="+answer-contact"
     rootsite="answers"
     />
   <browser:page
-    for="lp.apps.answers.interfaces.questiontarget.IQuestionTarget"
+    for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+portlet-answercontacts"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-answercontacts.pt"
     />
   <browser:page
     name="+addquestion"
-    for="lp.apps.answers.interfaces.questiontarget.IQuestionTarget"
+    for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     class=".question.QuestionAddView"
     permission="launchpad.AnyPerson"
     />
   <browser:renamed-page
-    for="lp.apps.answers.interfaces.questiontarget.IQuestionTarget"
+    for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+addticket"
     new_name="+addquestion"
     rootsite="answers"
     />
   <browser:page
     name="+ask-a-question-button"
-    for="lp.apps.answers.interfaces.questiontarget.IQuestionTarget"
+    for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     class=".questiontarget.AskAQuestionButtonView"
     permission="zope.Public"
     />
@@ -115,19 +115,19 @@
     />
 
   <browser:defaultView
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     name="+index"
     />
 
   <browser:url
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     path_expression="string:+question/${id}"
     attribute_to_parent="target"
     rootsite="answers"
     />
 
   <browser:pages
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     permission="zope.Public"
     >
     <browser:page
@@ -145,7 +145,7 @@
   </browser:pages>
 
   <browser:pages
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class="canonical.launchpad.webapp.LaunchpadView"
     permission="zope.Public"
     >
@@ -161,7 +161,7 @@
 
   <browser:page
     name="+index"
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionWorkflowView"
     permission="zope.Public"
     template="../templates/question-index.pt"
@@ -169,7 +169,7 @@
 
   <browser:page
     name="+confirm"
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionConfirmAnswerView"
     permission="launchpad.Owner"
     template="../templates/question-confirm-answer.pt"
@@ -177,7 +177,7 @@
 
   <browser:page
     name="+reject"
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionRejectView"
     permission="launchpad.Moderate"
     template="../templates/question-reject.pt"
@@ -186,14 +186,14 @@
   <browser:page
     name="+subscribe"
     template="../templates/question-subscription.pt"
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionSubscriptionView"
     permission="launchpad.AnyPerson"
     />
 
   <browser:page
     name="+edit"
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionEditView"
     permission="launchpad.AnyPerson"
     template="../templates/question-edit.pt"
@@ -201,7 +201,7 @@
 
   <browser:page
     name="+change-status"
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionChangeStatusView"
     permission="launchpad.Admin"
     template="../templates/question-change-status.pt"
@@ -209,7 +209,7 @@
 
   <browser:page
     name="+linkfaq"
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionLinkFAQView"
     permission="launchpad.AnyPerson"
     template="../templates/question-linkfaq.pt"
@@ -217,7 +217,7 @@
 
   <browser:page
     name="+createfaq"
-    for="lp.apps.answers.interfaces.question.IQuestion"
+    for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionCreateFAQView"
     permission="launchpad.Moderate"
     template="../templates/question-createfaq.pt"
@@ -225,7 +225,7 @@
 
   <browser:page
     name="+display"
-    for="lp.apps.answers.interfaces.questionmessage.IQuestionMessage"
+    for="lp.answers.interfaces.questionmessage.IQuestionMessage"
     class=".question.QuestionMessageDisplayView"
     permission="zope.Public"
     template="../templates/questionmessage-display.pt"
@@ -238,20 +238,20 @@
     />
 
   <browser:url
-    for="lp.apps.answers.interfaces.questioncollection.IQuestionSet"
+    for="lp.answers.interfaces.questioncollection.IQuestionSet"
     path_expression="string:questions"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     rootsite="answers"
     />
 
   <browser:defaultView
-    for="lp.apps.answers.interfaces.questioncollection.IQuestionSet"
+    for="lp.answers.interfaces.questioncollection.IQuestionSet"
     name="+index"
     />
 
   <browser:page
     name="+index"
-    for="lp.apps.answers.interfaces.questioncollection.IQuestionSet"
+    for="lp.answers.interfaces.questioncollection.IQuestionSet"
     class=".question.QuestionSetView"
     permission="zope.Public"
     template="../templates/questions-index.pt"
@@ -259,19 +259,19 @@
 
   <browser:page
     name="+ask-a-question-button"
-    for="lp.apps.answers.interfaces.questioncollection.IQuestionSet"
+    for="lp.answers.interfaces.questioncollection.IQuestionSet"
     permission="zope.Public"
     template="../templates/null.pt"
     />
 
   <browser:page
-    for="lp.apps.answers.interfaces.questioncollection.IQuestionSet"
+    for="lp.answers.interfaces.questioncollection.IQuestionSet"
     class="canonical.launchpad.browser.SearchAllQuestionsView"
     name="+questions"
     permission="zope.Public"
     />
   <browser:page
-    for="lp.apps.answers.interfaces.faqcollection.IFAQCollection"
+    for="lp.answers.interfaces.faqcollection.IFAQCollection"
     class=".faqcollection.SearchFAQsView"
     name="+faqs"
     permission="zope.Public"
@@ -280,44 +280,44 @@
 
   <browser:page
     name="+createfaq"
-    for="lp.apps.answers.interfaces.faqtarget.IFAQTarget"
+    for="lp.answers.interfaces.faqtarget.IFAQTarget"
     class=".faqtarget.FAQCreateView"
     permission="launchpad.Moderate"
     template="../templates/questiontarget-createfaq.pt"
     />
 
   <browser:url
-    for="lp.apps.answers.interfaces.faq.IFAQ"
+    for="lp.answers.interfaces.faq.IFAQ"
     path_expression="string:+faq/${id}"
     attribute_to_parent="target"
     rootsite="answers"
     />
   <browser:defaultView
-    for="lp.apps.answers.interfaces.faq.IFAQ"
+    for="lp.answers.interfaces.faq.IFAQ"
     name="+index"
     />
   <browser:page
     name="+index"
-    for="lp.apps.answers.interfaces.faq.IFAQ"
+    for="lp.answers.interfaces.faq.IFAQ"
     permission="zope.Public"
     template="../templates/faq-index.pt"
     />
   <browser:page
     name="+portlet-lifecycle"
-    for="lp.apps.answers.interfaces.faq.IFAQ"
+    for="lp.answers.interfaces.faq.IFAQ"
     permission="zope.Public"
     template="../templates/faq-portlet-lifecycle.pt"
     />
   <browser:page
     name="+portlet-related-questions"
-    for="lp.apps.answers.interfaces.faq.IFAQ"
+    for="lp.answers.interfaces.faq.IFAQ"
     class="canonical.launchpad.webapp.LaunchpadView"
     permission="zope.Public"
     template="../templates/faq-portlet-related-questions.pt"
     />
   <browser:page
     name="+edit"
-    for="lp.apps.answers.interfaces.faq.IFAQ"
+    for="lp.answers.interfaces.faq.IFAQ"
     class=".faq.FAQEditView"
     permission="launchpad.Edit"
     template="../templates/faq-edit.pt"

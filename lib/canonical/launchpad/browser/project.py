@@ -45,8 +45,8 @@ from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.apps.answers.browser.question import QuestionAddView
-from lp.apps.answers.browser.questiontarget import (
+from lp.answers.browser.question import QuestionAddView
+from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)

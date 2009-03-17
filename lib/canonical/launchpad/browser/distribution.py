@@ -47,12 +47,12 @@ from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.archive import traverse_distro_archive
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from lp.apps.answers.browser.faqtarget import FAQTargetNavigationMixin
+from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
-from lp.apps.answers.browser.questiontarget import (
+from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
