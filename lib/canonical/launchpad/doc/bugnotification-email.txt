@@ -219,11 +219,24 @@ logins to a user that is explicitly subscribed to this bug):
     ...     user=sample_person,
     ...     private={'old': False, 'new': edited_bug.private},
     ...     security_related={'old': False, 'new': edited_bug.security_related})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+
+The change representation is an IBugChange, but the security
+representation is still textual.
+
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     if IBugChange.providedBy(change):
+    ...         notification = change.getBugNotification()
+    ...         text_representation = notification['text']
+    ...     else:
+    ...         text_representation = change
+    ...
+    ...     print IBugChange.providedBy(change)
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
+    True
     ** Visibility changed to: Private
     -----------------------------
+    False
     ** This bug has been flagged as a security issue
     -----------------------------
 
@@ -239,7 +252,13 @@ e-mail sent changed as well.
     ...     user=sample_person,
     ...     private={'old': True, 'new': edited_bug.private},
     ...     security_related={'old': True, 'new': edited_bug.security_related})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     if IBugChange.providedBy(change):
+    ...         notification = change.getBugNotification()
+    ...         text_representation = notification['text']
+    ...     else:
+    ...         text_representation = change
+    ...
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Visibility changed to: Public

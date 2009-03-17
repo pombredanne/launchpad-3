@@ -612,7 +612,7 @@ def get_bug_edit_notification_texts(bug_delta):
             change_info += '   %s' % new_bug_dupe.title
             changes.append(change_info)
 
-    for field_name in ['title', 'description']:
+    for field_name in ['title', 'description', 'private']:
         field_delta = getattr(bug_delta, field_name)
         if field_delta is not None:
             bug_change_class = get_bug_change_class(bug_delta.bug, field_name)
@@ -620,13 +620,6 @@ def get_bug_edit_notification_texts(bug_delta):
                 when=None, person=bug_delta.user, what_changed=field_name,
                 old_value=field_delta['old'], new_value=field_delta['new'])
             changes.append(change_info)
-
-    if bug_delta.private is not None:
-        if bug_delta.private['new']:
-            visibility = "Private"
-        else:
-            visibility = "Public"
-        changes.append(u"** Visibility changed to: %s" % visibility)
 
     if bug_delta.security_related is not None:
         if bug_delta.security_related['new']:
