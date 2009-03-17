@@ -41,7 +41,7 @@ from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
 from canonical.launchpad.interfaces.bugtarget import (
-    IBugTarget, IOfficialBugTagTargetPublic)
+    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
@@ -1264,6 +1264,11 @@ class BugTargetBugTagsView(LaunchpadView):
         return [
             {'tag': tag, 'count': count, 'url': self._getSearchURL(tag)}
             for tag, count in bug_tag_counts]
+
+    @property
+    def show_manage_tags_link(self):
+        return (IOfficialBugTagTargetRestricted.providedBy(self.context) and
+                check_permission('launchpad.Edit', self.context))
 
 
 class OfficialBugTagsManageView(LaunchpadEditFormView):

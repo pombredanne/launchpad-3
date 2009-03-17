@@ -9,7 +9,15 @@
   <h2>Tags</h2>
 
   <div class="portletBody">
-
+    <div class="section"
+         tal:condition="view/show_manage_tags_link">
+      <a tal:attributes="href context/fmt:url/+manage-official-tags">
+        Manage Official Bug Tags
+      </a>
+      <a tal:attributes="href context/fmt:url/+manage-official-tags">
+        <img src="/@@/edit" alt="Manage Official Bug Tags" />
+      </a>
+    </div>
     <table width="100%">
       <tr tal:repeat="bug_tag_info bug_tags">
         <td>
