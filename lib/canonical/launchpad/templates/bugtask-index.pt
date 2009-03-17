@@ -13,7 +13,7 @@
       <script type='text/javascript' tal:content="string:var icingroot='${icingroot}';" />
       <js tal:replace="structure string:<script type='text/javascript'>
 YUI({base: '/+icing/' + icingroot + '/yui/current/build/'}).use(
-    'io-base', 'node', 'lazr.formoverlay', function(Y) {
+    'io-base', 'node', 'lazr.formoverlay', 'lazr.anim', function(Y) {
 
 /*
  * The lazr.FormOverlay object.
@@ -24,6 +24,16 @@ var formoverlay;
  * The url of the page used to update bug duplicates.
  */
 var update_dupe_url;
+
+/*
+ * The launchpad js client that will be used to update the duplicate.
+ */
+var lp_client;
+
+/*
+ * The launchpad client entry for the current bug.
+ */
+var lp_bug_entry;
 
 /*
  * Check the page for 'Mark as duplicate' links and request the HTML
@@ -69,7 +79,7 @@ Y.on('domready', requestFormHTMLContent);
  * Receive the response to the AJAX request for the form content and
  * user the result to create the form overlay.
  */
-function createBugDuplicateFormOverlay(id, response_object){
+function createBugDuplicateFormOverlay(id, response_object) {
     var form_content = response_object.responseText;
     formoverlay = new Y.lazr.FormOverlay({
         headerContent: '<h2>Mark bug report as duplicate</h2>',
@@ -82,17 +92,92 @@ function createBugDuplicateFormOverlay(id, response_object){
             points: 
                 [Y.WidgetPositionExt.CC, Y.WidgetPositionExt.CC]
         },
+        form_submit_callback: update_bug_duplicate,
         visible: false,
         zIndex: 1000
     });
     formoverlay.render();
+}
 
-    // As a first-pass integration, we simply want to post the form to
-    // the normal URL.
-    var form_node = formoverlay.form_node;
-    form_node.setAttribute('method', 'post');
-    form_node.setAttribute('action', update_dupe_url);
-    form_node.setAttribute('enctype', 'multipart/form-data');
+/*
+ * Update the bug duplicate via the LP API
+ */
+function update_bug_duplicate(data) {
+    // Hide the formoverlay:
+    formoverlay.hide();
+
+    // Add the spinner...
+    var dupe_span = Y.get('#mark-duplicate-text');
+    dupe_span.addClass('update-in-progress-message');
+
+    // Create the lp client and bug entry if we haven't done so already.
+    if (lp_client === undefined) {
+        lp_client = new LP.client.Launchpad();
+    }
+
+    if (lp_bug_entry === undefined) {
+        var bug_repr = LP.client.cache['bug'];
+        lp_bug_entry = new LP.client.Entry(
+            lp_client, bug_repr, bug_repr.self_link);
+    }
+
+    // Set the new duplicate link on the bug entry.
+    var new_dup_url = null;
+    var new_dup_id = data['field.duplicateof'];
+    if (new_dup_id != '') {
+        var self_link = lp_bug_entry.get('self_link')
+        var last_slash_index = self_link.lastIndexOf('/');
+        new_dup_url = self_link.slice(0, last_slash_index+1) + new_dup_id;
+    }
+    lp_bug_entry.set('duplicate_of_link', new_dup_url);
+
+    // Create a config for the lp_save method
+    config = {
+        on: {
+            success: function(updated_entry) {
+                dupe_span.removeClass('update-in-progress-message');
+                lp_bug_entry = updated_entry;
+
+                // XXX noodles 2009-03-17 bug=336866 It seems the etag
+                // returned by lp_save() is incorrect. Remove it for now
+                // so that the second save does not result in a '412
+                // precondition failed' error.
+                lp_bug_entry.removeAtt('http_etag');
+
+                if (new_dup_url !== null) {
+                    dupe_span.set('innerHTML', [
+                        'Duplicate of <a href=\'' + new_dup_url + '\'>',
+                        'bug #' + new_dup_id +'</a> ',
+                        '<a class=\'menu-link-mark-dupe\' ',
+                        'href=\'' + update_dupe_url + '\'>',
+                        '<img src=\'/@@/edit\' /></a>'
+                        ].join(''));
+                } else {
+                    dupe_span.set('innerHTML',
+                        '<a class=\'menu-link-mark-dupe\' href=\'' +
+                        update_dupe_url + '\'>' +
+                        '<img src=\'/@@/bug-dupe-icon\' /> ' +
+                        'Mark as duplicate</a>');
+                }
+                Y.lazr.anim.green_flash({node: dupe_span}).run();
+                requestFormHTMLContent();
+            },
+            failure: function(id, request) {
+                dupe_span.removeClass('update-in-progress-message');
+                if (request.status == 400) {
+                    formoverlay.showError(
+                        new_dup_id + ' is not a valid bug number or' +
+                        ' nickname.');
+                } else {
+                    formoverlay.showError(request.responseText);
+                }
+                formoverlay.show();
+            }
+        }
+    };
+
+    // And save the updated entry.
+    lp_bug_entry.lp_save(config);
 }
 
 });
@@ -204,13 +289,16 @@ function createBugDuplicateFormOverlay(id, response_object){
       <table style="width: 100%; margin-bottom: 0.33em;">
         <tr>
           <td style="text-align: left; width: 50%;">
+            <span id="mark-duplicate-text"
+                tal:define="link context_menu/markduplicate"
+                tal:condition="python: link.enabled and not
+                              context.bug.duplicateof"
+            >
             <a
-              tal:define="link context_menu/markduplicate"
-              tal:condition="python: link.enabled and not
-                            context.bug.duplicateof"
               tal:attributes="href link/url"
               class="menu-link-mark-dupe">
               <img src="/@@/bug-dupe-icon" /> Mark as duplicate</a>
+            </span>
             <tal:block
               tal:condition="context/bug/duplicates"
               tal:define="number_of_dupes context/bug/duplicates/count"
@@ -224,7 +312,8 @@ function createBugDuplicateFormOverlay(id, response_object){
             <tal:block
               tal:define="duplicateof context/bug/duplicateof"
               tal:condition="duplicateof"
-            >Duplicate of
+            >
+              <span id="mark-duplicate-text">Duplicate of
               <a
                 tal:condition="duplicateof/required:launchpad.View"
                 tal:attributes="href duplicateof/fmt:url; title
@@ -243,7 +332,7 @@ function createBugDuplicateFormOverlay(id, response_object){
               tal:attributes="href link/url">
               <img src="/@@/edit" />
             </a>
-
+            </span>
             </tal:block>
           </td>
 
