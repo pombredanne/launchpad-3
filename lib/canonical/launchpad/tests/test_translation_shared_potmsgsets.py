@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 from datetime import datetime, timedelta
-from pytz import timezone
+import pytz
 import unittest
 
 import transaction
@@ -226,6 +226,27 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
             self.stable_potemplate, serbian), shared_translation)
 
+    def test_getSharedTranslationMessage(self):
+        """Test how shared and diverged current translation messages
+        interact."""
+        # Share a POTMsgSet in two templates, and get a Serbian POFile.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        serbian = sr_pofile.language
+
+        # A shared translation matches the current one.
+        shared_translation = self.factory.makeSharedTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset)
+        self.assertEquals(
+            self.potmsgset.getSharedTranslationMessage(serbian),
+            shared_translation)
+
+        # Adding a diverged translation doesn't break getSharedTM.
+        diverged_translation = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset, force_diverged=True)
+        self.assertEquals(
+            self.potmsgset.getSharedTranslationMessage(serbian),
+            shared_translation)
+
     def test_getLocalTranslationMessages(self):
         """Test retrieval of local suggestions."""
         # Share a POTMsgSet in two templates, and get a Serbian POFile.
@@ -420,6 +441,85 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
             True)
+
+    def test_updateTranslation_divergence(self):
+        """Test that diverging translations works as expected."""
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        serbian = sr_pofile.language
+
+        # We can't use factory methods here because they depend on
+        # updateTranslation itself.  So, a bit more boiler-plate than
+        # usual.
+
+        # Let's create a shared, current translation.
+        shared_translation = self.potmsgset.updateTranslation(
+            pofile=sr_pofile, submitter=sr_pofile.owner,
+            new_translations=[u'Shared'], is_imported=False,
+            lock_timestamp=datetime.now(pytz.UTC))
+        self.assertEquals(shared_translation.potemplate, None)
+        self.assertTrue(shared_translation.is_current)
+
+        # And let's create a diverged translation by passing `force_diverged`
+        # parameter to updateTranslation call.
+        diverged_translation = self.potmsgset.updateTranslation(
+            pofile=sr_pofile, submitter=sr_pofile.owner,
+            new_translations=[u'Diverged'], is_imported=False,
+            lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
+        self.assertEquals(diverged_translation.potemplate,
+                          self.devel_potemplate)
+        # Both shared and diverged translations are marked as current,
+        # since shared might be used in other templates which have no
+        # divergences.
+        self.assertTrue(shared_translation.is_current)
+        self.assertTrue(diverged_translation.is_current)
+
+        # But only diverged one is returned as current.
+        current_translation = self.potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, serbian)
+        self.assertEquals(current_translation, diverged_translation)
+
+        # Trying to set a new, completely different translation when
+        # there is a diverged translation keeps the divergence.
+        new_translation = self.potmsgset.updateTranslation(
+            pofile=sr_pofile, submitter=sr_pofile.owner,
+            new_translations=[u'New diverged'], is_imported=False,
+            lock_timestamp=datetime.now(pytz.UTC))
+        self.assertEquals(new_translation.potemplate,
+                          self.devel_potemplate)
+        self.assertTrue(shared_translation.is_current)
+        self.assertTrue(new_translation.is_current)
+
+    def test_updateTranslation_convergence(self):
+        """Test that converging translations works as expected."""
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        serbian = sr_pofile.language
+
+        # Let's create a shared, current translation, and diverge from it
+        # in this POTemplate.
+        shared_translation = self.potmsgset.updateTranslation(
+            pofile=sr_pofile, submitter=sr_pofile.owner,
+            new_translations=[u'Shared'], is_imported=False,
+            lock_timestamp=datetime.now(pytz.UTC))
+        diverged_translation = self.potmsgset.updateTranslation(
+            pofile=sr_pofile, submitter=sr_pofile.owner,
+            new_translations=[u'Diverged'], is_imported=False,
+            lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
+
+        # Setting a diverged translation to exactly match shared one
+        # will "converge" it back to the shared one.
+        new_translation = self.potmsgset.updateTranslation(
+            pofile=sr_pofile, submitter=sr_pofile.owner,
+            new_translations=[u'Shared'], is_imported=False,
+            lock_timestamp=datetime.now(pytz.UTC))
+        self.assertEquals(new_translation, shared_translation)
+        self.assertFalse(diverged_translation.is_current)
+        self.assertTrue(new_translation.is_current)
+
+        # Current translation is the shared one.
+        current_translation = self.potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, serbian)
+        self.assertEquals(current_translation, shared_translation)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

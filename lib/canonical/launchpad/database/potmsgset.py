@@ -524,10 +524,9 @@ class POTMsgSet(SQLBase):
         # and a current translation is diverged (potemplate != None), then
         # we want to remove divergence.
         if (not force_diverged and
-            (new_message is not None and
-             new_message.potemplate is None) and
-            (current_message is not None and
-             current_message.potemplate is not None)):
+            (current_message is None or
+             ((new_message.potemplate is None) and
+              (current_message.potemplate is not None)))):
             force_shared = True
 
         make_current = False
@@ -594,8 +593,10 @@ class POTMsgSet(SQLBase):
             elif (current_message is not None and
                   current_message.potemplate is not None):
                 # Keep a diverged translation diverged.
-                new_message.potemplate = current_message.potemplate
+                new_message.potemplate = pofile.potemplate
             new_message.is_current = True
+        else:
+            new_message.potemplate = None
 
 
     def _isTranslationMessageASuggestion(self, force_suggestion,
@@ -707,7 +708,7 @@ class POTMsgSet(SQLBase):
             else:
                 matching_message = TranslationMessage(
                     potmsgset=self,
-                    potemplate=None,
+                    potemplate=pofile.potemplate,
                     pofile=pofile,
                     language=pofile.language,
                     variant=pofile.variant,
