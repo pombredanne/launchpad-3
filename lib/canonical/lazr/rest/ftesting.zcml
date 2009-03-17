@@ -13,12 +13,4 @@
 
     <adapter factory="zope.publisher.http.HTTPCharsets" />
 
-    <!--XXX Copied over, deal with later.-->
-    <view
-        for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
-        type="canonical.launchpad.layers.WebServiceLayer"
-        factory="canonical.lazr.rest.error.WebServiceExceptionView"
-        name="index.html"
-        />
-
 </configure>
