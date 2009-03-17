@@ -66,7 +66,13 @@ class TranslationMessageMixIn:
             # This message is a singular message.
             return 1
         else:
-            return self.language.pluralforms
+            if self.language.pluralforms is not None:
+                forms = self.language.pluralforms
+            else:
+                # Don't know anything about plural forms for this
+                # language, fallback to the most common case, 2.
+                forms = 2
+            return forms
 
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""
