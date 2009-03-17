@@ -5,9 +5,13 @@ information about policy. Some of the Launchpad web service's
 configuration options are controlled by code. This test demonstrates
 how that code works.
 
-    >>> from zope.component import getUtility
+    >>> from zope.component import provideUtility
     >>> from canonical.lazr.interfaces.rest import IWebServiceConfiguration
-    >>> webservice_config = getUtility(IWebServiceConfiguration)
+    >>> from canonical.launchpad.rest.configuration import (
+    ...     LaunchpadWebServiceConfiguration)
+    >>> webservice_config = LaunchpadWebServiceConfiguration()
+
+    >>> provideUtility(webservice_config, IWebServiceConfiguration)
 
 
 == show_tracebacks ==
@@ -24,7 +28,6 @@ developer.
     >>> from canonical.config import config
     >>> from canonical.lazr.testing.webservice import FakeRequest
 
-    >>> from zope.component import provideUtility
     >>> from zope.interface import implements
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> class FakeLaunchBag:

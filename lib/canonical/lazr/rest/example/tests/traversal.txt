@@ -5,7 +5,7 @@ class. In fact, a dict will work fine.
   >>> from canonical.lazr.rest.example.traversal import TraverseWithGet
   >>> class HasParent:
   ...     def __init__(self):
-  ...         __parent__ = None
+  ...         self.__parent__ = None
 
   >>> obj1, obj2 = HasParent(), HasParent()
   >>> context = {"name1":obj1, "name2":obj2}
