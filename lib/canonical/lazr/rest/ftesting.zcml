@@ -11,6 +11,7 @@
     <include file="meta.zcml" />
     <include file="example/configure.zcml" />
 
+    <adapter factory="zope.publisher.http.HTTPCharsets" />
 
     <!--XXX Copied over, deal with later.-->
     <view

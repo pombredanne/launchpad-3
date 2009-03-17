@@ -62,17 +62,4 @@
       name="absolute_url"
       />
 
-  <!--
-  XXX flacoste 2008/05/09 bug=185958:
-  Ideally, we would use webservice_error() to register the view,
-  but InvalidBatchSizeError is in lazr.batchnavigator and webservice_error()
-  can only be called from within a class definition.
-  -->
-  <view
-      for="lazr.batchnavigator.interfaces.InvalidBatchSizeError"
-      type="canonical.lazr.interfaces.rest.IWebServiceLayer"
-      factory="canonical.lazr.rest.error.WebServiceExceptionView"
-      name="index.html"
-      />
-
 </configure>

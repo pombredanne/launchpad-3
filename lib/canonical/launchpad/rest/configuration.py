@@ -49,6 +49,6 @@ class LaunchpadWebServiceConfiguration:
         error. It might contain private information.
         """
         is_developer = getUtility(ILaunchBag).developer
-        show_tracebacks = (is_developer or config.canonical.show_tracebacks)
+        return (is_developer or config.canonical.show_tracebacks)
 
 

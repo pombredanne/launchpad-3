@@ -59,13 +59,6 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
     One example would be a URL containing uppercase letters.
     """
 
-# annotate external interface
-# XXX flacoste 2008/05/09 bug=185958:
-# Ideally, we would use error_status, to set this up and
-# register the view, but cyclic imports prevents us from doing
-# so. This should be fixed once we move webapp stuff into LAZR.
-InvalidBatchSizeError.__lazr_webservice_error__ = 400
-
 
 class ILaunchpadContainer(Interface):
     """Marker interface for objects used as the context of something."""
