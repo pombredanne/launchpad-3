@@ -300,7 +300,7 @@ First we have to create the file itself, and upload it to the Librarian:
     security
 
     >>> print latest_activity.oldvalue, '==>', latest_activity.newvalue
-    not security related ==> security related
+    not security vulnerability ==> security vulnerability
 
     >>> print latest_activity.person.displayname
     Slartibartfast

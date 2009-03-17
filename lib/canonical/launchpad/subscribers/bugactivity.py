@@ -125,8 +125,8 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
         elif changed_field == 'security_related':
             whatchanged = 'security'
             security_values = {
-                'True': 'security related',
-                'False': 'not security related',
+                'True': 'security vulnerability',
+                'False': 'not security vulnerability',
                 }
             oldvalue = security_values[oldvalue]
             newvalue = security_values[newvalue]
