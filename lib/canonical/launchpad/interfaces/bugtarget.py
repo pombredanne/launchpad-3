@@ -53,6 +53,11 @@ class IHasBugs(Interface):
         "A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute(
         "A list of all BugTasks ever reported for this target.")
+    official_bug_tags = exported(List(
+        title=_("Official Bug Tags"),
+        description=_("The list of bug tags defined as official."),
+        value_type=Tag(),
+        readonly=True))
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(

@@ -70,6 +70,7 @@ Project groups are available at their canonical URL on the API virtual host.
     logo_link: u'http://.../mozilla/logo'
     mugshot_link: u'http://.../mozilla/mugshot'
     name: u'mozilla'
+    official_bug_tags: []
     owner_link: u'http://.../~name12'
     projects_collection_link: u'http://.../mozilla/projects'
     registrant_link: u'http://.../~name12'
@@ -626,6 +627,7 @@ virtual host.
     driver_link: None
     drivers_collection_link: u'http://.../babadoo/foobadoo/drivers'
     name: u'foobadoo'
+    official_bug_tags: []
     owner_link: u'http://.../~person-name8'
     project_link: u'http://.../babadoo'
     releases_collection_link: u'http://.../babadoo/foobadoo/releases'
@@ -768,6 +770,7 @@ host.
     description: None
     is_visible: True
     name: u'1.0'
+    official_bug_tags: []
     resource_type_link: u'...'
     self_link: u'http://.../firefox/+milestone/1.0'
     series_target_link: u'http://.../firefox/trunk'

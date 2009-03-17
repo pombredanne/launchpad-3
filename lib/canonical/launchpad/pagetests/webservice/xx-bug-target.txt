@@ -110,3 +110,11 @@ We can also access official tags as a list.
     >>> tags_test_product['official_bug_tags']
     [u'bar', u'foo']
 
+    >>> login('foo.bar@canonical.com')
+    >>> distribution = factory.makeDistribution(name='testix')
+    >>> logout()
+    >>> print webservice.patch(
+    ...     '/testix', 'application/json',
+    ...     dumps({'official_bug_tags': [u'foo', u'bar']}))
+    HTTP/1.1 209 Content Returned...
+
