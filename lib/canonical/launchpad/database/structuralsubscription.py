@@ -265,3 +265,24 @@ class StructuralSubscriptionTargetMixin:
             return parent
         else:
             return None
+
+    @property
+    def target_type_display(self):
+        """See `IStructuralSubscriptionTarget`."""
+        if IDistributionSourcePackage.providedBy(self):
+            return 'package'
+        elif IProduct.providedBy(self):
+            return 'project'
+        elif IProject.providedBy(self):
+            return 'project group'
+        elif IDistribution.providedBy(self):
+            return 'distribution'
+        elif IMilestone.providedBy(self):
+            return 'milestone'
+        elif IProductSeries.providedBy(self):
+            return 'project series'
+        elif IDistroSeries.providedBy(self):
+            return 'distribution series'
+        else:
+            raise AssertionError(
+                '%s is not a valid structural subscription target.', self)

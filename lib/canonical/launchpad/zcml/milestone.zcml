@@ -12,20 +12,17 @@
                            specifications product_release" />
         <require
             permission="launchpad.Edit"
-            attributes="createProductRelease" />
+            attributes="createProductRelease destroySelf" />
         <allow interface="canonical.launchpad.interfaces.bugtarget.IHasBugs" />
         <allow interface="canonical.launchpad.webapp.interfaces.IAuthorization" />
         <require
             permission="launchpad.Edit"
             set_attributes="name dateexpected summary active
-                            product_release" />
-        <require
-            permission="launchpad.Admin"
-            set_attributes="productseries distroseries" />
+                            product_release productseries distroseries" />
         <!-- IStructuralSubscriptionTarget -->
         <allow attributes="bug_subscriptions getSubscriptions
                            getSubscription getBugNotificationsRecipients
-                           parent_subscription_target" />
+                           parent_subscription_target target_type_display" />
         <require
             permission="launchpad.AnyPerson"
             attributes="addSubscription addBugSubscription
@@ -49,7 +46,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.milestone"
-        classes="MilestoneContextMenu" />
+        classes="MilestoneContextMenu MilestoneOverviewNavigationMenu" />
 
     <browser:pages
       for="canonical.launchpad.interfaces.IMilestone"
@@ -74,12 +71,12 @@
         />
 
     <browser:page
-        name="+admin"
+        name="+delete"
         for="canonical.launchpad.interfaces.IMilestone"
-        class="canonical.launchpad.browser.milestone.MilestoneAdminEditView"
+        class="canonical.launchpad.browser.milestone.MilestoneDeleteView"
         facet="overview"
-        permission="launchpad.Admin"
-        template="../templates/milestone-edit.pt"
+        permission="launchpad.Edit"
+        template="../templates/milestone-delete.pt"
         />
 
     <browser:page

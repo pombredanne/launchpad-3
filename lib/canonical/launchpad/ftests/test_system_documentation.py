@@ -415,12 +415,6 @@ special = {
             setUp=builddmasterSetUp,
             layer=LaunchpadZopelessLayer,
             ),
-    'buildd-queuebuilder.txt': LayeredDocFileSuite(
-            '../doc/buildd-queuebuilder.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
-            stdout_logging_level=logging.WARNING
-            ),
     'close-account.txt': LayeredDocFileSuite(
             '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
             layer=LaunchpadZopelessLayer
@@ -595,6 +589,12 @@ special = {
             setUp=checkwatchesSetUp,
             tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer
+            ),
+    'answer-tracker-notifications-linked-private-bug.txt':
+            LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-private-bug.txt',
+            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
             ),
     'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
             '../doc/answer-tracker-notifications-linked-bug.txt',

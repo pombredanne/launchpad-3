@@ -17,6 +17,7 @@ __all__ = [
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
+    'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
     'ITeamContactAddressForm',
@@ -427,21 +428,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     id = Int(title=_('ID'), required=True, readonly=True)
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
-    name = exported(
-        PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")))
-    displayname = exported(
-        StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-            description=_(
-                "Your name as you would like it displayed throughout "
-                "Launchpad. Most people use their full name here.")),
-        exported_as='display_name')
     password = PasswordField(
         title=_('Password'), required=True, readonly=False)
     karma = exported(
@@ -745,11 +731,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
-    unique_displayname = TextLine(
-        title=_('Return a string of the form $displayname ($name).'))
-    browsername = Attribute(
-        'Return a textual name suitable for display in a browser.')
-
     archive = exported(
         Reference(title=_("Personal Package Archive"),
                   description=_("The Archive owned by this person, his PPA."),
@@ -807,6 +788,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                 """),
             readonly=True, required=False,
             value_type=Reference(schema=Interface)))
+
+    hardware_submissions = exported(CollectionField(
+            title=_("Hardware submissions"),
+            readonly=True, required=False,
+            value_type=Reference(schema=Interface))) # HWSubmission
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1197,6 +1183,25 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
 
+    name = exported(
+        PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")))
+    displayname = exported(
+        StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "Your name as you would like it displayed throughout "
+                "Launchpad. Most people use their full name here.")),
+        exported_as='display_name')
+    browsername = Attribute(
+        'Return a textual name suitable for display in a browser.')
+    unique_displayname = TextLine(
+        title=_('Return a string of the form $displayname ($name).'))
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once

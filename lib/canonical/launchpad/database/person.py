@@ -2418,6 +2418,12 @@ class Person(
             # We don't want to subscribe to the list.
             return False
 
+    @property
+    def hardware_submissions(self):
+        """See `IPerson`."""
+        from canonical.launchpad.database.hwdb import HWSubmissionSet
+        return HWSubmissionSet().search(owner=self)
+
 
 class PersonSet:
     """The set of persons."""

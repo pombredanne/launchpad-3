@@ -285,3 +285,126 @@ list of recipients.
     cprov Subscriber (Mozilla Firefox: 1.0)
     ddaa Subscriber (Mozilla Firefox: 2.0)
     ...
+
+
+== Editing milestones ==
+
+Persons with launchpad.Edit permissions for milestones may create and edit
+them. These users play the roles of owners, drivers or Launchpad admins.
+The name, dateexpected, summary, and active, attributes are editable.
+
+    >>> login_person(upstream_firefox.owner)
+    >>> fizzy_milestone = ff_onedotzero.newMilestone('fuzzy')
+
+    >>> print fizzy_milestone.name
+    fuzzy
+    >>> fizzy_milestone.name = 'fizzy'
+    >>> print fizzy_milestone.name
+    fizzy
+
+    >>> fizzy_milestone.summary = 'fizzy love'
+    >>> print fizzy_milestone.summary
+    fizzy love
+
+    >>> date = datetime(2007, 4, 2)
+    >>> fizzy_milestone.dateexpected = date
+    >>> fizzy_milestone.dateexpected
+    datetime.date(2007, 4, 2)
+
+    >>> fizzy_milestone.active
+    True
+    >>> fizzy_milestone.active = False
+    >>> fizzy_milestone.active
+    False
+
+The productseries attribute can be edited if the milestones belongs to
+a product.
+
+    >>> print fizzy_milestone.productseries.name
+    1.0
+
+    >>> two_series = upstream_firefox.newSeries(
+    ...     upstream_firefox.owner, '2.0', 'Two dot n')
+    >>> fizzy_milestone.productseries = two_series
+    >>> print fizzy_milestone.productseries.name
+    2.0
+
+The distroseries attribute can be edited if the milestone belongs to
+a distribution.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+
+    # The factory makes the right kind of generic object for this test,
+    # but the test needs to use getUtility to get a security proxied object.
+    >>> bell_distro = factory.makeDistribution('bell')
+    >>> transaction.commit()
+    >>> bell_distro = getUtility(IDistributionSet).getByName('bell')
+    >>> login_person(bell_distro.owner)
+    >>> book_series = bell_distro.newSeries(
+    ...     'book', 'Book', 'title', 'summary', 'description',
+    ...     '1.n', None, bell_distro.owner)
+    >>> ink_milestone = book_series.newMilestone('ink')
+    >>> print ink_milestone.distroseries.name
+    book
+
+    >>> candle_series = bell_distro.newSeries(
+    ...     'candle', 'candle', 'title', 'summary', 'description',
+    ...     '2.n', book_series, bell_distro.owner)
+    >>> ink_milestone.distroseries = candle_series
+    >>> print ink_milestone.distroseries.name
+    candle
+
+
+== Deleting a milestone ==
+
+A milestone can be deleted using its destroySelf() method, as long as it
+doesn't have an IProductRelease associated with it, nor any bugtasks
+or specifications targeted to it.
+
+    >>> owner = getUtility(IPersonSet).getByName('name12')
+    >>> login_person(owner)
+    >>> milestone = ff_onedotzero.newMilestone('1.0.10')
+    >>> print milestone.product_release
+    None
+    >>> milestone.destroySelf()
+    >>> print upstream_firefox.getMilestone('1.0.10')
+    None
+
+If a milestone has a product release associated with it though, it can not be
+deleted.
+
+    >>> from datetime import datetime
+    >>> from pytz import UTC
+
+    >>> milestone = ff_onedotzero.newMilestone('1.0.11')
+    >>> release = milestone.createProductRelease(
+    ...     owner, datetime.now(UTC))
+    >>> milestone.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: You cannot delete a milestone which has a product release
+                    associated with it.
+
+If bugtasks are targeted to the milestone, it cannot be deleted.
+
+    >>> milestone = ff_onedotzero.newMilestone('1.0.12')
+    >>> bug = factory.makeBug(product=upstream_firefox)
+    >>> bugtask = bug.bugtasks[0]
+    >>> bugtask.milestone = milestone
+    >>> milestone.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: You cannot delete a milestone which has bugtasks
+                    targeted to it.
+
+If specifications are targeted to the milestone, it cannot be deleted.
+
+    >>> milestone = ff_onedotzero.newMilestone('1.0.13')
+    >>> specification = factory.makeSpecification(product=upstream_firefox)
+    >>> specification.milestone = milestone
+    >>> milestone.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: You cannot delete a milestone which has specifications
+                    targeted to it.

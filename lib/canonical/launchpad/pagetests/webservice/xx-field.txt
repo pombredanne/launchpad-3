@@ -101,9 +101,9 @@ value it's given.
   >>> from zope.schema.interfaces import IText
   >>> from canonical.launchpad.interfaces import IPerson
   >>> from canonical.lazr.interfaces.rest import (
-  ...     IFieldHTMLRenderer, WebServiceLayer)
+  ...     IFieldHTMLRenderer, IWebServiceClientRequest)
 
-  >>> @component.adapter(IPerson, IText, WebServiceLayer)
+  >>> @component.adapter(IPerson, IText, IWebServiceClientRequest)
   ... @implementer(IFieldHTMLRenderer)
   ... def dummy_renderer(context, field, request):
   ...     """Create a simple renderer that bolds the original string."""

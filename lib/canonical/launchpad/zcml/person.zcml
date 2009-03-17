@@ -73,7 +73,9 @@
       permission="launchpad.Edit"
       set_schema="canonical.launchpad.interfaces.person.IPersonPublic
                   canonical.launchpad.interfaces.person.ITeamPublic"
+      set_attributes="name displayname"
       />
+
     <require
       permission="launchpad.Commercial"
       set_schema="canonical.launchpad.interfaces.person.IPersonCommAdminWriteRestricted"
@@ -732,7 +734,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
-    permission="launchpad.Edit"
+    permission="zope.Public"
     name="+mailing-list-subscribers"
     template="../templates/team-mailinglist-subscribers.pt"
     />
@@ -919,6 +921,14 @@
     permission="zope.Public"
     />
 
+  <browser:page
+    name="+archivesubscriptions"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.archivesubscription.PersonArchiveSubscriptionsView"
+    permission="launchpad.Admin"
+    template="../templates/person-archive-subscriptions.pt"
+    />
+
   <!-- PersonSet -->
   <class class="canonical.launchpad.database.PersonSet">
      <allow interface="canonical.launchpad.interfaces.IPersonSet" />
@@ -1030,6 +1040,7 @@
         template="../templates/people-portlet-about.pt"
         />
   </browser:pages>
+
 </facet>
 
 <facet facet="answers">
