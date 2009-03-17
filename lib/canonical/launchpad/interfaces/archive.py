@@ -979,6 +979,9 @@ class IArchiveSet(Interface):
             distribution matching the given params.
         """
 
+    def getPrivatePPAs():
+        """Return a result set containing all private PPAs."""
+
 
 class ArchivePurpose(DBEnumeratedType):
     """The purpose, or type, of an archive.
