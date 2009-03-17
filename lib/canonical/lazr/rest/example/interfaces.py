@@ -22,7 +22,7 @@ from canonical.lazr.rest.declarations import (
 
 class IDish(Interface):
     """A dish, annotated for export to the web service."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(plural_name='dishes')
     name = exported(TextLine(title=u"Name", required=True))
     recipes = exported(CollectionField(
             title=u"Recipes in this cookbook",
