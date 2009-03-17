@@ -19,7 +19,6 @@ vocabulary_registry = getVocabularyRegistry()
 
 BUG_INTERESTING_FIELDS = [
     'description',
-    'displayname',
     'duplicateof',
     'name',
     'private',
@@ -36,7 +35,6 @@ BUGTASK_INTERESTING_FIELDS = [
     'milestone',
     'status',
     'target',
-    'title',
     ]
 
 
