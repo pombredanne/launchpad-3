@@ -13,6 +13,8 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    BranchVisibilityRule)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
@@ -61,6 +63,14 @@ class PackageBranchTarget(_BaseBranchTarget):
             PackageNamespace)
         return PackageNamespace(owner, self.sourcepackage)
 
+    def canCreateBranches(self, user):
+        """See `IBranchTarget`."""
+        return True
+
+    def areNewBranchesPrivate(self, user):
+        """See `IBranchTarget`."""
+        return False
+
 
 class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
@@ -85,6 +95,14 @@ class PersonBranchTarget(_BaseBranchTarget):
         from canonical.launchpad.database.branchnamespace import (
             PersonalNamespace)
         return PersonalNamespace(owner)
+
+    def canCreateBranches(self, user):
+        """See `IBranchTarget`."""
+        return user.inTeam(self.person)
+
+    def areNewBranchesPrivate(self, user):
+        """See `IBranchTarget`."""
+        return False
 
 
 class ProductBranchTarget(_BaseBranchTarget):
@@ -113,6 +131,28 @@ class ProductBranchTarget(_BaseBranchTarget):
         from canonical.launchpad.database.branchnamespace import (
             ProductNamespace)
         return ProductNamespace(owner, self.product)
+
+    def canCreateBranches(self, user):
+        """See `IBranchTarget`."""
+        policies = self.product.getBranchVisibilityTeamPolicies()
+        for policy in policies:
+            if user.inTeam(policy.team):
+                return True
+        base_rule = self.product.getBaseBranchVisibilityRule()
+        return base_rule == BranchVisibilityRule.PUBLIC
+
+    def areNewBranchesPrivate(self, user):
+        """See `IBranchTarget`."""
+        # If the user is a member of any team that has a PRIVATE or
+        # PRIVATE_ONLY rule, then the branches are private.
+        policies = self.product.getBranchVisibilityTeamPolicies()
+        private = (
+            BranchVisibilityRule.PRIVATE,
+            BranchVisibilityRule.PRIVATE_ONLY)
+        for policy in policies:
+            if user.inTeam(policy.team) and policy.rule in private:
+                return True
+        return False
 
 
 def get_canonical_url_data_for_target(branch_target):

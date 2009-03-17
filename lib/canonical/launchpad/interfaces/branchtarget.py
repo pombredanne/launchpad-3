@@ -54,3 +54,12 @@ class IBranchTarget(IPrimaryContext):
 
     def getNamespace(owner):
         """Return a namespace for this target and the specified owner."""
+
+    def canCreateBranches(user):
+        """Is the user allowed to create branches for this target?"""
+
+    def areNewBranchesPrivate(user):
+        """Are new branches by the user created private?
+
+        No check is made about whether or not a user can create branches.
+        """
