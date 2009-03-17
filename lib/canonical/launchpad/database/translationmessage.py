@@ -66,7 +66,7 @@ class TranslationMessageMixIn:
             # This message is a singular message.
             return 1
         else:
-            return self.language.plural_forms
+            return self.language.pluralforms
 
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""
