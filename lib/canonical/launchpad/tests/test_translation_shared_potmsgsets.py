@@ -194,7 +194,7 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         # Adding a diverged translation in one template makes that one
         # current in it.
         diverged_translation = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset)
+            pofile=sr_pofile, potmsgset=self.potmsgset, force_diverged=True)
         self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
             self.devel_potemplate, serbian), diverged_translation)
         self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
@@ -219,7 +219,8 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         # Adding a diverged translation in one template makes that one
         # an imported translation there.
         diverged_translation = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, is_imported=True)
+            pofile=sr_pofile, potmsgset=self.potmsgset, is_imported=True,
+            force_diverged=True)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
             self.devel_potemplate, serbian), diverged_translation)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(

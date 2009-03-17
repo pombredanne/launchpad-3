@@ -66,11 +66,11 @@ class TranslationMessageMixIn:
             # This message is a singular message.
             return 1
         else:
-            return self.pofile.plural_forms
+            return self.language.plural_forms
 
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""
-        elements = [self.pofile.language.code]
+        elements = [self.language.code]
         if suffix is not None:
             elements.append(suffix)
         return self.potmsgset.makeHTMLID('_'.join(elements))
@@ -149,8 +149,8 @@ def validate_is_current(self, attr, value):
         # change current one to non current before.
         current_translation_message = (
             self.potmsgset.getCurrentTranslationMessage(
-                self.pofile.potemplate,
-                self.pofile.language, self.pofile.variant))
+                self.potemplate,
+                self.language, self.variant))
         if (current_translation_message is not None and
             self.potemplate == current_translation_message.potemplate):
             current_translation_message.is_current = False
@@ -177,8 +177,8 @@ def validate_is_imported(self, attr, value):
         # change current one to non current before.
         imported_translation_message = (
             self.potmsgset.getImportedTranslationMessage(
-                self.pofile.potemplate,
-                self.pofile.language, self.pofile.variant))
+                self.potemplate,
+                self.language, self.variant))
         if (imported_translation_message is not None and
             self.potemplate == imported_translation_message.potemplate):
             imported_translation_message.is_imported = False
@@ -300,7 +300,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         return True
 
     @property
-    def is_hidden(self):
+    def is_hidden(self, pofile):
         """See `ITranslationMessage`."""
         # If this message is currently used or has been imported,
         # it's not hidden.
@@ -313,8 +313,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # it is hidden.
         # If it has not been reviewed yet, it's not hidden.
         current = self.potmsgset.getCurrentTranslationMessage(
-            self.pofile.potemplate,
-            self.pofile.language, self.pofile.variant)
+            pofile.potemplate,
+            self.language, self.variant)
         # If there is no current translation, none of the
         # suggestions have been reviewed, so they are all shown.
         if current is None:
