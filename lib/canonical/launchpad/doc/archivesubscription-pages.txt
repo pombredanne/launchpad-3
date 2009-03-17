@@ -149,6 +149,55 @@ So we try again with an expiry date in the future:
     Launchpad Developers
     Andrew Bennetts
 
+== ArchiveSubscriptionEditView ==
+
+The ArchiveSubscriptionEditView presents the expiry and description ready
+for editing:
+
+    >>> from canonical.launchpad.interfaces.archivesubscriber import (
+    ...     IArchiveSubscriberSet)
+    >>> spiv_subscription = getUtility(IArchiveSubscriberSet).getByArchive(
+    ...     cprov.archive).one()
+    >>> view = create_initialized_view(spiv_subscription, name="+edit")
+    >>> view.field_names
+    ['date_expires', 'description']
+
+The ArchiveSubscriptionEditView can be used to update the description field:
+
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+edit", method="POST",
+    ...     form={
+    ...         'field.description': "Updated description",
+    ...         'field.date_expires': '',
+    ...         'field.actions.update': 'Update'
+    ...     })
+    >>> print spiv_subscription.description
+    Updated description
+
+Like the ceate view, the update view will not accept a date in the past:
+
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+edit", method="POST",
+    ...     form={
+    ...         'field.description': "Updated description",
+    ...         'field.date_expires': '1984-01-01',
+    ...         'field.actions.update': 'Update'
+    ...     })
+    >>> for error in view.errors:
+    ...     print error
+    The expiry date must be in the future.
+
+But a date in the futurue is fine:
+
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+edit", method="POST",
+    ...     form={
+    ...         'field.description': "spiv's my friend",
+    ...         'field.date_expires': str(future_date),
+    ...         'field.actions.update': 'Update'
+    ...     })
+    >>> view.errors
+    []
 
 == PersonArchiveSubscriptions View ==
 

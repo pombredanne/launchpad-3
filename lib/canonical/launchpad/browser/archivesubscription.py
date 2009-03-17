@@ -24,7 +24,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.archive import ArchiveViewBase
 from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriber, IArchiveSubscriberUI, IArchiveSubscriberSet)
+    IArchiveSubscriberUI, IArchiveSubscriberSet)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -125,10 +125,39 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
     custom_widget('description', TextWidget, displayWidth=40)
     custom_widget('date_expires', CustomWidgetFactory(DateWidget))
 
-#    schema = IArchiveSubscriber
-#    field_names = ['date_expires', 'description']
-#    custom_widget('description', TextWidget, displayWidth=40)
-#    custom_widget('date_expires', CustomWidgetFactory(DateWidget))
+    def validate_update_subscription(self, action, data):
+        """Ensure that the date of expiry is not in the past."""
+        form.getWidgetsData(self.widgets, 'field', data)
+        date_expires = data.get('date_expires')
+
+        if date_expires:
+            if date_expires < datetime.date.today():
+                self.setFieldError('date_expires',
+                    "The expiry date must be in the future.")
+
+    @action(u'Update', name='update', validator="validate_update_subscription")
+    def update_subscription(self, action, data):
+        """Update the context subscription with the new data."""
+        # As we present a date selection to the user for expiry, we
+        # need to convert the value into a datetime with UTC:
+        date_expires = data['date_expires']
+
+        if date_expires:
+            data['date_expires'] = datetime.datetime(
+                date_expires.year,
+                date_expires.month,
+                date_expires.day,
+                tzinfo=pytz.timezone('UTC'))
+
+        self.updateContextFromData(data)
+
+        notification = "The subscription for %s has been updated." % (
+            self.context.subscriber.displayname)
+        self.request.response.addNotification(structured(notification))
+
+        # Redirect back to the subscriptions page.
+        # Note to reviewer: is there a better way to do this??
+        self.next_url = canonical_url(self.context.archive) + "/+subscriptions"
 
 
 class PersonArchiveSubscriptionsView(LaunchpadView):
