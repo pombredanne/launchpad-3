@@ -330,6 +330,11 @@ class DistributionSourcePackage(BugTargetBase,
                 BugTask.sourcepackagename == self.sourcepackagename),
             user)
 
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.distribution.official_bug_tags
+
     def createBug(self, bug_params):
         """See `IBugTarget`."""
         bug_params.setBugTarget(

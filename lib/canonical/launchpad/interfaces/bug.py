@@ -9,13 +9,13 @@ __all__ = [
     'CreateBugParams',
     'CreatedBugWithNoBugTasksError',
     'IBug',
-    'IBugBecameQuestionEvent',
-    'IBugSet',
-    'IBugDelta',
     'IBugAddForm',
+    'IBugBecameQuestionEvent',
+    'IBugDelta',
+    'IBugSet',
     'IFrontPageBugAddForm',
-    'InvalidBugTargetType',
     'IProjectBugAddForm',
+    'InvalidBugTargetType',
     ]
 
 from zope.component import getUtility
@@ -382,6 +382,13 @@ class IBug(ICanBeMentored):
 
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
+
+    def addChange(change):
+        """Record a change to the bug.
+
+        :param change: An `IBugChange` instance from which to take the
+            change data.
+        """
 
     def expireNotifications():
         """Expire any pending notifications that have not been emailed.
