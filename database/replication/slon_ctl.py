@@ -37,21 +37,33 @@ def main():
     if len(args) == 0:
         parser.error("No command given.")
 
-    elif len(args) == 1:
+    command = args[0]
+
+    if command not in ['start', 'stop']:
+        parser.error("Unknown command %s." % command)
+
+    if len(args) == 1:
         explicit = None
 
-    elif len(args) == 2:
-        parser.error("nickname or connection_string missing.")
+    elif command == 'start':
+        if len(args) == 2:
+            parser.error(
+                "nickname and connection_string required for %s command"
+                % command)
+        elif len(args) == 3:
+            explicit = replication.helpers.Node(
+                None, args[1], args[2], None)
+        else:
+            parser.error("Too many arguments.")
 
-    elif len(args) == 3:
-        explicit = replication.helpers.Node(
-            None, args[1], args[2], None)
+    elif command == 'stop':
+        if len(args) in (2, 3):
+            explicit = replication.helpers.Node(
+                None, args[1], None, None)
+        else:
+            parser.error("Too many arguments.")
 
     else:
-        parser.error("Too many arguments.")
-
-    command = args[0]
-    if command not in ['start', 'stop']:
         parser.error("Unknown command %s." % command)
 
     log = logger(options)
@@ -71,6 +83,7 @@ def get_pidfile(nickname):
     return os.path.join(
         config.canonical.pid_dir, 'lpslon_%s_%s.pid' % (
         nickname, config.instance_name))
+
 
 def get_logfile(nickname):
     return os.path.join(
