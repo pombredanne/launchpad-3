@@ -788,7 +788,6 @@ class POFile(SQLBase, POFileMixIn):
         # make sure all the data is in the db
         flush_database_updates()
 
-
         # Get number of imported messages that are still synced in Launchpad.
         current_clauses = self._getClausesForPOFileMessages()
         current_clauses.extend([
@@ -806,7 +805,7 @@ class POFile(SQLBase, POFileMixIn):
              '           current.variant AND '
              '        TranslationMessage.potmsgset=current.potmsgset AND '
              '        TranslationMessage.msgstr0 IS NOT NULL  AND '
-             '        TranslationMessage.is_current IS TRUE )))') % (
+             '        TranslationMessage.is_current IS TRUE)))') % (
               sqlvalues(template=self.potemplate)),
             ])
         self._appendCompletePluralFormsConditions(current_clauses)

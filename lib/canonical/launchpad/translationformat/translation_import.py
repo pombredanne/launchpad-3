@@ -116,6 +116,8 @@ class ExistingPOFileInDatabase:
             "pt%d.translation AS translation%d" % (form, form)
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
 
+        return
+
         sql = '''
         SELECT
             POMsgId.msgid AS msgid,
@@ -126,19 +128,27 @@ class ExistingPOFileInDatabase:
             is_imported,
             %s
           FROM TranslationMessage
-            JOIN POFile ON
-              TranslationMessage.pofile=POFile.id AND POFile.id=%s
             JOIN POTMsgSet ON
               POTMsgSet.id=TranslationMessage.potmsgset
+            JOIN TranslationTemplateItem ON
+              TranslationTemplateItem.id=POTMsgSet.id
+            JOIN POTemplate ON
+              POTemplate.id=TranslationTemplateItem.potemplate
+            JOIN POFile ON
+              POFile.potemplate=POTemplate.id
             %s
             JOIN POMsgID ON
               POMsgID.id=POTMsgSet.msgid_singular
             LEFT OUTER JOIN POMsgID AS POMsgID_Plural ON
               POMsgID_Plural.id=POTMsgSet.msgid_plural
           WHERE
+                POFile.id=%s AND
                 is_current or is_imported
-          ''' % (','.join(translations), quote(self.pofile),
-                 '\n'.join(msgstr_joins))
+          ORDER BY
+            TranslationTemplateItem.sequence,
+            COALESCE(TranslationMessage.potemplate, -1)
+          ''' % (','.join(translations), '\n'.join(msgstr_joins),
+                 quote(self.pofile))
         cur = cursor()
         cur.execute(sql)
         rows = cur.fetchall()
@@ -171,21 +181,14 @@ class ExistingPOFileInDatabase:
                     message.msgid_singular = msgid
                     message.msgid_plural = msgid_plural
 
-                assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
-                    "Change this code to support %d plural forms"
-                    % TranslationConstants.MAX_PLURAL_FORMS)
-                if msgstr0 is not None:
-                    message.addTranslation(0, msgstr0)
-                if msgstr1 is not None:
-                    message.addTranslation(1, msgstr1)
-                if msgstr2 is not None:
-                    message.addTranslation(2, msgstr2)
-                if msgstr3 is not None:
-                    message.addTranslation(3, msgstr3)
-                if msgstr4 is not None:
-                    message.addTranslation(4, msgstr4)
-                if msgstr5 is not None:
-                    message.addTranslation(5, msgstr5)
+                for plural in range(TranslationConstants.MAX_PLURAL_FORMS):
+                    local_vars = locals()
+                    msgstr = getattr(local_vars, 'msgstr' + plural, None)
+                    if (msgstr is not None and
+                        ((len(message.translations) > plural and
+                          message.translations[plural] is None) or
+                         (len(message.translations) <= plural))):
+                        message.addTranslation(plural, msgstr)
 
     def markMessageAsSeen(self, message):
         """Marks a message as seen in the import, to avoid expiring it."""
@@ -587,7 +590,7 @@ class POTFileImporter(FileImporter):
             flags_comment = u""
 
         potmsgset = self.getOrCreatePOTMsgSet(message)
-        potmsgset.setSequence(potmsgset.potemplate, self.count)
+        potmsgset.setSequence(self.potemplate, self.count)
         potmsgset.commenttext = message.comment
         potmsgset.sourcecomment = message.source_comment
         potmsgset.filereferences = message.file_references
@@ -713,7 +716,7 @@ class POFileImporter(FileImporter):
                 return
 
         potmsgset = self.getOrCreatePOTMsgSet(message)
-        if potmsgset.sequence == 0:
+        if potmsgset.getSequence(self.potemplate) == 0:
             # We are importing a message that does not exist in
             # latest translation template so we can update its values.
             potmsgset.sourcecomment = message.source_comment
@@ -743,7 +746,7 @@ class POFileImporter(FileImporter):
                 msgid, plural_text=plural, context=context)
             previous_imported_message = (
                 potmsgset.getImportedTranslationMessage(
-                    self.pofile.language))
+                    self.potemplate, self.pofile.language))
             if previous_imported_message is not None:
                 # The message was not imported this time, it therefore looses
                 # its imported status.
