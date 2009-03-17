@@ -1332,7 +1332,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                                translator=None, suggestion=False,
                                reviewer=None, translations=None,
                                lock_timestamp=None, date_updated=None,
-                               is_imported=False):
+                               is_imported=False, force_shared=False,
+                               force_diverged=False):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
             pofile = self.makePOFile('sr')
@@ -1344,7 +1345,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             translations = [self.getUniqueString()]
         translation_message = potmsgset.updateTranslation(
             pofile, translator, translations, is_imported=is_imported,
-            lock_timestamp=lock_timestamp, force_suggestion=suggestion)
+            lock_timestamp=lock_timestamp, force_suggestion=suggestion,
+            force_shared=force_shared, force_diverged=force_diverged)
         if date_updated is not None:
             naked_translation_message = removeSecurityProxy(
                 translation_message)
@@ -1361,8 +1363,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation_message = self.makeTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translator=translator,
             suggestion=suggestion, reviewer=reviewer, is_imported=is_imported,
-            translations=translations, date_updated=date_updated)
-        translation_message.potemplate = None
+            translations=translations, date_updated=date_updated,
+            force_shared=True)
         return translation_message
 
     def makeTranslation(self, pofile, sequence,
