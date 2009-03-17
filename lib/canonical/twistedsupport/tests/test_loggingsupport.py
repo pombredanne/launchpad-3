@@ -20,6 +20,7 @@ from twisted.trial.unittest import TestCase
 
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from canonical.launchpad.testing import TestCase as LaunchpadTestCase
 from canonical.testing.layers import TwistedLayer
 from canonical.twistedsupport.loggingsupport import (
     LaunchpadLogFile, OOPSLoggingObserver)
@@ -73,22 +74,21 @@ class LoggingSupportTests(TestCase):
         self.assertLogMatches('^Logged OOPS id.*')
 
 
-class TestLaunchpadLogFile(unittest.TestCase):
+class TestLaunchpadLogFile(LaunchpadTestCase):
 
     def setUp(self):
+        super(TestLaunchpadLogFile, self).setUp()
         self.temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.temp_dir)
 
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-
-    def testInitialisation(self):
-        """`LaunchpadLogFile` initialisation.
+    def testInitialization(self):
+        """`LaunchpadLogFile` initialization.
 
         It has proper default values for 'maxRotatedFiles' (5) and
         'compressLast' (3), although allows call sites to specify their own
         values.
 
-        The initialisation fails if the given 'compressLast' value is
+        The initialization fails if the given 'compressLast' value is
         incoherent with 'maxRotatedFiles', like requesting the compression
         of more files that we have rotated.
         """
@@ -103,7 +103,7 @@ class TestLaunchpadLogFile(unittest.TestCase):
         self.assertEqual(1, log_file.maxRotatedFiles)
         self.assertEqual(1, log_file.compressLast)
 
-        # Incosistent parameters, compression more than kept rotated files.
+        # Inconsistent parameters, compression more than kept rotated files.
         self.assertRaises(
             AssertionError, LaunchpadLogFile, 'test.log', self.temp_dir,
             maxRotatedFiles=1, compressLast=2)
@@ -152,11 +152,11 @@ class TestLaunchpadLogFile(unittest.TestCase):
         log_file = LaunchpadLogFile(
             'test.log', self.temp_dir, maxRotatedFiles=2, compressLast=1)
 
-        # Monkey-path DailyLogFile.suffix to be time independent.
+        # Monkey-patch DailyLogFile.suffix to be time independent.
         self.local_index = 0
         def testSuffix(tupledate):
             self.local_index += 1
-            return '%d' % self.local_index
+            return str(self.local_index)
         log_file.suffix = testSuffix
 
         log_file.rotate()

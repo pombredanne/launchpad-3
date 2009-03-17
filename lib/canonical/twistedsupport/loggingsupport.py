@@ -82,7 +82,6 @@ def set_up_oops_reporting(name, mangle_stdout=False):
 class LaunchpadLogFile(DailyLogFile):
     """Extending `DailyLogFile` to serve Launchpad purposes.
 
-
     Additionally to the original daily log file rotation it also allows
     call sites to control the number of rotated logfiles kept around and
     when to start compressing them.
@@ -105,14 +104,13 @@ class LaunchpadLogFile(DailyLogFile):
     def _compressFile(self, path):
         """Compress the file in the given path using bzip2.
 
-        The compressed file will be in the same path and and old file
+        The compressed file will be in the same path and old file
         will be removed.
 
         :return: the path to the compressed file.
         """
         bz2_path = '%s.bz2' % path
-        copy_and_close(
-            open(path), bz2.BZ2File(bz2_path, mode='w', compresslevel=9))
+        copy_and_close(open(path), bz2.BZ2File(bz2_path, mode='w'))
         os.remove(path)
         return bz2_path
 
@@ -145,6 +143,5 @@ class LaunchpadLogFile(DailyLogFile):
 
     def listLogs(self):
         """Return the list of rotate log files, newest first."""
-        return sorted(
-            [name for name in glob.glob("%s.*" % self.path)], reverse=True)
+        return sorted(glob.glob("%s.*" % self.path), reverse=True)
 
