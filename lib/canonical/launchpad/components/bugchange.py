@@ -25,14 +25,6 @@ def get_bug_change_class(obj, field_name):
         return BugChangeBase
 
 
-def get_unified_diff(old_value, new_value, line_length):
-    """Return a unified diff of old_value and new_value."""
-    # We've created this local version to avoid circular import
-    # problems.
-    from canonical.launchpad.mailnotification import get_unified_diff
-    return get_unified_diff(old_value, new_value, line_length)
-
-
 class BugChangeBase:
     """An abstract base class for Bug[Task]Changes."""
 
@@ -79,6 +71,7 @@ class BugDescriptionChange(SimpleBugChangeMixin, BugChangeBase):
     """Describes a change to a bug's description."""
 
     def getBugNotification(self):
+        from canonical.launchpad.mailnotification import get_unified_diff
         description_diff = get_unified_diff(
             self.old_value, self.new_value, 72)
         notification_text = (
