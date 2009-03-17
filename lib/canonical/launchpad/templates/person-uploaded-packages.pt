@@ -45,7 +45,7 @@
        replace="structure view/batchnav/@@+navigation-links-lower" />
 
   <tal:no_packages condition="not: sourcepackagereleases">
-    <tal:name replace="context/displayname"/> has not uploaded any packages.
+    <tal:name replace="context/fmt:displayname"/> has not uploaded any packages.
   </tal:no_packages>
 
   </tal:uploaded-packages>

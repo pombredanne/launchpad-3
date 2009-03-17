@@ -15,14 +15,14 @@
         tal:condition="direct_subscriptions"
         tal:repeat="subscription direct_subscriptions"
       >
-        <a
-          tal:attributes="
-            href subscription/person/fmt:url;
-            title subscription/display_subscribed_by;
-          "
+        <a tal:condition="subscription/person/name|nothing"
+           tal:attributes="
+             href subscription/person/fmt:url;
+             title subscription/display_subscribed_by;
+           "
         >
           <tal:block replace="structure subscription/person/image:icon" />
-          <tal:block replace="subscription/person/browsername" />
+          <tal:block replace="subscription/person/fmt:displayname" />
         </a>
       </div>
       <div tal:condition="not:direct_subscriptions">None</div>
@@ -34,14 +34,14 @@
   >
     <h2>From duplicates</h2>
     <div tal:repeat="subscription from_dupes_subscriptions">
-      <a
-        tal:attributes="
-          href subscription/person/fmt:url;
-          title subscription/display_subscribed_by;
+      <a tal:condition="subscription/person/name|nothing"
+         tal:attributes="
+           href subscription/person/fmt:url;
+           title subscription/display_subscribed_by;
         "
       >
-        <tal:block replace="structure subscription/person/image:icon" /> 
-        <tal:block replace="subscription/person/browsername" />
+        <tal:block replace="structure subscription/person/image:icon" />
+        <tal:block replace="subscription/person/fmt:displayname" />
       </a>
     </div>
   </div>

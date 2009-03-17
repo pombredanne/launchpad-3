@@ -136,11 +136,16 @@ class LaunchpadFormView(LaunchpadView):
         # done and then committed.
         transaction.abort()
 
+    def extendFields(self):
+        """Allow subclasses to extend the form fields."""
+        pass
+
     def setUpFields(self):
         assert self.schema is not None, (
             "Schema must be set for LaunchpadFormView")
         self.form_fields = form.Fields(self.schema, for_input=self.for_input,
                                        render_context=self.render_context)
+        self.extendFields()
         if self.field_names is not None:
             self.form_fields = self.form_fields.select(*self.field_names)
 

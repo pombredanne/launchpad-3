@@ -16,9 +16,11 @@ __all__ = [
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
+    'ArchiveViewBase',
     'traverse_distro_archive',
     'traverse_named_ppa',
     ]
+
 
 from zope.app.form.browser import TextAreaWidget
 from zope.app.form.interfaces import IInputWidget
@@ -236,7 +238,7 @@ class ArchiveContextMenu(ContextMenu):
 
     usedfor = IArchive
     links = ['ppa', 'admin', 'edit', 'builds', 'delete', 'copy',
-             'edit_dependencies']
+             'edit_dependencies', 'manage_subscribers']
 
     def ppa(self):
         text = 'View PPA'
@@ -246,6 +248,21 @@ class ArchiveContextMenu(ContextMenu):
     def admin(self):
         text = 'Administer archive'
         return Link('+admin', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Append')
+    def manage_subscribers(self):
+        text = 'Manage subscriptions'
+        link = Link('+subscriptions', text, icon='edit')
+
+        # This link should only be available for private archives:
+        if not self.context.private:
+            link.enabled = False
+
+        # XXX: noodles 2009-03-10 bug=340405. This link is disabled until
+        # the cron-job supporting private archive subscriptions is enabled.
+        link.enabled = False
+
+        return link
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):

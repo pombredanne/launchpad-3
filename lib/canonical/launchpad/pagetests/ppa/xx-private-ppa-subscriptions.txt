@@ -1,0 +1,160 @@
+= Private PPA Subscriptions =
+
+Note: This file contains all the pagetests for functionality that is not
+part of the stories in xx-private-ppa-subscription-stories.txt.
+
+== Managing Archive subscriptions ==
+
+Public PPAs do not have an option for managing subscriptions:
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> cprov_browser.getLink("Manage subscriptions")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
+will require launchpad.Admin until the backend .htaccess update
+machinery is in-place and tested:
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> login('foo.bar@canonical.com')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> admins = getUtility(IPersonSet).getByName('admins')
+    >>> admins.addMember(cprov, foobar)
+    >>> logout()
+
+Similarly, trying to access the subscriptions page directly will simply
+redirect back to the PPA page with a feedback message:
+
+    >>> cprov_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
+
+    >>> print cprov_browser.url
+    http://launchpad.dev/~cprov/+archive/ppa
+
+    >>> for msg in get_feedback_messages(cprov_browser.contents):
+    ...     print msg
+    Only private archives can have subscribers.
+
+Setup both cprov's and sabdfl's PPAs as a private one:
+
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
+    >>> admin_browser.getControl("Save").click()
+    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa")
+    >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
+    >>> admin_browser.getControl("Save").click()
+
+Normally the subscriptions are accessed via the PPA page:
+XXX: noodles 2009-03-10 bug=340405. The link 'Manage subscriptions' on the
+PPA page is disabled until the cron-job supporting private archive
+subscriptions is enabled.
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> cprov_browser.getLink("Manage subscriptions")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
+
+Initially there are no subscriptions for a newly privatized PPA (although,
+this may need to change, to add the owner/team). A heading is displayed
+with a message:
+
+    >>> main_content = find_main_content(cprov_browser.contents)
+    >>> print extract_text(main_content.find('h1'))
+    Manage subscriptions for Private PPA for Celso Providelo
+
+    >>> print extract_text(find_tag_by_id(cprov_browser.contents,
+    ...     'no-subscribers'))
+    This PPA does not yet have any subscribers.
+
+Create two new users that can be subscribed to archives:
+
+    >>> login('foo.bar@canonical.com')
+    >>> joesmith = factory.makePerson(name="joesmith", displayname="Joe Smith",
+    ...     password="test", email="joe@example.com")
+    >>> bradsmith = factory.makePerson(name="bradsmith", displayname="Brad Smith",
+    ...     password="test", email="brad@example.com")
+
+XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
+will require launchpad.Admin until the backend .htaccess update
+machinery is in-place and tested:
+
+    >>> admins.addMember(joesmith, foobar)
+    >>> logout()
+
+People can be subscribed by entering their details into the displayed
+form:
+
+    >>> cprov_browser.getControl(name='field.subscriber').value = 'joesmith'
+    >>> cprov_browser.getControl(
+    ...     name='field.description').value = "Joe is my friend"
+    >>> cprov_browser.getControl(name="field.actions.add").click()
+    >>> cprov_browser.getControl(name='field.subscriber').value = 'bradsmith'
+    >>> cprov_browser.getControl(
+    ...     name='field.date_expires').value = '2200-08-01'
+    >>> cprov_browser.getControl(
+    ...     name='field.description').value = "Brad can access for a while."
+    >>> cprov_browser.getControl(name="field.actions.add").click()
+
+Once the subscription has been added, it will display in the table:
+
+    >>> for row in find_tags_by_class(cprov_browser.contents,
+    ...                               'archive_subscriber_row'):
+    ...     print extract_text(row)
+    Name                Expires     Comment
+    Brad Smith          2200-08-01  Brad can access for a while.
+    Joe Smith                       Joe is my friend
+
+
+== Managing a persons' Archive subscriptions ==
+
+The title of a persons archive subscriptions is displayed as the main
+heading:
+
+    >>> cprov_browser.open("/~cprov/+archivesubscriptions")
+    >>> h1_heading = find_main_content(cprov_browser.contents).find('h1')
+    >>> print extract_text(h1_heading)
+    Private archive subscriptions for Celso Providelo
+
+A person who is not subscribed to any archives will see an appropriate
+explanation if they try to view their archive subscriptions:
+
+    >>> explanation = find_main_content(cprov_browser.contents).find('p')
+    >>> print extract_text(explanation)
+    You do not have any current subscriptions to private archives...
+
+First, create a subscription for Joe Smith to sabdfl's archive also, so that
+Joe has multiple subscriptions:
+
+    >>> sabdfl_browser = setupBrowser(
+    ...     auth="Basic mark@hbd.com:test")
+    >>> sabdfl_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa/+subscriptions")
+    >>> sabdfl_browser.getControl(name='field.subscriber').value = 'joesmith'
+    >>> sabdfl_browser.getControl(
+    ...     name='field.description').value = "Joe is also my friend"
+    >>> sabdfl_browser.getControl(name="field.actions.add").click()
+
+A person who is subscribed to multiple archives will see all the archives
+listed in the current subscriptions area:
+
+    >>> joe_browser = setupBrowser(auth="Basic joe@example.com:test")
+    >>> joe_browser.open(
+    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
+    >>> for row in find_tags_by_class(joe_browser.contents,
+    ...                               'archive-subscription-row'):
+    ...     print extract_text(row)
+    Archive                            Subscription description  Status
+    Private PPA for Mark Shuttleworth  Joe is also my friend     Pending
+    Private PPA for Celso Providelo    Joe is my friend          Pending
+

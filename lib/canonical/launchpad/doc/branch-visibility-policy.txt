@@ -197,16 +197,16 @@ associated with the mozilla project that are inheriting the project's
 branch policy.
 
     >>> mozilla.setBranchVisibilityTeamPolicy(
-    ...     ubuntu_gnome_team, BranchVisibilityRule.PRIVATE)
+    ...     None, BranchVisibilityRule.FORBIDDEN)
     >>> mozilla.setBranchVisibilityTeamPolicy(
-    ...     None, BranchVisibilityRule.PRIVATE)
+    ...     ubuntu_gnome_team, BranchVisibilityRule.PRIVATE)
 
     >>> print_team_policies(mozilla)
-    *everyone*: Private
+    *everyone*: Forbidden
     Ubuntu Gnome Team: Private
 
     >>> print_team_policies(thunderbird)
-    *everyone*: Private
+    *everyone*: Forbidden
     Ubuntu Gnome Team: Private
 
 In order to avoid inheriting the policy of the project, there just needs
@@ -230,7 +230,7 @@ defined, then None is returned.
     >>> print mozilla.getBranchVisibilityRuleForTeam(ubuntu_gnome_team).title
     Private
     >>> print mozilla.getBranchVisibilityRuleForTeam(None).title
-    Private
+    Forbidden
     >>> print mozilla.getBranchVisibilityRuleForTeam(launchpad_team)
     None
 

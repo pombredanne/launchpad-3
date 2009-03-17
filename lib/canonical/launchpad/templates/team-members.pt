@@ -29,6 +29,7 @@
   <ul>
     <li tal:condition="active_member_count"
         tal:define="membership_batch nocall:view/active_memberships/currentBatch">
+      <a name="active"></a>
       <h2>Active members</h2>
 
       <p>
@@ -115,6 +116,7 @@
       <h2>Pending members</h2>
 
       <tal:invited condition="view/invited_memberships">
+        <a name="invited"></a>
         <h3>Invited members</h3>
 
         <p>These teams have been invited to join this team, but one of
@@ -158,6 +160,7 @@
       </tal:invited>
 
       <tal:proposed condition="view/proposed_memberships">
+        <a name="proposed"></a>
         <h3>Proposed members</h3>
 
         <p>
@@ -211,6 +214,7 @@
 
     <li tal:condition="view/inactive_memberships/batch/total"
         tal:define="inactive_batch nocall:view/inactive_memberships/currentBatch">
+      <a name="former"></a>
       <h2>Former members</h2>
 
       <p>

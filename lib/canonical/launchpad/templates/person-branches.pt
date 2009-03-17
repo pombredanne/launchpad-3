@@ -30,7 +30,7 @@
   <div id="no-branch-message" tal:condition="not: view/has_branches">
     <p>
       There are no branches related to
-      <tal:user replace="context/displayname"/> today.
+      <tal:user replace="context/fmt:displayname"/> today.
     </p>
   </div>
 

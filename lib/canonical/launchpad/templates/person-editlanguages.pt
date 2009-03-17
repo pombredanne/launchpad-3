@@ -19,7 +19,7 @@
 <div metal:fill-slot="main" >
 
   <h1 tal:condition="not: view/is_current_user">
-    <span tal:replace="context/displayname">Someone</span>'s
+    <span tal:replace="context/fmt:displayname">Someone</span>'s
     language preferences
   </h1>
 
@@ -28,7 +28,12 @@
   </h1>
 
   <p class="documentDescription">
-    Preferred languages will be used for translations and support requests.
+    Your preferred languages are used to configure some Launchpad applications
+    to work with the languages you know. Launchpad Translations allows you
+    to translate a project into your preferred languages. Launchpad Answers
+    allows you to ask and answer questions in your preferred languages.
+    Launchpad's default language is English, which is the only language for
+    most Launchpad features.
   </p>
 
   <form action="" method="post">

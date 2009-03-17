@@ -18,6 +18,7 @@ from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.ssh.keys import Key
 from twisted.conch.ssh.transport import SSHServerTransport
 from twisted.internet import defer
+from twisted.protocols.policies import TimeoutFactory
 from twisted.python import log
 from twisted.web.xmlrpc import Proxy
 
@@ -137,7 +138,9 @@ class SSHService(service.Service):
         """Return a service that provides an SFTP server. This is called in
         the constructor.
         """
-        ssh_factory = Factory(self.makePortal())
+        ssh_factory = TimeoutFactory(
+            Factory(self.makePortal()),
+            timeoutPeriod=config.codehosting.idle_timeout)
         return strports.service(config.codehosting.port, ssh_factory)
 
     def startService(self):

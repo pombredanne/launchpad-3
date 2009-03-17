@@ -60,23 +60,24 @@
   <div class="right" tal:condition="indirect/count">
     <div class="portlet">
       <h2>Indirect membership</h2>
-      <table>
-        <tr tal:repeat="team_via view/indirect_teams_via">
-          <td><img src="/@@/team"
-                   tal:replace="structure team_via/team/image:icon" />
-          </td>
-          <td>
-            <div>
-              <a tal:attributes="href team_via/team/fmt:url"
-                 tal:content="team_via/team/browsername"
-                 >Team name</a>
-            </div>
-            <div>
-              Via
-              <span tal:replace="team_via/via">guadamen</span>.
-            </div>
-          </td>
-        </tr>
+      <table id="indirect participation">
+        <tal:loop repeat="team_via view/indirect_teams_via">
+          <tr tal:condition="team_via/team/@@+restricted-membership/userCanViewMembership">
+            <td><img tal:replace="structure team_via/team/image:icon" />
+            </td>
+            <td>
+              <div>
+                <a tal:attributes="href team_via/team/fmt:url"
+                   tal:content="team_via/team/browsername"
+                   >Team name</a>
+              </div>
+              <div>
+                Via
+                <span tal:replace="team_via/via">guadamen</span>.
+              </div>
+            </td>
+          </tr>
+        </tal:loop>
       </table>
     </div>
   </div>
