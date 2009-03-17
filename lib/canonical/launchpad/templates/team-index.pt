@@ -91,14 +91,14 @@
       <tal:is-owner condition="view/userIsOwner">
         <p>
           <tal:team condition="context/teamowner/is_team">
-            You are a member of the team which owns this team.
+            You are a member of the team that owns this team.
           </tal:team>
           <tal:user condition="not: context/teamowner/is_team">
             You are the owner of this team.
           </tal:user>
-          <tal:wtf condition="not: view/userIsActiveMember">
+          <tal:absentee-owner condition="not: view/userIsActiveMember">
             You are not currently an active member.
-          </tal:wtf>
+          </tal:absentee-owner>
         </p>
       </tal:is-owner>
       <tal:not-owner condition="not: view/userIsOwner">
@@ -136,7 +136,7 @@
           <img alt="Mentorships" src="/+icing/but-sml-mentoring.gif" /></a>
       </li>
       <li tal:condition="not: mentorships">
-        <a href="+mentoring" title="No mentoring is yet offered for this team">
+        <a href="+mentoring" title="No mentoring is currently offered">
           <img alt="Mentorships" src="/+icing/but-sml-mentoring-off.gif" /></a>
       </li>
       <tal:not-restricted
@@ -180,7 +180,7 @@
       </tal:no_preferredemail>
       <tal:emails repeat="email view/visible_email_addresses">
         <span style="white-space: nowrap">
-          <img src="/@@/mail" alt="" />
+          <img src="/@@/mail" alt="mail" />
           <tal:email replace="email">foo2@bar.com</tal:email>
           <tal:contact condition="repeat/email/start">
             <tal:contact metal:use-macro="template/macros/contact" />
@@ -202,13 +202,13 @@
       <div
         tal:define="archive_url view/archive_url"
         tal:condition="archive_url">
-        <img src="/@@/mail" alt="" />
+        <img src="/@@/mail" alt="mail" />
         <a id="mailing-list-posting-address"
           tal:attributes="href string:mailto:${context/mailing_list/address}"
           tal:content="context/mailing_list/address">team@example.com</a>
         <br />
         <strong>Policy:</strong>
-        You must be a team member to subscribed to the team mailing list.
+        You must be a team member to subscribe to the team mailing list.
         <br /><img src="/@@/mail" alt="email" /> <a id="mailing-list-archive"
                 tal:attributes="href archive_url">Mailing list archive</a>
         <br /><img src="/@@/team" alt="team" /> <a id="mailing-list-subscribers"
@@ -327,7 +327,6 @@
       </div>
     </tal:can-view>
   </div>
-
 
   <div class="portlet" id="subteam-of">
     <h2>Subteam of</h2>

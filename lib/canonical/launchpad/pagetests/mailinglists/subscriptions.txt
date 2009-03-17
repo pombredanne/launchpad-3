@@ -377,7 +377,7 @@ does not show either link.
     >>> print extract_text(
     ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
-    You are a member of the team which owns this team.
+    You are a member of the team that owns this team.
 
     >>> browser.getLink('Subscribe')
     Traceback (most recent call last):

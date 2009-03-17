@@ -16,7 +16,7 @@ The +related-software page displays a table with links to open bugs,
 unimplemented specs and open questions.
 
     >>> anon_browser.getLink(
-    ...     'See all 3 projects Ubuntu Team is involved with').click()
+    ...     'show all projects Ubuntu Team is involved with').click()
     >>> print anon_browser.title
     Software related to Ubuntu Team
 

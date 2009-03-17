@@ -4700,12 +4700,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
         """The number of project owned or driven by this person."""
         return self._related_projects().count()
 
-    @property
+    @cachedproperty
     def has_more_related_projects(self):
         """Does this person have more than five related projects?"""
         return self.related_projects_count > 5
 
-    @property
+    @cachedproperty
     def too_many_related_projects_found(self):
         """Does the user have more related projects than can be displayed?"""
         return self.related_projects_count > self.max_results_to_display

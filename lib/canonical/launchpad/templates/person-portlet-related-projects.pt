@@ -26,9 +26,9 @@
   </table>
   <p>
     <a href="+projects">
-      &raquo; See all <tal:count replace="view/related_projects_count" />
-      projects <tal:person replace="context/title">Foo Bar</tal:person>
-      is involved with
+      &raquo; show all projects
+      <tal:person replace="context/title">Foo Bar</tal:person> is involved
+      with
     </a>
   </p>
 </div>
