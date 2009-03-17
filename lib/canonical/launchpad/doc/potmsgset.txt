@@ -220,26 +220,6 @@ To add a suggestion, we set the force_suggestion parameter.
     ...     carlos, {0: u'foo'}, is_imported=False, force_suggestion=True,
     ...     lock_timestamp=datetime.now(UTC))
 
-XXX CarlosPerelloMarin 20080423: Once we finish shared translations DB
-migration, we could remove this part of the test. We don't need to
-migrate it! Please, read
-https://blueprints.launchpad.net/rosetta/+spec/message-sharing for
-more details.
-
-Finally, it should have some fields initialised in the same way its
-pofile attribute has it:
-
-    >>> new_translation.potemplate.id == new_translation.pofile.potemplate.id
-    True
-    >>> new_translation.language.code
-    u'ca'
-    >>> new_translation.pofile.language.code
-    u'ca'
-    >>> new_translation.variant is None
-    True
-    >>> new_translation.pofile.variant is None
-    True
-
 Since this message is just a suggestion, it doesn't have a reviewer, but
 it does note a person which last changed it.
 

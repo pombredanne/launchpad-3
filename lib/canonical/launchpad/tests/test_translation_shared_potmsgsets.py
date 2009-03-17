@@ -194,7 +194,7 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         # Adding a diverged translation in one template makes that one
         # current in it.
         diverged_translation = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset)
+            pofile=sr_pofile, potmsgset=self.potmsgset, force_diverged=True)
         self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
             self.devel_potemplate, serbian), diverged_translation)
         self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
@@ -219,7 +219,8 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
         # Adding a diverged translation in one template makes that one
         # an imported translation there.
         diverged_translation = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, is_imported=True)
+            pofile=sr_pofile, potmsgset=self.potmsgset, is_imported=True,
+            force_diverged=True)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
             self.devel_potemplate, serbian), diverged_translation)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
@@ -272,6 +273,153 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
             list(self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian)),
             [])
+
+    def test_getExternallyUsedTranslationMessages(self):
+        """Test retrieval of externally used translations."""
+
+        # Create an external POTemplate with a POTMsgSet using
+        # the same English string as the one in self.potmsgset.
+        external_template = self.factory.makePOTemplate()
+        external_template.productseries.product.official_rosetta = True
+        external_potmsgset = self.factory.makePOTMsgSet(
+            external_template,
+            singular=self.potmsgset.singular_text)
+        external_potmsgset.setSequence(external_template, 1)
+        external_pofile = self.factory.makePOFile('sr', external_template)
+        serbian = external_pofile.language
+
+        # When there is no translation for the external POTMsgSet,
+        # no externally used suggestions are returned.
+        self.assertEquals(
+            self.potmsgset.getExternallyUsedTranslationMessages(serbian),
+            [])
+
+        # If there are only suggestions on the external POTMsgSet,
+        # no externally used suggestions are returned.
+        external_suggestion = self.factory.makeSharedTranslationMessage(
+            pofile=external_pofile, potmsgset=external_potmsgset,
+            suggestion=True)
+        self.assertEquals(
+            self.potmsgset.getExternallyUsedTranslationMessages(serbian),
+            [])
+
+        # If there is an imported translation on the external POTMsgSet,
+        # it is returned as the externally used suggestion.
+        imported_translation = self.factory.makeSharedTranslationMessage(
+            pofile=external_pofile, potmsgset=external_potmsgset,
+            suggestion=False, is_imported=True)
+        imported_translation.is_current = False
+        self.assertEquals(
+            self.potmsgset.getExternallyUsedTranslationMessages(serbian),
+            [imported_translation])
+
+        # If there is a current translation on the external POTMsgSet,
+        # it is returned as the externally used suggestion as well.
+        current_translation = self.factory.makeSharedTranslationMessage(
+            pofile=external_pofile, potmsgset=external_potmsgset,
+            suggestion=False, is_imported=False)
+        self.assertEquals(
+            self.potmsgset.getExternallyUsedTranslationMessages(serbian),
+            [imported_translation, current_translation])
+
+    def test_getExternallySuggestedTranslationMessages(self):
+        """Test retrieval of externally suggested translations."""
+
+        # Create an external POTemplate with a POTMsgSet using
+        # the same English string as the one in self.potmsgset.
+        external_template = self.factory.makePOTemplate()
+        external_template.productseries.product.official_rosetta = True
+        external_potmsgset = self.factory.makePOTMsgSet(
+            external_template,
+            singular=self.potmsgset.singular_text)
+        external_potmsgset.setSequence(external_template, 1)
+        external_pofile = self.factory.makePOFile('sr', external_template)
+        serbian = external_pofile.language
+
+        # When there is no translation for the external POTMsgSet,
+        # no externally used suggestions are returned.
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
+            [])
+
+        # If there is a suggestion on the external POTMsgSet,
+        # it is returned.
+        external_suggestion = self.factory.makeSharedTranslationMessage(
+            pofile=external_pofile, potmsgset=external_potmsgset,
+            suggestion=True)
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
+            [external_suggestion])
+
+        # If there is an imported, non-current translation on the external
+        # POTMsgSet, it is not returned as the external suggestion.
+        imported_translation = self.factory.makeSharedTranslationMessage(
+            pofile=external_pofile, potmsgset=external_potmsgset,
+            suggestion=False, is_imported=True)
+        imported_translation.is_current = False
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
+            [external_suggestion])
+
+        # A current translation on the external POTMsgSet is not
+        # considered an external suggestion.
+        current_translation = self.factory.makeSharedTranslationMessage(
+            pofile=external_pofile, potmsgset=external_potmsgset,
+            suggestion=False, is_imported=False)
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
+            [external_suggestion])
+
+    def test_hasTranslationChangedInLaunchpad(self):
+        """Make sure checking whether a translation is changed in LP works."""
+
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        serbian = sr_pofile.language
+
+        # When there is no translation, it's not considered changed.
+        self.assertEquals(
+            self.potmsgset.hasTranslationChangedInLaunchpad(
+                self.devel_potemplate, serbian),
+            False)
+
+        # If only a current, non-imported translation exists, it's not
+        # changed in LP.
+        current_shared = self.factory.makeSharedTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset,
+            is_imported=False)
+        self.assertEquals(
+            self.potmsgset.hasTranslationChangedInLaunchpad(
+                self.devel_potemplate, serbian),
+            False)
+
+        # If imported translation is current, it's not changed in LP.
+        current_shared.is_current = False
+        imported_shared = self.factory.makeSharedTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset,
+            is_imported=True)
+        self.assertEquals(
+            self.potmsgset.hasTranslationChangedInLaunchpad(
+                self.devel_potemplate, serbian),
+            False)
+
+        # If there's a current, diverged translation, and an imported
+        # non-current one, it's changed in LP.
+        imported_shared.is_current = False
+        current_diverged = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset,
+            is_imported=False)
+        self.assertEquals(
+            self.potmsgset.hasTranslationChangedInLaunchpad(
+                self.devel_potemplate, serbian),
+            True)
+
+        # If imported one is shared and current, yet there is a diverged
+        # current translation as well, it is changed in LP.
+        imported_shared.is_current = False
+        self.assertEquals(
+            self.potmsgset.hasTranslationChangedInLaunchpad(
+                self.devel_potemplate, serbian),
+            True)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

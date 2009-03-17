@@ -203,11 +203,16 @@ class POTMsgSet(SQLBase):
             used_clause = 'is_current IS TRUE'
         else:
             used_clause = 'is_imported IS TRUE'
+        if potemplate is None:
+            template_clause = 'TranslationMessage.potemplate IS NULL'
+        else:
+            template_clause = (
+                '(TranslationMessage.potemplate IS NULL OR '
+                ' TranslationMessage.potemplate=%s)' % sqlvalues(potemplate))
         clauses = [
             'potmsgset = %s' % sqlvalues(self),
             used_clause,
-            '(TranslationMessage.potemplate IS NULL OR '
-            ' TranslationMessage.potemplate=%s)' % sqlvalues(potemplate),
+            template_clause,
             'TranslationMessage.language = %s' % sqlvalues(language)]
         if variant is None:
             clauses.append('TranslationMessage.variant IS NULL')
@@ -238,6 +243,11 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
             potemplate, language, variant, current=False)
+
+    def getSharedTranslationMessage(self, language, variant=None):
+        """See `IPOTMsgSet`."""
+        return self._getUsedTranslationMessage(
+            None, language, variant, current=True)
 
     def getLocalTranslationMessages(self, potemplate, language):
         """See `IPOTMsgSet`."""
@@ -281,15 +291,16 @@ class POTMsgSet(SQLBase):
             query = [in_use_clause]
         else:
             query = ["(NOT %s)" % in_use_clause]
-        query.append('POFile.language = %s' % sqlvalues(language))
-        query.append('POFile.id = TranslationMessage.pofile')
+        query.append('TranslationMessage.language = %s' % sqlvalues(language))
 
         query.append('''
             potmsgset IN (
                 SELECT POTMsgSet.id
                 FROM POTMsgSet
+                JOIN TranslationTemplateItem ON
+                    TranslationTemplateItem.potmsgset = POTMsgSet.id
                 JOIN POTemplate ON
-                    POTMsgSet.potemplate = POTemplate.id
+                    TranslationTemplateItem.potemplate = POTemplate.id
                 LEFT JOIN ProductSeries ON
                     POTemplate.productseries = ProductSeries.id
                 LEFT JOIN Product ON
@@ -308,7 +319,7 @@ class POTMsgSet(SQLBase):
         # Subquery to find the ids of TranslationMessages that are
         # matching suggestions.
         # We're going to get a lot of duplicates, sometimes resulting in
-        # thousands of suggstions.  Weed out most of that duplication by
+        # thousands of suggestions.  Weed out most of that duplication by
         # excluding older messages that are identical to newer ones in
         # all translated forms.  The Python code can later sort out the
         # distinct translations per form.
@@ -323,7 +334,6 @@ class POTMsgSet(SQLBase):
             SELECT DISTINCT ON (%(msgstrs)s)
                 TranslationMessage.id
             FROM TranslationMessage
-            JOIN POFile ON POFile.id = TranslationMessage.pofile
             WHERE %(where)s
             ORDER BY %(msgstrs)s, date_created DESC
             ''' % ids_query_params
@@ -353,8 +363,10 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         imported_translation = self.getImportedTranslationMessage(
             potemplate, language)
+        current_translation = self.getCurrentTranslationMessage(
+            potemplate, language)
         return (imported_translation is not None and
-                not imported_translation.is_current)
+                imported_translation != current_translation)
 
     def isTranslationNewerThan(self, pofile, timestamp):
         """See `IPOTMsgSet`."""
@@ -462,7 +474,11 @@ class POTMsgSet(SQLBase):
         `translations` strings comparing only `pluralforms` of them.
         """
         clauses = ['potmsgset = %s' % sqlvalues(self),
-                   'pofile = %s' % sqlvalues(pofile)]
+                   'language = %s' % sqlvalues(pofile.language)]
+        if pofile.variant is None:
+            clauses.append('variant IS NULL')
+        else:
+            clauses.append('variant = %s' % sqlvalues(pofile.variant))
 
         for pluralform in range(pluralforms):
             if potranslations[pluralform] is None:
@@ -474,13 +490,15 @@ class POTMsgSet(SQLBase):
         remaining_plural_forms = range(
             pluralforms, TranslationConstants.MAX_PLURAL_FORMS)
 
+        # Prefer shared messages over diverged ones.
+        order = ['potemplate NULLS FIRST']
         # Normally at most one message should match.  But if there is
         # more than one, prefer the one that adds the fewest extraneous
         # plural forms.
-        order = [
+        order.extend([
             'msgstr%s NULLS FIRST' % quote(form)
             for form in remaining_plural_forms
-            ]
+            ])
         matches = list(
             TranslationMessage.select(' AND '.join(clauses), orderBy=order))
 
@@ -495,10 +513,25 @@ class POTMsgSet(SQLBase):
             return None
 
     def _makeTranslationMessageCurrent(self, pofile, new_message, is_imported,
-                                       submitter):
+                                       submitter, force_shared=False,
+                                       force_diverged=False):
         """Make the given translation message the current one."""
         current_message = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
+            pofile.potemplate, pofile.language, pofile.variant)
+
+        # Converging from a diverged to a shared translation:
+        # when the new translation matches a shared one (potemplate==None),
+        # and a current translation is diverged (potemplate != None), then
+        # we want to remove divergence.
+        if (not force_diverged and
+            (new_message is not None and
+             new_message.potemplate is None) and
+            (current_message is not None and
+             current_message.potemplate is not None)):
+            force_shared = True
+
+        make_current = False
+
         if is_imported:
             # A new imported message is made current
             # only if there is no existing current message
@@ -510,7 +543,7 @@ class POTMsgSet(SQLBase):
                 (current_message.is_imported and
                  (current_message.is_empty or not new_message.is_empty)) or
                 current_message.is_empty):
-                new_message.is_current = True
+                make_current = True
                 # Don't update the submitter and date changed
                 # if there was no current message and an empty
                 # message is submitted.
@@ -520,7 +553,7 @@ class POTMsgSet(SQLBase):
                     pofile.date_changed = UTC_NOW
         else:
             # Non-imported translations.
-            new_message.is_current = True
+            make_current = True
             pofile.lasttranslator = submitter
             pofile.date_changed = UTC_NOW
 
@@ -548,6 +581,22 @@ class POTMsgSet(SQLBase):
                 new_message.date_reviewed = UTC_NOW
                 pofile.date_changed = UTC_NOW
                 pofile.lasttranslator = submitter
+
+        if make_current:
+            if force_shared:
+                # Converging from a diverged to a shared translation.
+                if current_message is not None:
+                    current_message.is_current = False
+                new_message.potemplate = None
+            elif force_diverged:
+                # Make the message diverged.
+                new_message.potemplate = pofile.potemplate
+            elif (current_message is not None and
+                  current_message.potemplate is not None):
+                # Keep a diverged translation diverged.
+                new_message.potemplate = current_message.potemplate
+            new_message.is_current = True
+
 
     def _isTranslationMessageASuggestion(self, force_suggestion,
                                          pofile, submitter,
@@ -598,7 +647,8 @@ class POTMsgSet(SQLBase):
         return not has_translations
 
     def updateTranslation(self, pofile, submitter, new_translations,
-                          is_imported, lock_timestamp, force_suggestion=False,
+                          is_imported, lock_timestamp, force_shared=False,
+                          force_diverged=False, force_suggestion=False,
                           ignore_errors=False, force_edition_rights=False):
         """See `IPOTMsgSet`."""
 
@@ -657,7 +707,7 @@ class POTMsgSet(SQLBase):
             else:
                 matching_message = TranslationMessage(
                     potmsgset=self,
-                    potemplate=pofile.potemplate,
+                    potemplate=None,
                     pofile=pofile,
                     language=pofile.language,
                     variant=pofile.variant,
@@ -699,7 +749,8 @@ class POTMsgSet(SQLBase):
                 # Makes the new_message current if needed and also
                 # assignes karma for translation approval
                 self._makeTranslationMessageCurrent(
-                    pofile, matching_message, is_imported, submitter)
+                    pofile, matching_message, is_imported, submitter,
+                    force_shared=force_shared, force_diverged=force_diverged)
 
         if is_imported:
             # If there is no previously existing imported message,
