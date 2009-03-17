@@ -111,9 +111,11 @@ class IArchivePublic(IHasOwner):
         title=_("Publish"), required=False,
         description=_("Whether the archive is to be published or not."))
 
-    private = Bool(
-        title=_("Private"), required=False,
-        description=_("Whether the archive is private to the owner or not."))
+    private = exported(
+        Bool(
+            title=_("Private"), required=False,
+            description=_(
+                "Whether the archive is private to the owner or not.")))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,
