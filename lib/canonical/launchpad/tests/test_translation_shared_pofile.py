@@ -608,10 +608,11 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
 
         # But adding a diverged current and imported translation means
         # that it's not changed anymore.
-        translation.is_current = False # XXX
+        old_translation = translation
         translation = self.factory.makeTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
-            translations=[u"Diverged imported"], is_imported=True)
+            translations=[u"Diverged imported"], is_imported=True,
+            force_diverged=True)
         self.assertEquals(translation.is_imported, True)
         self.assertEquals(translation.is_current, True)
         found_translations = list(
@@ -719,7 +720,7 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
         potmsgset.setSequence(self.devel_potemplate, 6)
         translation = self.factory.makeTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=potmsgset,
-            translations=[u"Imported translation"], is_imported=False)
+            translations=[u"New translation"], is_imported=False)
 
         removeSecurityProxy(self.devel_potemplate).messagecount = (
             self.devel_potemplate.getPOTMsgSetsCount())

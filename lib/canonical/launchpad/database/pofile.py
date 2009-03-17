@@ -689,7 +689,6 @@ class POFile(SQLBase, POFileMixIn):
                    WHERE
                      diverged.is_imported IS TRUE AND
                      diverged.id <> imported.id AND
-                     diverged.id <> TranslationMessage.id AND
                      diverged.potemplate=%s AND
                      diverged.language = TranslationMessage.language AND
                      diverged.variant IS NOT DISTINCT FROM
@@ -790,7 +789,7 @@ class POFile(SQLBase, POFileMixIn):
         flush_database_updates()
 
 
-        # Get number of imported messages that are still current in Launchpad.
+        # Get number of imported messages that are still synced in Launchpad.
         current_clauses = self._getClausesForPOFileMessages()
         current_clauses.extend([
             'TranslationMessage.is_imported IS TRUE',
@@ -800,11 +799,13 @@ class POFile(SQLBase, POFileMixIn):
              '  TranslationMessage.potemplate IS NULL AND NOT EXISTS ('
              '    SELECT * FROM TranslationMessage AS current '
              '      WHERE '
-             '        TranslationMessage.potemplate = %(template)s AND '
+             '        current.potemplate = %(template)s AND '
+             '        current.id <> TranslationMessage.id AND '
              '        TranslationMessage.language=current.language AND '
              '        TranslationMessage.variant IS NOT DISTINCT FROM '
              '           current.variant AND '
              '        TranslationMessage.potmsgset=current.potmsgset AND '
+             '        TranslationMessage.msgstr0 IS NOT NULL  AND '
              '        TranslationMessage.is_current IS TRUE )))') % (
               sqlvalues(template=self.potemplate)),
             ])
