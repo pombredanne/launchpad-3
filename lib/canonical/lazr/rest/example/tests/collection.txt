@@ -92,7 +92,26 @@ A collection may be empty.
 
 == Visibility ==
 
-TBA
+There are two recipes in "James Beard's American Cookery", but one of
+them has been marked private. The private one is hidden from view in
+collections.
+
+  >>> from urllib import quote
+  >>> url = quote("/cookbooks/James Beard's American Cookery/recipes")
+  >>> output = webservice.get(url).jsonBody()
+  >>> output['total_size']
+  2
+  >>> len(output['entries'])
+  1
+
+Why does total_size differ from the number of entries? The actual bugs
+are filtered against the security policy at a fairly high level, but
+the number of visible bugs comes from lower-level code that just looks
+at the underlying list.
+
+This is not an ideal solution--the numbers are off, and a batch may
+contain fewer than 'ws.size' entries--but it keeps unauthorized
+clients from seeing private data.
 
 
 == Element lookup ==

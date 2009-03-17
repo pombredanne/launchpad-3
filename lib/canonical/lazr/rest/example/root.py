@@ -19,6 +19,7 @@ from canonical.lazr.interfaces.rest import (
     IServiceRootResource, IWebServiceConfiguration)
 from canonical.lazr.rest.example.interfaces import (
     ICookbook, ICookbookSet, IDish, IDishSet, IRecipe, IHasGet)
+from canonical.lazr.security import protect_schema
 
 
 #Entry classes.
@@ -62,13 +63,14 @@ class Dish(CookbookWebServiceObject):
 class Recipe(CookbookWebServiceObject):
     implements(IRecipe)
 
-    def __init__(self, id, cookbook, dish, instructions):
+    def __init__(self, id, cookbook, dish, instructions, private=False):
         self.id = id
         self.dish = dish
         self.dish.recipes.append(self)
         self.cookbook = cookbook
         self.cookbook.recipes.append(self)
         self.instructions = instructions
+        self.private = private
 
     @property
     def __name__(self):
@@ -77,6 +79,8 @@ class Recipe(CookbookWebServiceObject):
     @property
     def __parent__(self):
         return self.cookbook
+
+protect_schema(Recipe, IRecipe, read_permission='lazr.restful.example.View')
 
 
 # Top-level objects.
@@ -150,7 +154,7 @@ C3_D1 = Recipe(3, C3, D1, u"A perfectly roasted chicken is...")
 
 D2 = Dish("Baked beans")
 C2_D2 = Recipe(4, C2, D2, "Preheat oven to...")
-C3_D2 = Recipe(5, C3, D2, "Without doubt the most famous...")
+C3_D2 = Recipe(5, C3, D2, "Without doubt the most famous...", True)
 
 D3 = Dish("Foies de voilaille en aspic")
 C1_D3 = Recipe(6, C1, D3, "Chicken livers sauteed in butter...")

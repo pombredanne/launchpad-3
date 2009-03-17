@@ -12,7 +12,7 @@ __all__ = ['ICookbook',
            'IRecipe']
 
 from zope.interface import Interface
-from zope.schema import Int, TextLine, Text
+from zope.schema import Bool, Int, TextLine, Text
 
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
@@ -37,8 +37,8 @@ class IRecipe(Interface):
     cookbook = exported(Reference(title=u"Cookbook", schema=Interface))
     instructions = exported(Text(title=u"How to prepare the recipe",
                                  required=True))
-    #private = exported(Bool(title=u"Whether the public can see this recipe.",
-    #                   default=False))
+    private = exported(Bool(title=u"Whether the public can see this recipe.",
+                       default=False))
 
 
 class ICookbook(Interface):

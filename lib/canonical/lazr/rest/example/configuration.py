@@ -18,7 +18,7 @@ class CookbookWebServiceConfiguration:
 
     path_override = "api"
     service_version_uri_prefix = "1.0"
-    view_permission = CheckerPublic
+    view_permission = 'lazr.restful.example.View'
     use_https = False
     code_revision = "test.revision"
     show_tracebacks = True

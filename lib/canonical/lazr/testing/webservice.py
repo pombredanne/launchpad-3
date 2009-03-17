@@ -208,14 +208,16 @@ class TestPublication:
 
     def handleException(self, object, request, exc_info, retry_allowed=1):
         """Prints the exception."""
-        traceback.print_exception(*exc_info)
-        exception = exc_info[1]
         # Reproduce the behavior of ZopePublication by looking up a view
         # for this exception.
-        view = getMultiAdapter((exception, request), name='index.html')
-        exc_info = None
-        request.response.reset()
-        request.response.setResult(view())
+        exception = exc_info[1]
+        view = queryMultiAdapter((exception, request), name='index.html')
+        if view is not None:
+            exc_info = None
+            request.response.reset()
+            request.response.setResult(view())
+        else:
+            traceback.print_exception(*exc_info)
 
     def endRequest(self, request, ob):
         """Ends the interaction."""

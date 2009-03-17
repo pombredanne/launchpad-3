@@ -13,4 +13,11 @@
 
     <adapter factory="zope.publisher.http.HTTPCharsets" />
 
+    <securityPolicy
+     component="canonical.lazr.rest.example.security.CookbookWebServiceSecurityPolicy"
+     />
+
+    <permission
+      id="lazr.restful.example.View" title="Viewing something" />
+
 </configure>
