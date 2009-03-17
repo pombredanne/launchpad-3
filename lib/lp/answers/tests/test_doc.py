@@ -20,7 +20,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 def test_suite():
     suite = unittest.TestSuite()
 
-    pagetests_dir = os.path.join(os.path.pardir, 'pagetests')
+    pagetests_dir = os.path.join(os.path.pardir, 'stories')
     suite.addTest(PageTestSuite(pagetests_dir))
 
     testsdir = os.path.abspath(
