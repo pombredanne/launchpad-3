@@ -12,13 +12,10 @@ __all__ = [
 
 
 import datetime
-from xmlrpclib import Fault
 
 import pytz
 
 from bzrlib.urlutils import escape, unescape
-
-from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -41,7 +38,7 @@ from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     NameLookupFailed, NotFoundError)
-from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.xmlrpc import faults, return_fault
 from canonical.launchpad.webapp.interaction import Participation
 
 
@@ -202,18 +199,6 @@ def run_with_login(login_id, function, *args, **kwargs):
         return function(requester, *args, **kwargs)
     finally:
         logout()
-
-
-def return_fault(function):
-    """Catch any Faults raised by 'function' and return them instead."""
-
-    def decorated(*args, **kwargs):
-        try:
-            return function(*args, **kwargs)
-        except Fault, fault:
-            return fault
-
-    return mergeFunctionMetadata(function, decorated)
 
 
 class BranchFileSystem(LaunchpadXMLRPCView):
