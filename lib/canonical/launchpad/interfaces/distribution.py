@@ -28,7 +28,8 @@ from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import (
+    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
@@ -63,7 +64,7 @@ class DistributionNameField(PillarNameField):
         return IDistribution
 
 
-class IDistributionEditRestricted(Interface):
+class IDistributionEditRestricted(IOfficialBugTagTargetRestricted):
     """IDistribution properties requiring launchpad.Edit permission."""
 
     def newSeries(name, displayname, title, summary, description,
@@ -72,10 +73,11 @@ class IDistributionEditRestricted(Interface):
 
 
 class IDistributionPublic(
-    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasDrivers,
-    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
-    IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
-    IMakesAnnouncements, IPillar, ISpecificationTarget, IHasBuildRecords):
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
+    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationGroup,
+    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")

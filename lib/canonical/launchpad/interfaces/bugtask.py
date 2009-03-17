@@ -946,7 +946,7 @@ class BugTaskSearchParams:
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
                  bug_commenter=None, omit_targeted=False,
-                 date_closed=None):
+                 date_closed=None, affected_user=None):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -975,6 +975,7 @@ class BugTaskSearchParams:
         self.nominated_for = nominated_for
         self.bug_commenter = bug_commenter
         self.date_closed = date_closed
+        self.affected_user = affected_user
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1033,8 +1034,9 @@ class BugTaskSearchParams:
                        importance=None,
                        assignee=None, bug_reporter=None, bug_supervisor=None,
                        bug_commenter=None, bug_subscriber=None, owner=None,
-                       has_patch=None, has_cve=None, distribution=None,
-                       tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
+                       affected_user=None, has_patch=None, has_cve=None,
+                       distribution=None, tags=None,
+                       tags_combinator=BugTagsSearchCombinator.ALL,
                        omit_duplicates=True, omit_targeted=None,
                        status_upstream=None, milestone_assignment=None,
                        milestone=None, component=None, nominated_for=None,
@@ -1051,6 +1053,7 @@ class BugTaskSearchParams:
         search_params.bug_commenter = bug_commenter
         search_params.subscriber = bug_subscriber
         search_params.owner = owner
+        search_params.affected_user = affected_user
         search_params.distribution = distribution
         if has_patch:
             # Import this here to avoid circular imports
@@ -1293,10 +1296,6 @@ class IAddBugTaskForm(Interface):
     bug_url = StrippedTextLine(
         title=_('URL'), required=False, constraint=valid_remote_bug_url,
         description=_("The URL of this bug in the remote bug tracker."))
-    visited_steps = TextLine(
-        title=_('Visited steps'), required=False,
-        description=_("Used to keep track of the steps we visited in a "
-                      "wizard-like form."))
 
 
 class IAddBugTaskWithProductCreationForm(Interface):

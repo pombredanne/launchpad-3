@@ -225,7 +225,7 @@
                 <td align="center">
                   <a tal:attributes="href item/product/bug_supervisor/fmt:url"
                      ><img src="/@@/yes"
-                        tal:attributes="title item/product/bug_supervisor/displayname"
+                        tal:attributes="title item/product/bug_supervisor/fmt:displayname"
                         /></a>
                 </td>
               </tal:has-bug-supervisor>
@@ -270,7 +270,7 @@
               <a tal:attributes="href item/upstream_bugs_delta_url"
                  tal:content="item/upstream_bugs_delta"></a>
             </td>
-            <tal:upstream-in-launchpad 
+            <tal:upstream-in-launchpad
                 condition="item/official_malone">
                 <td colspan="3" class="good">&nbsp;</td>
             </tal:upstream-in-launchpad>
@@ -314,7 +314,7 @@
         </tfoot>
       </table>
 
-      <div tal:condition="view/data" 
+      <div tal:condition="view/data"
            align="right"><small>Top <span tal:content="view/data/count:len" />
         packages listed.</small></div>
 

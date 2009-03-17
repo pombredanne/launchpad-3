@@ -136,6 +136,57 @@ email addresses state is NONE_AVAILABLE.
     []
 
 
+== Languages ==
+
+The PersonView provides a comma separated list of languages that a person
+speaks. The contact details portlet displays the user languages.
+
+English is the default language in Launchpad. If the user has not set
+his preferred languages, English is used.
+
+    >>> sample_person.languages
+    []
+
+    >>> login(ANONYMOUS)
+    >>> view = create_view(sample_person, '+portlet-contact-details')
+    >>> print view.languages
+    English
+
+This assumption is visible to the user when he views his own profile page,
+and he can set his preferred languages if he wants to make a correction.
+The list of languages is alphabetized.
+
+    >>> from canonical.launchpad.interfaces.language import ILanguageSet
+
+    >>> languageset = getUtility(ILanguageSet)
+    >>> sample_person.addLanguage(languageset.getLanguageByCode('so'))
+    >>> sample_person.addLanguage(languageset.getLanguageByCode('fr'))
+
+    >>> view = create_view(sample_person, '+portlet-contact-details')
+    >>> print view.languages
+    French, Somali
+
+Teams may have languages too. English is the default if the team has not
+set a language.
+
+    >>> landscape_developers.languages
+    []
+
+    >>> view = create_view(landscape_developers, '+portlet-contact-details')
+    >>> print view.languages
+    English
+
+Teams most often set just one language that is used for the Answers
+application. If the language is a variant, the variation is shown
+in parenthesis.
+
+    >>> landscape_developers.addLanguage(
+    ...     languageset.getLanguageByCode('pt_BR'))
+    >>> view = create_view(landscape_developers, '+portlet-contact-details')
+    >>> print view.languages
+    Portuguese (Brazil)
+
+
 == Location ==
 
 The Person profile page contains the location portlet that shows a map.

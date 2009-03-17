@@ -136,7 +136,7 @@ class AuthorizationBase:
         """
         # For backward compatibility, delegate to one of
         # checkAuthenticated() or checkUnauthenticated().
-        person = IPerson(account)
+        person = IPerson(account, None)
         if person is None:
             return self.checkUnauthenticated()
         else:

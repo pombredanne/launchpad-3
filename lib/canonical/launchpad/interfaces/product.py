@@ -35,7 +35,8 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal, BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import (
+    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
@@ -120,7 +121,7 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProductEditRestricted(Interface):
+class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
     def newSeries(owner, name, summary, branch=None):
@@ -177,7 +178,8 @@ class IProductPublic(
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, ISpecificationTarget, IPillar):
+    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
+    IPillar, ISpecificationTarget):
     """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
@@ -832,7 +834,7 @@ class NoSuchProduct(NameLookupFailed):
     _message_prefix = "No such product"
 
 
-# Fix a circular import.
+# Fix circular imports.
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 IDistributionSourcePackage['upstream_product'].schema = IProduct

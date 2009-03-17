@@ -111,14 +111,12 @@
                >Mailing list archive</a>
           </td>
         </tr>
-        <tal:can_see_subscribers condition="context/required:launchpad.Edit">
-          <tr>
-            <td><a id="mailing-list-subscribers"
-                   tal:attributes="href context/fmt:url/+mailing-list-subscribers"
-                   >Mailing list subscribers</a>
-            </td>
-          </tr>
-        </tal:can_see_subscribers>
+        <tr>
+          <td><a id="mailing-list-subscribers"
+                 tal:attributes="href context/fmt:url/+mailing-list-subscribers"
+                 >Mailing list subscribers</a>
+          </td>
+        </tr>
       </table>
 
     </tal:is_team>

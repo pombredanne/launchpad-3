@@ -17,6 +17,7 @@ from zope.app.form.interfaces import (
 from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
@@ -25,6 +26,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import UnexpectedFormData
+from canonical.launchpad.webapp.tales import TeamFormatterAPI
 from canonical.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
@@ -178,11 +180,15 @@ class BugTaskAssigneeWidget(Widget):
         """Return a display value for current IBugTask.assignee.
 
         If no IBugTask.assignee, return None.
+        If the assignee is not viewable, return u'<hidden>'.
         """
         field = self.context
         bugtask = field.context
-        if bugtask.assignee:
-            return bugtask.assignee.unique_displayname
+        if not bugtask.assignee:
+            return None
+        display_value = (
+            TeamFormatterAPI(bugtask.assignee).unique_displayname(None))
+        return display_value
 
     def selectedRadioButton(self):
         """Return the radio button that should be selected.

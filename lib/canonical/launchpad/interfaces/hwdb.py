@@ -165,7 +165,6 @@ class IHWSubmission(Interface):
             value_type=Reference(schema=Interface)))
 
 
-
 class IHWSubmissionForm(Interface):
     """The schema used to build the HW submission form."""
 

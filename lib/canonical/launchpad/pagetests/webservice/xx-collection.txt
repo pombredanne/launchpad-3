@@ -142,6 +142,7 @@ The elements of a collection can be looked up by unique identifier:
   default_renewal_period: None
   display_name: u'Launchpad Administrators'
   expired_members_collection_link: u'http://.../~admins/expired_members'
+  hardware_submissions_collection_link: u'http://.../~admins/hardware_submissions'
   hide_email_addresses: False
   homepage_content: None
   invited_members_collection_link: u'http://.../~admins/invited_members'
