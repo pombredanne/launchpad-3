@@ -648,12 +648,16 @@ class Bug(SQLBase):
 
     def addChange(self, change):
         """See `IBug`."""
+        when = change.when
+        if when is None:
+            when = UTC_NOW
+
         # Only try to add something to the activity log if we have some
         # data.
         activity_data = change.getBugActivity()
         if activity_data is not None:
             bug_activity = getUtility(IBugActivitySet).new(
-                self, change.when, change.person,
+                self, when, change.person,
                 activity_data['whatchanged'],
                 activity_data.get('oldvalue'),
                 activity_data.get('newvalue'),
@@ -667,7 +671,7 @@ class Bug(SQLBase):
 
             self.addChangeNotification(
                 notification_data['text'], change.person, recipients,
-                change.when)
+                when)
 
     def expireNotifications(self):
         """See `IBug`."""

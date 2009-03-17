@@ -17,7 +17,7 @@ The base class for BugChanges doesn't actually implement anything.
     >>> nowish = datetime(2009, 3, 13, 10, 9, tzinfo=pytz.timezone('UTC'))
     >>> base_instance = BugChangeBase(
     ...     when=nowish, person=example_person, what_changed="Nothing",
-    ...     old_value=None, new_value=None)
+    ...     old_value=None, new_value=None, recipients=None)
     >>> verifyObject(IBugChange, base_instance)
     True
 
@@ -43,6 +43,15 @@ But the basic attributes are still available.
 
     >>> print base_instance.person.displayname
     Ford Prefect
+
+    >>> print base_instance.new_value
+    None
+
+    >>> print base_instance.old_value
+    None
+
+    >>> print base_instance.what_changed
+    Nothing
 
 Because the base class is abstract, you can't pass it to
 Bug.addChange().
@@ -80,7 +89,7 @@ We'll create a test class that actually implements the methods we need.
     ...         'text': 'Some message text',
     ...         }
     ...
-    ...     recipients = [
+    ...     recipient_persons = [
     ...         example_person_2,
     ...         ]
     ...
@@ -93,7 +102,7 @@ We'll create a test class that actually implements the methods we need.
     ...
     ...     def getBugNotificationRecipients(self):
     ...         recipients = BugNotificationRecipients()
-    ...         for recipient in self.recipients:
+    ...         for recipient in self.recipient_persons:
     ...             recipients.addDirectSubscriber(recipient)
     ...         return recipients
     ...
@@ -202,7 +211,7 @@ By default, get_bug_change_class() will return BugChangeBase.
 For fields it knows about, it will return a more suitable class.
 
     >>> get_bug_change_class(example_bug, 'title')
-    <class '...TextualBugChange'>
+    <class '...BugTitleChange'>
 
 See component/ftests/test_bugchange.py for some sanity checks.
 
@@ -271,3 +280,10 @@ what's changed.
     <BLANKLINE>
     - Reality is on the blink again
     + Spam
+
+BugTitleChange mutates the `what_changed` field and will return
+'summary' rather than 'title'. This is to maintain naming consistency
+within the UI.
+
+    >>> print bug_title_change.getBugActivity()['whatchanged']
+    summary

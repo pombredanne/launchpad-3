@@ -35,6 +35,7 @@ from canonical.launchpad.interfaces import (
     INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
+from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.structuralsubscription import (
@@ -890,9 +891,15 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
             old_bugtask, recipients=old_bugtask_recipients,
             level=BugNotificationLevel.METADATA)
         recipients.update(old_bugtask_recipients)
-    for text_change in changes:
-        bug_delta.bug.addChangeNotification(
-            text_change, person=bug_delta.user, recipients=recipients)
+    for change in changes:
+        # XXX 2009-03-17 gmb [bug=344125]
+        #     This if..else should be removed once the new BugChange API
+        #     is complete and ubiquitous.
+        if IBugChange.providedBy(change):
+            bug_delta.bug.addChange(change)
+        else:
+            bug_delta.bug.addChangeNotification(
+                change, person=bug_delta.user, recipients=recipients)
 
 
 @block_implicit_flushes

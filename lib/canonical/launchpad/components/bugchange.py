@@ -39,12 +39,14 @@ class BugChangeBase:
 
     implements(IBugChange)
 
-    def __init__(self, when, person, what_changed, old_value, new_value):
+    def __init__(self, when, person, what_changed, old_value, new_value,
+                 recipients=None):
         self.new_value = new_value
         self.old_value = old_value
         self.person = person
         self.what_changed = what_changed
         self.when = when
+        self.recipients = recipients
 
     def getBugActivity(self):
         """Return the `BugActivity` entry for this change."""
@@ -55,12 +57,12 @@ class BugChangeBase:
         raise NotImplementedError(self.getBugNotification)
 
     def getBugNotificationRecipients(self):
-        """Return any recipients for the `BugNotification`s."""
+        """Return the recipients for this event."""
         raise NotImplementedError(self.getBugNotificationRecipients)
 
 
-class TextualBugChange(BugChangeBase):
-    """Describes a textual attribute change to a bug."""
+class SimpleBugChangeMixin:
+    """A mixin class that provides basic functionality for `IBugChange`s."""
 
     def getBugActivity(self):
         """Return the BugActivity data for the textual change."""
@@ -69,6 +71,13 @@ class TextualBugChange(BugChangeBase):
             'oldvalue': self.old_value,
             'whatchanged': self.what_changed,
             }
+
+    def getBugNotificationRecipients(self):
+        return self.recipients
+
+
+class TextualBugChange(SimpleBugChangeMixin, BugChangeBase):
+    """Describes a textual attribute change to a bug."""
 
 
 class BugDescriptionChange(TextualBugChange):
@@ -84,6 +93,15 @@ class BugDescriptionChange(TextualBugChange):
 
 class BugTitleChange(TextualBugChange):
     """Describes a change to a bug's title, aka summary."""
+
+    def getBugActivity(self):
+        activity = super(BugTitleChange, self).getBugActivity()
+
+        # We return 'summary' instead of 'title' for title changes
+        # because the bug's title is referred to as its summary in the
+        # UI.
+        activity['whatchanged'] = 'summary'
+        return activity
 
     def getBugNotification(self):
         notification_text = dedent("""\

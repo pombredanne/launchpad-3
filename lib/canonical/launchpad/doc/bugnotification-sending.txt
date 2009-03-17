@@ -1718,3 +1718,30 @@ will not receive notifications sent by add_bug_change_notification().
     Ubuntu Team, which is the registrant for Ubuntu.
 
     >>> config_data = config.pop('bugnotification_interval')
+
+add_bug_change_notifications() will call bug.addChange() rather than
+addChangeNotification() for some bug changes, in accordance with the new
+BugChange API. When this happens entries will be made in both the
+BugNotification and the BugActivity tables for the bug.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> example_person = factory.makePerson(displayname="Trillian")
+    >>> example_product = factory.makeProduct(owner=example_person)
+    >>> example_bug = factory.makeBug(
+    ...     product=example_product, owner=example_person,
+    ...     title="Marvin", description="Exists")
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(
+    ...     config.malone.bugnotification_dbuser)
+
+    >>> bug_delta = BugDelta(
+    ...     example_bug, canonical_url(example_bug),
+    ...     user=example_person,
+    ...     title={'old': example_bug.title, 'new': 'The world'})
+    >>> add_bug_change_notifications(bug_delta)
+
+    >>> for activity in example_bug.activity:
+    ...     print "%s: %s => %s (%s)" % (
+    ...         activity.whatchanged, activity.oldvalue, activity.newvalue,
+    ...         activity.person.displayname)
+    summary: Marvin => The world (Trillian)
