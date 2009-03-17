@@ -596,6 +596,8 @@ class POTMsgSet(SQLBase):
                   current_message.potemplate is not None):
                 # Keep a diverged translation diverged.
                 new_message.potemplate = pofile.potemplate
+            else:
+                new_message.potemplate = None
             new_message.is_current = True
         else:
             new_message.potemplate = None
