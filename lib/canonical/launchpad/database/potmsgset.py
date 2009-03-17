@@ -536,12 +536,14 @@ class POTMsgSet(SQLBase):
             # only if there is no existing current message
             # or if the current message came from import
             # or if current message is empty (deactivated translation).
+            # Or, if we are forcing a diverged imported translation.
             # Empty imported translations should not replace
             # non-empty imported translations.
             if (current_message is None or
                 (current_message.is_imported and
                  (current_message.is_empty or not new_message.is_empty)) or
-                current_message.is_empty):
+                current_message.is_empty or
+                (force_diverged and not new_message.is_empty)):
                 make_current = True
                 # Don't update the submitter and date changed
                 # if there was no current message and an empty
