@@ -163,6 +163,11 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
         search_params.milestone = self
+    
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.target.official_bug_tags
 
     def createProductRelease(self, owner, datereleased,
                              changelog=None, release_notes=None):
@@ -286,3 +291,9 @@ class ProjectMilestone(HasBugsBase):
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
         search_params.milestone = self
+
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.target.official_bug_tags
+
