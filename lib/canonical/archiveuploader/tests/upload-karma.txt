@@ -13,40 +13,6 @@ Set up an event listener to show when karma gets assigned.
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
 
-We also need to set up the karma categories in the database.
-
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
-    >>> LaunchpadZopelessLayer.switchDbUser('karmatesting')
-    >>> from canonical.launchpad.database import (
-    ...     KarmaAction, KarmaCategory)
-    >>> category = KarmaCategory(
-    ...     name='soyuz', title='Soyuz', summary='Karma actions in Soyuz')
-    >>> discard = KarmaAction(
-    ...     name='distributionuploadaccepted',
-    ...     title='Distribution package upload accepted',
-    ...     summary='A user uploaded a package to a distribution',
-    ...     category=category,
-    ...     points=10)
-    >>> discard = KarmaAction(
-    ...     name='sponsoruploadaccepted',
-    ...     title='Sponsored package upload accepted',
-    ...     summary='A package sponsor uploaded a package to a distribution',
-    ...     category=category,
-    ...     points=5)
-    >>> discard = KarmaAction(
-    ...     name='ppauploadaccepted',
-    ...     title='PPA package upload accepted',
-    ...     summary='A user uploaded a package to a PPA',
-    ...     category=category,
-    ...     points=1)
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
-
-Now make sure we're using the right database user for upload processing.
-
-    >>> from canonical.config import config
-    >>> LaunchpadZopelessLayer.switchDbUser(config.uploader.dbuser)
-
 
 == Uploading new sources ==
 
@@ -62,6 +28,7 @@ First, uploading a new source does not assign karma immediately.
 Nothing is printed from the listener yet, so no karma was assigned.
 We'll accept the upload now.
 
+    >>> from canonical.database.sqlbase import commit
     >>> commit()
     >>> bar_src.queue_root.acceptFromQueue("announce@example.com")
     Karma added: action=distributionuploadaccepted, distribution=ubuntu
