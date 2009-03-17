@@ -65,6 +65,8 @@ class IBranchNamespace(Interface):
     def isNameUsed(name):
         """Is 'name' already used in this namespace?"""
 
+    def getPrivacySubscriber():
+        """Get the implicit privacy subscriber for a new branch."""
 
 class IBranchNamespaceSet(Interface):
     """Interface for getting branch namespaces.

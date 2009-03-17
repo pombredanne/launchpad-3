@@ -24,6 +24,8 @@ from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, IBranchSet, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespace, InvalidNamespace)
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    BranchVisibilityRule)
 from canonical.launchpad.interfaces.distribution import (
     IDistributionSet, NoSuchDistribution)
 from canonical.launchpad.interfaces.distroseries import (
@@ -104,6 +106,10 @@ class _BaseNamespace:
     def isNameUsed(self, branch_name):
         return self.getByName(branch_name) is not None
 
+    def getPrivacySubscriber(self):
+        """See `IBranchNamespace`."""
+        return None
+
 
 class PersonalNamespace(_BaseNamespace):
     """A namespace for personal (or 'junk') branches.
@@ -147,6 +153,30 @@ class ProductNamespace(_BaseNamespace):
     def name(self):
         """See `IBranchNamespace`."""
         return '~%s/%s' % (self.owner.name, self.product.name)
+
+    def getPrivacySubscriber(self):
+        """See `IBranchNamespace`."""
+        # If there is a policy defined for the owner, then there is no privacy
+        # subscriber.
+        policy = self.product.getBranchVisibilityRuleForTeam(self.owner)
+        if policy is not None:
+            return None
+        policies = self.product.getBranchVisibilityTeamPolicies()
+        private = (
+            BranchVisibilityRule.PRIVATE,
+            BranchVisibilityRule.PRIVATE_ONLY)
+        subscriber = None
+        for policy in policies:
+            if self.owner.inTeam(policy.team) and policy.rule in private:
+                # If we haven't found a private rule yet, remember the team.
+                if subscriber is None:
+                    subscriber = policy.team
+                else:
+                    # If we have a subscriber already, we have just found a
+                    # second team that the owner is in, so there is no privacy
+                    # subscriber.
+                    return None
+        return subscriber
 
 
 class PackageNamespace(_BaseNamespace):

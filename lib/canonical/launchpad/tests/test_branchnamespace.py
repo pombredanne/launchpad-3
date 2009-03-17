@@ -17,6 +17,8 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespace, IBranchNamespaceSet,
     lookup_branch_namespace, InvalidNamespace)
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    BranchVisibilityRule)
 from canonical.launchpad.interfaces.distribution import NoSuchDistribution
 from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.person import NoSuchPerson
@@ -206,6 +208,18 @@ class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
 
 
+class TestPersonalNamespacePrivacy(TestCaseWithFactory):
+    """Tests for the privacy aspects of `PersonalNamespace`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_subscriber(self):
+        # There are no implicit subscribers for a personal namespace.
+        person = self.factory.makePerson()
+        namespace = PersonalNamespace(person)
+        self.assertIs(None, namespace.getPrivacySubscriber())
+
+
 class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
     """Tests for `ProductNamespace`."""
 
@@ -230,6 +244,70 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
         product = self.factory.makeProduct()
         namespace = ProductNamespace(person, product)
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
+
+
+class TestProductNamespacePrivacy(TestCaseWithFactory):
+    """Tests for the privacy aspects of `ProductNamespace`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_subscriber(self):
+        # If there is no privacy policy, then there is no privacy subscriber.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        namespace = ProductNamespace(person, product)
+        self.assertIs(None, namespace.getPrivacySubscriber())
+
+    def test_subscriber_private_team_personal_namespace(self):
+        # If there is a private policy for a team that the registrant is in,
+        # and the namespace owner is in that team, then the team is
+        # subscribed.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        namespace = ProductNamespace(person, product)
+        team = self.factory.makeTeam(owner=person)
+        product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        self.assertEqual(team, namespace.getPrivacySubscriber())
+
+    def test_subscriber_private_team_namespace(self):
+        # If there is a private policy for a namespace owner, then there is no
+        # privacy subscriber.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=person)
+        product = self.factory.makeProduct()
+        namespace = ProductNamespace(team, product)
+        product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        self.assertIs(None, namespace.getPrivacySubscriber())
+
+    def test_subscriber_personal_namespace_multiple_rules(self):
+        # If the namespace owner is a member of multiple teams that have
+        # private rules, there is no privacy subscriber.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        namespace = ProductNamespace(person, product)
+        product.setBranchVisibilityTeamPolicy(
+            self.factory.makeTeam(owner=person), BranchVisibilityRule.PRIVATE)
+        product.setBranchVisibilityTeamPolicy(
+            self.factory.makeTeam(owner=person), BranchVisibilityRule.PRIVATE)
+        self.assertIs(None, namespace.getPrivacySubscriber())
+
+    def test_subscriber_personal_namespace_diverse_rules(self):
+        # If the namespace owner is a member of multiple teams and only one of
+        # those rules is private, then the team that has the private rule is
+        # the subscriber.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        namespace = ProductNamespace(person, product)
+        product.setBranchVisibilityTeamPolicy(
+            self.factory.makeTeam(owner=person), BranchVisibilityRule.PUBLIC)
+        product.setBranchVisibilityTeamPolicy(
+            self.factory.makeTeam(owner=person), BranchVisibilityRule.PUBLIC)
+        team = self.factory.makeTeam(owner=person)
+        product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        self.assertEqual(team, namespace.getPrivacySubscriber())
 
 
 class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
@@ -265,6 +343,21 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
         namespace = PackageNamespace(
             person, SourcePackage(sourcepackagename, distroseries))
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
+
+
+class TestPackageNamespacePrivacy(TestCaseWithFactory):
+    """Tests for the privacy aspects of `PackageNamespace`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_subscriber(self):
+        # There are no implicit subscribers for a personal namespace.
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        namespace = PackageNamespace(
+            person, SourcePackage(sourcepackagename, distroseries))
+        self.assertIs(None, namespace.getPrivacySubscriber())
 
 
 class TestNamespaceSet(TestCaseWithFactory):
