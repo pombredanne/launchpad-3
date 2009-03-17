@@ -734,7 +734,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
-    permission="launchpad.Edit"
+    permission="zope.Public"
     name="+mailing-list-subscribers"
     template="../templates/team-mailinglist-subscribers.pt"
     />
