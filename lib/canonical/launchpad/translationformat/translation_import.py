@@ -372,16 +372,9 @@ class FileImporter(object):
         :return: The POTMsgSet instance, existing or new.
         """
         potmsgset = (
-            self.potemplate.getPOTMsgSetByMsgIDText(
+            self.potemplate.getOrCreateSharedPOTMsgSet(
                 message.msgid_singular, plural_text=message.msgid_plural,
                 context=message.context))
-        if potmsgset is None:
-            potmsgset = (
-                self.potemplate.createMessageSetFromText(
-                    message.msgid_singular, message.msgid_plural,
-                    context=message.context))
-            potmsgset.setSequence(self.potemplate, 0)
-
         return potmsgset
 
     def storeTranslationsInDatabase(self, message, potmsgset):

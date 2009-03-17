@@ -738,7 +738,7 @@ class POTemplate(SQLBase, RosettaStats):
         if potmsgset is None:
             potmsgset = self.createMessageSetFromText(
                 singular_text, plural_text, context)
-        potmsgset.setSequence(self, 0)
+            potmsgset.setSequence(self, 0)
         return potmsgset
 
     def importFromQueue(self, entry_to_import, logger=None, txn=None):
