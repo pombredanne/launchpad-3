@@ -1,0 +1,1 @@
+# lp.coop namespace package

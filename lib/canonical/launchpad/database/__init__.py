@@ -123,7 +123,7 @@ from canonical.launchpad.database.karma import *
 from canonical.launchpad.database.teammembership import *
 from canonical.launchpad.database.temporaryblobstorage import *
 from lp.apps.answers.database.question import *
-from lp.extensions.answersbugs.database import *
+from lp.coop.answersbugs.database import *
 from lp.apps.answers.database.questionmessage import *
 from lp.apps.answers.database.questionreopening import *
 from lp.apps.answers.database.questionsubscription import *

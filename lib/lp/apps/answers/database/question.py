@@ -55,7 +55,7 @@ from lp.apps.answers.database.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
-from lp.extensions.answersbugs.database import QuestionBug
+from lp.coop.answersbugs.database import QuestionBug
 from lp.apps.answers.database.questionmessage import QuestionMessage
 from lp.apps.answers.database.questionsubscription import (
     QuestionSubscription)

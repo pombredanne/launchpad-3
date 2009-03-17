@@ -182,7 +182,7 @@ from lp.apps.answers.interfaces.faq import *
 from lp.apps.answers.interfaces.faqcollection import *
 from lp.apps.answers.interfaces.faqtarget import *
 from lp.apps.answers.interfaces.question import *
-from lp.extensions.answersbugs.interfaces import *
+from lp.coop.answersbugs.interfaces import *
 from lp.apps.answers.interfaces.questioncollection import *
 from lp.apps.answers.interfaces.questionenums import *
 from lp.apps.answers.interfaces.questionmessage import *

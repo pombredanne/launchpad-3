@@ -13,7 +13,7 @@
   <include package="canonical.launchpad.xmlrpc" />
 
   <include package="lp.apps.answers" />
-  <include package="lp.extensions.answersbugs" />
+  <include package="lp.coop.answersbugs" />
 
   <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"
