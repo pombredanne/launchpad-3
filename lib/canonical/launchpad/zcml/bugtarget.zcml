@@ -77,6 +77,15 @@
         facet="bugs"
         permission="launchpad.AnyPerson" />
 
+    <browser:page
+        name="+manage-official-tags"
+        for="canonical.launchpad.interfaces.IOfficialBugTagTargetRestricted"
+        class="canonical.launchpad.browser.OfficialBugTagsManageView"
+        facet="bugs"
+        permission="launchpad.Edit"
+        template="../templates/official-bug-target-manage-tags.pt" />
+
+
   </facet>
 
   <!-- Macros -->
