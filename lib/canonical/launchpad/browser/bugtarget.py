@@ -1267,6 +1267,7 @@ class BugTargetBugTagsView(LaunchpadView):
 
     @property
     def show_manage_tags_link(self):
+        """Should a link to a "manage official tags" page be shown?"""
         return (IOfficialBugTagTargetRestricted.providedBy(self.context) and
                 check_permission('launchpad.Edit', self.context))
 
