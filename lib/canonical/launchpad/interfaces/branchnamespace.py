@@ -68,6 +68,16 @@ class IBranchNamespace(Interface):
     def getPrivacySubscriber():
         """Get the implicit privacy subscriber for a new branch."""
 
+    def canCreateBranches(user):
+        """Is the user allowed to create branches for this namespace?"""
+
+    def areNewBranchesPrivate():
+        """Are new branches by the user created private?
+
+        No check is made about whether or not a user can create branches.
+        """
+
+
 class IBranchNamespaceSet(Interface):
     """Interface for getting branch namespaces.
 

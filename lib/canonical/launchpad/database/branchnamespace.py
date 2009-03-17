@@ -185,6 +185,14 @@ class _BaseNamespace:
     def isNameUsed(self, branch_name):
         return self.getByName(branch_name) is not None
 
+    def canCreateBranches(self, user):
+        """See `IBranchNamespace`."""
+        return user.inTeam(self.owner)
+
+    def areNewBranchesPrivate(self):
+        """See `IBranchNamespace`."""
+        return False
+
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
         return None
@@ -243,10 +251,10 @@ class ProductNamespace(_BaseNamespace):
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
-        # If there is a policy defined for the owner, then there is no privacy
+        # If there is a rule defined for the owner, then there is no privacy
         # subscriber.
-        policy = self.product.getBranchVisibilityRuleForTeam(self.owner)
-        if policy is not None:
+        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
+        if rule is not None:
             return None
         policies = self.product.getBranchVisibilityTeamPolicies()
         private = (
@@ -264,6 +272,35 @@ class ProductNamespace(_BaseNamespace):
                     # subscriber.
                     return None
         return subscriber
+
+    def canCreateBranches(self, user):
+        """See `IBranchNamespace`."""
+        if not _BaseNamespace.canCreateBranches(self, user):
+            return False
+
+        policies = self.product.getBranchVisibilityTeamPolicies()
+        for policy in policies:
+            if user.inTeam(policy.team):
+                return True
+        base_rule = self.product.getBaseBranchVisibilityRule()
+        return base_rule == BranchVisibilityRule.PUBLIC
+
+    def areNewBranchesPrivate(self):
+        """See `IBranchNamespace`."""
+        # If there is a rule for the namespace owner, use that.
+        private = (
+            BranchVisibilityRule.PRIVATE,
+            BranchVisibilityRule.PRIVATE_ONLY)
+        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
+        if rule is not None:
+            return rule in private
+        # If the owner is a member of any team that has a PRIVATE or
+        # PRIVATE_ONLY rule, then the branches are private.
+        policies = self.product.getBranchVisibilityTeamPolicies()
+        for policy in policies:
+            if self.owner.inTeam(policy.team) and policy.rule in private:
+                return True
+        return False
 
 
 class PackageNamespace(_BaseNamespace):
