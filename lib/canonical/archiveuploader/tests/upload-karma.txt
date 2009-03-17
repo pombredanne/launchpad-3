@@ -86,3 +86,11 @@ will generate another different karma event for the uploader.
     >>> bar_ppa_src.process()
     >>> result = bar_ppa_src.do_accept()
     Karma added: action=ppauploadaccepted, distribution=ubuntu
+
+
+== Clean up ==
+
+Unregister the event listener to make sure we won't interfere in other tests.
+
+    >>> karma_helper.unregister_listener()
+
