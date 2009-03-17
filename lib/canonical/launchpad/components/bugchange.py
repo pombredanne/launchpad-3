@@ -108,7 +108,7 @@ class BugTitleChange(SimpleBugChangeMixin, BugChangeBase):
         return {'text': notification_text}
 
 
-class BugVisibilityChange(BugChangeBase):
+class BugVisibilityChange(SimpleBugChangeMixin, BugChangeBase):
     """Describes a change to a bug's visibility."""
 
     def _getVisibilityString(self, private):

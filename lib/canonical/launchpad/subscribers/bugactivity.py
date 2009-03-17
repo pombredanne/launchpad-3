@@ -20,7 +20,6 @@ vocabulary_registry = getVocabularyRegistry()
 BUG_INTERESTING_FIELDS = [
     'duplicateof',
     'name',
-    'private',
     'security_related',
     'tags',
     ]
@@ -115,11 +114,6 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
                 whatchanged = 'changed duplicate marker'
             elif oldvalue is not None and newvalue is None:
                 whatchanged = 'removed duplicate marker'
-        elif changed_field == 'private':
-            whatchanged = 'privacy'
-            privacy_values = {'True': 'private', 'False': 'public'}
-            oldvalue = privacy_values[oldvalue]
-            newvalue = privacy_values[newvalue]
         elif changed_field == 'security_related':
             whatchanged = 'security'
             security_values = {
