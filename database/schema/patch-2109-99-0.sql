@@ -35,6 +35,8 @@ ALTER TABLE potmsgset ALTER COLUMN sequence DROP NOT NULL;
 -- Also provides for shared (potemplate IS NULL) and
 -- diverged (potemplate IS NOT NULL).
 
+ALTER TABLE translationmessage ALTER COLUMN pofile DROP NOT NULL;
+
 DROP INDEX translationmessage__pofile__potmsgset__msgstrs__key;
 CREATE UNIQUE INDEX translationmessage__language__variant__potmsgset__shared__msgstrs__key ON translationmessage USING btree (language, variant, potmsgset, (COALESCE(msgstr0, -1)), (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)), (COALESCE(msgstr3, -1)), (COALESCE(msgstr4, -1)), (COALESCE(msgstr5, -1))) WHERE (potemplate IS NULL);
 CREATE UNIQUE INDEX translationmessage__language__variant__potmsgset__diverged__msgstrs__key ON translationmessage USING btree (language, variant, potmsgset, (COALESCE(msgstr0, -1)), (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)), (COALESCE(msgstr3, -1)), (COALESCE(msgstr4, -1)), (COALESCE(msgstr5, -1))) WHERE (potemplate IS NOT NULL);
