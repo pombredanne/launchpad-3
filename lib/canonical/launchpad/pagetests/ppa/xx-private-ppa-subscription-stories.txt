@@ -148,7 +148,8 @@ and clicks Update
 
     >>> cprov_browser.getLink(
     ...     url='/~cprov/+archive/ppa/+subscriptions/launchpad/+edit').click()
-    >>> cprov_browser.getControl(name="field.description").value = "a different description"
+    >>> cprov_browser.getControl(name="field.description").value = (
+    ...     "a different description")
     >>> cprov_browser.getControl(name="field.actions.update").click()
 
 Then the browser is redirected back to the subscriptions page
