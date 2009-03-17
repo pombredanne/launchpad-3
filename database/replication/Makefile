@@ -20,30 +20,42 @@ start:
 	./slon_ctl.py --lag="${LAG}" start
 
 stop:
-	-./slon_ctl.py stop
+	./slon_ctl.py stop
 
 restart: stop start
 
 devsetup:
 	make _prelim _CONFIG=${DEV_CONFIG} \
-	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave
+	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave LAG="0 seconds"
+	
 	# Build the master database
 	LPCONFIG=${DEV_CONFIG} make -C ../schema
+	
 	# Replicate it
 	make _replicate _CONFIG=${DEV_CONFIG} \
 	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave LAG="0 seconds"
+	
+	# Replicate it again, so we can test with multiple slaves.
+	-${PGMASSACRE} launchpad_dev_slave2
+	createdb --encoding=UTF8 launchpad_dev_slave2
+	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py start \
+		 node3_node 'dbname=launchpad_dev_slave2 user=slony'
+	LPCONFIG=${DEV_CONFIG} ./new-slave.py 3 launchpad_dev_slave2
+	LPCONFIG=${DEV_CONFIG} ../schema/security.py -d launchpad_dev_slave2
+	
+	# Regenerate the preamble for manual slonik(1) usage.
+	LPCONFIG=${DEV_CONFIG} ./preamble.py > preamble.sk
 
-	# Add a new slave to the existant cluster
-	##LPCONFIG=${DEV_CONFIG} ./new-slave.py "dbname=launchpad_dev_slave2"
-	# Regenerate our preamble for the new slave
-	##LPCONFIG=${DEV_CONFIG} ./preamble.py > preamble.sk
-	# Restart slon daemons with lag setting
-	##LPCONFIG=${DEV_CONFIG} make restart LAG="${LAG}"
+	# Restart slon daemons with default lag setting.
+	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py stop
+	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py --lag="${LAG}" start
+
 
 # Build _new staging databases from a production dump.
 stagingsetup:
 	make _prelim _CONFIG=${NEW_STAGING_CONFIG} \
-	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new
+	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
+	    LAG="0 seconds"
 	# Create the DB with the desired default tablespace.
 	createdb --encoding UTF8 --tablespace ${STAGING_TABLESPACE} \
 	    lpmain_staging_new
@@ -76,11 +88,11 @@ stagingsetup:
 # Switch the _new staging databases into place.
 stagingswitch:
 	# Stop Slony-I daemons - don't confuse the poor darlings.
-	make stop LPCONFIG=${NEW_STAGING_CONFIG}
-	make stop LPCONFIG=${STAGING_CONFIG}
+	LPCONFIG=${NEW_STAGING_CONFIG} ./slon_ctl.py stop
+	LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py stop
 	# Kill the existing staging database if it exists.
-	${PGMASSACRE} lpmain_staging
-	${PGMASSACRE} lpmain_staging_slave
+	-${PGMASSACRE} lpmain_staging
+	-${PGMASSACRE} lpmain_staging_slave
 	# Rename the newly build staging databases.
 	psql -d template1 -c \
 	    "ALTER DATABASE lpmain_staging_new RENAME TO lpmain_staging;"
@@ -99,13 +111,13 @@ stagingswitch:
 	    server = @slave1_node, client=@master_node,	\
 	    conninfo=@slave1_conninfo);			\
 	" | slonik
-	make start LPCONFIG=${STAGING_CONFIG}
+	LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py --lag="${LAG}" start
 
 _prelim:
 	# Create the slony PostgreSQL superuser if necessary.
 	-createuser --superuser slony
 	# Stop the slon daemons and wait a bit for connections to drop.
-	LPCONFIG=${_CONFIG} make stop
+	LPCONFIG=${_CONFIG} ./slon_ctl.py stop
 	sleep 5
 	# Drop any existing databases if they exist
 	${PGMASSACRE} ${_MASTER}
@@ -134,7 +146,8 @@ _replicate:
 	LPCONFIG=${_CONFIG} ../schema/security.py --cluster
 	
 	# Restart slon daemons with default lag setting.
-	LPCONFIG=${_CONFIG} make restart LAG="${LAG}"
+	LPCONFIG=${_CONFIG} ./slon_ctl.py stop
+	LPCONFIG=${_CONFIG} ./slon_ctl.py --lag="${LAG}" start
 
 	# Generate a preamble for manual slonik(1) usage.
 	LPCONFIG=${_CONFIG} ./preamble.py > preamble.sk
