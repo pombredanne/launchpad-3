@@ -116,8 +116,6 @@ class ExistingPOFileInDatabase:
             "pt%d.translation AS translation%d" % (form, form)
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
 
-        return
-
         sql = '''
         SELECT
             POMsgId.msgid AS msgid,
@@ -146,7 +144,7 @@ class ExistingPOFileInDatabase:
                 is_current or is_imported
           ORDER BY
             TranslationTemplateItem.sequence,
-            COALESCE(TranslationMessage.potemplate, -1)
+            TranslationMessage.potemplate NULLS LAST
           ''' % (','.join(translations), '\n'.join(msgstr_joins),
                  quote(self.pofile))
         cur = cursor()
@@ -183,7 +181,7 @@ class ExistingPOFileInDatabase:
 
                 for plural in range(TranslationConstants.MAX_PLURAL_FORMS):
                     local_vars = locals()
-                    msgstr = getattr(local_vars, 'msgstr' + plural, None)
+                    msgstr = getattr(local_vars, 'msgstr' + str(plural), None)
                     if (msgstr is not None and
                         ((len(message.translations) > plural and
                           message.translations[plural] is None) or
@@ -744,10 +742,11 @@ class POFileImporter(FileImporter):
             (msgid, plural, context) = unseen_message
             potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
                 msgid, plural_text=plural, context=context)
-            previous_imported_message = (
-                potmsgset.getImportedTranslationMessage(
+            if potmsgset is not None:
+                previous_imported_message = (
+                    potmsgset.getImportedTranslationMessage(
                     self.potemplate, self.pofile.language))
-            if previous_imported_message is not None:
-                # The message was not imported this time, it therefore looses
-                # its imported status.
-                previous_imported_message.is_imported = False
+                if previous_imported_message is not None:
+                    # The message was not imported this time, it
+                    # therefore looses its imported status.
+                    previous_imported_message.is_imported = False
