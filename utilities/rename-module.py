@@ -33,8 +33,9 @@ def file2module(module_file):
     """From a filename, return the python module name."""
     start_path = 'lib' + os.path.sep
     assert module_file.startswith(start_path), "File should start with lib"
-    assert module_file.endswith('.py'), "File should end with .py"
-    return module_file[len(start_path):-3].replace(os.path.sep, '.')
+    if module_file.endswith('.py'):
+        module_file = module_file[:-3]
+    return module_file[len(start_path):].replace(os.path.sep, '.')
 
 
 def rename_module(src_file, target_file):
@@ -49,8 +50,8 @@ def rename_module(src_file, target_file):
     # Find the files to update.
     src_module = file2module(src_file)
     p = subprocess.Popen([
-        'egrep', '-rl', '--exclude', '*.pyc', 'from %s import|import %s' %
-        (src_module, src_module), 'lib'], stdout=subprocess.PIPE)
+        'egrep', '-rl', '--exclude', '*.pyc', '%s' % src_module, 'lib'],
+        stdout=subprocess.PIPE)
     files = [f.strip() for f in p.stdout.readlines()]
     p.wait()
     # grep fails if it didn't find anything to update. So ignore return code.
@@ -62,11 +63,8 @@ def rename_module(src_file, target_file):
     for f in files:
         # YES! Perl
         cmdline = [
-            'perl', '-i', '-pe', 
-            's/from %s import/from %s import/g;' % (
-                src_module_re, target_module_re),
-            '-e',
-            's/import %s/import %s/g;' % (src_module_re, target_module_re),
+            'perl', '-i', '-pe',
+            's/%s\\b/%s/g;' % (src_module_re, target_module_re),
             f]
         p = subprocess.Popen(cmdline)
         rv = p.wait()
@@ -96,8 +94,9 @@ def main():
         if not src_file.startswith('lib'):
             log('Source file "%s" must be under lib. Skipping' % src_file)
             continue
-        if not src_file.endswith('.py'):
-            log('Source file "%s" should end with .py. Skipping' % src_file)
+        if not (src_file.endswith('.py') or os.path.isdir(src_file)):
+            log('Source file "%s" should end with .py or be a directory. '
+                'Skipping' % src_file)
             continue
 
         if os.path.isdir(target):
