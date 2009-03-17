@@ -191,6 +191,24 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
         self.assertEquals(potmsgset_context.msgid_singular, msgid_singular)
         self.assertEquals(potmsgset_context.context, msgid_context)
 
+    def test_getOrCreateSharedPOTMsgSet(self):
+        # Let's create a new POTMsgSet.
+        singular_text = self.factory.getUniqueString()
+        potmsgset = self.devel_potemplate.getOrCreateSharedPOTMsgSet(
+            singular_text, None)
+
+        # If we try to add a POTMsgSet with identical strings,
+        # we get back the existing one.
+        same_potmsgset = self.devel_potemplate.getOrCreateSharedPOTMsgSet(
+            singular_text, None)
+        self.assertEquals(potmsgset, same_potmsgset)
+
+        # And even if we do it in the shared template, existing
+        # POTMsgSet is returned.
+        shared_potmsgset = self.stable_potemplate.getOrCreateSharedPOTMsgSet(
+            singular_text, None)
+        self.assertEquals(potmsgset, shared_potmsgset)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
