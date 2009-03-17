@@ -139,8 +139,43 @@ class BugVisibilityChange(BugChangeBase):
         return {'text': "** Visibility changed to: %s" % visibility_string}
 
 
+class BugSecurityChange(BugChangeBase):
+    """Describes a change to a bug's security setting."""
+
+    activity_mapping = {
+        (False, True): ('no', 'yes'),
+        (True, False): ('yes', 'no'),
+        }
+
+    notification_mapping = {
+        (False, True):
+            u"** This bug has been flagged as a security issue",
+        (True, False):
+            u"** This bug is no longer flagged as a security issue",
+        }
+
+    def getBugActivity(self):
+        # Use _getVisibilityString() to set old and new values
+        # correctly. We lowercase them for UI consistency in the
+        # activity log.
+        old_value, new_value = self.activity_mapping[
+            self.old_value, self.new_value]
+        return {
+           'oldvalue': old_value,
+           'newvalue': new_value,
+           'whatchanged': 'security issue',
+           }
+
+    def getBugNotification(self):
+        return {
+            'text': self.notification_mapping[
+                self.old_value, self.new_value]
+            }
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
+    'security': BugSecurityChange,
     'title': BugTitleChange,
     }
