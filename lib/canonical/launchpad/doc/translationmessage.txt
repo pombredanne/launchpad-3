@@ -85,9 +85,9 @@ a default of 2, which is the most common number of plural forms:
     2
 
 
-== is_hidden ==
+== isHidden ==
 
-This property tells if a TranslationMessage is actually shown in the
+This method tells if a TranslationMessage is actually shown in the
 web translation interface or not.
 
 We have to commit transaction for every message update so we end up
@@ -132,7 +132,7 @@ hidden.
     ...     pofile_sr, nopriv, {0: u'suggestion'},
     ...     is_imported=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
-    >>> new_suggestion.is_hidden
+    >>> new_suggestion.isHidden(pofile_sr)
     False
 
 'foobar' is a privileged translator that will do the updates.
@@ -145,12 +145,12 @@ An imported translation is not hidden when submitted.
     ...     pofile_sr, foobar, {0: u'foo'},
     ...     is_imported=True, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
-    >>> imported_translation.is_hidden
+    >>> imported_translation.isHidden(pofile_sr)
     False
 
 A previous suggestion is now hidden.
 
-    >>> new_suggestion.is_hidden
+    >>> new_suggestion.isHidden(pofile_sr)
     True
 
 A newly submitted non-imported translation is not hidden either.
@@ -159,12 +159,12 @@ A newly submitted non-imported translation is not hidden either.
     ...     pofile_sr, foobar, {0: u'bar'},
     ...     is_imported=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
-    >>> current_translation.is_hidden
+    >>> current_translation.isHidden(pofile_sr)
     False
 
 However, previous imported translation is not hidden yet.
 
-    >>> imported_translation.is_hidden
+    >>> imported_translation.isHidden(pofile_sr)
     False
 
 If a new current translation is submitted, the old one is hidden.
@@ -173,14 +173,14 @@ If a new current translation is submitted, the old one is hidden.
     ...     pofile_sr, foobar, {0: u'new'},
     ...     is_imported=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
-    >>> new_current_translation.is_hidden
+    >>> new_current_translation.isHidden(pofile_sr)
     False
-    >>> current_translation.is_hidden
+    >>> current_translation.isHidden(pofile_sr)
     True
 
-    >>> new_current_translation.is_hidden
+    >>> new_current_translation.isHidden(pofile_sr)
     False
-    >>> imported_translation.is_hidden
+    >>> imported_translation.isHidden(pofile_sr)
     False
 
 If a non-privileged user submits another suggestion, it's not hidden,
@@ -193,9 +193,9 @@ and last current translation is not hidden either.
     ...     pofile_sr, nopriv, {0: u'another suggestion'},
     ...     is_imported=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
-    >>> another_suggestion.is_hidden
+    >>> another_suggestion.isHidden(pofile_sr)
     False
-    >>> new_current_translation.is_hidden
+    >>> new_current_translation.isHidden(pofile_sr)
     False
 
 == translations & all_msgstrs ==
