@@ -328,11 +328,9 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         token1 = self.ppa.newAuthToken(name12)
         token2 = self.ppa.newAuthToken(name16)
         self.layer.txn.commit()
-        subs = []
-        subs.append(sub1)
+        subs = [sub1]
         subs.append(sub2)
-        tokens = []
-        tokens.append(token1)
+        tokens = [token1]
         tokens.append(token2)
         return subs, tokens
 
