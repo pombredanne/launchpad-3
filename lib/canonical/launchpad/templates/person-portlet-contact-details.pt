@@ -70,13 +70,6 @@
           </td>
         </tr>
 
-        <tr tal:condition="view/team_has_mailing_list">
-            <th>Mailing&nbsp;list:</th>
-            <td id="mailing-list-posting-address">
-                <tal:email replace="context/mailing_list/address"
-                >team@example.com</tal:email></td>
-        </tr>
-
         <tr tal:condition="context/icon">
           <th>Icon:</th>
           <td><tal:icon replace="structure context/image:icon" /></td>
