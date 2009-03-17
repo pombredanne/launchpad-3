@@ -18,7 +18,44 @@
       <div metal:use-macro="context/@@launchpad_form/form" />
 
     </noscript>
-  </div>
+    <script type="text/javascript"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/bugs/offical_bug_tags.js">
+    </script>
+    <script tal:replace="structure view/tags_js_data" />
+    <script type="text/javascript">
+        YUI().use('event', 'bugs.official_bug_tag_management', function(Y) {
+            Y.on('domready', function(e) {
+                Y.bugs.setup_official_bug_tag_management();
+            });
+        });
+    </script>
+
+    <table id="layout-table" style="display:none">
+      <tr>
+        <th>Official Tags</th>
+        <th />
+        <th>Other Tags</th>
+      </tr>
+      <tr>
+        <td id="left-column">
+          <input type="text" id="new-tag-text" />
+          <a href="#" id="new-tag-add"><img src="/@@/add" /></a>
+          <ul id="official-tags-list">
+          </ul>
+        </td>
+        <td id="middle-column">
+          <a href="#" id="add-official-tag">&lt;--</a>
+          <br />
+          <a href="#" id="remove-official-tag">--&gt;</a>
+        </td>
+        <td id="right-column">
+          <ul id="other-tags-list">
+          </ul>
+        </td>
+      </tr>
+    </table>
+ </div>
 
   </body>
 </html>

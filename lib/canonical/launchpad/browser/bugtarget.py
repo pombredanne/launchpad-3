@@ -21,6 +21,7 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from email import message_from_string
+from simplejson import dumps
 import tempfile
 import urllib
 
@@ -1283,3 +1284,15 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         """Action for saving new official bug tags."""
         self.context.official_bug_tags = data['official_bug_tags']
         self.next_url = canonical_url(self.context)
+
+    @property
+    def tags_js_data(self):
+        """Return the JSON representation of the bug tags."""
+        used_tags = dumps(
+            dict(self.context.getUsedBugTagsWithOpenCounts(self.user)))
+        official_tags = dumps(list(self.context.official_bug_tags))
+        return """<script type="text/javascript">
+                      var used_bug_tags = %s;
+                      var official_bug_tags = %s;
+                  </script>
+               """ % (used_tags, official_tags)
