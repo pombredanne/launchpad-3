@@ -25,8 +25,6 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
-from lazr.lifecycle.event import ObjectCreatedEvent
-
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -47,7 +45,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import (
     BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
-    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
     BranchType, BranchTypeError, CannotDeleteBranch, ControlFormat,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
@@ -61,9 +59,6 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
-from canonical.launchpad.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
@@ -1014,67 +1009,19 @@ class BranchSet:
             distroseries=None, sourcepackagename=None,
             merge_control_status=BranchMergeControlStatus.NO_QUEUE):
         """See `IBranchSet`."""
-        if date_created is None:
-            date_created = UTC_NOW
-
-        # Check the policy for the person creating the branch.
-        private, implicit_subscription = self._checkVisibilityPolicy(
-            registrant, owner, product)
-
-        # Not all code paths that lead to branch creation go via a
-        # schema-validated form (e.g. the register_branch XML-RPC call or
-        # pushing a new branch to codehosting), so we validate the branch name
-        # here to give a nicer error message than 'ERROR: new row for relation
-        # "branch" violates check constraint "valid_name"...'.
-        IBranch['name'].validate(unicode(name))
-
-        # Run any necessary data massage on the branch URL.
-        if url is not None:
-            url = IBranch['url'].normalize(url)
-
         # Make sure that the new branch has a unique name if not a junk
         # branch.
         namespace = get_branch_namespace(
             owner, product=product, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
-        existing_branch = namespace.getByName(name)
-        if existing_branch is not None:
-            raise BranchExists(existing_branch)
-
-        branch = Branch(
-            registrant=registrant,
-            name=name, owner=owner, product=product, url=url,
-            title=title, lifecycle_status=lifecycle_status, summary=summary,
-            whiteboard=whiteboard, private=private,
-            date_created=date_created, branch_type=branch_type,
-            date_last_modified=date_created, branch_format=branch_format,
-            repository_format=repository_format,
-            control_format=control_format, distroseries=distroseries,
-            sourcepackagename=sourcepackagename,
-            merge_control_status=merge_control_status)
-
-        # Implicit subscriptions are to enable teams to see private branches
-        # as soon as they are created.  The subscriptions can be edited at
-        # a later date if desired.
-        if implicit_subscription is not None:
-            branch.subscribe(
-                implicit_subscription,
-                BranchSubscriptionNotificationLevel.NOEMAIL,
-                BranchSubscriptionDiffSize.NODIFF,
-                CodeReviewNotificationLevel.NOEMAIL)
-
-        # The owner of the branch should also be automatically subscribed
-        # in order for them to get code review notifications.  The implicit
-        # owner subscription does not cause email to be sent about attribute
-        # changes, just merge proposals and code review comments.
-        branch.subscribe(
-            branch.owner,
-            BranchSubscriptionNotificationLevel.NOEMAIL,
-            BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.FULL)
-
-        notify(ObjectCreatedEvent(branch))
-        return branch
+        return namespace.createBranch(
+            branch_type=branch_type, name=name, registrant=registrant,
+            url=url, title=title, lifecycle_status=lifecycle_status,
+            summary=summary, whiteboard=whiteboard, date_created=date_created,
+            branch_format=branch_format, repository_format=repository_format,
+            control_format=control_format,
+            merge_control_status=merge_control_status,
+            )
 
     @staticmethod
     def URIToUniqueName(uri):
