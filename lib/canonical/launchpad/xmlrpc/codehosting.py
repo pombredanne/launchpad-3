@@ -25,6 +25,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.branch import (
     BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
 from canonical.launchpad.interfaces.codehosting import (
@@ -94,7 +95,7 @@ class BranchPuller(LaunchpadXMLRPCView):
 
     def mirrorComplete(self, branch_id, last_revision_id):
         """See `IBranchPuller`."""
-        branch = getUtility(IBranchSet).get(branch_id)
+        branch = getUtility(IBranchLookup).get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         # See comment in startMirroring.
@@ -107,7 +108,7 @@ class BranchPuller(LaunchpadXMLRPCView):
 
     def mirrorFailed(self, branch_id, reason):
         """See `IBranchPuller`."""
-        branch = getUtility(IBranchSet).get(branch_id)
+        branch = getUtility(IBranchLookup).get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         # See comment in startMirroring.
@@ -125,7 +126,7 @@ class BranchPuller(LaunchpadXMLRPCView):
 
     def startMirroring(self, branch_id):
         """See `IBranchPuller`."""
-        branch = getUtility(IBranchSet).get(branch_id)
+        branch = getUtility(IBranchLookup).get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         # The puller runs as no user and may pull private branches. We need to
@@ -138,7 +139,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         # We don't want the security proxy on the branch set because this
         # method should be able to see all branches and set stacking
         # information on any of them.
-        branch_set = removeSecurityProxy(getUtility(IBranchSet))
+        branch_set = removeSecurityProxy(getUtility(IBranchLookup))
         if stacked_on_location == '':
             stacked_on_branch = None
         else:
@@ -249,7 +250,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
     def requestMirror(self, login_id, branchID):
         """See `IBranchFileSystem`."""
         def request_mirror(requester):
-            branch = getUtility(IBranchSet).get(branchID)
+            branch = getUtility(IBranchLookup).get(branchID)
             # We don't really care who requests a mirror of a branch.
             branch.requestMirror()
             return True
@@ -303,7 +304,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             stripped_path = path.strip('/')
             for first, second in iter_split(stripped_path, '/'):
                 # Is it a branch?
-                branch = getUtility(IBranchSet).getByUniqueName(
+                branch = getUtility(IBranchLookup).getByUniqueName(
                     unescape(first).encode('utf-8'))
                 if branch is not None:
                     branch = self._serializeBranch(requester, branch, second)

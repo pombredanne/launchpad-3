@@ -18,8 +18,9 @@ from zope.interface import Interface, implements
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
-    IBranchSet, IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
+    IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import NoSuchBranch
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -83,7 +84,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         # slashes from the end of the URL.
         branch_url = branch_url.rstrip('/')
 
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         existing_branch = branch_set.getByUrl(branch_url)
         if existing_branch is not None:
             return faults.BranchAlreadyRegistered(branch_url)
@@ -126,7 +127,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
     def link_branch_to_bug(self, branch_url, bug_id, whiteboard):
         """See IBranchSetAPI."""
-        branch = getUtility(IBranchSet).getByUrl(url=branch_url)
+        branch = getUtility(IBranchLookup).getByUrl(url=branch_url)
         if branch is None:
             return faults.NoSuchBranch(branch_url)
         try:
@@ -210,7 +211,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         strip_path = path.strip('/')
         if strip_path == '':
             return faults.InvalidBranchIdentifier(path)
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         try:
             branch, suffix, series = branch_set.getByLPPath(strip_path)
             # XXX: Manually checking the permission kind of blows.

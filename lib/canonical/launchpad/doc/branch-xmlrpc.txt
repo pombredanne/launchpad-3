@@ -19,9 +19,9 @@ register_branch(branch_url, branch_name, branch_title,
 Let's register a branch using register_branch(). First we make sure that
 there is no branch with the URL we are going to register.
 
-    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
     >>> branch_url = 'http://foo.com/branch'
-    >>> getUtility(IBranchSet).getByUrl(branch_url) is None
+    >>> getUtility(IBranchLookup).getByUrl(branch_url) is None
     True
 
 The only thing that we have to supply is the branch url. The rest is
@@ -36,7 +36,7 @@ authenticated user as the owner of the branch.
 
 Now we can see that a branch got registered:
 
-    >>> new_branch = getUtility(IBranchSet).getByUrl(branch_url)
+    >>> new_branch = getUtility(IBranchLookup).getByUrl(branch_url)
 
 The author_email is now ignored as the author attribute has been
 removed from the branch object.
@@ -79,7 +79,7 @@ well:
     ...      'branch description', 'test@canonical.com', 'evolution')
     'http://code.launchpad.dev/~name16/evolution/branch_name'
 
-    >>> new_branch = getUtility(IBranchSet).getByUrl(other_branch_url)
+    >>> new_branch = getUtility(IBranchLookup).getByUrl(other_branch_url)
     >>> print new_branch.owner.displayname
     Foo Bar
 
@@ -178,7 +178,7 @@ gets removed from the stored URL:
     ...     'branch_description', 'test@canonical.com', 'evolution')
     'http://code.launchpad.dev/~name16/evolution/new_branch'
 
-    >>> new_branch = getUtility(IBranchSet).getByUrl(new_branch_url)
+    >>> new_branch = getUtility(IBranchLookup).getByUrl(new_branch_url)
     >>> print new_branch.url
     http://foo.com/new_branch
     >>> print new_branch.owner.name
@@ -191,7 +191,7 @@ gets removed from the stored URL:
 
 If we try to register a branch which is already registered in Launchpad:
 
-    >>> getUtility(IBranchSet).getByUrl(other_branch_url) is not None
+    >>> getUtility(IBranchLookup).getByUrl(other_branch_url) is not None
     True
     >>> branchset_api.register_branch(
     ...      other_branch_url, 'branch_name', 'branch_title',
@@ -452,6 +452,7 @@ not hosted on Launchpad and are only available (if at all) on remote
 sites. For these branches, resolve_lp_path returns only a single URL.
 
     >>> from canonical.launchpad.interfaces import (BranchType, IPersonSet)
+    >>> from canonical.launchpad.interfaces.branch import IBranchSet
     >>> arbitrary_person = getUtility(IPersonSet).getByName('name12')
     >>> getUtility(IBranchSet).new(
     ...     BranchType.REMOTE, 'remote', arbitrary_person, arbitrary_person,

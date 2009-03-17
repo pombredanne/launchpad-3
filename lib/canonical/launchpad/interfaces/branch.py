@@ -80,6 +80,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
@@ -539,7 +540,7 @@ class BranchURIField(URIField):
                 "URLs for branches cannot point to the root of a site.")
             raise LaunchpadValidationError(message)
 
-        branch = getUtility(IBranchSet).getByUrl(str(uri))
+        branch = getUtility(IBranchLookup).getByUrl(str(uri))
         if branch is not None:
             message = _(
                 'The bzr branch <a href="${url}">${branch}</a> is '
@@ -1152,12 +1153,6 @@ class IBranchSet(Interface):
         Only counts public branches.
         """
 
-    def get(branch_id, default=None):
-        """Return the branch with the given id.
-
-        Return the default value if there is no such branch.
-        """
-
     def new(branch_type, name, registrant, owner, product=None, url=None,
             title=None,
             lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
@@ -1171,48 +1166,6 @@ class IBranchSet(Interface):
         If product, distroseries and sourcepackagename are None (indicating a
         +junk branch) then the owner must not be a team, except for the
         special case of the ~vcs-imports celebrity.
-        """
-
-    # XXX: Split these four methods off to a different utility.
-    def getByUniqueName(unique_name):
-        """Find a branch by its ~owner/product/name unique name.
-
-        Return None if no match was found.
-        """
-
-    def uriToUniqueName(uri):
-        """Return the unique name for the URI, if the URI is on codehosting.
-
-        This does not ensure that the unique name is valid.  It recognizes the
-        codehosting URIs of remote branches and mirrors, but not their
-        remote URIs.
-
-        :param uri: An instance of lazr.uri.URI
-        :return: The unique name if possible, None if the URI is not a valid
-            codehosting URI.
-        """
-
-    def getByUrl(url, default=None):
-        """Find a branch by URL.
-
-        Either from the external specified in Branch.url, from the URL on
-        http://bazaar.launchpad.net/ or the lp: URL.
-
-        Return the default value if no match was found.
-        """
-
-    def getByLPPath(path):
-        """Find the branch associated with an lp: path.
-
-        Recognized formats:
-        "~owner/product/name" (same as unique name)
-        "product/series" (branch associated with a product series)
-        "product" (development focus of product)
-
-        :return: a tuple of `IBranch`, extra_path, series.  Series is the
-            series, if any, used to perform the lookup.
-        :raises: `BranchNotFound`, `NoBranchForSeries`, and other subclasses
-            of `LaunchpadFault`.
         """
 
     def getBranchesToScan():

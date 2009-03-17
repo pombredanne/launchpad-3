@@ -8,11 +8,12 @@ Imports used later in the document:
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
     ...     BranchType, BranchFormat, RepositoryFormat, IBranchSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 
 Modifying/creating test data for this test case.
 
     >>> login('foo.bar@canonical.com')
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/+junk/junk.dev')
     >>> factory.makeRevisionsForBranch(branch, count=5)
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
@@ -344,10 +345,10 @@ The download URL is only shown for branches that actually have revisions.
 So we need to fake that here.
 
     >>> login('foo.bar@canonical.com')
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~landscape-developers/landscape/trunk')
     >>> branch.revision_count = 42
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/gnome-terminal/scanned')
     >>> branch.revision_count = 13
     >>> flush_database_updates()

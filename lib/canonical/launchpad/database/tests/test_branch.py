@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces import (
     InvalidBranchMergeProposal, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.person import NoSuchPerson
@@ -295,13 +296,13 @@ class TestBranch(TestCaseWithFactory):
 
 
 class TestGetByUniqueName(TestCaseWithFactory):
-    """Tests for `IBranchSet.getByUniqueName`."""
+    """Tests for `IBranchLookup.getByUniqueName`."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.branch_set = getUtility(IBranchSet)
+        self.branch_set = getUtility(IBranchLookup)
 
     def test_not_found(self):
         unused_name = self.factory.getUniqueString()
@@ -325,13 +326,14 @@ class TestGetByUniqueName(TestCaseWithFactory):
 
 
 class TestGetByPath(TestCaseWithFactory):
-    """Test `IBranchSet._getByPath`."""
+    """Test `IBranchLookup._getByPath`."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self._unsafe_branch_set = removeSecurityProxy(getUtility(IBranchSet))
+        self._unsafe_branch_set = removeSecurityProxy(
+            getUtility(IBranchLookup))
 
     def getByPath(self, path):
         return self._unsafe_branch_set._getByPath(path)
@@ -453,7 +455,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self, 'test@canonical.com')
         self.product = ProductSet().getByName('firefox')
         self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        self.branch_set = BranchSet()
         self.branch = BranchSet().new(
             BranchType.HOSTED, 'to-delete', self.user, self.user,
             self.product, None, 'A branch to delete')
@@ -471,7 +472,7 @@ class TestBranchDeletion(TestCaseWithFactory):
                          "A newly created branch should be able to be "
                          "deleted.")
         branch_id = self.branch.id
-        branch_set = BranchSet()
+        branch_set = getUtility(IBranchLookup)
         self.branch.destroySelf()
         self.assert_(branch_set.get(branch_id) is None,
                      "The branch has not been deleted.")
@@ -554,7 +555,8 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.branch.destroySelf()
         # Commit again to trigger the deferred indices.
         transaction.commit()
-        self.assertEqual(BranchSet().getByUniqueName(unique_name), None,
+        branch_lookup = getUtility(IBranchLookup)
+        self.assertEqual(branch_lookup.getByUniqueName(unique_name), None,
                          "Branch was not deleted.")
 
     def test_landingTargetDisablesDeletion(self):
@@ -1249,14 +1251,14 @@ class TestGetByUrl(TestCaseWithFactory):
     def test_getByUrl_with_http(self):
         """getByUrl recognizes LP branches for http URLs."""
         branch = self.makeProductBranch()
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         branch2 = branch_set.getByUrl('http://bazaar.launchpad.dev/~aa/b/c')
         self.assertEqual(branch, branch2)
 
     def test_getByUrl_with_ssh(self):
         """getByUrl recognizes LP branches for bzr+ssh URLs."""
         branch = self.makeProductBranch()
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         branch2 = branch_set.getByUrl(
             'bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
         self.assertEqual(branch, branch2)
@@ -1264,7 +1266,7 @@ class TestGetByUrl(TestCaseWithFactory):
     def test_getByUrl_with_sftp(self):
         """getByUrl recognizes LP branches for sftp URLs."""
         branch = self.makeProductBranch()
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         branch2 = branch_set.getByUrl('sftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertEqual(branch, branch2)
 
@@ -1274,13 +1276,13 @@ class TestGetByUrl(TestCaseWithFactory):
         This is because Launchpad doesn't currently support ftp.
         """
         branch = self.makeProductBranch()
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertIs(None, branch2)
 
     def test_getByURL_with_lp_prefix(self):
         """lp: URLs for the configured prefix are supported."""
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
         self.assertRaises(NoSuchPerson, branch_set.getByUrl, url)
         owner = self.factory.makePerson(name='aa')
@@ -1294,7 +1296,7 @@ class TestGetByUrl(TestCaseWithFactory):
 
     def test_getByURL_for_production(self):
         """test_getByURL works with production values."""
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         branch = self.makeProductBranch()
         self.pushConfig('codehosting', lp_url_hosts='edge,production,,')
         branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
@@ -1315,7 +1317,7 @@ class TestGetByUrl(TestCaseWithFactory):
         be handled. If any other URL gets passed the returned will be
         None.
         """
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         uri = URI(config.codehosting.supermirror_root)
         uri.path = '/~foo/bar/baz'
         # Test valid schemes
@@ -1346,7 +1348,7 @@ class TestGetByLPPath(TestCaseWithFactory):
 
     def test_getByLPPath_with_three_parts(self):
         """Test the behaviour with three-part names."""
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         self.assertRaises(
             InvalidBranchIdentifier, branch_set.getByLPPath, 'a/b/c')
         self.assertRaises(
@@ -1363,7 +1365,7 @@ class TestGetByLPPath(TestCaseWithFactory):
     def test_getByLPPath_with_junk_branch(self):
         """Test the behaviour with junk branches."""
         owner = self.factory.makePerson(name='aa')
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/+junk/c')
         branch = self.factory.makePersonalBranch(owner=owner, name='c')
         self.assertEqual(
@@ -1371,7 +1373,7 @@ class TestGetByLPPath(TestCaseWithFactory):
 
     def test_getByLPPath_with_two_parts(self):
         """Test the behaviour with two-part names."""
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb/dd')
         product = self.factory.makeProduct('bb')
         self.assertRaises(NoSuchSeries, branch_set.getByLPPath, 'bb/dd')
@@ -1384,7 +1386,7 @@ class TestGetByLPPath(TestCaseWithFactory):
 
     def test_getByLPPath_with_one_part(self):
         """Test the behaviour with one names."""
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         self.assertRaises(
             InvalidProductIdentifier, branch_set.getByLPPath, 'b')
         self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb')
