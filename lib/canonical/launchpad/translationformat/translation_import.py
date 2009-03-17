@@ -380,6 +380,8 @@ class FileImporter(object):
                 self.potemplate.createMessageSetFromText(
                     message.msgid_singular, message.msgid_plural,
                     context=message.context))
+            potmsgset.setSequence(self.potemplate, 0)
+
         return potmsgset
 
     def storeTranslationsInDatabase(self, message, potmsgset):
