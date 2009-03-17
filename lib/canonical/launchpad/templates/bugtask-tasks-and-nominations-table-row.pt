@@ -105,7 +105,8 @@
           </button>
           <div class="yui-activator-message-box yui-activator-hidden"/>
         </span>
-        <script tal:content="structure string:
+        <script tal:condition="context/required:launchpad.Edit"
+                tal:content="structure string:
         YUI().use('lp.picker', function(Y) {
             Y.lp.picker.addBugTaskAssigneeEditor(
                 '${view/bugtask_canonical_url}',
