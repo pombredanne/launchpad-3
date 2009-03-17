@@ -6,6 +6,7 @@ import datetime
 import os
 import random
 import time
+import transaction
 import unittest
 
 from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
