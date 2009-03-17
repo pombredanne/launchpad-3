@@ -139,7 +139,7 @@ class BugVisibilityChange(SimpleBugChangeMixin, BugChangeBase):
         return {'text': "** Visibility changed to: %s" % visibility_string}
 
 
-class BugSecurityChange(BugChangeBase):
+class BugSecurityChange(SimpleBugChangeMixin, BugChangeBase):
     """Describes a change to a bug's security setting."""
 
     activity_mapping = {
@@ -176,6 +176,6 @@ class BugSecurityChange(BugChangeBase):
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
-    'security': BugSecurityChange,
+    'security_related': BugSecurityChange,
     'title': BugTitleChange,
     }

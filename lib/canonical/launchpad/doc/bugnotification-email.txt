@@ -220,8 +220,8 @@ logins to a user that is explicitly subscribed to this bug):
     ...     private={'old': False, 'new': edited_bug.private},
     ...     security_related={'old': False, 'new': edited_bug.security_related})
 
-The change representation is an IBugChange, but the security
-representation is still textual.
+Both the privacy and security-related change representations provide
+IBugChange.
 
     >>> for change in get_bug_edit_notification_texts(bug_delta):
     ...     if IBugChange.providedBy(change):
@@ -236,7 +236,7 @@ representation is still textual.
     True
     ** Visibility changed to: Private
     -----------------------------
-    False
+    True
     ** This bug has been flagged as a security issue
     -----------------------------
 

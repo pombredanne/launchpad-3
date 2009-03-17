@@ -1796,7 +1796,6 @@ subscribers.
 Changing the privacy of the bug will also add notification and activity
 records.
 
-
     >>> bug_delta = BugDelta(
     ...     example_bug, canonical_url(example_bug),
     ...     user=example_person,
@@ -1816,6 +1815,34 @@ records.
     >>> notification = pending_notifications[-1]
     >>> print notification.message.text_contents
     ** Visibility changed to: Private
+
+    >>> print 'Recipients:', ', '.join(
+    ...     recipient.person.displayname
+    ...     for recipient in notification.recipients)
+    Recipients: Trillian
+
+Similarly, marking a bug as a security issue will also add
+notification and activity records.
+
+    >>> bug_delta = BugDelta(
+    ...     example_bug, canonical_url(example_bug),
+    ...     user=example_person,
+    ...     security_related={'old': False, 'new': True})
+    >>> add_bug_change_notifications(bug_delta)
+    >>> activity = example_bug.activity[-1]
+    >>> print "%s: %s => %s (%s)" % (
+    ...     activity.whatchanged, activity.oldvalue, activity.newvalue,
+    ...     activity.person.displayname)
+    security issue: no => yes (Trillian)
+
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> pending_notifications = sorted(
+    ...     pending_notifications, key=attrgetter('id'))
+
+    >>> notification = pending_notifications[-1]
+    >>> print notification.message.text_contents
+    ** This bug has been flagged as a security issue
 
     >>> print 'Recipients:', ', '.join(
     ...     recipient.person.displayname

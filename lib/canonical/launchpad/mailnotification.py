@@ -612,7 +612,10 @@ def get_bug_edit_notification_texts(bug_delta):
             change_info += '   %s' % new_bug_dupe.title
             changes.append(change_info)
 
-    for field_name in ['title', 'description', 'private', 'security']:
+    bug_change_field_names = [
+        'title', 'description', 'private', 'security_related',
+        ]
+    for field_name in bug_change_field_names:
         field_delta = getattr(bug_delta, field_name)
         if field_delta is not None:
             bug_change_class = get_bug_change_class(bug_delta.bug, field_name)
