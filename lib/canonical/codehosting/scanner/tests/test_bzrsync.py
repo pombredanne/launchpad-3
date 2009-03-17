@@ -23,8 +23,7 @@ from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.interfaces import IRevisionSet
 from canonical.launchpad.interfaces.branch import IBranchSet
-from canonical.launchpad.interfaces.branchjob import
-    IRosettaUploadJobSource)
+from canonical.launchpad.interfaces.branchjob import IRosettaUploadJobSource
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, InvalidStackedBranchURL)

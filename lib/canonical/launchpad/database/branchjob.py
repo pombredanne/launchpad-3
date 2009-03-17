@@ -64,7 +64,7 @@ class BranchJobType(DBEnumeratedType):
         This job runs against a branch to send emails about added revisions.
         """)
 
-    ROSETTA_UPLOAD = DBItem(2, """
+    ROSETTA_UPLOAD = DBItem(3, """
         Rosetta Upload
 
         This job runs against a branch to upload translation files to rosetta.
