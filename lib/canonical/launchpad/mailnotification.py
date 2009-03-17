@@ -614,7 +614,7 @@ def get_bug_edit_notification_texts(bug_delta):
     if bug_delta.title is not None:
         bug_change_class = get_bug_change_class(None, 'title')
         change_info = bug_change_class(
-            when=None, person=None, what_changed='title',
+            when=None, person=bug_delta.user, what_changed='title',
             old_value=bug_delta.title['old'],
             new_value=bug_delta.title['new'])
         changes.append(change_info)
@@ -622,7 +622,7 @@ def get_bug_edit_notification_texts(bug_delta):
     if bug_delta.description is not None:
         bug_change_class = get_bug_change_class(None, 'description')
         change_info = bug_change_class(
-            when=None, person=None, what_changed='description',
+            when=None, person=bug_delta.user, what_changed='description',
             old_value=bug_delta.description['old'],
             new_value=bug_delta.description['new'])
         changes.append(change_info)
