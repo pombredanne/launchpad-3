@@ -285,3 +285,47 @@ within the UI.
 
     >>> print bug_title_change.getBugActivity()['whatchanged']
     summary
+
+
+=== BugVisibilityChange ===
+
+BugVisibilityChange is used to represent a change in a Bug's `private`
+attribute.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugVisibilityChange)
+
+    >>> bug_visibility_change = BugVisibilityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='private', old_value=example_bug.private,
+    ...     new_value=True)
+
+IBug.private is a boolean but to make it more readable we express it in
+activity and notification records as a string, where True = 'Private'
+and False = 'Public'. We also refer to it as "visibility" rather than
+privacy.
+
+    >>> print pretty(bug_visibility_change.getBugActivity())
+    {'newvalue': 'private',
+     'oldvalue': 'public',
+     'whatchanged': 'visibility'}
+
+We also use the 'Private', 'Public' and 'Visibility' terms in the
+notification text.
+
+    >>> print bug_visibility_change.getBugNotification()['text']
+    ** Visibility changed to: Private
+
+If we reverse the changes we'll see the opposite values in the
+notification and activity entries.
+
+    >>> bug_visibility_change = BugVisibilityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='private', old_value=True, new_value=False)
+    >>> print pretty(bug_visibility_change.getBugActivity())
+    {'newvalue': 'public',
+     'oldvalue': 'private',
+     'whatchanged': 'visibility'}
+
+    >>> print bug_visibility_change.getBugNotification()['text']
+    ** Visibility changed to: Public

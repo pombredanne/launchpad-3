@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'BugDescriptionChange',
     'BugTitleChange',
+    'BugVisibilityChange',
     'get_bug_change_class',
 ]
 
@@ -107,7 +108,39 @@ class BugTitleChange(SimpleBugChangeMixin, BugChangeBase):
         return {'text': notification_text}
 
 
+class BugVisibilityChange(BugChangeBase):
+    """Describes a change to a bug's visibility."""
+
+    def _getVisibilityString(self, private):
+        """Return a string representation of `private`.
+
+        :return: 'Public' if private is False, 'Private' if
+            private is True.
+        """
+        if private:
+            return 'Private'
+        else:
+            return 'Public'
+
+    def getBugActivity(self):
+        # Use _getVisibilityString() to set old and new values
+        # correctly. We lowercase them for UI consistency in the
+        # activity log.
+        old_value = self._getVisibilityString(self.old_value)
+        new_value = self._getVisibilityString(self.new_value)
+        return {
+           'oldvalue': old_value.lower(),
+           'newvalue': new_value.lower(),
+           'whatchanged': 'visibility',
+           }
+
+    def getBugNotification(self):
+        visibility_string = self._getVisibilityString(self.new_value)
+        return {'text': "** Visibility changed to: %s" % visibility_string}
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
+    'private': BugVisibilityChange,
     'title': BugTitleChange,
     }
