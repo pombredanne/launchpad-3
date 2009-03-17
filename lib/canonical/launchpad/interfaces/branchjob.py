@@ -115,6 +115,9 @@ class IRevisionsAddedJobSource(Interface):
 class IRosettaUploadJob(Interface):
     """A job to upload translation files to Rosetta."""
 
+    from_revision_id = TextLine(
+        title=_('The revision id to compare against.'))
+
     def run():
         """Extract translation files from the branch passed in by the factory
         (see IRosettaUploadJobSource) and put them into the translations
@@ -124,10 +127,11 @@ class IRosettaUploadJob(Interface):
 
 class IRosettaUploadJobSource(Interface):
 
-    def create(branch):
+    def create(branch, from_revision_id):
         """Construct a new object that implements IRosettaUploadJob.
 
         :param branch: The database branch to exract files from.
+        :param from_revision_id: The revision id to compare against.
         """
 
     def iterReady():

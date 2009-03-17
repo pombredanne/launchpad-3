@@ -416,7 +416,8 @@ class BzrSync:
             last_revision = bzr_history[-1]
             revision = getUtility(IRevisionSet).getByRevisionId(last_revision)
             if last_revision != self.db_branch.last_scanned_id:
-                getUtility(IRosettaUploadJobSource).create(self.db_branch)
+                getUtility(IRosettaUploadJobSource).create(
+                    self.db_branch, self.db_branch.last_scanned_id)
         else:
             revision = None
 

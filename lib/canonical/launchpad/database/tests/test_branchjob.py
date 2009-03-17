@@ -7,6 +7,7 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
+from bzrlib.revision import NULL_REVISION
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
 import transaction
@@ -479,24 +480,29 @@ class TestRosettaUploadJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def _makeProductSeries(self, branch, mode):
-        series = self.factory.makeProductSeries()
-        series.user_branch = branch
-        series.translations_autoimport_mode = mode
-        return series
-
     def _makeBranchWithTreeAndFile(self, file_name, file_content = None):
         return self._makeBranchWithTreeAndFiles(((file_name, file_content),))
 
-    def _makeBranchWithTreeAndFiles(self, files = ()):
+    def _makeBranchWithTreeAndFiles(self, files):
         """Create a branch with a tree that contains the given files.
 
         :param files: A list of pairs of file names and file content. file
             content is a byte string and may be None or missing completely,
             in which case an arbitrary unique string is used.
-        :returns: The IBranch object.
+        :returns: The revision of the first commit.
         """
-        branch, tree = self.create_branch_and_tree()
+        self.useBzrBranches()
+        self.branch, self.tree = self.create_branch_and_tree()
+        return self._commitFilesToTree(files, 'First commit')
+
+    def _commitFilesToTree(self, files, commit_message=None):
+        """Add files to the tree.
+
+        :param files: A list of pairs of file names and file content. file
+            content is a byte string and may be None or missing completely,
+            in which case an arbitrary unique string is used.
+        :returns: The revision of this commit.
+        """
         for file_pair in files:
             file_name = file_pair[0]
             try:
@@ -505,93 +511,163 @@ class TestRosettaUploadJob(TestCaseWithFactory):
                     raise IndexError # Same as if missing.
             except IndexError:
                 file_content = self.factory.getUniqueString()
-            tree.bzrdir.root_transport.put_bytes(file_name, file_content)
-            tree.add(file_name)
-        tree.commit('First commit')
-        return branch
+            self.tree.bzrdir.root_transport.put_bytes(file_name, file_content)
+            self.tree.add(file_name)
+        if commit_message is None:
+            commit_message = self.factory.getUniqueString('commit')
+        revision_id = self.tree.commit(commit_message)
+        self.branch.last_scanned_id = revision_id
+        self.branch.last_mirrored_id = revision_id
+        return revision_id
+
+    def _makeProductSeries(self, mode):
+        self.series = self.factory.makeProductSeries()
+        self.series.branch = self.branch
+        self.series.translations_autoimport_mode = mode
 
     def _runJobWithFile(self, import_mode, file_name, file_content = None):
         return self._runJobWithFiles(
             import_mode, ((file_name, file_content),))
 
     def _runJobWithFiles(self, import_mode, files):
-        self.useBzrBranches()
-        branch = self._makeBranchWithTreeAndFiles(files)
-        series = self._makeProductSeries(branch, import_mode)
-        job = RosettaUploadJob.create(branch)
-        job.run()
+        self._makeBranchWithTreeAndFiles(files)
+        return self._runJob(import_mode, NULL_REVISION)
+
+    def _runJob(self, import_mode, revision_id):
+        self._makeProductSeries(import_mode)
+        job = RosettaUploadJob.create(self.branch, revision_id)
+        if job is not None:
+            job.run()
         queue = getUtility(ITranslationImportQueue)
         # Using getAllEntries also asserts that the right product series
         # was used in the upload.
-        return (branch, series, list(queue.getAllEntries(target=series)))
+        return list(queue.getAllEntries(target=self.series))
 
     def test_providesInterface(self):
         # RosettaUploadJob implements IRosettaUploadJob.
-        branch = self.factory.makeAnyBranch()
-        job = RosettaUploadJob.create(branch)
+        self.branch = self.factory.makeAnyBranch()
+        self._makeProductSeries(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
         verifyObject(IRosettaUploadJob, job)
 
     def test_upload_pot(self):
         # A POT can be uploaded to a product series that is
         # configured to do so, other files are not uploaded.
         POT_NAME = "foo.pot"
-        branch, series, entries = self._runJobWithFiles(
+        entries = self._runJobWithFiles(
             TranslationsBranchImportMode.IMPORT_TEMPLATES,
             ((POT_NAME,), ('eo.po',), ('README',))
             )
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        self.assertEqual(entry.path, POT_NAME)
+        self.assertEqual(POT_NAME, entry.path)
+
+    def test_upload_xpi_template(self):
+        # XPI templates are indentified by a special name. They are imported
+        # like POT files.
+        POT_NAME = "en-US.xpi"
+        entries = self._runJobWithFiles(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,
+            ((POT_NAME,), ('eo.xpi',), ('README',))
+            )
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual(POT_NAME, entry.path)
 
     def test_upload_empty_pot(self):
         # An empty POT cannot be uploaded, if if the product series is
         # configured for template import.
-        branch, series, entries = self._runJobWithFile(
+        entries = self._runJobWithFile(
             TranslationsBranchImportMode.IMPORT_TEMPLATES, 'empty.pot', '')
         self.assertEqual(entries, [])
 
     def test_upload_pot_uploader(self):
         # The uploader of a POT is the series owner.
-        branch, series, entries = self._runJobWithFile(
+        entries = self._runJobWithFile(
             TranslationsBranchImportMode.IMPORT_TEMPLATES, 'foo.pot')
         entry = entries[0]
-        self.assertEqual(entry.importer, series.owner)
+        self.assertEqual(self.series.owner, entry.importer)
 
     def test_upload_pot_content(self):
         # The content of the uploaded file is stored in the librarian.
         # The uploader of a POT is the series owner.
         POT_CONTENT = "pot content\n"
-        branch, series, entries = self._runJobWithFile(
+        entries = self._runJobWithFile(
             TranslationsBranchImportMode.IMPORT_TEMPLATES,
             'foo.pot', POT_CONTENT)
         # Commit so that the file is stored in the librarian.
         transaction.commit()
-        self.assertEqual(get_newest_librarian_file().read(), POT_CONTENT)
+        self.assertEqual(POT_CONTENT, get_newest_librarian_file().read())
+
+    def test_upload_changed_files(self):
+        # Only changed files are queued for import.
+        POT_NAME = "foo.pot"
+        revision_id = self._makeBranchWithTreeAndFiles(
+            ((POT_NAME,), ('eo.po',), ('README',)))
+        self._commitFilesToTree(((POT_NAME,),))
+        entries = self._runJob(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES, revision_id)
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual(POT_NAME, entry.path)
 
     def test_upload_to_no_import_series(self):
         # Nothing can be uploaded to a product series that is
         # not configured to do so.
-        branch, series, entries = self._runJobWithFiles(
+        entries = self._runJobWithFiles(
             TranslationsBranchImportMode.NO_IMPORT,
             (('foo.pot',), ('eo.po',), ('README',))
             )
-        self.assertEqual(entries, [])
+        self.assertEqual([], entries)
 
-    def test_iterReady(self):
-        # iterReady only returns RosettaUploadJob in ready state.
-        branch = self.factory.makeAnyBranch()
+    def test_iterReady_job_type(self):
+        # iterReady only returns RosettaUploadJobs.
+        self._makeBranchWithTreeAndFiles([])
+        self._makeProductSeries(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Add a job that is not a RosettaUploadJob.
-        BranchDiffJob.create(branch, 0, 1)
+        BranchDiffJob.create(self.branch, 0, 1)
+        ready_jobs = list(RosettaUploadJob.iterReady())
+        self.assertEqual([], ready_jobs)
+
+    def test_iterReady_not_ready(self):
+        # iterReady only returns RosettaUploadJobs in ready state.
+        self._makeBranchWithTreeAndFiles([])
+        self._makeProductSeries(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Add a job and complete it -> not in ready state.
-        completed_job = RosettaUploadJob.create(branch)
-        completed_job.job.start()
-        completed_job.job.complete()
-        # Add the job that is expected to be returned.
-        job = RosettaUploadJob.create(branch)
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job.job.start()
+        job.job.complete()
+        ready_jobs = list(RosettaUploadJob.iterReady())
+        self.assertEqual([], ready_jobs)
+
+    def test_iterReady_revision_ids_differ(self):
+        # iterReady does not return jobs for branches where last_scanned_id
+        # and last_mirror_id are different.
+        self._makeBranchWithTreeAndFiles([])
+        self.branch.last_scanned_id = NULL_REVISION # Was not scanned yet.
+        self._makeProductSeries(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        # Put the job in ready state.
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
         job.job.sync()
         job.context.sync()
         ready_jobs = list(RosettaUploadJob.iterReady())
-        self.assertEqual(ready_jobs, [job])
+        self.assertEqual([], ready_jobs)
+
+    def test_iterReady(self):
+        # iterReady only returns RosettaUploadJob in ready state.
+        self._makeBranchWithTreeAndFiles([])
+        self._makeProductSeries(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        # Put the job in ready state.
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job.job.sync()
+        job.context.sync()
+        ready_jobs = list(RosettaUploadJob.iterReady())
+        self.assertEqual([job], ready_jobs)
 
 
 def test_suite():
