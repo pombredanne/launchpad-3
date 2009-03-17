@@ -14,9 +14,10 @@ __all__ = [
     'NoSuchDistribution',
     ]
 
-from zope.schema import Choice, Datetime, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Text, TextLine
 from zope.interface import Attribute, Interface
 
+from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
    collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_operation_as,
@@ -28,7 +29,9 @@ from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import (
+    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasOwner, IHasSecurityContact,
@@ -62,7 +65,7 @@ class DistributionNameField(PillarNameField):
         return IDistribution
 
 
-class IDistributionEditRestricted(Interface):
+class IDistributionEditRestricted(IOfficialBugTagTargetRestricted):
     """IDistribution properties requiring launchpad.Edit permission."""
 
     def newSeries(name, displayname, title, summary, description,
@@ -71,10 +74,11 @@ class IDistributionEditRestricted(Interface):
 
 
 class IDistributionPublic(
-    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasDrivers,
-    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
-    IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
-    IMakesAnnouncements, IPillar, ISpecificationTarget):
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
+    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationGroup,
+    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -249,6 +253,12 @@ class IDistributionPublic(
         "A list of the source packages that should not be shown on the "
         "upstream bug report for this Distribution.")
 
+    has_published_binaries = Bool(
+        title=_("Has Published Binaries"),
+        description=_("True if this distribution has binaries published "
+                      "on disk."),
+        readonly=True, required=False)
+
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
 
@@ -366,6 +376,29 @@ class IDistributionPublic(
         matching.
         """
 
+    def searchBinaryPackages(package_name, exact_match=False):
+        """Search for binary packages in this distribution.
+
+        :param package_name: The binary package name to match.
+        :param exact_match: If False, substring matches are done on the
+            binary package names; if True only a full string match is
+            returned.
+        :return: A result set containing appropriate DistributionSourcePackage
+            objects for the matching source.
+
+        The returned results will consist of source packages that match
+        (a substring of) their binary package names.
+        """
+
+    def searchBinaryPackagesFTI(package_name):
+        """Do an FTI search on binary packages.
+
+        :param package_name: The binary package name to search for.
+        :return: A result set containing DistributionSourcePackageCache
+            objects for the matching binaries found via an FTI search on
+            DistroSeriesPackageCache.
+        """
+
     def getFileByName(filename, archive=None, source=True, binary=True):
         """Find and return a LibraryFileAlias for the filename supplied.
 
@@ -460,6 +493,13 @@ class IDistribution(IDistributionEditRestricted, IDistributionPublic):
 
 # We are forced to define this now to avoid circular import problems.
 IMessage['distribution'].schema = IDistribution
+
+# Patch the official_bug_tags field to make sure that it's
+# writable from the API, and not readonly like its definition
+# in IHasBugs.
+writable_obt_field = copy_field(IDistribution['official_bug_tags'])
+writable_obt_field.readonly = False
+IDistribution._v_attrs['official_bug_tags'] = writable_obt_field
 
 
 class IDistributionSet(Interface):

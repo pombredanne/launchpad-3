@@ -70,8 +70,8 @@ class IExternalBugTracker(Interface):
 
         :param remote_bug: The ID of the remote bug for which to return
             the remote product.
-        :return: The remote product for `remote_bug`. If a remote product
-            isn't specified for `remote_bug` return None.
+        :return: The remote product for `remote_bug`. If no remote
+            product is recorded for `remote_bug` return None.
         :raise BugNotFound: If `remote_bug` doesn't exist for the bug
             tracker.
         """

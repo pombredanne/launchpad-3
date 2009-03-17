@@ -12,15 +12,10 @@
           <tal:and condition="repeat/manager/end"> and </tal:and>
         </tal:comma>
         <tal:team condition="manager/team">
-          <a tal:replace="structure manager/team/fmt:link" /><!-- (nospace)
-        --><tal:guidelines tal:condition="manager/style_guide_url">
-        (<a class="style_guide_url"
-            tal:attributes="href manager/style_guide_url"
-             ><img src="/@@/link" alt=""/> Translation guidelines</a>)<!-- (nospace)
-        --></tal:guidelines>,
+          <a tal:replace="structure manager/team/fmt:link" />,
           assigned by
           <a tal:attributes="href manager/group/fmt:url"
-             tal:content="manager/group/name">
+             tal:content="manager/group/title">
             Ubuntu translators<!-- (nospace)
           --></a><!-- (nospace)
         --></tal:team><!-- (nospace)

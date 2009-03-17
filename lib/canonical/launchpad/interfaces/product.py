@@ -23,7 +23,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Date, Datetime, Int, List, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
-
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -35,7 +35,8 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal, BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import (
+    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
@@ -57,9 +58,11 @@ from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.validators.sourceforgeproject import (
+    sourceforge_project_name_validator)
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
+from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, collection_default_content,
     export_as_webservice_collection, export_as_webservice_entry,
@@ -119,7 +122,7 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProductEditRestricted(Interface):
+class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
     def newSeries(owner, name, summary, branch=None):
@@ -176,7 +179,8 @@ class IProductPublic(
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, ISpecificationTarget, IPillar):
+    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
+    IPillar, ISpecificationTarget):
     """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
@@ -322,6 +326,7 @@ class IProductPublic(
         TextLine(
             title=_('Sourceforge Project'),
             required=False,
+            constraint=sourceforge_project_name_validator,
             description=_("""The SourceForge project name for
                 this project, if it is in sourceforge.""")),
         exported_as='sourceforge_project')
@@ -480,13 +485,9 @@ class IProductPublic(
 
     remote_product = exported(
         TextLine(
-            title=_('Remote product'),
+            title=_('Remote project'), required=False,
             description=_(
                 "The ID of this project on its remote bug tracker.")))
-
-    upstream_bugtracker_links = Attribute(
-        "The URLs of bug filing and search forms on this project's upstream "
-        "bug tracker")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -574,6 +575,13 @@ class IProduct(IProductEditRestricted, IProductCommercialRestricted,
 # Fix cyclic references.
 IProject['products'].value_type = Reference(IProduct)
 IProductRelease['product'].schema = IProduct
+
+# Patch the official_bug_tags field to make sure that it's
+# writable from the API, and not readonly like its definition
+# in IHasBugs.
+writable_obt_field = copy_field(IProduct['official_bug_tags'])
+writable_obt_field.readonly = False
+IProduct._v_attrs['official_bug_tags'] = writable_obt_field
 
 
 class IProductSet(Interface):
@@ -768,6 +776,9 @@ class IProductSet(Interface):
         with a given bugtracker type.
         """
 
+    def getSFLinkedProductsWithNoneRemoteProduct(self):
+        """Get IProducts with a sourceforge project and no remote_product."""
+
 
 emptiness_vocabulary = SimpleVocabulary.fromItems(
         [('Empty', True), ('Not Empty', False)])
@@ -831,7 +842,7 @@ class NoSuchProduct(NameLookupFailed):
     _message_prefix = "No such product"
 
 
-# Fix a circular import.
+# Fix circular imports.
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 IDistributionSourcePackage['upstream_product'].schema = IProduct

@@ -61,6 +61,7 @@ We use the webservice as an unrelated, unprivileged user.
     superseded_by_link: None
     supersedes_link: None
     target_branch_link: u'http://.../~target/fooix/trunk'
+    votes_collection_link: u'http://.../~source/fooix/fix-it/+merge/.../votes'
 
 
 == Read the comments ==
@@ -92,6 +93,25 @@ The comments on a branch merge proposal are exposed through the API.
     title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
     vote: u'Abstain'
     vote_tag: None
+
+
+== Check the votes ==
+
+The votes on a branch merge proposal can be checked through the API.
+
+    >>> votes = webservice.get(
+    ...     merge_proposal['votes_collection_link']).jsonBody()['entries']
+    >>> print len(votes)
+    2
+    >>> pprint_entry(votes[0])
+    branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    comment_link: u'http://.../~source/fooix/fix-it/+merge/1/comments/...'
+    date_created: u'...'
+    registrant_link: u'http://.../~person-name20'
+    resource_type_link: u'http://.../#code_review_vote_reference'
+    review_type: u'code'
+    reviewer_link: u'http://.../~person-name20'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/.../+review/...'
 
 
 == Performing a Review ==
@@ -183,7 +203,7 @@ The diff is now visible through the merge proposal.
     branch_merge_proposal_link:
       u'http://.../~source/fooix/fix-it/+merge/1'
     conflicts: u'oh, no conflicts'
-    dependent_revision_id: u'OOPS'
+    dependent_revision_id: None
     diff_lines_count: 7
     diff_text_link:
       u'http://.../~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
@@ -196,6 +216,19 @@ The diff is now visible through the merge proposal.
     stale: True
     target_revision_id: u'rev-b'
 
+It is possible that the diff will be empty.
+
+    >>> response = reviewer_webservice.named_post(
+    ...     merge_proposal['self_link'], 'updatePreviewDiff',
+    ...     diff_content='',
+    ...     diff_stat='', source_revision_id='rev-c',
+    ...     target_revision_id='rev-d', conflicts=None)
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    Content-Length: ...
+    Content-Type: application/json
+    Vary: ...
+    ...
 
 == Getting a Project's Pending Merge Proposals ==
 
@@ -217,22 +250,21 @@ proposals by their status.
 Or I can look for anything that is approved.
 
     >>> login('admin@canonical.com')
-    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.branchmergeproposal import (
     ...     BranchMergeProposalStatus)
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> fixit_proposal.approveBranch(fixit_proposal.target_branch.owner, '1')
     >>> logout()
 
-    >>> def print_fooix_proposals(webservice, status=None):
+    >>> def print_proposals(webservice, url, status=None):
     ...     proposals = webservice.named_get(
-    ...         '/fooix', 'getMergeProposals',
+    ...         url, 'getMergeProposals',
     ...         status=status).jsonBody()
     ...     for proposal in proposals['entries']:
     ...         print_proposal(proposal)
 
-    >>> print_fooix_proposals(
-    ...     webservice, status=[BranchMergeProposalStatus.CODE_APPROVED.title])
+    >>> print_proposals(
+    ...     webservice, url='/fooix',
+    ...     status=[BranchMergeProposalStatus.CODE_APPROVED.title])
     http://.../~source/fooix/fix-it/+merge/1 - Approved
 
 If the branch is private it is not visible to an unpriveleged user.
@@ -242,14 +274,42 @@ If the branch is private it is not visible to an unpriveleged user.
     >>> branch_owner = fixit_proposal.source_branch.owner
     >>> logout()
 
-    >>> print_fooix_proposals(
-    ...     webservice, status=[BranchMergeProposalStatus.CODE_APPROVED.title])
+    >>> print_proposals(
+    ...     webservice, url='/fooix',
+    ...     status=[BranchMergeProposalStatus.CODE_APPROVED.title])
 
 If we get a webservice for the owner of the source branch, then they can see
 the proposal if they have allowed the API to access private bits.
 
     >>> service = webservice_for_person(
     ...     branch_owner, permission=OAuthPermission.READ_PRIVATE)
-    >>> print_fooix_proposals(
-    ...     service, status=[BranchMergeProposalStatus.CODE_APPROVED.title])
+    >>> print_proposals(
+    ...     service, url='/fooix',
+    ...     status=[BranchMergeProposalStatus.CODE_APPROVED.title])
     http://.../~source/fooix/fix-it/+merge/1 - Approved
+
+    >>> login('foo.bar@canonical.com')
+    >>> fixit_proposal.source_branch.private = False
+    >>> logout()
+
+
+== Getting a Person's Pending Merge Proposals ==
+
+It is possible to view all of a person's merge proposals or filter their
+proposals by their status.
+
+    >>> proposals = webservice.named_get('/~source', 'getMergeProposals',
+    ...     ).jsonBody()
+    >>> print_proposals(service, url='/~source')
+    http://.../~source/fooix/fix-it/+merge/1 - Approved
+
+The person's proposals can also be filtered by status.
+
+    >>> login('foo.bar@canonical.com')
+    >>> fixit_proposal.rejectBranch(fixit_proposal.target_branch.owner, '1')
+    >>> logout()
+
+    >>> print_proposals(webservice, url='/~source',
+    ...     status=[BranchMergeProposalStatus.REJECTED.title])
+    http://.../~source/fooix/fix-it/+merge/1 - Rejected
+

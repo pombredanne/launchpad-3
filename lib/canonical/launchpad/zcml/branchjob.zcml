@@ -15,6 +15,11 @@
     />
     <allow interface="canonical.launchpad.interfaces.branchjob.IBranchJob" />
   </class>
+  <class class="canonical.launchpad.database.branchjob.RevisionsAddedJob">
+    <allow interface="canonical.launchpad.interfaces.branchjob.IRevisionsAddedJob"
+    />
+    <allow interface="canonical.launchpad.interfaces.branchjob.IBranchJob" />
+  </class>
   <securedutility
       component="canonical.launchpad.database.branchjob.BranchDiffJob"
       provides="canonical.launchpad.interfaces.branchjob.IBranchDiffJobSource" >
@@ -26,6 +31,13 @@
       provides="canonical.launchpad.interfaces.branchjob.IRevisionMailJobSource" >
     <allow
      interface="canonical.launchpad.interfaces.branchjob.IRevisionMailJobSource"
+    />
+  </securedutility>
+  <securedutility
+      component="canonical.launchpad.database.branchjob.RevisionsAddedJob"
+      provides="canonical.launchpad.interfaces.branchjob.IRevisionsAddedJobSource" >
+    <allow
+     interface="canonical.launchpad.interfaces.branchjob.IRevisionsAddedJobSource"
     />
   </securedutility>
 </configure>

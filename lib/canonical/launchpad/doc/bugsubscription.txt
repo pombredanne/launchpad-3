@@ -379,8 +379,8 @@ subscribers.
 
     >>> from zope.event import notify
 
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IBug
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
@@ -392,7 +392,7 @@ subscribers.
     True
 
     >>> notify(
-    ...     SQLObjectModifiedEvent(
+    ...     ObjectModifiedEvent(
     ...         linux_source_bug, bug_before_modification, ["private"]))
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
@@ -827,15 +827,15 @@ subscriptions themselves, rather than the subscribers.
 
 When a user is subscribed to a bug by someone other than themselves,
 they receive an email notification. The notification is sent only when
-an SQLObjectCreatedEvent is issued, since subscribe() is used in places
+an ObjectCreatedEvent is issued, since subscribe() is used in places
 where no notification should be sent.
 
-    >>> from canonical.launchpad.event import SQLObjectCreatedEvent
+    >>> from lazr.lifecycle.event import ObjectCreatedEvent
     >>> from canonical.launchpad.mail import stub
     >>> transaction.commit()
     >>> stub.test_emails = []
     >>> bug_subscription = bug.subscribe(sabdfl, lifeless)
-    >>> notify(SQLObjectCreatedEvent(bug_subscription))
+    >>> notify(ObjectCreatedEvent(bug_subscription))
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1

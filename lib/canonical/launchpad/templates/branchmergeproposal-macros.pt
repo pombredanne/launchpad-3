@@ -21,25 +21,29 @@
   <tal:comment condition="nothing">
     This macro requires the following defined variables:
       proposals - the list of proposals
-      table_id - the id to use for the table
       heading - the heading to use before the table
       show_diffs - show the diff column
   </tal:comment>
 
-  <h2 tal:condition="heading" tal:content="heading">Table Heading</h2>
+  <tbody>
 
-  <table tal:attributes="id table_id" class="listing sortable">
-    <thead>
-      <tr>
-        <th>Branch Merge Proposal</th>
-        <th>Requested By</th>
-        <th>Activity</th>
-        <th tal:condition="show_diffs">
-          Diff
-        </th>
-      </tr>
-    </thead>
-    <tbody>
+  <tr tal:condition="heading">
+    <td class="section-heading"
+        tal:content="heading"
+        tal:attributes="colspan col_count">
+      Section heading
+    </td>
+  </tr>
+
+  <tr class="thead">
+    <th>Branch Merge Proposal</th>
+    <th>Requested By</th>
+    <th>Activity</th>
+    <th tal:condition="show_diffs">
+      Diff
+    </th>
+  </tr>
+
       <tr tal:repeat="proposal proposals">
         <td>
           <a tal:attributes="href proposal/fmt:url">
@@ -51,7 +55,7 @@
           </a>
         </td>
         <td>
-          <tal:registrant content="structure proposal/registrant/fmt:link" />
+          <tal:registrant replace="structure proposal/registrant/fmt:link" />
           <tal:date replace="proposal/date_review_requested/fmt:displaydate"/>
         </td>
         <td>
@@ -62,8 +66,8 @@
                          replace="structure proposal/preview_diff/fmt:link"/>
         </td>
       </tr>
-    </tbody>
-  </table>
+
+  </tbody>
 
 </metal:active-reviews>
 

@@ -179,7 +179,7 @@ class Bugzilla(ExternalBugTracker):
         ('RESOLVED', 'VERIFIED', 'CLOSED',
             LookupTree(
                 ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
-                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
+                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE', 'UPSTREAM',
                  BugTaskStatus.FIXRELEASED),
                 ('WONTFIX', BugTaskStatus.WONTFIX),
                 (BugTaskStatus.INVALID,))),

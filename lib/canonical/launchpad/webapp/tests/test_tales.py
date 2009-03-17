@@ -298,7 +298,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # If there is no diff, there is no link.
         preview = self._createPreviewDiff(10, 0, 0)
         self.assertEqual(
-            '<a href="%s" title="" class="clean-diff">10 lines</a>'
+            '<a href="%s" title="" class="clean-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
@@ -306,7 +307,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # If there is no diff, there is no link.
         preview = self._createPreviewDiff(10, 4, 0)
         self.assertEqual(
-            '<a href="%s" title="4 added" class="clean-diff">10 lines</a>'
+            '<a href="%s" title="4 added" class="clean-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
@@ -314,7 +316,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # If there is no diff, there is no link.
         preview = self._createPreviewDiff(10, 0, 4)
         self.assertEqual(
-            '<a href="%s" title="4 removed" class="clean-diff">10 lines</a>'
+            '<a href="%s" title="4 removed" class="clean-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
@@ -323,15 +326,18 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         preview = self._createPreviewDiff(10, 6, 4)
         self.assertEqual(
             '<a href="%s" title="6 added, 4 removed" class="clean-diff">'
-            '10 lines</a>' % preview.diff_text.getURL(),
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
+            % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
     def test_fmt_simple_conflicts(self):
         # If there is no diff, there is no link.
         preview = self._createPreviewDiff(10, 2, 3, u'conflicts')
         self.assertEqual(
-            '<a href="%s" title="CONFLICTS, 2 added, 3 removed" class="conflicts-diff">'
-            '10 lines</a>' % preview.diff_text.getURL(),
+            '<a href="%s" title="CONFLICTS, 2 added, 3 removed" '
+            'class="conflicts-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
+            % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
     def test_fmt_stale_empty_diff(self):
@@ -346,7 +352,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         preview = self._createStalePreviewDiff(500, 89, 340)
         self.assertEqual(
             '<a href="%s" title="Stale, 89 added, 340 removed" '
-            'class="stale-diff">500 lines</a>' % preview.diff_text.getURL(),
+            'class="stale-diff"><img src="/@@/download"/>&nbsp;500 lines</a>'
+            % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
     def test_fmt_stale_non_empty_diff_with_conflicts(self):
@@ -354,7 +361,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         preview = self._createStalePreviewDiff(500, 89, 340, u'conflicts')
         self.assertEqual(
             '<a href="%s" title="CONFLICTS, Stale, 89 added, 340 removed" '
-            'class="stale-diff">500 lines</a>' % preview.diff_text.getURL(),
+            'class="stale-diff"><img src="/@@/download"/>&nbsp;500 lines</a>'
+            % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
 
 

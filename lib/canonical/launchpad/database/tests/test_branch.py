@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Tests for Branches."""
 
@@ -35,22 +35,20 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
     ANONYMOUS, login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces import (
-    BranchListingSort, BranchSubscriptionNotificationLevel, BranchType,
-    CannotDeleteBranch, CodeReviewNotificationLevel, CreateBugParams,
-    IBranchSet, IBugSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
-    ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
-    SpecificationDefinitionStatus)
+    BranchSubscriptionNotificationLevel, BranchType, CannotDeleteBranch,
+    CodeReviewNotificationLevel, CreateBugParams, IBranchSet, IBugSet,
+    ILaunchpadCelebrities, IPersonSet, IProductSet, ISpecificationSet,
+    InvalidBranchMergeProposal, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace, InvalidNamespace)
-from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
+    get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
     NoSuchSeries)
@@ -129,6 +127,37 @@ class TestBranchGetRevision(TestCaseWithFactory):
                           revision=rev1, revision_id=rev1.revision_id)
         self.assertRaises(AssertionError, self.branch.getBranchRevision,
                           sequence=1, revision_id=rev1.revision_id)
+
+
+class TestGetMainlineBranchRevisions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getMainlineBranchRevisions(self):
+        """Only gets the mainline revisions, ignoring the others."""
+        branch = self.factory.makeBranch()
+        self.factory.makeBranchRevision(branch, 'rev1', 1)
+        self.factory.makeBranchRevision(branch, 'rev2', 2)
+        self.factory.makeBranchRevision(branch, 'rev2b', None)
+        result_set = branch.getMainlineBranchRevisions(
+            ['rev1', 'rev2', 'rev3'])
+        revid_set = set(
+            branch_revision.revision.revision_id for
+            branch_revision in result_set)
+        self.assertEqual(set(['rev1', 'rev2']), revid_set)
+
+    def test_getMainlineBranchRevisionsWrongBranch(self):
+        """Only gets the revisions for this branch, ignoring the others."""
+        branch = self.factory.makeBranch()
+        other_branch = self.factory.makeBranch()
+        self.factory.makeBranchRevision(branch, 'rev1', 1)
+        self.factory.makeBranchRevision(other_branch, 'rev1b', 2)
+        result_set = branch.getMainlineBranchRevisions(
+            ['rev1', 'rev1b'])
+        revid_set = set(
+            branch_revision.revision.revision_id for
+            branch_revision in result_set)
+        self.assertEqual(set(['rev1']), revid_set)
 
 
 class TestBranch(TestCaseWithFactory):
@@ -1148,87 +1177,6 @@ class TestBranchLifecycleStatus(TestCaseWithFactory):
                 state, BranchLifecycleStatus.DEVELOPMENT)
 
 
-class BranchSorting(TestCase):
-    """Test cases for the sort_by option of BranchSet getBranch* methods."""
-
-    layer = LaunchpadZopelessLayer
-
-    def createPersonWithTwoBranches(self):
-        """Create a person and two branches that belong to that person."""
-        new_person, email = getUtility(IPersonSet).createPersonAndEmail(
-            "test@example.com",
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-
-        branch_set = getUtility(IBranchSet)
-        branch_a = branch_set.new(
-            BranchType.MIRRORED, "a", new_person, new_person, None,
-            "http://bzr.example.com/a")
-        branch_b = branch_set.new(
-            BranchType.MIRRORED, "b", new_person, new_person, None,
-            "http://bzr.example.com/b")
-
-        return new_person, branch_a, branch_b
-
-    def assertEqualByID(self, first, second):
-        """Compare two lists of database objects by id."""
-        # XXX: 2007-10-22 MichaelHudson bug=154016: This is only needed
-        # because getBranchesForContext queries the BranchWithSortKeys table
-        # and we want to compare the results with objects from the Branch
-        # table.  This method can be removed when we can get rid of
-        # BranchWithSortKeys.
-        self.assertEqual([a.id for a in first], [b.id for b in second])
-
-    def xmas(self, year):
-        """Create a UTC datetime for Christmas of the given year."""
-        return datetime(year=year, month=12, day=25, tzinfo=UTC)
-
-    def test_sortByRecentChanges(self):
-        """Test the MOST/LEAST_RECENTLY_CHANGED_FIRST options."""
-        new_person, modified_in_2005, modified_in_2006 = (
-            self.createPersonWithTwoBranches())
-
-        modified_in_2005.date_last_modified = self.xmas(2005)
-        modified_in_2006.date_last_modified = self.xmas(2006)
-
-        syncUpdate(modified_in_2005)
-        syncUpdate(modified_in_2006)
-
-        getBranchesForContext = getUtility(IBranchSet).getBranchesForContext
-        self.assertEqualByID(
-            getBranchesForContext(
-                new_person,
-                sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST),
-            [modified_in_2006, modified_in_2005])
-        self.assertEqualByID(
-            getBranchesForContext(
-                new_person,
-                sort_by=BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST),
-            [modified_in_2005, modified_in_2006])
-
-    def test_sortByAge(self):
-        """Test the NEWEST_FIRST and OLDEST_FIRST options."""
-        new_person, created_in_2005, created_in_2006 = (
-            self.createPersonWithTwoBranches())
-
-        # In the normal course of things date_created is not writable and so
-        # we have to use removeSecurityProxy() here.
-        removeSecurityProxy(created_in_2005).date_created = self.xmas(2005)
-        removeSecurityProxy(created_in_2006).date_created = self.xmas(2006)
-
-        syncUpdate(created_in_2005)
-        syncUpdate(created_in_2006)
-
-        getBranchesForContext = getUtility(IBranchSet).getBranchesForContext
-        self.assertEqualByID(
-            getBranchesForContext(
-                new_person, sort_by=BranchListingSort.NEWEST_FIRST),
-            [created_in_2006, created_in_2005])
-        self.assertEqualByID(
-            getBranchesForContext(
-                new_person, sort_by=BranchListingSort.OLDEST_FIRST),
-            [created_in_2005, created_in_2006])
-
-
 class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
     """Tests for `Branch.createBranchRevisionFromIDs`."""
 
@@ -1450,68 +1398,6 @@ class TestGetByLPPath(TestCaseWithFactory):
             branch_set.getByLPPath('bb'))
 
 
-class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
-    """Tests the visible_by_user checks for getBranchesForContext."""
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        # Use an admin user to set branch privacy easily.
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
-        self.product = self.factory.makeProduct()
-        self.public_branch = self.factory.makeProductBranch(
-            product=self.product)
-        self.private_branch_1 = self.factory.makeProductBranch(
-            product=self.product, private=True)
-        # Need a second private branch by another owner.
-        self.private_branch_2 = self.factory.makeProductBranch(
-            product=self.product, private=True)
-        self.public_only = set([self.public_branch])
-        self.all_branches = set(
-            [self.public_branch, self.private_branch_1,
-             self.private_branch_2])
-
-    def _getBranches(self, visible_by_user=None):
-        branches = getUtility(IBranchSet).getBranchesForContext(
-            context=self.product, visible_by_user=visible_by_user)
-        return set(branches)
-
-    def test_anonymous_only_sees_public(self):
-        # An anonymous user will only see public branches.
-        self.assertEqual(self.public_only, self._getBranches())
-
-    def test_normal_user_only_sees_public(self):
-        # A user who is not the owner nor special only sees public branches.
-        self.assertEqual(self.public_only, self._getBranches())
-
-    def test_private_owner_sees_public_and_own(self):
-        # A private branch owner can see their private branches and the public
-        # branches.
-        self.assertEqual(set([self.public_branch, self.private_branch_1]),
-                         self._getBranches(self.private_branch_1.owner))
-
-    def test_launchpad_services_sees_all(self):
-        # The special launchpad services identity can see all branches.
-        self.assertEqual(self.all_branches,
-                         self._getBranches(LAUNCHPAD_SERVICES))
-
-    def test_admins_see_all(self):
-        # Launchpad admins see all.
-        admin_user = self.factory.makePerson()
-        celebs = getUtility(ILaunchpadCelebrities)
-        celebs.admin.addMember(admin_user, celebs.admin.teamowner)
-
-        self.assertEqual(self.all_branches, self._getBranches(admin_user))
-
-    def test_bazaar_experts_see_all(self):
-        # Bazaar experts see all.
-        expert = self.factory.makePerson()
-        celebs = getUtility(ILaunchpadCelebrities)
-        celebs.bazaar_experts.addMember(
-            expert, celebs.bazaar_experts.teamowner)
-
-        self.assertEqual(self.all_branches, self._getBranches(expert))
-
-
 class TestCodebrowseURL(TestCaseWithFactory):
     """Tests for `Branch.codebrowse_url`."""
 
@@ -1539,6 +1425,50 @@ class TestCodebrowseURL(TestCaseWithFactory):
         self.assertEqual(
             'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
             branch.codebrowse_url('a', 'b'))
+
+
+class TestBranchNamespace(TestCaseWithFactory):
+    """Tests for `IBranch.namespace`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertNamespaceEqual(self, namespace_one, namespace_two):
+        """Assert that `namespace_one` equals `namespace_two`."""
+        namespace_one = removeSecurityProxy(namespace_one)
+        namespace_two = removeSecurityProxy(namespace_two)
+        self.assertEqual(namespace_one.__class__, namespace_two.__class__)
+        self.assertEqual(namespace_one.owner, namespace_two.owner)
+        self.assertEqual(
+            getattr(namespace_one, 'sourcepackage', None),
+            getattr(namespace_two, 'sourcepackage', None))
+        self.assertEqual(
+            getattr(namespace_one, 'product', None),
+            getattr(namespace_two, 'product', None))
+
+    def test_namespace_personal(self):
+        # The namespace attribute of a personal branch points to the namespace
+        # that corresponds to ~owner/+junk.
+        branch = self.factory.makePersonalBranch()
+        namespace = getUtility(IBranchNamespaceSet).get(person=branch.owner)
+        self.assertNamespaceEqual(namespace, branch.namespace)
+
+    def test_namespace_package(self):
+        # The namespace attribute of a package branch points to the namespace
+        # that corresponds to
+        # ~owner/distribution/distroseries/sourcepackagename.
+        branch = self.factory.makePackageBranch()
+        namespace = getUtility(IBranchNamespaceSet).get(
+            person=branch.owner, distroseries=branch.distroseries,
+            sourcepackagename=branch.sourcepackagename)
+        self.assertNamespaceEqual(namespace, branch.namespace)
+
+    def test_namespace_product(self):
+        # The namespace attribute of a product branch points to the namespace
+        # that corresponds to ~owner/product.
+        branch = self.factory.makeProductBranch()
+        namespace = getUtility(IBranchNamespaceSet).get(
+            person=branch.owner, product=branch.product)
+        self.assertNamespaceEqual(namespace, branch.namespace)
 
 
 def test_suite():

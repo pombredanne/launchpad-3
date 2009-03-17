@@ -4,7 +4,7 @@
   define-macro="master"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    version string:Launchpad 2.2.1 (r${revno});
+    version string:Launchpad 2.2.2 (r${revno});
   "
 ><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
@@ -109,6 +109,8 @@
       <script type="text/javascript"
               tal:attributes="src string:${yui}/base/base.js"></script>
       <script type="text/javascript"
+              tal:attributes="src string:${yui}/substitute/substitute.js"></script>
+      <script type="text/javascript"
               tal:attributes="src string:${yui}/anim/anim.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/classnamemanager/classnamemanager.js"></script>
@@ -116,6 +118,8 @@
               tal:attributes="src string:${yui}/plugin/plugin.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/widget/widget.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/cookie/cookie.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>
@@ -167,6 +171,9 @@
                 ></script>
       </tal:not-devmode>
     </tal:needs-gmap2>
+    <script type="text/javascript"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/lp/mapping.js"></script>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>

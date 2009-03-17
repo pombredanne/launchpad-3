@@ -26,8 +26,8 @@ class IBranchNamespace(Interface):
         "The name of the namespace. This is prepended to the branch name.")
 
     def createBranch(branch_type, name, registrant, url=None, title=None,
-                     lifecycle_status=BranchLifecycleStatus.NEW, summary=None,
-                     whiteboard=None):
+                     lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
+                     summary=None, whiteboard=None):
         """Create and return an `IBranch` in this namespace."""
 
     def createBranchWithPrefix(branch_type, prefix, registrant, url=None):

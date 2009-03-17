@@ -19,13 +19,18 @@ from canonical.launchpad.interfaces import (
     ICodeReviewCommentDeletion,
     )
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 
 
 class CodeReviewComment(SQLBase):
     """A table linking branch merge proposals and messages."""
 
-    implements(IBranchNavigationMenu, ICodeReviewComment,
-        ICodeReviewCommentDeletion)
+    implements(
+        IBranchNavigationMenu,
+        ICodeReviewComment,
+        ICodeReviewCommentDeletion,
+        IHasBranchTarget,
+        )
 
     _table = 'CodeReviewMessage'
 
@@ -35,6 +40,11 @@ class CodeReviewComment(SQLBase):
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
     vote = EnumCol(dbName='vote', notNull=False, schema=CodeReviewVote)
     vote_tag = StringCol(default=None)
+
+    @property
+    def target(self):
+        """See `IHasBranchTarget`."""
+        return self.branch_merge_proposal.target
 
     @property
     def title(self):

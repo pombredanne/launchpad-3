@@ -15,10 +15,10 @@ __all__ = [
 
 from zope.interface import Attribute
 from zope.schema import Object
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.component import IComponent
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class ISourcePackage(IBugTarget):

@@ -44,7 +44,8 @@ class _BaseNamespace:
     """Common code for branch namespaces."""
 
     def createBranch(self, branch_type, name, registrant, url=None,
-                     title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+                     title=None,
+                     lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
                      summary=None, whiteboard=None, date_created=None,
                      branch_format=None, repository_format=None,
                      control_format=None):

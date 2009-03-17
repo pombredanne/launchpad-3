@@ -34,6 +34,7 @@ class JobRunner(object):
         transaction.commit()
         try:
             job.job.start()
+            transaction.commit()
             job.run()
         except Exception:
             # Commit transaction to update the DB time.

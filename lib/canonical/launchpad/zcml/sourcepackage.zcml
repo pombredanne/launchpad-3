@@ -43,6 +43,12 @@
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
+    layer="canonical.launchpad.layers.CodeLayer"
+    name="+branches"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISourcePackage"
     layer="canonical.launchpad.layers.BugsLayer"
     name="+bugs"
     />
@@ -206,5 +212,14 @@
       template="../templates/sourcepackage-edit-packaging.pt"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.sourcepackage.ISourcePackage"
+    class="canonical.launchpad.browser.branchlisting.SourcePackageBranchesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+branches"
+    template="../templates/sourcepackage-branches.pt"
+    />
 
 </configure>

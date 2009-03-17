@@ -9,7 +9,6 @@ from zope.app.form.browser.textwidgets import TextAreaWidget, TextWidget
 from zope.app.form.interfaces import ConversionError
 
 from canonical.launchpad.interfaces import UnexpectedFormData
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 # XXX matsubara 2006-05-10: Should I move our NewLineToSpacesWidget to
 # this module?

@@ -22,7 +22,8 @@
                   getSubscription parent_subscription_target
                   getBugNotificationsRecipients
                   getReleasesAndPublishingHistory
-                  upstream_product" />
+                  upstream_product target_type_display
+                  official_bug_tags" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addSubscription addBugSubscription

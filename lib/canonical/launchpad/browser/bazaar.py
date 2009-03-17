@@ -92,12 +92,11 @@ class ProductInfo:
     delegates(IProduct, 'product')
 
     def __init__(
-        self, product, num_branches, branch_size, elapsed, important):
+        self, product, num_branches, branch_size, elapsed):
         self.product = product
         self.num_branches = num_branches
         self.branch_size = branch_size
         self.elapsed_since_commit = elapsed
-        self.important = important
 
     @property
     def branch_class(self):
@@ -114,17 +113,8 @@ class ProductInfo:
         return "light"
 
     @property
-    def branch_highlight(self):
-        """Return 'highlight' or 'shade'."""
-        if self.important:
-            return 'highlight'
-        else:
-            return 'shade'
-
-    @property
     def html_class(self):
-        return "%s cloud-%s-%s" % (
-            self.branch_class, self.branch_highlight, self.time_darkness)
+        return "%s cloud-%s" % (self.branch_class, self.time_darkness)
 
     @property
     def html_title(self):
@@ -147,28 +137,48 @@ class ProductInfo:
 class BazaarProductView:
     """Browser class for products gettable with Bazaar."""
 
+    def _make_distribution_map(self, values, percentile_map):
+        """Given some values and a map of percentiles to other values, return
+        a function that will take a value in the same domain as 'values' and
+        map it to a value in the 'percentile_map' dict.
+
+        There *must* be a percentile_map entry for 1.0.
+        """
+        def constrained_minimum(xs, a):
+            """Return the smallest value of 'xs' strictly bigger than 'a'."""
+            return min(x for x in xs if x > a)
+
+        cutoffs = percentile_map.keys()
+        num_values = float(len(values))
+        value_to_cutoffs = {}
+        for index, value in enumerate(values):
+            cutoff = constrained_minimum(cutoffs, (index / num_values))
+            value_to_cutoffs[value] = percentile_map[cutoff]
+        if num_values > 0 and 1 in percentile_map:
+            value_to_cutoffs[values[-1]] = percentile_map[1]
+        return value_to_cutoffs
+
     def products(self, num_products=None):
         product_info = sorted(
             list(getUtility(IBranchCloud).getProductsWithInfo(num_products)),
             key=lambda data: data[0].name)
         now = datetime.today()
         counts = sorted(zip(*product_info)[1])
-        # Lowest half are small.
-        small_count = counts[len(counts)/2]
-        # Top 20% are big.
-        large_count = counts[-(len(counts)/5)]
+        size_mapping = {
+            0.2: 'smallest',
+            0.4: 'small',
+            0.6: 'medium',
+            0.8: 'large',
+            1.0: 'largest',
+            }
+        num_branches_to_size = self._make_distribution_map(
+            counts, size_mapping)
+
         for product, num_branches, last_revision_date in product_info:
             # Projects with no branches are not interesting.
             if num_branches == 0:
                 continue
-            if num_branches > large_count:
-                branch_size = 'large'
-            elif num_branches < small_count:
-                branch_size = 'small'
-            else:
-                branch_size = 'medium'
+            branch_size = num_branches_to_size[num_branches]
             elapsed = now - last_revision_date
-            # We want to highlight products that actually _use_ Launchpad.
-            important = product.official_codehosting
             yield ProductInfo(
-                product, num_branches, branch_size, elapsed, important)
+                product, num_branches, branch_size, elapsed)

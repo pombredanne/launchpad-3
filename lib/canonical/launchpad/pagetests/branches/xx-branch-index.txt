@@ -220,7 +220,7 @@ for the branch's canonical location.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(get_branch_details_table())
     Project: GNOME Terminal (Unspecified)
-    Status: New
+    Status: Development
     Upload URL: Only Sample Person can upload to this branch.
       If you are Sample Person please log in for upload directions.
 
@@ -246,7 +246,7 @@ been mirrored:
     >>> browser.open(
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirrored')
     >>> print extract_text(get_branch_details_table())
-    Status: New
+    Status: Development
     Location: http://example.com/mirrored
     Last mirrored: 2007-10-01
     Next mirror: Disabled
@@ -280,7 +280,7 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirror-disabled')
     >>> print extract_text(get_branch_details_table())
-    Status: New
+    Status: Development
     Location: http://example.com/disabled
     Last mirrored: Not mirrored yet
     Next mirror: Disabled
@@ -358,7 +358,7 @@ So we need to fake that here.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
     Project: The Landscape Project (Unspecified)
-    Status: New
+    Status: Development
     Get this branch:
       bzr branch lp://dev/~landscape-developers/landscape/trunk
     ...
@@ -370,7 +370,7 @@ Public branches use the lp spec bzr lookup name.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
     Project: GNOME Terminal (Unspecified)
-    Status: New
+    Status: Development
     Get this branch: bzr branch lp://dev/~name12/gnome-terminal/scanned
     ...
 

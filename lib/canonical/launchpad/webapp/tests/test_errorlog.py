@@ -414,6 +414,7 @@ class TestErrorReportingUtility(unittest.TestCase):
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
+        self.assertEqual(request.oops.id, 'OOPS-91T1')
 
     def test_raising_with_xmlrpc_request(self):
         # Test ErrorReportingUtility.raising() with an XML-RPC request.

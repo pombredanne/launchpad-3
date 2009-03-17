@@ -4,7 +4,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-details">
+<div class="portlet" id="portlet-details"
+  tal:define="overview_menu context/menu:overview">
 
   <h2 tal:condition="not: context/is_team">Bragging rights</h2>
   <h2 tal:condition="context/is_team">Summary</h2>
@@ -30,16 +31,14 @@
       <b>Karma:</b>
       <a
         id="karma-total"
-        tal:define="link context/menu:overview/karma"
-        tal:attributes="href link/url"
+        tal:attributes="href overview_menu/karma/url"
         tal:content="context/karma">342</a><br />
 
       <tal:ubuntero condition="context/is_ubuntero"><b>Ubuntero:</b>
         <a
           id="ubuntero"
           tal:condition="context/required:launchpad.Edit"
-          tal:define="link context/menu:overview/codesofconduct"
-          tal:attributes="href link/url"
+          tal:attributes="href overview_menu/codesofconduct/url"
           >Yes</a>
          <span
            id="ubuntero"
@@ -112,14 +111,12 @@
                >Mailing list archive</a>
           </td>
         </tr>
-        <tal:can_see_subscribers condition="context/required:launchpad.Edit">
-          <tr>
-            <td><a id="mailing-list-subscribers"
-                   tal:attributes="href context/fmt:url/+mailing-list-subscribers"
-                   >Mailing list subscribers</a>
-            </td>
-          </tr>
-        </tal:can_see_subscribers>
+        <tr>
+          <td><a id="mailing-list-subscribers"
+                 tal:attributes="href context/fmt:url/+mailing-list-subscribers"
+                 >Mailing list subscribers</a>
+          </td>
+        </tr>
       </table>
 
     </tal:is_team>

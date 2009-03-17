@@ -97,24 +97,11 @@ from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpcontrol import SMTPControl
-
+from canonical.lazr.testing.layers import MockRootFolder
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
-WAIT_INTERVAL = datetime.timedelta(seconds=120)
-
-
-class MockRootFolder:
-    """Implement the minimum functionality required by Z3 ZODB dependencies
-
-    Installed as part of FunctionalLayer.testSetUp() to allow the http()
-    method (zope.app.testing.functional.HTTPCaller) to work.
-    """
-    @property
-    def _p_jar(self):
-        return self
-    def sync(self):
-        pass
+WAIT_INTERVAL = datetime.timedelta(seconds=180)
 
 
 class LayerError(Exception):
@@ -1406,8 +1393,7 @@ class LayerProcessController:
         if cls.appserver is not None:
             # Unfortunately, Popen.wait() does not support a timeout, so poll
             # for a little while, then SIGKILL the process if it refuses to
-            # exit.  test_on_merge.py will barf if we hang here for more than
-            # 900 seconds (15 minutes).
+            # exit.  test_on_merge.py will barf if we hang here for too long.
             until = datetime.datetime.now() + WAIT_INTERVAL
             last_chance = False
             if not cls._kill(signal.SIGTERM):
@@ -1477,8 +1463,8 @@ class LayerProcessController:
         """Wait until the app server accepts connection."""
         assert cls.appserver is not None, "App server isn't started."
         root_url = cls.appserver_config.vhost.mainsite.rooturl
-        until = time.time() + 30
-        while time.time() < until:
+        until = datetime.datetime.now() + WAIT_INTERVAL
+        while until > datetime.datetime.now():
             try:
                 connection = urlopen(root_url)
                 connection.read()
@@ -1503,6 +1489,8 @@ class LayerProcessController:
         else:
             os.kill(cls.appserver.pid, signal.SIGTERM)
             cls.appserver = None
+            # Go no further.
+            raise AssertionError('App server startup timed out.')
 
 
 class AppServerLayer(LaunchpadFunctionalLayer):

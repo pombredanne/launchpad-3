@@ -36,15 +36,14 @@ from zope.formlib import form
 from zope.interface import Interface, implements
 from zope.publisher.interfaces import NotFound
 from zope.schema import Choice, Text
+from lazr.delegates import delegates
+from lazr.enum import EnumeratedType, Item
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
-from lazr.delegates import delegates
-from canonical.lazr.enum import EnumeratedType, Item
 from canonical.lazr.interface import copy_field
-
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
@@ -74,6 +73,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
@@ -82,10 +82,9 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, IPrimaryContext)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
@@ -113,29 +112,14 @@ class BranchURL:
         return '%s/%s' % (self.branch.target.name, self.branch.name)
 
 
-class BranchPrimaryContext:
-    """The primary context is the product if there is one."""
-
-    # XXX: JonathanLange 2008-12-08 spec=package-branches: Not sure what
-    # should happen to this class, given that IBranchTarget does something
-    # fairly similar.
-
-    implements(IPrimaryContext)
-
-    def __init__(self, branch):
-        if branch.product is not None:
-            self.context = branch.product
-        else:
-            self.context = branch.owner
-
-
 class BranchHierarchy(Hierarchy):
     """The hierarchy for a branch should be the product if there is one."""
 
     def items(self):
         """See `Hierarchy`."""
-        obj = IPrimaryContext(self.context).context
-        return self._breadcrumbs([(obj, canonical_url(obj))])
+        return self._breadcrumbs(
+            (obj, canonical_url(obj))
+            for obj in IHasBranchTarget(self.context).target.components)
 
 
 class BranchBadges(HasBadgeBase):
@@ -736,13 +720,8 @@ class BranchDeletionView(LaunchpadFormView):
         branch = self.context
         if self.all_permitted():
             # Since the user is going to delete the branch, we need to have
-            # somewhere valid to send them next.  If the branch is junk, we
-            # send the user back to the code listing for the branch owner,
-            # otherwise we send them to the branch listing of the product.
-            if branch.product is None:
-                self.next_url = canonical_url(branch.owner)
-            else:
-                self.next_url = canonical_url(branch.product)
+            # somewhere valid to send them next.
+            self.next_url = canonical_url(branch.target)
             message = "Branch %s deleted." % branch.unique_name
             self.context.destroySelf(break_references=True)
             self.request.response.addNotification(message)

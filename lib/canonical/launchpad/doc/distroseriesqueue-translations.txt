@@ -347,7 +347,7 @@ For translations from auto-synced packages we consider the importer to be
   >>> translations_upload.publish_ROSETTA_TRANSLATIONS()
   Imported by: katie
 
-Non-auto-sync uploads by 'katie' are treated as if importer isn't known.
+Non-auto-sync uploads by 'katie' still indicate 'katie' as the uploader.
 
   >>> non_sync_package_upload = MockPackageUpload(
   ...     release_pocket, False, katie_sourcepackagerelease)
@@ -355,7 +355,7 @@ Non-auto-sync uploads by 'katie' are treated as if importer isn't known.
   False
   >>> translations_upload.packageupload = non_sync_package_upload
   >>> translations_upload.publish_ROSETTA_TRANSLATIONS()
-  Imported by: None
+  Imported by: katie
 
 Uploads by anyone else are treated as if importer is the packager.
 

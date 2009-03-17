@@ -15,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.xmlrpc.branch import PublicCodehostingAPI
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer

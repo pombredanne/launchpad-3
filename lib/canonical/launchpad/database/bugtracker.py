@@ -46,7 +46,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 def normalise_leading_slashes(rest):
@@ -168,37 +168,50 @@ class BugTracker(SQLBase):
 
     _filing_url_patterns = {
         BugTrackerType.BUGZILLA: (
-            "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"),
-        BugTrackerType.MANTIS: "%(base_url)s/bug_report_advanced_page.php",
-        BugTrackerType.PHPPROJECT: "%(base_url)s/report.php",
-        BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=item",
+            "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
+            "&short_desc=%(summary)s&long_desc=%(description)s"),
+        BugTrackerType.MANTIS: (
+            "%(base_url)s/bug_report_advanced_page.php"
+            "?summary=%(summary)s&description=%(description)s"),
+        BugTrackerType.PHPPROJECT: (
+            "%(base_url)s/report.php"
+            "?in[sdesc]=%(summary)s&in[ldesc]=%(description)s"),
+        BugTrackerType.ROUNDUP: (
+            "%(base_url)s/issue?@template=item&title=%(summary)s"
+            "&@note=%(description)s"),
         BugTrackerType.RT: (
-            "%(base_url)s/Ticket/Create.html?Queue=%(remote_product)s"),
+            "%(base_url)s/Ticket/Create.html?Queue=%(remote_product)s"
+            "&Subject=%(summary)s&Content=%(description)s"),
         BugTrackerType.SAVANE: (
             "%(base_url)s/bugs/?func=additem&group=%(remote_product)s"),
         BugTrackerType.SOURCEFORGE: (
             "%(base_url)s/%(tracker)s/?func=add&"
-                "group_id=%(group_id)s&atid=%(at_id)s"),
+            "group_id=%(group_id)s&atid=%(at_id)s"),
         BugTrackerType.TRAC: "%(base_url)s/newticket",
         }
 
     _search_url_patterns = {
         BugTrackerType.BUGZILLA: (
-            "%(base_url)s/query.cgi?product=%(remote_product)s"),
+            "%(base_url)s/query.cgi?product=%(remote_product)s"
+            "&short_desc=%(summary)s"),
         BugTrackerType.DEBBUGS: (
-            "%(base_url)s/cgi-bin/pkgreport.cgi?package=%(remote_product)s"),
+            "%(base_url)s/cgi-bin/search.cgi?phrase=%(summary)s"
+            "&attribute_field=package&attribute_operator=STROREQ"
+            "&attribute_value=%(remote_product)s"),
         BugTrackerType.MANTIS: "%(base_url)s/view_all_bug_page.php",
-        BugTrackerType.PHPPROJECT: "%(base_url)s/search.php",
-        BugTrackerType.ROUNDUP: "%(base_url)s/issue?@template=search",
+        BugTrackerType.PHPPROJECT: (
+            "%(base_url)s/search.php?search_for=%(summary)s"),
+        BugTrackerType.ROUNDUP: (
+            "%(base_url)s/issue?@template=search&@search_text=%(summary)s"),
         BugTrackerType.RT: (
             "%(base_url)s/Search/Build.html?Query=Queue = "
-                "'%(remote_product)s'"),
+            "'%(remote_product)s' AND Subject LIKE '%(summary)s'"),
         BugTrackerType.SAVANE: (
             "%(base_url)s/bugs/?func=search&group=%(remote_product)s"),
         BugTrackerType.SOURCEFORGE: (
-            "%(base_url)s/search/?group_id=%(group_id)s&"
-                "type_of_search=artifact"),
-        BugTrackerType.TRAC: "%(base_url)s/search?ticket=on",
+            "%(base_url)s/search/?group_id=%(group_id)s"
+            "&some_word=%(summary)s&type_of_search=artifact"),
+        BugTrackerType.TRAC: "%(base_url)s/search?ticket=on&q=%(summary)s",
         }
 
     @property
@@ -214,7 +227,8 @@ class BugTracker(SQLBase):
         else:
             return False
 
-    def getBugFilingAndSearchLinks(self, remote_product):
+    def getBugFilingAndSearchLinks(self, remote_product, summary=None,
+                                   description=None):
         """See `IBugTracker`."""
         bugtracker_urls = {'bug_filing_url': None, 'bug_search_url': None}
 
@@ -236,6 +250,14 @@ class BugTracker(SQLBase):
         # Make sure that we don't put > 1 '/' in returned URLs.
         base_url = self.baseurl.rstrip('/')
 
+        # If summary or description are None, convert them to empty
+        # strings to that we don't try to pass anything to the upstream
+        # bug tracker.
+        if summary is None:
+            summary = ''
+        if description is None:
+            description = ''
+
         if self.bugtrackertype == BugTrackerType.SOURCEFORGE:
             # SourceForge bug trackers use a group ID and an ATID to
             # file a bug, rather than a product name. remote_product
@@ -256,12 +278,16 @@ class BugTracker(SQLBase):
                 'tracker': quote(tracker),
                 'group_id': quote(group_id),
                 'at_id': quote(at_id),
+                'summary': quote(summary),
+                'description': quote(description),
                 }
 
         else:
             url_components = {
                 'base_url': base_url,
                 'remote_product': quote(remote_product),
+                'summary': quote(summary),
+                'description': quote(description),
                 }
 
         if bug_filing_pattern is not None:

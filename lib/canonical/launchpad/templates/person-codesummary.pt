@@ -6,26 +6,21 @@
   tal:condition="view/show_summary">
 
   <p>
-    <tal:link
-        define="link context/menu:branches/all_related"
-        replace="structure link/render"
-        />:
-    <strong class="count" tal:content="view/total_branch_count">100</strong>
-    (<strong class="count" tal:content="view/registered_branch_count">100</strong>
-    <tal:link
-        define="link context/menu:branches/registered"
-        replace="structure link/render"
-        />,
     <strong class="count" tal:content="view/owned_branch_count">100</strong>
     <tal:link
         define="link context/menu:branches/owned"
+        replace="structure link/render"
+        />,
+    <strong class="count" tal:content="view/registered_branch_count">100</strong>
+    <tal:link
+        define="link context/menu:branches/registered"
         replace="structure link/render"
         />,
     <strong class="count" tal:content="view/subscribed_branch_count">100</strong>
     <tal:link
         define="link context/menu:branches/subscribed"
         replace="structure link/render"
-        />)
+        />
   </p>
   <p id="merge-counts">
     <strong class="count" tal:content="view/active_review_count">5</strong>

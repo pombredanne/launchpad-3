@@ -41,13 +41,20 @@
     permission="zope.Public"
     />
 
+  <!-- Using permission="Public" here causes some tests to fail
+  (https://pastebin.canonical.com/13975/), so we use trusted="yes" here. -->
+  <adapter
+    factory="canonical.launchpad.database.person.person_from_account"
+    trusted="yes"
+    />
+
   <class class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.person.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.person.ITeamPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasStanding"/>
     <allow
-      interface="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
+      interface="canonical.launchpad.interfaces.person.IPersonCommAdminWriteRestricted"
       />
 
     <require
@@ -66,10 +73,12 @@
       permission="launchpad.Edit"
       set_schema="canonical.launchpad.interfaces.person.IPersonPublic
                   canonical.launchpad.interfaces.person.ITeamPublic"
+      set_attributes="name displayname"
       />
+
     <require
-      permission="launchpad.Admin"
-      set_schema="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
+      permission="launchpad.Commercial"
+      set_schema="canonical.launchpad.interfaces.person.IPersonCommAdminWriteRestricted"
       />
     <require
       permission="launchpad.Special"
@@ -84,11 +93,15 @@
   <browser:menus
     module="canonical.launchpad.browser.person"
     classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-        PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
+        PersonSpecsMenu TeamBugsMenu TeamSpecsMenu
         PersonSetContextMenu PersonTranslationsMenu
         PersonOverviewNavigationMenu PersonEditNavigationMenu
         PersonRelatedSoftwareNavigationMenu TeamOverviewNavigationMenu"
     />
+
+  <browser:menus
+     module="canonical.launchpad.browser.branchlisting"
+     classes="PersonBranchesMenu" />
 
   <browser:url
     for="canonical.launchpad.interfaces.IPerson"
@@ -129,6 +142,14 @@
     name="+review"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonAdministerView"
+    permission="launchpad.Admin"
+    template="../templates/person-review.pt"
+    />
+
+  <browser:page
+    name="+reviewaccount"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonAccountAdministerView"
     permission="launchpad.Admin"
     template="../templates/person-review.pt"
     />
@@ -458,7 +479,7 @@
     name="+bugs"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
-    class="canonical.launchpad.browser.PersonRelatedBugsView"
+    class="canonical.launchpad.browser.PersonRelatedBugTaskSearchListingView"
     permission="zope.Public"
     template="../templates/buglisting-embedded-advanced-search.pt"
     />
@@ -503,7 +524,7 @@
     name="+reportedbugs"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
-    class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
+    class="canonical.launchpad.browser.PersonReportedBugTaskSearchListingView"
     permission="zope.Public"
     template="../templates/buglisting-embedded-advanced-search.pt"
     />
@@ -512,7 +533,7 @@
     name="+subscribedbugs"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
-    class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
+    class="canonical.launchpad.browser.PersonSubscribedBugTaskSearchListingView"
     permission="zope.Public"
     template="../templates/buglisting-embedded-advanced-search.pt"
     />
@@ -599,7 +620,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonBranchesView"
+    class="canonical.launchpad.browser.PersonOwnedBranchesView"
     permission="zope.Public"
     facet="branches"
     name="+branches"
@@ -635,7 +656,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.person.PersonCodeSummaryView"
+    class="canonical.launchpad.browser.branchlisting.PersonCodeSummaryView"
     permission="zope.Public"
     facet="branches"
     name="+codesummary"
@@ -644,7 +665,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.person.PersonActiveReviewsView"
+    class="canonical.launchpad.browser.branchmergeproposallisting.PersonActiveReviewsView"
     permission="zope.Public"
     facet="branches"
     name="+activereviews"
@@ -653,7 +674,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.person.PersonRequestedReviewsView"
+    class="canonical.launchpad.browser.branchmergeproposallisting.PersonRequestedReviewsView"
     permission="zope.Public"
     facet="branches"
     name="+requestedreviews"
@@ -662,7 +683,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.person.PersonApprovedMergesView"
+    class="canonical.launchpad.browser.branchmergeproposallisting.PersonApprovedMergesView"
     permission="zope.Public"
     facet="branches"
     name="+approvedmerges"
@@ -713,7 +734,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
-    permission="launchpad.Edit"
+    permission="zope.Public"
     name="+mailing-list-subscribers"
     template="../templates/team-mailinglist-subscribers.pt"
     />
@@ -900,6 +921,14 @@
     permission="zope.Public"
     />
 
+  <browser:page
+    name="+archivesubscriptions"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.archivesubscription.PersonArchiveSubscriptionsView"
+    permission="launchpad.Admin"
+    template="../templates/person-archive-subscriptions.pt"
+    />
+
   <!-- PersonSet -->
   <class class="canonical.launchpad.database.PersonSet">
      <allow interface="canonical.launchpad.interfaces.IPersonSet" />
@@ -1011,6 +1040,7 @@
         template="../templates/people-portlet-about.pt"
         />
   </browser:pages>
+
 </facet>
 
 <facet facet="answers">

@@ -21,7 +21,10 @@ __all__ = [
     ]
 
 from StringIO import StringIO
+import subprocess
 import xmlrpclib
+
+from canonical.config import config
 
 
 class MockBuilder:
@@ -49,7 +52,7 @@ class MockBuilder:
     def requestAbort(self):
         return self.slave.abort()
 
-    def resumeSlaveHost(self, logger):
+    def resumeSlave(self, logger):
         return ('out', 'err')
 
     def checkSlaveAlive(self):
@@ -166,6 +169,13 @@ class OkSlave:
     def info(self):
         return ('1.0', 'i386', 'debian')
 
+    def resume(self):
+        resume_argv = config.builddmaster.vm_resume_command.split()
+        resume_process = subprocess.Popen(
+            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = resume_process.communicate()
+
+        return (stdout, stderr, resume_process.returncode)
 
 class BuildingSlave(OkSlave):
     """A mock slave that looks like it's currently building."""

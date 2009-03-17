@@ -36,7 +36,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.widgets import CheckBoxMatrixWidget, LabeledMultiCheckBoxWidget
-from canonical.launchpad.helpers import intOrZero, shortlist
+from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.launchpadform import (
@@ -639,8 +639,7 @@ class ShippingRequestsView:
 
     @cachedproperty
     def shipitrequests(self):
-        return shortlist(
-            self.batchNavigator.currentBatch(), longest_expected=100)
+        return self.batchNavigator.currentBatch()
 
     @cachedproperty
     def totals_for_shipitrequests(self):

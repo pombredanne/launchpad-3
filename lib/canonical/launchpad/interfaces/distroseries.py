@@ -16,12 +16,14 @@ __all__ = [
 
 from zope.schema import Bool, Datetime, Choice, Object, TextLine
 from zope.interface import Interface, Attribute
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
@@ -34,7 +36,6 @@ from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
@@ -114,7 +115,8 @@ class IDistroSeriesEditRestricted(Interface):
 
 
 class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
-                          IBugTarget, ISpecificationGoal, IHasMilestones):
+                          IBugTarget, ISpecificationGoal, IHasMilestones,
+                          IHasBuildRecords):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")

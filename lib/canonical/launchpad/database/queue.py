@@ -1541,13 +1541,8 @@ class PackageUploadCustom(SQLBase):
             # packages in main.
             return
 
-        # Set the importer to `katie` only for actual Debian auto-syncs.
+        # Set the importer to package creator.
         importer = sourcepackagerelease.creator
-        importer_email = importer.preferredemail
-        katie = getUtility(ILaunchpadCelebrities).katie
-        if (importer == katie and
-            not self.packageupload.isAutoSyncUpload(importer_email.email)):
-            importer = None
 
         # Attach the translation tarball. It's always published.
         try:

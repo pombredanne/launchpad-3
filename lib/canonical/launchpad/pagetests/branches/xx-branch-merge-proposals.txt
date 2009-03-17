@@ -65,13 +65,6 @@ Registering the merge proposal takes the user to the new merge proposal.
     >>> print nopriv_browser.url
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
 
-An email notification is emitted when the merge proposal is created.
-
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> [notification] = pop_notifications()
-    >>> print notification['Subject']
-    [Merge] lp://dev/~name12/gnome-terminal/klingon into
-      lp://dev/~name12/gnome-terminal/main
 
 == Landing Targets ==
 
@@ -117,10 +110,6 @@ shown.
     ~name12/gnome-terminal/main - view proposal details
     Needs review
 
-Consume notification.
-
-    >>> [_unused] = pop_notifications()
-
 
 == Landing Candidates ==
 
@@ -132,7 +121,7 @@ shown first.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Merge Proposals').click()
     >>> printMergeProposals(browser, 'landing-candidates')
-    ~name12/gnome-terminal/scanned (New) - view proposal details
+    ~name12/gnome-terminal/scanned (Development) - view proposal details
       Needs review
     ~name12/gnome-terminal/klingon (Experimental) - view proposal details
       Merge proposed by No Privileges Person
@@ -187,10 +176,6 @@ yet in the target branch are also shown.
       Import of Mozilla Firefox 0.9
     >>> firefox_merge_url = sample_browser.url
 
-Consume notification.
-
-    >>> [_unused] = pop_notifications()
-
 
 == Deleting merge proposals ==
 
@@ -220,24 +205,6 @@ You can request a review of a merge proposal.
     >>> sample_browser.getControl('Review type').value = 'first'
     >>> sample_browser.getControl('Request Review').click()
 
-This causes a notification to be sent.
-
-    >>> [notification] = pop_notifications()
-
-The message notifies the requested reviewer.
-
-    >>> print notification.get_payload(decode=True)
-    You have been requested to review the proposed merge of
-    lp://dev/~name12/gnome-terminal/klingon into
-    lp://dev/~name12/gnome-terminal/main.
-    <BLANKLINE>
-    -- 
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are requested to review the proposed merge of
-    lp://dev/~name12/gnome-terminal/klingon into
-    lp://dev/~name12/gnome-terminal/main.
-    <BLANKLINE>
-
 The status of the merge proposal is updated to "Needs review".
 
     >>> print_summary(sample_browser)
@@ -252,21 +219,6 @@ Additional reviews can be requested.
     >>> sample_browser.getControl('Reviewer').value = 'name12'
     >>> sample_browser.getControl('Request Review').click()
 
-This sends a notification only to the requested reviewer.
-
-    >>> [notification] = pop_notifications()
-    >>> print notification.get_payload(decode=True)
-    You have been requested to review the proposed merge of
-    lp://dev/~name12/gnome-terminal/klingon into
-    lp://dev/~name12/gnome-terminal/main.
-    <BLANKLINE>
-    -- 
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are requested to review the proposed merge of
-    lp://dev/~name12/gnome-terminal/klingon into
-    lp://dev/~name12/gnome-terminal/main.
-    <BLANKLINE>
-
 You can even re-request the same person to review, so that a new email is
 sent.
 
@@ -274,18 +226,6 @@ sent.
     >>> sample_browser.getControl('Reviewer').value = 'sabdfl'
     >>> sample_browser.getControl('Review type').value = 'second'
     >>> sample_browser.getControl('Request Review').click()
-    >>> [notification] = pop_notifications()
-    >>> print notification.get_payload(decode=True)
-    You have been requested to review the proposed merge of
-    lp://dev/~name12/gnome-terminal/klingon into
-    lp://dev/~name12/gnome-terminal/main.
-    <BLANKLINE>
-    -- 
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are requested to review the proposed merge of
-    lp://dev/~name12/gnome-terminal/klingon into
-    lp://dev/~name12/gnome-terminal/main.
-    <BLANKLINE>
 
 Only the last request is listed, showing the last review type.
 
@@ -312,10 +252,6 @@ bugs and urls.
     ...     {'class': 'boardCommentBody codereviewcomment'}).contents[1]
     <pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;">This fixes <a href="/bugs/1" title="Firefox does not support SVG">bug #1</a></pre>
 
-
-Consume notifications.
-
-    >>> _unused = pop_notifications()
 
 == Marking as merged ==
 
@@ -358,29 +294,6 @@ The proposal is now shown as have being merged.
     Status: Merged
     ...
 
-An email notification is also created and sent to both the subscribers
-and the reviewers.
-
-    >>> notifications = pop_notifications()
-    >>> for notification in notifications:
-    ...     print notification['To']
-    Foo Bar <foo.bar@canonical.com>
-    Mark Shuttleworth <mark@hbd.com>
-    Sample Person <test@canonical.com>
-    >>> notification = notifications[0]
-    >>> print notification['Subject']
-    [Merge] lp://dev/~name12/gnome-terminal/klingon into
-      lp://dev/~name12/gnome-terminal/main updated
-    >>> print notification.get_payload(decode=True)
-    The proposal to merge lp://dev/~name12/gnome-terminal/klingon
-    into lp://dev/~name12/gnome-terminal/main
-    has been updated.
-    <BLANKLINE>
-         Status: Needs review => Merged
-    -- 
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are subscribed to branch lp://dev/~name12/gnome-terminal/main.
-    <BLANKLINE>
 
 The source branch is still shown on the branch's merges page.
 
@@ -396,7 +309,7 @@ Gone from the target branch.
     >>> nopriv_browser.getLink('~name12/gnome-terminal/main').click()
     >>> nopriv_browser.getLink(url="+merges").click()
     >>> printMergeProposals(nopriv_browser, 'landing-candidates')
-    ~name12/gnome-terminal/scanned (New) - view proposal details
+    ~name12/gnome-terminal/scanned (Development) - view proposal details
       Needs review
 
 If the user subsequently wants to set the merged revision number,
@@ -431,11 +344,6 @@ next to the heading "Merged at revision".
     ...     sample_browser.contents, 'landing-targets'))
     &raquo; Merged into lp://dev/~name12/gnome-terminal/main at revision 42
 
-No email notification is triggered.
-
-    >>> pop_notifications()
-    []
-
 
 == Resubmitting proposals ==
 
@@ -461,21 +369,6 @@ This takes the user to the resubmission page.
 
     >>> sample_browser.getControl('Resubmit').click()
 
-Emails are sent out to say the the old proposal was superseded, and that the
-new proposal has been created.
-
-    >>> notifications = pop_notifications()
-    >>> len(notifications)
-    2
-    >>> subjects = [notification['Subject'] for notification in notifications]
-    >>> # The order of notifications appears to be non-deterministic
-    >>> subjects.sort()
-    >>> print subjects[0]
-    [Merge] lp://dev/~name12/gnome-terminal/scanned into
-      lp://dev/~name12/gnome-terminal/main
-    >>> print subjects[1]
-    [Merge] lp://dev/~name12/gnome-terminal/scanned into
-      lp://dev/~name12/gnome-terminal/main updated
 
 The new merge proposal is created as needs review, and there is
 a link back to the superseded proposal.
@@ -684,9 +577,8 @@ they'll get a 404.
 
 Create merge proposal with a review diff, and go to its index page.
 
-    >>> import transaction
-    >>> from canonical.launchpad.database.diff import StaticDiff
     >>> login('admin@canonical.com')
+    >>> from canonical.launchpad.database.diff import StaticDiff
     >>> review_diff = StaticDiff.acquireFromText('a', 'b', 'Fake Diff'
     ...     u'\u1010'.encode('utf-8'))
     >>> transaction.commit()
@@ -707,3 +599,12 @@ If no diff is present, nothing is shown.
     >>> logout()
     >>> print get_review_diff()
     None
+
+If the review diff is empty, then we say it is empty.
+
+    >>> login('admin@canonical.com')
+    >>> bmp.review_diff = StaticDiff.acquireFromText('c', 'd', '')
+    >>> logout()
+    >>> print extract_text(get_review_diff())
+    Review Diff
+    Empty

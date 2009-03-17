@@ -1095,6 +1095,26 @@ We can also search for submissions from a particular user.
     >>> sata_controller.getSubmissions(owner=not_owner).count()
     0
 
+=== Counting unique results ===
+
+The results of getSubmissions are unique, so the underlying implementation
+uses an SQL DISTINCT directive. The count() call issued by Storm is usually
+incorrect for distinct queries, but we decorate the returning result set
+with a special count implementation which corrects count.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> submissions = sata_controller.getSubmissions()
+
+The original result set returns an incorrect result for count()
+
+    >>> print removeSecurityProxy(submissions).result_set.count()
+    2
+
+But the wrapper issues the modified query and returns the correct result.
+
+    >>> print submissions.count()
+    1
+
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 HWDevice.drivers is the set of drivers that are associated via

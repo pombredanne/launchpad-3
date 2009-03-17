@@ -2214,9 +2214,8 @@ The 'sandbox archive' is a PPA that was newly created above.
     >>> uber_copy.publish
     False
 
-== The name uniqueness constraints for archives ==
 
-The names of PPAs must be unique per owner and distribution.
+== The name uniqueness constraints for archives ==
 
 The names of archives other than PPAs must be unique for a given
 distribution. Trying to create an archive with the same name and
@@ -2239,3 +2238,75 @@ archives.
     ...
     AssertionError: archive 'uber-partner' exists ... in 'uberdistro'.
 
+The names of PPAs must be unique per owner and distribution.
+
+    >>> print sabdfl.archive.title
+    PPA for Mark Shuttleworth
+
+    >>> print sabdfl.archive.name
+    ppa
+
+    >>> dup_ppa = getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='ppa')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Person 'sabdfl' already has a PPA named 'ppa'.
+
+While multiple PPAs per user isn't yet fully suported we may create
+other PPAs, but they won't affect the existing traversal from IPerson
+to a single IArchive.
+
+    >>> another_ppa = getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='nightly')
+
+    >>> print another_ppa.owner.displayname
+    Mark Shuttleworth
+
+    >>> print another_ppa.name
+    nightly
+
+`IPerson.archive` is still pointing to the PPA named 'ppa'.
+
+    >>> print sabdfl.archive.title
+    PPA for Mark Shuttleworth
+
+    >>> print sabdfl.archive.name
+    ppa
+
+The ppas named differently than the default ('ppa') have a slightly
+different title format, including their names.
+
+    >>> print another_ppa.title
+    PPA named nightly for Mark Shuttleworth
+
+
+== Looking up named PPAs ==
+
+Additionally to the locked 'archive' property, `IPerson` also offers
+`ppas` property and `getPPAByName` method.
+
+`IPerson.ppas` returns a list with all PPA owned by the context person
+or team ordered by name.
+
+    >>> for ppa in sabdfl.ppas:
+    ...     print ppa.name
+    nightly
+    ppa
+
+`IPerson.getPPAByName` allows call sites to look up PPAs owned by the
+context person with a given name (exact match).
+
+    >>> default_ppa = sabdfl.getPPAByName('ppa')
+    >>> default_ppa == sabdfl.archive
+    True
+
+    >>> nightly_ppa = sabdfl.getPPAByName('nightly')
+    >>> another_ppa == nightly_ppa
+    True
+
+When there are not matching PPAs, None is returned.
+
+    >>> print sabdfl.getPPAByName('not-found')
+    None

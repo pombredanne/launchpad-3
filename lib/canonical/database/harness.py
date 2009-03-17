@@ -56,6 +56,7 @@ def switch_db_user(dbuser, commit_first=True):
 from canonical.launchpad.database import *
 from canonical.launchpad.interfaces import *
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.testing.mail import create_mail_for_directoryMailBox
 from canonical.launchpad.testing.systemdocs import (
     create_initialized_view, create_view)
 

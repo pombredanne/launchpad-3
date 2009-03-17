@@ -233,6 +233,21 @@ A Person may be linked to an Account.
     >>> person.account.openid_identifier
     u'no-priv_oid'
 
+And when the person is linked to an account, it's possible to adapt that
+account into an IPerson.
+
+    >>> IPerson(person.account) == person
+    True
+
+We can't adapt an account which has no person associated with, though.
+
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     AccountCreationRationale, IAccountSet)
+    >>> personless_account = getUtility(IAccountSet).new(
+    ...     AccountCreationRationale.UNKNOWN, 'Display name')
+    >>> print IPerson(personless_account, None)
+    None
+
 
 === Personal standing ===
 
@@ -636,7 +651,8 @@ BugSubscription.subscribed_by attributes.
     >>> myteam = person_set.getByName('myteam')
     >>> guadamen = person_set.getByName('guadamen')
     >>> bug = bug_set.get(1)
-    >>> BugSubscription(bug=bug, person=myteam, subscribed_by=guadamen)
+    >>> bug_subscription = BugSubscription(bug=bug, person=myteam,
+    ...     subscribed_by=guadamen)
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person
@@ -1327,4 +1343,3 @@ be raised.
     Traceback (most recent call last):
       ...
     InvalidName: ThisIsn'tValid is not a valid name for a person.
-

@@ -167,8 +167,11 @@ The status is now IMPORTED:
 The import code has also composed an email with the notification of the
 import.
 
-    >>> subject
-    u'Translation import - Welsh (cy) - firefox in Mozilla Firefox trunk'
+    >>> print subject
+    None
+    >>> print message
+    Hello Mark Shuttleworth,
+    ...
 
 There was no error output this time.
 

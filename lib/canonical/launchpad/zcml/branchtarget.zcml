@@ -31,4 +31,9 @@
            factory="canonical.launchpad.database.branchtarget.ProductBranchTarget"
            />
 
+  <adapter for="canonical.launchpad.interfaces.branchtarget.IBranchTarget"
+           provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+           factory="canonical.launchpad.database.branchtarget.get_canonical_url_data_for_target"
+           />
+
 </configure>

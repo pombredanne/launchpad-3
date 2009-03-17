@@ -150,6 +150,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
 
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, self.path)
+
     def _get_ubuntu(self):
         # XXX: kiko 2006-03-20: Ideally, it would be possible to just do
         # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -422,6 +425,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
+
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.distroseries.official_bug_tags
 
     def getUsedBugTags(self):
         """See `IBugTarget`."""

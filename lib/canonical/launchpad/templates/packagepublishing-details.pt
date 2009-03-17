@@ -18,8 +18,7 @@
       <strong>Deleted</strong>
       <span tal:attributes="title context/datesuperseded/fmt:datetime"
             tal:content="context/datesuperseded/fmt:displaydate" />
-      by <a tal:attributes="href context/removed_by/fmt:url"
-            tal:content="context/removed_by/displayname"/>
+      by <a tal:replace="structure context/removed_by/fmt:link"/>
       <div tal:condition="context/removal_comment"
            tal:content="context/removal_comment" />
     </li>

@@ -11,17 +11,18 @@ __all__ = [
     'IBuild',
     'IBuildRescoreForm',
     'IBuildSet',
-    'IHasBuildRecords',
     'incomplete_building_status',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import (Choice, Datetime, Int, Object, TextLine, Timedelta,
     Text)
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.builder import IBuilder
+from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.processor import IProcessor
@@ -29,10 +30,10 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.lazr.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item)
-from canonical.lazr.rest.declarations import (export_as_webservice_entry,
-    exported)
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+
 
 class BuildStatus(DBEnumeratedType):
     """Build status type
@@ -126,9 +127,10 @@ class IBuild(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    datecreated = Datetime(
-        title=_('Date created'), required=True, readonly=True,
-        description=_("The time when the build request was created."))
+    datecreated = exported(
+        Datetime(
+            title=_('Date created'), required=True, readonly=True,
+            description=_("The time when the build request was created.")))
 
     processor = Object(
         title=_("Processor"), schema=IProcessor,
@@ -145,42 +147,49 @@ class IBuild(Interface):
         required=True, readonly=True,
         description=_("The DistroArchSeries context for this build."))
 
-    archive = Object(
-        title=_("Archive"), schema=IArchive,
-        required=True, readonly=True,
-        description=_("The Archive context for this build."))
+    archive = exported(
+        Reference(
+            title=_("Archive"), schema=IArchive,
+            required=True, readonly=True,
+            description=_("The Archive context for this build.")))
 
-    pocket = Choice(
-        title=_('Pocket'), required=True, vocabulary=PackagePublishingPocket,
-        description=_("The build targeted pocket."))
+    pocket = exported(
+        Choice(
+            title=_('Pocket'), required=True,
+            vocabulary=PackagePublishingPocket,
+            description=_("The build targeted pocket.")))
 
-    buildstate = Choice(
-        title=_('State'), required=True, vocabulary=BuildStatus,
-        description=_("The current build state."))
+    buildstate = exported(
+        Choice(
+            title=_('State'), required=True, vocabulary=BuildStatus,
+            description=_("The current build state.")))
 
     estimated_build_duration = Timedelta(
         title=_("Estimated Build Duration"), required=False,
         description=_("Estimated build duration interval. Optionally "
                       "set during build creation time."))
 
-    date_first_dispatched = Datetime(
-        title=_('Date first dispatched'), required=False,
-        description=_("The actual build start time. Set when the build "
-                      "is dispatched the first time and not changed in "
-                      "subsequent build attempts."))
+    date_first_dispatched = exported(
+        Datetime(
+            title=_('Date first dispatched'), required=False,
+            description=_("The actual build start time. Set when the build "
+                          "is dispatched the first time and not changed in "
+                          "subsequent build attempts.")))
 
-    dependencies = TextLine(
-        title=_("Dependencies"), required=False,
-        description=_("Debian-like dependency line that must be satisfied "
-                      "before attempting to build this request."))
+    dependencies = exported(
+        TextLine(
+            title=_("Dependencies"), required=False,
+            description=_("Debian-like dependency line that must be satisfied"
+                          " before attempting to build this request.")))
 
     builder = Object(
         title=_("Builder"), schema=IBuilder, required=False,
         description=_("The Builder which address this build request."))
 
-    datebuilt = Datetime(
-        title=_('Date built'), required=False,
-        description=_("The time when the build result got collected."))
+    datebuilt = exported(
+        Datetime(
+            title=_('Date built'), required=False,
+            description=_("The time when the build result got collected.")))
 
     buildduration = Timedelta(
         title=_("Build Duration"), required=False,
@@ -191,11 +200,23 @@ class IBuild(Interface):
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the entire buildlog."))
 
+    build_log_url = exported(
+        TextLine(
+            title=_("Build Log URL"), required=False,
+            description=_("A URL for the build log. None if there is no "
+                          "log available.")))
+
     upload_log = Object(
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the upload log for "
                 "build resulting in binaries that could not be processed "
                 "successfully. Otherwise it will be None."))
+
+    upload_log_url = exported(
+        TextLine(
+            title=_("Upload Log URL"), required=False,
+            description=_("A URL for failed upload logs."
+                          "Will be None if there was no failure.")))
 
     # Properties
     current_component = Attribute(
@@ -209,7 +230,11 @@ class IBuild(Interface):
     was_built = Attribute("Whether or not modified by the builddfarm.")
     arch_tag = exported(
         Text(title=_("Architecture tag"), required=False))
-    distribution = Attribute("Shortcut for its distribution.")
+    distribution = exported(
+        Reference(
+            schema=IDistribution,
+            title=_("Distribution"), required=True,
+            description=_("Shortcut for its distribution.")))
     distributionsourcepackagerelease = Attribute("The page showing the "
         "details for this sourcepackagerelease in this distribution.")
     binarypackages = Attribute(
@@ -434,27 +459,6 @@ class IBuildSet(Interface):
                     'builds':[build3]
                 }
         :rtype: ``dict``.
-        """
-
-
-class IHasBuildRecords(Interface):
-    """An Object that has build records"""
-
-    def getBuildRecords(build_state=None, name=None, pocket=None,
-                        user=None):
-        """Return build records owned by the object.
-
-        The optional 'build_state' argument selects build records in a specific
-        state. This excludes the build records generated by Gina by selecting
-        a null datebuilt when buildstate is FULLYBUILT. Results are ordered
-        by descending datebuilt. NEEDSBUILD records are special, they are
-        ordered by descending BuildQueue.lastscore.  If the optional 'name'
-        argument is passed try to find only those builds which the
-        sourcepackagename matches (SQL LIKE).
-        If pocket is specified return only builds for this pocket, otherwise
-        return all.
-        "user" is the requesting user and if specified can be used in
-        permission checks to see if he is allowed to view the build.
         """
 
 

@@ -10,11 +10,14 @@ __all__ = [
     'CollectionResource',
     'Entry',
     'EntryAdapterUtility',
+    'EntryField',
+    'EntryFieldResource',
     'EntryHTMLView',
     'EntryResource',
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'render_field_to_html',
     'ResourceJSONEncoder',
     'RESTUtilityBase',
     'ScopedCollection',
@@ -23,6 +26,7 @@ __all__ = [
     ]
 
 
+import cgi
 import copy
 from cStringIO import StringIO
 from datetime import datetime, date
@@ -34,42 +38,42 @@ import zlib
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
+from zope import component
 from zope.component import (
-    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
+    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter, 
     getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.publisher.http import init_status_codes, status_reasons
-from zope.interface import implements, implementedBy, providedBy
+from zope.interface import (
+    implementer, implements, implementedBy, providedBy, Interface)
 from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFieldsInOrder
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IChoice, IObject)
+    ConstraintNotSatisfied, IBytes, IField, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-from canonical.lazr.enum import BaseItem
+from zope.traversing.browser import absoluteURL
 
-# XXX leonardr 2008-01-25 bug=185958:
-# canonical_url, BatchNavigator, and event code should be moved into lazr.
-from canonical.launchpad import versioninfo
-from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.webapp import canonical_url
+from lazr.enum import BaseItem
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, ILaunchBag)
 from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lazr.interfaces import (
-    ICollection, ICollectionResource, IEntry, IEntryResource,
+from canonical.lazr.interfaces.fields import (
+    ICollectionField, IReferenceChoice)
+from canonical.lazr.interfaces.rest import (
+    ICollection, ICollectionResource, IEntry, IEntryField,
+    IEntryFieldResource, IEntryResource, IFieldHTMLRenderer,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME)
-from canonical.lazr.interfaces.fields import ICollectionField
-from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue,
+    IWebServiceClientRequest, IWebServiceConfiguration, LAZR_WEBSERVICE_NAME)
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -122,8 +126,8 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
 class JSONItem:
     """JSONPublishable adapter for lazr.enum."""
-    adapts(BaseItem)
     implements(IJSONPublishable)
+    adapts(BaseItem)
 
     def __init__(self, context):
         self.context = context
@@ -145,10 +149,6 @@ class HTTPResource:
     # A preparsed template file for WADL representations of resources.
     WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-resource.pt')
 
-    # The representation value used when the client doesn't have
-    # authorization to see the real value.
-    REDACTED_VALUE = 'tag:launchpad.net:2008:redacted'
-
     HTTP_METHOD_OVERRIDE_ERROR = ("X-HTTP-Method-Override can only be used "
                                   "with a POST request.")
 
@@ -159,6 +159,8 @@ class HTTPResource:
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.etags_by_media_type = {}
+        super(HTTPResource, self).__init__(context, request)
 
     def __call__(self):
         """See `IHTTPResource`."""
@@ -255,17 +257,61 @@ class HTTPResource:
         self.request.response.setStatus(412)
         return None
 
-    def getETag(self, media_type):
-        """Calculate an ETag for a representation of this resource.
+    def _getETagCore(self, cache=None):
+        """Calculate the core ETag for a representation.
 
-        The WADL representation of a resource only changes when the
-        software itself changes. Thus, we can use the Launchpad
-        revision number itself as an ETag. We delegate to subclasses
-        when it comes to calculating ETags for other representations.
+        :return: a string that will be used to calculate the full
+        ETag. If None is returned, no ETag at all will be calculated
+        for the given resource and media type.
         """
-        if media_type == self.WADL_TYPE:
-            return '"%s"' % versioninfo.revno
         return None
+
+    def getETag(self, media_type, cache=None):
+        """Calculate the ETag for an entry.
+
+        An ETag is derived from a 'core' string conveying information
+        about the representation itself, plus information about the
+        content type and the current Launchpad revision number. The
+        resulting string is hashed, and there's your ETag.
+
+        :arg unmarshalled_field_values: A dict mapping field names to
+        unmarshalled values, obtained during some other operation such
+        as the construction of a representation.
+        """
+        # Try to find a cached value.
+        etag = self.etags_by_media_type.get(media_type)
+        if etag is not None:
+            return etag
+
+        if media_type == self.WADL_TYPE:
+            # The WADL representation of a resource only changes when
+            # the software itself changes. Thus, we don't need any
+            # special information for its ETag core.
+            etag_core = ''
+        else:
+            # For other media types, we calculate the ETag core by
+            # delegating to the subclass.
+            etag_core = self._getETagCore(cache)
+
+        if etag_core is None:
+            return None
+
+        hash_object = sha.new()
+        hash_object.update(etag_core)
+
+        # Append the media type, so that web browsers won't treat
+        # different representations of a resource interchangeably.
+        hash_object.update("\0" + media_type)
+
+        # Append the revision number, because the algorithm for
+        # generating the representation might itself change across
+        # versions.
+        revno = getUtility(IWebServiceConfiguration).code_revision
+        hash_object.update("\0" + revno)
+
+        etag = '"%s"' % hash_object.hexdigest()
+        self.etags_by_media_type[media_type] = etag
+        return etag
 
     def applyTransferEncoding(self, representation):
         """Apply a requested transfer-encoding to the representation.
@@ -303,7 +349,6 @@ class HTTPResource:
             self.request.response.setHeader("Transfer-Encoding", "deflate")
             return zlib.compress(representation)
         return representation
-
 
     def implementsPOST(self):
         """Returns True if this resource will respond to POST.
@@ -373,16 +418,8 @@ class HTTPResource:
         object as its value. But an IChoice field might also have a
         vocabulary drawn from the set of data model objects.
         """
-        if IObject.providedBy(field):
-            return True
-        if IChoice.providedBy(field):
-            # Find out whether the field's vocabulary is made of
-            # database objects (which correspond to resources that
-            # need to be linked to) or regular objects (which can
-            # be serialized to JSON).
-            field = field.bind(self.context)
-            return isinstance(field.vocabulary, SQLObjectVocabularyBase)
-        return False
+        return (IObject.providedBy(field)
+                or IReferenceChoice.providedBy(field))
 
     def _parseContentDispositionHeader(self, value):
         """Parse a Content-Disposition header.
@@ -481,6 +518,14 @@ class BatchingResourceMixin:
 
     """A mixin for resources that need to batch lists of entries."""
 
+    def __init__(self, context, request):
+        """A basic constructor."""
+        # Like all mixin classes, this class is designed to be used
+        # with multiple inheritance. That requires defining __init__
+        # to call the next constructor in the chain, which means using
+        # super() even though this class itself has no superclass.
+        super(BatchingResourceMixin, self).__init__(context, request)
+
     def batch(self, entries, request):
         """Prepare a batch from a (possibly huge) list of entries.
 
@@ -496,9 +541,10 @@ class BatchingResourceMixin:
         """
         navigator = WebServiceBatchNavigator(entries, request)
 
+        view_permission = getUtility(IWebServiceConfiguration).view_permission
         resources = [EntryResource(entry, request)
                      for entry in navigator.batch
-                     if check_permission('launchpad.View', entry)]
+                     if check_permission(view_permission, entry)]
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }
@@ -516,6 +562,14 @@ class BatchingResourceMixin:
 class CustomOperationResourceMixin:
 
     """A mixin for resources that implement a collection-entry pattern."""
+
+    def __init__(self, context, request):
+        """A basic constructor."""
+        # Like all mixin classes, this class is designed to be used
+        # with multiple inheritance. That requires defining __init__
+        # to call the next constructor in the chain, which means using
+        # super() even though this class itself has no superclass.
+        super(CustomOperationResourceMixin, self).__init__(context, request)
 
     def handleCustomGET(self, operation_name):
         """Execute a custom search-type operation triggered through GET.
@@ -569,9 +623,99 @@ class CustomOperationResourceMixin:
         del self.request.form['ws.op']
         return self.handleCustomPOST(operation_name)
 
+class FieldUnmarshallerMixin:
+
+    """A class that needs to unmarshall field values."""
+
+    # The representation value used when the client doesn't have
+    # authorization to see the real value.
+    REDACTED_VALUE = 'tag:launchpad.net:2008:redacted'
+
+    def __init__(self, context, request):
+        """A basic constructor."""
+        # Like all mixin classes, this class is designed to be used
+        # with multiple inheritance. That requires defining __init__
+        # to call the next constructor in the chain, which means using
+        # super() even though this class itself has no superclass.
+        super(FieldUnmarshallerMixin, self).__init__(context, request)
+        self._unmarshalled_field_cache = {}
+
+    def _unmarshallField(self, field_name, field):
+        """See what a field would look like in a generic representation.
+
+        :return: a 2-tuple (representation_name, representation_value).
+        """
+        missing = object()
+        cached_value = self._unmarshalled_field_cache.get(
+            field_name, missing)
+        if cached_value is not missing:
+            return cached_value
+
+        field = field.bind(self.context)
+        marshaller = getMultiAdapter((field, self.request), IFieldMarshaller)
+        try:
+            if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
+                value = None
+            else:
+                value = getattr(self.entry, field.__name__)
+            repr_value = marshaller.unmarshall(self.entry, value)
+        except Unauthorized:
+            # Either the client doesn't have permission to see
+            # this field, or it doesn't have permission to read
+            # its current value. Rather than denying the client
+            # access to the resource altogether, use our special
+            # 'redacted' tag: URI for the field's value.
+            repr_value = self.REDACTED_VALUE
+
+        unmarshalled = (marshaller.representation_name, repr_value)
+        self._unmarshalled_field_cache[field_name] = unmarshalled
+        return unmarshalled
+
+    def unmarshallFieldToHTML(self, field_name, field):
+        """See what a field would look like in an HTML representation.
+
+        This is usually similar to the value of _unmarshallField(),
+        but it might contain some custom HTML weirdness.
+
+        :return: a 2-tuple (representation_name, representation_value).
+        """
+        name, value = self._unmarshallField(field_name, field)
+        try:
+            # Try to get a renderer for this particular field.
+            renderer = getMultiAdapter(
+                (self.entry.context, field, self.request),
+                IFieldHTMLRenderer, name=field.__name__)
+        except ComponentLookupError:
+            # There's no field-specific renderer. Look up an
+            # IFieldHTMLRenderer for this _type_ of field.
+            field = field.bind(self.entry.context)
+            renderer = getMultiAdapter(
+                (self.entry.context, field, self.request),
+                IFieldHTMLRenderer)
+        return name, renderer(value)
+
+
+@component.adapter(Interface, IField, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def render_field_to_html(object, field, request):
+    """Turn a field's current value into an XHTML snippet.
+
+    This is the default adapter for IFieldHTMLRenderer.
+    """
+    def unmarshall(value):
+        return cgi.escape(unicode(value).encode("utf-8"))
+    return unmarshall
+
 
 class ReadOnlyResource(HTTPResource):
     """A resource that serves a string in response to GET."""
+
+    def __init__(self, context, request):
+        """A basic constructor."""
+        # This class is designed to be used with mixins. That means
+        # defining __init__ to call the next constructor in the chain,
+        # even though there's no other code in __init__.
+        super(ReadOnlyResource, self).__init__(context, request)
 
     def __call__(self):
         """Handle a GET or (if implemented) POST request."""
@@ -592,8 +736,16 @@ class ReadOnlyResource(HTTPResource):
             self.request.response.setHeader("Allow", allow_string)
         return self.applyTransferEncoding(result)
 
+
 class ReadWriteResource(HTTPResource):
     """A resource that responds to GET, PUT, and PATCH."""
+
+    def __init__(self, context, request):
+        """A basic constructor."""
+        # This class is designed to be used with mixins. That means
+        # defining __init__ to call the next constructor in the chain,
+        # even though there's no other code in __init__.
+        super(ReadWriteResource, self).__init__(context, request)
 
     def __call__(self):
         """Handle a GET, PUT, or PATCH request."""
@@ -639,14 +791,73 @@ class EntryHTMLView:
     def __call__(self):
         """Send the entry data through an HTML template."""
         namespace = self.HTML_TEMPLATE.pt_getContext()
-        names_and_values = self.resource.toDataForJSON().items()
-        data = sorted([{'name' : name, 'value': value}
-                       for name, value in names_and_values])
-        namespace['context'] = data
+        names_and_values = self.resource.toDataStructure(
+            HTTPResource.XHTML_TYPE).items()
+        data = [{'name' : name, 'value': value}
+                for name, value in names_and_values]
+        namespace['context'] = sorted(data)
         return self.HTML_TEMPLATE.pt_render(namespace)
 
 
-class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
+class EntryFieldResource(ReadOnlyResource, FieldUnmarshallerMixin):
+    """An individual field of an entry."""
+    implements(IEntryFieldResource, IJSONPublishable)
+
+    SUPPORTED_CONTENT_TYPES = [HTTPResource.JSON_TYPE,
+                               HTTPResource.XHTML_TYPE]
+
+    def __init__(self, context, request):
+        """Initialize with respect to a context and request."""
+        super(EntryFieldResource, self).__init__(context, request)
+        self.entry = self.context.entry
+
+    def do_GET(self):
+        """Create a representation of a single field."""
+        media_type = self.handleConditionalGET()
+        if media_type is None:
+            # The conditional GET succeeded. Serve nothing.
+            return ""
+        else:
+            self.request.response.setHeader('Content-Type', media_type)
+            return self._representation(media_type)
+
+    def _getETagCore(self, unmarshalled_field_values=None):
+        """Calculate the ETag for an entry field.
+
+        The core of the ETag is the field value itself.
+        """
+        name, value = self._unmarshallField(
+            self.context.name, self.context.field)
+        return str(value)
+
+    def _representation(self, media_type):
+        """Create a representation of the field value."""
+        if media_type == self.JSON_TYPE:
+            name, value = self._unmarshallField(
+                self.context.name, self.context.field)
+            return simplejson.dumps(value)
+        elif media_type == self.XHTML_TYPE:
+            name, value = self.unmarshallFieldToHTML(
+                self.context.name, self.context.field)
+            return value
+        else:
+            raise AssertionError((
+                    "No representation implementation for media type %s"
+                    % media_type))
+
+
+class EntryField:
+    implements(IEntryField)
+
+    def __init__(self, entry, field, name):
+        """Initialize with respect to a named field of an entry."""
+        self.entry = entry
+        self.field = field.bind(entry)
+        self.name = name
+
+
+class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
+                    FieldUnmarshallerMixin):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
 
@@ -654,38 +865,18 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                                HTTPResource.XHTML_TYPE,
                                HTTPResource.JSON_TYPE]
 
-    missing = object()
-
     def __init__(self, context, request):
         """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(context, request)
-        self.etags_by_media_type = {}
         self.entry = IEntry(context)
-        self._unmarshalled_field_cache = {}
 
-    def getETag(self, media_type, unmarshalled_field_values=None):
+    def _getETagCore(self, unmarshalled_field_values=None):
         """Calculate the ETag for an entry.
 
         :arg unmarshalled_field_values: A dict mapping field names to
         unmarshalled values, obtained during some other operation such
         as the construction of a representation.
         """
-        # Try to find a cached value.
-        etag = self.etags_by_media_type.get(media_type)
-        if etag is not None:
-            return etag
-
-        # Try to make the superclass handle it.
-        etag = super(EntryResource, self).getETag(media_type)
-        if etag is not None:
-            self.etags_by_media_type[media_type] = etag
-            return etag
-
-        # Calculate the ETag for a JSON or XHTML representation only.
-        if media_type not in (self.JSON_TYPE, self.XHTML_TYPE):
-            return None
-
-        hash_object = sha.new()
         values = []
         for name, field in getFieldsInOrder(self.entry.schema):
             if self.isModifiableField(field, False):
@@ -695,33 +886,39 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 else:
                     ignored, value = self._unmarshallField(name, field)
                 values.append(unicode(value))
-        hash_object.update("\0".join(values).encode("utf-8"))
-
-        # Append the revision number, because the algorithm for
-        # generating the representation might itself change across
-        # versions.
-        hash_object.update("\0" + str(versioninfo.revno))
-
-        etag = '"%s"' % hash_object.hexdigest()
-        self.etags_by_media_type[media_type] = etag
-        return etag
+        return "\0".join(values).encode("utf-8")
 
     def toDataForJSON(self):
+        """Turn the object into a simple data structure."""
+        return self.toDataStructure(self.JSON_TYPE)
+
+    def toDataStructure(self, media_type):
         """Turn the object into a simple data structure.
 
         In this case, a dictionary containing all fields defined by
         the resource interface.
+
+        The values in the dictionary may differ depending on the value
+        of media_type.
         """
         data = {}
-        data['self_link'] = canonical_url(self.context, self.request)
+        data['self_link'] = absoluteURL(self.context, self.request)
         data['resource_type_link'] = self.type_url
         unmarshalled_field_values = {}
         for name, field in getFieldsInOrder(self.entry.schema):
-            repr_name, repr_value = self._unmarshallField(name, field)
+            if media_type == self.JSON_TYPE:
+                repr_name, repr_value = self._unmarshallField(name, field)
+            elif media_type == self.XHTML_TYPE:
+                repr_name, repr_value = self.unmarshallFieldToHTML(
+                    name, field)
+            else:
+                raise AssertionError((
+                        "Cannot create data structure for media type %s"
+                        % media_type))
             data[repr_name] = repr_value
             unmarshalled_field_values[name] =  repr_value
 
-        etag = self.getETag(self.JSON_TYPE, unmarshalled_field_values)
+        etag = self.getETag(media_type, unmarshalled_field_values)
         data['http_etag'] = etag
         return data
 
@@ -778,15 +975,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             if media_type is None:
                 # The conditional GET succeeded. Serve nothing.
                 return ""
-            elif media_type == self.WADL_TYPE:
-                result = self.toWADL().encode("utf-8")
-            elif media_type == self.JSON_TYPE:
-                result = simplejson.dumps(self, cls=ResourceJSONEncoder)
-            elif media_type == self.XHTML_TYPE:
-                result = self.toXHTML().encode("utf-8")
-
-        self.request.response.setHeader('Content-Type', media_type)
-        return result
+            else:
+                self.request.response.setHeader('Content-Type', media_type)
+                return self._representation(media_type)
 
     def do_PUT(self, media_type, representation):
         """Modify the entry's state to match the given representation.
@@ -833,7 +1024,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         adapter = EntryAdapterUtility(self.entry.__class__)
 
         return "%s#%s" % (
-            canonical_url(self.request.publication.getApplication(
+            absoluteURL(self.request.publication.getApplication(
                     self.request), self.request),
             adapter.singular_type)
 
@@ -856,36 +1047,18 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             return not is_external_client
         return True
 
-    def _unmarshallField(self, field_name, field):
-        """See what a field would look like in a representation.
-
-        :return: a 2-tuple (representation_name, representation_value).
-        """
-        cached_value = self._unmarshalled_field_cache.get(
-            field_name, self.missing)
-        if cached_value is not self.missing:
-            return cached_value
-
-        field = field.bind(self.context)
-        marshaller = getMultiAdapter((field, self.request),
-                                     IFieldMarshaller)
-        try:
-            if IUnmarshallingDoesntNeedValue.providedBy(marshaller):
-                value = None
-            else:
-                value = getattr(self.entry, field_name)
-            repr_value = marshaller.unmarshall(self.entry, value)
-        except Unauthorized:
-            # Either the client doesn't have permission to see
-            # this field, or it doesn't have permission to read
-            # its current value. Rather than denying the client
-            # access to the resource altogether, use our special
-            # 'redacted' tag: URI for the field's value.
-            repr_value = self.REDACTED_VALUE
-
-        unmarshalled = (marshaller.representation_name, repr_value)
-        self._unmarshalled_field_cache[field_name] = unmarshalled
-        return unmarshalled
+    def _representation(self, media_type):
+        """Return a representation of this entry, of the given media type."""
+        if media_type == self.WADL_TYPE:
+            return self.toWADL().encode("utf-8")
+        elif media_type == self.JSON_TYPE:
+            return simplejson.dumps(self, cls=ResourceJSONEncoder)
+        elif media_type == self.XHTML_TYPE:
+            return self.toXHTML().encode("utf-8")
+        else:
+            raise AssertionError((
+                    "No representation implementation for media type %s"
+                    % media_type))
 
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
@@ -904,8 +1077,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         modified_read_only_attribute = ("%s: You tried to modify a "
                                         "read-only attribute.")
         if 'self_link' in changeset:
-            if changeset['self_link'] != canonical_url(self.context,
-                                                       self.request):
+            if changeset['self_link'] != absoluteURL(self.context,
+                                                     self.request):
                 errors.append(modified_read_only_attribute % 'self_link')
             del changeset['self_link']
 
@@ -1070,7 +1243,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.entry.context, providing=providedBy(self.entry.context))
 
         # Store the entry's current URL so we can see if it changes.
-        original_url = canonical_url(self.context, self.request)
+        original_url = absoluteURL(self.context, self.request)
         # Make the changes.
         for field, (name, value) in validated_changeset.items():
             field.set(self.entry, value)
@@ -1084,16 +1257,15 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         self.etags_by_media_type = {}
 
         # Send a notification event.
-        event = SQLObjectModifiedEvent(
+        event = ObjectModifiedEvent(
             object=self.entry.context,
             object_before_modification=entry_before_modification,
-            edited_fields=validated_changeset.keys(),
-            user=getUtility(ILaunchBag).user)
+            edited_fields=validated_changeset.keys())
         notify(event)
 
         # If the modification caused the entry's URL to change, tell
         # the client about the new URL.
-        new_url = canonical_url(self.context, self.request)
+        new_url = absoluteURL(self.context, self.request)
         if new_url != original_url:
             self.request.response.setStatus(301)
             self.request.response.setHeader('Location', new_url)
@@ -1103,8 +1275,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # If the object didn't move, serve up its representation.
         self.request.response.setStatus(209)
-        self.request.response.setHeader('Content-type', self.JSON_TYPE)
-        return simplejson.dumps(self, cls=ResourceJSONEncoder)
+
+        media_type = self.getPreferredSupportedContentType()
+        self.request.response.setHeader('Content-type', media_type)
+        return self._representation(media_type)
 
 
 class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
@@ -1176,14 +1350,10 @@ class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
 
 class ServiceRootResource(HTTPResource):
     """A resource that responds to GET by describing the service."""
-    implements(IServiceRootResource, ICanonicalUrlData, IJSONPublishable)
+    implements(IServiceRootResource, IJSONPublishable)
 
     # A preparsed template file for WADL representations of the root.
     WADL_TEMPLATE = LazrPageTemplateFile('../templates/wadl-root.pt')
-
-    inside = None
-    path = ''
-    rootsite = None
 
     def __init__(self):
         """Initialize the resource.
@@ -1197,21 +1367,21 @@ class ServiceRootResource(HTTPResource):
         # it assumes it's being called in the context of a particular
         # request.
         # pylint:disable-msg=W0231
-        pass
+        self.etags_by_media_type = {}
 
     @property
     def request(self):
         """Fetch the current browser request."""
         return get_current_browser_request()
 
-    def getETag(self, media_type):
+    def _getETagCore(self, cache=None):
         """Calculate an ETag for a representation of this resource.
 
         The service root resource changes only when the software
-        itself changes. Thus, we can use the revision number itself as
-        an ETag.
+        itself changes. This information goes into the ETag already,
+        so there's no need to provide anything.
         """
-        return '"%s-%s"' % (versioninfo.revno, media_type)
+        return ''
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
@@ -1305,15 +1475,15 @@ class ServiceRootResource(HTTPResource):
         represented.
         """
         type_url = "%s#%s" % (
-            canonical_url(
+            absoluteURL(
                 self.request.publication.getApplication(self.request),
                 self.request),
             "service-root")
         data_for_json = {'resource_type_link' : type_url}
         publications = self.getTopLevelPublications()
         for link_name, publication in publications.items():
-            data_for_json[link_name] = canonical_url(publication,
-                                                     self.request)
+            data_for_json[link_name] = absoluteURL(publication,
+                                                   self.request)
         return data_for_json
 
     def getTopLevelPublications(self):
@@ -1355,8 +1525,8 @@ class ServiceRootResource(HTTPResource):
         adapter = EntryAdapterUtility(self.entry.__class__)
 
         return "%s#%s" % (
-            canonical_url(self.request.publication.getApplication(
-                    self.request)),
+            absoluteURL(self.request.publication.getApplication(
+                    self.request), self.request),
             adapter.singular_type)
 
 
@@ -1381,6 +1551,7 @@ class Collection:
 class ScopedCollection:
     """A collection associated with some parent object."""
     implements(IScopedCollection)
+    adapts(Interface, Interface)
 
     def __init__(self, context, collection):
         """Initialize the scoped collection.
@@ -1412,7 +1583,8 @@ class RESTUtilityBase:
     def _service_root_url(self):
         """Return the URL to the service root."""
         request = get_current_browser_request()
-        return canonical_url(request.publication.getApplication(request))
+        return absoluteURL(request.publication.getApplication(request),
+                           request)
 
 
 class EntryAdapterUtility(RESTUtilityBase):

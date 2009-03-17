@@ -79,6 +79,6 @@ explicitly allow POST requests through to the OpenID endpoint:
   >>> print browser.url
   http://openid.launchpad.dev/+openid
   >>> print browser.contents
-  error:No decoder for mode 'no-such-method'
+  error:...'no-such-method'
   mode:error
   <BLANKLINE>

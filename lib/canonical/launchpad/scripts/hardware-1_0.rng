@@ -20,6 +20,11 @@
             <element name="questions">
                 <ref name="questionsSection"/>
             </element>
+            <optional>
+                <element name="context">
+                    <ref name="contextSection"/>
+                </element>
+            </optional>
           </interleave>
         </element>
     </start>
@@ -169,22 +174,6 @@
                     </zeroOrMore>
                 </element>
             </optional>
-            <optional>
-              <element name="dmi">
-                <attribute name="options">
-                  <text/>
-                </attribute>
-                <text/>
-              </element>
-            </optional>
-            <optional>
-              <element name="lspci">
-                <attribute name="options">
-                  <text/>
-                </attribute>
-                <text/>
-              </element>
-            </optional>
         </interleave>
     </define>
 
@@ -324,6 +313,17 @@
                         </element>
                     </optional>
                 </interleave>
+            </element>
+        </zeroOrMore>
+    </define>
+
+    <define name="contextSection">
+        <zeroOrMore>
+            <element name="info">
+                <attribute name="command">
+                    <text/>
+                </attribute>
+                <text/>
             </element>
         </zeroOrMore>
     </define>

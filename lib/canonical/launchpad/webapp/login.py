@@ -18,12 +18,13 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet, LoginTokenType)
-from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.person import (
+    IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessAuthUtility, IPlacelessLoginSource)
+    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
@@ -229,20 +230,23 @@ class LoginOrRegister:
         appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        if (principal is not None
-            and principal.person.account_status == AccountStatus.DEACTIVATED):
+        if principal is None or not principal.validate(password):
+            self.login_error = "The email address and password do not match."
+        elif principal.person is None:
+            logInPrincipalAndMaybeCreatePerson(self.request, principal, email)
+            self.redirectMinusLogin()
+        elif principal.person.account_status == AccountStatus.DEACTIVATED:
             self.login_error = _(
                 'The email address belongs to a deactivated account. '
                 'Use the "Forgotten your password" link to reactivate it.')
-        elif (principal is not None
-            and principal.person.account_status == AccountStatus.SUSPENDED):
+        elif principal.person.account_status == AccountStatus.SUSPENDED:
             email_link = (
                 'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
             self.login_error = _(
                 'The email address belongs to a suspended account. '
                 'Contact a <a href="%s">Launchpad admin</a> '
                 'about this issue.' % email_link)
-        elif principal is not None and principal.validate(password):
+        else:
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
                 self.login_error = _(
@@ -258,7 +262,7 @@ class LoginOrRegister:
                 token.sendEmailValidationRequest(appurl)
                 return
             if person.is_valid_person:
-                logInPerson(self.request, principal, email)
+                logInPrincipal(self.request, principal, email)
                 self.redirectMinusLogin()
             else:
                 # Normally invalid accounts will have a NULL password
@@ -267,8 +271,6 @@ class LoginOrRegister:
                 # such as having them flagged as OLD by a email bounce
                 # processor or manual changes by the DBA.
                 self.login_error = "This account cannot be used."
-        else:
-            self.login_error = "The email address and password do not match."
 
     def process_registration_form(self):
         """A user has asked to join launchpad.
@@ -371,16 +373,34 @@ class LoginOrRegister:
         return '\n'.join(L)
 
 
-def logInPerson(request, principal, email):
-    """Log the person in. Password validation must be done in callsites."""
+def logInPrincipal(request, principal, email):
+    """Log the principal in. Password validation must be done in callsites."""
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
     request.setPrincipal(principal)
-    authdata['personid'] = principal.id
+    authdata['accountid'] = principal.id
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
+
+
+def logInPrincipalAndMaybeCreatePerson(request, principal, email):
+    """Log the principal in, creating a Person if necessary.
+
+    If the given principal has no associated person, we create a new
+    person, fetch a new principal and set it in the request.
+
+    Password validation must be done in callsites.
+    """
+    logInPrincipal(request, principal, email)
+    if ILaunchpadPrincipal.providedBy(principal) and principal.person is None:
+        person = principal.account.createPerson(
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+        new_principal = getUtility(IPlacelessLoginSource).getPrincipal(
+            principal.id)
+        assert ILaunchpadPrincipal.providedBy(new_principal)
+        request.setPrincipal(new_principal)
 
 
 def expireSessionCookie(request, client_id_manager=None,
@@ -414,13 +434,22 @@ def allowUnauthenticatedSession(request, duration=timedelta(minutes=10)):
         expireSessionCookie(request, client_id_manager, duration)
 
 
+# XXX: salgado, 2009-02-19: Rename this to logOutPrincipal(), to be consistent
+# with logInPrincipal().  Or maybe logUserOut(), in case we don't care about
+# consistency.
 def logoutPerson(request):
     """Log the user out."""
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
-    previous_login = authdata.get('personid')
+    account_variable_name = 'accountid'
+    previous_login = authdata.get(account_variable_name)
+    if previous_login is None:
+        # This is for backwards compatibility, when we used to store the
+        # person's ID in the 'personid' session variable.
+        account_variable_name = 'personid'
+        previous_login = authdata.get(account_variable_name)
     if previous_login is not None:
-        authdata['personid'] = None
+        authdata[account_variable_name] = None
         authdata['logintime'] = datetime.utcnow()
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.unauthenticatedPrincipal()

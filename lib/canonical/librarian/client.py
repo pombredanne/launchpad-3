@@ -312,6 +312,19 @@ class FileDownloadClient:
         base = self.download_url
         return urljoin(base, path)
 
+    def _getURLForDownload(self, aliasID):
+        """Returns the internal librarian URL for the alias.
+
+        :param aliasID: A unique ID for the alias
+
+        :returns: String URL, or None if the file has expired and been deleted.
+        """
+        path = self._getPathForAlias(aliasID)
+        if path is None:
+            return None
+        base = self._internal_download_url
+        return urljoin(base, path)
+
     def getFileByAlias(self, aliasID):
         """Returns a fd to read the file from
 
@@ -320,7 +333,7 @@ class FileDownloadClient:
         :returns: file-like object, or None if the file has expired and
                   been deleted.
         """
-        url = self.getURLForAlias(aliasID)
+        url = self._getURLForDownload(aliasID)
         if url is None:
             # File has been deleted
             return None
@@ -351,6 +364,12 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
     def download_url(self):
         return config.librarian.download_url
 
+    @property
+    def _internal_download_url(self): # used by _getURLForDownload
+        return 'http://%s:%s/' % (config.librarian.download_host,
+                                  config.librarian.download_port)
+
+
 
 class RestrictedLibrarianClient(LibrarianClient):
     """See `IRestrictedLibrarianClient`."""
@@ -370,3 +389,7 @@ class RestrictedLibrarianClient(LibrarianClient):
     def download_url(self):
         return config.librarian.restricted_download_url
 
+    @property
+    def _internal_download_url(self): # used by _getURLForDownload
+        return 'http://%s:%s/' % (config.librarian.restricted_download_host,
+                                  config.librarian.restricted_download_port)
