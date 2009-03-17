@@ -35,6 +35,7 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.launchpad.components.bugchange import UnsubscribedFromBug
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -381,10 +382,13 @@ class Bug(SQLBase):
         Store.of(sub).flush()
         return sub
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                self.addChange(UnsubscribedFromBug(
+                    when=UTC_NOW, person=unsubscribed_by,
+                    unsubscribed_user=person))
                 store = Store.of(sub)
                 store.remove(sub)
                 # Make sure that the subscription removal has been
