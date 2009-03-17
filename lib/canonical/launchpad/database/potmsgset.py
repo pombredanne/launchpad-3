@@ -517,7 +517,7 @@ class POTMsgSet(SQLBase):
                                        force_diverged=False):
         """Make the given translation message the current one."""
         current_message = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
+            pofile.potemplate, pofile.language, pofile.variant)
 
         # Converging from a diverged to a shared translation:
         # when the new translation matches a shared one (potemplate==None),
