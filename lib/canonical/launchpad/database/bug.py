@@ -402,7 +402,7 @@ class Bug(SQLBase):
         bugs_unsubscribed = []
         for dupe in self.duplicates:
             if dupe.isSubscribed(person):
-                dupe.unsubscribe(person)
+                dupe.unsubscribe(person, person)
                 bugs_unsubscribed.append(dupe)
 
         return bugs_unsubscribed
