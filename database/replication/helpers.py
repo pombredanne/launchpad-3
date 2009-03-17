@@ -49,6 +49,8 @@ LPMAIN_SEED = set([
     ('public', 'standardshipitrequest'),
     ('public', 'bugtag'),
     ('public', 'launchpadstatistic'),
+    ('public', 'parsedapachelog'),
+    ('public', 'shipitsurvey'),
     ])
 
 
