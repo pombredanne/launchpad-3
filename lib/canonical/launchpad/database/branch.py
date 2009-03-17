@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    bazaar_identity, IBranchNavigationMenu, user_has_special_branch_access)
+    bazaar_identity, IBranchNavigationMenu)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
@@ -65,7 +65,6 @@ from canonical.launchpad.interfaces.branchsubscription import (
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
-from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend
@@ -508,7 +507,7 @@ class Branch(SQLBase):
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
-                  review_level):
+                  code_review_level):
         """See `IBranch`."""
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
@@ -517,12 +516,12 @@ class Branch(SQLBase):
             subscription = BranchSubscription(
                 branch=self, person=person,
                 notification_level=notification_level,
-                max_diff_lines=max_diff_lines, review_level=review_level)
+                max_diff_lines=max_diff_lines, review_level=code_review_level)
             Store.of(subscription).flush()
         else:
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
-            subscription.review_level = review_level
+            subscription.review_level = code_review_level
         return subscription
 
     def getSubscription(self, person):
@@ -1124,56 +1123,6 @@ class BranchSet:
         if branch_count is not None:
             branches.config(limit=branch_count)
         return branches
-
-    @staticmethod
-    def _getBranchVisibilitySubQuery(visible_by_user):
-        # Logged in people can see public branches (first part of the union),
-        # branches owned by teams they are in (second part),
-        # and all branches they are subscribed to (third part).
-        return """
-            SELECT Branch.id
-            FROM Branch
-            WHERE
-                NOT Branch.private
-
-            UNION
-
-            SELECT Branch.id
-            FROM Branch, TeamParticipation
-            WHERE
-                Branch.owner = TeamParticipation.team
-            AND TeamParticipation.person = %d
-
-            UNION
-
-            SELECT Branch.id
-            FROM Branch, BranchSubscription, TeamParticipation
-            WHERE
-                Branch.private
-            AND Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person = TeamParticipation.team
-            AND TeamParticipation.person = %d
-            """ % (visible_by_user.id, visible_by_user.id)
-
-    def _generateBranchClause(self, query, visible_by_user):
-        # If the visible_by_user is a member of the Launchpad admins team,
-        # then don't filter the results at all.
-        if (LAUNCHPAD_SERVICES == visible_by_user or
-            user_has_special_branch_access(visible_by_user)):
-            return query
-
-        if len(query) > 0:
-            query = '%s AND ' % query
-
-        # Non logged in people can only see public branches.
-        if visible_by_user is None:
-            return '%sNOT Branch.private' % query
-
-        clause = (
-            '%sBranch.id IN (%s)'
-            % (query, self._getBranchVisibilitySubQuery(visible_by_user)))
-
-        return clause
 
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):

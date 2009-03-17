@@ -14,9 +14,7 @@
         Warty
       </span>
       by
-      <a href="#"
-         tal:attributes="href nomination_person/fmt:url"
-         tal:content="nomination_person/displayname">
+      <a tal:replace="structure nomination_person/fmt:link">
         Foo Bar
       </a>
     </span>
