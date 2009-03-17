@@ -121,13 +121,16 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.is_complete = False
         self.is_imported = False
         self.is_empty = True
-        self.is_hidden = True
         self.was_obsolete_in_last_import = False
         self.was_complete_in_last_import = False
         if self.potmsgset.msgid_plural is None:
             self.translations = [None]
         else:
             self.translations = [None] * self.plural_forms
+
+    def isHidden(self, pofile):
+        """See `ITranslationMessage`."""
+        return True
 
     @property
     def all_msgstrs(self):
@@ -305,8 +308,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # We found no translations in this translation_message
         return True
 
-    @property
-    def is_hidden(self, pofile):
+    def isHidden(self, pofile):
         """See `ITranslationMessage`."""
         # If this message is currently used or has been imported,
         # it's not hidden.
