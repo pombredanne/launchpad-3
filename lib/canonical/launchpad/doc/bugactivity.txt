@@ -279,3 +279,48 @@ First we have to create the file itself, and upload it to the Librarian:
     None
     >>> print latest_activity.message
     None
+
+
+== Bug privacy changed ==
+
+    >>> owner = factory.makePerson(displayname='Arthur Dent')
+    >>> login(owner.preferredemail.email)
+
+    >>> bug = factory.makeBug(owner=owner)
+    >>> bug_snap = Snapshot(bug, providing=IBug)
+    >>> bug.setPrivate(True, owner)
+    True
+
+    >>> notify(ObjectModifiedEvent(
+    ...     bug, bug_snap, ['private'], user=owner))
+    >>> latest_activity = bug.activity[-1]
+    >>> print latest_activity.whatchanged
+    privacy
+
+    >>> print latest_activity.oldvalue, '==>', latest_activity.newvalue
+    public ==> private
+
+    >>> print latest_activity.person.displayname
+    Arthur Dent
+
+
+== Bug security changed ==
+
+    >>> owner = factory.makePerson(displayname='Slartibartfast')
+    >>> login(owner.preferredemail.email)
+
+    >>> bug = factory.makeBug(owner=owner)
+    >>> bug_snap = Snapshot(bug, providing=IBug)
+    >>> bug.security_related = True
+
+    >>> notify(ObjectModifiedEvent(
+    ...     bug, bug_snap, ['security_related'], user=owner))
+    >>> latest_activity = bug.activity[-1]
+    >>> print latest_activity.whatchanged
+    security
+
+    >>> print latest_activity.oldvalue, '==>', latest_activity.newvalue
+    not security vulnerability ==> security vulnerability
+
+    >>> print latest_activity.person.displayname
+    Slartibartfast

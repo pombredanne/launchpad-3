@@ -11,10 +11,31 @@ from lazr.enum import BaseItem
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
-    IBug, IBugActivitySet, IBugTask, IMilestone, IPerson, IProductRelease,
+    IBug, IBugActivitySet, IMilestone, IPerson, IProductRelease,
     ISourcePackageRelease)
 
 vocabulary_registry = getVocabularyRegistry()
+
+
+BUG_INTERESTING_FIELDS = [
+    'description',
+    'duplicateof',
+    'name',
+    'private',
+    'security_related',
+    'tags',
+    'title',
+    ]
+
+
+BUGTASK_INTERESTING_FIELDS = [
+    'assignee',
+    'bugwatch',
+    'importance',
+    'milestone',
+    'status',
+    'target',
+    ]
 
 
 def get_string_representation(obj):
@@ -38,6 +59,8 @@ def get_string_representation(obj):
         return obj.title
     elif isinstance(obj, basestring):
         return obj
+    elif isinstance(obj, bool):
+        return str(obj)
     else:
         return None
 
@@ -76,34 +99,49 @@ def record_bug_added(bug, object_created_event):
         whatchanged = "bug",
         message = "added bug")
 
+
 @block_implicit_flushes
 def record_bug_edited(bug_edited, sqlobject_modified_event):
     # If the event was triggered by a web service named operation, its
-    # edited_fields will be empty. We'll need to check all fields to
-    # see which were actually changed.
-    sqlobject_modified_event.edited_fields = IBug.names(all=True)
-    changes = what_changed(sqlobject_modified_event)
+    # edited_fields will be empty. We'll need to check all interesting
+    # fields to see which were actually changed.
+    sqlobject_modified_event.edited_fields = BUG_INTERESTING_FIELDS
 
-    if changes:
-        for changed_field in changes.keys():
-            oldvalue, newvalue = changes[changed_field]
-            if changed_field == 'duplicateof':
-                if oldvalue is None and newvalue is not None:
-                    whatchanged = 'marked as duplicate'
-                elif oldvalue is not None and newvalue is not None:
-                    whatchanged = 'changed duplicate marker'
-                elif oldvalue is not None and newvalue is None:
-                    whatchanged = 'removed duplicate marker'
-            else:
-                whatchanged = changed_field
-            getUtility(IBugActivitySet).new(
-                bug = bug_edited.id,
-                datechanged = UTC_NOW,
-                person = IPerson(sqlobject_modified_event.user),
-                whatchanged = whatchanged,
-                oldvalue = oldvalue,
-                newvalue = newvalue,
-                message = "")
+    changes = what_changed(sqlobject_modified_event)
+    for changed_field in changes:
+        oldvalue, newvalue = changes[changed_field]
+        if changed_field == 'duplicateof':
+            if oldvalue is None and newvalue is not None:
+                whatchanged = 'marked as duplicate'
+            elif oldvalue is not None and newvalue is not None:
+                whatchanged = 'changed duplicate marker'
+            elif oldvalue is not None and newvalue is None:
+                whatchanged = 'removed duplicate marker'
+        elif changed_field == 'private':
+            whatchanged = 'privacy'
+            privacy_values = {'True': 'private', 'False': 'public'}
+            oldvalue = privacy_values[oldvalue]
+            newvalue = privacy_values[newvalue]
+        elif changed_field == 'security_related':
+            whatchanged = 'security'
+            security_values = {
+                'True': 'security vulnerability',
+                'False': 'not security vulnerability',
+                }
+            oldvalue = security_values[oldvalue]
+            newvalue = security_values[newvalue]
+        else:
+            whatchanged = changed_field
+
+        getUtility(IBugActivitySet).new(
+            bug=bug_edited.id,
+            datechanged=UTC_NOW,
+            person=IPerson(sqlobject_modified_event.user),
+            whatchanged=whatchanged,
+            oldvalue=oldvalue,
+            newvalue=newvalue,
+            message="")
+
 
 @block_implicit_flushes
 def record_bug_task_added(bug_task, object_created_event):
@@ -114,13 +152,14 @@ def record_bug_task_added(bug_task, object_created_event):
         whatchanged='bug',
         message='assigned to ' + bug_task.bugtargetname)
 
+
 @block_implicit_flushes
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     """Make an activity note that a bug task was edited."""
     # If the event was triggered by a web service named operation, its
     # edited_fields will be empty. We'll need to check all fields to
-    # see which were actually changed.
-    sqlobject_modified_event.edited_fields = IBugTask.names(all=True)
+   # see which were actually changed.
+    sqlobject_modified_event.edited_fields = BUGTASK_INTERESTING_FIELDS
     changes = what_changed(sqlobject_modified_event)
     if changes:
         task_title = ""
@@ -149,6 +188,7 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
                 oldvalue=oldvalue,
                 newvalue=newvalue)
 
+
 @block_implicit_flushes
 def record_product_task_added(product_task, object_created_event):
     getUtility(IBugActivitySet).new(
@@ -158,12 +198,13 @@ def record_product_task_added(product_task, object_created_event):
         whatchanged='bug',
         message='assigned to product ' + product_task.product.name)
 
+
 @block_implicit_flushes
 def record_product_task_edited(product_task_edited, sqlobject_modified_event):
     # If the event was triggered by a web service named operation, its
     # edited_fields will be empty. We'll need to check all fields to
     # see which were actually changed.
-    sqlobject_modified_event.edited_fields = IBugTask.names(all=True)
+    sqlobject_modified_event.edited_fields = BUGTASK_INTERESTING_FIELDS
     changes = what_changed(sqlobject_modified_event)
     if changes:
         product = sqlobject_modified_event.object_before_modification.product
@@ -177,6 +218,7 @@ def record_product_task_edited(product_task_edited, sqlobject_modified_event):
                 oldvalue=oldvalue,
                 newvalue=newvalue)
 
+
 @block_implicit_flushes
 def record_bugsubscription_added(bugsubscription_added, object_created_event):
     getUtility(IBugActivitySet).new(
@@ -186,6 +228,7 @@ def record_bugsubscription_added(bugsubscription_added, object_created_event):
         whatchanged='bug',
         message='added subscriber %s' % (
             bugsubscription_added.person.browsername))
+
 
 @block_implicit_flushes
 def record_bugsubscription_edited(bugsubscription_edited,
@@ -214,5 +257,3 @@ def record_bug_attachment_added(attachment, created_event):
         whatchanged='bug',
         message="added attachment '%s' (%s)" % (
             attachment.libraryfile.filename, attachment.title))
-
-
