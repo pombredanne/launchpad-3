@@ -7,32 +7,28 @@
      tal:attributes="href context/fmt:url/+bugtarget-portlet-bugfilters-content" >
   </a>
   <h2>Filters</h2>
-  <script type="text/javascript">
+  <div id="bugfilters-portlet-spinner"
+       style="text-align: center; display: none">
+    <img src="/@@/spinner" />
+  </div>
+    <script type="text/javascript">
     YUI().use('io-base', 'node', function(Y) {
-      Y.on('contentready', function() {
-        var portlet = Y.get('#portlet-bugfilters');
-        portlet.set('innerHTML',
-                    portlet.get('innerHTML') +
-                    '<' + 'div id="bugfilters-portlet-spinner"' +
-                    '     style="text-align: center">' +
-                    '<img src="/@@/spinner" /><' + '/div>');
-      }, '#portlet-bugfilters');
-
       Y.on('domready', function() {
         var portlet = Y.get('#portlet-bugfilters');
+        Y.get('#bugfilters-portlet-spinner').setStyle('display', 'block');
 
-        function remove_spinner() {
-          portlet.removeChild(Y.get('#bugfilters-portlet-spinner'));
+        function hide_spinner() {
+          Y.get('#bugfilters-portlet-spinner').setStyle('display', 'none');
         }
 
         function on_success(transactionid, response, arguments) {
-          remove_spinner();
+          hide_spinner();
           portlet.set('innerHTML',
                       portlet.get('innerHTML') + response.responseText);
         }
 
         var config = {on: {success: on_success,
-                           failure: remove_spinner}};
+                           failure: hide_spinner}};
         var url = Y.get('#bugtarget-bugfilters-link').getAttribute('href');
         var request = Y.io(url, config);
       });
