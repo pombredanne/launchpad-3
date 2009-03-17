@@ -154,3 +154,10 @@ class IBuildQueueSet(Interface):
         asserted to not be None/empty.
         """
 
+    def getForBuilds(build_ids):
+        """Return the IBuildQueue instance for the IBuild IDs at hand.
+
+        Retrieve the build queue and related builder rows associated with the
+        builds in question where they exist.
+        """
+
