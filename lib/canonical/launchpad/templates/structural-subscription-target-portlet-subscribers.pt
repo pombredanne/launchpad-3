@@ -8,7 +8,8 @@
 
   <div class="portletBody portletContent"
        tal:define="subscriptions context/bug_subscriptions;
-                   parent_target context/parent_subscription_target">
+                   parent_target context/parent_subscription_target;
+                   target_type context/target_type_display">
     <b>For <tal:target-title replace="context/title" />:</b>
     <br />
     <div tal:condition="subscriptions">
@@ -23,7 +24,9 @@
     </div>
     <div tal:condition="not:subscriptions">
       <i class="info">No people or teams are
-        subscribed to bugmail for this package.</i>
+        subscribed to bugmail for this
+        <tal:target replace="target_type" />.
+      </i>
       <br /><br />
     </div>
     <tal:parent-subscriptions condition="parent_target">

@@ -292,6 +292,7 @@ class ProductNavigationMenu(NavigationMenu):
     links = [
         'details',
         'announcements',
+        'branchvisibility',
         'downloads',
         ]
 
@@ -306,6 +307,11 @@ class ProductNavigationMenu(NavigationMenu):
     def downloads(self):
         text = 'Downloads'
         return Link('+download', text)
+
+    @enabled_with_permission('launchpad.Admin')
+    def branchvisibility(self):
+        text = 'Branch Visibility Policy'
+        return Link('+branchvisibility', text)
 
 
 class ProductEditNavigationMenu(NavigationMenu):

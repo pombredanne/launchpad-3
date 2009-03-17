@@ -29,19 +29,16 @@ import urllib
 import simplejson
 
 from zope.datetime import DateTimeError, DateTimeParser
-from zope.component import getMultiAdapter
+from zope.component import getMultiAdapter, getUtility
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from canonical.config import config
-
-from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
-from canonical.launchpad.webapp.url import urlsplit
+from lazr.uri import URI, InvalidURIError
 
 from canonical.lazr.interfaces.rest import (
-    IFieldMarshaller, IUnmarshallingDoesntNeedValue)
+    IFieldMarshaller, IUnmarshallingDoesntNeedValue, IWebServiceConfiguration)
 from canonical.lazr.utils import safe_hasattr
 
 
@@ -61,37 +58,42 @@ class URLDereferencingMixin:
         :raise NotFound: If the URL does not designate a
             published object.
         """
-        (protocol, host, path, query, fragment) = urlsplit(url)
-
-        request_host = self.request.get('HTTP_HOST')
-        if config.vhosts.use_https:
+        config = getUtility(IWebServiceConfiguration)
+        if config.use_https:
             site_protocol = 'https'
             default_port = '443'
         else:
             site_protocol = 'http'
             default_port = '80'
+        request_host = self.request.get('HTTP_HOST', 'localhost')
+        if ':' in request_host:
+            request_host, request_port = request_host.split(':', 2)
+        else:
+            request_port = default_port
+
+        uri = URI(url)
+        protocol = uri.scheme
+        host = uri.host
+        port = uri.port or default_port
+        path = uri.path
+        query = uri.query
+        fragment = uri.fragment
 
         url_host_and_http_host_are_identical = (
-            host == request_host
-            or host + ':' + default_port == request_host
-            or host == request_host + ':' + default_port)
+            host == request_host and port == request_port)
         if (not url_host_and_http_host_are_identical
-            or protocol != site_protocol or query != '' or fragment != ''):
+            or protocol != site_protocol or query is not None
+            or fragment is not None):
             raise NotFound(self, url, self.request)
 
         path_parts = [urllib.unquote(part) for part in path.split('/')]
         path_parts.pop(0)
         path_parts.reverse()
 
-        # Import here is necessary to avoid circular import.
-        from canonical.launchpad.webapp.servers import WebServiceClientRequest
-        request = WebServiceClientRequest(StringIO(), {'PATH_INFO' : path})
-        setFirstLayer(request, WebServiceLayer)
+        request = config.createRequest(StringIO(), {'PATH_INFO' : path})
         request.setTraversalStack(path_parts)
-
-        publication = self.request.publication
-        request.setPublication(publication)
-        return request.traverse(publication.getApplication(self.request))
+        root = request.publication.getApplication(self.request)
+        return request.traverse(root)
 
 
 class SimpleFieldMarshaller:
@@ -489,6 +491,8 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
         except NotFound:
             # The URL doesn't correspond to any real object.
             raise ValueError('No such object "%s".' % value)
+        except InvalidURIError:
+            raise ValueError('"%s" is not a valid URI.' % value)
         # We looked up the URL and got the thing at the other end of
         # the URL: a resource. But internally, a resource isn't a
         # valid value for any schema field. Instead we want the object

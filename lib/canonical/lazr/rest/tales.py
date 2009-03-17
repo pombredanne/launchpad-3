@@ -14,12 +14,15 @@ from epydoc.markup import DocstringLinker
 from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
-from zope.component import queryAdapter
+from zope.component import adapts, queryAdapter
+from zope.interface import implements
 from zope.interface.interfaces import IInterface
 from zope.schema import getFieldsInOrder
 from zope.schema.interfaces import IBytes, IChoice, IDate, IDatetime, IObject
 from zope.security.proxy import removeSecurityProxy
+from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.traversing.browser import absoluteURL
+from zope.traversing.interfaces import IPathAdapter
 from lazr.enum import IEnumeratedType
 
 from canonical.launchpad.webapp.publisher import get_current_browser_request
@@ -32,7 +35,7 @@ from canonical.lazr.interfaces import (
 from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import (
-    LAZR_WEBSERVICE_NAME, WebServiceLayer)
+    IWebServiceClientRequest, LAZR_WEBSERVICE_NAME)
 from canonical.lazr.rest import (
     CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
 
@@ -82,8 +85,11 @@ def generate_wadl_doc(doc):
 
     return WADL_DOC_TEMPLATE % parsed.to_html(WadlDocstringLinker())
 
+
 class WebServiceRequestAPI:
     """Namespace for web service functions related to a website request."""
+    implements(IPathAdapter)
+    adapts(IBrowserRequest)
 
     def __init__(self, request):
         """Initialize with respect to a request."""
@@ -112,7 +118,7 @@ class WebLayerAPI:
     @property
     def json(self):
         """Return a JSON description of the object."""
-        request = WebServiceLayer(get_current_browser_request())
+        request = IWebServiceClientRequest(get_current_browser_request())
         if queryAdapter(self.context, IEntry):
             resource = EntryResource(self.context, request)
         else:
@@ -277,7 +283,7 @@ class WadlResourceAdapterAPI(RESTUtilityBase):
                     self.adapter_interface.__name__))
         model_class = registrations[0].required[0]
         operations = getGlobalSiteManager().adapters.lookupAll(
-            (model_class, WebServiceLayer), IResourceOperation)
+            (model_class, IWebServiceClientRequest), IResourceOperation)
         ops = [{'name' : name, 'op' : op} for name, op in operations]
         return ops
 

@@ -94,8 +94,9 @@
                  tal:attributes="
                    href string:${context/assignee/fmt:url}/+assignedbugs"
               >
-                <img tal:replace="structure context/assignee/image:icon"/>
-                <span tal:content="context/assignee/browsername"/>
+                <span tal:replace="structure context/assignee/fmt:link">
+                  icon and assignee.browsername
+                </span>
               </a>
             </tal:has_assignee>
           </span>

@@ -1645,7 +1645,8 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
 
     def shouldNotify(self):
         """Only send notification when the status changed."""
-        return self.bugtask.status != self.old_bugtask.status
+        return (self.bugtask.status != self.old_bugtask.status
+                and self.bugtask.bug.private == False)
 
     def getSubject(self):
         """See QuestionNotification."""

@@ -17,6 +17,7 @@ __all__ = [
 from zope.schema import Bool, Choice, Datetime, Text, TextLine
 from zope.interface import Attribute, Interface
 
+from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
    collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_operation_as,
@@ -28,7 +29,8 @@ from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.archive import IArchive
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import (
+    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
@@ -63,7 +65,7 @@ class DistributionNameField(PillarNameField):
         return IDistribution
 
 
-class IDistributionEditRestricted(Interface):
+class IDistributionEditRestricted(IOfficialBugTagTargetRestricted):
     """IDistribution properties requiring launchpad.Edit permission."""
 
     def newSeries(name, displayname, title, summary, description,
@@ -72,10 +74,11 @@ class IDistributionEditRestricted(Interface):
 
 
 class IDistributionPublic(
-    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasDrivers,
-    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
-    IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
-    IMakesAnnouncements, IPillar, ISpecificationTarget, IHasBuildRecords):
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
+    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationGroup,
+    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -490,6 +493,13 @@ class IDistribution(IDistributionEditRestricted, IDistributionPublic):
 
 # We are forced to define this now to avoid circular import problems.
 IMessage['distribution'].schema = IDistribution
+
+# Patch the official_bug_tags field to make sure that it's
+# writable from the API, and not readonly like its definition
+# in IHasBugs.
+writable_obt_field = copy_field(IDistribution['official_bug_tags'])
+writable_obt_field.readonly = False
+IDistribution._v_attrs['official_bug_tags'] = writable_obt_field
 
 
 class IDistributionSet(Interface):
