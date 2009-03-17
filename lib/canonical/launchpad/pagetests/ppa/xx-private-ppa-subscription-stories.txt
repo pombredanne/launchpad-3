@@ -165,6 +165,37 @@ and a notification about the update is also displayed.
     ...     print msg
     The subscription for Launchpad Developers has been updated.
 
+=== Scenario 2: Canceling a subscription ===
+
+Given a private PPA for Celso
+and a subscription to Celso's private PPA for the Launchpad Developers team
+and a browser for Celso currently navigated to the Manage Subscriptions page
+
+    >>> cprov_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
+
+
+When Celso clicks 'Edit/Cancel' for the Launchpad Developers subscription
+and clicks Cancel
+
+    >>> cprov_browser.getLink(
+    ...     url='/~cprov/+archive/ppa/+subscriptions/launchpad/+edit').click()
+    >>> cprov_browser.getControl(name="field.actions.cancel").click()
+
+Then the browser is redirected back to the subscriptions page
+and the canceled subscription is no longer displayed
+and a notification about the cancellation is displayed.
+
+    >>> print cprov_browser.url
+    http://launchpad.dev/~cprov/+archive/ppa/+subscriptions
+    >>> print_archive_subscriptions(cprov_browser.contents)
+    Name                    Expires       Comment
+    Joe Smith                             Joe is my friend    Edit/Cancel
+
+    >>> for msg in get_feedback_messages(cprov_browser.contents):
+    ...     print msg
+    The subscription for Launchpad Developers has been canceled.
+
 
 == Story 3: A subscriber activates a subscription ==
 

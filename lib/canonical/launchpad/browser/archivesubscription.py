@@ -135,7 +135,8 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
                 self.setFieldError('date_expires',
                     "The expiry date must be in the future.")
 
-    @action(u'Update', name='update', validator="validate_update_subscription")
+    @action(
+        u'Update', name='update', validator="validate_update_subscription")
     def update_subscription(self, action, data):
         """Update the context subscription with the new data."""
         # As we present a date selection to the user for expiry, we
@@ -157,8 +158,22 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 
         # Redirect back to the subscriptions page.
         # Note to reviewer: is there a better way to do this??
-        self.next_url = canonical_url(self.context.archive) + "/+subscriptions"
+        self.next_url = canonical_url(self.context.archive) + (
+            "/+subscriptions")
 
+    @action(u'Cancel subscription', name='cancel')
+    def cancel_subscription(self, action, data):
+        """Cancel the context subscription."""
+        self.context.cancel(self.user)
+
+        notification = "The subscription for %s has been canceled." % (
+            self.context.subscriber.displayname)
+        self.request.response.addNotification(structured(notification))
+
+        # Redirect back to the subscriptions page.
+        # Note to reviewer: is there a better way to do this??
+        self.next_url = canonical_url(self.context.archive) + (
+            "/+subscriptions")
 
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for managing a persons archive subscriptions."""

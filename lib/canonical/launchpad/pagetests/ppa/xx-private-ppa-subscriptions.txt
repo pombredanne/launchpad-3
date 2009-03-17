@@ -113,8 +113,8 @@ Once the subscription has been added, it will display in the table:
     ...                               'archive_subscriber_row'):
     ...     print extract_text(row)
     Name                Expires     Comment
-    Brad Smith          2200-08-01  Brad can access for a while.
-    Joe Smith                       Joe is my friend
+    Brad Smith          2200-08-01  Brad can access for a while.  Edit/Cancel
+    Joe Smith                       Joe is my friend              Edit/Cancel
 
 
 == Managing a persons' Archive subscriptions ==
