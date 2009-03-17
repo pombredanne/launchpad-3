@@ -27,6 +27,7 @@ distribution series.
     distribution_link: u'http://.../ubuntu'
     distroseries_link: u'http://.../ubuntu/hoary'
     name: u'evolution'
+    official_bug_tags: []
     productseries_link: u'http://.../evolution/trunk'
     resource_type_link: ...
     self_link: u'http://.../ubuntu/hoary/+source/evolution'
