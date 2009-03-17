@@ -9,6 +9,9 @@ import _pythonpath
 from itertools import chain
 import os
 import sets
+import sys
+
+import psycopg2
 
 from ConfigParser import SafeConfigParser
 from optparse import OptionParser
@@ -145,19 +148,22 @@ def main(options):
     con = connect(options.dbuser)
     cur = CursorWrapper(con.cursor())
 
-    nodes = replication.helpers.get_nodes(con, 1)
-    if nodes:
-        # If we have a replicated environment, reset permissions on all
-        # Nodes.
-        del con
-        for node in nodes:
-            log.info("Resetting permissions on %s (%s)" % (
-                node.nickname, node.connection_string))
-            reset_permissions(
-                psycopg2.connect(node.connection_string), config, options)
+    if options.cluster:
+        nodes = replication.helpers.get_nodes(con, 1)
+        if nodes:
+            # If we have a replicated environment, reset permissions on all
+            # Nodes.
+            con.close()
+            for node in nodes:
+                log.info("Resetting permissions on %s (%s)" % (
+                    node.nickname, node.connection_string))
+                reset_permissions(
+                    psycopg2.connect(node.connection_string), config, options)
+        else:
+            log.error("--cluster requested, but not a Slony-I cluster.")
+            return 1
     else:
-        # Otherwise, just reset permissions on the stand alone database.
-        log.info("Resetting permissions on standalone database")
+        log.info("Resetting permissions on single database")
         reset_permissions(con, config, options)
 
 
@@ -369,12 +375,16 @@ def reset_permissions(con, config, options):
 
     con.commit()
 
+
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option(
-            "-o", "--owner", dest="owner", default="postgres",
-            help="Owner of PostgreSQL objects"
-            )
+        "-o", "--owner", dest="owner", default="postgres",
+        help="Owner of PostgreSQL objects")
+    parser.add_option(
+        "-c", "--cluster", dest="cluster", default=False,
+        action="store_true",
+        help="Rebuild permissions on all nodes in the Slony-I cluster.")
     db_options(parser)
     logger_options(parser)
 
@@ -382,4 +392,4 @@ if __name__ == '__main__':
 
     log = logger(options)
 
-    main(options)
+    sys.exit(main(options))

@@ -183,7 +183,7 @@ def _get_nodes(con, query):
 def get_master_node(con, set_id=1):
     """Return the master Node, or None if the cluster is still being setup."""
     nodes = _get_nodes(con, """
-        SELECT
+        SELECT DISTINCT
             pa_server AS node_id,
             'master',
             pa_conninfo AS connection_string,
