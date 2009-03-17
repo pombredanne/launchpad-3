@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'BugChangeBase',
     'BugDescriptionChange',
     'BugTitleChange',
     'get_bug_change_class',
@@ -76,11 +75,7 @@ class SimpleBugChangeMixin:
         return self.recipients
 
 
-class TextualBugChange(SimpleBugChangeMixin, BugChangeBase):
-    """Describes a textual attribute change to a bug."""
-
-
-class BugDescriptionChange(TextualBugChange):
+class BugDescriptionChange(SimpleBugChangeMixin, BugChangeBase):
     """Describes a change to a bug's description."""
 
     def getBugNotification(self):
@@ -91,7 +86,7 @@ class BugDescriptionChange(TextualBugChange):
         return {'text': notification_text}
 
 
-class BugTitleChange(TextualBugChange):
+class BugTitleChange(SimpleBugChangeMixin, BugChangeBase):
     """Describes a change to a bug's title, aka summary."""
 
     def getBugActivity(self):
@@ -112,9 +107,7 @@ class BugTitleChange(TextualBugChange):
         return {'text': notification_text}
 
 
-
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
-    'name': TextualBugChange,
     'title': BugTitleChange,
     }

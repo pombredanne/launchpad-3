@@ -216,33 +216,33 @@ For fields it knows about, it will return a more suitable class.
 See component/ftests/test_bugchange.py for some sanity checks.
 
 
-=== TextualBugChange ===
+=== SimpleBugChangeMixin ===
 
-The TextualBugChange class can be used to represent a change in the
-value of a textual field on a Bug, such as its description, title or
-name.
+The SimpleBugChangeMixin offers basic functionality for bug changes
+classes.
 
     >>> from canonical.launchpad.components.bugchange import (
-    ...     TextualBugChange)
+    ...     SimpleBugChangeMixin)
 
-    >>> textual_change = TextualBugChange(
+    >>> class SimpleBugChange(SimpleBugChangeMixin, BugChangeBase):
+    ...     """Solely to demo basic functionality of mixin."""
+
+    >>> simple_change = SimpleBugChange(
     ...     when=nowish, person=example_person, what_changed='title',
     ...     old_value=example_bug.title, new_value='Spam')
 
-In its getBugActivity() method TextualBugChange merely returns the field
-name, old value and new value as passed to its __init__() method.
+In its getBugActivity() method SimpleBugChangeMixin merely returns the
+field name, old value and new value as passed to its __init__()
+method.
 
-    >>> activity_data = textual_change.getBugActivity()
+    >>> activity_data = simple_change.getBugActivity()
     >>> print pretty(activity_data)
     {'newvalue': 'Spam',
      'oldvalue': u'Reality is on the blink again',
      'whatchanged': 'title'}
 
-However, TextualBugChange is a base class; it does not implement
-getBugNotification(), which is left to various subclasses.
 
-
-==== BugDescriptionChange ====
+=== BugDescriptionChange ===
 
 This describes a change to the description of a
 bug. getBugNotification() returns a formatted description of the
@@ -262,7 +262,7 @@ change.
     + Well, maybe not
 
 
-==== BugTitleChange ====
+=== BugTitleChange ===
 
 This, surprisingly, describes a title change for a bug. Again,
 getBugNotification() returns a specially formatted description of
