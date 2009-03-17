@@ -36,8 +36,8 @@
     The current setting is:<br />
   </p>
   <p tal:condition="view/context/branch"><code
-         tal:content="view/context/branch/displayname">
-    lp:~/branch/url</code></p>
+         tal:content="view/context/branch/unique_name">
+    ~user/branch/url</code></p>
   <p tal:condition="not:view/context/branch">No Launchpad hosted 
     branch is associated with this series.</p>
   <div metal:use-macro="context/@@launchpad_form/form" />

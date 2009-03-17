@@ -414,6 +414,8 @@ class RosettaUploadJob(BranchJobDerived):
     @classmethod
     def create(klass, branch, from_revision_id):
         """See `IRosettaUploadJobSource`."""
+        if branch is None:
+            return None
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         productseries = store.find(
             (ProductSeries),

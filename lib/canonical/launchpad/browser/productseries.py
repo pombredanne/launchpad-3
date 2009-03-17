@@ -600,11 +600,11 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
-        if data['branch'] != context.branch:
+        if data['branch'] != self.context.branch:
             self.updateContextFromData(data)
             # Request an initial upload of translation files.
             getUtility(IRosettaUploadJobSource).create(
-                context.branch, NULL_REVISION)
+                self.context.branch, NULL_REVISION)
         else:
             self.updateContextFromData(data)
         self.request.response.addInfoNotification(
