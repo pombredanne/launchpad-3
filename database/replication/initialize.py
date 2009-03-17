@@ -182,13 +182,16 @@ def main():
     con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     global cur
     cur = con.cursor()
+    log.debug("Calculating authdb replication set.")
     authdb_tables, authdb_sequences = helpers.calculate_replication_set(
         cur, helpers.AUTHDB_SEED)
+    log.debug("Calculating lpmain replication set.")
     lpmain_tables, lpmain_sequences = helpers.calculate_replication_set(
         cur, helpers.LPMAIN_SEED)
 
     # Sanity check these lists - we want all objects in the public
     # schema to be in one and only one replication set.
+    log.debug("Performing sanity checks.")
     fails = 0
     for table in all_tables_in_schema(cur, 'public'):
         times_seen = 0

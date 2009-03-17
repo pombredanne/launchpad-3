@@ -326,7 +326,22 @@ def calculate_replication_set(cur, seeds):
     # or indirectly via foreign key constraints, including the seed itself.
     while pending_tables:
         namespace, tablename = pending_tables.pop()
+
+        # Skip if the table doesn't exist - we might have seeds listed that
+        # have been removed or are yet to be created.
+        cur.execute("""
+            SELECT TRUE
+            FROM pg_class, pg_namespace
+            WHERE pg_class.relnamespace = pg_namespace.oid
+                AND pg_namespace.nspname = %s
+                AND pg_class.relname = %s
+            """ % sqlvalues(namespace, tablename))
+        if cur.fetchone() is None:
+            log.debug("Table %s.%s doesn't exist" % (namespace, tablename))
+            continue
+
         tables.add((namespace, tablename))
+
         # Find all tables that reference the current (seed) table
         # and all tables that the seed table references.
         cur.execute("""
