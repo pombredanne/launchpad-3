@@ -52,8 +52,6 @@ from canonical.launchpad.interfaces.translationimporter import (
     ITranslationImporter)
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue)
-from canonical.launchpad.interfaces.translations import (
-    TranslationsBranchImportMode)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
