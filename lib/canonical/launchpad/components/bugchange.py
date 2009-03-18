@@ -204,14 +204,16 @@ class BugTagsChange(AttributeChange):
     def getBugNotification(self):
         new_tags = set(self.new_value)
         old_tags = set(self.old_value)
-        added_tags = " ".join(sorted(new_tags.difference(old_tags)))
-        removed_tags = " ".join(sorted(old_tags.difference(new_tags)))
+        added_tags = new_tags.difference(old_tags)
+        removed_tags = old_tags.difference(new_tags)
 
         messages = []
-        if added_tags:
-            messages.append("** Tags added: %s" % added_tags)
-        if removed_tags:
-            messages.append("** Tags removed: %s" % removed_tags)
+        if len(added_tags) > 0:
+            messages.append(
+                "** Tags added: %s" % " ".join(sorted(added_tags)))
+        if len(removed_tags) > 0:
+            messages.append(
+                "** Tags removed: %s" % " ".join(sorted(removed_tags)))
 
         return {'text': "\n".join(messages)}
 
