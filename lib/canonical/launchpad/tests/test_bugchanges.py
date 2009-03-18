@@ -190,7 +190,7 @@ class TestBugChanges(unittest.TestCase):
         added_activity = {
             'person': self.user,
             'whatchanged': 'branch unlinked',
-            'newvalue': branch.bzr_identity,
+            'oldvalue': branch.bzr_identity,
             }
         added_notification = {
             'text': "** Branch unlinked: %s" % branch.bzr_identity,

@@ -125,7 +125,7 @@ class BranchUnlinkedFromBug(BugChangeBase):
         """See `IBugChange`."""
         return dict(
             whatchanged='branch unlinked',
-            newvalue=self.branch.bzr_identity)
+            oldvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
