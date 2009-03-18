@@ -14,15 +14,13 @@ able to:
 
 == Setting up ==
 
-    >>> import tempfile, os, operator
-    >>> from canonical.buildmaster.master import (
-    ...   BuilddMaster, determineArchitecturesToBuild)
+    >>> from canonical.buildmaster.master import BuilddMaster
 
 Import the bunch of required database classes:
 
     >>> from canonical.launchpad.database import (
     ...      Build, BuildQueue, DistroArchSeries, DistroSeries,
-    ...      PocketChroot, SecureSourcePackagePublishingHistory)
+    ...      PocketChroot)
 
     >>> from canonical.launchpad.interfaces import (
     ...      PackagePublishingPocket, PackagePublishingStatus)
@@ -82,6 +80,7 @@ build jobs will be created.
     ...     distroserieses.add(archseries.distroseries)
     ...     build_master.addDistroArchSeries(archseries)
 
+    >>> import operator
     >>> distroserieses = sorted(
     ...     distroserieses, key=operator.attrgetter('name'))
 
@@ -286,197 +285,6 @@ checks/counters within this test.
 
     >>> old_build_ids.append(failed_build.id)
     >>> old_build_ids.append(ok_build.id)
-
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-
-
-== Package Architecture Specific ==
-
-The Package-Architecture-Specific (PAS) module is a parser to a set
-of restrictions to build packages based on archive-admin experiences.
-
-Those restrictions overlap the metadata information from the source
-packages (architecturehintlist).
-
-
-=== Source PAS ===
-
-    >>> from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
-
-Write a harness that lets us easily test PAS statements:
-
-    >>> def getPASVerifier(pas_string, series=hoary):
-    ...   """Build and return a PAS verifier based on the string provided."""
-    ...   temp_dir = tempfile.mkdtemp()
-    ...   pas_filename = os.path.join(temp_dir, "Packages-arch-specific")
-    ...   pas_file = file(pas_filename, "w")
-    ...   pas_file.write(pas_string)
-    ...   pas_file.close()
-    ...   pas_verify = BuildDaemonPackagesArchSpecific(temp_dir, series)
-    ...   os.unlink(pas_filename)
-    ...   return pas_verify
-
-    >>> legal_archs = set(hoary.architectures)
-
-First check a positive source listing:
-
-    >>> pas_verify = getPASVerifier("%test-buildd-3: i386")
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_three, legal_archs, hoary,
-    ...                                pas_verify)]
-    [u'i386']
-
-And now a negative source listing:
-
-    >>> pas_verify = getPASVerifier("%test-buildd-3: !i386")
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_three, legal_archs, hoary,
-    ...                                pas_verify)]
-    [u'hppa']
-
-And a source listing which causes us to produce no builds:
-
-    >>> pas_verify = getPASVerifier("%test-buildd-3: sparc")
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_three, legal_archs, hoary,
-    ...                                pas_verify)]
-    []
-
-PPA builds are not affected by PAS restrictions, i.e., they will
-build for all requested architectures currently supported in the PPA
-subsystem.
-
-    >>> pas_verify = getPASVerifier("%test-ppa: hppa")
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs,
-    ...                                hoary, pas_verify)]
-    [u'i386']
-
-    >>> pas_verify = getPASVerifier("%test-ppa: !i386")
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs,
-    ...                                hoary, pas_verify)]
-    [u'i386']
-
-
-== Binary PAS ==
-
-To check binary PAS listings we'll use a source publication for
-iceweasel which produces mozilla-firefox binaries in warty and already
-has its data set up.
-
-    >>> firefox_pub = SecureSourcePackagePublishingHistory.get(28)
-    >>> print firefox_pub.sourcepackagerelease.title
-    iceweasel - 1.0
-    >>> print firefox_pub.sourcepackagerelease.architecturehintlist
-    any
-    >>> iceweasel_binaries = warty.getSourcePackage(
-    ...     'iceweasel')['1.0'].binaries
-    >>> [binary.title for binary in iceweasel_binaries]
-    [u'mozilla-firefox-1.0']
-
-    >>> legal_archs = set(warty.architectures)
-    >>> sorted([arch.architecturetag
-    ...         for arch in legal_archs], reverse=True)
-    [u'i386', u'hppa']
-
-Restrict iceweasel targets to i386 and sparc, since the latter is not
-present in warty, we will only create a build for i386:
-
-    >>> pas_verify = getPASVerifier(
-    ...     "mozilla-firefox: i386 sparc", series=warty)
-    >>> permitted_archs = determineArchitecturesToBuild(
-    ...      firefox_pub, legal_archs, warty, pas_verify)
-    >>> [arch.architecturetag for arch in permitted_archs]
-    [u'i386']
-
-And a binary PAS listing that tries to exclude i386 and hppa from an
-arch-any build. The exclusion of i386 is ignored; see comment in
-pas.py:_handleBinaryPAS for more information on why.
-
-    >>> pas_verify = getPASVerifier(
-    ...     "mozilla-firefox: !i386 !hppa", series=warty)
-    >>> permitted_archs = determineArchitecturesToBuild(
-    ...      firefox_pub, legal_archs, warty, pas_verify)
-    >>> [arch.architecturetag for arch in permitted_archs]
-    [u'i386']
-
-XXX cprov 20071211: we can't properly test PPA binary-PAS right now
-because there is no binary package published in PPA. The way the PAS
-component is completely ignored for PPAs indicates that we are safe,
-however, for now, we have to rely on the previous primary-archive tests.
-See bug 189025.
-
-
-== Check the architectures ==
-
-See if the code which determines archs to build does the right thing for
-each of these options:
-
-    >>> legal_archs = set(hoary.architectures)
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_all, legal_archs, hoary)]
-    [u'i386']
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_any, legal_archs, hoary)]
-    [u'hppa', u'i386']
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_three, legal_archs, hoary)]
-    [u'hppa', u'i386']
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_one, legal_archs, hoary)]
-    [u'hppa']
-
-
-== Check support for kernel notation in architecture hint list ==
-
-dpkg supports the use of the '<kernel-><arch>' notation in the
-'Architecture' field, where 'kernel-' is one of the kernel platform
-available in debian systems: ['linux-', 'kfreebsd', 'hurd-', 'any-']
-
-See bug 73761 and http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=268709
-for further information about this dpkg feature.
-
-Soyuz will consider only 'any-' and 'linux-' elements as the
-corresponding architecture, since only linux is supported in ubuntu.
-
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_any_foo, legal_archs, hoary)]
-    [u'hppa']
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_linux_foo, legal_archs, hoary)]
-    [u'i386']
-
-
-== PPA architectures ==
-
-For virtualized archives only architectures with established support for
-PPA will be considered when creating PPA builds. See distroarchseries.txt
-for further information.
-
-    >>> legal_archs = set(hoary.architectures)
-    >>> sorted([arch.architecturetag for arch in legal_archs])
-    [u'hppa', u'i386']
-
-    >>> [arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs, hoary)]
-    [u'i386']
-
-Conversely, for non-virtual archives, build records are created for all
-architectures supported for the distroseries.
-
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
-
-    >>> pub_hoary_ppa.archive.require_virtualized = False
-    >>> sorted([arch.architecturetag for arch in
-    ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs, hoary)])
-    [u'hppa', u'i386']
-
-Reset the virtualization flag.
-
-    >>> pub_hoary_ppa.archive.require_virtualized = True
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)

@@ -7,6 +7,7 @@
 
   <attendees>
     <person tal:repeat="attendance view/attendees"
+            tal:condition="attendance/name|nothing"
             tal:attributes="name attendance/name;
                             displayname attendance/displayname;
                             start attendance/start;
@@ -24,6 +25,7 @@
                              approver spec/spec/approver/name|nothing;
                              priority spec/spec/priority/value">
       <person tal:repeat="person spec/interested"
+              tal:condition="person/name|nothing"
               tal:attributes="name person/name;
                               required person/required" />
     </meeting>

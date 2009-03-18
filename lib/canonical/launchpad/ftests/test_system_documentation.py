@@ -415,12 +415,6 @@ special = {
             setUp=builddmasterSetUp,
             layer=LaunchpadZopelessLayer,
             ),
-    'buildd-queuebuilder.txt': LayeredDocFileSuite(
-            '../doc/buildd-queuebuilder.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
-            stdout_logging_level=logging.WARNING
-            ),
     'close-account.txt': LayeredDocFileSuite(
             '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
             layer=LaunchpadZopelessLayer

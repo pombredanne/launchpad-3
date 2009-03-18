@@ -1207,25 +1207,6 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
         self.response.setHeader('Vary', 'Cookie, Authorization, Accept')
 
 
-def website_request_to_web_service_request(website_request):
-    """An adapter from a web browser request to a web service request.
-
-    Used to instantiate Resource objects when handling normal web
-    browser requests.
-    """
-    body = website_request.bodyStream.getCacheStream().read()
-    environ = dict(website_request._environ)
-    # Zope picks up on SERVER_URL when setting the _app_server attribute
-    # of the new request.
-    environ['SERVER_URL'] = website_request.getApplicationURL()
-    version_string = getUtility(
-        IWebServiceConfiguration).service_version_uri_prefix
-    web_service_request = WebServiceClientRequest(body, environ)
-    web_service_request.setVirtualHostRoot(names=["api", version_string])
-    web_service_request.setPublication(WebServicePublication(None))
-    return web_service_request
-
-
 class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
     """Test request for the webservice.
 

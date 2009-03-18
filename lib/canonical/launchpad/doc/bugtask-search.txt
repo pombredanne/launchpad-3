@@ -769,7 +769,7 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     1 Firefox does not support SVG [3 comments]
     10 another test bug [2 comments]
     9 Thunderbird crashes [1 comments]
-    19 Bug to be fixed in trunk [0 comments]
+    19 Bug to be fixed in trunk [1 comments]
 
 
 == Searching using a flat interface ==

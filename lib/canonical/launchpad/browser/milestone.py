@@ -15,6 +15,8 @@ __all__ = [
     ]
 
 from zope.component import getUtility
+from zope.formlib import form
+from zope.schema import Choice
 
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
@@ -48,7 +50,7 @@ class MilestoneContextMenu(ContextMenu):
 
     usedfor = IMilestone
 
-    links = ['edit', 'admin', 'subscribe', 'publish_release', 'view_release']
+    links = ['edit', 'subscribe', 'publish_release', 'view_release']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -57,14 +59,6 @@ class MilestoneContextMenu(ContextMenu):
         # any properties which can be edited.
         enabled = not IProjectMilestone.providedBy(self.context)
         return Link('+edit', text, icon='edit', enabled=enabled)
-
-    @enabled_with_permission('launchpad.Admin')
-    def admin(self):
-        text = 'Administer'
-        # ProjectMilestones are virtual milestones and provide no details
-        # that can/must be administrated.
-        enabled = not IProjectMilestone.providedBy(self.context)
-        return Link('+admin', text, icon='edit', enabled=enabled)
 
     def subscribe(self):
         enabled = not IProjectMilestone.providedBy(self.context)
@@ -188,31 +182,51 @@ class MilestoneEditView(LaunchpadEditFormView):
 
     This view supports editing of properties such as the name, the date it is
     expected to complete, the milestone description, and whether or not it is
-    active (i.e. active).
+    active.
     """
 
     schema = IMilestone
-    field_names = ['name', 'active', 'dateexpected', 'summary']
     label = "Modify milestone details"
 
     custom_widget('dateexpected', DateWidget)
 
-    @action(_('Update'), name='update')
-    def update_action(self, action, data):
-        self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
+    @property
+    def field_names(self):
+        """See `LaunchpadFormView`.
 
+        There are two series fields, one for for product milestones and the
+        other for distribution milestones. The product milestone may change
+        its productseries. The distribution milestone may change its
+        distroseries.
+        """
+        names = ['name', 'active', 'dateexpected', 'summary']
+        if self.context.product is None:
+            # This is a distribution milestone.
+            names.append('distroseries')
+        else:
+            names.append('productseries')
+        return names
 
-class MilestoneAdminEditView(LaunchpadEditFormView):
-    """A view for administering the milestone.
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
 
-    This view allows an administrator to change the productseries and
-    distroseries.
-    """
-
-    schema = IMilestone
-    field_names = ['productseries', 'distroseries']
-    label = "Modify milestone details"
+        The schema permits the series field to be None (required=False) to
+        create the milestone, but once a series field is set, None is invalid.
+        The choice for the series is redefined to ensure None is not included.
+        """
+        super(MilestoneEditView, self).setUpFields()
+        if self.context.product is None:
+            # This is a distribution milestone.
+            choice = Choice(
+                __name__='distroseries', vocabulary="FilteredDistroSeries")
+        else:
+            choice = Choice(
+                __name__='productseries', vocabulary="FilteredProductSeries")
+        choice.title = _("Series")
+        choice.description = _("The series for which this is a milestone.")
+        field = form.Fields(choice, render_context=self.render_context)
+        # Remove the schema's field, then add back the replacement field.
+        self.form_fields = self.form_fields.omit(choice.__name__) + field
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):

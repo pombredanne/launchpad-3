@@ -72,8 +72,8 @@ from canonical.lazr.interfaces.rest import (
     IEntryFieldResource, IEntryResource, IFieldHTMLRenderer,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME,
-    IWebServiceConfiguration, WebServiceLayer)
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue,
+    IWebServiceClientRequest, IWebServiceConfiguration, LAZR_WEBSERVICE_NAME)
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -695,7 +695,7 @@ class FieldUnmarshallerMixin:
         return name, renderer(value)
 
 
-@component.adapter(Interface, IField, WebServiceLayer)
+@component.adapter(Interface, IField, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def render_field_to_html(object, field, request):
     """Turn a field's current value into an XHTML snippet.

@@ -9,13 +9,13 @@ __all__ = [
     'CreateBugParams',
     'CreatedBugWithNoBugTasksError',
     'IBug',
-    'IBugBecameQuestionEvent',
-    'IBugSet',
-    'IBugDelta',
     'IBugAddForm',
+    'IBugBecameQuestionEvent',
+    'IBugDelta',
+    'IBugSet',
     'IFrontPageBugAddForm',
-    'InvalidBugTargetType',
     'IProjectBugAddForm',
+    'InvalidBugTargetType',
     ]
 
 from zope.component import getUtility
@@ -205,8 +205,6 @@ class IBug(ICanBeMentored):
         schema=IBugTask)
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
-    productinfestations = Attribute('List of product release infestations.')
-    packageinfestations = Attribute('List of package release infestations.')
     watches = exported(
         CollectionField(
             title=_("All bug watches associated with this bug."),
@@ -384,6 +382,13 @@ class IBug(ICanBeMentored):
 
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
+
+    def addChange(change):
+        """Record a change to the bug.
+
+        :param change: An `IBugChange` instance from which to take the
+            change data.
+        """
 
     def expireNotifications():
         """Expire any pending notifications that have not been emailed.
