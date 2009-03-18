@@ -51,13 +51,104 @@ CREATE UNIQUE INDEX translationmessage__potmsgset__language__variant__diverged__
 DROP INDEX translationmessage__potmsgset__pofile__is_imported__key;
 -- There can be only a single shared translation to a language/variant
 -- for a POTMsgSet.
--- XXX 20081203 Danilo: should we support diverging imported translations?
 CREATE UNIQUE INDEX translationmessage__potmsgset__language__variant__shared__imported__key ON translationmessage USING btree (potmsgset, language, variant) WHERE ((is_imported IS TRUE) AND (potemplate IS NULL));
 -- Diverged translations need not be unique.
 CREATE INDEX translationmessage__potmsgset__language__variant__diverged__imported__key ON translationmessage USING btree (potmsgset, language, variant) WHERE ((is_imported IS TRUE) AND (potemplate IS NOT NULL));
 
 DROP INDEX translationmessage__potmsgset__pofile__not_used__key;
 CREATE INDEX translationmessage__potmsgset__language__variant__not_used__key ON translationmessage USING btree (potmsgset, language, variant) WHERE (NOT ((is_current IS TRUE) AND (is_imported IS TRUE)));
+
+DROP VIEW poexport;
+CREATE VIEW poexport AS
+    SELECT
+      ((COALESCE((potmsgset.id)::text, 'X'::text) || '.'::text) || COALESCE((translationmessage.id)::text, 'X'::text)) AS id,
+      potemplate.productseries,
+      potemplate.sourcepackagename,
+      potemplate.distroseries,
+      potemplate.id AS potemplate,
+      potemplate.header AS template_header,
+      potemplate.languagepack,
+      pofile.id AS pofile,
+      pofile.language,
+      pofile.variant,
+      pofile.topcomment AS translation_file_comment,
+      pofile.header AS translation_header,
+      pofile.fuzzyheader AS is_translation_header_fuzzy,
+      potmsgset.sequence,
+      potmsgset.id AS potmsgset,
+      translationmessage.comment,
+      potmsgset.sourcecomment AS source_comment,
+      potmsgset.filereferences AS file_references,
+      potmsgset.flagscomment AS flags_comment,
+      potmsgset.context,
+      msgid_singular.msgid AS msgid_singular,
+      msgid_plural.msgid AS msgid_plural,
+      translationmessage.is_current,
+      translationmessage.is_imported,
+      translationmessage.potemplate AS diverged,
+      potranslation0.translation AS translation0,
+      potranslation1.translation AS translation1,
+      potranslation2.translation AS translation2,
+      potranslation3.translation AS translation3,
+      potranslation4.translation AS translation4,
+      potranslation5.translation AS translation5
+FROM
+     potmsgset
+     JOIN translationtemplateitem ON
+          translationtemplateitem.potmsgset = potmsgset.id
+     JOIN potemplate ON
+          potemplate.id = translationtemplateitem.potemplate
+     JOIN pofile ON
+          potemplate.id = pofile.potemplate
+     LEFT JOIN translationmessage ON
+          (potmsgset.id = translationmessage.potmsgset AND
+           translationmessage.pofile = pofile.id AND
+           translationmessage.is_current IS TRUE)
+     LEFT JOIN pomsgid msgid_singular ON
+          msgid_singular.id = potmsgset.msgid_singular
+     LEFT JOIN pomsgid msgid_plural ON
+          msgid_plural.id = potmsgset.msgid_plural
+     LEFT JOIN potranslation potranslation0 ON
+          potranslation0.id = translationmessage.msgstr0
+     LEFT JOIN potranslation potranslation1 ON
+          potranslation1.id = translationmessage.msgstr1
+     LEFT JOIN potranslation potranslation2 ON
+          potranslation2.id = translationmessage.msgstr2
+     LEFT JOIN potranslation potranslation3 ON
+          potranslation3.id = translationmessage.msgstr3
+     LEFT JOIN potranslation potranslation4 ON
+          potranslation4.id = translationmessage.msgstr4
+     LEFT JOIN potranslation potranslation5 ON
+          potranslation5.id = translationmessage.msgstr5;
+
+DROP VIEW potexport;
+CREATE VIEW potexport AS
+    SELECT COALESCE((potmsgset.id)::text, 'X'::text) AS id,
+    potemplate.productseries,
+    potemplate.sourcepackagename,
+    potemplate.distroseries,
+    potemplate.id AS potemplate,
+    potemplate.header AS template_header,
+    potemplate.languagepack,
+    potmsgset.sequence,
+    potmsgset.id AS potmsgset,
+    potmsgset.commenttext AS comment,
+    potmsgset.sourcecomment AS source_comment,
+    potmsgset.filereferences AS file_references,
+    potmsgset.flagscomment AS flags_comment,
+    potmsgset.context,
+    msgid_singular.msgid AS msgid_singular,
+    msgid_plural.msgid AS msgid_plural 
+FROM
+    potmsgset
+    JOIN translationtemplateitem ON
+         translationtemplateitem.potmsgset = potmsgset.id
+    JOIN potemplate ON
+         potemplate.id = translationtemplateitem.potemplate
+    LEFT JOIN pomsgid msgid_singular ON
+          potmsgset.msgid_singular = msgid_singular.id
+    LEFT JOIN pomsgid msgid_plural ON
+          potmsgset.msgid_plural = msgid_plural.id;
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
