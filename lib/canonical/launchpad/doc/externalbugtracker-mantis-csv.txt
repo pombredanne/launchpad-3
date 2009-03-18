@@ -79,7 +79,7 @@ And have our special Mantis instance process them:
     >>> bug_watch_updater = BugWatchUpdater(transaction)
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, example_bug_tracker.watches)
-    INFO:...:Updating 1 watches on http://bugs.some.where
+    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
@@ -121,7 +121,7 @@ updateBugWatches() issues only one request to update all watches:
     >>> example_ext_bug_tracker.cleanCache()
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, example_bug_tracker.watches)
-    INFO:...:Updating 6 watches on http://bugs.some.where
+    INFO:...:Updating 6 watches for 6 bugs on http://bugs.some.where
     CALLED _postPage('view_all_set.php?f=3', ...)
     CALLED _getPage('csv_export.php')
 
@@ -176,7 +176,7 @@ updated:
     >>> old_last_changed = bug_watch.lastchanged
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, [bug_watch])
-    INFO:...:Updating 1 watches on http://bugs.some.where
+    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> bug_watch.lastchanged == old_last_changed
     True

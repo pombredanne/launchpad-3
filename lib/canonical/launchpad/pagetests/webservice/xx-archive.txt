@@ -19,6 +19,7 @@ We publish a subset of their attributes.
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
+    private: False
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: None
@@ -80,6 +81,7 @@ The archive has the following attributes:
     distribution_link: u'http://.../ubuntutest'
     name: u'primary'
     owner_link: u'http://.../~ubuntu-team'
+    private: False
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../ubuntutest/+archive/primary'
     signing_key_fingerprint: None
@@ -619,6 +621,7 @@ the IArchive context, in this case only Celso has it.
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
+    private: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
@@ -629,10 +632,31 @@ the IArchive context, in this case only Celso has it.
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
+    private: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
     title: u'Private PPA for Celso Providelo'
+
+
+== Modifying privacy ==
+
+Modifying the privacy flag through the API is not allowed except for admins.
+
+    >>> import simplejson
+    >>> def modify_archive(service, archive):
+    ...     headers = {'Content-type': 'application/json'}
+    ...     return service(
+    ...         archive['self_link'], 'PUT', simplejson.dumps(archive),
+    ...         headers)
+
+    >>> sabdfl_archive = webservice.get("/~sabdfl/+archive/ppa").jsonBody()
+    >>> sabdfl_archive['private'] = True
+    >>> print modify_archive(user_webservice, sabdfl_archive)
+    HTTP/1.1 401 Unauthorized
+    ...
+    Unauthorized: (<Archive at ...>, 'private', 'launchpad.Admin')
+    <BLANKLINE>
 
 
 === Copy privacy mismatch ===

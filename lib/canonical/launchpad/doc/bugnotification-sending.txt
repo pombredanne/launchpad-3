@@ -1636,7 +1636,7 @@ notification level greater or equal to METADATA.
     >>> from canonical.launchpad.mailnotification import (
     ...     add_bug_change_notifications)
     >>> from canonical.launchpad.webapp import canonical_url
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> subscription_no_priv.bug_notification_level = (

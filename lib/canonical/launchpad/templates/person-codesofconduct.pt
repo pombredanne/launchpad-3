@@ -21,7 +21,7 @@
   drive the open source community.</p>
 
   <p tal:condition="not: context/signedcocs">
-    <tal:name replace="context/displayname"/> has never signed a code
+    <tal:name replace="context/fmt:displayname"/> has never signed a code
     of conduct.
   </p>
 

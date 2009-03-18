@@ -63,7 +63,7 @@ We successfully change the polls name
 Trying to edit a poll that's already open isn't possible.
 
     >>> team_admin_browser.open('http://launchpad.dev/~ubuntu-team/')
-    >>> team_admin_browser.getLink('Show polls').click()
+    >>> team_admin_browser.getLink('Polls').click()
     >>> team_admin_browser.url
     'http://launchpad.dev/~ubuntu-team/+polls'
 
@@ -79,7 +79,7 @@ Trying to edit a poll that's already open isn't possible.
 It's also not possible to edit a poll that's already closed.
 
     >>> team_admin_browser.open('http://launchpad.dev/~ubuntu-team/')
-    >>> team_admin_browser.getLink('Show polls').click()
+    >>> team_admin_browser.getLink('Polls').click()
     >>> team_admin_browser.url
     'http://launchpad.dev/~ubuntu-team/+polls'
 

@@ -3,7 +3,7 @@
 Information about the last ten import runs for a code import are shown
 on the branch index page with the other code import details.
 
-    >>> login(ANONYMOUS)
+    >>> login('test@canonical.com')
     >>> from canonical.launchpad.testing.codeimporthelpers import (
     ...     make_all_result_types)
     >>> code_import = factory.makeCodeImport()

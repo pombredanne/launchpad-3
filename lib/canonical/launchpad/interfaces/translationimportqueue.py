@@ -208,9 +208,6 @@ class ITranslationImportQueue(Interface):
     def entryCount():
         """Return the number of TranslationImportQueueEntry records."""
 
-    def iterNeedReview():
-        """Iterate over all entries in the queue that need review."""
-
     def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, pofile=None, format=None):

@@ -1,0 +1,182 @@
+= ArchiveAuthToken =
+
+This content class represents an authorisation token associated with
+an IPerson and an IArchive.  The tokens are used to permit Launchpad
+users access to a published private archive and are written out to
+.htaccess files in the archive's filesystem by the publisher.
+
+See also ArchiveSubscriber.txt.
+
+Set cprov's PPA to be a private one:
+
+    >>> login("foo.bar@canonical.com")
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName("cprov")
+    >>> cprov.archive.buildd_secret = "secret"
+    >>> cprov.archive.private = True
+    >>> logout()
+
+== Creating new tokens ==
+
+New tokens are created using IArchive.newAuthToken() but this is only
+possible if there is already a valid subscription for the user for
+that archive.
+
+First, login as name12 and try to create a token for ourselves, even
+though we do not yet have a subscription:
+
+    >>> login("test@canonical.com")
+    >>> name12 = getUtility(IPersonSet).getByName("name12")
+    >>> new_token = cprov.archive.newAuthToken(name12)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: You do not have a subscription for Private PPA for
+    Celso Providelo.
+
+Create a subscription for name12 to cprov's archive:
+
+    >>> login("celso.providelo@canonical.com")
+    >>> subscription_to_cprov_archive = cprov.archive.newSubscription(
+    ...     name12, cprov)
+    >>> login("test@canonical.com")
+
+Now try again to create a token as name12 - this time it works:
+
+    >>> token_with_random_string = cprov.archive.newAuthToken(name12)
+
+By default the tokens are 20 characters long.
+
+    >>> print len(token_with_random_string.token)
+    20
+
+It is not possible to create a second token when one already exists:
+
+    >>> new_token = cprov.archive.newAuthToken(name12)
+    Traceback (most recent call last):
+    ...
+    ArchiveSubscriptionError: Sample Person already has a token for
+    Private PPA for Celso Providelo.
+
+So deactivate the old token so that we can create a new token:
+
+    >>> login("celso.providelo@canonical.com")
+    >>> token_with_random_string.deactivate()
+    >>> login("test@canonical.com")
+
+We can also specify our own token for testing purposes:
+
+    >>> new_token = cprov.archive.newAuthToken(name12, u"testtoken")
+
+The new token is returned and reflects the data:
+
+    >>> print new_token.archive.title
+    Private PPA for Celso Providelo
+
+    >>> print new_token.person.name
+    name12
+
+    >>> print new_token.token
+    testtoken
+
+    >>> print new_token.archive_url
+    http://name12:testtoken@private-ppa.launchpad.dev/cprov/ppa/ubuntu
+
+Commit the new token to the database.
+
+    >>> from storm.store import Store
+    >>> Store.of(new_token).commit()
+
+Tokens also contain some date information:
+
+    >>> new_token.date_created is not None
+    True
+
+    >>> print new_token.date_deactivated
+    None
+
+
+== Retrieving existing tokens ==
+
+The ArchiveAuthTokenSet utility allows you to retrieve tokens by ID and by
+the token text itself.  To access tokens you need launchpad.View privilege
+which applies to the person in the token and launchpad admins.
+
+    >>> from canonical.launchpad.interfaces.archiveauthtoken import (
+    ...     IArchiveAuthTokenSet)
+    >>> token_set = getUtility(IArchiveAuthTokenSet)
+
+    >>> login("no-priv@canonical.com")
+
+    >>> token =  token_set.get(new_token.id)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+Log in as name12, who is the person in the token.
+
+    >>> login("test@canonical.com")
+
+And retrieve the token by id and by token data:
+
+    >>> print token_set.get(new_token.id).token
+    testtoken
+
+    >>> print token_set.getByToken(u"testtoken").person.name
+    name12
+
+It's also possible to retrieve a set of all the tokens for an archive.
+
+    >>> tokens = token_set.getByArchive(cprov.archive)
+    >>> print tokens.count()
+    2
+
+    >>> for token in tokens:
+    ...     print token.person.name
+    name12
+    name12
+
+Tokens can also be retreived by archive and person:
+
+    >>> print token_set.getActiveTokenForArchiveAndPerson(
+    ...     new_token.archive, new_token.person).token
+    testtoken
+
+
+== Amending Tokens ==
+
+Tokens can only be de-activated after they are created.  The calling user
+also needs launchpad.Edit on the token, which means either someone with
+IArchive launchpad.Append (as for creating new tokens) or an admin.
+
+    >>> login("no-priv@canonical.com")
+    >>> new_token.deactivate()
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> login("celso.providelo@canonical.com")
+    >>> new_token.deactivate()
+
+Deactivating sets the date_deactivated value.
+
+    >>> new_token.date_deactivated is not None
+    True
+
+We can do this as an admin too:
+
+    >>> login("admin@canonical.com")
+    >>> new_token.deactivate()
+
+Deactivating a token stops it being returned from getByArchive().  The
+previous count of 2 is now reduced to 1.
+
+    >>> token_set.getByArchive(cprov.archive).count()
+    1
+
+The IArchiveAuthTokenSet.getActiveTokenForArchiveAndPerson() method will
+also not return tokens that have been deactivated:
+
+    >>> print token_set.getActiveTokenForArchiveAndPerson(
+    ...     new_token.archive, new_token.person)
+    None
+

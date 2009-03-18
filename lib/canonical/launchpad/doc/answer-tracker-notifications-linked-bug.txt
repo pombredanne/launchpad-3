@@ -6,15 +6,15 @@ of changes to the bug status:
     >>> from zope.event import notify
     >>> from zope.interface import providedBy
     >>> from canonical.launchpad.interfaces import BugTaskStatus, IPersonSet
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bugtask = get_bugtask_linked_to_question()
     >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
     >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED, no_priv)
     >>> bugtask.statusexplanation = 'This bug really happened to me.'
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     bugtask, original_bugtask, ['status', 'statusexplanation'],
     ...     user=no_priv))
 
@@ -52,7 +52,7 @@ Only a change in status triggers a notification.
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
     >>> bugtask.transitionToAssignee(sample_person)
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     bugtask, original_bugtask, ['assignee', 'dateassigned'],
     ...     user=sample_person))
 

@@ -325,8 +325,12 @@ class IBranchMergeProposal(Interface):
 
 
     # Cannot specify value type without creating a circular dependency
-    votes = List(
-        title=_('The votes cast or expected for this proposal'),
+    votes = exported(
+        CollectionField(
+            title=_('The votes cast or expected for this proposal'),
+            value_type=Reference(schema=Interface), #ICodeReviewVoteReference
+            readonly=True
+            )
         )
 
     def isValidTransition(next_state, user=None):

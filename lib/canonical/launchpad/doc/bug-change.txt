@@ -1,0 +1,173 @@
+= Tracking changes to a bug =
+
+The base class for BugChanges doesn't actually implement anything.
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> from canonical.launchpad.components.bugchange import BugChangeBase
+    >>> from canonical.launchpad.interfaces.bugchange import IBugChange
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+    >>> login("test@canonical.com")
+    >>> example_person = factory.makePerson(displayname="Ford Prefect")
+
+    >>> nowish = datetime(2009, 3, 13, 10, 9, tzinfo=pytz.timezone('UTC'))
+    >>> base_instance = BugChangeBase(when=nowish, person=example_person)
+    >>> verifyObject(IBugChange, base_instance)
+    True
+
+    >>> base_instance.getBugNotification()
+    Traceback (most recent call last):
+      ...
+    NotImplementedError...
+
+    >>> base_instance.getBugActivity()
+    Traceback (most recent call last):
+      ...
+    NotImplementedError...
+
+    >>> base_instance.getBugNotificationRecipients()
+    Traceback (most recent call last):
+      ...
+    NotImplementedError...
+
+But the basic attributes are still available.
+
+    >>> print base_instance.when
+    2009-03-13 10:09:00+00:00
+
+    >>> print base_instance.person.displayname
+    Ford Prefect
+
+Because the base class is abstract, you can't pass it to
+Bug.addChange().
+
+    >>> example_product = factory.makeProduct(owner=example_person)
+    >>> example_bug = factory.makeBug(
+    ...     product=example_product, owner=example_person)
+    >>> example_bug.addChange(base_instance)
+    Traceback (most recent call last):
+      ...
+    NotImplementedError...
+
+We'll create a test class that actually implements the methods we need.
+
+    >>> from canonical.launchpad.mailnotification import (
+    ...     BugNotificationRecipients)
+
+    >>> example_message = factory.makeMessage(content="Hello, world")
+    >>> example_person_2 = factory.makePerson(
+    ...     displayname="Zaphod Beeblebrox")
+
+    >>> class TestBugChange(BugChangeBase):
+    ...
+    ...     bug_activity_data = {
+    ...         'whatchanged': 'Nothing',
+    ...         'oldvalue': 'OldValue',
+    ...         'newvalue': 'NewValue',
+    ...         }
+    ...
+    ...     bug_notification_data = {
+    ...         'text': 'Some message text',
+    ...         }
+    ...
+    ...     recipients = [
+    ...         example_person_2,
+    ...         ]
+    ...
+    ...     def getBugActivity(self):
+    ...         return self.bug_activity_data
+    ...
+    ...     def getBugNotificationRecipients(self):
+    ...         recipients = BugNotificationRecipients()
+    ...         for recipient in self.recipients:
+    ...             recipients.addDirectSubscriber(recipient)
+    ...         return recipients
+    ...
+    ...     def getBugNotification(self):
+    ...         return self.bug_notification_data
+
+    >>> def print_bug_activity(activity):
+    ...     for activity in activity:
+    ...         print "%s: %s %s => %s (%s)" % (
+    ...             activity.datechanged, activity.whatchanged,
+    ...             activity.oldvalue, activity.newvalue,
+    ...             activity.person.displayname)
+
+BugActivity entries are added when addChange() is called.
+
+    >>> example_bug.addChange(
+    ...     TestBugChange(when=nowish, person=example_person))
+    >>> print_bug_activity(example_bug.activity)
+    2009-03-13...: Nothing OldValue => NewValue (Ford Prefect)
+
+As are BugNotifications.
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.text_contents
+    Some message text
+
+The notification's recipients are taken from the result of
+getBugNotificationRecipients().
+
+    >>> for recipient in latest_notification.recipients:
+    ...     print recipient.person.displayname
+    Zaphod Beeblebrox
+
+Bug if getBugActivity() returns None, no activity entries will be added.
+
+    >>> class NoActionBugChange(TestBugChange):
+    ...     bug_activity_data = None
+    ...     bug_notification_data = None
+
+    >>> example_bug.addChange(
+    ...     NoActionBugChange(when=nowish, person=example_person))
+    >>> print_bug_activity(example_bug.activity)
+    2009-03-13...: Nothing OldValue => NewValue (Ford Prefect)
+
+And if getBugNotification() returns None, no notification will be added.
+
+    >>> new_latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> new_latest_notification.id == latest_notification.id
+    True
+
+If getBugNotificationRecipients() returns None the default recipient
+list for the Bug will be used.
+
+    >>> class NoRecipientsBugChange(TestBugChange):
+    ...
+    ...     bug_notification_data = {
+    ...         'text': "Here's some sample text",
+    ...         }
+    ...
+    ...     def getBugNotificationRecipients(self):
+    ...         return None
+
+    >>> example_bug.addChange(
+    ...     NoRecipientsBugChange(when=nowish, person=example_person))
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.text_contents
+    Here's some sample text
+
+    >>> for recipient in latest_notification.recipients:
+    ...     print recipient.person.displayname
+    Ford Prefect
+
+If you try to send a notification without adding a text body for the
+notification you'll get an error.
+
+    >>> class NoNotificationTextBugChange(TestBugChange):
+    ...
+    ...     bug_notification_data = {
+    ...         'text': None,
+    ...         }
+
+    >>> example_bug.addChange(
+    ...     NoNotificationTextBugChange(when=nowish, person=example_person))
+    Traceback (most recent call last):
+      ...
+    AssertionError: notification_data must include a `text` value.

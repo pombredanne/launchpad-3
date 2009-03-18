@@ -6,10 +6,11 @@ __metaclass__ = type
 
 from zope.interface import implements
 
-from canonical.launchpad.components import ObjectDelta
+from lazr.lifecycle import snapshot
+from lazr.lifecycle.objectdelta import ObjectDelta
+
 from canonical.launchpad.interfaces import (
     IBranch, IBranchDelta, IBranchMergeProposal)
-from canonical.launchpad.webapp import snapshot
 
 # XXX: thumper 2006-12-20: This needs to be extended
 # to cover bugs and specs linked and unlinked, as
@@ -44,7 +45,7 @@ class BranchDelta:
         """Return a BranchDelta instance that encapsulates the changes.
 
         This method is primarily used by event subscription code to
-        determine what has changed during an SQLObjectModifiedEvent.
+        determine what has changed during an ObjectModifiedEvent.
         """
         delta = ObjectDelta(old_branch, new_branch)
         delta.recordNewValues(("summary", "whiteboard"))

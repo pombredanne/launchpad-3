@@ -651,7 +651,8 @@ BugSubscription.subscribed_by attributes.
     >>> myteam = person_set.getByName('myteam')
     >>> guadamen = person_set.getByName('guadamen')
     >>> bug = bug_set.get(1)
-    >>> BugSubscription(bug=bug, person=myteam, subscribed_by=guadamen)
+    >>> bug_subscription = BugSubscription(bug=bug, person=myteam,
+    ...     subscribed_by=guadamen)
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person
@@ -1342,4 +1343,3 @@ be raised.
     Traceback (most recent call last):
       ...
     InvalidName: ThisIsn'tValid is not a valid name for a person.
-
