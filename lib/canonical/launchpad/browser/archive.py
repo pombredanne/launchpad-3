@@ -143,7 +143,7 @@ class DistributionArchiveURL:
 
     @property
     def path(self):
-        return u"+archive/%s" % self.context.name.lower()
+        return u"+archive/%s" % self.context.name
 
 
 class PPAURL:

@@ -275,6 +275,14 @@
       name="+portlet-memberships"
       template="../templates/person-portlet-memberships.pt"
       />
+    <browser:page
+      name="+portlet-ppas"
+      template="../templates/person-portlet-ppas.pt"
+      />
+    <browser:page
+      name="+ppas-list"
+      template="../templates/person-ppas.pt"
+      />
     <!-- this should be on IPerson because we don't always know if it is a
     team or a person -->
     <browser:page

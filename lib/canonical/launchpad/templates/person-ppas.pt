@@ -1,0 +1,16 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+  <div tal:define="ppas context/ppas" tal:condition="ppas">
+    <table>
+      <tr tal:repeat="ppa ppas">
+        <td><tal:icon replace="structure ppa/image:icon" /></td>
+        <td>
+          <a tal:content="ppa/title" tal:attributes="href ppa/fmt:url" />
+        </td>
+      </tr>
+    </table>
+  </div>
+</tal:root>
