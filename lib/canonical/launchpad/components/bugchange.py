@@ -123,7 +123,7 @@ class BugTitleChange(AttributeChange):
         return {'text': notification_text}
 
 
-class BugVisibilityChange(SimpleBugChangeMixin, BugChangeBase):
+class BugVisibilityChange(AttributeChange):
     """Describes a change to a bug's visibility."""
 
     def _getVisibilityString(self, private):
