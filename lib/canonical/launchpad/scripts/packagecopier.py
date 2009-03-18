@@ -274,6 +274,9 @@ def check_copy(source, archive, series, pocket, include_binaries,
     :raise CannotCopy when a copy is not allowed to be performed
         containing the reason of the error.
     """
+    if series is None:
+        series = source.distroseries
+
     if deny_privacy_mismatch and check_privacy_mismatch(source, archive):
         raise CannotCopy("Cannot copy private source into public archives.")
 
