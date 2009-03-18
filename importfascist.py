@@ -36,7 +36,7 @@ permitted_database_imports = text_lines_to_set("""
     canonical.librarian.client
     canonical.launchpad.scripts.librarian_apache_log_parser
     """)
-# It's not worth creating a *Set utility for ParsedApacheLog to be used only
+# It's not worth creating a *Set utility for ParsedApacheLog, to be used only
 # in librarian_apache_log_parser, so instead we allow that module to import
 # from launchpad.database above.
 
