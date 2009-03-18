@@ -3,9 +3,8 @@
 
 __metaclass__ = type
 
-# README:
-# Please DO NOT put interfaces in this file. Put them in the correct
-# file, one file for each interface type: person, project, bug, etc.
+# XXX flacoste 2009/03/18 We should use specific imports instead of
+# importing from this module.
 
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.malone import *
@@ -176,7 +175,6 @@ from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.packagediff import *
 
 
-# Backward-compatible imports
 from lp.answers.interfaces.answercontact import *
 from lp.answers.interfaces.faq import *
 from lp.answers.interfaces.faqcollection import *

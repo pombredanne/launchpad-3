@@ -8,6 +8,8 @@ located in this specific module, but are in turn imported from each of the
 files in this directory.
 """
 
+# XXX flacoste 2009/03/18 We should use specific imports instead of
+# importing from this module.
 from canonical.launchpad.browser.announcement import *
 from canonical.launchpad.browser.archive import *
 from canonical.launchpad.browser.bazaar import *

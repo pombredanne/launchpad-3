@@ -1,6 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
+# XXX flacoste 2009/03/18 We should use specific imports instead of
+# importing from this module.
 from canonical.launchpad.database.account import *
 from canonical.launchpad.database.codeimport import *
 from canonical.launchpad.database.codeimportevent import *
