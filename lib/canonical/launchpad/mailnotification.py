@@ -612,7 +612,13 @@ def get_bug_edit_notification_texts(bug_delta):
             change_info += '   %s' % new_bug_dupe.title
             changes.append(change_info)
 
-    for field_name in ['title', 'description']:
+    # The order of the field names in this list is important; this is
+    # the order in which changes will appear both in the bug activity
+    # log and in notification emails.
+    bug_change_field_names = [
+        'title', 'description', 'private', 'security_related',
+        ]
+    for field_name in bug_change_field_names:
         field_delta = getattr(bug_delta, field_name)
         if field_delta is not None:
             bug_change_class = get_bug_change_class(bug_delta.bug, field_name)
@@ -620,21 +626,6 @@ def get_bug_edit_notification_texts(bug_delta):
                 when=None, person=bug_delta.user, what_changed=field_name,
                 old_value=field_delta['old'], new_value=field_delta['new'])
             changes.append(change_info)
-
-    if bug_delta.private is not None:
-        if bug_delta.private['new']:
-            visibility = "Private"
-        else:
-            visibility = "Public"
-        changes.append(u"** Visibility changed to: %s" % visibility)
-
-    if bug_delta.security_related is not None:
-        if bug_delta.security_related['new']:
-            changes.append(
-                u"** This bug has been flagged as a security issue")
-        else:
-            changes.append(
-                u"** This bug is no longer flagged as a security issue")
 
     if bug_delta.tags is not None:
         new_tags = set(bug_delta.tags['new'])

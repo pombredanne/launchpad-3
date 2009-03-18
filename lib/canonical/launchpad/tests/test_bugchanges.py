@@ -11,7 +11,7 @@ from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -23,8 +23,8 @@ class TestBugChanges(unittest.TestCase):
     def setUp(self):
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
-        self.bug = self.factory.makeBug()
         self.user = self.factory.makePerson(displayname='Arthur Dent')
+        self.bug = self.factory.makeBug(owner=self.user)
         self.saveOldChanges()
 
     def saveOldChanges(self):
@@ -50,13 +50,16 @@ class TestBugChanges(unittest.TestCase):
         return getattr(obj_before_modification, attribute)
 
     def assertRecordedChange(self, expected_activity=None,
-                             expected_notification=None):
+                             expected_notification=None, bug=None):
         """Assert that things were recorded as expected."""
+        if bug is None:
+            bug = self.bug
+
         new_activities = [
-            activity for activity in self.bug.activity
+            activity for activity in bug.activity
             if activity not in self.old_activities]
         bug_notifications = BugNotification.selectBy(
-            bug=self.bug, orderBy='id')
+            bug=bug, orderBy='id')
         new_notifications = [
             notification for notification in bug_notifications
             if notification.id not in self.old_notification_ids]
@@ -161,6 +164,107 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_notification=description_change_notification,
             expected_activity=description_change_activity)
+
+    def test_make_private(self):
+        # Marking a bug as private adds items to the bug's activity log
+        # and notifications.
+        bug_before_modification = Snapshot(self.bug, providing=IBug)
+        self.bug.setPrivate(True, self.user)
+        notify(ObjectModifiedEvent(
+            self.bug, bug_before_modification, ['private'], self.user))
+
+        visibility_change_activity = {
+            'person': self.user,
+            'whatchanged': 'visibility',
+            'oldvalue': 'public',
+            'newvalue': 'private',
+            }
+
+        visibility_change_notification = {
+            'text': '** Visibility changed to: Private',
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=visibility_change_activity,
+            expected_notification=visibility_change_notification)
+
+    def test_make_public(self):
+        # Marking a bug as public adds items to the bug's activity log
+        # and notifications.
+        private_bug = self.factory.makeBug(private=True)
+        self.assertTrue(private_bug.private)
+
+        bug_before_modification = Snapshot(private_bug, providing=IBug)
+        private_bug.setPrivate(False, self.user)
+        notify(ObjectModifiedEvent(
+            private_bug, bug_before_modification, ['private'], self.user))
+
+        visibility_change_activity = {
+            'person': self.user,
+            'whatchanged': 'visibility',
+            'oldvalue': 'private',
+            'newvalue': 'public',
+            }
+
+        visibility_change_notification = {
+            'text': '** Visibility changed to: Public',
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=visibility_change_activity,
+            expected_notification=visibility_change_notification,
+            bug=private_bug)
+
+    def test_mark_as_security_vulnerability(self):
+        # Marking a bug as a security vulnerability adds to the bug's
+        # activity log and sends a notification.
+        self.bug.security_related = False
+        self.changeAttribute(self.bug, 'security_related', True)
+
+        security_change_activity = {
+            'person': self.user,
+            'whatchanged': 'security vulnerability',
+            'oldvalue': 'no',
+            'newvalue': 'yes',
+            }
+
+        security_change_notification = {
+            'text': (
+                '** This bug has been flagged as '
+                'a security vulnerability'),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=security_change_activity,
+            expected_notification=security_change_notification)
+
+    def test_unmark_as_security_vulnerability(self):
+        # Unmarking a bug as a security vulnerability adds to the
+        # bug's activity log and sends a notification.
+        self.bug.security_related = True
+        self.changeAttribute(self.bug, 'security_related', False)
+
+        security_change_activity = {
+            'person': self.user,
+            'whatchanged': 'security vulnerability',
+            'oldvalue': 'yes',
+            'newvalue': 'no',
+            }
+
+        security_change_notification = {
+            'text': (
+                '** This bug is no longer flagged as '
+                'a security vulnerability'),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=security_change_activity,
+            expected_notification=security_change_notification)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
