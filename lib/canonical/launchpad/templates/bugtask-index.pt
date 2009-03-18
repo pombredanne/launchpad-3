@@ -91,8 +91,7 @@ function createBugDuplicateFormOverlay(form_content) {
                 [Y.WidgetPositionExt.CC, Y.WidgetPositionExt.CC]
         },
         form_submit_callback: update_bug_duplicate,
-        visible: false,
-        zIndex: 1000
+        visible: false
     });
     duplicate_form_overlay.render();
 }
