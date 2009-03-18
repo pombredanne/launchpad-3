@@ -33,7 +33,6 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
-from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
 from canonical.launchpad.interfaces.distribution import (
@@ -63,37 +62,11 @@ class _BaseNamespace:
                      control_format=None,
                      merge_control_status=BranchMergeControlStatus.NO_QUEUE):
         """See `IBranchNamespace`."""
-        owner = self.owner
-        if not registrant.inTeam(owner):
-            if owner.isTeam():
-                raise BranchCreatorNotMemberOfOwnerTeam(
-                    "%s is not a member of %s"
-                    % (registrant.displayname, owner.displayname))
-            else:
-                raise BranchCreatorNotOwner(
-                    "%s cannot create branches owned by %s"
-                    % (registrant.displayname, owner.displayname))
 
-        target = self._target()
-        if not target.canCreateBranches(registrant):
-            raise BranchCreationForbidden(
-                "You cannot create branches for %r"% target.name)
-
-        existing_branch = self.getByName(name)
-        if existing_branch is not None:
-            raise BranchExists(existing_branch)
-
-        private = target.areNewBranchesPrivate(registrant)
+        self.validateNewBranch(registrant, name)
 
         if date_created is None:
             date_created = UTC_NOW
-
-        # Not all code paths that lead to branch creation go via a
-        # schema-validated form (e.g. the register_branch XML-RPC call or
-        # pushing a new branch to codehosting), so we validate the branch name
-        # here to give a nicer error message than 'ERROR: new row for relation
-        # "branch" violates check constraint "valid_name"...'.
-        IBranch['name'].validate(unicode(name))
 
         # Run any necessary data massage on the branch URL.
         if url is not None:
@@ -108,9 +81,11 @@ class _BaseNamespace:
             distroseries = sourcepackage.distroseries
             sourcepackagename = sourcepackage.sourcepackagename
 
+        private = self.areNewBranchesPrivate()
+
         branch = Branch(
             registrant=registrant,
-            name=name, owner=owner, product=product, url=url,
+            name=name, owner=self.owner, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard, private=private,
             date_created=date_created, branch_type=branch_type,
@@ -144,9 +119,34 @@ class _BaseNamespace:
         notify(ObjectCreatedEvent(branch))
         return branch
 
-    def _target(self):
-        """Return the BranchTarget for this namespace."""
-        raise NotImplemented(self._target)
+    def validateNewBranch(self, registrant, name):
+        """See `IBranchNamespace`."""
+        owner = self.owner
+        if not registrant.inTeam(owner):
+            if owner.isTeam():
+                raise BranchCreatorNotMemberOfOwnerTeam(
+                    "%s is not a member of %s"
+                    % (registrant.displayname, owner.displayname))
+            else:
+                raise BranchCreatorNotOwner(
+                    "%s cannot create branches owned by %s"
+                    % (registrant.displayname, owner.displayname))
+
+        if not self.canCreateBranches(registrant):
+            raise BranchCreationForbidden(
+                "You cannot create branches in %r"% self.name)
+
+        existing_branch = self.getByName(name)
+        if existing_branch is not None:
+            raise BranchExists(existing_branch)
+
+        # Not all code paths that lead to branch creation go via a
+        # schema-validated form (e.g. the register_branch XML-RPC call or
+        # pushing a new branch to codehosting), so we validate the branch name
+        # here to give a nicer error message than 'ERROR: new row for relation
+        # "branch" violates check constraint "valid_name"...'.
+        IBranch['name'].validate(unicode(name))
+
 
     def createBranchWithPrefix(self, branch_type, prefix, registrant,
                                url=None):
@@ -219,10 +219,6 @@ class PersonalNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return '~%s/+junk' % (self.owner.name,)
 
-    def _target(self):
-        """Return the BranchTarget for this namespace."""
-        return IBranchTarget(self.owner)
-
 
 class ProductNamespace(_BaseNamespace):
     """A namespace for product branches.
@@ -244,10 +240,6 @@ class ProductNamespace(_BaseNamespace):
     def name(self):
         """See `IBranchNamespace`."""
         return '~%s/%s' % (self.owner.name, self.product.name)
-
-    def _target(self):
-        """Return the BranchTarget for this namespace."""
-        return IBranchTarget(self.product)
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
@@ -280,7 +272,7 @@ class ProductNamespace(_BaseNamespace):
 
         policies = self.product.getBranchVisibilityTeamPolicies()
         for policy in policies:
-            if user.inTeam(policy.team):
+            if self.owner.inTeam(policy.team):
                 return True
         base_rule = self.product.getBaseBranchVisibilityRule()
         return base_rule == BranchVisibilityRule.PUBLIC
@@ -328,10 +320,6 @@ class PackageNamespace(_BaseNamespace):
     def name(self):
         """See `IBranchNamespace`."""
         return '~%s/%s' % (self.owner.name, self.sourcepackage.path)
-
-    def _target(self):
-        """Return the BranchTarget for this namespace."""
-        return IBranchTarget(self.sourcepackage)
 
 
 class BranchNamespaceSet:

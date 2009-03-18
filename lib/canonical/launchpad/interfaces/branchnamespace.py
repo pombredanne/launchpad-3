@@ -77,6 +77,20 @@ class IBranchNamespace(Interface):
         No check is made about whether or not a user can create branches.
         """
 
+    def validateNewBranch(registrant, name):
+        """Check that the registrant can create a branch called `name`.
+
+        :raises BranchCreatorNotMemberOfOwnerTeam: if the namespace owner is
+            a team, and the registrant is not in that team.
+        :raises BranchCreatorNotOwner: if the namespace owner is an individual
+            and the registrant is not the owner.
+        :raises BranchCreationForbidden: if the registrant is not allowed to
+            create a branch in this namespace due to privacy rules.
+        :raises BranchExists: if a branch with the `name` exists already in
+            the namespace.
+        :raises LaunchpadValidationError: if the name doesn't match the
+            validation constraints on IBranch.name.
+        """
 
 class IBranchNamespaceSet(Interface):
     """Interface for getting branch namespaces.

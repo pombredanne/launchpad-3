@@ -13,7 +13,9 @@ from canonical.launchpad.database.branchnamespace import (
     PackageNamespace, PersonalNamespace, ProductNamespace)
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, BranchType, NoSuchBranch)
+    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
+    BranchCreatorNotOwner, BranchExists, BranchLifecycleStatus, BranchType,
+    NoSuchBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespace, IBranchNamespaceSet,
     lookup_branch_namespace, InvalidNamespace)
@@ -26,6 +28,7 @@ from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.testing import DatabaseFunctionalLayer
 
 
@@ -722,14 +725,14 @@ class TestNamespaceSet(TestCaseWithFactory):
             iter([person.name, product.name, None]))
 
 
-class BaseCanCreateBranchesTestCase(TestCaseWithFactory):
+class BaseCanCreateBranchesMixin:
     """Common tests for all namespaces."""
 
     layer = DatabaseFunctionalLayer
 
     def _getNamespace(self, owner):
         # Return a namespace appropraite for the owner specified.
-        raise NotImplemented(self._getNamespace)
+        raise NotImplemented
 
     def test_individual(self):
         # For a BranchTarget for an individual, only the individual can own
@@ -762,22 +765,23 @@ class BaseCanCreateBranchesTestCase(TestCaseWithFactory):
             namespace.canCreateBranches(self.factory.makePerson()))
 
 
-class TestPersonalNamespaceCanCreateBranches(BaseCanCreateBranchesTestCase):
+class TestPersonalNamespaceCanCreateBranches(TestCaseWithFactory,
+                                             BaseCanCreateBranchesMixin):
 
     def _getNamespace(self, owner):
         return PersonalNamespace(owner)
 
 
-class TestPackageNamespaceCanCreateBranches(BaseCanCreateBranchesTestCase):
+class TestPackageNamespaceCanCreateBranches(TestCaseWithFactory,
+                                            BaseCanCreateBranchesMixin):
 
     def _getNamespace(self, owner):
         source_package = self.factory.makeSourcePackage()
         return PackageNamespace(owner, source_package)
 
 
-class TestProductNamespaceCanCreateBranches(BaseCanCreateBranchesTestCase):
-
-    layer = DatabaseFunctionalLayer
+class TestProductNamespaceCanCreateBranches(TestCaseWithFactory,
+                                            BaseCanCreateBranchesMixin):
 
     def _getNamespace(self, owner):
         product = self.factory.makeProduct()
@@ -785,7 +789,7 @@ class TestProductNamespaceCanCreateBranches(BaseCanCreateBranchesTestCase):
 
     def setUp(self):
         # Setting visibility policies is an admin only task.
-        BaseCanCreateBranchesTestCase.setUp(self, 'admin@canonical.com')
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
 
     def test_any_person(self):
         # If there is no privacy set up, any person can create a personal
@@ -960,6 +964,79 @@ class TestProductNamespaceAreNewBranchesPrivate(TestCaseWithFactory):
         self.assertNewBranchesPrivate(person)
         self.assertNewBranchesPrivate(private_team)
         self.assertNewBranchesPublic(public_team)
+
+
+class BaseValidateNewBranchMixin:
+
+    layer = DatabaseFunctionalLayer
+
+    def _getNamespace(self, owner):
+        # Return a namespace appropraite for the owner specified.
+        raise NotImplemented
+
+    def test_registrant_not_owner(self):
+        # If the namespace owner is an individual, and the registrant is not
+        # the owner, BranchCreatorNotOwner is raised.
+        namespace = self._getNamespace(self.factory.makePerson())
+        self.assertRaises(
+            BranchCreatorNotOwner,
+            namespace.validateNewBranch,
+            self.factory.makePerson(),
+            self.factory.getUniqueString())
+
+    def test_registrant_not_in_owner_team(self):
+        # If the namespace owner is a team, and the registrant is not
+        # in the team, BranchCreatorNotMemberOfOwnerTeam is raised.
+        namespace = self._getNamespace(self.factory.makeTeam())
+        self.assertRaises(
+            BranchCreatorNotMemberOfOwnerTeam,
+            namespace.validateNewBranch,
+            self.factory.makePerson(),
+            self.factory.getUniqueString())
+
+    def test_existing_branch(self):
+        # If a branch exists with the same name, then BranchExists is raised.
+        namespace = self._getNamespace(self.factory.makePerson())
+        branch = namespace.createBranch(
+            BranchType.HOSTED, self.factory.getUniqueString(),
+            namespace.owner)
+        self.assertRaises(
+            BranchExists,
+            namespace.validateNewBranch,
+            namespace.owner,
+            branch.name)
+
+    def test_invalid_name(self):
+        # If the branch name is not valid, a LaunchpadValidationError is
+        # raised.
+        namespace = self._getNamespace(self.factory.makePerson())
+        self.assertRaises(
+            LaunchpadValidationError,
+            namespace.validateNewBranch,
+            namespace.owner,
+            '+foo')
+
+class TestPersonalNamespaceValidateNewBranch(TestCaseWithFactory,
+                                             BaseValidateNewBranchMixin):
+
+    def _getNamespace(self, owner):
+        return PersonalNamespace(owner)
+
+
+class TestPackageNamespaceValidateNewBranch(TestCaseWithFactory,
+                                            BaseValidateNewBranchMixin):
+
+    def _getNamespace(self, owner):
+        source_package = self.factory.makeSourcePackage()
+        return PackageNamespace(owner, source_package)
+
+
+class TestProductNamespaceValidateNewBranch(TestCaseWithFactory,
+                                            BaseValidateNewBranchMixin):
+
+    def _getNamespace(self, owner):
+        product = self.factory.makeProduct()
+        return ProductNamespace(owner, product)
 
 
 def test_suite():
