@@ -57,7 +57,9 @@ Y.on('domready', function() {
         // First things first, pre-load the mark-dupe form.
         update_dupe_url = update_dupe_links.item(0).getAttribute('href');
         var mark_dupe_form_url = update_dupe_url + '/++form++';
-        Y.on('io:complete', createBugDuplicateFormOverlay, this);
+        Y.on('io:complete', function(id, response_object) {
+            createBugDuplicateFormOverlay(response_object.responseText);
+            }, this);
         Y.io(mark_dupe_form_url);
 
         // Add an on-click handler to any links found that displays
@@ -74,11 +76,9 @@ Y.on('domready', function() {
 });
 
 /*
- * Receive the response to the AJAX request for the form content and
- * user the result to create the form overlay.
+ * Creates the duplicate form overlay using the passed form content.
  */
-function createBugDuplicateFormOverlay(id, response_object) {
-    var form_content = response_object.responseText;
+function createBugDuplicateFormOverlay(form_content) {
     duplicate_form_overlay = new Y.lazr.FormOverlay({
         headerContent: '<h2>Mark bug report as duplicate</h2>',
         form_content: 'Marking the bug as a duplicate will, by default, ' +
