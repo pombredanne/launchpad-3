@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'BugCveLinked',
+    'BugCveUnlinked',
     'BugDescriptionChange',
     'BugTagsChange',
     'BugTitleChange',
@@ -87,6 +89,54 @@ class UnsubscribedFromBug(BugChangeBase):
                 self.unsubscribed_user.displayname))
 
     def getBugNotification(self):
+        """See `IBugChange`."""
+        return None
+
+
+class BugCveLinked(BugChangeBase):
+    """Used to represent the linking of a CVE to a bug."""
+
+    def __init__(self, when, person, cve):
+        super(BugCveLinked, self).__init__(when, person)
+        self.cve = cve
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return {
+            'newvalue': self.cve.sequence,
+            'oldvalue': u'',
+            'whatchanged': 'cve linked',
+            }
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {'text': "** CVE added: %s" % self.cve.url}
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
+        return None
+
+
+class BugCveUnlinked(BugChangeBase):
+    """Used to represent the unlinking of a CVE from a bug."""
+
+    def __init__(self, when, person, cve):
+        super(BugCveUnlinked, self).__init__(when, person)
+        self.cve = cve
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return {
+            'newvalue': u'',
+            'oldvalue': self.cve.sequence,
+            'whatchanged': 'cve unlinked',
+            }
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {'text': "** CVE removed: %s" % self.cve.url}
+
+    def getBugNotificationRecipients(self):
         """See `IBugChange`."""
         return None
 

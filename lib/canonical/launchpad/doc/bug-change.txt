@@ -226,10 +226,8 @@ method.
 
 These describe the linking or unlinking of a CVE to a bug.
 
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    >>> cve = store.find(Cve, sequence='1999-8979').one()
+    >>> from canonical.launchpad.interfaces.cve import ICveSet
+    >>> cve = getUtility(ICveSet)['1999-8979']
 
 getBugNotification() returns a formatted description of the change
 when a CVE is linked to a bug.
@@ -243,9 +241,9 @@ when a CVE is linked to a bug.
     >>> print pretty(bug_cve_linked.getBugActivity())
     {'newvalue': u'1999-8979',
      'oldvalue': u'',
-     'whatlinkedd': 'cve linked'}
+     'whatchanged': 'cve linked'}
 
-    >>> print bug_cve_linked.getBugNotifiction()['text']
+    >>> print bug_cve_linked.getBugNotification()['text']
     ** CVE added: http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979
 
 And when a CVE is unlinked from a bug.
@@ -256,9 +254,9 @@ And when a CVE is unlinked from a bug.
     >>> print pretty(bug_cve_unlinked.getBugActivity())
     {'newvalue': u'',
      'oldvalue': u'1999-8979',
-     'whatunlinkedd': 'cve unlinked'}
+     'whatchanged': 'cve unlinked'}
 
-    >>> print bug_cve_unlinked.getBugNotifiction()['text']
+    >>> print bug_cve_unlinked.getBugNotification()['text']
     ** CVE removed: http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979
 
 
