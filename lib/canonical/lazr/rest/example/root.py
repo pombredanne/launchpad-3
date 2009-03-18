@@ -13,13 +13,14 @@ from zope.interface import implements
 from zope.traversing.browser.interfaces import IAbsoluteURL
 from zope.component import adapts, getUtility
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+from zope.security.checker import CheckerPublic
 
 from canonical.lazr.rest import ServiceRootResource
 from canonical.lazr.interfaces.rest import (
     IServiceRootResource, IWebServiceConfiguration)
 from canonical.lazr.rest.example.interfaces import (
-    ICookbook, ICookbookSet, IDish, IDishSet, IRecipe, IHasGet,
-    NameAlreadyTaken)
+    AlreadyNouvelle, ICookbook, ICookbookSet, IDish, IDishSet, IRecipe,
+    IHasGet, NameAlreadyTaken)
 from canonical.lazr.security import protect_schema
 
 
@@ -44,6 +45,26 @@ class Cookbook(CookbookWebServiceObject):
     def __parent__(self):
         return getUtility(ICookbookSet)
 
+    def find_recipes(self, search):
+        """See `ICookbook`."""
+        recipes = []
+        for recipe in self.recipes:
+            if search in recipe.dish.name:
+                recipes.append(recipe)
+        return recipes
+
+    def make_more_interesting(self):
+        """See `ICookbook`."""
+        if self.cuisine.find("Nouvelle ") == 0:
+            raise AlreadyNouvelle(
+                "The 'Nouvelle' trick can't be used on this cookbook "
+                "because its cuisine is already 'Nouvelle'.")
+        self.cuisine = "Nouvelle " + self.cuisine
+
+protect_schema(Cookbook, ICookbook,
+               read_permission='lazr.restful.example.View',
+               write_permission=CheckerPublic)
+
 
 class Dish(CookbookWebServiceObject):
     implements(IDish)
@@ -59,6 +80,9 @@ class Dish(CookbookWebServiceObject):
     @property
     def __parent__(self):
         return getUtility(IDishSet)
+
+protect_schema(Dish, IDish, read_permission='lazr.restful.example.View',
+               write_permission=CheckerPublic)
 
 
 class Recipe(CookbookWebServiceObject):
@@ -81,7 +105,8 @@ class Recipe(CookbookWebServiceObject):
     def __parent__(self):
         return self.cookbook
 
-protect_schema(Recipe, IRecipe, read_permission='lazr.restful.example.View')
+protect_schema(Recipe, IRecipe, read_permission='lazr.restful.example.View',
+               write_permission=CheckerPublic)
 
 
 # Top-level objects.
@@ -120,9 +145,7 @@ class CookbookSet(CookbookTopLevelObject):
     def find_recipes(self, search):
         recipes = []
         for cookbook in self.cookbooks:
-            for recipe in cookbook.recipes:
-                if search in recipe.dish.name:
-                    recipes.append(recipe)
+            recipes.extend(cookbook.find_recipe(search))
         return recipes
 
     def create(self, name, cuisine):

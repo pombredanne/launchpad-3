@@ -154,3 +154,106 @@ we just defined.
   <dl ...>
   ...
   </dl>
+
+
+== Named operations ==
+
+Some entries support custom operations through GET. The custom
+operation to be invoked is named in the query string's 'ws.op'
+argument. You can search a cookbook's recipes by specifying
+the 'find_recipes' operation.
+
+  >>> joy_url = quote("/cookbooks/The Joy of Cooking")
+  >>> recipes = webservice.get(
+  ...     "%s?ws.op=find_recipes&search=e" % joy_url).jsonBody()
+  >>> sorted([r['self_link'] for r in recipes['entries']])
+  [u'...Baked%20beans', u'...Roast%20chicken']
+
+Some entries support custom operations through POST. You can invoke a
+custom operation to modify a cookbook's cuisine, making it seem more
+interesting.
+
+  >>> print webservice.get(joy_url).jsonBody()['cuisine']
+  General
+
+  >>> print webservice.named_post(joy_url, 'make_more_interesting', {})
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print webservice.get(joy_url).jsonBody()['cuisine']
+  Nouvelle General
+
+Custom operations may have error handling.
+
+  >>> print webservice.named_post(joy_url, 'make_more_interesting', {})
+  HTTP/1.1 400 Bad Request
+  ...
+  The 'Nouvelle' trick can't be used on this cookbook because its
+  cuisine is already 'Nouvelle'.
+  ...
+
+Trying to invoke a nonexistent custom operation yields an error.
+
+  >>> print webservice.get("%s?ws.op=no_such_operation" % joy_url)
+  HTTP/1.1 400 Bad Request
+  ...
+  No such operation: no_such_operation
+
+
+== Modification ==
+
+It's possible to modify an entry by sending to the server a document
+asserting what the entry should look like. The document may only
+describe part of the entry's new state, in which case the client
+should use the PATCH HTTP method. Or it may completely describe the
+entry's state, in which case the client should use PUT.
+
+  >>> import simplejson
+  >>> def modify_cookbook(cookbook, representation, method, headers=None):
+  ...     "A helper function to send a PUT or PATCH request to a cookbook."
+  ...     new_headers = {'Content-type': 'application/json'}
+  ...     if headers is not None:
+  ...         new_headers.update(headers)
+  ...     return webservice('/cookbooks/' + quote(cookbook), method,
+  ...                       simplejson.dumps(representation),
+  ...                       headers)
+
+Here we use the web service to change the "Everyday Greens" cookbook
+so that its cuisine is in uppercase. The data returned is the new JSON
+representation of the object.
+
+  >>> print modify_cookbook('Everyday Greens', {'cuisine' : 'VEGETARIAN'},
+  ...                       'PATCH')
+  HTTP/1.1 209 Content Returned
+  ...
+  Content-Type: application/json
+  ...
+  <BLANKLINE>
+  {...}
+
+  >>> print webservice.get(greens_url).jsonBody()['cuisine']
+  VEGETARIAN
+
+A modification might cause an entry's address to change. Here we use
+the web service to change the cookbook's name to 'Everyday Greens 2'.
+
+  >>> print modify_person('Everyday Greens',
+  ...                     {'name' : 'Everyday Greens 2'}, 'PATCH')
+  HTTP/1.1 301 Moved Permanently
+  ...
+  Location: http://.../Everyday%20Greens%202
+  ...
+
+At this point we can no longer manipulate this cookbook by sending
+HTTP requests to http://cookbooks.dev/1.0/cookbooks/Everyday%20Greens,
+because that cookbook now 'lives' at
+http://cookbooks.dev/1.0/cookbooks/Everyday%20Greens%202. To change
+the cookbook name back, we need to send a PATCH request to the new
+address.
+
+  >>> print modify_cookbook('Everyday Greens 2',
+  ...                       {'name' : 'Everyday Greens'}, 'PATCH')
+  HTTP/1.1 301 Moved Permanently
+  ...
+  Location: http://.../cookbooks/Everyday%20Greens
+  ...

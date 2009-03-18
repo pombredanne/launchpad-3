@@ -4,7 +4,8 @@
 """Interface objects for the LAZR example web service."""
 
 __metaclass__ = type
-__all__ = ['ICookbook',
+__all__ = ['AlreadyNouvelle',
+           'ICookbook',
            'ICookbookSet',
            'IDish',
            'IDishSet',
@@ -19,8 +20,13 @@ from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_factory_operation,
-    export_read_operation, exported, operation_parameters,
-    operation_returns_collection_of, webservice_error)
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_collection_of, webservice_error)
+
+
+class AlreadyNouvelle(Exception):
+    """A cookbook's cuisine prohibits the cheap 'Nouvelle' trick."""
+    webservice_error(400)
 
 
 class NameAlreadyTaken(Exception):
@@ -57,6 +63,17 @@ class ICookbook(Interface):
         TextLine(title=u"Cuisine", required=False, default=None))
     recipes = exported(CollectionField(title=u"Recipes in this cookbook",
                                        value_type=Reference(schema=IRecipe)))
+
+    @operation_parameters(
+        search=TextLine(title=u"String to search for in recipe name."))
+    @operation_returns_collection_of(IRecipe)
+    @export_read_operation()
+    def find_recipes(search):
+        """Search for recipes in this cookbook."""
+
+    @export_write_operation()
+    def make_more_interesting():
+        """Alter a cookbook to make it seem more interesting."""
 
 
 # Resolve dangling references
