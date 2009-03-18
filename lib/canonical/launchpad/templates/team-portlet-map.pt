@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-map">
+<div class="portlet" id="portlet-map" style="margin-bottom: 0px;">
 
   <tal:can_view condition="context/required:launchpad.View"
                 define="link context/menu:overview/map">
@@ -33,6 +33,10 @@
     <a tal:condition="not: view/mapped_participants"
        tal:attributes="href link/target"
       ><img src="/+icing/portlet-map-unknown.png" /></a>
+
+    <div tal:condition="link/enabled">
+      <a tal:replace="structure link/render">Show map and time zones</a>
+    </div>
   </tal:can_view>
 
 </div>
