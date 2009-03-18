@@ -8,6 +8,9 @@ Each activity can happen more than once to a bug over the course of its
 lifetime. For auditing reasons, it's useful to track when these happen, why
 these things happen, and who made them happen.
 
+This file contains old tests for bug activity. New tests are in
+tests/test_bugchanges.py.
+
 Before going any further--because editing a bug requires an
 authenticated user--let's login:
 

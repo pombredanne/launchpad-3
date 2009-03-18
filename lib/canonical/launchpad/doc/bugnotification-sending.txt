@@ -1147,7 +1147,7 @@ gets over-long.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-    >>> bug_three.unsubscribe(sample_person)
+    >>> bug_three.unsubscribe(sample_person, sample_person)
     >>> bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
     >>> commit()
 
@@ -1719,109 +1719,3 @@ will not receive notifications sent by add_bug_change_notification().
 
     >>> config_data = config.pop('bugnotification_interval')
 
-add_bug_change_notifications() will call bug.addChange() rather than
-addChangeNotification() for some bug changes, in accordance with the new
-BugChange API. When this happens entries will be made in both the
-BugNotification and the BugActivity tables for the bug.
-
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> example_person = factory.makePerson(displayname="Trillian")
-    >>> example_product = factory.makeProduct(owner=example_person)
-    >>> example_bug = factory.makeBug(
-    ...     product=example_product, owner=example_person,
-    ...     title="Marvin", description="Exists")
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(
-    ...     config.malone.bugnotification_dbuser)
-    >>> config.push('bugnotification_interval', bugnotification_interval)
-
-    >>> bug_delta = BugDelta(
-    ...     example_bug, canonical_url(example_bug),
-    ...     user=example_person,
-    ...     title={'old': example_bug.title, 'new': 'The world'},
-    ...     description={
-    ...         'old': example_bug.description,
-    ...         'new': "Existential",
-    ...         })
-    >>> add_bug_change_notifications(bug_delta)
-
-The activity log shows that the description and summary were changed.
-
-    >>> from operator import attrgetter
-    >>> activity_list = sorted(
-    ...     example_bug.activity, key=attrgetter('whatchanged'))
-    >>> for activity in activity_list:
-    ...     print "%s: %s => %s (%s)" % (
-    ...         activity.whatchanged, activity.oldvalue, activity.newvalue,
-    ...         activity.person.displayname)
-    description: Exists => Existential (Trillian)
-    summary: Marvin => The world (Trillian)
-
-Nicely formatted notifications were sent to all interested
-subscribers.
-
-    >>> pending_notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> example_bug_notifications = [
-    ...     notification for notification in pending_notifications
-    ...     if notification.bug == example_bug]
-    >>> len(example_bug_notifications)
-    2
-
-    >>> notifications = sorted(
-    ...     example_bug_notifications,
-    ...     key=lambda notification: notification.message.text_contents)
-    >>> for notification in notifications:
-    ...     print notification.message.text_contents
-    ...     print '--'
-    ...     print 'Recipients:', ', '.join(
-    ...         recipient.person.displayname
-    ...         for recipient in notification.recipients)
-    ...     print '-----------------'
-    ** Description changed:
-    <BLANKLINE>
-    - Exists
-    + Existential
-    --
-    Recipients: Trillian
-    -----------------
-    ** Summary changed:
-    <BLANKLINE>
-    - Marvin
-    + The world
-    --
-    Recipients: Trillian
-    -----------------
-
-Changing the privacy of the bug will also add notification and activity
-records.
-
-
-    >>> bug_delta = BugDelta(
-    ...     example_bug, canonical_url(example_bug),
-    ...     user=example_person,
-    ...     private={'old': False, 'new': True})
-    >>> add_bug_change_notifications(bug_delta)
-    >>> activity = example_bug.activity[-1]
-    >>> print "%s: %s => %s (%s)" % (
-    ...     activity.whatchanged, activity.oldvalue, activity.newvalue,
-    ...     activity.person.displayname)
-    visibility: public => private (Trillian)
-
-    >>> pending_notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> pending_notifications = sorted(
-    ...     pending_notifications, key=attrgetter('id'))
-
-    >>> notification = pending_notifications[-1]
-    >>> print notification.message.text_contents
-    ** Visibility changed to: Private
-
-    >>> print 'Recipients:', ', '.join(
-    ...     recipient.person.displayname
-    ...     for recipient in notification.recipients)
-    Recipients: Trillian
-
-Finally, we'll make sure that the bugnotification_interval is reset.
-
-    >>> config_data = config.pop('bugnotification_interval')

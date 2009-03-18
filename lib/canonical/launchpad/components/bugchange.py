@@ -7,8 +7,9 @@ __all__ = [
     'BugDescriptionChange',
     'BugTitleChange',
     'BugVisibilityChange',
+    'UnsubscribedFromBug',
     'get_bug_change_class',
-]
+    ]
 
 from textwrap import dedent
 
@@ -26,27 +27,14 @@ def get_bug_change_class(obj, field_name):
         return BugChangeBase
 
 
-def get_unified_diff(old_value, new_value, line_length):
-    """Return a unified diff of old_value and new_value."""
-    # We've created this local version to avoid circular import
-    # problems.
-    from canonical.launchpad.mailnotification import get_unified_diff
-    return get_unified_diff(old_value, new_value, line_length)
-
-
 class BugChangeBase:
     """An abstract base class for Bug[Task]Changes."""
 
     implements(IBugChange)
 
-    def __init__(self, when, person, what_changed, old_value, new_value,
-                 recipients=None):
-        self.new_value = new_value
-        self.old_value = old_value
+    def __init__(self, when, person):
         self.person = person
-        self.what_changed = what_changed
         self.when = when
-        self.recipients = recipients
 
     def getBugActivity(self):
         """Return the `BugActivity` entry for this change."""
@@ -61,8 +49,16 @@ class BugChangeBase:
         raise NotImplementedError(self.getBugNotificationRecipients)
 
 
-class SimpleBugChangeMixin:
+class AttributeChange(BugChangeBase):
     """A mixin class that provides basic functionality for `IBugChange`s."""
+
+    def __init__(self, when, person, what_changed, old_value, new_value,
+                 recipients=None):
+        super(AttributeChange, self).__init__(when, person)
+        self.new_value = new_value
+        self.old_value = old_value
+        self.what_changed = what_changed
+        self.recipients = recipients
 
     def getBugActivity(self):
         """Return the BugActivity data for the textual change."""
@@ -76,10 +72,29 @@ class SimpleBugChangeMixin:
         return self.recipients
 
 
-class BugDescriptionChange(SimpleBugChangeMixin, BugChangeBase):
+class UnsubscribedFromBug(BugChangeBase):
+    """A user got unsubscribed from a bug."""
+
+    def __init__(self, when, person, unsubscribed_user):
+        super(UnsubscribedFromBug, self).__init__(when, person)
+        self.unsubscribed_user = unsubscribed_user
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='removed subscriber %s' % (
+                self.unsubscribed_user.displayname))
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return None
+
+
+class BugDescriptionChange(AttributeChange):
     """Describes a change to a bug's description."""
 
     def getBugNotification(self):
+        from canonical.launchpad.mailnotification import get_unified_diff
         description_diff = get_unified_diff(
             self.old_value, self.new_value, 72)
         notification_text = (
@@ -87,7 +102,7 @@ class BugDescriptionChange(SimpleBugChangeMixin, BugChangeBase):
         return {'text': notification_text}
 
 
-class BugTitleChange(SimpleBugChangeMixin, BugChangeBase):
+class BugTitleChange(AttributeChange):
     """Describes a change to a bug's title, aka summary."""
 
     def getBugActivity(self):
