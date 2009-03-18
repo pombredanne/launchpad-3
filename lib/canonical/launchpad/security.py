@@ -78,6 +78,8 @@ from canonical.launchpad.interfaces.productrelease import (
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.question import IQuestion
 from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.interfaces.seriessourcepackagebranch import (
+    ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
     IStandardShipItRequest, IStandardShipItRequestSet)
@@ -2077,3 +2079,41 @@ class EditArchivePermissionSet(AuthorizationBase):
             globalErrorUtility.raising(info)
             return False
         return user.inTeam(techboard)
+
+
+class LinkOfficialSourcePackageBranches(AuthorizationBase):
+    """Who can source packages to their official branches?
+
+    Only members of the ~ubuntu-branches celebrity team! Or admins.
+    """
+
+    permission = 'launchpad.Edit'
+    usedfor = ISeriesSourcePackageBranchSet
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(celebrities.ubuntu_branches)
+            or user.inTeam(celebrities.admin))
+
+
+class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
+    """Who can change the links from source packages to their branches?
+
+    Only members of the ~ubuntu-branches celebrity team! Or admins.
+    """
+
+    permission = 'launchpad.Edit'
+    usedfor = ISeriesSourcePackageBranch
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(celebrities.ubuntu_branches)
+            or user.inTeam(celebrities.admin))

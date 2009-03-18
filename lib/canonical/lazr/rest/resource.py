@@ -40,7 +40,7 @@ from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope import component
 from zope.component import (
-    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter, 
+    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
     getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify

@@ -194,11 +194,16 @@ tag...
     4  Reflow problems with complex page layouts
        Medium New
 
-... and for bugs with a certain status, importance, etc.
+... and for bugs with a certain status, importance, etc. The content
+of the "Filters" portlet is served in a separate request, issued by
+regular browsers via Javascript.
+
 
     >>> anon_browser.goBack()
-    >>> filter_portlet = find_portlet(anon_browser.contents, 'Filters')
-    >>> for filter_link in filter_portlet('a'):
+    >>> anon_browser.getLink(id='bugtarget-bugfilters-link').click()
+    >>> portlet_content = find_tags_by_class(
+    ...     anon_browser.contents, 'portletContent')[0]
+    >>> for filter_link in portlet_content('a'):
     ...     print filter_link.renderContents()
     Open
     Critical
