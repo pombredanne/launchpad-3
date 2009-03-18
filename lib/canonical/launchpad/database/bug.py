@@ -35,6 +35,7 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.launchpad.components.bugchange import UnsubscribedFromBug
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -381,10 +382,13 @@ class Bug(SQLBase):
         Store.of(sub).flush()
         return sub
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                self.addChange(UnsubscribedFromBug(
+                    when=UTC_NOW, person=unsubscribed_by,
+                    unsubscribed_user=person))
                 store = Store.of(sub)
                 store.remove(sub)
                 # Make sure that the subscription removal has been
@@ -398,7 +402,7 @@ class Bug(SQLBase):
         bugs_unsubscribed = []
         for dupe in self.duplicates:
             if dupe.isSubscribed(person):
-                dupe.unsubscribe(person)
+                dupe.unsubscribe(person, person)
                 bugs_unsubscribed.append(dupe)
 
         return bugs_unsubscribed
@@ -648,12 +652,16 @@ class Bug(SQLBase):
 
     def addChange(self, change):
         """See `IBug`."""
+        when = change.when
+        if when is None:
+            when = UTC_NOW
+
         # Only try to add something to the activity log if we have some
         # data.
         activity_data = change.getBugActivity()
         if activity_data is not None:
             bug_activity = getUtility(IBugActivitySet).new(
-                self, change.when, change.person,
+                self, when, change.person,
                 activity_data['whatchanged'],
                 activity_data.get('oldvalue'),
                 activity_data.get('newvalue'),
@@ -667,7 +675,7 @@ class Bug(SQLBase):
 
             self.addChangeNotification(
                 notification_data['text'], change.person, recipients,
-                change.when)
+                when)
 
     def expireNotifications(self):
         """See `IBug`."""
