@@ -18,8 +18,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
-    BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranchSet,
+    BranchCreationNoTeamOwnedJunkBranches, BranchType,
     BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
@@ -120,7 +121,7 @@ class BranchPullerTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchPuller`.
 
     :ivar frontend: A nullary callable that returns an object that implements
-        getPullerEndpoint, getLaunchpadObjectFactory and getBranchSet.
+        getPullerEndpoint, getLaunchpadObjectFactory and getBranchLookup.
     """
 
     def setUp(self):
@@ -128,7 +129,7 @@ class BranchPullerTest(TestCaseWithFactory):
         frontend = self.frontend()
         self.storage = frontend.getPullerEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.branch_set = frontend.getBranchSet()
+        self.branch_lookup = frontend.getBranchLookup()
         self.getLastActivity = frontend.getLastActivity
 
     def assertFaultEqual(self, expected_fault, observed_fault):
@@ -176,7 +177,7 @@ class BranchPullerTest(TestCaseWithFactory):
         """Return a branch ID that isn't in the database."""
         branch_id = 999
         # We can't be sure until the sample data is gone.
-        self.assertIs(self.branch_set.get(branch_id), None)
+        self.assertIs(self.branch_lookup.get(branch_id), None)
         return branch_id
 
     def test_startMirroring(self):
@@ -500,7 +501,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         frontend = self.frontend()
         self.branchfs = frontend.getFilesystemEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.branch_set = frontend.getBranchSet()
+        self.branch_lookup = frontend.getBranchLookup()
 
     def assertFaultEqual(self, expected_fault, observed_fault):
         """Assert that `expected_fault` equals `observed_fault`."""
@@ -518,7 +519,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_id = self.branchfs.createBranch(
             owner.id, escape('/~%s/%s/%s' % (owner.name, product.name, name)))
         login(ANONYMOUS)
-        branch = self.branch_set.get(branch_id)
+        branch = self.branch_lookup.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(product, branch.product)
         self.assertEqual(name, branch.name)
@@ -539,7 +540,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_id = self.branchfs.createBranch(
             owner.id, escape('/~%s/%s/%s' % (owner.name, '+junk', name)))
         login(ANONYMOUS)
-        branch = self.branch_set.get(branch_id)
+        branch = self.branch_lookup.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(None, branch.product)
         self.assertEqual(name, branch.name)
@@ -636,7 +637,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         branch_id = self.branchfs.createBranch(owner.id, escape(unique_name))
         login(ANONYMOUS)
-        branch = self.branch_set.get(branch_id)
+        branch = self.branch_lookup.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(sourcepackage.distroseries, branch.distroseries)
         self.assertEqual(
@@ -1023,14 +1024,14 @@ class LaunchpadDatabaseFrontend:
         """
         return LaunchpadObjectFactory()
 
-    def getBranchSet(self):
-        """Return an implementation of `IBranchSet`.
+    def getBranchLookup(self):
+        """Return an implementation of `IBranchLookup`.
 
         Tests should use this to get the branch set they need, rather than
         using 'getUtility(IBranchSet)'. This allows in-memory implementations
         to work correctly.
         """
-        return getUtility(IBranchSet)
+        return getUtility(IBranchLookup)
 
     def getLastActivity(self, activity_name):
         """Get the last script activity with 'activity_name'."""

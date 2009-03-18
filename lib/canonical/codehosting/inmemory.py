@@ -648,11 +648,11 @@ class InMemoryFrontend:
         """
         return self._factory
 
-    def getBranchSet(self):
+    def getBranchLookup(self):
         """See `LaunchpadDatabaseFrontend`.
 
-        Returns a partial implementation of `IBranchSet` -- enough to pass the
-        tests.
+        Returns a partial implementation of `IBranchLookup` -- enough to pass
+        the tests.
         """
         return self._branch_set
 
