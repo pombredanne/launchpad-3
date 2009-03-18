@@ -170,27 +170,19 @@ class BugTagsChange(AttributeChange):
             'whatchanged': self.what_changed,
             }
 
-
-class BugTagsAdded(BugTagsChange):
-    """Used when tags are added to an `IBug`s tag list."""
-
     def getBugNotification(self):
         new_tags = set(self.new_value)
         old_tags = set(self.old_value)
         added_tags = " ".join(sorted(new_tags.difference(old_tags)))
-
-        return {'text': "** Tags added: %s" % added_tags}
-
-
-class BugTagsRemoved(BugTagsChange):
-    """Used when tags are removed from an `IBug`s tag list."""
-
-    def getBugNotification(self):
-        new_tags = set(self.new_value)
-        old_tags = set(self.old_value)
         removed_tags = " ".join(sorted(old_tags.difference(new_tags)))
 
-        return {'text': "** Tags removed: %s" % removed_tags}
+        messages = []
+        if added_tags:
+            messages.append("** Tags added: %s" % added_tags)
+        if removed_tags:
+            messages.append("** Tags removed: %s" % removed_tags)
+
+        return {'text': "\n".join(messages)}
 
 
 BUG_CHANGE_LOOKUP = {

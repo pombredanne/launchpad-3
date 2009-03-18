@@ -239,6 +239,30 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=tag_change_activity,
             expected_notification=tag_change_notification)
 
+    def test_tags_removed(self):
+        # Removing tags from a bug adds BugActivity and BugNotification
+        # entries.
+        self.bug.tags = ['first-new-tag', 'second-new-tag']
+        self.saveOldChanges()
+        old_tags = self.changeAttribute(
+            self.bug, 'tags', ['first-new-tag'])
+
+        tag_change_activity = {
+            'person': self.user,
+            'whatchanged': 'tags',
+            'oldvalue': 'first-new-tag second-new-tag',
+            'newvalue': 'first-new-tag',
+            }
+
+        tag_change_notification = {
+            'person': self.user,
+            'text': '** Tags removed: second-new-tag',
+            }
+
+        self.assertRecordedChange(
+            expected_activity=tag_change_activity,
+            expected_notification=tag_change_notification)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -322,49 +322,22 @@ BugTagsChange is used to represent a change in a Bug's tag list.
 
     >>> tags_change = BugTagsChange(
     ...     when=nowish, person=example_person,
-    ...     what_changed='tags', old_value=[],
-    ...     new_value=[u'first-tag', u'second-tag', u'third-tag'])
+    ...     what_changed='tags',
+    ...     old_value=[u'first-tag', u'second-tag', u'third-tag'],
+    ...     new_value=[u'second-tag', u'third-tag', u'zillionth-tag'])
 
 This change is expressed in the activity entry in the same way as any
 other attribute change. The list of tags is converted to a
 space-separated string for display.
 
     >>> print pretty(tags_change.getBugActivity())
-    {'newvalue': u'first-tag second-tag third-tag',
-     'oldvalue': '',
-     'whatchanged': 'tags'}
-
-BugTagsChange has two subclasses: BugTagsAdded and BugTagsRemoved. This
-is because the notifications for these two types of change differ. in
-that they express the change in terms of tags added and removed.
-
-    >>> from canonical.launchpad.components.bugchange import (
-    ...     BugTagsAdded, BugTagsRemoved)
-
-    >>> tags_added = BugTagsAdded(
-    ...     when=nowish, person=example_person,
-    ...     what_changed='tags', old_value=[],
-    ...     new_value=[u'first-tag', u'second-tag', u'third-tag'])
-    >>> print tags_added.getBugNotification()['text']
-    ** Tags added: first-tag second-tag third-tag
-
-    >>> tags_removed = BugTagsRemoved(
-    ...     when=nowish, person=example_person,
-    ...     what_changed='tags', new_value=[u'second-tag', u'third-tag'],
-    ...     old_value=[u'first-tag', u'second-tag', u'third-tag'])
-    >>> print tags_removed.getBugNotification()['text']
-    ** Tags removed: first-tag
-
-Both BugTagsAdded and BugTagsRemoved express the activity in the same
-way, though, as they both subclass BugTagsChange.
-
-    >>> print pretty(tags_added.getBugActivity())
-    {'newvalue': u'first-tag second-tag third-tag',
-     'oldvalue': '',
-     'whatchanged': 'tags'}
-
-    >>> print pretty(tags_removed.getBugActivity())
-    {'newvalue': u'second-tag third-tag',
+    {'newvalue': u'second-tag third-tag zillionth-tag',
      'oldvalue': u'first-tag second-tag third-tag',
      'whatchanged': 'tags'}
+
+Addtions and removals are expressed separately in the notification.
+
+    >>> print tags_change.getBugNotification()['text']
+    ** Tags added: zillionth-tag
+    ** Tags removed: first-tag
 
