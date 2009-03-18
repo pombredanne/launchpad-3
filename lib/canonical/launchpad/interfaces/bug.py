@@ -463,7 +463,7 @@ class IBug(ICanBeMentored):
     @call_with(user=REQUEST_USER)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
-    def unlinkCVE(cve, user=None):
+    def unlinkCVE(cve, user):
         """Ensure that any links between this bug and the given CVE are
         removed.
         """
