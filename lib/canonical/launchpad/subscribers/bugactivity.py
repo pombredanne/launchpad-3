@@ -18,13 +18,11 @@ vocabulary_registry = getVocabularyRegistry()
 
 
 BUG_INTERESTING_FIELDS = [
-    'description',
     'duplicateof',
     'name',
     'private',
     'security_related',
     'tags',
-    'title',
     ]
 
 
