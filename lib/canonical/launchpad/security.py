@@ -1291,21 +1291,31 @@ class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
             self, user)
 
 
-class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
+class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ITranslationImportQueueEntry
+
+    def checkAuthenticated(self, user):
+        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
+            return True
+
+        return False
+
+
+class EditTranslationImportQueueEntry(AdminTranslationImportQueueEntry):
     permission = 'launchpad.Edit'
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        """Allow who added the entry, experts and admins.
+        """Anyone who can admin an entry, plus its owner, can edit it.
         """
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+        if AdminTranslationImportQueueEntry.checkAuthenticated(self, user):
+            return True
+        if user.inTeam(self.obj.importer):
+            return True
 
-        return (OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-                user.inTeam(self.obj.importer))
+        return False
 
-class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = ITranslationImportQueueEntry
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
