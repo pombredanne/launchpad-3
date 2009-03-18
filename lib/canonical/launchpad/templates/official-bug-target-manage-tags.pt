@@ -41,6 +41,13 @@
         <td id="left-column">
           <input type="text" id="new-tag-text" />
           <a href="#" id="new-tag-add"><img src="/@@/add" /></a>
+          <div id="field-error-message" class="error" style="display: none">
+            <div class="message">
+              This is not a valid tag name.
+              Tags must start with a letter or number and be lowercase.
+              The characters "+", "-" and "." are also allowed after the first character.
+            </div>
+          </div>
           <ul id="official-tags-list">
           </ul>
         </td>
