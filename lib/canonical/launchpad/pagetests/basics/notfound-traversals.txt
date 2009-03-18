@@ -97,6 +97,7 @@ status is returned.
 ...                 host='translations.launchpad.dev')
 
 >>> check("robots.txt", host="shipit.ubuntu.dev")
+>>> check_redirect('/user.cgi', host="shipit.ubuntu.dev", status=301)
 
 >>> check("/bounties")
 >>> check("/bounties/foomatic-widgets")

@@ -365,7 +365,7 @@ it as being marked for expiration.
 No Privileges Person can't see the bug either...
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> private_bug.unsubscribe(no_priv)
+    >>> private_bug.unsubscribe(no_priv, no_priv)
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, user=no_priv, target=ubuntu)
     >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
@@ -518,7 +518,7 @@ master and slave bugtasks were expired.
 
 The bug's activity log was updated too with the status change.
 
-    >>> for activity in hoary_bugtask.bug.activity:
+    >>> for activity in hoary_bugtask.bug.activity[1:]:
     ...     print "%s %s %s %s" % (
     ...         activity.person.displayname,
     ...         activity.whatchanged, activity.oldvalue, activity.newvalue)

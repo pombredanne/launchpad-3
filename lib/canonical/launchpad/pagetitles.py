@@ -135,6 +135,8 @@ archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
 
 archive_index = ContextTitle('%s')
 
+archive_subscriber_edit = ContextTitle('Edit %s')
+
 archive_subscribers = ContextTitle('Manage subscriptions for %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
@@ -1250,6 +1252,8 @@ shipit_index_edubuntu = 'Getting Edubuntu'
 shipit_index_ubuntu = 'Request an Ubuntu CD'
 
 shipit_login = 'ShipIt'
+
+shipit_login_error = 'ShipIt - Unsuccessful login'
 
 shipit_myrequest = "Your ShipIt order"
 
