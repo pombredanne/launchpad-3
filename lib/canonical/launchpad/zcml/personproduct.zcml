@@ -69,33 +69,4 @@
         interface="canonical.launchpad.interfaces.personproduct.IPersonProductFactory" />
   </securedutility>
 
-<!--
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="BranchNavigation" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBranch"
-        facet="branches"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.BranchView" >
-        <browser:page
-            name="+index"
-            template="../templates/branch-index.pt"
-            />
-        <browser:page
-            name="+portlet-details"
-            template="../templates/branch-portlet-details.pt" />
-        <browser:page
-            name="+associations"
-            template="../templates/branch-associations.pt" />
-        <browser:page
-            name="+landing-candidates"
-            template="../templates/branch-landing-candidates.pt" />
-        <browser:page
-            name="+merges"
-            template="../templates/branch-merges.pt" />
-   </browser:pages>
--->
-
 </configure>
