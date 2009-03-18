@@ -25,6 +25,8 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.components.bugchange import (
+    get_bug_change_class)
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
@@ -33,6 +35,7 @@ from canonical.launchpad.interfaces import (
     INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
+from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.structuralsubscription import (
@@ -609,45 +612,20 @@ def get_bug_edit_notification_texts(bug_delta):
             change_info += '   %s' % new_bug_dupe.title
             changes.append(change_info)
 
-    if bug_delta.title is not None:
-        change_info = u"** Summary changed:\n\n"
-        change_info += u"- %s\n" % bug_delta.title['old']
-        change_info += u"+ %s" % bug_delta.title['new']
-        changes.append(change_info)
-
-    if bug_delta.description is not None:
-        description_diff = get_unified_diff(
-            bug_delta.description['old'],
-            bug_delta.description['new'], 72)
-
-        change_info = u"** Description changed:\n\n"
-        change_info += description_diff
-        changes.append(change_info)
-
-    if bug_delta.private is not None:
-        if bug_delta.private['new']:
-            visibility = "Private"
-        else:
-            visibility = "Public"
-        changes.append(u"** Visibility changed to: %s" % visibility)
-
-    if bug_delta.security_related is not None:
-        if bug_delta.security_related['new']:
-            changes.append(
-                u"** This bug has been flagged as a security issue")
-        else:
-            changes.append(
-                u"** This bug is no longer flagged as a security issue")
-
-    if bug_delta.tags is not None:
-        new_tags = set(bug_delta.tags['new'])
-        old_tags = set(bug_delta.tags['old'])
-        added_tags = sorted(new_tags.difference(old_tags))
-        removed_tags = sorted(old_tags.difference(new_tags))
-        if added_tags:
-            changes.append(u'** Tags added: %s' % ' '.join(added_tags))
-        if removed_tags:
-            changes.append(u'** Tags removed: %s' % ' '.join(removed_tags))
+    # The order of the field names in this list is important; this is
+    # the order in which changes will appear both in the bug activity
+    # log and in notification emails.
+    bug_change_field_names = [
+        'title', 'description', 'private', 'security_related', 'tags',
+        ]
+    for field_name in bug_change_field_names:
+        field_delta = getattr(bug_delta, field_name)
+        if field_delta is not None:
+            bug_change_class = get_bug_change_class(bug_delta.bug, field_name)
+            change_info = bug_change_class(
+                when=None, person=bug_delta.user, what_changed=field_name,
+                old_value=field_delta['old'], new_value=field_delta['new'])
+            changes.append(change_info)
 
     if bug_delta.bugwatch is not None:
         old_bug_watch = bug_delta.bugwatch.get('old')
@@ -887,9 +865,15 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
             old_bugtask, recipients=old_bugtask_recipients,
             level=BugNotificationLevel.METADATA)
         recipients.update(old_bugtask_recipients)
-    for text_change in changes:
-        bug_delta.bug.addChangeNotification(
-            text_change, person=bug_delta.user, recipients=recipients)
+    for change in changes:
+        # XXX 2009-03-17 gmb [bug=344125]
+        #     This if..else should be removed once the new BugChange API
+        #     is complete and ubiquitous.
+        if IBugChange.providedBy(change):
+            bug_delta.bug.addChange(change)
+        else:
+            bug_delta.bug.addChangeNotification(
+                change, person=bug_delta.user, recipients=recipients)
 
 
 @block_implicit_flushes

@@ -346,7 +346,7 @@ class UnsubscribeEmailCommand(EmailCommand):
                 get_error_message('unsubscribe-too-many-arguments.txt'))
 
         if bug.isSubscribed(person):
-            bug.unsubscribe(person)
+            bug.unsubscribe(person, getUtility(ILaunchBag).user)
         if bug.isSubscribedToDupes(person):
             bug.unsubscribeFromDupes(person)
 

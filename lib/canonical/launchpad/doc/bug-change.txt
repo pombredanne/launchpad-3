@@ -1,0 +1,385 @@
+= Tracking changes to a bug =
+
+The base class for BugChanges doesn't actually implement anything.
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> from canonical.launchpad.components.bugchange import BugChangeBase
+    >>> from canonical.launchpad.interfaces.bugchange import IBugChange
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+    >>> login("test@canonical.com")
+    >>> example_person = factory.makePerson(displayname="Ford Prefect")
+
+    >>> nowish = datetime(2009, 3, 13, 10, 9, tzinfo=pytz.timezone('UTC'))
+    >>> base_instance = BugChangeBase(when=nowish, person=example_person)
+    >>> verifyObject(IBugChange, base_instance)
+    True
+
+    >>> base_instance.getBugNotification()
+    Traceback (most recent call last):
+      ...
+    NotImplementedError...
+
+    >>> base_instance.getBugActivity()
+    Traceback (most recent call last):
+      ...
+    NotImplementedError...
+
+    >>> base_instance.getBugNotificationRecipients()
+    Traceback (most recent call last):
+      ...
+    NotImplementedError...
+
+But the basic attributes are still available.
+
+    >>> print base_instance.when
+    2009-03-13 10:09:00+00:00
+
+    >>> print base_instance.person.displayname
+    Ford Prefect
+
+Because the base class is abstract, you can't pass it to
+Bug.addChange().
+
+    >>> example_product = factory.makeProduct(owner=example_person)
+    >>> example_bug = factory.makeBug(
+    ...     product=example_product, owner=example_person,
+    ...     title="Reality is on the blink again",
+    ...     description="I'm tired of thinking up funny strings for tests")
+    >>> example_bug.addChange(base_instance)
+    Traceback (most recent call last):
+      ...
+    NotImplementedError...
+
+We'll create a test class that actually implements the methods we need.
+
+    >>> from canonical.launchpad.mailnotification import (
+    ...     BugNotificationRecipients)
+
+    >>> example_message = factory.makeMessage(content="Hello, world")
+    >>> example_person_2 = factory.makePerson(
+    ...     displayname="Zaphod Beeblebrox")
+
+    >>> class TestBugChange(BugChangeBase):
+    ...
+    ...     bug_activity_data = {
+    ...         'whatchanged': 'Nothing',
+    ...         'oldvalue': 'OldValue',
+    ...         'newvalue': 'NewValue',
+    ...         }
+    ...
+    ...     bug_notification_data = {
+    ...         'text': 'Some message text',
+    ...         }
+    ...
+    ...     recipient_persons = [
+    ...         example_person_2,
+    ...         ]
+    ...
+    ...     def getBugActivity(self):
+    ...         return self.bug_activity_data
+    ...
+    ...     def getBugNotificationRecipients(self):
+    ...         recipients = BugNotificationRecipients()
+    ...         for recipient in self.recipient_persons:
+    ...             recipients.addDirectSubscriber(recipient)
+    ...         return recipients
+    ...
+    ...     def getBugNotification(self):
+    ...         return self.bug_notification_data
+
+    >>> def print_bug_activity(activity):
+    ...     for activity in activity:
+    ...         print "%s: %s %s => %s (%s)" % (
+    ...             activity.datechanged, activity.whatchanged,
+    ...             activity.oldvalue, activity.newvalue,
+    ...             activity.person.displayname)
+
+BugActivity entries are added when addChange() is called.
+
+    >>> example_bug.addChange(
+    ...     TestBugChange(when=nowish, person=example_person))
+    >>> print_bug_activity(example_bug.activity)
+    2009-03-13...: Nothing OldValue => NewValue (Ford Prefect)
+
+As are BugNotifications.
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.text_contents
+    Some message text
+
+The notification's recipients are taken from the result of
+getBugNotificationRecipients().
+
+    >>> for recipient in latest_notification.recipients:
+    ...     print recipient.person.displayname
+    Zaphod Beeblebrox
+
+Bug if getBugActivity() returns None, no activity entries will be added.
+
+    >>> class NoActionBugChange(TestBugChange):
+    ...     bug_activity_data = None
+    ...     bug_notification_data = None
+
+    >>> example_bug.addChange(
+    ...     NoActionBugChange(when=nowish, person=example_person))
+    >>> print_bug_activity(example_bug.activity)
+    2009-03-13...: Nothing OldValue => NewValue (Ford Prefect)
+
+And if getBugNotification() returns None, no notification will be added.
+
+    >>> new_latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> new_latest_notification.id == latest_notification.id
+    True
+
+If getBugNotificationRecipients() returns None the default recipient
+list for the Bug will be used.
+
+    >>> class NoRecipientsBugChange(TestBugChange):
+    ...
+    ...     bug_notification_data = {
+    ...         'text': "Here's some sample text",
+    ...         }
+    ...
+    ...     def getBugNotificationRecipients(self):
+    ...         return None
+
+    >>> example_bug.addChange(
+    ...     NoRecipientsBugChange(when=nowish, person=example_person))
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.text_contents
+    Here's some sample text
+
+    >>> for recipient in latest_notification.recipients:
+    ...     print recipient.person.displayname
+    Ford Prefect
+
+If you try to send a notification without adding a text body for the
+notification you'll get an error.
+
+    >>> class NoNotificationTextBugChange(TestBugChange):
+    ...
+    ...     bug_notification_data = {
+    ...         'text': None,
+    ...         }
+
+    >>> example_bug.addChange(
+    ...     NoNotificationTextBugChange(when=nowish, person=example_person))
+    Traceback (most recent call last):
+      ...
+    AssertionError: notification_data must include a `text` value.
+
+
+== BugChange subclasses ==
+
+=== Getting the right bug change class ===
+
+Given that we know what's changing and the name of the field that is
+being changed, we can find a suitable IBugChange implementation to
+help us describe the change.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     get_bug_change_class)
+
+By default, get_bug_change_class() will return BugChangeBase.
+
+    >>> get_bug_change_class(example_bug, 'foobar')
+    <class '...BugChangeBase'>
+
+For fields it knows about, it will return a more suitable class.
+
+    >>> get_bug_change_class(example_bug, 'title')
+    <class '...BugTitleChange'>
+
+See component/ftests/test_bugchange.py for some sanity checks.
+
+
+=== AttributeChange ===
+
+The AttributeChange class offers basic functionality for dealing with
+bug attribute changes.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     AttributeChange)
+
+    >>> simple_change = AttributeChange(
+    ...     when=nowish, person=example_person, what_changed='title',
+    ...     old_value=example_bug.title, new_value='Spam')
+
+In its getBugActivity() method AttributeChange merely returns the
+field name, old value and new value as passed to its __init__()
+method.
+
+    >>> activity_data = simple_change.getBugActivity()
+    >>> print pretty(activity_data)
+    {'newvalue': 'Spam',
+     'oldvalue': u'Reality is on the blink again',
+     'whatchanged': 'title'}
+
+
+=== BugDescriptionChange ===
+
+This describes a change to the description of a
+bug. getBugNotification() returns a formatted description of the
+change.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugDescriptionChange)
+
+    >>> bug_desc_change = BugDescriptionChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='description', old_value=example_bug.description,
+    ...     new_value='Well, maybe not')
+    >>> print bug_desc_change.getBugNotification()['text']
+    ** Description changed:
+    <BLANKLINE>
+    - I'm tired of thinking up funny strings for tests
+    + Well, maybe not
+
+
+=== BugTitleChange ===
+
+This, surprisingly, describes a title change for a bug. Again,
+getBugNotification() returns a specially formatted description of
+what's changed.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTitleChange)
+
+    >>> bug_title_change = BugTitleChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='title', old_value=example_bug.title,
+    ...     new_value='Spam')
+    >>> print bug_title_change.getBugNotification()['text']
+    ** Summary changed:
+    <BLANKLINE>
+    - Reality is on the blink again
+    + Spam
+
+BugTitleChange mutates the `what_changed` field and will return
+'summary' rather than 'title'. This is to maintain naming consistency
+within the UI.
+
+    >>> print bug_title_change.getBugActivity()['whatchanged']
+    summary
+
+
+=== BugVisibilityChange ===
+
+BugVisibilityChange is used to represent a change in a Bug's `private`
+attribute.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugVisibilityChange)
+
+    >>> bug_visibility_change = BugVisibilityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='private', old_value=example_bug.private,
+    ...     new_value=True)
+
+IBug.private is a boolean but to make it more readable we express it in
+activity and notification records as a string, where True = 'Private'
+and False = 'Public'. We also refer to it as "visibility" rather than
+privacy.
+
+    >>> print pretty(bug_visibility_change.getBugActivity())
+    {'newvalue': 'private',
+     'oldvalue': 'public',
+     'whatchanged': 'visibility'}
+
+We also use the 'Private', 'Public' and 'Visibility' terms in the
+notification text.
+
+    >>> print bug_visibility_change.getBugNotification()['text']
+    ** Visibility changed to: Private
+
+If we reverse the changes we'll see the opposite values in the
+notification and activity entries.
+
+    >>> bug_visibility_change = BugVisibilityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='private', old_value=True, new_value=False)
+    >>> print pretty(bug_visibility_change.getBugActivity())
+    {'newvalue': 'public',
+     'oldvalue': 'private',
+     'whatchanged': 'visibility'}
+
+    >>> print bug_visibility_change.getBugNotification()['text']
+    ** Visibility changed to: Public
+
+
+== BugTagsChange ==
+
+BugTagsChange is used to represent a change in a Bug's tag list.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTagsChange)
+
+    >>> tags_change = BugTagsChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='tags',
+    ...     old_value=[u'first-tag', u'second-tag', u'third-tag'],
+    ...     new_value=[u'second-tag', u'third-tag', u'zillionth-tag'])
+
+This change is expressed in the activity entry in the same way as any
+other attribute change. The list of tags is converted to a
+space-separated string for display.
+
+    >>> print pretty(tags_change.getBugActivity())
+    {'newvalue': u'second-tag third-tag zillionth-tag',
+     'oldvalue': u'first-tag second-tag third-tag',
+     'whatchanged': 'tags'}
+
+Addtions and removals are expressed separately in the notification.
+
+    >>> print tags_change.getBugNotification()['text']
+    ** Tags added: zillionth-tag
+    ** Tags removed: first-tag
+
+
+=== BugSecurityChange ===
+
+BugSecurityChange is used to represent a change in a Bug's
+`security_related` attribute.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugSecurityChange)
+
+    >>> bug_security_change = BugSecurityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=False, new_value=True)
+
+IBug.security_related is a boolean but to make it more readable we
+express it in activity and notification records as a short phrase.
+
+Marking a bug as security related causes one set of terms/phrases to
+be used.
+
+    >>> print pretty(bug_security_change.getBugActivity())
+    {'newvalue': 'yes',
+     'oldvalue': 'no',
+     'whatchanged': 'security vulnerability'}
+
+    >>> print bug_security_change.getBugNotification()['text']
+    ** This bug has been flagged as a security vulnerability
+
+Going the other way the phrases are similar.
+
+    >>> bug_security_change = BugSecurityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=True, new_value=False)
+
+    >>> print pretty(bug_security_change.getBugActivity())
+    {'newvalue': 'no',
+     'oldvalue': 'yes',
+     'whatchanged': 'security vulnerability'}
+
+    >>> print bug_security_change.getBugNotification()['text']
+    ** This bug is no longer flagged as a security vulnerability

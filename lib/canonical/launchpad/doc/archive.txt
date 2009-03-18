@@ -1607,6 +1607,14 @@ method returns an empty SelectResults.
     >>> jblack_ppas.count()
     0
 
+The method getPrivatePPAs() will return a result set of all PPAs that are
+private.
+
+    >>> p3as = archive_set.getPrivatePPAs()
+    >>> for p3a in p3as:
+    ...     print p3a.title
+    Private PPA for Celso Providelo
+
 For the next test we will make Celso's PPA public again, so it can
 appear in public lists. We do that because that PPA contains relevant
 contents for testing.
