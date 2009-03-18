@@ -209,7 +209,7 @@ Non-KDE style messages get their translations in the usual way.
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     singular_text=u'_n:bar\nbars')
     >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     firefox_serbian_pofile.language)
+    ...     firefox_potemplate, firefox_serbian_pofile.language)
     >>> print current.translations
     [u'non-plural forms message']
 
@@ -219,7 +219,7 @@ plural messages:
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     singular_text=u'%d foo', plural_text=u'%d foos')
     >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     firefox_serbian_pofile.language)
+    ...     firefox_potemplate, firefox_serbian_pofile.language)
     >>> print current.translations
     [u'%d translation', u'%d translationes', u'%d translations']
 
@@ -477,7 +477,7 @@ We can get the first translation by specifying 'Context' for the context:
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     singular_text=u'Message', context=u'Context')
     >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     firefox_serbian_pofile.language)
+    ...     firefox_potemplate, firefox_serbian_pofile.language)
     >>> print current.translations
     [u'First translation']
 
@@ -487,7 +487,7 @@ other message and its translation:
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
     ...     singular_text=u'Message', context=u'Different Context')
     >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     firefox_serbian_pofile.language)
+    ...     firefox_potemplate, firefox_serbian_pofile.language)
     >>> print current.translations
     [u'Second translation']
 
