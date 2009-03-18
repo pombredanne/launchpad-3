@@ -557,7 +557,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         buglink = BugLinkTargetMixin.unlinkBug(self, bug)
         if buglink:
             # Additionnaly, unsubscribe the question's owner to the bug
-            bug.unsubscribe(self.owner)
+            bug.unsubscribe(self.owner, self.owner)
         return buglink
 
     # Template methods for BugLinkTargetMixin.

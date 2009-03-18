@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BugChangeBase',
+    'UnsubscribedFromBug',
 ]
 
 from zope.interface import implements
@@ -33,3 +34,25 @@ class BugChangeBase:
     def getBugNotificationRecipients(self):
         """Return any recipients for the `BugNotification`s."""
         raise NotImplementedError(self.getBugNotificationRecipients)
+
+
+class UnsubscribedFromBug(BugChangeBase):
+    """A user got unsubscribed from a bug."""
+
+    def __init__(self, when, person, unsubscribed_user):
+        super(UnsubscribedFromBug, self).__init__(when, person)
+        self.unsubscribed_user = unsubscribed_user
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='removed subscriber %s' % (
+                self.unsubscribed_user.displayname))
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return None
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
+        return None
