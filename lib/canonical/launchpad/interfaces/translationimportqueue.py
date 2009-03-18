@@ -82,13 +82,13 @@ class SpecialTranslationImportTargetFilter(DBEnumeratedType):
     """Special "meta-targets" to filter the queue view by."""
 
     PRODUCT = DBItem(1, """
-        Any Project
+        Any project
 
         Any project registered in Launchpad.
         """)
 
     DISTRIBUTION = DBItem(2, """
-        Any Distribution
+        Any distribution
 
         Any distribution registered in Launchpad.
         """)

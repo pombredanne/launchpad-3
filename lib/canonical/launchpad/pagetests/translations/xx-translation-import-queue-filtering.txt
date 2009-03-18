@@ -67,8 +67,8 @@ targets.
 
     >>> print_targets(browser)
     All targets
-    Any Project
-    Any Distribution
+    Any project
+    Any distribution
     Evolution
 
 
@@ -108,8 +108,8 @@ now shows up in the target dropdown with an asterisk.
 
     >>> print_targets(browser)
     All targets
-    Any Project
-    Any Distribution
+    Any project
+    Any distribution
     Evolution*
 
 
@@ -161,8 +161,8 @@ no entries matching the status that Carlos is filtering for.
 
     >>> print_targets(browser)
     All targets
-    Any Project
-    Any Distribution
+    Any project
+    Any distribution
     Evolution
 
 Carlos changes the status of the third entry to Blocked.
@@ -187,8 +187,8 @@ The entry now shows up in the Blocked filter.
 
     >>> print_targets(browser)
     All targets
-    Any Project
-    Any Distribution
+    Any project
+    Any distribution
     Evolution*
 
 And the entries that need review are only 99.
@@ -329,8 +329,8 @@ Evolution (a separate project registered in Launchpad).
 
     >>> print_targets(browser)
     All targets
-    Any Project
-    Any Distribution
+    Any project
+    Any distribution
     Hoary
     Evolution
 
@@ -338,7 +338,7 @@ Evolution (a separate project registered in Launchpad).
     ...     name='field.filter_target', index=0).value = ['[PRODUCT]']
     >>> user_browser.getControl('Filter').click()
 
-The "Any Project" filter here shows only those Evolution uploads.
+The "Any project" filter here shows only those Evolution uploads.
 
     >>> displayed_entries = summarize_displayed_queue_entries(user_browser)
     >>> print displayed_entries
@@ -353,7 +353,7 @@ None of the Hoary uploads are shown.
     >>> print re.findall('Hoary', displayed_entries)
     []
 
-The "Any Distribution" filter on the other hand shows the Hoary upload
+The "Any distribution" filter on the other hand shows the Hoary upload
 (for "evolution" the package), but not the uploads for "Evolution" the
 project.
 
@@ -367,7 +367,6 @@ project.
 
     >>> print re.findall('Evolution', displayed_entries)
     []
-
 
 
 === Target filter validation ===

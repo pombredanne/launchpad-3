@@ -257,6 +257,7 @@ class HasTranslationImportsView(LaunchpadFormView):
             if target == 'all':
                 target = None
             elif target.startswith('[') and target.endswith(']'):
+                # This is a SpecialTranslationImportTargetFilter.
                 target_code = target[1:-1]
                 target = None
                 for enum_item in SpecialTranslationImportTargetFilter.items:
