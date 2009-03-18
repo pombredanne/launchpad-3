@@ -104,6 +104,11 @@ class BranchLinkedToBug(BugChangeBase):
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        return {'text': '** Branch linked: %s' % self.branch.bzr_identity}
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
+        # Send the notification to the default recipients.
         return None
 
 
