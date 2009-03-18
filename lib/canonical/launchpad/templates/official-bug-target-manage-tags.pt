@@ -45,9 +45,9 @@
           </ul>
         </td>
         <td id="middle-column">
-          <a href="#" id="add-official-tag">&lt;--</a>
+          <a href="#" id="add-official-tags">&lt;--</a>
           <br />
-          <a href="#" id="remove-official-tag">--&gt;</a>
+          <a href="#" id="remove-official-tags">--&gt;</a>
         </td>
         <td id="right-column">
           <ul id="other-tags-list">
