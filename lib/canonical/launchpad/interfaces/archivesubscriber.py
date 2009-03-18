@@ -173,8 +173,8 @@ class IArchiveSubscriberUI(Interface):
 def archive_subscriber_ui(archive_subscriber):
     """Adapt an archive subscriber to the UI interface.
 
-    Note to reviewer: did I miss something? it seems strange that this should
-    be required instead of some kind of default for adaption?
+    Since we are only modifying the type of fields that already exist
+    on IArchiveSubscriber, we simply return the archive_subscriber record.
     """
     return archive_subscriber
 
