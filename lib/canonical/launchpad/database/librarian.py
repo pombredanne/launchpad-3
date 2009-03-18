@@ -7,7 +7,8 @@ __all__ = [
     'LibraryFileAliasSet',
     'LibraryFileContent',
     'LibraryFileDownloadCount',
-    'ParsedApacheLog']
+    'ParsedApacheLog',
+    ]
 
 from datetime import datetime, timedelta
 import pytz
