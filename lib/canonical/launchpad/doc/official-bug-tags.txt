@@ -191,9 +191,11 @@ their parent distribution.
     >>> ubuntu.getSeries('hoary').official_bug_tags
     [u'foo']
 
+    >>> login('test@canonical.com')
     >>> ubuntu.getSeries(
     ...     'hoary').getSourcePackage('alsa-utils').official_bug_tags
     [u'foo']
+    >>> logout()
 
     >>> ubuntu.getSourcePackage('alsa-utils').official_bug_tags
     [u'foo']
