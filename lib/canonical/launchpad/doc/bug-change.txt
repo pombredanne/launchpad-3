@@ -47,7 +47,9 @@ Bug.addChange().
 
     >>> example_product = factory.makeProduct(owner=example_person)
     >>> example_bug = factory.makeBug(
-    ...     product=example_product, owner=example_person)
+    ...     product=example_product, owner=example_person,
+    ...     title="Reality is on the blink again",
+    ...     description="I'm tired of thinking up funny strings for tests")
     >>> example_bug.addChange(base_instance)
     Traceback (most recent call last):
       ...
@@ -55,8 +57,6 @@ Bug.addChange().
 
 We'll create a test class that actually implements the methods we need.
 
-    >>> from canonical.launchpad.interfaces.bugactivity import (
-    ...     IBugActivitySet)
     >>> from canonical.launchpad.mailnotification import (
     ...     BugNotificationRecipients)
 
@@ -76,7 +76,7 @@ We'll create a test class that actually implements the methods we need.
     ...         'text': 'Some message text',
     ...         }
     ...
-    ...     recipients = [
+    ...     recipient_persons = [
     ...         example_person_2,
     ...         ]
     ...
@@ -85,7 +85,7 @@ We'll create a test class that actually implements the methods we need.
     ...
     ...     def getBugNotificationRecipients(self):
     ...         recipients = BugNotificationRecipients()
-    ...         for recipient in self.recipients:
+    ...         for recipient in self.recipient_persons:
     ...             recipients.addDirectSubscriber(recipient)
     ...         return recipients
     ...
@@ -173,3 +173,97 @@ notification you'll get an error.
     Traceback (most recent call last):
       ...
     AssertionError: notification_data must include a `text` value.
+
+
+== BugChange subclasses ==
+
+=== Getting the right bug change class ===
+
+Given that we know what's changing and the name of the field that is
+being changed, we can find a suitable IBugChange implementation to
+help us describe the change.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     get_bug_change_class)
+
+By default, get_bug_change_class() will return BugChangeBase.
+
+    >>> get_bug_change_class(example_bug, 'foobar')
+    <class '...BugChangeBase'>
+
+For fields it knows about, it will return a more suitable class.
+
+    >>> get_bug_change_class(example_bug, 'title')
+    <class '...BugTitleChange'>
+
+See component/ftests/test_bugchange.py for some sanity checks.
+
+
+=== AttributeChange ===
+
+The AttributeChange class offers basic functionality for dealing with
+bug attribute changes.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     AttributeChange)
+
+    >>> simple_change = AttributeChange(
+    ...     when=nowish, person=example_person, what_changed='title',
+    ...     old_value=example_bug.title, new_value='Spam')
+
+In its getBugActivity() method AttributeChange merely returns the
+field name, old value and new value as passed to its __init__()
+method.
+
+    >>> activity_data = simple_change.getBugActivity()
+    >>> print pretty(activity_data)
+    {'newvalue': 'Spam',
+     'oldvalue': u'Reality is on the blink again',
+     'whatchanged': 'title'}
+
+
+=== BugDescriptionChange ===
+
+This describes a change to the description of a
+bug. getBugNotification() returns a formatted description of the
+change.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugDescriptionChange)
+
+    >>> bug_desc_change = BugDescriptionChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='description', old_value=example_bug.description,
+    ...     new_value='Well, maybe not')
+    >>> print bug_desc_change.getBugNotification()['text']
+    ** Description changed:
+    <BLANKLINE>
+    - I'm tired of thinking up funny strings for tests
+    + Well, maybe not
+
+
+=== BugTitleChange ===
+
+This, surprisingly, describes a title change for a bug. Again,
+getBugNotification() returns a specially formatted description of
+what's changed.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTitleChange)
+
+    >>> bug_title_change = BugTitleChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='title', old_value=example_bug.title,
+    ...     new_value='Spam')
+    >>> print bug_title_change.getBugNotification()['text']
+    ** Summary changed:
+    <BLANKLINE>
+    - Reality is on the blink again
+    + Spam
+
+BugTitleChange mutates the `what_changed` field and will return
+'summary' rather than 'title'. This is to maintain naming consistency
+within the UI.
+
+    >>> print bug_title_change.getBugActivity()['whatchanged']
+    summary

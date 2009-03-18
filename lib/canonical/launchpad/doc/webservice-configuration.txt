@@ -35,8 +35,9 @@ developer.
     >>> the_launchbag = FakeLaunchBag()
     >>> provideUtility(the_launchbag, ILaunchBag)
 
-Here's how Launchpad's configuration and the status of the user
-results in a value for the web service configuration:
+Here's how a value for the web service's 'show_tracebacks' variable is
+determined from the user's developer status plus Launchpad's
+'show_tracebacks' configuration variable:
 
 Launchpad show_tracebacks | User is developer | Web service show_tracebacks
 --------------------------+-------------------+----------------------------
