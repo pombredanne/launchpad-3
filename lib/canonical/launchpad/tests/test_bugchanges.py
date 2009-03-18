@@ -11,7 +11,7 @@ from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import DatabaseFunctionalLayer
 
