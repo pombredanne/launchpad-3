@@ -206,6 +206,9 @@ class ITranslationMessage(Interface):
     def setPOFile(pofile):
         """Set a POFile for use in views."""
 
+    def getOnePOFile():
+        """Get any POFile containing this translation."""
+
     def isHidden(pofile):
         """Whether this is an unused, hidden suggestion in `pofile`.
 

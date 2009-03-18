@@ -1154,7 +1154,8 @@ class CurrentTranslationMessageView(LaunchpadView):
                 key=operator.attrgetter("date_created"),
                 reverse=True)
             for suggestion in externally_used:
-                suggestion.setPOFile(self.context.pofile)
+                pofile = suggestion.getOnePOFile()
+                suggestion.setPOFile(pofile)
 
             # Get a list of translations which are suggested as
             # translations for this same message in a different translation
@@ -1164,7 +1165,9 @@ class CurrentTranslationMessageView(LaunchpadView):
                 key=operator.attrgetter("date_created"),
                 reverse=True)
             for suggestion in externally_suggested:
-                suggestion.setPOFile(self.context.pofile)
+                pofile = suggestion.getOnePOFile()
+                suggestion.setPOFile(pofile)
+                suggestion.setPOFile(pofile)
         else:
             # Don't show suggestions for anonymous users.
             local = externally_used = externally_suggested = []

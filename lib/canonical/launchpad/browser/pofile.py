@@ -187,7 +187,7 @@ class POFileView(LaunchpadView):
 
 
 class TranslationMessageContainer:
-    def __init__(self, translation):
+    def __init__(self, translation, pofile):
         self.data = translation
 
         # Assign a CSS class to the translation
@@ -196,14 +196,14 @@ class TranslationMessageContainer:
         if translation.is_current:
             self.usage_class = 'usedtranslation'
         else:
-            if translation.is_hidden:
+            if translation.isHidden(pofile):
                 self.usage_class = 'hiddentranslation'
             else:
                 self.usage_class = 'suggestedtranslation'
 
 
 class FilteredPOTMsgSets:
-    def __init__(self, translations):
+    def __init__(self, translations, pofile):
         potmsgsets = []
         current_potmsgset = None
         if translations is None:
@@ -213,14 +213,15 @@ class FilteredPOTMsgSets:
                 if (current_potmsgset is not None and
                     current_potmsgset['potmsgset'] == translation.potmsgset):
                     current_potmsgset['translations'].append(
-                        TranslationMessageContainer(translation))
+                        TranslationMessageContainer(translation, pofile))
                 else:
                     if current_potmsgset is not None:
                         potmsgsets.append(current_potmsgset)
+                    translation.setPOFile(pofile)
                     current_potmsgset = {
                         'potmsgset' : translation.potmsgset,
                         'translations' : [TranslationMessageContainer(
-                            translation)],
+                            translation, pofile)],
                         'context' : translation
                         }
             if current_potmsgset is not None:
@@ -251,7 +252,6 @@ class POFileFilteredView(LaunchpadView):
             else:
                 translations = self.context.getTranslationsFilteredBy(
                     person=self.person)
-
         self.batchnav = BatchNavigator(translations, self.request,
                                        size=self.DEFAULT_BATCH_SIZE)
 
@@ -263,7 +263,8 @@ class POFileFilteredView(LaunchpadView):
         display them grouped by English string, we transform the
         current batch.
         """
-        return FilteredPOTMsgSets(self.batchnav.currentBatch()).potmsgsets
+        return FilteredPOTMsgSets(self.batchnav.currentBatch(),
+                                  self.context).potmsgsets
 
 
 class POFileUploadView(POFileView):

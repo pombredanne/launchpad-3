@@ -20,7 +20,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationConstants, TranslationValidationStatus)
@@ -337,6 +337,28 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         if date_reviewed is None:
             date_reviewed = current.date_created
         return date_reviewed > self.date_created
+
+    def getOnePOFile(self):
+        """See `ITranslationMessage`."""
+        from canonical.launchpad.database import POFile
+        clauses = [
+            "POFile.potemplate = TranslationTemplateItem.potemplate",
+            "TranslationTemplateItem.potmsgset = %s" % (
+                sqlvalues(self.potmsgset)),
+            "POFile.language = %s" % sqlvalues(self.language),
+            ]
+        if self.variant is None:
+            clauses.append("POFile.variant IS NULL")
+        else:
+            clauses.append("POFile.variant = %s" % sqlvalues(self.variant))
+
+        pofiles = POFile.select(' AND '.join(clauses),
+                                clauseTables=['TranslationTemplateItem'])
+        pofile = list(pofiles[:1])
+        if len(pofile) > 0:
+            return pofile[0]
+        else:
+            return None
 
 
 class TranslationMessageSet:
