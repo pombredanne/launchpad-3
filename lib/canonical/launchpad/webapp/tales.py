@@ -32,8 +32,8 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IProduct, IProject,
-    ISprint, LicenseStatus, NotFoundError)
+    ArchivePurpose, BuildStatus, IBug, IBugSet, IDistribution, IFAQSet,
+    IProduct, IProject, ISprint, LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet
@@ -850,6 +850,31 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
         alt = '[%s]' % self._context.buildstate.name
         title = self._context.buildstate.title
         source = icon_map[self._context.buildstate]
+
+        return self.icon_template % (alt, title, source)
+
+
+class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IArchive objects to an image.
+
+    Used for image:icon.
+    """
+    icon_template = """
+        <img width="14" height="14" alt="%s" title="%s" src="%s" />
+        """
+
+    def icon(self):
+        """Return the appropriate <img> tag for the an archive."""
+        icon_map = {
+            ArchivePurpose.PRIMARY: '/@@/flame-icon',
+            ArchivePurpose.PARTNER: '/@@/flame-icon',
+            ArchivePurpose.PPA: '/@@/flame-icon',
+            ArchivePurpose.COPY: '/@@/flame-icon',
+            }
+
+        alt = '[%s]' % self._context.purpose.title
+        title = self._context.purpose.title
+        source = icon_map[self._context.purpose]
 
         return self.icon_template % (alt, title, source)
 

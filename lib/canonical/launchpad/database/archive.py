@@ -52,12 +52,12 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadSource)
 from canonical.launchpad.database.teammembership import TeamParticipation
-from canonical.launchpad.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
     IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, SourceNotFound)
+    PocketNotFound, SourceNotFound, default_name_by_purpose)
+from canonical.launchpad.interfaces.archiveauthtoken import (
+    IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
@@ -83,13 +83,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
-
-
-default_name_by_purpose = {
-    ArchivePurpose.PRIMARY: 'primary',
-    ArchivePurpose.PPA: 'ppa',
-    ArchivePurpose.PARTNER: 'partner',
-    }
 
 
 class Archive(SQLBase):

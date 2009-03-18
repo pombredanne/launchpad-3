@@ -8,6 +8,7 @@ __all__ = [
     'ArchiveAdminView',
     'ArchiveActivateView',
     'ArchiveBadges',
+    'ArchiveBreadcrumbBuilder',
     'ArchiveBuildsView',
     'ArchiveContextMenu',
     'ArchiveEditDependenciesView',
@@ -44,7 +45,8 @@ from canonical.launchpad.components.archivesourcepublication import (
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, CannotCopy, IArchive, IArchiveEditDependenciesForm,
     IArchivePackageCopyingForm, IArchivePackageDeletionForm,
-    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
+    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm,
+    default_name_by_purpose)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.build import (
@@ -71,6 +73,7 @@ from canonical.launchpad.scripts.packagecopier import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import (
@@ -299,6 +302,25 @@ class ArchiveContextMenu(ContextMenu):
     def edit_dependencies(self):
         text = 'Edit dependencies'
         return Link('+edit-dependencies', text, icon='edit')
+
+
+class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IArchive`."""
+
+    @property
+    def text(self):
+        if self.context.is_ppa:
+            default_ppa_name = default_name_by_purpose.get(
+                self.context.purpose)
+            if self.context.name == default_ppa_name:
+                return 'default PPA'
+            return '%s PPA' % self.context.name
+
+        if self.context.is_copy:
+            return '%s Archive Copy' % self.context.name
+
+        return '%s' % self.context.purpose.title
+
 
 class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
