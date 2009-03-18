@@ -49,6 +49,9 @@ this test a tripwire for the number potentially getting out of hand.
     >>> 0 < statement_count < 100
     True
 
+    >>> print statement_count
+    17
+
 === Reviewing and translating ===
 
 When an administrator logs in, the page shows not only translations and the

@@ -1341,6 +1341,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             pofile = self.makePOFile('sr')
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(pofile.potemplate)
+            potmsgset.setSequence(pofile.potemplate, 1)
         if translator is None:
             translator = self.makePerson()
         if translations is None:
