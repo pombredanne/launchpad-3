@@ -18,7 +18,7 @@ YUI({base: '/+icing/' + icingroot + '/yui/current/build/'}).use(
 /*
  * The lazr.FormOverlay object.
  */
-var formoverlay;
+var duplicate_form_overlay;
 
 /*
  * The url of the page used to update bug duplicates.
@@ -39,7 +39,7 @@ var lp_bug_entry;
  * Check the page for 'Mark as duplicate' links and request the HTML
  * for the form.
  */
-function requestFormHTMLContent() {
+Y.on('domready', function() {
     // If the user is not logged in, then we need to defer to the
     // default behaviour.
     if (LP.client.links['me'] === undefined){
@@ -65,15 +65,13 @@ function requestFormHTMLContent() {
         update_dupe_links.on('click', function(e){
             // Only go ahead if we have received the form content by the
             // time the user clicks:
-            if (formoverlay){
+            if (duplicate_form_overlay){
                 e.preventDefault();
-                formoverlay.show();
+                duplicate_form_overlay.show();
             }
         });
     }
-}
-
-Y.on('domready', requestFormHTMLContent);
+});
 
 /*
  * Receive the response to the AJAX request for the form content and
@@ -81,7 +79,7 @@ Y.on('domready', requestFormHTMLContent);
  */
 function createBugDuplicateFormOverlay(id, response_object) {
     var form_content = response_object.responseText;
-    formoverlay = new Y.lazr.FormOverlay({
+    duplicate_form_overlay = new Y.lazr.FormOverlay({
         headerContent: '<h2>Mark bug report as duplicate</h2>',
         form_content: 'Marking the bug as a duplicate will, by default, ' +
                       'hide it from search results listings.' + form_content,
@@ -96,7 +94,7 @@ function createBugDuplicateFormOverlay(id, response_object) {
         visible: false,
         zIndex: 1000
     });
-    formoverlay.render();
+    duplicate_form_overlay.render();
 }
 
 /*
@@ -104,7 +102,7 @@ function createBugDuplicateFormOverlay(id, response_object) {
  */
 function update_bug_duplicate(data) {
     // Hide the formoverlay:
-    formoverlay.hide();
+    duplicate_form_overlay.hide();
 
     // Add the spinner...
     var dupe_span = Y.get('#mark-duplicate-text');
@@ -165,13 +163,13 @@ function update_bug_duplicate(data) {
             failure: function(id, request) {
                 dupe_span.removeClass('update-in-progress-message');
                 if (request.status == 400) {
-                    formoverlay.showError(
+                    duplicate_form_overlay.showError(
                         new_dup_id + ' is not a valid bug number or' +
                         ' nickname.');
                 } else {
-                    formoverlay.showError(request.responseText);
+                    duplicate_form_overlay.showError(request.responseText);
                 }
-                formoverlay.show();
+                duplicate_form_overlay.show();
             }
         }
     };
