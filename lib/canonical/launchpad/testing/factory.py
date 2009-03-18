@@ -38,12 +38,14 @@ from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
-from canonical.launchpad.interfaces.branchmergequeue import (
-    IBranchMergeQueueSet)
 from canonical.launchpad.interfaces.branch import (
     BranchType, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
+from canonical.launchpad.interfaces.branchmergequeue import (
+    IBranchMergeQueueSet)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
@@ -515,9 +517,12 @@ class LaunchpadObjectFactory(ObjectFactory):
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
-        branch = getUtility(IBranchSet).new(
-            branch_type, name, registrant, owner, product, url,
-            distroseries=distroseries, sourcepackagename=sourcepackagename,
+
+        namespace = get_branch_namespace(
+            owner, product=product, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        branch = namespace.createBranch(
+            branch_type, name, registrant, owner, url,
             **optional_branch_args)
         if private:
             removeSecurityProxy(branch).private = True

@@ -167,13 +167,10 @@ class TestPerson(TestCaseWithFactory):
                 ' an archive.')
 
     def test_visibility_validator_branch(self):
-        branch = getUtility(IBranchSet).new(
-            branch_type=BranchType.HOSTED,
-            name='namefoo',
+        branch = self.factory.makeProductBranch(
             registrant=self.otherteam,
             owner=self.otherteam,
-            product=self.bzr,
-            url=None)
+            product=self.bzr)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         except ImmutableVisibilityError, exc:

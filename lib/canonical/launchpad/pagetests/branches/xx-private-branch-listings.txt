@@ -28,9 +28,9 @@ Adding a private branch that is only visible by No Privileges Person
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> landscape = getUtility(IProductSet).getByName('landscape')
-    >>> branch = getUtility(IBranchSet).new(
+    >>> branch = factory.makePersonalBranch(
     ...     BranchType.HOSTED, name='testing-branch', registrant=no_priv,
-    ...     owner=no_priv, product=None, url=None, title='A Private Branch')
+    ...     owner=no_priv, title='A Private Branch')
     >>> branch.private = True
     >>> branch.product = landscape
     >>> flush_database_updates()

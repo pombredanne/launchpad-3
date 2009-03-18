@@ -233,9 +233,9 @@ been mirrored:
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> branch = getUtility(IBranchSet).new(
+    >>> branch = factory.makePersonalBranch(
     ...     BranchType.MIRRORED, name='mirrored', registrant=no_priv,
-    ...     owner=no_priv, product=None, url='http://example.com/mirrored',
+    ...     owner=no_priv, url='http://example.com/mirrored',
     ...     title='Disabled branch')
     >>> branch.last_mirrored = datetime(
     ...     year=2007, month=10, day=1, tzinfo=pytz.timezone('UTC'))
@@ -268,9 +268,9 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> branch = getUtility(IBranchSet).new(
+    >>> branch = factory.makePersonalBranch(
     ...     BranchType.MIRRORED, name='mirror-disabled', registrant=no_priv,
-    ...     owner=no_priv, product=None, url='http://example.com/disabled',
+    ...     owner=no_priv, url='http://example.com/disabled',
     ...     title='Disabled branch')
     >>> branch.next_mirror_time = None
     >>> flush_database_updates()

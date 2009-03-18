@@ -879,28 +879,6 @@ class BranchSet:
         except SQLObjectNotFound:
             return default
 
-    def new(self, branch_type, name, registrant, owner, product=None,
-            url=None, title=None,
-            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
-            summary=None, whiteboard=None, date_created=None,
-            branch_format=None, repository_format=None, control_format=None,
-            distroseries=None, sourcepackagename=None,
-            merge_control_status=BranchMergeControlStatus.NO_QUEUE):
-        """See `IBranchSet`."""
-        # Make sure that the new branch has a unique name if not a junk
-        # branch.
-        namespace = get_branch_namespace(
-            owner, product=product, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
-        return namespace.createBranch(
-            branch_type=branch_type, name=name, registrant=registrant,
-            url=url, title=title, lifecycle_status=lifecycle_status,
-            summary=summary, whiteboard=whiteboard, date_created=date_created,
-            branch_format=branch_format, repository_format=repository_format,
-            control_format=control_format,
-            merge_control_status=merge_control_status,
-            )
-
     @staticmethod
     def URIToUniqueName(uri):
         """See `IBranchSet`."""
