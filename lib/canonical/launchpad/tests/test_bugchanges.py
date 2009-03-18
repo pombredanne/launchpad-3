@@ -162,5 +162,31 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=description_change_notification,
             expected_activity=description_change_activity)
 
+    def test_bugwatch_added(self):
+        # Adding a BugWatch to a bug adds items to the activity
+        # log and the Bug's notifications.
+        bugtracker = self.factory.makeBugTracker()
+        bug_watch = self.bug.addWatch(bugtracker, '42', self.user)
+
+        bugwatch_activity = {
+            'person': self.user,
+            'whatchanged': 'bug watch',
+            'newvalue': bug_watch.url,
+            }
+
+        bugwatch_notification = {
+            'text': (
+                "** Bug watch added: %s #%s\n"
+                "   %s" % (
+                    bug_watch.bugtracker.title, bug_watch.remotebug,
+                    bug_watch.url)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_notification=bugwatch_notification,
+            expected_activity=None)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
