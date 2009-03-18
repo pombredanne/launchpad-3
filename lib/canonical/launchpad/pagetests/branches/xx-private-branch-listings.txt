@@ -29,7 +29,7 @@ Adding a private branch that is only visible by No Privileges Person
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> landscape = getUtility(IProductSet).getByName('landscape')
     >>> branch = factory.makePersonalBranch(
-    ...     BranchType.HOSTED, name='testing-branch', registrant=no_priv,
+    ...     branch_type=BranchType.HOSTED, name='testing-branch',
     ...     owner=no_priv, title='A Private Branch')
     >>> branch.private = True
     >>> branch.product = landscape

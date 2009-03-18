@@ -234,7 +234,7 @@ been mirrored:
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> branch = factory.makePersonalBranch(
-    ...     BranchType.MIRRORED, name='mirrored', registrant=no_priv,
+    ...     branch_type=BranchType.MIRRORED, name='mirrored',
     ...     owner=no_priv, url='http://example.com/mirrored',
     ...     title='Disabled branch')
     >>> branch.last_mirrored = datetime(
@@ -269,7 +269,7 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> branch = factory.makePersonalBranch(
-    ...     BranchType.MIRRORED, name='mirror-disabled', registrant=no_priv,
+    ...     branch_type=BranchType.MIRRORED, name='mirror-disabled',
     ...     owner=no_priv, url='http://example.com/disabled',
     ...     title='Disabled branch')
     >>> branch.next_mirror_time = None
