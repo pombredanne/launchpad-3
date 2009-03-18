@@ -13,11 +13,11 @@
 
   <div metal:fill-slot="main">
     <h1 tal:content="CONTEXTS/fmt:pagetitle">Manage Official Bug Tags</h1>
-    <noscript id="tag-management-noscript">
 
-      <div metal:use-macro="context/@@launchpad_form/form" />
-
+    <noscript>
+        <div metal:use-macro="context/@@launchpad_form/form" />
     </noscript>
+
     <script type="text/javascript"
             tal:define="lp_js string:${icingroot}/build"
             tal:attributes="src string:${lp_js}/bugs/offical_bug_tags.js">
