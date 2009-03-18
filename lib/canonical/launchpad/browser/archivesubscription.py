@@ -156,11 +156,6 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
             self.context.subscriber.displayname)
         self.request.response.addNotification(structured(notification))
 
-        # Redirect back to the subscriptions page.
-        # Note to reviewer: is there a better way to do this??
-        self.next_url = canonical_url(self.context.archive) + (
-            "/+subscriptions")
-
     @action(u'Cancel subscription', name='cancel')
     def cancel_subscription(self, action, data):
         """Cancel the context subscription."""
@@ -170,10 +165,11 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
             self.context.subscriber.displayname)
         self.request.response.addNotification(structured(notification))
 
-        # Redirect back to the subscriptions page.
-        # Note to reviewer: is there a better way to do this??
-        self.next_url = canonical_url(self.context.archive) + (
-            "/+subscriptions")
+    @property
+    def next_url(self):
+        """Calculate and return the url to which we want to redirect."""
+        return canonical_url(self.context.archive) + "/+subscriptions"
+
 
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for managing a persons archive subscriptions."""

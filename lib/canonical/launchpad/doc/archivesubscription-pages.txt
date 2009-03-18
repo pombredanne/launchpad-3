@@ -167,6 +167,11 @@ for editing, together with Update and Cancel actions:
     Update
     Cancel subscription
 
+The ArchiveSubscriptionEditView has a next_url helper property.
+
+    >>> print view.next_url
+    http://launchpad.dev/~cprov/+archive/ppa/+subscriptions
+
 The ArchiveSubscriptionEditView can be used to update the description field:
 
     >>> view = create_initialized_view(
@@ -179,7 +184,7 @@ The ArchiveSubscriptionEditView can be used to update the description field:
     >>> print spiv_subscription.description
     Updated description
 
-Like the ceate view, the update view will not accept a date in the past:
+Like the create view, the update view will not accept a date in the past:
 
     >>> view = create_initialized_view(
     ...     spiv_subscription, name="+edit", method="POST",
@@ -192,7 +197,7 @@ Like the ceate view, the update view will not accept a date in the past:
     ...     print error
     The expiry date must be in the future.
 
-But a date in the futurue is fine:
+But a date in the future is fine:
 
     >>> view = create_initialized_view(
     ...     spiv_subscription, name="+edit", method="POST",
