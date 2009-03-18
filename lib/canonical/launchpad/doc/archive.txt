@@ -336,6 +336,12 @@ Combining 'name' and 'distroseries' filters:
     ...     name='cd', distroseries=breezy_autotest).count()
     1
 
+Using the 'published_since_date' filter:
+
+    >>> cprov_archive.getPublishedSources(
+    ...     published_since_date='2007-01-01 00:00:00').count()
+    3
+
 
 === Binary publication lookups ===
 
