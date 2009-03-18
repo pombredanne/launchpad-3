@@ -81,7 +81,7 @@ class IBugAttachment(IHasBug):
                                     "added this attachment.")))
 
     @export_write_operation()
-    def removeFromBug():
+    def removeFromBug(user):
         """Remove the attachment from the bug."""
 
 

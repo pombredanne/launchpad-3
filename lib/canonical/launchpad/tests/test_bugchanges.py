@@ -13,12 +13,12 @@ from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestBugChanges(unittest.TestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         login('foo.bar@canonical.com')
@@ -310,6 +310,60 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_activity=security_change_activity,
             expected_notification=security_change_notification)
+
+    def test_attachment_added(self):
+        # Adding an attachment to a bug adds entries in both BugActivity
+        # and BugNotification.
+        message = self.factory.makeMessage(owner=self.user)
+        self.bug.linkMessage(message)
+        self.saveOldChanges()
+
+        attachment = self.factory.makeBugAttachment(
+            bug=self.bug, owner=self.user, comment=message)
+
+        attachment_added_activity = {
+            'person': self.user,
+            'whatchanged': 'attachment added',
+            'oldvalue': None,
+            'newvalue': '%s %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        attachment_added_notification = {
+            'person': self.user,
+            'text': '** Attachment added: %s\n   %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        self.assertRecordedChange(
+            expected_notification=attachment_added_notification,
+            expected_activity=attachment_added_activity)
+
+    def test_attachment_removed(self):
+        # Removing an attachment from a bug adds entries in both BugActivity
+        # and BugNotification.
+        attachment = self.factory.makeBugAttachment(
+            bug=self.bug, owner=self.user)
+        self.saveOldChanges()
+        attachment.removeFromBug(user=self.user)
+
+        attachment_removed_activity = {
+            'person': self.user,
+            'whatchanged': 'attachment removed',
+            'newvalue': None,
+            'oldvalue': '%s %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        attachment_removed_notification = {
+            'person': self.user,
+            'text': '** Attachment removed: %s\n   %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        self.assertRecordedChange(
+            expected_notification=attachment_removed_notification,
+            expected_activity=attachment_removed_activity)
 
 
 def test_suite():

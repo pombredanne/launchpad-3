@@ -383,3 +383,44 @@ Going the other way the phrases are similar.
 
     >>> print bug_security_change.getBugNotification()['text']
     ** This bug is no longer flagged as a security vulnerability
+
+
+== BugAttachmentChange ==
+
+BugAttachmentChange is used to handle the addition and removal of
+attachments from a bug.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugAttachmentChange)
+
+You can add an attachment...
+
+    >>> attachment = factory.makeBugAttachment(
+    ...     description='sample-attachment')
+    >>> attachment_change = BugAttachmentChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=None, new_value=attachment)
+
+    >>> print pretty(attachment_change.getBugActivity())
+    {'newvalue': u'sample-attachment http://...',
+     'oldvalue': None,
+     'whatchanged': 'attachment added'}
+
+    >>> print attachment_change.getBugNotification()['text']
+    ** Attachment added: sample-attachment http...
+
+Or remove one.
+
+    >>> attachment_change = BugAttachmentChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=attachment, new_value=None)
+
+    >>> print pretty(attachment_change.getBugActivity())
+    {'newvalue': None,
+     'oldvalue': u'sample-attachment http://...',
+     'whatchanged': 'attachment removed'}
+
+    >>> print attachment_change.getBugNotification()['text']
+    ** Attachment removed: sample-attachment http...
