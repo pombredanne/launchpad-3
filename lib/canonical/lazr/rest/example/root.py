@@ -163,7 +163,8 @@ C3 = Cookbook(u"James Beard's American Cookery", "American")
 C4 = Cookbook(u"Everyday Greens", "Vegetarian")
 C5 = Cookbook(u"I'm Just Here For The Food", "American")
 C6 = Cookbook(u"Cooking Without Recipes", "General")
-COOKBOOKS = [C1, C2, C3, C4, C5, C6]
+C7 = Cookbook(u"Construsions un repas", "Fran\xc3\xa7ais".decode("utf-8"))
+COOKBOOKS = [C1, C2, C3, C4, C5, C6, C7]
 
 D1 = Dish("Roast chicken")
 C1_D1 = Recipe(1, C1, D1, u"You can always judge...")

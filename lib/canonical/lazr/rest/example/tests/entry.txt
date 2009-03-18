@@ -1,0 +1,156 @@
+= Entries =
+
+Most objects published by a lazr.restful web service are entries:
+self-contained data structures with an independent existence from any
+other entry. Entries are distinguished from collections, which are
+groupings of entries.
+
+All entries in a web service work pretty much the same way. This
+document illustrates the general features of entries, using the
+example web service's dishes and recipes as examples.
+
+  >>> from canonical.lazr.testing.webservice import CookbookWebServiceCaller
+  >>> webservice = CookbookWebServiceCaller()
+
+
+== Reading ==
+
+It's possible to get a JSON 'representation' of an entry by sending a
+GET request to the entry's URL.
+
+Here we see that the cookbook 'Everyday Greens' is a vegetarian cookbook.
+
+  >>> from urllib import quote
+  >>> greens_url = quote("/cookbooks/Everyday Greens")
+  >>> webservice.get(greens_url).jsonBody()['cuisine']
+  u'Vegetarian'
+
+Data is served encoded in UTF-8, and a good client will automatically
+convert it into Unicode.
+
+  >>> construsions_url = quote("/cookbooks/Construsions un repas")
+  >>> webservice.get(construsions_url).jsonBody()['cuisine']
+  u'Fran\xe7ais'
+
+
+== Redirects ==
+
+TBA.
+
+
+== Content negotiation ==
+
+By varying the 'Accept' header, the client can request either a JSON
+or XHTML representation of an entry, or a WADL description of the
+entry's capabilities.
+
+  >>> def negotiated_type(accept_header, uri='/cookbooks/Everyday%20Greens'):
+  ...     return webservice.get(uri, accept_header).getHeader('Content-Type')
+
+  >>> negotiated_type('application/json')
+  'application/json'
+
+  >>> negotiated_type('application/xhtml+xml')
+  'application/xhtml+xml'
+
+  >>> negotiated_type('application/vd.sun.wadl+xml')
+  'application/vd.sun.wadl+xml'
+
+  >>> negotiated_type(None)
+  'application/json'
+
+  >>> negotiated_type('text/html')
+  'application/json'
+
+  >>> negotiated_type('application/json, application/vd.sun.wadl+xml')
+  'application/json'
+
+  >>> negotiated_type('application/json, application/xhtml+xml')
+  'application/json'
+
+  >>> negotiated_type('application/vd.sun.wadl+xml, text/html, '
+  ...                 'application/json')
+  'application/vd.sun.wadl+xml'
+
+  >>> negotiated_type('application/json;q=0.5, application/vd.sun.wadl+xml')
+  'application/vd.sun.wadl+xml'
+
+  >>> negotiated_type('application/json;q=0, application/xhtml+xml;q=0.05,'
+  ...                 'application/vd.sun.wadl+xml;q=0.1')
+  'application/vd.sun.wadl+xml'
+
+The client can also set the 'ws.accept' query string variable, which
+will take precedence over any value set for the Accept header.
+
+  >>> def qs_negotiated_type(query_string, header):
+  ...     uri = '/cookbooks/Everyday%20Greens?ws.accept=' + query_string
+  ...     return negotiated_type(header, uri)
+
+  >>> qs_negotiated_type('application/json', None)
+  'application/json'
+
+  >>> qs_negotiated_type('application/json', 'application/xhtml+xml')
+  'application/json'
+
+  >>> negotiated_type('application/json;q=0, application/xhtml+xml;q=0.5,'
+  ...                 'application/json;q=0.5, application/xhtml+xml;q=0,')
+  'application/xhtml+xml'
+
+
+== XHTML representations ==
+
+Every entry has an XHTML representation. The default representation is
+a simple definition list.
+
+  >>> print webservice.get(greens_url, 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <dl ...>
+  ...
+  </dl>
+
+But it's possible to define a custom HTML view for a particular object
+type. Here's a simple view that serves some hard-coded HTML.
+
+  >>> class DummyView:
+  ...
+  ...     def __init__(*args):
+  ...         pass
+  ...
+  ...     def __call__(*args):
+  ...         return "<html>foo</html>"
+
+Register the view as the IWebServiceClientRequest view for an ICookbook entry...
+
+  >>> from canonical.lazr.interfaces.rest import IWebServiceClientRequest
+  >>> from canonical.lazr.rest.example.interfaces import ICookbook
+  >>> from zope.interface.interfaces import IInterface
+  >>> view_name = "canonical.lazr.rest.resource.EntryResource"
+  >>> from zope.component import getGlobalSiteManager
+  >>> manager = getGlobalSiteManager()
+  >>> manager.registerAdapter(
+  ...      factory=DummyView, required=[ICookbook, IWebServiceClientRequest],
+  ...      provided=IInterface, name=view_name)
+
+...and the XHTML representation of an ICookbook will be the result of
+calling a DummyView object.
+
+  >>> print webservice.get(greens_url, 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <html>foo</html>
+
+Before we continue, here's some cleanup code to remove the custom view
+we just defined.
+
+  >>> from zope.component import getGlobalSiteManager
+  >>> ignored = getGlobalSiteManager().unregisterAdapter(
+  ...      factory=DummyView, required=[ICookbook, IWebServiceClientRequest],
+  ...      provided=IInterface, name=view_name)
+
+  >>> print webservice.get(greens_url, 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <dl ...>
+  ...
+  </dl>
