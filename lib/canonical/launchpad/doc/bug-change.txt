@@ -335,10 +335,10 @@ be used.
     >>> print pretty(bug_security_change.getBugActivity())
     {'newvalue': 'yes',
      'oldvalue': 'no',
-     'whatchanged': 'security issue'}
+     'whatchanged': 'security vulnerability'}
 
     >>> print bug_security_change.getBugNotification()['text']
-    ** This bug has been flagged as a security issue
+    ** This bug has been flagged as a security vulnerability
 
 Going the other way the phrases are similar.
 
@@ -350,7 +350,7 @@ Going the other way the phrases are similar.
     >>> print pretty(bug_security_change.getBugActivity())
     {'newvalue': 'no',
      'oldvalue': 'yes',
-     'whatchanged': 'security issue'}
+     'whatchanged': 'security vulnerability'}
 
     >>> print bug_security_change.getBugNotification()['text']
-    ** This bug is no longer flagged as a security issue
+    ** This bug is no longer flagged as a security vulnerability

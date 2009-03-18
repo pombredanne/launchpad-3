@@ -237,7 +237,7 @@ IBugChange.
     ** Visibility changed to: Private
     -----------------------------
     True
-    ** This bug has been flagged as a security issue
+    ** This bug has been flagged as a security vulnerability
     -----------------------------
 
 Now we set the bug public, and not security-related and check if the
@@ -263,7 +263,7 @@ e-mail sent changed as well.
     ...     print "-----------------------------"
     ** Visibility changed to: Public
     -----------------------------
-    ** This bug is no longer flagged as a security issue
+    ** This bug is no longer flagged as a security vulnerability
     -----------------------------
 
 Let's add some tags to a bug:

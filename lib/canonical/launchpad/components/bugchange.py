@@ -164,9 +164,9 @@ class BugSecurityChange(AttributeChange):
 
     notification_mapping = {
         (False, True):
-            u"** This bug has been flagged as a security issue",
+            u"** This bug has been flagged as a security vulnerability",
         (True, False):
-            u"** This bug is no longer flagged as a security issue",
+            u"** This bug is no longer flagged as a security vulnerability",
         }
 
     def getBugActivity(self):
@@ -178,7 +178,7 @@ class BugSecurityChange(AttributeChange):
         return {
            'oldvalue': old_value,
            'newvalue': new_value,
-           'whatchanged': 'security issue',
+           'whatchanged': 'security vulnerability',
            }
 
     def getBugNotification(self):
