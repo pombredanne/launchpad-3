@@ -92,7 +92,7 @@ from canonical.launchpad.interfaces.specification import (
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE) 
+        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
 
 
 from lp.answers.interfaces.faqtarget import IFAQTarget
