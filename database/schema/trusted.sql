@@ -378,14 +378,35 @@ BEGIN
             INSERT INTO POFileTranslator (
                 person, pofile, latest_message, date_last_touched
                 )
-            SELECT DISTINCT ON (person, pofile)
-                submitter AS person,
-                pofile,
-                id,
-                greatest(date_created, date_reviewed)
-            FROM TranslationMessage
-            WHERE pofile = OLD.pofile AND submitter = OLD.submitter
-            ORDER BY submitter, pofile, date_created DESC, id DESC;
+            SELECT DISTINCT ON (person, pofile.id)
+                NEW.submitter AS person,
+                pofile.id,
+                new_latest_message.id,
+                greatest(new_latest_message.date_created,
+                         new_latest_message.date_reviewed)
+              FROM POFile
+              JOIN TranslationTemplateItem AS old_template_item
+                ON (OLD.potmsgset =
+                     old_template_item.potmsgset) AND
+                   (old_template_item.potemplate = pofile.potemplate) AND
+                   (pofile.language
+                     IS NOT DISTINCT FROM OLD.language) AND
+                   (pofile.variant
+                     IS NOT DISTINCT FROM OLD.variant)
+              JOIN TranslationTemplateItem AS new_template_item
+                ON (old_template_item.potemplate =
+                     new_template_item.potemplate)
+              JOIN TranslationMessage AS new_latest_message
+                ON (new_latest_message.potmsgset =
+                     new_template_item.potmsgset) AND
+                   (new_latest_message.language
+                     IS NOT DISTINCT FROM OLD.language AND
+                   (new_latest_message.variant)
+                     IS NOT DISTINCT FROM OLD.variant)
+              WHERE
+                new_latest_message.submitter=OLD.submitter
+              ORDER BY new_latest_message.submitter, pofile.id,
+                       new_latest_message.date_created DESC, id DESC;
         END IF;
 
         -- No NEW with DELETE, so we can short circuit and leave.
@@ -400,14 +421,28 @@ BEGIN
         SET
             date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
             latest_message = NEW.id
-        WHERE person = NEW.submitter AND pofile = NEW.pofile;
+        FROM POFile, TranslationTemplateItem
+        WHERE person = NEW.submitter AND
+              TranslationTemplateItem.potmsgset=NEW.potmsgset AND
+              TranslationTemplateItem.potemplate=pofile.potemplate AND
+              pofile.language=NEW.language AND
+              pofile.variant IS NOT DISTINCT FROM NEW.variant AND
+              POFileTranslator.pofile = pofile.id;
         IF found THEN
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
         END IF;
 
         BEGIN
             INSERT INTO POFileTranslator (person, pofile, latest_message)
-            VALUES (NEW.submitter, NEW.pofile, NEW.id);
+            SELECT DISTINCT ON (NEW.submitter, pofile.id)
+                NEW.submitter, pofile.id, NEW.id
+              FROM TranslationTemplateItem
+              JOIN POFile
+                ON pofile.language = NEW.language AND
+                   pofile.variant IS NOT DISTINCT FROM NEW.variant AND
+                   pofile.potemplate = translationtemplateitem.potemplate
+              WHERE
+                TranslationTemplateItem.potmsgset = NEW.potmsgset;
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
         EXCEPTION WHEN unique_violation THEN
             -- do nothing
