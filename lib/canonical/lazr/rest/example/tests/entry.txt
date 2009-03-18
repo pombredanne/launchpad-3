@@ -257,3 +257,61 @@ address.
   ...
   Location: http://.../cookbooks/Everyday%20Greens
   ...
+
+The PATCH HTTP method is useful for simple changes, but not all HTTP
+clients support PATCH. It's possible to fake a PATCH request with
+POST, by setting the X-HTTP-Method-Override header to "PATCH". Because
+Firefox 3 mangles the Content-Type header for POST requests, you may
+also set the X-Content-Type-Override header, which will override the
+value of Content-Type.
+
+  >>> print modify_cookbook('Everyday Greens',
+  ...     {'cuisine' : 'VEGETARIAN/VEGAN', 'POST',
+  ...     {'X-HTTP-Method-Override' : 'PATCH',
+  ...      'Content-Type': 'not-a-valid-content/type',
+  ...      'X-Content-Type-Override': 'application/json'})
+  HTTP/1.1 209 Content Returned
+  ...
+
+If you try to use X-HTTP-Method-Override when the underlying HTTP
+method is not POST, you'll get an error.
+
+  >>> print modify_person('Everyday GReens',
+  ...     {}, 'GET', {'X-HTTP-Method-Override' : 'PATCH'})
+  HTTP/1.1 400 Bad Request
+  ...
+  X-HTTP-Method-Override can only be used with a POST request.
+
+Even if a client supports PATCH, sometimes it's easier to GET a
+document, modify it, and send it back. If you have the full document
+at hand, you can use the PUT method.
+
+We happen to have a full document from when we sent a GET request to
+the 'Everday Greens' cookbook. Modifying that document and PUTting it
+back is less work than constructing a new document and sending it with
+PATCH. As with PATCH, a successful PUT serve the new representation of
+the object that was modified.
+
+  >>> greens = webservice.get(greens_url).jsonBody()
+  >>> print greens['cuisine']
+  VEGETARIAN/VEGAN
+
+  >>> greens['cuisine'] = 'Vegetarian'
+  >>> print modify_cookbook('Everyday Greens', greens, 'PUT')
+  HTTP/1.1 209 Content Returned
+  ...
+  <BLANKLINE>
+  {...}
+
+  >>> greens = webservice.get(greens_url).jsonBody()
+  >>> print greens['cuisine']
+  Vegetarian
+
+Because our patch format is the same as our representation format (a
+JSON hash), any document that works with a PUT request will also work
+with a PATCH request.
+
+  >>> print modify_cookbook('Everyday Greens', greens, 'PATCH')
+  HTTP/1.1 209 Content Returned
+  ...
+
