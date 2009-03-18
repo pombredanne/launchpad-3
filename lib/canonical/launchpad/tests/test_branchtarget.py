@@ -9,8 +9,6 @@ import unittest
 from canonical.launchpad.database.branchtarget import (
     PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
-from canonical.launchpad.interfaces.branchvisibilitypolicy import (
-    BranchVisibilityRule)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext

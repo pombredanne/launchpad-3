@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
 from canonical.launchpad.interfaces.branch import (
-    BranchType, IBranchSet, UnknownBranchTypeError)
+    BranchType, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.branchmergequeue import (

@@ -87,7 +87,7 @@ CodeImportEvent, we need to use the CodeImport constructor directly.
 
     >>> from canonical.launchpad.interfaces import (
     ...     CodeImportEventDataType, BranchType, ILaunchpadCelebrities,
-    ...     IBranchSet, IPersonSet, IProductSet)
+    ...     IPersonSet, IProductSet)
     >>> from canonical.launchpad.database import CodeImport
     >>> from canonical.launchpad.interfaces.branchnamespace import (
     ...     get_branch_namespace)

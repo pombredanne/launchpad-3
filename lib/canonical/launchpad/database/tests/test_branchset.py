@@ -16,15 +16,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
-    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchLifecycleStatus, BranchType, BranchVisibilityRule, IBranchSet,
-    IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
-    PersonCreationRationale, TeamSubscriptionPolicy)
-from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace)
+    BranchLifecycleStatus, BranchType, IBranchSet, IProductSet,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT)
 from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory)
+    TestCaseWithFactory)
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.testing import DatabaseFunctionalLayer

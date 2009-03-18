@@ -745,7 +745,8 @@ class BaseCanCreateBranchesMixin:
         # Any other individual cannot own branches targeted to the person.
         person = self.factory.makePerson()
         namespace = self._getNamespace(person)
-        self.assertFalse(namespace.canCreateBranches(self.factory.makePerson()))
+        self.assertFalse(
+            namespace.canCreateBranches(self.factory.makePerson()))
 
     def test_team_member(self):
         # A member of a team is able to create a branch on this namespace.

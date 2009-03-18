@@ -42,10 +42,8 @@ from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IProductSet, NotFoundError)
+    IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import (
-    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
-    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
     BranchType, BranchTypeError, CannotDeleteBranch, ControlFormat,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
@@ -55,13 +53,11 @@ from canonical.launchpad.interfaces.branch import (
     user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
+    IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
-from canonical.launchpad.interfaces.branchvisibilitypolicy import (
-    BranchVisibilityRule)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.mailnotification import NotificationRecipientSet

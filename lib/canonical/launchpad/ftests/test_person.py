@@ -11,8 +11,8 @@ from zope.component import getUtility
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BranchType, CreateBugParams, EmailAddressAlreadyTaken,
-    IArchiveSet, IBranchSet, IBugSet, IEmailAddressSet, IProductSet,
+    ArchivePurpose, CreateBugParams, EmailAddressAlreadyTaken,
+    IArchiveSet, IBugSet, IEmailAddressSet, IProductSet,
     ISpecificationSet, InvalidEmailAddress, InvalidName)
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.person import (
