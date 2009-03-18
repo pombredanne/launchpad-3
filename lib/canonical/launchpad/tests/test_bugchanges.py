@@ -316,17 +316,14 @@ class TestBugChanges(unittest.TestCase):
     def test_link_cve(self):
         # Linking a CVE to a bug adds to the bug's activity log and
         # sends a notification.
-
         cve = getUtility(ICveSet)['1999-8979']
-
-        # linkCVE() emits an ObjectCreatedEvent.
         self.bug.linkCVE(cve, self.user)
 
         cve_linked_activity = {
             'person': self.user,
             'whatchanged': 'cve linked',
             'oldvalue': '',
-            'newvalue': cve.url,
+            'newvalue': cve.sequence,
             }
 
         cve_linked_notification = {
@@ -343,16 +340,15 @@ class TestBugChanges(unittest.TestCase):
     def test_unlink_cve(self):
         # Unlinking a CVE from a bug adds to the bug's activity log and
         # sends a notification.
-
         cve = getUtility(ICveSet)['1999-8979']
-
-        # unlinkCVE() emits an ObjectCreatedEvent.
+        self.bug.linkCVE(cve, self.user)
+        self.saveOldChanges()
         self.bug.unlinkCVE(cve, self.user)
 
         cve_unlinked_activity = {
             'person': self.user,
             'whatchanged': 'cve unlinked',
-            'oldvalue': cve.url,
+            'oldvalue': cve.sequence,
             'newvalue': '',
             }
 

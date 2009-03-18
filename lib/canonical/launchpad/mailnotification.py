@@ -26,7 +26,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.bugchange import (
-    get_bug_change_class)
+    get_bug_change_class, BugCveLinked, BugCveUnlinked)
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
@@ -640,14 +640,6 @@ def get_bug_edit_notification_texts(bug_delta):
                 new_bug_watch.bugtracker.title, new_bug_watch.remotebug)
             change_info += u"   %s" % new_bug_watch.url
             changes.append(change_info)
-
-    if bug_delta.cve is not None:
-        new_cve = bug_delta.cve.get('new', None)
-        old_cve = bug_delta.cve.get('old', None)
-        if old_cve:
-            changes.append(u"** CVE removed: %s" % old_cve.url)
-        if new_cve:
-            changes.append(u"** CVE added: %s" % new_cve.url)
 
     if bug_delta.attachment is not None and bug_delta.attachment['new']:
         added_attachment = bug_delta.attachment['new']
