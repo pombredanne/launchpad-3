@@ -41,7 +41,7 @@ def main():
 
     # Confirm we can connect to the source database.
     # Keep the connection as we need it later.
-    source_connection_string = ConnectionString(connect_string('postgres'))
+    source_connection_string = ConnectionString(connect_string('slony'))
     try:
         log.debug(
             "Opening source connection to '%s'" % source_connection_string)
@@ -71,42 +71,32 @@ def main():
 
     # Sanity check the target connection string.
     target_connection_string = ConnectionString(raw_target_connection_string)
-    if target_connection_string.user is not None:
-        parser.error("Don't include username in connection string.")
-
-    target_slony_connection_string = ConnectionString(
-        raw_target_connection_string)
-    target_slony_connection_string.user = 'slony'
-
-    target_postgres_connection_string = ConnectionString(
-        raw_target_connection_string)
-    target_postgres_connection_string.user = 'postgres'
+    if target_connection_string.user is None:
+        target_connection_string.user = 'slony'
 
     # Make sure we can connect as the required users to our target.
-    for connection_string in [
-        target_postgres_connection_string, target_slony_connection_string]:
-        try:
-            psycopg2.connect(str(connection_string))
-        except psycopg2.Error, exception:
-            parser.error("Failed to connect using '%s' (%s)" % (
-                connection_string, str(exception).strip()))
+    # Keep the connection as we need it.
+    try:
+        target_con = psycopg2.connect(str(target_connection_string))
+    except psycopg2.Error, exception:
+        parser.error("Failed to connect using '%s' (%s)" % (
+            target_connection_string, str(exception).strip()))
 
     # Confirm the target database is sane. Check for common errors
     # that people might make when bringing new replicas online at 4am.
-    target_con = psycopg2.connect(str(target_postgres_connection_string))
     cur = target_con.cursor()
     cur.execute("SHOW lc_collate")
     collation = cur.fetchone()[0]
     if collation != "C":
         parser.error(
             "Database at %s has incorrect collation (%s)" % (
-                target_postgres_connection_string, collation))
+                target_connection_string, collation))
     cur.execute("SHOW server_encoding")
     encoding = cur.fetchone()[0]
     if encoding != "UTF8":
         parser.error(
             "Database at %s has incorrect encoding (%s)" % (
-                target_postgres_connection_string, encoding))
+                target_connection_string, encoding))
     cur.execute("""
         SELECT COUNT(*) FROM information_schema.tables
         WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
@@ -114,15 +104,17 @@ def main():
     num_existing_objects = cur.fetchone()[0]
     if num_existing_objects != 0:
         parser.error(
-            "Database at %s is not empty." % target_postgres_connection_string)
+            "Database at %s is not empty." % target_connection_string)
     target_con.rollback()
 
-    # Duplicate the schema.
+    # Duplicate the schema. We restore with no-privileges as required
+    # roles may not yet exist, so we have to run security.py on the
+    # new slave once it is built.
     log.info("Duplicating db schema from '%s' to '%s'" % (
-        source_connection_string, target_postgres_connection_string))
+        source_connection_string, target_connection_string))
     cmd = "pg_dump --schema-only --no-privileges %s | psql -1 -q %s" % (
         source_connection_string.asPGCommandLineArgs(),
-        target_postgres_connection_string.asPGCommandLineArgs())
+        target_connection_string.asPGCommandLineArgs())
     if subprocess.call(cmd, shell=True) != 0:
         log.error("Failed to duplicate database schema.")
         return 1
@@ -144,7 +136,7 @@ def main():
         try {
             store node (id=@new_node, comment='%s');
             echo 'Creating new node paths.';
-        """ % (node_id, target_slony_connection_string, comment))
+        """ % (node_id, target_connection_string, comment))
 
     for node in existing_nodes:
         nickname = node.nickname
