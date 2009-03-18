@@ -40,8 +40,10 @@ A team member will be able to see these parts of the team page.
     >>> find_tag_by_id(browser.contents, 'recently-applied')
     <...<a href="/~no-priv">No Privileges Person (no-priv)</a>...
 
-    >>> find_tag_by_id(browser.contents, 'membership-summary')
-    <...2 active members...1 proposed members...
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'membership-summary'))
+    2 active members
+    1 proposed members
 
 
 == Team Participation ==
@@ -270,17 +272,17 @@ section.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subteam-of'))
     Subteam of
-    &#8220;GuadaMen&#8221; is a member of these teams: My Team
+    &#8220;GuadaMen&#8221; is a member of these teams: My Team...
 
-However, to anonymous or non-members, the team name is redacted and there is
+However, to anonymous or non-members, the team name is hidden and there is
 no clickable link.
 
     >>> user_browser.open('http://launchpad.dev/~guadamen')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'subteam-of'))
     Subteam of
-    &#8220;GuadaMen&#8221; is a member of these teams: &lt;redacted&gt;
-    >>> user_browser.getLink('<redacted>')
+    &#8220;GuadaMen&#8221; is a member of these teams: &lt;hidden&gt;...
+    >>> user_browser.getLink('<hidden>')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -289,8 +291,8 @@ no clickable link.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'subteam-of'))
     Subteam of
-    &#8220;GuadaMen&#8221; is a member of these teams: &lt;redacted&gt;
-    >>> anon_browser.getLink('<redacted>')
+    &#8220;GuadaMen&#8221; is a member of these teams: &lt;hidden&gt;...
+    >>> anon_browser.getLink('<hidden>')
     Traceback (most recent call last):
     ...
     LinkNotFoundError

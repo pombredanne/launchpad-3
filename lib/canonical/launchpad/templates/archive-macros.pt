@@ -212,13 +212,13 @@ div.package-details {
           <tr tal:repeat="request requests">
             <td tal:define="archive request/source_archive">
               <a tal:attributes="href archive/fmt:url"
-                 tal:content="archive/title" 
+                 tal:content="archive/title"
                  tal:condition="archive/is_ppa" />
-              <tal:archive_title replace="archive/title" 
+              <tal:archive_title replace="archive/title"
                                  condition="not: archive/is_ppa" />
             </td>
             <td>
-              <tal:distroseries 
+              <tal:distroseries
                   replace="request/source_distroseries/displayname" />-<tal:src_pocket
                   replace="request/source_pocket/name/fmt:lower" />
               <tal:component condition="request/source_component">
@@ -226,8 +226,7 @@ div.package-details {
                   replace="request/source_component/name" />)
               </tal:component>
             </td>
-            <td><a tal:attributes="href request/requester/fmt:url"
-                   tal:content="request/requester/displayname" /></td>
+            <td><a tal:replace="structure request/requester/fmt:link" /></td>
             <td tal:content="request/date_created/fmt:approximatedate" />
             <td tal:content="request/status/name/capitalize" />
           </tr>
