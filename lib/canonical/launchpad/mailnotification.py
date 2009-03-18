@@ -612,6 +612,9 @@ def get_bug_edit_notification_texts(bug_delta):
             change_info += '   %s' % new_bug_dupe.title
             changes.append(change_info)
 
+    # The order of the field names in this list is important; this is
+    # the order in which changes will appear both in the bug activity
+    # log and in notification emails.
     bug_change_field_names = [
         'title', 'description', 'private', 'security_related',
         ]
