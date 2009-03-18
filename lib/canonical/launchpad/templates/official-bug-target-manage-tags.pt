@@ -53,6 +53,13 @@
           <ul id="other-tags-list">
           </ul>
         </td>
+        <td>
+          <form action="+manage-official-tags" method="post" id="save-form">
+            <input type="hidden" id="field-official_bug_tags" name="field.official_bug_tags" />
+            <input type="hidden" name="field.actions.save" value="Save" />
+            <input type="submit" value="Save" id="save-button" />
+          </form>
+        </td>
       </tr>
     </table>
  </div>

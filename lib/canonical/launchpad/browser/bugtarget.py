@@ -59,6 +59,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
 from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
+from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.webapp.menu import structured
 
@@ -1294,5 +1295,7 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         return """<script type="text/javascript">
                       var used_bug_tags = %s;
                       var official_bug_tags = %s;
+                      var valid_name_pattern = %s;
                   </script>
-               """ % (used_tags, official_tags)
+               """ % (
+               used_tags, official_tags, dumps(valid_name_pattern.pattern))
