@@ -38,12 +38,14 @@ from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
-from canonical.launchpad.interfaces.branchmergequeue import (
-    IBranchMergeQueueSet)
 from canonical.launchpad.interfaces.branch import (
-    BranchType, IBranchSet, UnknownBranchTypeError)
+    BranchType, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
+from canonical.launchpad.interfaces.branchmergequeue import (
+    IBranchMergeQueueSet)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
@@ -211,7 +213,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             import transaction
             transaction.commit()
         return account
-            
+
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, hide_email_addresses=False,
                    displayname=None, time_zone=None, latitude=None,
@@ -343,7 +345,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IEmailAddressSet).new(
             address, person, email_status, account)
 
-    def makeTeam(self, owner, displayname=None, email=None, name=None,
+    def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
                  visibility=None):
         """Create and return a new, arbitrary Team.
@@ -356,6 +358,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         """
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
@@ -513,10 +517,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
-        branch = getUtility(IBranchSet).new(
-            branch_type, name, registrant, owner, product, url,
-            distroseries=distroseries, sourcepackagename=sourcepackagename,
-            **optional_branch_args)
+
+        namespace = get_branch_namespace(
+            owner, product=product, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        branch = namespace.createBranch(
+            branch_type=branch_type, name=name, registrant=registrant,
+            url=url, **optional_branch_args)
         if private:
             removeSecurityProxy(branch).private = True
         if stacked_on is not None:

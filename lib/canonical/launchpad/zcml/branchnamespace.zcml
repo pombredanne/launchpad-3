@@ -6,14 +6,17 @@
 
   <class class="canonical.launchpad.database.branchnamespace.PackageNamespace">
     <allow interface="canonical.launchpad.interfaces.branchnamespace.IBranchNamespace" />
+    <allow interface="canonical.launchpad.interfaces.branchnamespace.IBranchCreationPolicy" />
   </class>
 
   <class class="canonical.launchpad.database.branchnamespace.PersonalNamespace">
     <allow interface="canonical.launchpad.interfaces.branchnamespace.IBranchNamespace" />
+    <allow interface="canonical.launchpad.interfaces.branchnamespace.IBranchCreationPolicy" />
   </class>
 
   <class class="canonical.launchpad.database.branchnamespace.ProductNamespace">
     <allow interface="canonical.launchpad.interfaces.branchnamespace.IBranchNamespace" />
+    <allow interface="canonical.launchpad.interfaces.branchnamespace.IBranchCreationPolicy" />
   </class>
 
   <securedutility
