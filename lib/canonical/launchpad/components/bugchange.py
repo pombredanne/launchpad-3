@@ -4,12 +4,12 @@
 
 __metaclass__ = type
 __all__ = [
-    'BugCveLinked',
-    'BugCveUnlinked',
     'BugDescriptionChange',
     'BugTagsChange',
     'BugTitleChange',
     'BugVisibilityChange',
+    'CveLinkedToBug',
+    'CveUnlinkedFromBug',
     'UnsubscribedFromBug',
     'get_bug_change_class',
     ]
@@ -93,11 +93,11 @@ class UnsubscribedFromBug(BugChangeBase):
         return None
 
 
-class BugCveLinked(BugChangeBase):
+class CveLinkedToBug(BugChangeBase):
     """Used to represent the linking of a CVE to a bug."""
 
     def __init__(self, when, person, cve):
-        super(BugCveLinked, self).__init__(when, person)
+        super(CveLinkedToBug, self).__init__(when, person)
         self.cve = cve
 
     def getBugActivity(self):
@@ -117,11 +117,11 @@ class BugCveLinked(BugChangeBase):
         return None
 
 
-class BugCveUnlinked(BugChangeBase):
+class CveUnlinkedFromBug(BugChangeBase):
     """Used to represent the unlinking of a CVE from a bug."""
 
     def __init__(self, when, person, cve):
-        super(BugCveUnlinked, self).__init__(when, person)
+        super(CveUnlinkedFromBug, self).__init__(when, person)
         self.cve = cve
 
     def getBugActivity(self):
