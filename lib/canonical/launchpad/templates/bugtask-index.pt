@@ -158,7 +158,12 @@ function update_bug_duplicate(data) {
                         'Mark as duplicate</a>');
                 }
                 Y.lazr.anim.green_flash({node: dupe_span}).run();
-                requestFormHTMLContent();
+                // ensure the new link is hooked up correctly:
+                dupe_span.get('a.menu-link-mark-dupe').on(
+                    'click', function(e){
+                        e.preventDefault();
+                        duplicate_form_overlay.show();
+                    });
             },
             failure: function(id, request) {
                 dupe_span.removeClass('update-in-progress-message');
