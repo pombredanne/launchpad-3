@@ -1283,3 +1283,8 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         """Action for saving new official bug tags."""
         self.context.official_bug_tags = data['official_bug_tags']
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        """The URL the user is sent to when clicking the "cancel" link."""
+        return canonical_url(self.context)

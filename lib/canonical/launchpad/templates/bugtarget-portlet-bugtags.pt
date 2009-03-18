@@ -6,18 +6,6 @@
   tal:define="bug_tags view/getUsedBugTagsWithURLs"
   tal:condition="bug_tags">
 
-  <div class="section"
-       tal:condition="view/show_manage_tags_link"
-       style="float:right">
-    <a tal:attributes="href context/fmt:url/+manage-official-tags">
-      Edit official tags
-    </a>
-
-    <a tal:attributes="href context/fmt:url/+manage-official-tags">
-      <img src="/@@/edit" alt="Edit official tags" />
-    </a>
-  </div>
-
   <h2>Tags</h2>
 
   <div class="portletBody">
@@ -33,5 +21,13 @@
       </tr>
     </table>
 
+    <p style="text-align:right">
+      <a tal:attributes="href context/fmt:url/+manage-official-tags">
+        <img src="/@@/edit" alt="Edit official tags" />
+      </a>
+      <a tal:attributes="href context/fmt:url/+manage-official-tags">
+        Edit official tags
+      </a>
+    </p>
   </div>
 </div>
