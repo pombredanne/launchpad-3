@@ -39,14 +39,15 @@ class TestBugChanges(unittest.TestCase):
         new_activities = [
             activity for activity in self.bug.activity
             if activity not in self.old_activities]
-        bug_notfications = BugNotification.selectBy(
+        bug_notifications = BugNotification.selectBy(
             bug=self.bug, orderBy='id')
         new_notifications = [
-            notification for notification in bug_notfications
+            notification for notification in bug_notifications
             if notification.id not in self.old_notification_ids]
         if expected_activity is None:
             self.assertEqual(len(new_activities), 0)
         else:
+            self.assertEqual(len(new_activities), 1)
             [added_activity] = new_activities
             self.assertEqual(
                 added_activity.person, expected_activity['person'])
