@@ -41,7 +41,7 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
-        self.assertEqual(location.archive.title,
+        self.assertEqual(location.archive.displayname,
                          'Copy archive now-comes-the-mystery for Mysteryman')
 
     def testSetupLocationForPRIMARY(self):
@@ -50,7 +50,7 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
-        self.assertEqual(location.archive.title,
+        self.assertEqual(location.archive.displayname,
                          'Primary Archive for Ubuntu Linux')
 
     def testSetupLocationForPPA(self):
@@ -61,7 +61,7 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
-        self.assertEqual(location.archive.title,
+        self.assertEqual(location.archive.displayname,
                          'PPA for Celso Providelo')
 
     def testSetupLocationForPARTNER(self):
@@ -70,7 +70,7 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
-        self.assertEqual(location.archive.title,
+        self.assertEqual(location.archive.displayname,
                          'Partner Archive for Ubuntu Linux')
 
     def testSetupLocationUnknownDistribution(self):

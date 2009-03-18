@@ -12,7 +12,7 @@
 <body>
   <div metal:fill-slot="main">
 
-    <h1>Builds for <tal:title replace="context/title" /></h1>
+    <h1>Builds for <tal:displayname replace="context/displayname" /></h1>
 
     <div tal:replace="structure context/@@+builds-list"/>
 

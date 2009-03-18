@@ -192,29 +192,11 @@ class Archive(SQLBase):
         return self.purpose in MAIN_ARCHIVE_PURPOSES
 
     @property
-    def title(self):
+    def displayname(self):
         """See `IArchive`."""
-        if self.is_ppa:
-            default_name = default_name_by_purpose.get(ArchivePurpose.PPA)
-            if self.name == default_name:
-                title = 'PPA for %s' % self.owner.displayname
-            else:
-                title = 'PPA named %s for %s' % (
-                    self.name, self.owner.displayname)
-            if self.private:
-                title = "Private %s" % title
-            return title
-
-        if self.is_copy:
-            if self.private:
-                title = "Private copy archive %s for %s" % (
-                    self.name, self.owner.displayname)
-            else:
-                title = "Copy archive %s for %s" % (
-                    self.name, self.owner.displayname)
-            return title
-
-        return '%s for %s' % (self.purpose.title, self.distribution.title)
+        return getUtility(IArchiveSet).getArchiveDisplayname(
+            self.purpose, self.owner, self.name, self.distribution,
+            self.private)
 
     @property
     def series_with_sources(self):
@@ -1119,7 +1101,7 @@ class Archive(SQLBase):
         subscriptions = subscription_set.getBySubscriber(person, archive=self)
         if subscriptions.count() == 0:
             raise Unauthorized(
-                "You do not have a subscription for %s." % self.title)
+                "You do not have a subscription for %s." % self.displayname)
 
         # Second, ensure that the current subscription does not already
         # have a token:
@@ -1129,8 +1111,7 @@ class Archive(SQLBase):
         if previous_token:
             raise ArchiveSubscriptionError(
                 "%s already has a token for %s." % (
-                    person.displayname,
-                    self.title))
+                    person.displayname, self.displayname))
 
         # Now onto the actual token creation:
         if token is None:
@@ -1210,6 +1191,30 @@ class ArchiveSet:
                 "'%s' purpose has no default name." % purpose.name)
 
         return default_name_by_purpose[purpose]
+
+    def getArchiveDisplayname(self, purpose, owner, name, distribution,
+                              private=False):
+        """See `IArchiveSet`."""
+        if purpose is ArchivePurpose.PPA:
+            if name == default_name_by_purpose.get(ArchivePurpose.PPA):
+                displayname = 'PPA for %s' % owner.displayname
+            else:
+                displayname = 'PPA named %s for %s' % (name, owner.displayname)
+            if private:
+                displayname = "Private %s" % displayname
+            return displayname
+
+        if purpose is ArchivePurpose.COPY:
+            if private:
+                displayname = "Private copy archive %s for %s" % (
+                    name, owner.displayname)
+            else:
+                displayname = "Copy archive %s for %s" % (
+                    name, owner.displayname)
+            return displayname
+
+        return '%s for %s' % (purpose.title, distribution.title)
+
 
     def getByDistroPurpose(self, distribution, purpose, name=None):
         """See `IArchiveSet`."""

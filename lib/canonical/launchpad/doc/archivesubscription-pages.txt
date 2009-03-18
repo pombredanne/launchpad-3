@@ -178,7 +178,7 @@ subscriptions for the person, with a corresponding token for each:
     ...     for subscription_and_token in view.subscriptions_with_tokens:
     ...         subscription = subscription_and_token['subscription']
     ...         token = subscription_and_token['token']
-    ...         print subscription.archive.title
+    ...         print subscription.archive.displayname
     ...         print subscription.description
     ...         token_text = "None"
     ...         if token:
@@ -233,11 +233,11 @@ The user will also see a notification of the subscription activation:
     Your subscription to 'Private PPA for Mark Shuttleworth' has been
     activated. Please update your custom sources.list as described below.
 
-The PersonArchiveSubscriptionsView also provides an 
+The PersonArchiveSubscriptionsView also provides an
 active_subscriptions_with_tokens property:
 
     >>> for subs_with_token in view.active_subscriptions_with_tokens:
-    ...     print subs_with_token['subscription'].archive.title
+    ...     print subs_with_token['subscription'].archive.displayname
     ...     if subs_with_token['token'] is not None:
     ...         print "Token"
     Private PPA for Mark Shuttleworth              Token

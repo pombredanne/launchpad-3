@@ -110,7 +110,7 @@ make Celso's PPA public again.
 
 Useful properties:
 
-    >>> print cprov_archive.title
+    >>> print cprov_archive.displayname
     PPA for Celso Providelo
 
     >>> print cprov_archive.archive_url
@@ -181,10 +181,10 @@ Valid names work as expected.
 
     >>> login(ANONYMOUS)
 
-Please note that copy archive titles include the owner name as well as
-the archive's name.
+Please note that copy archive displayname include the owner name as
+well as the archive's name.
 
-    >>> rebuild_archive.title
+    >>> rebuild_archive.displayname
     u'Copy archive there-we-go for J\xc3\xbcrgen'
 
 The "is_copy" property allows us to ask an archive whether it's a copy
@@ -1059,7 +1059,7 @@ required dependencies when building.
     ...         print "No dependencies recorded."
     ...         return
     ...     for dep in dependencies:
-    ...         print dep.dependency.title
+    ...         print dep.dependency.displayname
 
 Celso's PPA has no dependencies stored in the sampledata.
 
@@ -1081,14 +1081,14 @@ RELEASE pocket and 'main' component.
 
 The `IArchiveDependency` object simply maps the desired relationship.
 
-    >>> print archive_dependency.archive.title
+    >>> print archive_dependency.archive.displayname
     PPA for Celso Providelo
 
-    >>> print archive_dependency.dependency.title
+    >>> print archive_dependency.dependency.displayname
     PPA for Mark Shuttleworth
 
 The `IArchiveDependency` object itself implement a 'title'
-property. For PPA dependencies the title defaults to the PPA title.
+property. For PPA dependencies the title defaults to the PPA displayname.
 
     >>> print archive_dependency.title
     PPA for Mark Shuttleworth
@@ -1102,7 +1102,7 @@ The archive dependency is immediately recorded on Celso's PPA.
 for a given 'dependency', otherwise it returns None.
 
     >>> print cprov.archive.getArchiveDependency(
-    ...     sabdfl.archive).dependency.title
+    ...     sabdfl.archive).dependency.displayname
     PPA for Mark Shuttleworth
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
@@ -1234,7 +1234,7 @@ dependency for PPAs.
 
     >>> def print_expanded_archive_dependencies(archive):
     ...     for dep in archive.expanded_archive_dependencies:
-    ...         print dep.title
+    ...         print dep.displayname
 
     >>> print_expanded_archive_dependencies(ubuntu.main_archive)
     Primary Archive for Ubuntu Linux
@@ -1402,7 +1402,7 @@ at some point, but it's not needed right now.
 
     >>> partner_archive = getUtility(IArchiveSet).getByDistroAndName(
     ...     ubuntutest, 'partner')
-    >>> print partner_archive.title
+    >>> print partner_archive.displayname
     Partner Archive for Ubuntu Test
 
 Passing an invalid name will cause an empty result set.
@@ -1564,7 +1564,7 @@ user is allowed to upload or copy packages to.
 In the sampledata, 'cprov' only participates in his own PPA.
 
     >>> for ppa in archive_set.getPPAsForUser(cprov):
-    ...     print ppa.title
+    ...     print ppa.displayname
     Private PPA for Celso Providelo
 
 However 'cprov' is also a member of 'launchpad-buildd-admins' team,
@@ -1587,7 +1587,7 @@ immediately recognises 'cprov' rights on it.
     ...     distribution=ubuntu, description='Yo !')
 
     >>> for ppa in archive_set.getPPAsForUser(cprov):
-    ...     print ppa.title
+    ...     print ppa.displayname
     Private PPA for Celso Providelo
     PPA for Launchpad Buildd Admins
 
@@ -1606,7 +1606,7 @@ private.
 
     >>> p3as = archive_set.getPrivatePPAs()
     >>> for p3a in p3as:
-    ...     print p3a.title
+    ...     print p3a.displayname
     Private PPA for Celso Providelo
 
 For the next test we will make Celso's PPA public again, so it can
@@ -1705,7 +1705,8 @@ are old.
     ...     most_active_ppas = (
     ...         archive_set.getMostActivePPAsForDistribution(ubuntu))
     ...     for most_active in most_active_ppas:
-    ...         print most_active['archive'].title, most_active['uploads']
+    ...         print most_active[
+    ...             'archive'].displayname, most_active['uploads']
 
     >>> print_most_active_ppas()
     PPA for Mark Shuttleworth 2
@@ -2248,7 +2249,7 @@ archives.
 
 The names of PPAs must be unique per owner and distribution.
 
-    >>> print sabdfl.archive.title
+    >>> print sabdfl.archive.displayname
     PPA for Mark Shuttleworth
 
     >>> print sabdfl.archive.name
@@ -2277,16 +2278,16 @@ to a single IArchive.
 
 `IPerson.archive` is still pointing to the PPA named 'ppa'.
 
-    >>> print sabdfl.archive.title
+    >>> print sabdfl.archive.displayname
     PPA for Mark Shuttleworth
 
     >>> print sabdfl.archive.name
     ppa
 
 The ppas named differently than the default ('ppa') have a slightly
-different title format, including their names.
+different displayname format, including their names.
 
-    >>> print another_ppa.title
+    >>> print another_ppa.displayname
     PPA named nightly for Mark Shuttleworth
 
 

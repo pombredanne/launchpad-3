@@ -1192,7 +1192,7 @@ class PackageUploadBuild(SQLBase):
                 [filename for filename in known_filenames])
             raise QueueInconsistentStateError(
                 'The following files are already published in %s:\n%s' % (
-                    self.packageupload.archive.title, filename_list))
+                    self.packageupload.archive.displayname, filename_list))
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""

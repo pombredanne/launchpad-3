@@ -212,10 +212,11 @@ div.package-details {
           <tr tal:repeat="request requests">
             <td tal:define="archive request/source_archive">
               <a tal:attributes="href archive/fmt:url"
-                 tal:content="archive/title"
+                 tal:content="archive/displayname"
                  tal:condition="archive/is_ppa" />
-              <tal:archive_title replace="archive/title"
-                                 condition="not: archive/is_ppa" />
+              <tal:archive_displayname
+                 replace="archive/displayname"
+                 condition="not: archive/is_ppa" />
             </td>
             <td>
               <tal:distroseries

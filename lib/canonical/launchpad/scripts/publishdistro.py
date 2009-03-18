@@ -152,7 +152,8 @@ def run_publisher(options, txn, log=None):
 
     for archive in archives:
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
-            log.info("Processing %s %s" % (distribution.name, archive.title))
+            log.info(
+                "Processing %s %s" % (distribution.name, archive.displayname))
             # Only let the primary/partner archives override the distsroot.
             publisher = getPublisher(
                 archive, allowed_suites, log, options.distsroot)

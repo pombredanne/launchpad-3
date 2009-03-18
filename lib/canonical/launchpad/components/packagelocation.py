@@ -57,7 +57,7 @@ class PackageLocation:
         elif self.archive.is_copy:
             title = "%s/%s" % (self.archive.owner.name, self.archive.name)
         else:
-            title = self.archive.title
+            title = self.archive.displayname
 
         result = '%s: %s-%s' % (
             title, self.distroseries.name, self.pocket.name)
