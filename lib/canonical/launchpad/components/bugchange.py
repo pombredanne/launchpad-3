@@ -5,7 +5,9 @@
 __metaclass__ = type
 __all__ = [
     'BugDescriptionChange',
+    'BugTagsChange',
     'BugTitleChange',
+    'BugVisibilityChange',
     'UnsubscribedFromBug',
     'get_bug_change_class',
     ]
@@ -122,7 +124,104 @@ class BugTitleChange(AttributeChange):
         return {'text': notification_text}
 
 
+class BugVisibilityChange(AttributeChange):
+    """Describes a change to a bug's visibility."""
+
+    def _getVisibilityString(self, private):
+        """Return a string representation of `private`.
+
+        :return: 'Public' if private is False, 'Private' if
+            private is True.
+        """
+        if private:
+            return 'Private'
+        else:
+            return 'Public'
+
+    def getBugActivity(self):
+        # Use _getVisibilityString() to set old and new values
+        # correctly. We lowercase them for UI consistency in the
+        # activity log.
+        old_value = self._getVisibilityString(self.old_value)
+        new_value = self._getVisibilityString(self.new_value)
+        return {
+           'oldvalue': old_value.lower(),
+           'newvalue': new_value.lower(),
+           'whatchanged': 'visibility',
+           }
+
+    def getBugNotification(self):
+        visibility_string = self._getVisibilityString(self.new_value)
+        return {'text': "** Visibility changed to: %s" % visibility_string}
+
+
+class BugSecurityChange(AttributeChange):
+    """Describes a change to a bug's security setting."""
+
+    activity_mapping = {
+        (False, True): ('no', 'yes'),
+        (True, False): ('yes', 'no'),
+        }
+
+    notification_mapping = {
+        (False, True):
+            u"** This bug has been flagged as a security vulnerability",
+        (True, False):
+            u"** This bug is no longer flagged as a security vulnerability",
+        }
+
+    def getBugActivity(self):
+        old_value, new_value = self.activity_mapping[
+            (self.old_value, self.new_value)]
+        return {
+           'oldvalue': old_value,
+           'newvalue': new_value,
+           'whatchanged': 'security vulnerability',
+           }
+
+    def getBugNotification(self):
+        return {
+            'text': self.notification_mapping[
+                (self.old_value, self.new_value)]
+            }
+
+
+class BugTagsChange(AttributeChange):
+    """Used to represent a change to an `IBug`s tags."""
+
+    def getBugActivity(self):
+        # Convert the new and old values into space-separated strings of
+        # tags.
+        new_value = " ".join(sorted(set(self.new_value)))
+        old_value = " ".join(sorted(set(self.old_value)))
+
+        return {
+            'newvalue': new_value,
+            'oldvalue': old_value,
+            'whatchanged': self.what_changed,
+            }
+
+    def getBugNotification(self):
+        new_tags = set(self.new_value)
+        old_tags = set(self.old_value)
+        added_tags = new_tags.difference(old_tags)
+        removed_tags = old_tags.difference(new_tags)
+
+        messages = []
+        if len(added_tags) > 0:
+            messages.append(
+                "** Tags added: %s" % " ".join(sorted(added_tags)))
+        if len(removed_tags) > 0:
+            messages.append(
+                "** Tags removed: %s" % " ".join(sorted(removed_tags)))
+
+        return {'text': "\n".join(messages)}
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
+    'private': BugVisibilityChange,
+    'security_related': BugSecurityChange,
+    'tags': BugTagsChange,
     'title': BugTitleChange,
     }
