@@ -1335,7 +1335,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             sourcepackagename = self.makeSourcePackageName()
         if distroseries is None:
             distroseries = self.makeDistroRelease()
-        return SourcePackage(sourcepackagename, distroseries)
+        return distroseries.getSourcePackage(sourcepackagename)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None):

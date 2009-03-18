@@ -833,13 +833,13 @@ class CommonMenuLinks:
         target = '+related-software'
         text = 'List assigned packages'
         summary = 'Packages assigned to %s' % self.context.browsername
-        return Link(target, text, summary, icon='packages')
+        return Link(target, text, summary, icon='package-source')
 
     def related_projects(self):
         target = '+related-software#projects'
         text = 'List related projects'
         summary = 'Projects %s is involved with' % self.context.browsername
-        return Link(target, text, summary, icon='packages')
+        return Link(target, text, summary, icon='product')
 
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
@@ -1145,7 +1145,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def members(self):
         target = '+members'
         text = 'Show all members'
-        return Link(target, text, icon='people')
+        return Link(target, text, icon='team')
 
     @enabled_with_permission('launchpad.Edit')
     def received_invitations(self):
@@ -1186,7 +1186,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def mugshots(self):
         target = '+mugshots'
         text = 'Show member photos'
-        return Link(target, text, icon='people')
+        return Link(target, text, icon='team')
 
     def polls(self):
         target = '+polls'
@@ -1206,7 +1206,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = (
             'The address Launchpad uses to contact %s' %
             self.context.browsername)
-        return Link(target, text, summary, icon='mail')
+        return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
@@ -4700,7 +4700,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
         """The number of project owned or driven by this person."""
         return self._related_projects().count()
 
-    @property
+    @cachedproperty
+    def has_more_related_projects(self):
+        """Does this person have more than five related projects?"""
+        return self.related_projects_count > 5
+
+    @cachedproperty
     def too_many_related_projects_found(self):
         """Does the user have more related projects than can be displayed?"""
         return self.related_projects_count > self.max_results_to_display

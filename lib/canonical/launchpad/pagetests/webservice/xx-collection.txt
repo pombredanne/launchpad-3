@@ -1,5 +1,8 @@
 = Introduction =
 
+These tests are being ported to the lazr.restful example
+webservice. Once they're all ported, this file will be removed.
+
 All collections published by the Launchpad web service work pretty
 much the same way. This document illustrates the general features of
 entries, using Launchpad's collections of people/teams and bugs as
