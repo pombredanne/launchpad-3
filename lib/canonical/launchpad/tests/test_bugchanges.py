@@ -162,5 +162,24 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=description_change_notification,
             expected_activity=description_change_activity)
 
+    def test_link_branch(self):
+        # Linking a branch to a bug adds both to the activity log and
+        # sends an e-mail notification.
+        branch = self.factory.makeBranch()
+        self.bug.addBranch(branch, self.user)
+        added_activity = {
+            'person': self.user,
+            'whatchanged': 'branch linked',
+            'newvalue': branch.bzr_identity,
+            }
+        added_notification = {
+            'text': "** Branch linked: %s" % branch.bzr_identity,
+            'person': self.user,
+            }
+        self.assertRecordedChange(
+            expected_activity=added_activity,
+            expected_notification=added_notification)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
