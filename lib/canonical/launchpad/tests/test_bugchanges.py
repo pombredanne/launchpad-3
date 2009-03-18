@@ -217,6 +217,28 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=visibility_change_notification,
             bug=private_bug)
 
+    def test_mark_as_security_issue(self):
+        # Marking a bug as a security vulnerability adds to the bug's
+        # activity log and sends a notification.
+        self.bug.security_related = False
+        self.changeAttribute(self.bug, 'security_related', True)
+
+        security_change_activity = {
+            'person': self.user,
+            'whatchanged': 'security issue',
+            'oldvalue': 'no',
+            'newvalue': 'yes',
+            }
+
+        security_change_notification = {
+            'text': '** This bug has been flagged as a security issue',
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=security_change_activity,
+            expected_notification=security_change_notification)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -154,7 +154,7 @@ class BugVisibilityChange(AttributeChange):
         return {'text': "** Visibility changed to: %s" % visibility_string}
 
 
-class BugSecurityChange(SimpleBugChangeMixin, BugChangeBase):
+class BugSecurityChange(AttributeChange):
     """Describes a change to a bug's security setting."""
 
     activity_mapping = {
