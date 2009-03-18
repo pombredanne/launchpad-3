@@ -74,7 +74,7 @@ def print_bug_affects_table(content, highlighted_only=False):
         if tr.td.table:
             # Don't print the bugtask edit form.
             continue
-        print extract_text(tr)
+        print extract_text(tr, skip_tags='script')
 
 
 def print_remote_bugtasks(content):
