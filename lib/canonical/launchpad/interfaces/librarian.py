@@ -161,10 +161,10 @@ class IParsedApacheLog(Interface):
     This is used so that we don't parse log files more than once.
     """
 
-    file_name = TextLine(
-        title=_('Name of the file'), required=True, readonly=True)
     first_line = TextLine(
         title=_("The log file's first line"), required=True,
         readonly=True)
     bytes_read = Int(
         title=_('Number of bytes read'), required=True, readonly=False)
+    date_last_parsed = Datetime(
+        title=_('Date last parsed'), required=False, readonly=False)

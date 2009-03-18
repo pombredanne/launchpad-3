@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
-from storm.locals import Date, Int, RawStr, Reference, Storm, Unicode
+from storm.locals import Date, Int, Reference, Storm, Unicode
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -220,13 +220,12 @@ class ParsedApacheLog(Storm):
     __storm_table__ = 'ParsedApacheLog'
 
     id = Int(primary=True)
-    file_name = RawStr(allow_none=False)
     first_line = Unicode(allow_none=False)
     bytes_read = Int(allow_none=False)
+    date_last_parsed = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    def __init__(self, file_name, first_line, bytes_read):
+    def __init__(self, first_line, bytes_read):
         super(ParsedApacheLog, self).__init__()
-        self.file_name = file_name
         self.first_line = unicode(first_line)
         self.bytes_read = bytes_read
         getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR).add(self)
