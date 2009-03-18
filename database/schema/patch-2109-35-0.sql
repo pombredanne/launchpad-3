@@ -10,4 +10,4 @@ CREATE TABLE OpenIDNonce (
     PRIMARY KEY (server_url, timestamp, salt)
     );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 44, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 35, 0);
