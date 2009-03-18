@@ -253,17 +253,6 @@ First we have to create the file itself, and upload it to the Librarian:
     1.0
 
 
-== Subscribe someone to a bug ==
-
-    >>> bug_one = getUtility(IBugSet).get(1)
-    >>> thumper = getUtility(IPersonSet).getByName('thumper')
-    >>> bug_subscription = bug_one.subscribe(thumper, user)
-    >>> notify(ObjectCreatedEvent(bug_subscription))
-    >>> latest_activity = bug_one.activity[-1]
-    >>> latest_activity.message
-    u'added subscriber Tim Penhey'
-
-
 == Bug security changed ==
 
     >>> owner = factory.makePerson(displayname='Slartibartfast')
