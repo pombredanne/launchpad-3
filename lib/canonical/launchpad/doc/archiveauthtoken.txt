@@ -30,8 +30,8 @@ though we do not yet have a subscription:
     >>> new_token = cprov.archive.newAuthToken(name12)
     Traceback (most recent call last):
     ...
-    Unauthorized: You do not have a subscription for PPA for
-    Celso Providelo.
+    Unauthorized: You do not have a subscription for
+    Private PPA for Celso Providelo.
 
 Create a subscription for name12 to cprov's archive:
 
@@ -55,7 +55,7 @@ It is not possible to create a second token when one already exists:
     Traceback (most recent call last):
     ...
     ArchiveSubscriptionError: Sample Person already has a token for
-    PPA for Celso Providelo.
+    Private PPA for Celso Providelo.
 
 So deactivate the old token so that we can create a new token:
 
@@ -70,7 +70,7 @@ We can also specify our own token for testing purposes:
 The new token is returned and reflects the data:
 
     >>> print new_token.archive.displayname
-    PPA for Celso Providelo
+    Private PPA for Celso Providelo
 
     >>> print new_token.person.name
     name12

@@ -135,7 +135,7 @@ archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
 archive_index = ContextDisplayName('%s')
 
-archive_subscriber_edit = ContextDisplayName('Edit %s')
+archive_subscriber_edit = ContextTitle('Edit %s')
 
 archive_subscribers = ContextDisplayName('Manage subscriptions for %s')
 
