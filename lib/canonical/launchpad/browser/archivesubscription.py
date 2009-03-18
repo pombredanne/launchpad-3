@@ -33,6 +33,15 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.widgets import DateWidget
 
 
+def archive_subscription_ui_adapter(archive_subscription):
+    """Adapt an archive subscriber to the UI interface.
+
+    Since we are only modifying the type of fields that already exist
+    on IArchiveSubscriber, we simply return the archive_subscriber record.
+    """
+    return archive_subscription
+
+
 class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
     """A view for listing and creating archive subscribers."""
 
@@ -116,6 +125,7 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
 
         # Just ensure a redirect happens (back to ourselves).
         self.next_url = str(self.request.URL)
+
 
 class ArchiveSubscriptionEditView(LaunchpadEditFormView):
     """A view for editing and canceling an archive subscriber."""

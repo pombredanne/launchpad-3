@@ -41,7 +41,7 @@
   <adapter
       for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber"
       provides="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriberUI"
-      factory="canonical.launchpad.interfaces.archivesubscriber.archive_subscriber_ui"
+      factory="canonical.launchpad.browser.archivesubscription.archive_subscription_ui_adapter"
       />
 
 </configure>
