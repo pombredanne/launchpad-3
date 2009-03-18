@@ -55,7 +55,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.database.account import Account
-from lp.answers.database.answercontact import AnswerContact
+from lp.answers.model.answercontact import AnswerContact
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
@@ -152,7 +152,7 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
-from lp.answers.database.question import QuestionPersonSearch
+from lp.answers.model.question import QuestionPersonSearch
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name

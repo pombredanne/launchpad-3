@@ -50,17 +50,17 @@
     <subscriber
         for=".interfaces.question.IQuestion
              lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler=".database.questionreopening.create_questionreopening"
+        handler=".model.questionreopening.create_questionreopening"
         />
 
-    <class class=".database.questionreopening.QuestionReopening">
+    <class class=".model.questionreopening.QuestionReopening">
         <allow
           interface=".interfaces.questionreopening.IQuestionReopening"
           />
     </class>
 
     <!-- QuestionSubscription -->
-    <class class=".database.questionsubscription.QuestionSubscription">
+    <class class=".model.questionsubscription.QuestionSubscription">
         <allow
           interface=".interfaces.questionsubscription.IQuestionSubscription"
           />
@@ -70,7 +70,7 @@
           />
     </class>
 
-  <class class=".database.question.Question">
+  <class class=".model.question.Question">
     <!-- IQuestion -->
     <allow
         attributes="id title description status priority owner assignee
@@ -112,7 +112,7 @@
   </class>
 
 
-  <class class=".database.questionmessage.QuestionMessage">
+  <class class=".model.questionmessage.QuestionMessage">
     <allow interface=".interfaces.questionmessage.IQuestionMessage"/>
   </class>
 
@@ -154,19 +154,19 @@
     />
 
   <!-- QuestionSet -->
-  <class class=".database.question.QuestionSet">
+  <class class=".model.question.QuestionSet">
     <allow interface=".interfaces.questioncollection.IQuestionSet" />
   </class>
 
   <securedutility
-    class=".database.question.QuestionSet"
+    class=".model.question.QuestionSet"
     provides=".interfaces.questioncollection.IQuestionSet"
     >
     <allow interface=".interfaces.questioncollection.IQuestionSet" />
   </securedutility>
 
 
-  <class class=".database.faq.FAQ">
+  <class class=".model.faq.FAQ">
     <!-- IFAQ-->
     <allow interface=".interfaces.faq.IFAQ" />
     <require
@@ -199,7 +199,7 @@
 
   <!-- IFAQSet -->
   <securedutility
-    class=".database.faq.FAQSet"
+    class=".model.faq.FAQSet"
     provides=".interfaces.faq.IFAQSet"
     >
     <allow interface=".interfaces.faq.IFAQSet" />

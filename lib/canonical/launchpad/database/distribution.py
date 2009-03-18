@@ -48,7 +48,7 @@ from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseries import DistroSeries
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
-from lp.answers.database.faq import FAQ, FAQSearch
+from lp.answers.model.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import (
@@ -104,7 +104,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.url import urlparse
 
-from lp.answers.database.question import (
+from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
