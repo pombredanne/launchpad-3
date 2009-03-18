@@ -237,8 +237,8 @@ representation of the object.
 A modification might cause an entry's address to change. Here we use
 the web service to change the cookbook's name to 'Everyday Greens 2'.
 
-  >>> print modify_person('Everyday Greens',
-  ...                     {'name' : 'Everyday Greens 2'}, 'PATCH')
+  >>> print modify_cookbook('Everyday Greens',
+  ...                       {'name' : 'Everyday Greens 2'}, 'PATCH')
   HTTP/1.1 301 Moved Permanently
   ...
   Location: http://.../Everyday%20Greens%202
@@ -266,7 +266,7 @@ also set the X-Content-Type-Override header, which will override the
 value of Content-Type.
 
   >>> print modify_cookbook('Everyday Greens',
-  ...     {'cuisine' : 'VEGETARIAN/VEGAN', 'POST',
+  ...     {'cuisine' : 'VEGETARIAN/VEGAN'}, 'POST',
   ...     {'X-HTTP-Method-Override' : 'PATCH',
   ...      'Content-Type': 'not-a-valid-content/type',
   ...      'X-Content-Type-Override': 'application/json'})
@@ -276,7 +276,7 @@ value of Content-Type.
 If you try to use X-HTTP-Method-Override when the underlying HTTP
 method is not POST, you'll get an error.
 
-  >>> print modify_person('Everyday GReens',
+  >>> print modify_cookbook('Everyday Greens',
   ...     {}, 'GET', {'X-HTTP-Method-Override' : 'PATCH'})
   HTTP/1.1 400 Bad Request
   ...
@@ -315,3 +315,27 @@ with a PATCH request.
   HTTP/1.1 209 Content Returned
   ...
 
+
+=== Content negotiation during modification ===
+
+When making a PATCH, you don't have to get a JSON representation
+back. You can also get an HTML representation.
+
+  >>> print modify_cookbook('Everyday Greens', greens, 'PATCH',
+  ...                       headers={'Accept': 'application/xhtml+xml'})
+  HTTP/1.1 209 Content Returned
+  ...
+  Content-Type: application/xhtml+xml
+  ...
+  <?xml version="1.0"?>
+  ...
+
+You can even get a WADL representation, though that's pretty useless.
+
+  >>> headers = {'Accept':'application/vd.sun.wadl+xml'}
+  >>> print modify_cookbook('Everyday Greens', greens, 'PATCH',
+  ...                       headers=headers)
+  HTTP/1.1 209 Content Returned
+  ...
+  Content-Type: application/vd.sun.wadl+xml
+  ...
