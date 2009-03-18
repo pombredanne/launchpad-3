@@ -818,7 +818,7 @@ IBug.date_last_updated.
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> firefox_bug.unsubscribe(ubuntu_team)
+    >>> firefox_bug.unsubscribe(ubuntu_team, ubuntu_team)
 
     >>> firefox_bug.date_last_updated == current_date_last_updated
     True
