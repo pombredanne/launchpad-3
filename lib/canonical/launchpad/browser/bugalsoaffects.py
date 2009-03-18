@@ -281,7 +281,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
             if bug_watch is None:
                 bug_watch = task_added.bug.addWatch(
                     extracted_bugtracker, extracted_bug, self.user)
-                notify(ObjectCreatedEvent(bug_watch))
             if not target.official_malone:
                 task_added.bugwatch = bug_watch
 

@@ -767,6 +767,7 @@ class Bug(SQLBase):
                 bug=self, bugtracker=bugtracker,
                 remotebug=remotebug, owner=owner)
             Store.of(bug_watch).flush()
+        notify(ObjectCreatedEvent(bug_watch, user=owner))
         return bug_watch
 
     def addAttachment(self, owner, data, comment, filename, is_patch=False,
