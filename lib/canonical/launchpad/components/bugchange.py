@@ -229,11 +229,9 @@ class CveLinkedToBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
-        return {
-            'newvalue': self.cve.sequence,
-            'oldvalue': u'',
-            'whatchanged': 'cve linked',
-            }
+        return dict(
+            newvalue=self.cve.sequence,
+            whatchanged='cve linked')
 
     def getBugNotification(self):
         """See `IBugChange`."""
@@ -253,11 +251,9 @@ class CveUnlinkedFromBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
-        return {
-            'newvalue': u'',
-            'oldvalue': self.cve.sequence,
-            'whatchanged': 'cve unlinked',
-            }
+        return dict(
+            oldvalue=self.cve.sequence,
+            whatchanged='cve unlinked')
 
     def getBugNotification(self):
         """See `IBugChange`."""

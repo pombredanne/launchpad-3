@@ -20,7 +20,6 @@ vocabulary_registry = getVocabularyRegistry()
 BUG_INTERESTING_FIELDS = [
     'duplicateof',
     'name',
-    'tags',
     ]
 
 
