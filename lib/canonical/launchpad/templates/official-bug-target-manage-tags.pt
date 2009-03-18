@@ -45,7 +45,8 @@
                 <input type="text" id="new-tag-text" style="width: 100%" />
               </td>
               <td>
-                <a href="#" id="new-tag-add"><img src="/@@/add" /></a>
+                <input type="submit" value="Add"
+                       id="new-tag-add" disabled="true" />
               </td>
             </tr>
           </table>
@@ -60,12 +61,15 @@
           </ul>
         </td>
         <td id="middle-column">
-          <input type="submit" value="&larr;" id="add-official-tags" class="arrow-button" />
+          <input type="submit" value="&larr;"
+                 id="add-official-tags" class="arrow-button"
+                 disabled="true" />
           <br />
-          <input type="submit" value="&rarr;" id="remove-official-tags" class="arrow-button" />
+          <input type="submit" value="&rarr;"
+                 id="remove-official-tags" class="arrow-button"
+                 disabled="true" />
           <br />
           <br />
-          <input type="submit" value="Save" id="save-button" />
           <form action="+manage-official-tags" method="post" id="save-form">
             <input type="hidden" id="field-official_bug_tags" name="field.official_bug_tags" />
             <input type="hidden" name="field.actions.save" value="Save" />
@@ -77,6 +81,10 @@
         </td>
       </tr>
     </table>
+    <div class="actions">
+      <input type="submit" value="Save" id="save-button" />
+      or <a href="#" id="cancel-link">Cancel</a>        
+    </div>
   </div>
   </body>
 </html>

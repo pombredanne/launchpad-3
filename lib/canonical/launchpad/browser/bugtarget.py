@@ -1289,17 +1289,21 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     @property
     def tags_js_data(self):
         """Return the JSON representation of the bug tags."""
-        used_tags = dumps(
-            dict(self.context.getUsedBugTagsWithOpenCounts(self.user)))
-        official_tags = dumps(list(self.context.official_bug_tags))
+        used_tags = dict(self.context.getUsedBugTagsWithOpenCounts(self.user))
+        official_tags = list(self.context.official_bug_tags)
         return """<script type="text/javascript">
                       var used_bug_tags = %s;
                       var official_bug_tags = %s;
                       var valid_name_pattern = %s;
+                      var cancel_url = %s;
                   </script>
                """ % (
-               used_tags, official_tags, dumps(valid_name_pattern.pattern))
+               dumps(used_tags),
+               dumps(official_tags),
+               dumps(valid_name_pattern.pattern),
+               dumps(self.cancel_url))
 
+    @property
     def cancel_url(self):
         """The URL the user is sent to when clicking the "cancel" link."""
         return canonical_url(self.context)
