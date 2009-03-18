@@ -68,9 +68,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # interface, so we need to remove the security wrapper.
         pub_config = removeSecurityProxy(ppa.getPubConfig())
         htaccess_filename = os.path.join(pub_config.htaccessroot, ".htaccess")
-        if not os.path.isfile(htaccess_filename):
+        if not os.path.exists(htaccess_filename):
             # It's not there, so create it.
-            if not os.path.isdir(pub_config.htaccessroot):
+            if not os.path.exists(pub_config.htaccessroot):
                 os.makedirs(pub_config.htaccessroot)
             file = open(htaccess_filename, "w")
             file.write(HTACCESS_TEMPLATE)

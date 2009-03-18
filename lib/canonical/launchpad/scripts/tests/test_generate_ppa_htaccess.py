@@ -174,7 +174,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
 
         # Write out a dummy .htpasswd
-        if not os.path.isdir(pub_config.htaccessroot):
+        if not os.path.exists(pub_config.htaccessroot):
             os.makedirs(pub_config.htaccessroot)
         file = open(filename, "w")
         file.write(FILE_CONTENT)

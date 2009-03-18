@@ -163,6 +163,7 @@ Deactivating sets the date_deactivated value.
 
 We can do this as an admin too:
 
+    >>> new_token = cprov.archive.newAuthToken(name12)
     >>> login("admin@canonical.com")
     >>> new_token.deactivate()
 
