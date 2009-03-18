@@ -239,6 +239,28 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=security_change_activity,
             expected_notification=security_change_notification)
 
+    def test_unmark_as_security_issue(self):
+        # Unmarking a bug as a security vulnerability adds to the
+        # bug's activity log and sends a notification.
+        self.bug.security_related = True
+        self.changeAttribute(self.bug, 'security_related', False)
+
+        security_change_activity = {
+            'person': self.user,
+            'whatchanged': 'security issue',
+            'oldvalue': 'yes',
+            'newvalue': 'no',
+            }
+
+        security_change_notification = {
+            'text': '** This bug is no longer flagged as a security issue',
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=security_change_activity,
+            expected_notification=security_change_notification)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
