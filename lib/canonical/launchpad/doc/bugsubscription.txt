@@ -481,7 +481,7 @@ When Sample Person is unsubscribed from linux_source_bug, he is no
 longer included in the result of getBugNotificationRecipients() for
 the COMMENTS level...
 
-   >>> linux_source_bug.unsubscribe(mr_no_privs)
+   >>> linux_source_bug.unsubscribe(mr_no_privs, mr_no_privs)
    >>> recipients = linux_source_bug.getBugNotificationRecipients(
    ...     level=BugNotificationLevel.COMMENTS)
    >>> addresses = recipients.getEmails()
@@ -494,7 +494,7 @@ the COMMENTS level...
 
 ...but remains included for the level LIFECYCLE.
 
-   >>> linux_source_bug.unsubscribe(mr_no_privs)
+   >>> linux_source_bug.unsubscribe(mr_no_privs, mr_no_privs)
    >>> recipients = linux_source_bug.getBugNotificationRecipients(
    ...     level=BugNotificationLevel.LIFECYCLE)
    >>> addresses = recipients.getEmails()
@@ -549,7 +549,7 @@ IBug.subscribe and IBug.unsubscribe:
     >>> bug.isSubscribed(foobar)
     True
 
-    >>> bug.unsubscribe(foobar)
+    >>> bug.unsubscribe(foobar, foobar)
     >>> bug.isSubscribed(foobar)
     False
 
