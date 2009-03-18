@@ -1,1 +1,0 @@
-# lp.apps namespace package
