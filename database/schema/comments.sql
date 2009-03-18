@@ -1860,6 +1860,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.error_output IS 'Error output from
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
 COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
+COMMENT ON COLUMN Archive.title IS 'User defined title for this archive.';
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';
@@ -1872,7 +1873,7 @@ COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached fo
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
 COMMENT ON COLUMN Archive.name IS 'The name of the archive.';
-COMMENT ON COLUMN Archive.name IS 'Whether this archive should be published.';
+COMMENT ON COLUMN Archive.publish IS 'Whether this archive should be published.';
 COMMENT ON COLUMN Archive.date_updated IS 'When were the rebuild statistics last updated?';
 COMMENT ON COLUMN Archive.total_count IS 'How many source packages are in the rebuild archive altogether?';
 COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need building?';
