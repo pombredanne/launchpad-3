@@ -376,3 +376,298 @@ The canonicalization works for PUT requests as well.
   ...                     {'Content-type': 'application/json'}).jsonBody()
   >>> greens['cuisine']
   u'Vegetarian'
+
+
+=== Conditional GET, PUT and PATCH ===
+
+When you GET an entry you're given an ETag; an opaque string that
+changes whenever the entry changes.
+
+  >>> response = webservice.get(greens_url)
+  >>> greens_etag = response._response.getHeader('ETag')
+  >>> greens = response.jsonBody()
+
+The ETag is present in the HTTP response headers when you GET an
+entry, but it's also present in the representation of the entry
+itself.
+
+  >>> greens['http_etag'] == greens_etag
+  True
+
+This is so you can get the ETags for all the entries in a collection
+at once, without making a separate HTTP request for each.
+
+  >>> cookbooks = webservice.get('/cookbooks').jsonBody()
+  >>> etags = [book['http_etag'] for book in cookbooks['entries']]
+
+The ETag provided with an entry of a collection is the same as the
+ETag you'd get if you got that entry individually.
+
+  >>> first_book = cookbooks['entries'][0]
+  >>> first_book_2 = webservice.get(first_book['self_link']).jsonBody()
+  >>> first_book['http_etag'] == first_book_2['http_etag']
+  True
+
+When you make a GET request, you can provide the ETag as the
+If-None-Match header. This lets you save time when the resource hasn't
+changed.
+
+  >>> print webservice.get(greens_url,
+  ...                      headers={'If-None-Match': greens_etag})
+  HTTP/1.1 304 Not Modified
+  ...
+
+Conditional GET works the same way whether the request goes through
+the web service's virtual host or through the website-level interface
+designed for Ajax.
+
+  >>> from canonical.lazr.testing.webservice import (
+  ...     CookbookWebServiceAjaxCaller)
+  >>> ajax = CookbookWebServiceAjaxCaller()
+  >>> etag = 'dummy-etag'
+  >>> response = ajax.get(greens_url, headers={'If-None-Match' : etag})
+  >>> etag = response.getHeader("Etag")
+  >>> print ajax.get(greens_url, headers={'If-None-Match' : etag})
+  HTTP/1.1 304 Not Modified
+  ...
+
+When you make a PUT or PATCH request, you can provide the ETag as the
+If-Match header. This lets you detect changes that other people made
+to the entry, so your changes don't overwrite theirs.
+
+If the ETag you provide in If-Match matches the entry's current ETag,
+your request goes through.
+
+  >>> print modify_cookbook('Everyday Greens', greens, 'PATCH',
+  ...                     {'If-Match' : greens_etag})
+  HTTP/1.1 209 Content Returned
+  ...
+
+If the ETags don't match, it's because somebody modified the entry
+after you got your copy of it. Your request will fail with status code
+412.
+
+  >>> print modify_cookbook('Everyday Greens', greens, 'PATCH',
+  ...                       {'If-Match' : '"an-old-etag"'})
+  HTTP/1.1 412 Precondition Failed
+  ...
+
+If you specify a number of ETags, and any of them match, your request
+will go through.
+
+  >>> print modify_cookbook('Everyday Greens', greens, 'PATCH',
+  ...                       {'If-Match' : '"an-old-etag", %s' % greens_etag})
+  HTTP/1.1 209 Content Returned
+  ...
+
+Both PUT and PATCH requests work this way.
+
+  >>> print modify_cookbook('Everyday Greens', greens, 'PUT',
+  ...                       {'If-Match' : 'an-old-etag'})
+  HTTP/1.1 412 Precondition Failed
+  ...
+
+
+=== Changing object relationships ===
+
+TBA.
+
+
+=== Date formats ===
+
+lazr.restful web services serve and parse dates in ISO 8601
+format. Only UTC dates are allowed.
+
+The tests that follow make a number of PATCH requests that include
+values for a cookbook's 'copyright_date' attribute.
+
+  >>> greens['copyright_date']
+  u'2003-01-01'
+
+  >>> def patch_greens_copyright_date(date):
+  ...     "A helper method to try and change a date field."
+  ...     return modify_cookbook(
+  ...         'Everyday Greens', {'copyright_date' : date}, 'PATCH')
+
+These requests aren't actually trying to modify 'copyright_date', which
+is read-only. They're asserting that 'copyright_date' is a certain
+value. If the assertion succeeds (because 'copyright_date' does in fact
+have that value), the response code is 200. If the assertion could not
+be understood (because the date is in the wrong format), the response
+code is 400, and the body is an error message about the date
+format. If the assertion _fails_ (because 'copyright_date' happens to be
+read-only), the response code is also 400, but the error message talks
+about an attempt to modify a read-only attribute.
+
+The two 400 error codes below are caused by a failure to understand
+the assertion. The string used in the assertion might not be a date.
+
+  >>> print patch_greens_copyright_date('dummy')
+  HTTP/1.1 400 Bad Request
+  ...
+  copyright_date: Value doesn't look like a date.
+
+Or it might be a date that's not in UTC.
+
+  >>> print patch_greens_copyright_date(u'2005-06-06T00:00:00.000000+05:00')
+  HTTP/1.1 400 Bad Request
+  ...
+  copyright_date: Time not in UTC.
+
+There are five ways to specify UTC:
+
+  >>> print patch_greens_copyright_date(u'2003-01-01T00:00:00.000000Z')
+  HTTP/1.1 209 Content Returned
+  ...
+
+  >>> print patch_greens_copyright_date(u'2003-01-01T00:00:00.000000+00:00')
+  HTTP/1.1 209 Content Returned
+  ...
+
+  >>> print patch_greens_copyright_date(u'2003-01-01T00:00:00.000000+0000')
+  HTTP/1.1 209 Content Returned
+  ...
+
+  >>> print patch_greens_copyright_date(u'2003-01-01T00:00:00.000000-00:00')
+  HTTP/1.1 209 Content Returned
+  ...
+
+  >>> print patch_greens_copyright_date(u'2003-01-01T00:00:00.000000-0000')
+  HTTP/1.1 209 Content Returned
+  ...
+
+A value with a missing timezone is treated as UTC.
+
+  >>> print patch_greens_copyright_date(u'2003-01-01T00:00:00.000000')
+  HTTP/1.1 209 Content Returned
+  ...
+
+Less precise time measurements may also be acceptable.
+
+  >>> print patch_greens_copyright_date(u'2003-01-01T00:00:00Z')
+  HTTP/1.1 209 Content Returned
+  ...
+
+  >>> print patch_greens_copyright_date(u'2003-01-01')
+  HTTP/1.1 209 Content Returned
+  ...
+
+
+=== What you can't do ===
+
+A document that would be acceptable as the payload of a PATCH request
+might not be acceptable as the payload of a PUT request.
+
+  >>> print modify_cookbook('Everyday Greens', {'name' : 'Greens'}, 'PUT')
+  HTTP/1.1 400 Bad Request
+  ...
+  You didn't specify a value for the attribute 'cuisine'.
+
+A document that's not a valid JSON document is also unacceptable.
+
+  >>> print webservice.patch(greens_url, "application/json", "{")
+  HTTP/1.1 400 Bad Request
+  ...
+  Entity-body was not a well-formed JSON document.
+
+A document that's valid JSON but is not a JSON hash is unacceptable.
+
+  >>> print modify_cookbook('Everyday Greens', 'name=Greens', 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  Expected a JSON hash.
+
+An entry's read-only attributes can't be modified.
+
+  >>> print modify_cookbook('Everyday Greens', {'copyright_date' :
+  ...                                 u'2001-01-01T01:01:01+00:00Z'}, 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  copyright_date: You tried to modify a read-only attribute.
+
+You can send a document that includes a value for a read-only
+attribute, but it has to be the same as the current value.
+
+  >>> print modify_cookbook(
+  ...     'Everyday Greens',
+  ...     {'copyright_date' : greens['copyright_date']}, 'PATCH')
+  HTTP/1.1 209 Content Returned
+  ...
+
+You can't change the link to an entry's associated collection.
+
+  >>> print modify_cookbook('Everyday Greens',
+  ...                       {'recipes_collection_link' : 'dummy'},
+  ...                       'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  recipes_collection_link: You tried to modify a collection...
+
+Again, you can send a document that includes a value for an associated
+collection link; you just can't _change_ the value.
+
+  >>> print modify_cookbook(
+  ...     'Everyday Greens',
+  ...     {'recipes_collection_link' : greens['recipes_collection_link']},
+  ...     'PATCH')
+  HTTP/1.1 209 Content Returned
+  ...
+
+You can't directly change an entry's URL address.
+
+  >>> print modify_cookbook('Everyday Greens',
+  ...                       {'self_link' : 'dummy'}, 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  self_link: You tried to modify a read-only attribute.
+
+You can't directly change an entry's ETag.
+
+  >>> print modify_cookbook('Everyday Greens',
+  ...                       {'http_etag' : 'dummy'}, 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  http_etag: You tried to modify a read-only attribute.
+
+You can't change an entry's resource type.
+
+  >>> print modify_cookbook('Everyday Greens',
+  ...                       {'resource_type_link' : 'dummy'}, 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  resource_type_link: You tried to modify a read-only attribute.
+
+You can't refer to a link to an associated object or collection as
+though it were the actual object. A cookbook has a
+'recipes_collection_link', but it doesn't have 'recipes' directly.
+
+  >>> print modify_cookbook(
+  ...     'Everyday Greens', {'recipes' : 'dummy'}, 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  recipes: You tried to modify a nonexistent attribute.
+
+A recipe has a 'dish_link', but it doesn't have a 'dish' directly.
+
+  >>> url = quote('/cookbooks/The Joy of Cooking/Roast chicken')
+  >>> print webservice.patch(url, 'application/json',
+  ...     simplejson.dumps({'dish' : 'dummy'}))
+  HTTP/1.1 400 Bad Request
+  ...
+  dish: You tried to modify a nonexistent attribute.
+
+You can't set values that violate data integrity rules. For instance,
+you can't set a required value to None.
+
+  >>> print modify_cookbook('Everyday Greens',
+  ...                       {'name' : None}, 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  name: Validation error
+
+And of course you can't modify attributes that don't exist.
+
+  >>> print modify_cookbook('Everyday Greens', {'nonesuch' : 'dummy'}, 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  nonesuch: You tried to modify a nonexistent attribute.

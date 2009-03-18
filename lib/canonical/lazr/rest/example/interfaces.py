@@ -14,7 +14,7 @@ __all__ = ['AlreadyNouvelle',
            'NameAlreadyTaken']
 
 from zope.interface import Interface
-from zope.schema import Bool, Int, TextLine, Text
+from zope.schema import Bool, Date, Int, TextLine, Text
 
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
@@ -39,7 +39,15 @@ class WhitespaceStrippingTextLine(TextLine):
 
     def set(self, object, value):
         """Strip whitespace before setting."""
-        super(WhitespaceStrippingTextLine, self).set(object, value.strip())
+        if value is not None:
+            value = value.strip()
+        super(WhitespaceStrippingTextLine, self).set(object, value)
+
+
+class IHasGet(Interface):
+    """A marker interface objects that implement traversal with get()."""
+    def get(name):
+        """Traverse to a contained object."""
 
 
 class IDish(Interface):
@@ -63,10 +71,11 @@ class IRecipe(Interface):
                        default=False))
 
 
-class ICookbook(Interface):
+class ICookbook(IHasGet):
     """A cookbook, annotated for export to the web service."""
     export_as_webservice_entry()
     name = exported(TextLine(title=u"Name", required=True))
+    copyright_date = exported(Date(title=u"Copyright Date", readonly=True))
     cuisine = exported(WhitespaceStrippingTextLine(
             title=u"Cuisine", required=False, default=None))
     recipes = exported(CollectionField(title=u"Recipes in this cookbook",
@@ -88,11 +97,6 @@ class ICookbook(Interface):
 IDish['recipes'].value_type.schema = IRecipe
 IRecipe['cookbook'].schema = ICookbook
 
-
-class IHasGet(Interface):
-    """A marker interface objects that implement traversal with get()."""
-    def get(name):
-        """Traverse to a contained object."""
 
 class ICookbookSet(IHasGet):
     """The set of all cookbooks, annotated for export to the web service."""

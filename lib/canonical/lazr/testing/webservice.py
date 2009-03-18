@@ -443,5 +443,11 @@ class CookbookWebServiceCaller(WebServiceCaller):
             handle_errors, CookbookWebServiceHTTPCaller())
 
 
+class CookbookWebServiceAjaxCaller(CookbookWebServiceCaller):
+    """A caller that simulates an Ajax client like a web browser."""
 
-
+    def apiVersion(self):
+        """Introduce the Ajax path override to the URI prefix."""
+        config = getUtility(IWebServiceConfiguration)
+        return (config.path_override
+                + '/' + config.service_version_uri_prefix)

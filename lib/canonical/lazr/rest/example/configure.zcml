@@ -9,11 +9,15 @@
   </class>
 
   <class class="canonical.lazr.rest.example.root.Cookbook">
-      <allow interface='canonical.lazr.rest.example.interfaces.ICookbook' />
+      <require interface='canonical.lazr.rest.example.interfaces.ICookbook'
+       set_schema='canonical.lazr.rest.example.interfaces.ICookbook'
+       permission="zope.Public" />
   </class>
 
   <class class="canonical.lazr.rest.example.root.Dish">
-      <allow interface='canonical.lazr.rest.example.interfaces.IDish' />
+      <require interface='canonical.lazr.rest.example.interfaces.IDish'
+       set_schema='canonical.lazr.rest.example.interfaces.IDish'
+       permission = "zope.Public" />
   </class>
 
   <class class="canonical.lazr.rest.example.root.DishSet">
@@ -21,7 +25,9 @@
   </class>
 
   <class class="canonical.lazr.rest.example.root.Recipe">
-      <allow interface='canonical.lazr.rest.example.interfaces.IRecipe' />
+      <require interface='canonical.lazr.rest.example.interfaces.IRecipe'
+       set_schema='canonical.lazr.rest.example.interfaces.IRecipe'
+       permission = "zope.Public" />
   </class>
 
   <permission id="lazr.View" title="Viewing something" />

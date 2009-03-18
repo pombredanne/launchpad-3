@@ -9,6 +9,8 @@ __all__ = ['Cookbook',
            'CookbookWebServiceObject',
            'CookbookServiceRootAbsoluteURL']
 
+from datetime import date
+
 from zope.interface import implements
 from zope.traversing.browser.interfaces import IAbsoluteURL
 from zope.component import adapts, getUtility
@@ -32,10 +34,11 @@ class CookbookWebServiceObject:
 class Cookbook(CookbookWebServiceObject):
     """An object representing a cookbook"""
     implements(ICookbook)
-    def __init__(self, name, cuisine):
+    def __init__(self, name, cuisine, copyright_year):
         self.name = name
         self.cuisine = cuisine
         self.recipes = []
+        self.copyright_date = date(copyright_year, 1, 1)
 
     @property
     def __name__(self):
@@ -44,6 +47,14 @@ class Cookbook(CookbookWebServiceObject):
     @property
     def __parent__(self):
         return getUtility(ICookbookSet)
+
+    def get(self, name):
+        """See `IHasGet`."""
+        match = [recipe for recipe in self.recipes
+                 if recipe.dish.name == name]
+        if len(match) > 0:
+            return match[0]
+        return None
 
     def find_recipes(self, search):
         """See `ICookbook`."""
@@ -61,10 +72,6 @@ class Cookbook(CookbookWebServiceObject):
                 "because its cuisine is already 'Nouvelle'.")
         self.cuisine = "Nouvelle " + self.cuisine
 
-protect_schema(Cookbook, ICookbook,
-               read_permission='lazr.restful.example.View',
-               write_permission=CheckerPublic)
-
 
 class Dish(CookbookWebServiceObject):
     implements(IDish)
@@ -80,9 +87,6 @@ class Dish(CookbookWebServiceObject):
     @property
     def __parent__(self):
         return getUtility(IDishSet)
-
-protect_schema(Dish, IDish, read_permission='lazr.restful.example.View',
-               write_permission=CheckerPublic)
 
 
 class Recipe(CookbookWebServiceObject):
@@ -104,9 +108,6 @@ class Recipe(CookbookWebServiceObject):
     @property
     def __parent__(self):
         return self.cookbook
-
-protect_schema(Recipe, IRecipe, read_permission='lazr.restful.example.View',
-               write_permission=CheckerPublic)
 
 
 # Top-level objects.
@@ -180,13 +181,14 @@ class DishSet(CookbookTopLevelObject):
 
 
 # Define some globally accessible sample data.
-C1 = Cookbook(u"Mastering the Art of French Cooking", "French")
-C2 = Cookbook(u"The Joy of Cooking", "General")
-C3 = Cookbook(u"James Beard's American Cookery", "American")
-C4 = Cookbook(u"Everyday Greens", "Vegetarian")
-C5 = Cookbook(u"I'm Just Here For The Food", "American")
-C6 = Cookbook(u"Cooking Without Recipes", "General")
-C7 = Cookbook(u"Construsions un repas", "Fran\xc3\xa7ais".decode("utf-8"))
+C1 = Cookbook(u"Mastering the Art of French Cooking", "French", 1961)
+C2 = Cookbook(u"The Joy of Cooking", "General", 1995)
+C3 = Cookbook(u"James Beard's American Cookery", "American", 1972)
+C4 = Cookbook(u"Everyday Greens", "Vegetarian", 2003)
+C5 = Cookbook(u"I'm Just Here For The Food", "American", 2002)
+C6 = Cookbook(u"Cooking Without Recipes", "General", 1959)
+C7 = Cookbook(u"Construsions un repas", "Fran\xc3\xa7ais".decode("utf-8"),
+              2007)
 COOKBOOKS = [C1, C2, C3, C4, C5, C6, C7]
 
 D1 = Dish("Roast chicken")
