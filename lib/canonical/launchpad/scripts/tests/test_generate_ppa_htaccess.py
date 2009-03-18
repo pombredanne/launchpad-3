@@ -61,9 +61,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         stdout, stderr = process.communicate()
         return process.returncode, stdout, stderr
 
-    # XXX: JonathanLange 2009-03-18 bug=344662: Disabled due to failure on
-    # db-devel buildslave.
-    def disabled_testEnsureHtaccess(self):
+    def testEnsureHtaccess(self):
         """Ensure that the .htaccess file is generated correctly."""
         # The publisher Config object does not have an interface, so we
         # need to remove the security wrapper.
@@ -167,9 +165,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
         os.remove(filename)
 
-    # XXX: JonathanLange 2009-03-18 bug=344662: Disabled due to failure on
-    # db-devel buildslave.
-    def disabled_testReplaceUpdatedHtpasswd(self):
+    def testReplaceUpdatedHtpasswd(self):
         """Test that the htpasswd file is only replaced if it changes."""
         FILE_CONTENT = "Kneel before Zod!"
         # The publisher Config object does not have an interface, so we
@@ -178,6 +174,8 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
 
         # Write out a dummy .htpasswd
+        if not os.path.isdir(pub_config.htaccessroot):
+            os.makedirs(pub_config.htaccessroot)
         file = open(filename, "w")
         file.write(FILE_CONTENT)
         file.close()
@@ -351,9 +349,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
             os.remove(htpasswd)
         return htaccess, htpasswd
 
-    # XXX: JonathanLange 2009-03-18 bug=344662: Disabled due to failure on
-    # db-devel buildslave.
-    def disabled_testBasicOperation(self):
+    def testBasicOperation(self):
         """Invoke the actual script and make sure it generates some files."""
         self.setupDummyTokens()
         htaccess, htpasswd = self.ensureNoFiles()
@@ -394,9 +390,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         # to get deactivated.
         self.assertNotDeactivated(tokens[0])
 
-    # XXX: JonathanLange 2009-03-18 bug=344662: Disabled due to failure on
-    # db-devel buildslave.
-    def disabled_testNoDeactivationOption(self):
+    def testNoDeactivationOption(self):
         """Test that the --no-deactivation option works."""
         subs, tokens = self._setupOptionsData()
         script = self.getScript(test_args=["--no-deactivation"])
