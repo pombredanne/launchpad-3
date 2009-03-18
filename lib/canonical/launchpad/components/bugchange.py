@@ -174,7 +174,7 @@ class BugSecurityChange(AttributeChange):
         # correctly. We lowercase them for UI consistency in the
         # activity log.
         old_value, new_value = self.activity_mapping[
-            self.old_value, self.new_value]
+            (self.old_value, self.new_value)]
         return {
            'oldvalue': old_value,
            'newvalue': new_value,
@@ -184,7 +184,7 @@ class BugSecurityChange(AttributeChange):
     def getBugNotification(self):
         return {
             'text': self.notification_mapping[
-                self.old_value, self.new_value]
+                (self.old_value, self.new_value)]
             }
 
 

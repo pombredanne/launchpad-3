@@ -326,7 +326,7 @@ BugSecurityChange is used to represent a change in a Bug's
     ...     what_changed='security_related',
     ...     old_value=False, new_value=True)
 
-IBug.security_related is a boolean bug to make it more readable we
+IBug.security_related is a boolean but to make it more readable we
 express it in activity and notification records as a short phrase.
 
 Marking a bug as security related causes one set of terms/phrases to
