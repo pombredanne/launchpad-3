@@ -23,4 +23,25 @@
     <allow interface="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriberSet"/>
   </securedutility>
 
+  <browser:url
+    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber"
+    path_expression="string:+subscriptions/${subscriber/name}"
+    attribute_to_parent="archive"
+  />
+
+  <browser:page
+    name="+edit"
+    facet="overview"
+    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber"
+    class="canonical.launchpad.browser.archivesubscription.ArchiveSubscriptionEditView"
+    permission="launchpad.Edit"
+    template="../templates/archive-subscriber-edit.pt"
+    />
+
+  <adapter
+      for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber"
+      provides="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriberUI"
+      factory="canonical.launchpad.browser.archivesubscription.archive_subscription_ui_adapter"
+      />
+
 </configure>
