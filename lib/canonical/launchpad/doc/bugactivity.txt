@@ -252,24 +252,3 @@ First we have to create the file itself, and upload it to the Librarian:
     >>> print latest_activity.newvalue
     1.0
 
-
-== Bug security changed ==
-
-    >>> owner = factory.makePerson(displayname='Slartibartfast')
-    >>> login(owner.preferredemail.email)
-
-    >>> bug = factory.makeBug(owner=owner)
-    >>> bug_snap = Snapshot(bug, providing=IBug)
-    >>> bug.security_related = True
-
-    >>> notify(ObjectModifiedEvent(
-    ...     bug, bug_snap, ['security_related'], user=owner))
-    >>> latest_activity = bug.activity[-1]
-    >>> print latest_activity.whatchanged
-    security
-
-    >>> print latest_activity.oldvalue, '==>', latest_activity.newvalue
-    not security vulnerability ==> security vulnerability
-
-    >>> print latest_activity.person.displayname
-    Slartibartfast
