@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'BugDescriptionChange',
     'BugTitleChange',
+    'BugWatchAdded',
     'UnsubscribedFromBug',
     'get_bug_change_class',
     ]
@@ -83,6 +84,24 @@ class UnsubscribedFromBug(BugChangeBase):
         return dict(
             whatchanged='removed subscriber %s' % (
                 self.unsubscribed_user.displayname))
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return None
+
+
+class BugWatchAdded(BugChangeBase):
+    """A bug watch was added to the bug."""
+
+    def __init__(self, when, person, bug_watch):
+        super(BugWatchAdded, self).__init__(when, person)
+        self.bug_watch = bug_watch
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='bug watch added',
+            newvalue=self.bug_watch.url)
 
     def getBugNotification(self):
         """See `IBugChange`."""

@@ -35,7 +35,8 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.components.bugchange import UnsubscribedFromBug
+from canonical.launchpad.components.bugchange import (
+    BugWatchAdded, UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -767,6 +768,7 @@ class Bug(SQLBase):
                 bug=self, bugtracker=bugtracker,
                 remotebug=remotebug, owner=owner)
             Store.of(bug_watch).flush()
+        self.addChange(BugWatchAdded(UTC_NOW, owner, bug_watch))
         notify(ObjectCreatedEvent(bug_watch, user=owner))
         return bug_watch
 

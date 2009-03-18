@@ -170,7 +170,7 @@ class TestBugChanges(unittest.TestCase):
 
         bugwatch_activity = {
             'person': self.user,
-            'whatchanged': 'bug watch',
+            'whatchanged': 'bug watch added',
             'newvalue': bug_watch.url,
             }
 
@@ -185,7 +185,7 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(
             expected_notification=bugwatch_notification,
-            expected_activity=None)
+            expected_activity=bugwatch_activity)
 
 
 def test_suite():
