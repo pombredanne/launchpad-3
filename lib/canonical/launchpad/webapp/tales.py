@@ -539,33 +539,43 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return None
 
+    def _default_icon_url(self, rootsite):
+        """Get the default icon URL."""
+        if rootsite is None:
+            root_url = ''
+        else:
+            root_url = allvhosts.configs[rootsite].rooturl[:-1]
+
+        default_icon = self.default_icon_resource(self._context)
+        if default_icon is None:
+            # We want to indicate that this object doesn't have an
+            # icon.
+            return None
+        url = root_url + default_icon
+        return url
+
+    def icon_url(self, rootsite):
+        """Return the URL for this object's icon."""
+        context = self._context
+        if context is None:
+            # We handle None specially and return an empty string.
+            return ''
+
+        if IHasIcon.providedBy(context) and context.icon is not None:
+            url = context.icon.getURL()
+        else:
+            url = self._default_icon_url(rootsite)
+        return url
+
     def icon(self, rootsite=None):
         """Return the appropriate <img> tag for this object's icon.
 
         :return: A string, or None if the context object doesn't have
             an icon.
         """
-        context = self._context
-        if context is None:
-            # we handle None specially and return an empty string
-            return ''
-
-        if IHasIcon.providedBy(context) and context.icon is not None:
-            url = context.icon.getURL()
-        else:
-            if rootsite is None:
-                root_url = ''
-            else:
-                root_url = allvhosts.configs[rootsite].rooturl[:-1]
-
-            default_icon = self.default_icon_resource(context)
-            if default_icon is None:
-                # We want to indicate that this object doesn't have an
-                # icon.
-                return None
-
-            url = root_url + default_icon
-
+        url = self.icon_url(rootsite)
+        if url is None:
+            return None
         icon = '<img alt="" width="14" height="14" src="%s" />'
         return icon % url
 
@@ -879,6 +889,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
 
     traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url',
+                         'icon_url': 'icon_url',
                          'displayname': 'displayname',
                          'unique_displayname': 'unique_displayname',
                          }
@@ -912,9 +923,10 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         """
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
-        image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
-        return '<a href="%s">%s&nbsp;%s</a>' % (
-            url, image_html, cgi.escape(person.browsername))
+        image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
+        return (u'<a href="%s" style="padding-left: 18px; background: url(%s)'
+                'center left no-repeat;">%s</a>') % (
+            url, image_url, cgi.escape(person.browsername))
 
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""
@@ -926,6 +938,9 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         person = self._context
         return person.unique_displayname
 
+    def icon_url(self, view_name, rootsite=None):
+        """Return the URL for the person's icon."""
+        return ObjectImageDisplayAPI(self._context).icon_url(rootsite=rootsite)
 
 class TeamFormatterAPI(PersonFormatterAPI):
     """Adapter for `ITeam` objects to a formatted string."""
@@ -951,9 +966,10 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
-            return u'%s&nbsp;%s' % (
-                image_html, cgi.escape(self.hidden))
+            image_url = ObjectImageDisplayAPI(person)._default_icon_url(rootsite=rootsite)
+            return ('<span style="padding-left: 18px; background: url(%s)'
+                    'center left no-repeat;">%s</span>') % (
+                image_url, cgi.escape(self.hidden))
         return super(TeamFormatterAPI, self).link(view_name, rootsite)
 
     def displayname(self, view_name, rootsite=None):
@@ -972,6 +988,16 @@ class TeamFormatterAPI(PersonFormatterAPI):
             return self.hidden
         return super(TeamFormatterAPI, self).unique_displayname(view_name,
                                                                 rootsite)
+    def icon_url(self, view_name, rootsite=None):
+        """Return the URL for the team's icon.
+
+        If the team is private use the default team icon url.
+        """
+        person = self._context
+        if not check_permission('launchpad.View', person):
+            image_url = ObjectImageDisplayAPI(person)._default_icon_url(rootsite=rootsite)
+            return image_url
+        return ObjectImageDisplayAPI(self._context).icon_url(rootsite=rootsite)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):

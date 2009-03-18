@@ -92,8 +92,9 @@
             style="display: block; padding: 0.25em; text-decoration: none;"
             tal:attributes="href string:${context/assignee/fmt:url}/+assignedbugs"
           >
-            <span tal:replace="structure context/assignee/fmt:link">
-              icon and assignee.browsername
+            <img tal:attributes="src context/assignee/fmt:icon_url" />
+            <span tal:content="context/assignee/fmt:displayname">
+              assignee.displayname
             </span>
           </a>
         </tal:has_assignee>
