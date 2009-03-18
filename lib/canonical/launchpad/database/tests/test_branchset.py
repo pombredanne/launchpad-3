@@ -469,40 +469,6 @@ class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
                          'expected %s, got %s'
                          % (expected_rule.name, rule.name))
 
-    def assertVisibilityPolicy(self, creator, owner, private, subscriber):
-        """Check the visibility policy for branch creation.
-
-        The method _checkVisibilityPolicy of the class BranchSet is called
-        when a branch is being created.  The method is responsible for
-        checking the visibility policy of the product.  The visibility policy
-        is a collection of team policies, where a team policy is a team and a
-        visiblity rule.
-
-        This method does not create a branch, it just checks to see that the
-        creator is able to create a branch in the namespace of the owner, and
-        it determins whether the branch is a public branch or a private
-        branch.  If the branch is to be created as a private branch, then
-        there may be a team that is implicitly subscribed to the branch to
-        give that team the ability to see the private branch.
-
-        :param creator: The user creating the branch.
-        :param owner: The person or team that will be the owner of the branch.
-        :param private: The expected private flag value.
-        :param subscriber: The expected implicit subscriber to the branch.
-        """
-        create_private, implicit_subscription_team = (
-            BranchSet()._checkVisibilityPolicy(
-            creator=creator, owner=owner, product=self.product))
-        self.assertEqual(
-            create_private, private,
-            "Branch privacy doesn't match. Expected %s, got %s"
-            % (private, create_private))
-        self.assertEqual(
-            implicit_subscription_team, subscriber,
-            "Implicit subscriber doesn't match. Expected %s, got %s."
-            % (getattr(subscriber, 'name', None),
-               getattr(implicit_subscription_team, 'name', None)))
-
     def assertPublic(self, creator, owner):
         """Assert that the policy check would result in a public branch.
 
