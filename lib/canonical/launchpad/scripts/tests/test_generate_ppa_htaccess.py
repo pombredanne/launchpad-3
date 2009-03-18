@@ -39,7 +39,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
     def getScript(self, test_args=None):
         """Return a HtaccessTokenGenerator instance."""
-        if test_args == None:
+        if test_args is None:
             test_args = []
         script = HtaccessTokenGenerator("test tokens", test_args=test_args)
         script.logger = QuietFakeLogger()
