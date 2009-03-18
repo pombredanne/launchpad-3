@@ -217,6 +217,28 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=visibility_change_notification,
             bug=private_bug)
 
+    def test_tags_added(self):
+        # Adding tags to a bug will add BugActivity and BugNotification
+        # entries.
+        old_tags = self.changeAttribute(
+            self.bug, 'tags', ['first-new-tag', 'second-new-tag'])
+
+        tag_change_activity = {
+            'person': self.user,
+            'whatchanged': 'tags',
+            'oldvalue': '',
+            'newvalue': 'first-new-tag second-new-tag',
+            }
+
+        tag_change_notification = {
+            'person': self.user,
+            'text': '** Tags added: first-new-tag second-new-tag',
+            }
+
+        self.assertRecordedChange(
+            expected_activity=tag_change_activity,
+            expected_notification=tag_change_notification)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

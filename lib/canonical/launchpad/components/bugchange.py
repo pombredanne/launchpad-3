@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BugDescriptionChange',
+    'BugTagsChange',
     'BugTitleChange',
     'BugVisibilityChange',
     'UnsubscribedFromBug',
@@ -152,6 +153,44 @@ class BugVisibilityChange(AttributeChange):
     def getBugNotification(self):
         visibility_string = self._getVisibilityString(self.new_value)
         return {'text': "** Visibility changed to: %s" % visibility_string}
+
+
+class BugTagsChange(AttributeChange):
+    """Used to represent a change to an `IBug`s tags."""
+
+    def getBugActivity(self):
+        # Convert the new and old values into space-separated strings of
+        # tags.
+        new_value = " ".join(sorted(set(self.new_value)))
+        old_value = " ".join(sorted(set(self.old_value)))
+
+        return {
+            'newvalue': new_value,
+            'oldvalue': old_value,
+            'whatchanged': self.what_changed,
+            }
+
+
+class BugTagsAdded(BugTagsChange):
+    """Used when tags are added to an `IBug`s tag list."""
+
+    def getBugNotification(self):
+        new_tags = set(self.new_value)
+        old_tags = set(self.old_value)
+        added_tags = " ".join(sorted(new_tags.difference(old_tags)))
+
+        return {'text': "** Tags added: %s" % added_tags}
+
+
+class BugTagsRemoved(BugTagsChange):
+    """Used when tags are removed from an `IBug`s tag list."""
+
+    def getBugNotification(self):
+        new_tags = set(self.new_value)
+        old_tags = set(self.old_value)
+        removed_tags = " ".join(sorted(old_tags.difference(new_tags)))
+
+        return {'text': "** Tags removed: %s" % removed_tags}
 
 
 BUG_CHANGE_LOOKUP = {
