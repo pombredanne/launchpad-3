@@ -36,7 +36,7 @@ from lazr.lifecycle.event import (
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.components.bugchange import (
-    BranchLinkedToBug, UnsubscribedFromBug)
+    BranchLinkedToBug, BranchUnlinkedFromBug, UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -834,6 +834,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
         if bug_branch is not None:
+            self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch))
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
 

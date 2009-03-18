@@ -186,6 +186,7 @@ class TestBugChanges(unittest.TestCase):
         branch = self.factory.makeBranch()
         self.bug.addBranch(branch, self.user)
         self.saveOldChanges()
+        self.bug.removeBranch(branch, self.user)
         added_activity = {
             'person': self.user,
             'whatchanged': 'branch unlinked',

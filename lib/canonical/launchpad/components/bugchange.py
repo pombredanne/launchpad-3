@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchLinkedToBug',
+    'BranchUnlinkedFromBug',
     'BugDescriptionChange',
     'BugTitleChange',
     'UnsubscribedFromBug',
@@ -105,6 +107,29 @@ class BranchLinkedToBug(BugChangeBase):
     def getBugNotification(self):
         """See `IBugChange`."""
         return {'text': '** Branch linked: %s' % self.branch.bzr_identity}
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
+        # Send the notification to the default recipients.
+        return None
+
+
+class BranchUnlinkedFromBug(BugChangeBase):
+    """A branch got unlinked from the bug."""
+
+    def __init__(self, when, person, branch):
+        super(BranchUnlinkedFromBug, self).__init__(when, person)
+        self.branch = branch
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='branch unlinked',
+            newvalue=self.branch.bzr_identity)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {'text': '** Branch unlinked: %s' % self.branch.bzr_identity}
 
     def getBugNotificationRecipients(self):
         """See `IBugChange`."""
