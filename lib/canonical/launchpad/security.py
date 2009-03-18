@@ -1298,8 +1298,6 @@ class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
     def checkAuthenticated(self, user):
         """Allow who added the entry, experts and admins.
         """
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-
         return (OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
                 user.inTeam(self.obj.importer))
 
