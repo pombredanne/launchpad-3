@@ -806,6 +806,7 @@ class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
         'code': '/@@/branch',
         'translations': '/@@/translation',
         'specs': '/@@/blueprint',
+        'soyuz': '/@@/package-source',
         'answers': '/@@/question'}
 
     def icon(self):

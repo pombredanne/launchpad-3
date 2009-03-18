@@ -69,6 +69,7 @@ We also have image:icon for KarmaCategory:
     <img ... title="Answer Tracker" src="/@@/question" />
     <img ... title="Bazaar Branches" src="/@@/branch" />
     <img ... title="Bug Management" src="/@@/bug" />
+    <img ... title="Soyuz" src="/@@/package-source" />
     <img ... title="Specification Tracking" src="/@@/blueprint" />
     <img ... title="Translations in Rosetta" src="/@@/translation" />
 
