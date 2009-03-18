@@ -8,6 +8,9 @@ Each activity can happen more than once to a bug over the course of its
 lifetime. For auditing reasons, it's useful to track when these happen, why
 these things happen, and who made them happen.
 
+This file contains old tests for bug activity. New tests are in
+tests/test_bugchanges.py.
+
 Before going any further--because editing a bug requires an
 authenticated user--let's login:
 
@@ -248,17 +251,6 @@ First we have to create the file itself, and upload it to the Librarian:
     None
     >>> print latest_activity.newvalue
     1.0
-
-
-== Subscribe someone to a bug ==
-
-    >>> bug_one = getUtility(IBugSet).get(1)
-    >>> thumper = getUtility(IPersonSet).getByName('thumper')
-    >>> bug_subscription = bug_one.subscribe(thumper, user)
-    >>> notify(ObjectCreatedEvent(bug_subscription))
-    >>> latest_activity = bug_one.activity[-1]
-    >>> latest_activity.message
-    u'added subscriber Tim Penhey'
 
 
 == Bug privacy changed ==
