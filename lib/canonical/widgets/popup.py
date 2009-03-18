@@ -8,7 +8,6 @@ __metaclass__ = type
 import os
 import cgi
 import simplejson
-from textwrap import dedent
 
 from zope.interface import Attribute, implements, Interface
 from zope.app import zapi
