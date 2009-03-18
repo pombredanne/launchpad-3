@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BugDescriptionChange',
+    'BugTagsChange',
     'BugTitleChange',
     'BugVisibilityChange',
     'UnsubscribedFromBug',
@@ -170,9 +171,6 @@ class BugSecurityChange(AttributeChange):
         }
 
     def getBugActivity(self):
-        # Use _getVisibilityString() to set old and new values
-        # correctly. We lowercase them for UI consistency in the
-        # activity log.
         old_value, new_value = self.activity_mapping[
             (self.old_value, self.new_value)]
         return {
@@ -188,9 +186,42 @@ class BugSecurityChange(AttributeChange):
             }
 
 
+class BugTagsChange(AttributeChange):
+    """Used to represent a change to an `IBug`s tags."""
+
+    def getBugActivity(self):
+        # Convert the new and old values into space-separated strings of
+        # tags.
+        new_value = " ".join(sorted(set(self.new_value)))
+        old_value = " ".join(sorted(set(self.old_value)))
+
+        return {
+            'newvalue': new_value,
+            'oldvalue': old_value,
+            'whatchanged': self.what_changed,
+            }
+
+    def getBugNotification(self):
+        new_tags = set(self.new_value)
+        old_tags = set(self.old_value)
+        added_tags = new_tags.difference(old_tags)
+        removed_tags = old_tags.difference(new_tags)
+
+        messages = []
+        if len(added_tags) > 0:
+            messages.append(
+                "** Tags added: %s" % " ".join(sorted(added_tags)))
+        if len(removed_tags) > 0:
+            messages.append(
+                "** Tags removed: %s" % " ".join(sorted(removed_tags)))
+
+        return {'text': "\n".join(messages)}
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
     'security_related': BugSecurityChange,
+    'tags': BugTagsChange,
     'title': BugTitleChange,
     }

@@ -217,6 +217,52 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=visibility_change_notification,
             bug=private_bug)
 
+    def test_tags_added(self):
+        # Adding tags to a bug will add BugActivity and BugNotification
+        # entries.
+        old_tags = self.changeAttribute(
+            self.bug, 'tags', ['first-new-tag', 'second-new-tag'])
+
+        tag_change_activity = {
+            'person': self.user,
+            'whatchanged': 'tags',
+            'oldvalue': '',
+            'newvalue': 'first-new-tag second-new-tag',
+            }
+
+        tag_change_notification = {
+            'person': self.user,
+            'text': '** Tags added: first-new-tag second-new-tag',
+            }
+
+        self.assertRecordedChange(
+            expected_activity=tag_change_activity,
+            expected_notification=tag_change_notification)
+
+    def test_tags_removed(self):
+        # Removing tags from a bug adds BugActivity and BugNotification
+        # entries.
+        self.bug.tags = ['first-new-tag', 'second-new-tag']
+        self.saveOldChanges()
+        old_tags = self.changeAttribute(
+            self.bug, 'tags', ['first-new-tag'])
+
+        tag_change_activity = {
+            'person': self.user,
+            'whatchanged': 'tags',
+            'oldvalue': 'first-new-tag second-new-tag',
+            'newvalue': 'first-new-tag',
+            }
+
+        tag_change_notification = {
+            'person': self.user,
+            'text': '** Tags removed: second-new-tag',
+            }
+
+        self.assertRecordedChange(
+            expected_activity=tag_change_activity,
+            expected_notification=tag_change_notification)
+
     def test_mark_as_security_vulnerability(self):
         # Marking a bug as a security vulnerability adds to the bug's
         # activity log and sends a notification.
