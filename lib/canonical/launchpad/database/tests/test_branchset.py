@@ -81,60 +81,6 @@ class TestBranchSet(TestCase):
         self.assertEqual(original_branches[1:], latest_branches)
 
 
-class TestBranchSetNew(TestCaseWithFactory):
-    """Tests for BranchSet.new()."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        # This person should be considered to be wholly arbitrary.
-        self.person = self.factory.makePerson()
-        assert self.person is not None, "Sample Person not found."
-        self.branch_set = getUtility(IBranchSet)
-
-    def makeNewBranchWithName(self, name):
-        """Attempt to create a new branch with name 'name'.
-
-        It will a +junk branch owned and authored by Sample Person, but this
-        shouldn't be important.
-        """
-        return self.branch_set.new(
-            BranchType.HOSTED, name, self.person, self.person, None, None)
-
-    def test_permitted_first_character(self):
-        # The first character of a branch name must be a letter or a number.
-        for c in [chr(i) for i in range(128)]:
-            if c.isalnum():
-                self.makeNewBranchWithName(c)
-            else:
-                self.assertRaises(
-                    LaunchpadValidationError, self.makeNewBranchWithName, c)
-
-    def test_permitted_subsequent_character(self):
-        # After the first character, letters, numbers and certain punctuation
-        # is permitted.
-        for c in [chr(i) for i in range(128)]:
-            if c.isalnum() or c in '+-_@.':
-                self.makeNewBranchWithName('a' + c)
-            else:
-                self.assertRaises(
-                    LaunchpadValidationError,
-                    self.makeNewBranchWithName, 'a' + c)
-
-    def test_source_package_branch(self):
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        owner = self.factory.makePerson()
-        new_branch = self.branch_set.new(
-            BranchType.HOSTED, name=self.factory.getUniqueString(),
-            registrant=owner, owner=owner, product=None, url=None,
-            distroseries=distroseries, sourcepackagename=sourcepackagename)
-        self.assertEqual(distroseries, new_branch.distroseries)
-        self.assertEqual(sourcepackagename, new_branch.sourcepackagename)
-        self.assertIs(None, new_branch.product)
-
-
 class TestMirroringForHostedBranches(TestCaseWithFactory):
     """Tests for mirroring methods of a branch."""
 
