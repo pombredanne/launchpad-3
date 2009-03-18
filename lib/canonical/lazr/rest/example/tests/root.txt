@@ -10,7 +10,8 @@ links to the top-level web service objects.
   >>> top_level_response = webservice.get("/")
   >>> top_level_links = top_level_response.jsonBody()
   >>> sorted(top_level_links.keys())
-  [u'cookbooks_collection_link', u'resource_type_link']
+  [u'cookbooks_collection_link', u'dishes_collection_link',
+   u'resource_type_link']
   >>> top_level_links['cookbooks_collection_link']
   u'http://api.cookbooks.dev/1.0/cookbooks'
 
