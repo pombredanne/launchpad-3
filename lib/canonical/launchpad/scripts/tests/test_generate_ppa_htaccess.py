@@ -39,6 +39,8 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
 
     def getScript(self, test_args=None):
         """Return a HtaccessTokenGenerator instance."""
+        if test_args is None:
+            test_args = []
         script = HtaccessTokenGenerator("test tokens", test_args=test_args)
         script.logger = QuietFakeLogger()
         script.txn = self.layer.txn
@@ -172,6 +174,8 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
 
         # Write out a dummy .htpasswd
+        if not os.path.exists(pub_config.htaccessroot):
+            os.makedirs(pub_config.htaccessroot)
         file = open(filename, "w")
         file.write(FILE_CONTENT)
         file.close()

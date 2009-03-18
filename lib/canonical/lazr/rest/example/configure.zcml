@@ -4,12 +4,35 @@
 
   <webservice:register module="canonical.lazr.rest.example.interfaces" />
 
+  <class class="canonical.lazr.rest.example.root.CookbookSet">
+      <allow interface='canonical.lazr.rest.example.interfaces.ICookbookSet' />
+  </class>
+
+  <class class="canonical.lazr.rest.example.root.Cookbook">
+      <allow interface='canonical.lazr.rest.example.interfaces.ICookbook' />
+  </class>
+
+  <class class="canonical.lazr.rest.example.root.Dish">
+      <allow interface='canonical.lazr.rest.example.interfaces.IDish' />
+  </class>
+
+  <class class="canonical.lazr.rest.example.root.DishSet">
+      <allow interface='canonical.lazr.rest.example.interfaces.IDishSet' />
+  </class>
+
+  <class class="canonical.lazr.rest.example.root.Recipe">
+      <allow interface='canonical.lazr.rest.example.interfaces.IRecipe' />
+  </class>
+
+  <permission id="lazr.View" title="Viewing something" />
+
   <utility
       factory="canonical.lazr.rest.example.configuration.CookbookWebServiceConfiguration"
       provides="canonical.lazr.interfaces.rest.IWebServiceConfiguration">
   </utility>
 
   <utility factory="canonical.lazr.rest.example.root.CookbookSet" />
+  <utility factory="canonical.lazr.rest.example.root.DishSet" />
 
   <utility
     provides="canonical.lazr.interfaces.rest.IServiceRootResource"

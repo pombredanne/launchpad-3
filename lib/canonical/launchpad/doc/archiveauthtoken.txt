@@ -128,11 +128,10 @@ It's also possible to retrieve a set of all the tokens for an archive.
 
     >>> tokens = token_set.getByArchive(cprov.archive)
     >>> print tokens.count()
-    2
+    1
 
     >>> for token in tokens:
     ...     print token.person.name
-    name12
     name12
 
 Tokens can also be retreived by archive and person:
@@ -164,14 +163,15 @@ Deactivating sets the date_deactivated value.
 
 We can do this as an admin too:
 
+    >>> new_token = cprov.archive.newAuthToken(name12)
     >>> login("admin@canonical.com")
     >>> new_token.deactivate()
 
 Deactivating a token stops it being returned from getByArchive().  The
-previous count of 2 is now reduced to 1.
+previous count of 1 is now reduced to 0.
 
     >>> token_set.getByArchive(cprov.archive).count()
-    1
+    0
 
 The IArchiveAuthTokenSet.getActiveTokenForArchiveAndPerson() method will
 also not return tokens that have been deactivated:

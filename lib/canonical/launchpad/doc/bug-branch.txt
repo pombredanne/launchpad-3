@@ -108,6 +108,20 @@ bug nor the BugBranch.
     True
     >>> login('no-priv@canonical.com')
 
+You can unlink a branch from a bug using removeBranch().
+
+    >>> bug.hasBranch(branch)
+    True
+    >>> bug.removeBranch(branch, getUtility(ILaunchBag).user)
+    >>> bug.hasBranch(branch)
+    False
+
+Calling removeBranch() once again is a noop.
+
+    >>> bug.removeBranch(branch, getUtility(ILaunchBag).user)
+
+    >>> bug_branch = bug.addBranch(branch, user)
+
 
 == Bugs Related to Branches ==
 
