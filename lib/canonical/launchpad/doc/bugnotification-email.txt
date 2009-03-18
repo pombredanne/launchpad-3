@@ -110,9 +110,16 @@ But of course, security related bugs are private by default:
 
 = Editing a bug =
 
-get_bug_edit_notification_texts accepts an object that provides
-IBugDelta, and returns a list of text representations of the changes
-made to the bug.
+get_bug_edit_notification_texts() accepts an object that provides
+IBugDelta, and returns a list of the changes made to the bug. The list
+will contain a mix of IBugChange objects and strings, depending on how
+get_bug_edit_notification_texts() handles the change internally.
+
+
+    # XXX 2009-03-17 gmb [bug=344125]:
+    #     Returning strings is deprecated for future additions to
+    #     get_bug_edit_notification_texts() but will remain in place
+    #     until the transition to the IBugChange API is complete.
 
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> edited_bug = getUtility(IBugSet).get(2)
@@ -137,8 +144,19 @@ made to the bug.
     >>> IBugDelta.providedBy(bug_delta)
     True
 
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+The change representations for changes to the title and description of
+the bug will be IBugChange objects.
+
+    >>> from canonical.launchpad.interfaces.bugchange import IBugChange
+    >>> changes = get_bug_edit_notification_texts(bug_delta)
+    >>> for change in changes:
+    ...     IBugChange.providedBy(change)
+    True
+    True
+
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Summary changed:
     <BLANKLINE>
@@ -168,8 +186,9 @@ is wrapped properly:
     ...     user=sample_person,
     ...     description={'new': edited_bug.description,
     ...                  'old': old_description})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Description changed:
     <BLANKLINE>

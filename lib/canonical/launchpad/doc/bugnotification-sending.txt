@@ -1718,3 +1718,4 @@ will not receive notifications sent by add_bug_change_notification().
     Ubuntu Team, which is the registrant for Ubuntu.
 
     >>> config_data = config.pop('bugnotification_interval')
+
