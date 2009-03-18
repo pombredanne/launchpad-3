@@ -31,7 +31,7 @@
         });
     </script>
 
-    <table id="layout-table" style="display:none">
+    <table id="layout-table" class="official-tags-layout-table" style="display:none">
       <tr>
         <th>Official Tags</th>
         <th />
@@ -39,8 +39,16 @@
       </tr>
       <tr>
         <td id="left-column">
-          <input type="text" id="new-tag-text" />
-          <a href="#" id="new-tag-add"><img src="/@@/add" /></a>
+          <table class="input-field-layout-table">
+            <tr>
+              <td style="width: 100%">
+                <input type="text" id="new-tag-text" style="width: 100%" />
+              </td>
+              <td>
+                <a href="#" id="new-tag-add"><img src="/@@/add" /></a>
+              </td>
+            </tr>
+          </table>
           <div id="field-error-message" class="error" style="display: none">
             <div class="message">
               This is not a valid tag name.
@@ -52,24 +60,23 @@
           </ul>
         </td>
         <td id="middle-column">
-          <a href="#" id="add-official-tags">&lt;--</a>
+          <input type="submit" value="&larr;" id="add-official-tags" class="arrow-button" />
           <br />
-          <a href="#" id="remove-official-tags">--&gt;</a>
+          <input type="submit" value="&rarr;" id="remove-official-tags" class="arrow-button" />
+          <br />
+          <br />
+          <input type="submit" value="Save" id="save-button" />
+          <form action="+manage-official-tags" method="post" id="save-form">
+            <input type="hidden" id="field-official_bug_tags" name="field.official_bug_tags" />
+            <input type="hidden" name="field.actions.save" value="Save" />
+          </form>
         </td>
         <td id="right-column">
           <ul id="other-tags-list">
           </ul>
         </td>
-        <td>
-          <form action="+manage-official-tags" method="post" id="save-form">
-            <input type="hidden" id="field-official_bug_tags" name="field.official_bug_tags" />
-            <input type="hidden" name="field.actions.save" value="Save" />
-            <input type="submit" value="Save" id="save-button" />
-          </form>
-        </td>
       </tr>
     </table>
- </div>
-
+  </div>
   </body>
 </html>
