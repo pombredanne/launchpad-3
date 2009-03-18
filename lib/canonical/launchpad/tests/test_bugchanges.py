@@ -180,6 +180,25 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=added_activity,
             expected_notification=added_notification)
 
+    def test_unlink_branch(self):
+        # Unlinking a branch from a bug adds both to the activity log and
+        # sends an e-mail notification.
+        branch = self.factory.makeBranch()
+        self.bug.addBranch(branch, self.user)
+        self.saveOldChanges()
+        added_activity = {
+            'person': self.user,
+            'whatchanged': 'branch unlinked',
+            'newvalue': branch.bzr_identity,
+            }
+        added_notification = {
+            'text': "** Branch unlinked: %s" % branch.bzr_identity,
+            'person': self.user,
+            }
+        self.assertRecordedChange(
+            expected_activity=added_activity,
+            expected_notification=added_notification)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

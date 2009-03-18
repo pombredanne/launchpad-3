@@ -830,6 +830,13 @@ class Bug(SQLBase):
 
         return bug_branch
 
+    def removeBranch(self, branch, user):
+        """See `IBug`."""
+        bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
+        if bug_branch is not None:
+            notify(ObjectDeletedEvent(bug_branch, user=user))
+            bug_branch.destroySelf()
+
     def linkCVE(self, cve, user):
         """See `IBug`."""
         if cve not in self.cves:
