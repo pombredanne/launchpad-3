@@ -453,9 +453,13 @@ sites. For these branches, resolve_lp_path returns only a single URL.
 
     >>> from canonical.launchpad.interfaces import (BranchType, IPersonSet)
     >>> arbitrary_person = getUtility(IPersonSet).getByName('name12')
-    >>> getUtility(IBranchSet).new(
-    ...     BranchType.REMOTE, 'remote', arbitrary_person, arbitrary_person,
-    ...     None, 'http://example.com/remote_branch')
+    >>> from canonical.launchpad.interfaces.branchnamespace import (
+    ...     get_branch_namespace)
+    >>> namespace = get_branch_namespace(arbitrary_person)
+    >>> namespace.createBranch(
+    ...     branch_type=BranchType.REMOTE, name='remote',
+    ...     registrant=arbitrary_person,
+    ...     url='http://example.com/remote_branch')
     <Branch u'~name12/+junk/remote' (...)>
     >>> results = branchset_api.resolve_lp_path('~name12/+junk/remote')
     >>> results['urls']
