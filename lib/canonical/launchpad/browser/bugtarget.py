@@ -1299,3 +1299,8 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
                   </script>
                """ % (
                used_tags, official_tags, dumps(valid_name_pattern.pattern))
+
+    def cancel_url(self):
+        """The URL the user is sent to when clicking the "cancel" link."""
+        return canonical_url(self.context)
+
