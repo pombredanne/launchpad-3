@@ -209,7 +209,10 @@ class _BaseNamespace:
         raise NotImplementedError(self.getPrivacySubscriber)
 
     def checkCreationPolicy(self, user):
-        """Check to see if user is allowed a branch in this namespace."""
+        """Check to see if user is allowed a branch in this namespace.
+
+        :return: True if the user is allowed, False otherwise.
+        """
         raise NotImplementedError(self.checkCreationPolicy)
 
 
@@ -243,7 +246,7 @@ class PersonalNamespace(_BaseNamespace):
         return None
 
     def checkCreationPolicy(self, user):
-        """Check to see if user is allowed a branch in this namespace."""
+        """See `_BaseNamespace`."""
         return True
 
 
@@ -298,7 +301,7 @@ class ProductNamespace(_BaseNamespace):
             return None
 
     def checkCreationPolicy(self, user):
-        """Check to see if user is allowed a branch in this namespace."""
+        """See `_BaseNamespace`."""
         if len(self._getRelatedPolicies()) > 0:
             return True
         base_rule = self.product.getBaseBranchVisibilityRule()
@@ -353,7 +356,7 @@ class PackageNamespace(_BaseNamespace):
         return None
 
     def checkCreationPolicy(self, user):
-        """Check to see if user is allowed a branch in this namespace."""
+        """See `_BaseNamespace`."""
         return True
 
 
