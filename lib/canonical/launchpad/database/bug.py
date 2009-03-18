@@ -848,7 +848,8 @@ class Bug(SQLBase):
         """See `IBug`."""
         for cve_link in self.cve_links:
             if cve_link.cve.id == cve.id:
-                self.addChange(CveUnlinkedFromBug(when=None, person=user, cve=cve))
+                self.addChange(
+                    CveUnlinkedFromBug(when=None, person=user, cve=cve))
                 notify(ObjectDeletedEvent(cve_link, user=user))
                 BugCve.delete(cve_link.id)
                 break

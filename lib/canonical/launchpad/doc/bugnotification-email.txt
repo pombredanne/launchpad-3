@@ -28,7 +28,7 @@ examples that follow:
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IBugDelta, IBugSet, IPersonSet, IBugTaskSet,
-    ...     ICve, IEmailAddressSet)
+    ...     IEmailAddressSet)
     >>> from canonical.launchpad.components.bug import BugDelta
 
 = Filing a bug =
