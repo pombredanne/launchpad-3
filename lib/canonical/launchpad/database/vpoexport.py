@@ -52,6 +52,7 @@ class VPOExportSet:
         'msgid_plural',
         'is_current',
         'is_imported',
+        'diverged',
         'translation0',
         'translation1',
         'translation2',
@@ -71,6 +72,7 @@ class VPOExportSet:
         VIEW_NAME_PREFIX+'potemplate',
         VIEW_NAME_PREFIX+'language',
         VIEW_NAME_PREFIX+'variant',
+        VIEW_NAME_PREFIX+'diverged NULLS LAST',
         'CASE '
             'WHEN '+VIEW_NAME_PREFIX+'sequence = 0 THEN NULL '
             'ELSE '+VIEW_NAME_PREFIX+'sequence '
@@ -242,6 +244,7 @@ class VPOExport:
          self.msgid_plural,
          self.is_current,
          self.is_imported,
+         self.diverged,
          self.translation0,
          self.translation1,
          self.translation2,
