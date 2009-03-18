@@ -772,6 +772,10 @@ class Bug(SQLBase):
         notify(ObjectCreatedEvent(bug_watch, user=owner))
         return bug_watch
 
+    def removeWatch(self, bug_watch, user):
+        """See `IBug`."""
+        bug_watch.destroySelf()
+
     def addAttachment(self, owner, data, comment, filename, is_patch=False,
                       content_type=None, description=None):
         """See `IBug`."""
