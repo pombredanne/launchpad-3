@@ -9,7 +9,8 @@ __all__ = ['ICookbook',
            'IDish',
            'IDishSet',
            'IHasGet',
-           'IRecipe']
+           'IRecipe',
+           'NameAlreadyTaken']
 
 from zope.interface import Interface
 from zope.schema import Bool, Int, TextLine, Text
@@ -17,7 +18,14 @@ from zope.schema import Bool, Int, TextLine, Text
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_factory_operation,
+    export_read_operation, exported, operation_parameters,
+    operation_returns_collection_of, webservice_error)
+
+
+class NameAlreadyTaken(Exception):
+    """The name given for a cookbook is in use by another cookbook."""
+    webservice_error(409)
 
 
 class IDish(Interface):
@@ -68,6 +76,18 @@ class ICookbookSet(IHasGet):
     @collection_default_content()
     def getCookbooks():
         """Return the list of cookbooks."""
+
+    @operation_parameters(
+        search=TextLine(title=u"String to search for in recipe name."))
+    @operation_returns_collection_of(IRecipe)
+    @export_read_operation()
+    def find_recipes(search):
+        """Search for recipes across cookbooks."""
+
+    @export_factory_operation(ICookbook, ['name', 'cuisine'])
+    def create(name, cuisine):
+        """Create a new cookbook."""
+
 
 class IDishSet(IHasGet):
     """The set of all dishes, annotated for export to the web service."""

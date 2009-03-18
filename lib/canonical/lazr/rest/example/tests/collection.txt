@@ -146,4 +146,96 @@ A collection may be scoped to an element:
 
 == Named operations ==
 
-TBA
+A collection may expose custom named operations in response to GET
+requests. A named operation may do anything consistent with the nature
+of a GET request, but it's usually used to serve search results. The
+custom operation to be invoked is named in the query string's
+'ws.op' argument. Here's a custom operation on the collection of
+cookbooks, called 'find_recipes'.
+
+  >>> def search_recipes(text, start=0, size=2):
+  ...     return webservice.get(
+  ...         "/cookbooks?ws.op=find_recipes&search=%s&ws.start=%s&ws.size=%s" %
+  ...             (quote(text), start, size)).jsonBody()
+
+  >>> s_recipes = search_recipes("chicken")
+  >>> s_recipes['total_size']
+  3
+  >>> sorted(r['instructions'] for r in s_recipes['entries'])
+  [u'Draw, singe, stuff, and truss...', u'You can always judge...']
+
+A custom operation that returns a list of objects is paginated, just
+like a collection.
+
+  >>> s_recipes['next_collection_link']
+  u'http://.../cookbooks?search=chicken&ws.op=find_recipes&ws.start=2&ws.size=2'
+
+  >>> s_recipes_batch_2 = search_recipes("chicken", 2)
+  >>> sorted(r['instructions'] for r in s_recipes_batch_2['entries'])
+  [u'A perfectly roasted chicken is...']
+
+Just as a collection may be empty, a custom operation may return an
+empty list of results:
+
+  >>> empty_collection = search_recipes("nosuchrecipe")
+  >>> empty_collection['total_size']
+  0
+  >>> [r['instructions'] for r in empty_collection['entries']]
+  []
+
+Custom operations may have custom error handling.
+
+  >>> print webservice.get("/cookbooks?ws.op=find_recipes")
+  HTTP/1.1 400 Bad Request
+  ...
+  search: Required input is missing.
+
+
+=== POST operations ===
+
+A collection may also expose named operations in response to POST
+requests. These operations are usually factories. Here's a helper
+method that creates a new cookbook by invoking a factory operation on
+the collection of cookbooks.
+
+  >>> def create_cookbook(name, cuisine):
+  ...     return webservice.named_post(
+  ...         "/cookbooks", "create", {},
+  ...         name=name, cuisine=cuisine)
+
+  >>> cake_url = quote('/cookbooks/The Cake Bible')
+
+  >>> print webservice.get(cake_url)
+  HTTP/1.1 404 Not Found
+  ...
+
+  >>> print create_cookbook("The Cake Bible", "Dessert")
+  HTTP/1.1 201 Created
+  ...
+  Location: http://.../cookbooks/The%20Cake%20Bible
+
+  >>> print webservice.get(cake_url)
+  HTTP/1.1 200 Ok
+  ...
+
+POST operations can have custom validation. For instance, you can't
+create a cookbook with a name that's already in use.
+
+  >>> print create_cookbook("The Cake Bible", "Dessert")
+  HTTP/1.1 409 Conflict
+  ...
+  A cookbook called "The Cake Bible" already exists.
+
+A POST request has no meaning unless it specifies a custom operation.
+
+  >>> print webservice.post("/cookbooks", 'text/plain', '')
+  HTTP/1.1 400 Bad Request
+  ...
+  No operation name given.
+
+You can't invoke a nonexistent operation:
+
+  >>> print webservice.named_post("/cookbooks", "nosuchop", {})
+  HTTP/1.1 400 Bad Request
+  ...
+  No such operation: nosuchop

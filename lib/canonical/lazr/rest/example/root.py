@@ -18,7 +18,8 @@ from canonical.lazr.rest import ServiceRootResource
 from canonical.lazr.interfaces.rest import (
     IServiceRootResource, IWebServiceConfiguration)
 from canonical.lazr.rest.example.interfaces import (
-    ICookbook, ICookbookSet, IDish, IDishSet, IRecipe, IHasGet)
+    ICookbook, ICookbookSet, IDish, IDishSet, IRecipe, IHasGet,
+    NameAlreadyTaken)
 from canonical.lazr.security import protect_schema
 
 
@@ -115,6 +116,23 @@ class CookbookSet(CookbookTopLevelObject):
         if len(match) > 0:
             return match[0]
         return None
+
+    def find_recipes(self, search):
+        recipes = []
+        for cookbook in self.cookbooks:
+            for recipe in cookbook.recipes:
+                if search in recipe.dish.name:
+                    recipes.append(recipe)
+        return recipes
+
+    def create(self, name, cuisine):
+        for cookbook in self.cookbooks:
+            if cookbook.name == name:
+                raise NameAlreadyTaken(
+                    'A cookbook called "%s" already exists.' % name)
+        cookbook = Cookbook(name, cuisine)
+        self.cookbooks.append(cookbook)
+        return cookbook
 
 
 class DishSet(CookbookTopLevelObject):
