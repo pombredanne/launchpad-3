@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistroSeries."""
@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
@@ -38,7 +39,8 @@ from canonical.launchpad import _
 
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters, operation_returns_entry)
 
 
 # XXX: salgado, 2008-06-02: We should use a more generic name here as this
@@ -355,6 +357,11 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Update the binary and source package counts for this distro
         series."""
 
+    @operation_parameters(
+        name=TextLine(
+            title=_("The name of the source package"), required=True))
+    @operation_returns_entry(ISourcePackage)
+    @export_read_operation()
     def getSourcePackage(name):
         """Return a source package in this distro series by name.
 
