@@ -8,12 +8,17 @@
     <allow
        interface="canonical.launchpad.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"
        />
+    <require
+       permission="launchpad.Edit"
+       set_schema="canonical.launchpad.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch" />
   </class>
 
   <securedutility
       class="canonical.launchpad.database.seriessourcepackagebranch.SeriesSourcePackageBranchSet"
       provides="canonical.launchpad.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranchSet" >
     <allow interface="canonical.launchpad.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranchSet" />
+    <require permission="launchpad.Edit"
+             interface="canonical.launchpad.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranchSet"  />
   </securedutility>
 
 
