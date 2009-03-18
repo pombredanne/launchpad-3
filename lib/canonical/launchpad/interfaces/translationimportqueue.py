@@ -1,4 +1,4 @@
-# Copyright 2005-2008 Canonical Ltd. All rights reserved.
+# Copyright 2005-2009 Canonical Ltd. All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
@@ -20,8 +20,10 @@ __all__ = [
     'IEditTranslationImportQueueEntry',
     'IHasTranslationImports',
     'RosettaImportStatus',
+    'SpecialTranslationImportTargetFilter',
     'TranslationFileType',
     ]
+
 
 class TranslationImportQueueConflictError(
                                     TranslationImportExportBaseException):
@@ -73,6 +75,22 @@ class RosettaImportStatus(DBEnumeratedType):
         Blocked
 
         The entry has been blocked to be imported by a Rosetta Expert.
+        """)
+
+
+class SpecialTranslationImportTargetFilter(DBEnumeratedType):
+    """Special "meta-targets" to filter the queue view by."""
+
+    PRODUCT = DBItem(1, """
+        Any Project
+
+        Any project registered in Launchpad.
+        """)
+
+    DISTRIBUTION = DBItem(2, """
+        Any Distribution
+
+        Any distribution registered in Launchpad.
         """)
 
 
@@ -314,11 +332,9 @@ class ITranslationImportQueue(Interface):
     def remove(entry):
         """Remove the given :entry: from the queue."""
 
-class TranslationFileType(EnumeratedType):
-    """The different types of translation files that can be imported.
 
-    .
-    """
+class TranslationFileType(EnumeratedType):
+    """The different types of translation files that can be imported."""
 
     UNSPEC = Item("""
         <Please specify>
