@@ -616,7 +616,7 @@ def get_bug_edit_notification_texts(bug_delta):
     # the order in which changes will appear both in the bug activity
     # log and in notification emails.
     bug_change_field_names = [
-        'title', 'description', 'private', 'security_related',
+        'title', 'description', 'private', 'security_related', 'tags',
         ]
     for field_name in bug_change_field_names:
         field_delta = getattr(bug_delta, field_name)
@@ -626,16 +626,6 @@ def get_bug_edit_notification_texts(bug_delta):
                 when=None, person=bug_delta.user, what_changed=field_name,
                 old_value=field_delta['old'], new_value=field_delta['new'])
             changes.append(change_info)
-
-    if bug_delta.tags is not None:
-        new_tags = set(bug_delta.tags['new'])
-        old_tags = set(bug_delta.tags['old'])
-        added_tags = sorted(new_tags.difference(old_tags))
-        removed_tags = sorted(old_tags.difference(new_tags))
-        if added_tags:
-            changes.append(u'** Tags added: %s' % ' '.join(added_tags))
-        if removed_tags:
-            changes.append(u'** Tags removed: %s' % ' '.join(removed_tags))
 
     if bug_delta.bugwatch is not None:
         old_bug_watch = bug_delta.bugwatch.get('old')

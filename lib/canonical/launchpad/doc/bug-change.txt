@@ -383,4 +383,3 @@ Going the other way the phrases are similar.
 
     >>> print bug_security_change.getBugNotification()['text']
     ** This bug is no longer flagged as a security vulnerability
->>>>>>> MERGE-SOURCE

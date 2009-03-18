@@ -220,5 +220,6 @@ BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
     'security_related': BugSecurityChange,
+    'tags': BugTagsChange,
     'title': BugTitleChange,
     }
