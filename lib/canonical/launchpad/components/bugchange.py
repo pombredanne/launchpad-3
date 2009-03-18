@@ -31,14 +31,9 @@ class BugChangeBase:
 
     implements(IBugChange)
 
-    def __init__(self, when, person, what_changed, old_value, new_value,
-                 recipients=None):
-        self.new_value = new_value
-        self.old_value = old_value
+    def __init__(self, when, person):
         self.person = person
-        self.what_changed = what_changed
         self.when = when
-        self.recipients = recipients
 
     def getBugActivity(self):
         """Return the `BugActivity` entry for this change."""
@@ -53,8 +48,16 @@ class BugChangeBase:
         raise NotImplementedError(self.getBugNotificationRecipients)
 
 
-class SimpleBugChangeMixin:
+class AttributeChange(BugChangeBase):
     """A mixin class that provides basic functionality for `IBugChange`s."""
+
+    def __init__(self, when, person, what_changed, old_value, new_value,
+                 recipients=None):
+        super(AttributeChange, self).__init__(when, person)
+        self.new_value = new_value
+        self.old_value = old_value
+        self.what_changed = what_changed
+        self.recipients = recipients
 
     def getBugActivity(self):
         """Return the BugActivity data for the textual change."""
@@ -75,7 +78,7 @@ class UnsubscribedFromBug(BugChangeBase):
         super(UnsubscribedFromBug, self).__init__(when, person)
         self.unsubscribed_user = unsubscribed_user
 
-    def getBugActivity(self)
+    def getBugActivity(self):
         """See `IBugChange`."""
         return dict(
             whatchanged='removed subscriber %s' % (
@@ -86,7 +89,7 @@ class UnsubscribedFromBug(BugChangeBase):
         return None
 
 
-class BugDescriptionChange(SimpleBugChangeMixin, BugChangeBase):
+class BugDescriptionChange(AttributeChange):
     """Describes a change to a bug's description."""
 
     def getBugNotification(self):
@@ -98,7 +101,7 @@ class BugDescriptionChange(SimpleBugChangeMixin, BugChangeBase):
         return {'text': notification_text}
 
 
-class BugTitleChange(SimpleBugChangeMixin, BugChangeBase):
+class BugTitleChange(AttributeChange):
     """Describes a change to a bug's title, aka summary."""
 
     def getBugActivity(self):
