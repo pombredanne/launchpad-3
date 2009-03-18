@@ -213,7 +213,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             import transaction
             transaction.commit()
         return account
-            
+
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, hide_email_addresses=False,
                    displayname=None, time_zone=None, latitude=None,
@@ -522,8 +522,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner, product=product, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
         branch = namespace.createBranch(
-            branch_type, name, registrant, owner, url,
-            **optional_branch_args)
+            branch_type=branch_type, name=name, registrant=registrant,
+            url=url, **optional_branch_args)
         if private:
             removeSecurityProxy(branch).private = True
         if stacked_on is not None:
