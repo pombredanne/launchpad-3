@@ -256,7 +256,10 @@ class PackageUpload(SQLBase):
 
     def _giveKarma(self):
         """Assign karma as appropriate for an accepted upload."""
-        # Give some karma to the uploader for source uploads.
+        # Give some karma to the uploader for source uploads only.
+        if self.sources.count() == 0:
+            return
+
         changed_by = self.sources[0].sourcepackagerelease.creator
         if self.signing_key is not None:
             uploader = self.signing_key.owner
