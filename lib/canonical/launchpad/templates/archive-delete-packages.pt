@@ -23,7 +23,9 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Delete packages from <tal:displayname replace="context/displayname" /></h1>
+  <h1 tal:content="CONTEXTS/fmt:pagetitle">
+    Delete packages from Blah PPA
+  </h1>
 
     <tal:inactive_ppa_header condition="not: view/has_sources">
       <p>This PPA does not contain any source packages published.</p>
