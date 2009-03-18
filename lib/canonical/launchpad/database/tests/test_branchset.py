@@ -21,6 +21,8 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, BranchVisibilityRule, IBranchSet,
     IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
     PersonCreationRationale, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -395,7 +397,7 @@ class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
     branch_type = BranchType.IMPORTED
 
 
-class BranchVisibilityPolicyTestCase(TestCase):
+class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
     """Base class for tests to make testing of branch visibility easier."""
 
     layer = DatabaseFunctionalLayer
@@ -412,11 +414,9 @@ class BranchVisibilityPolicyTestCase(TestCase):
           * "charlie", who is a member of zulu.
           * "doug", who is a member of no teams.
         """
-        TestCase.setUp(self)
-        login("foo.bar@canonical.com")
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
         # Our test product.
         person_set = getUtility(IPersonSet)
-        self.factory = LaunchpadObjectFactory()
         self.product = self.factory.makeProduct()
         # Create some test people.
         self.albert, alberts_email = person_set.createPersonAndEmail(
@@ -509,7 +509,8 @@ class BranchVisibilityPolicyTestCase(TestCase):
         :param creator: The user creating the branch.
         :param owner: The person or team that will be the owner of the branch.
         """
-        self.assertVisibilityPolicy(creator, owner, False, None)
+        namespace = get_branch_namespace(owner, product=self.product)
+        self.assertFalse(namespace.areNewBranchesPrivate())
 
     def assertPrivateSubscriber(self, creator, owner, subscriber):
         """Assert that the policy check results in a private branch.
@@ -518,7 +519,12 @@ class BranchVisibilityPolicyTestCase(TestCase):
         :param owner: The person or team that will be the owner of the branch.
         :param subscriber: The expected implicit subscriber to the branch.
         """
-        self.assertVisibilityPolicy(creator, owner, True, subscriber)
+        namespace = get_branch_namespace(owner, product=self.product)
+        self.assertTrue(namespace.areNewBranchesPrivate())
+        if subscriber is None:
+            self.assertIs(None, namespace.getPrivacySubscriber())
+        else:
+            self.assertEqual(subscriber, namespace.getPrivacySubscriber())
 
     def assertPolicyCheckRaises(self, error, creator, owner):
         """Assert that the policy check raises an exception.
@@ -527,10 +533,11 @@ class BranchVisibilityPolicyTestCase(TestCase):
         :param creator: The user creating the branch.
         :param owner: The person or team that will be the owner of the branch.
         """
+        namespace = get_branch_namespace(owner, product=self.product)
         self.assertRaises(
             error,
-            BranchSet()._checkVisibilityPolicy,
-            creator=creator, owner=owner, product=self.product)
+            namespace.validateNewBranch,
+            registrant=creator, name=self.factory.getUniqueString())
 
 
 class TestTeamMembership(BranchVisibilityPolicyTestCase):
@@ -1016,10 +1023,9 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         """
         self.assertPublic(self.albert, self.albert)
 
-    def test_no_team_junk_branches(self):
-        """We forbid the creation of team-owned +junk branches."""
-        self.assertPolicyCheckRaises(
-            BranchCreationNoTeamOwnedJunkBranches, self.albert, self.xray)
+    def test_team_junk_branches(self):
+        """Team junk branches are allowed, and are public."""
+        self.assertPublic(self.albert, self.xray)
 
     def test_no_create_junk_branch_for_other_user(self):
         """One user can't create +junk branches owned by another."""
