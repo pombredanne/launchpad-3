@@ -34,6 +34,14 @@ class NameAlreadyTaken(Exception):
     webservice_error(409)
 
 
+class WhitespaceStrippingTextLine(TextLine):
+    """A TextLine that won't abide leading or trailing whitespace."""
+
+    def set(self, object, value):
+        """Strip whitespace before setting."""
+        super(WhitespaceStrippingTextLine, self).set(object, value.strip())
+
+
 class IDish(Interface):
     """A dish, annotated for export to the web service."""
     export_as_webservice_entry(plural_name='dishes')
@@ -59,8 +67,8 @@ class ICookbook(Interface):
     """A cookbook, annotated for export to the web service."""
     export_as_webservice_entry()
     name = exported(TextLine(title=u"Name", required=True))
-    cuisine = exported(
-        TextLine(title=u"Cuisine", required=False, default=None))
+    cuisine = exported(WhitespaceStrippingTextLine(
+            title=u"Cuisine", required=False, default=None))
     recipes = exported(CollectionField(title=u"Recipes in this cookbook",
                                        value_type=Reference(schema=IRecipe)))
 

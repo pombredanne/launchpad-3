@@ -227,7 +227,6 @@ representation of the object.
   HTTP/1.1 209 Content Returned
   ...
   Content-Type: application/json
-  ...
   <BLANKLINE>
   {...}
 
@@ -242,7 +241,7 @@ the web service to change the cookbook's name to 'Everyday Greens 2'.
   HTTP/1.1 301 Moved Permanently
   ...
   Location: http://.../Everyday%20Greens%202
-  ...
+  <BLANKLINE>
 
 At this point we can no longer manipulate this cookbook by sending
 HTTP requests to http://cookbooks.dev/1.0/cookbooks/Everyday%20Greens,
@@ -256,7 +255,7 @@ address.
   HTTP/1.1 301 Moved Permanently
   ...
   Location: http://.../cookbooks/Everyday%20Greens
-  ...
+  <BLANKLINE>
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
 clients support PATCH. It's possible to fake a PATCH request with
@@ -326,7 +325,7 @@ back. You can also get an HTML representation.
   HTTP/1.1 209 Content Returned
   ...
   Content-Type: application/xhtml+xml
-  ...
+  <BLANKLINE>
   <?xml version="1.0"?>
   ...
 
@@ -338,4 +337,42 @@ You can even get a WADL representation, though that's pretty useless.
   HTTP/1.1 209 Content Returned
   ...
   Content-Type: application/vd.sun.wadl+xml
+  <BLANKLINE>
   ...
+
+
+=== Server-side modification ===
+
+Sometimes the server will transparently modify a value sent by the
+client, to clean it up or put it into a canonical form. For this
+purpose, the response to a PUT or PATCH request includes a brand new
+JSON representation of the object, so that the client can know whether
+and which changes were made.
+
+Here's an example. If a cookbook's name contains leading or trailing
+whitespace, the whitespace will be stripped.
+
+  >>> greens = webservice.get(greens_url).jsonBody()
+  >>> greens['cuisine']
+  u'Vegetarian'
+  >>> first_etag = greens['http_etag']
+
+Send in a cuisine with leading or trailing whitespace and it'll be
+transparently trimmed. The document returned from the POST request
+will be the new representation, modified by both client and server.
+
+  >>> greens = webservice(greens_url, "PATCH",
+  ...                     simplejson.dumps({'cuisine' : '  Veg '}),
+  ...                     {'Content-type': 'application/json'}).jsonBody()
+  >>> greens['cuisine']
+  u'Veg'
+  >>> greens['http_etag'] == first_etag
+  False
+
+The canonicalization works for PUT requests as well.
+
+  >>> greens['cuisine'] = "    Vegetarian "
+  >>> greens = webservice(greens_url, "PUT", simplejson.dumps(greens),
+  ...                     {'Content-type': 'application/json'}).jsonBody()
+  >>> greens['cuisine']
+  u'Vegetarian'
