@@ -1176,15 +1176,18 @@ class CurrentTranslationMessageView(LaunchpadView):
             alt_title = None
         else:
             # User is asking for alternative language suggestions.
+            alt_pofile = self.context.pofile.potemplate.getPOFileByLang(
+                self.sec_lang.code)
             alt_current = potmsgset.getCurrentTranslationMessage(
-                self.sec_lang)
-            alt_current.setPOFile(self.context.pofile)
+                self.context.pofile.potemplate, self.sec_lang)
+            if alt_current is not None:
+                alt_current.setPOFile(alt_pofile)
             if alt_current is not None:
                 alt_submissions.append(alt_current)
             alt_external = list(
                 potmsgset.getExternallyUsedTranslationMessages(self.sec_lang))
             for suggestion in alt_external:
-                suggestion.setPOFile(self.context.pofile)
+                suggestion.setPOFile(alt_pofile)
             alt_submissions.extend(alt_external)
             alt_title = self.sec_lang.englishname
 
