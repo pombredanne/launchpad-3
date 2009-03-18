@@ -321,7 +321,7 @@ However, if we now unsubscribe Foo Bar, it will say
 'Subscribe/Unsubscribe' since he will have the option of either
 subscribing himself or unsubscribing the Launchpad team.
 
-    >>> bug_one.unsubscribe(foo_bar)
+    >>> bug_one.unsubscribe(foo_bar, foo_bar)
 
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
@@ -337,7 +337,7 @@ other team, it will say only 'Subscribe'.
     >>> shipit_team = getUtility(IPersonSet).getByName('shipit-admins')
     >>> foo_bar.inTeam(shipit_team)
     False
-    >>> bug_one.unsubscribe(launchpad_team)
+    >>> bug_one.unsubscribe(launchpad_team, foo_bar)
     >>> bug_one.subscribe(shipit_team, shipit_team)
     <BugSubscription at ...>
 

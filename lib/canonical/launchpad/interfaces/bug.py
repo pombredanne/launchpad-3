@@ -312,9 +312,9 @@ class IBug(ICanBeMentored):
         :return: an `IBugSubscription`.
         """
 
-    @call_with(person=REQUEST_USER)
+    @call_with(person=REQUEST_USER, unsubscribed_by=REQUEST_USER)
     @export_write_operation()
-    def unsubscribe(person):
+    def unsubscribe(person, unsubscribed_by):
         """Remove this person's subscription to this bug."""
 
     def unsubscribeFromDupes(person):

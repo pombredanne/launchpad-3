@@ -585,7 +585,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         # will be prevented from calling methods on the main bug after
         # they unsubscribe from it!
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(self.user)
-        self.context.bug.unsubscribe(self.user)
+        self.context.bug.unsubscribe(self.user, self.user)
 
         self.request.response.addNotification(
             structured(
@@ -609,7 +609,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         # We'll also unsubscribe the other user from dupes of this bug,
         # otherwise they'll keep getting this bug's mail.
-        self.context.bug.unsubscribe(user)
+        self.context.bug.unsubscribe(user, self.user)
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(user)
         self.request.response.addNotification(
             structured(
