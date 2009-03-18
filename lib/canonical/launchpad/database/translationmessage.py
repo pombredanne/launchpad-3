@@ -81,6 +81,10 @@ class TranslationMessageMixIn:
             elements.append(suffix)
         return self.potmsgset.makeHTMLID('_'.join(elements))
 
+    def setPOFile(self, pofile):
+        """See `ITransationMessage`."""
+        self.pofile = pofile
+
 
 class DummyTranslationMessage(TranslationMessageMixIn):
     """Represents an `ITranslationMessage` where we don't yet HAVE it.
@@ -205,7 +209,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     _table = 'TranslationMessage'
 
-    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
     potemplate = ForeignKey(
         foreignKey='POTemplate', dbName='potemplate', notNull=False,
         default=None)
@@ -254,6 +257,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                           storm_validator=validate_is_imported)
     was_obsolete_in_last_import = BoolCol(
         dbName='was_obsolete_in_last_import', notNull=True, default=False)
+
+    pofile = None
 
     # XXX jamesh 2008-05-02:
     # This method is not being called anymore.  The Storm

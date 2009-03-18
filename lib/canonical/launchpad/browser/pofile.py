@@ -73,16 +73,17 @@ class POFileNavigation(Navigation):
         # Need to check in our database whether we have already the requested
         # TranslationMessage.
         translationmessage = potmsgset.getCurrentTranslationMessage(
-            self.context.language)
+            self.context.potemplate, self.context.language)
 
         if translationmessage is not None:
             # Already have a valid POMsgSet entry, just return it.
+            translationmessage.setPOFile(self.context)
             return translationmessage
         else:
             # Get a fake one so we don't create new TranslationMessage just
             # because someone is browsing the web.
             return potmsgset.getCurrentDummyTranslationMessage(
-                self.context.language)
+                self.context.potemplate, self.context.language)
 
 
 class POFileFacets(POTemplateFacets):
@@ -464,11 +465,13 @@ class POFileTranslateView(BaseTranslationView):
             last = potmsgset
 
             translationmessage = potmsgset.getCurrentTranslationMessage(
-                self.context.language)
+                self.context.potemplate, self.context.language)
             if translationmessage is None:
                 translationmessage = (
                     potmsgset.getCurrentDummyTranslationMessage(
-                        self.context.language))
+                        self.context.potemplate, self.context.language))
+            else:
+                translationmessage.setPOFile(self.context)
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
                 self.errors.get(potmsgset))
@@ -533,12 +536,12 @@ class POFileTranslateView(BaseTranslationView):
         """
         if self.show == 'untranslated':
             translationmessage = potmsgset.getCurrentTranslationMessage(
-                self.pofile.language)
+                self.pofile.potemplate, self.pofile.language)
             if translationmessage is not None:
                 self.start_offset += 1
         elif self.show == 'new_suggestions':
             new_suggestions = potmsgset.getLocalTranslationMessages(
-                self.pofile.language)
+                self.pofile.potemplate, self.pofile.language)
             if len(new_suggestions) == 0:
                 self.start_offset += 1
         else:

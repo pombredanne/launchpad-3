@@ -88,7 +88,7 @@ class ITranslationMessage(Interface):
 
     pofile = Object(
         title=_("The translation file from where this translation comes"),
-        readonly=True, required=True, schema=IPOFile)
+        readonly=False, required=False, schema=IPOFile)
 
     potemplate = Object(
         title=_("The template this translation is in"),
@@ -202,6 +202,9 @@ class ITranslationMessage(Interface):
     plural_forms = Int(
         title=_("Number of plural form translations in this translation."),
         readonly=True, required=True)
+
+    def setPOFile(pofile):
+        """Set a POFile for use in views."""
 
     def isHidden(pofile):
         """Whether this is an unused, hidden suggestion in `pofile`.
