@@ -19,7 +19,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
     IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
-from canonical.launchpad.interfaces.branch import NoSuchBranch
+from canonical.launchpad.interfaces.branch import IBranchSet, NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.person import NoSuchPerson
@@ -84,8 +84,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         # slashes from the end of the URL.
         branch_url = branch_url.rstrip('/')
 
-        branch_set = getUtility(IBranchLookup)
-        existing_branch = branch_set.getByUrl(branch_url)
+        branch_lookup = getUtility(IBranchLookup)
+        existing_branch = branch_lookup.getByUrl(branch_url)
         if existing_branch is not None:
             return faults.BranchAlreadyRegistered(branch_url)
 
@@ -109,7 +109,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 branch_type = BranchType.MIRRORED
             else:
                 branch_type = BranchType.HOSTED
-            branch = branch_set.new(
+            branch = getUtility(IBranchSet).new(
                 branch_type=branch_type,
                 name=branch_name, registrant=registrant, owner=owner,
                 product=product, url=branch_url, title=branch_title,

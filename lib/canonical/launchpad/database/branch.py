@@ -54,6 +54,7 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -848,7 +849,7 @@ class BranchSet:
 
     def __getitem__(self, branch_id):
         """See `IBranchSet`."""
-        branch = self.get(branch_id)
+        branch = getUtility(IBranchLookup).get(branch_id)
         if branch is None:
             raise NotFoundError(branch_id)
         return branch
