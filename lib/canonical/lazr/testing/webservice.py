@@ -22,7 +22,7 @@ import urllib
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller
-from zope.component import getMultiAdapter, getUtility, queryMultiAdapter
+from zope.component import getUtility, queryMultiAdapter
 from zope.interface import implements
 from zope.publisher.browser import BrowserRequest
 from zope.publisher.interfaces import IPublication, IPublishTraverse, NotFound

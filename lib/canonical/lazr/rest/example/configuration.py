@@ -10,7 +10,6 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.lazr.interfaces.rest import IWebServiceConfiguration
-from zope.security.checker import CheckerPublic
 
 class CookbookWebServiceConfiguration:
     """A configuration object for the cookbook web service."""
