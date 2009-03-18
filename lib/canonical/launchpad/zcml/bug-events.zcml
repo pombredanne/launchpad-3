@@ -110,11 +110,6 @@
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
         lazr.lifecycle.interfaces.IObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_watch_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugWatch
-        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber

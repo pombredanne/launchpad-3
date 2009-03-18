@@ -105,6 +105,16 @@ class BugWatchAdded(BugChangeBase):
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        return {
+            'text': (
+                "** Bug watch added: %s #%s\n"
+                "   %s" % (
+                    self.bug_watch.bugtracker.title, self.bug_watch.remotebug,
+                    self.bug_watch.url)),
+            }
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
         return None
 
 
