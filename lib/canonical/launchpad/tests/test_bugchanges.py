@@ -5,6 +5,7 @@
 import unittest
 
 from zope.event import notify
+from zope.interface import providedBy
 
 from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -35,14 +36,15 @@ class TestBugChanges(unittest.TestCase):
         self.old_activities = list(self.bug.activity)
         self.old_notification_ids = [
             notification.id
-            for notification in BugNotification.selectBy(bug=self.bug)]
+            for notification in BugNotification.selectBy(bug=self.bug,
+                                                         orderBy='id')]
 
     def changeAttribute(self, obj, attribute, new_value):
         """Set the value of `attribute` on `obj` to `new_value`.
 
         :return: The value of `attribute` before modification.
         """
-        obj_before_modification = Snapshot(obj, providing=IBug)
+        obj_before_modification = Snapshot(obj, providing=providedBy(obj))
         setattr(obj, attribute, new_value)
         notify(ObjectModifiedEvent(
             obj, obj_before_modification, [attribute], self.user))
@@ -63,31 +65,45 @@ class TestBugChanges(unittest.TestCase):
         if expected_activity is None:
             self.assertEqual(len(new_activities), 0)
         else:
-            self.assertEqual(len(new_activities), 1)
-            [added_activity] = new_activities
-            self.assertEqual(
-                added_activity.person, expected_activity['person'])
-            self.assertEqual(
-                added_activity.whatchanged, expected_activity['whatchanged'])
-            self.assertEqual(
-                added_activity.oldvalue, expected_activity.get('oldvalue'))
-            self.assertEqual(
-                added_activity.newvalue, expected_activity.get('newvalue'))
-            self.assertEqual(
-                added_activity.message, expected_activity.get('message'))
+            if isinstance(expected_activity, dict):
+                expected_activities = [expected_activity]
+            else:
+                expected_activities = expected_activity
+            self.assertEqual(len(new_activities), len(expected_activities))
+            for expected_activity in expected_activities:
+                added_activity = new_activities.pop()
+                self.assertEqual(
+                    added_activity.person, expected_activity['person'])
+                self.assertEqual(
+                    added_activity.whatchanged,
+                    expected_activity['whatchanged'])
+                self.assertEqual(
+                    added_activity.oldvalue,
+                    expected_activity.get('oldvalue'))
+                self.assertEqual(
+                    added_activity.newvalue,
+                    expected_activity.get('newvalue'))
+                self.assertEqual(
+                    added_activity.message, expected_activity.get('message'))
 
         if expected_notification is None:
             self.assertEqual(len(new_notifications), 0)
         else:
-            self.assertEqual(len(new_notifications), 1)
-            [added_notification] = new_notifications
+            if isinstance(expected_notification, dict):
+                expected_notifications = [expected_notification]
+            else:
+                expected_notifications = expected_notification
             self.assertEqual(
-                added_notification.message.text_contents,
-                expected_notification['text'])
-            self.assertEqual(
-                added_notification.message.owner,
-                expected_notification['person'])
-            self.assertFalse(added_notification.is_comment)
+                len(new_notifications), len(expected_notifications))
+            for expected_notification in expected_notifications:
+                [added_notification] = new_notifications
+                self.assertEqual(
+                    added_notification.message.text_contents,
+                    expected_notification['text'])
+                self.assertEqual(
+                    added_notification.message.owner,
+                    expected_notification['person'])
+                self.assertFalse(added_notification.is_comment)
 
     def test_subscribe(self):
         # Subscribing someone to a bug adds an item to the activity log,
@@ -213,6 +229,48 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_notification=bugwatch_notification,
             expected_activity=bugwatch_activity)
+
+    def test_bugwatch_modified(self):
+        # Modifying a BugWatch is like removing and re-adding it.
+        bugtracker = self.factory.makeBugTracker()
+        bug_watch = self.bug.addWatch(bugtracker, '42', self.user)
+        old_url = bug_watch.url
+        self.saveOldChanges()
+        self.changeAttribute(bug_watch, 'remotebug', '84')
+
+        bugwatch_removal_activity = {
+            'person': self.user,
+            'whatchanged': 'bug watch removed',
+            'oldvalue': bug_watch.url,
+            }
+        bugwatch_addition_activity = {
+            'person': self.user,
+            'whatchanged': 'bug watch added',
+            'newvalue': bug_watch.url,
+            }
+
+        bugwatch_removal_notification = {
+            'text': (
+                "** Bug watch removed: %s #%s\n"
+                "   %s" % (
+                    bug_watch.bugtracker.title, bug_watch.remotebug,
+                    bug_watch.url)),
+            'person': self.user,
+            }
+        bugwatch_addition_notification = {
+            'text': (
+                "** Bug watch added: %s #%s\n"
+                "   %s" % (
+                    bug_watch.bugtracker.title, bug_watch.remotebug,
+                    bug_watch.url)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_notification=[bugwatch_removal_notification,
+                                   bugwatch_addition_notification],
+            expected_activity=[bugwatch_removal_activity,
+                               bugwatch_addition_activity])
 
 
 def test_suite():
