@@ -7,6 +7,7 @@ __all__ = [
     'BugDescriptionChange',
     'BugTitleChange',
     'BugWatchAdded',
+    'BugWatchRemoved',
     'UnsubscribedFromBug',
     'get_bug_change_class',
     ]
@@ -108,6 +109,34 @@ class BugWatchAdded(BugChangeBase):
         return {
             'text': (
                 "** Bug watch added: %s #%s\n"
+                "   %s" % (
+                    self.bug_watch.bugtracker.title, self.bug_watch.remotebug,
+                    self.bug_watch.url)),
+            }
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
+        return None
+
+
+class BugWatchRemoved(BugChangeBase):
+    """A bug watch was removed from the bug."""
+
+    def __init__(self, when, person, bug_watch):
+        super(BugWatchRemoved, self).__init__(when, person)
+        self.bug_watch = bug_watch
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='bug watch removed',
+            oldvalue=self.bug_watch.url)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {
+            'text': (
+                "** Bug watch removed: %s #%s\n"
                 "   %s" % (
                     self.bug_watch.bugtracker.title, self.bug_watch.remotebug,
                     self.bug_watch.url)),

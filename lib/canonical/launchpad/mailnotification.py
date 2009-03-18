@@ -646,14 +646,6 @@ def get_bug_edit_notification_texts(bug_delta):
         if removed_tags:
             changes.append(u'** Tags removed: %s' % ' '.join(removed_tags))
 
-    if bug_delta.bugwatch is not None:
-        old_bug_watch = bug_delta.bugwatch.get('old')
-        if old_bug_watch:
-            change_info = u"** Bug watch removed: %s #%s\n" % (
-                old_bug_watch.bugtracker.title, old_bug_watch.remotebug)
-            change_info += u"   %s" % old_bug_watch.url
-            changes.append(change_info)
-
     if bug_delta.cve is not None:
         new_cve = bug_delta.cve.get('new', None)
         old_cve = bug_delta.cve.get('old', None)

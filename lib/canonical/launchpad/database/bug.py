@@ -36,7 +36,7 @@ from lazr.lifecycle.event import (
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.components.bugchange import (
-    BugWatchAdded, UnsubscribedFromBug)
+    BugWatchAdded, BugWatchRemoved, UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -774,6 +774,7 @@ class Bug(SQLBase):
 
     def removeWatch(self, bug_watch, user):
         """See `IBug`."""
+        self.addChange(BugWatchRemoved(UTC_NOW, user, bug_watch))
         bug_watch.destroySelf()
 
     def addAttachment(self, owner, data, comment, filename, is_patch=False,
