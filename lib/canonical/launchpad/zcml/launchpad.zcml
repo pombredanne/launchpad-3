@@ -91,7 +91,7 @@
 
   <!-- InvalidBatchSizeError -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
+      for="lazr.batchnavigator.interfaces.InvalidBatchSizeError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-invalidbatchsize.pt"
