@@ -155,6 +155,37 @@ class BugVisibilityChange(AttributeChange):
         return {'text': "** Visibility changed to: %s" % visibility_string}
 
 
+class BugSecurityChange(AttributeChange):
+    """Describes a change to a bug's security setting."""
+
+    activity_mapping = {
+        (False, True): ('no', 'yes'),
+        (True, False): ('yes', 'no'),
+        }
+
+    notification_mapping = {
+        (False, True):
+            u"** This bug has been flagged as a security vulnerability",
+        (True, False):
+            u"** This bug is no longer flagged as a security vulnerability",
+        }
+
+    def getBugActivity(self):
+        old_value, new_value = self.activity_mapping[
+            (self.old_value, self.new_value)]
+        return {
+           'oldvalue': old_value,
+           'newvalue': new_value,
+           'whatchanged': 'security vulnerability',
+           }
+
+    def getBugNotification(self):
+        return {
+            'text': self.notification_mapping[
+                (self.old_value, self.new_value)]
+            }
+
+
 class BugTagsChange(AttributeChange):
     """Used to represent a change to an `IBug`s tags."""
 
@@ -188,5 +219,6 @@ class BugTagsChange(AttributeChange):
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
+    'security_related': BugSecurityChange,
     'title': BugTitleChange,
     }
