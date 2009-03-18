@@ -35,7 +35,8 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.components.bugchange import UnsubscribedFromBug
+from canonical.launchpad.components.bugchange import (
+    BranchLinkedToBug, UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -824,6 +825,7 @@ class Bug(SQLBase):
             registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
+        self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch))
         notify(ObjectCreatedEvent(bug_branch))
 
         return bug_branch

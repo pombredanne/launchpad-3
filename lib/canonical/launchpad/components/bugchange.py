@@ -89,6 +89,24 @@ class UnsubscribedFromBug(BugChangeBase):
         return None
 
 
+class BranchLinkedToBug(BugChangeBase):
+    """A branch got linked to the bug."""
+
+    def __init__(self, when, person, branch):
+        super(BranchLinkedToBug, self).__init__(when, person)
+        self.branch = branch
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='branch linked',
+            newvalue=self.branch.bzr_identity)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return None
+
+
 class BugDescriptionChange(AttributeChange):
     """Describes a change to a bug's description."""
 
