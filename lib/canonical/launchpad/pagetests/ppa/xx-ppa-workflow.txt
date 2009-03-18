@@ -170,7 +170,7 @@ Similarly to the user PPAs activation, team PPAs can be activated by
 anyone with 'launchpad.Edit' permission in the team in question:
 
     >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
-    >>> cprov_browser.getLink("Activate Personal Package Archive")
+    >>> cprov_browser.getLink('Personal Package Archive')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -186,7 +186,7 @@ Even if we try the URL directly:
 Let's proceed with the required permissions:
 
     >>> sample_browser.open("http://launchpad.dev/~landscape-developers")
-    >>> sample_browser.getLink("Activate Personal Package Archive").click()
+    >>> sample_browser.getLink('Personal Package Archive').click()
     >>> sample_browser.title
     'Activate Personal Package Archive'
 

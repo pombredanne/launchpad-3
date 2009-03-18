@@ -330,9 +330,7 @@ page, because he is not subscribed to the team mailing list.
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~admins')
     >>> print extract_text(
-    ...     find_portlet(browser.contents, 'Your involvement'))
-    Your involvement
-    You are a member of this team.
+    ...     find_tag_by_id(browser.contents, 'mailing-list-involvement'))
     You are not subscribed to the team mailing list.
     (Subscribe)
     >>> browser.getLink('Subscribe').click()
@@ -355,9 +353,7 @@ has an active mailing list.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
-    ...     find_portlet(browser.contents, 'Your involvement'))
-    Your involvement
-    You are a member of the team which owns this team.
+    ...     find_tag_by_id(browser.contents, 'mailing-list-involvement'))
     You are subscribed to the team mailing list.
     >>> browser.getControl('Unsubscribe')
     <SubmitControl name='unsubscribe' type='submit'>
@@ -370,9 +366,7 @@ Clicking the link will unsubscribe you from the list immediately.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
-    ...     find_portlet(browser.contents, 'Your involvement'))
-    Your involvement
-    You are a member of the team which owns this team.
+    ...     find_tag_by_id(browser.contents, 'mailing-list-involvement'))
     You are not subscribed to the team mailing list.
     (Subscribe)
 
@@ -383,7 +377,7 @@ does not show either link.
     >>> print extract_text(
     ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
-    You are a member of the team which owns this team.
+    You are a member of the team that owns this team.
 
     >>> browser.getLink('Subscribe')
     Traceback (most recent call last):
@@ -404,10 +398,10 @@ rosetta admins team has such a list and carlos is the owner.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
-    ...     find_portlet(browser.contents, 'Summary'))
-    Summary...
+    ...     find_portlet(browser.contents, 'Mailing list'))
+    Mailing list...
     Mailing list archive
-    Mailing list subscribers
+    Mailing list subscribers...
 
     >>> browser.getLink('Mailing list subscribers').click()
     >>> print browser.title
@@ -418,7 +412,7 @@ links are not present.
 
     >>> admin_browser.open('http://launchpad.dev/~commercial-admins')
     >>> summary_content = extract_text(
-    ...     find_portlet(admin_browser.contents, 'Summary'))
+    ...     find_portlet(admin_browser.contents, 'Mailing list'))
     >>> 'Mailing list archive' in summary_content
     False
     >>> 'Mailing list subscribers' in summary_content
