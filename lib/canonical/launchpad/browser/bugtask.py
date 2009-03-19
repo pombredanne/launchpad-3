@@ -696,15 +696,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             # context.
             if IUpstreamBugTask.providedBy(fake_task):
                 # Create a real upstream task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    product=fake_task.product)
+                real_task = fake_task.bug.addTask(
+                    getUtility(ILaunchBag).user, fake_task.product)
             elif IDistroBugTask.providedBy(fake_task):
                 # Create a real distro bug task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    distribution=fake_task.distribution,
-                    sourcepackagename=fake_task.sourcepackagename)
+                real_task = fake_task.bug.addTask(
+                    getUtility(ILaunchBag).user,, fake_task.target)
             elif IDistroSeriesBugTask.providedBy(fake_task):
                 self._nominateBug(fake_task.distroseries)
                 return
