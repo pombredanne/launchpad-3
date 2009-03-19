@@ -266,10 +266,44 @@ class BugTagsChange(AttributeChange):
         return {'text': "\n".join(messages)}
 
 
+class BugAttachmentChange(AttributeChange):
+    """Used to represent a change to an `IBug`'s attachments."""
+
+    def getBugActivity(self):
+        if self.old_value is None:
+            what_changed = "attachment added"
+            old_value = None
+            new_value = "%s %s" % (
+                self.new_value.title, self.new_value.libraryfile.http_url)
+        else:
+            what_changed = "attachment removed"
+            attachment = self.new_value
+            old_value = "%s %s" % (
+                self.old_value.title, self.old_value.libraryfile.http_url)
+            new_value = None
+
+        return {
+            'newvalue': new_value,
+            'oldvalue': old_value,
+            'whatchanged': what_changed,
+            }
+
+    def getBugNotification(self):
+        if self.old_value is None:
+            message = '** Attachment added: "%s"\n   %s' % (
+                self.new_value.title, self.new_value.libraryfile.http_url)
+        else:
+            message = '** Attachment removed: "%s"\n   %s' % (
+                self.old_value.title, self.old_value.libraryfile.http_url)
+
+        return {'text': message}
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
     'security_related': BugSecurityChange,
     'tags': BugTagsChange,
     'title': BugTitleChange,
+    'attachment': BugAttachmentChange,
     }

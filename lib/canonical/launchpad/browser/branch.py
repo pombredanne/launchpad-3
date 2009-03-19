@@ -925,12 +925,12 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """Handle a request to create a new branch for this product."""
         try:
             ui_branch_type = data['branch_type']
-            self.branch = getUtility(IBranchSet).new(
+            namespace = get_branch_namespace(
+                data['owner'], product=data['product'])
+            self.branch = namespace.createBranch(
                 branch_type=BranchType.items[ui_branch_type.name],
                 name=data['name'],
                 registrant=self.user,
-                owner=data['owner'],
-                product=data['product'],
                 url=data.get('url'),
                 title=data['title'],
                 summary=data['summary'],

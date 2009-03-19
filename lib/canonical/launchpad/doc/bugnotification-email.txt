@@ -521,11 +521,27 @@ Adding an attachment will generate a notification that looks as follows:
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
-    ...     attachment={'new' : attachment})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     attachment={'new' : attachment, 'old': None})
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Attachment added: "A screenshot of the problem"
+       http://foo.com/screenshot.png
+    -----------------------------
+
+Removing an attachment generates a notification, too.
+
+    >>> bug_delta = BugDelta(
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     attachment={'old' : attachment, 'new': None})
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
+    ** Attachment removed: "A screenshot of the problem"
        http://foo.com/screenshot.png
     -----------------------------
 
