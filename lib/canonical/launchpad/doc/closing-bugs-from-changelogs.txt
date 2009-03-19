@@ -222,6 +222,17 @@ is "NEW".
     Before: NEW
     After: NEW
 
+Similarly, uploads to the backports pocket will not close bugs. (See bug
+#295621).
+
+    >>> queue_item_id = add_package_upload(
+    ...     cdrkit_release, cdrkit_bug_id, 
+    ...     pocket=PackagePublishingPocket.BACKPORTS).id
+
+    >>> close_bugs_and_check_status([cdrkit_bug_id], queue_item_id)
+    Before: NEW
+    After: NEW
+
 Uploads to PPAs will not close bugs (see bug #137767).  Here we upload a
 package, cdrkit, to cprov's PPA.  The bug status before and after calling
 close_bugs is "NEW".
