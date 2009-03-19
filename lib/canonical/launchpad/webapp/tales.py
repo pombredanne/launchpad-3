@@ -414,15 +414,19 @@ class ObjectFormatterAPI:
     def __init__(self, context):
         self._context = context
 
-    def url(self, view_name=None):
+    def url(self, view_name=None, rootsite=None):
         """Return the object's canonical URL.
 
         :param view_name: If not None, return the URL to the page with that
             name on this object.
+        :param rootsite: If not None, return the URL to the page on the
+            specified rootsite.  Note this is available only for subclasses
+            that allow specifying the rootsite.
         """
         try:
             url = canonical_url(
                 self._context, path_only_if_possible=True,
+                rootsite=rootsite,
                 view_name=view_name)
         except Unauthorized:
             url = ""
@@ -574,8 +578,8 @@ class ObjectImageDisplayAPI:
             an icon.
         """
         url = self.icon_url(rootsite)
-        if url is None:
-            return None
+        if url is None or url == '':
+            return url
         icon = '<img alt="" width="14" height="14" src="%s" />'
         return icon % url
 
@@ -898,7 +902,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
-        if name.startswith('link:'):
+        if name.startswith('link:') or name.startswith('url:'):
             rootsite = name.split(':')[1]
             extra_path = None
             if len(furtherPath) > 0:
@@ -906,7 +910,10 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             # Remove remaining entries in furtherPath so that traversal
             # stops here.
             del furtherPath[:]
-            return self.link(extra_path, rootsite=rootsite)
+            if name.startswith('link:'):
+                return self.link(extra_path, rootsite=rootsite)
+            else:
+                return self.url(extra_path, rootsite=rootsite)
         else:
             return super(PersonFormatterAPI, self).traverse(name, furtherPath)
 
@@ -924,7 +931,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
         image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
-        return (u'<a href="%s" style="padding-left: 18px; background: url(%s)'
+        return (u'<a href="%s" style="padding-left: 18px; background: url(%s) '
                 'center left no-repeat;">%s</a>') % (
             url, image_url, cgi.escape(person.browsername))
 
