@@ -23,16 +23,14 @@ from canonical.launchpad.interfaces import (
     IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries)
+    IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries,
+    NoDefaultBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
-from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.person import NoSuchPerson
-from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, NoSuchProduct)
 from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
-from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
@@ -241,25 +239,13 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             raise faults.InvalidProductIdentifier(e.name)
         except NoSuchProductSeries, e:
             raise faults.NoSuchSeries(e.name, e.product)
-        except NoSuchProduct, e:
-            product_name = e.name
-            pillar = getUtility(IPillarNameSet).getByName(product_name)
-            if pillar:
-                if IProject.providedBy(pillar):
-                    pillar_type = 'project group'
-                elif IDistribution.providedBy(pillar):
-                    # XXX: JonathanLange 2009-03-13 spec=package-branches: We
-                    # actually want to support matching against this!
-                    pillar_type = 'distribution'
-                else:
-                    raise AssertionError(
-                        "pillar of unknown type %s" % pillar)
-                raise faults.NoDefaultBranchForPillar(
-                    product_name, pillar_type)
-            else:
-                raise faults.NoSuchProduct(product_name)
+        except NoDefaultBranch, e:
+            raise faults.NoDefaultBranchForPillar(
+                e.component.name, e.component_type)
         except NoSuchPerson, e:
             raise faults.NoSuchPersonWithName(e.name)
+        except NoSuchProduct, e:
+            raise faults.NoSuchProduct(e.name)
         return self._getResultDict(branch, suffix)
 
     def resolve_lp_path(self, path):

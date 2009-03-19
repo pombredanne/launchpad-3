@@ -8,6 +8,7 @@ __all__ = [
     'IBranchLookup',
     'InvalidBranchIdentifier',
     'NoBranchForSeries',
+    'NoDefaultBranch',
     ]
 
 from zope.interface import Interface
@@ -27,6 +28,15 @@ class NoBranchForSeries(Exception):
     def __init__(self, product_series):
         self.series = product_series
         Exception.__init__(self, "%r has no branch" % (product_series,))
+
+
+class NoDefaultBranch(Exception):
+    """Raised when asked to resolve a path that never has a default branch."""
+
+    def __init__(self, component, component_type):
+        self.component = component
+        self.component_type = component_type
+        Exception.__init__(self, "%r has no default branch." % (component,))
 
 
 class IBranchLookup(Interface):

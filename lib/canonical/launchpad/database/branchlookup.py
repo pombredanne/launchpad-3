@@ -22,13 +22,17 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries)
+    IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries,
+    NoDefaultBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
-    InvalidProductName, IProduct, IProductSet, NoSuchProduct)
+    InvalidProductName, IProduct, NoSuchProduct)
 from canonical.launchpad.interfaces.productseries import (
     IProductSeries, NoSuchProductSeries)
+from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -200,19 +204,19 @@ class BranchLookup:
 
     def _traverseToShortcut(self, path):
         segments = iter(path.split('/'))
-        product_name = segments.next()
-        if not valid_name(product_name):
-            raise InvalidProductName(product_name)
-        product = getUtility(IProductSet).getByName(product_name)
-        if product is None:
-            raise NoSuchProduct(product_name)
+        pillar_name = segments.next()
+        if not valid_name(pillar_name):
+            raise InvalidProductName(pillar_name)
+        pillar = getUtility(IPillarNameSet).getByName(pillar_name)
+        if pillar is None:
+            raise NoSuchProduct(pillar_name)
         try:
             series_name = segments.next()
         except StopIteration:
-            return product
-        series = product.getSeries(series_name)
+            return pillar
+        series = pillar.getSeries(series_name)
         if series is None:
-            raise NoSuchProductSeries(series_name, product)
+            raise NoSuchProductSeries(series_name, pillar)
         try:
             segments.next()
         except StopIteration:
@@ -221,11 +225,16 @@ class BranchLookup:
             raise InvalidBranchIdentifier(path)
 
     def _getBranchAndSeriesForObject(self, obj):
+        # XXX: This should be a series of adapters.
         if IProduct.providedBy(obj):
             return obj.development_focus.series_branch, obj.development_focus
         if IProductSeries.providedBy(obj):
             return obj.series_branch, obj
-        raise "what the fuck was that?!?"
+        if IProject.providedBy(obj):
+            raise NoDefaultBranch(obj, 'project group')
+        if IDistribution.providedBy(obj):
+            raise NoDefaultBranch(obj, 'distribution')
+        raise NoDefaultBranch(obj, 'unknown')
 
     def _getDefaultProductBranch(self, path):
         """Return the branch with the shortcut 'path'.
