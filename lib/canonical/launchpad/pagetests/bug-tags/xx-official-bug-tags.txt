@@ -5,7 +5,7 @@ from the main bug page.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/firefox')
-    >>> admin_browser.getLink('Manage Official Bug Tags').click()
+    >>> admin_browser.getLink('Edit official tags').click()
     >>> print admin_browser.url
     http://bugs.launchpad.dev/firefox/+manage-official-tags
 
@@ -26,7 +26,7 @@ distributions but not for other bug targets.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/1.0')
-    >>> print admin_browser.getLink('Manage Official Bug Tags')
+    >>> print admin_browser.getLink('Edit official tags')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -41,7 +41,7 @@ The link as well as the edit form is only available for project
 administrators but not for ordinary users.
 
     >>> browser.open('http://bugs.launchpad.dev/firefox')
-    >>> print browser.getLink('Manage Official Bug Tags')
+    >>> print browser.getLink('Edit official tags')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
