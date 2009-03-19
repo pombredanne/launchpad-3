@@ -194,7 +194,7 @@ def get_master_node(con, set_id=1):
         """ % set_id)
     if not nodes:
         return None
-    assert len(nodes) == 1, "Too many origins!"
+    assert len(nodes) == 1, "More than one master found for set %s" % set_id
     return nodes[0]
 
 

@@ -125,8 +125,9 @@ def main():
     target_con.commit()
     del target_con
 
+    # Generate and run a slonik(1) script to initialize the new node
+    # and subscribe it to our replication sets.
     comment = 'New node created %s' % time.ctime()
-
     script = dedent("""\
         define new_node %d;
         define new_node_conninfo '%s';
@@ -139,7 +140,6 @@ def main():
         """ % (node_id, target_connection_string, comment))
 
     for node in existing_nodes:
-        nickname = node.nickname
         script += dedent("""\
             store path (
                 server=@%(nickname)s, client=@new_node,
@@ -147,7 +147,7 @@ def main():
             store path (
                 server=@new_node, client=@%(nickname)s,
                 conninfo=@new_node_conninfo);
-            """ % vars())
+            """ % {'nickname': node.nickname})
 
     script += dedent("""\
         } on error { echo 'Failed.'; exit 1; }

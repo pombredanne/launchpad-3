@@ -41,11 +41,11 @@ from canonical.config import config
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
 
 # Custom log levels. logging.debug is 10.
-DEBUG2 = 9 
+DEBUG2 = 9
 DEBUG3 = 8
-DEBUG4 = 7 
-DEBUG5 = 6 
-DEBUG6 = 5 
+DEBUG4 = 7
+DEBUG5 = 6
+DEBUG6 = 5
 DEBUG7 = 4
 DEBUG8 = 3
 DEBUG9 = 2
@@ -298,6 +298,7 @@ def reset_root_logger():
         except KeyError:
             pass
         root_logger.removeHandler(hdlr)
+
 
 def _logger(level, out_stream, name=None):
     """Create the actual logger instance, logging at the given level
