@@ -219,12 +219,25 @@ logins to a user that is explicitly subscribed to this bug):
     ...     user=sample_person,
     ...     private={'old': False, 'new': edited_bug.private},
     ...     security_related={'old': False, 'new': edited_bug.security_related})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+
+Both the privacy and security-related change representations provide
+IBugChange.
+
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     if IBugChange.providedBy(change):
+    ...         notification = change.getBugNotification()
+    ...         text_representation = notification['text']
+    ...     else:
+    ...         text_representation = change
+    ...
+    ...     print IBugChange.providedBy(change)
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
+    True
     ** Visibility changed to: Private
     -----------------------------
-    ** This bug has been flagged as a security issue
+    True
+    ** This bug has been flagged as a security vulnerability
     -----------------------------
 
 Now we set the bug public, and not security-related and check if the
@@ -239,12 +252,13 @@ e-mail sent changed as well.
     ...     user=sample_person,
     ...     private={'old': True, 'new': edited_bug.private},
     ...     security_related={'old': True, 'new': edited_bug.security_related})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Visibility changed to: Public
     -----------------------------
-    ** This bug is no longer flagged as a security issue
+    ** This bug is no longer flagged as a security vulnerability
     -----------------------------
 
 Let's add some tags to a bug:
@@ -256,8 +270,9 @@ Let's add some tags to a bug:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     tags={'old': old_tags, 'new': edited_bug.tags})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Tags added: bar foo
     -----------------------------
@@ -271,11 +286,11 @@ If we change one tag, it's basically removing one and adding another:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     tags={'old': old_tags, 'new': edited_bug.tags})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Tags added: baz
-    -----------------------------
     ** Tags removed: bar
     -----------------------------
 
@@ -506,11 +521,27 @@ Adding an attachment will generate a notification that looks as follows:
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
-    ...     attachment={'new' : attachment})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     attachment={'new' : attachment, 'old': None})
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Attachment added: "A screenshot of the problem"
+       http://foo.com/screenshot.png
+    -----------------------------
+
+Removing an attachment generates a notification, too.
+
+    >>> bug_delta = BugDelta(
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     attachment={'old' : attachment, 'new': None})
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
+    ** Attachment removed: "A screenshot of the problem"
        http://foo.com/screenshot.png
     -----------------------------
 
