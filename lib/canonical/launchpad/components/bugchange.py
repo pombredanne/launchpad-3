@@ -104,8 +104,8 @@ class BugTaskAdded(BugChangeBase):
     def getBugActivity(self):
         """See `IBugChange`."""
         return dict(
-            whatchanged='bug',
-            message='assigned to %s' % self.bug_task.bugtargetname)
+            whatchanged='bug task added',
+            newvalue=self.bug_task.bugtargetname)
 
     def getBugNotification(self):
         """See `IBugChange`."""

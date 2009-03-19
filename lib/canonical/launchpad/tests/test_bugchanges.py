@@ -411,9 +411,8 @@ class TestBugChanges(unittest.TestCase):
 
         task_added_activity = {
             'person': self.user,
-            'whatchanged': 'bug', #'bug task added',
-            'message': 'assigned to %s' % target.bugtargetname,
-            #'newvalue': target.bugtargetname,
+            'whatchanged': 'bug task added',
+            'newvalue': target.bugtargetname,
             }
 
         task_added_notification = {
@@ -440,9 +439,8 @@ class TestBugChanges(unittest.TestCase):
 
         task_added_activity = {
             'person': self.user,
-            'whatchanged': 'bug', #'bug task added',
-            'message': 'assigned to %s' % target.bugtargetname,
-            #'newvalue': target.bugtargetname,
+            'whatchanged': 'bug task added',
+            'newvalue': target.bugtargetname,
             }
 
         task_added_notification = {
@@ -473,9 +471,8 @@ class TestBugChanges(unittest.TestCase):
 
         task_added_activity = {
             'person': self.user,
-            'whatchanged': 'bug', #'bug task added',
-            'message': 'assigned to %s' % target.bugtargetname,
-            #'newvalue': target.bugtargetname,
+            'whatchanged': 'bug task added',
+            'newvalue': target.bugtargetname,
             }
 
         task_added_notification = {
