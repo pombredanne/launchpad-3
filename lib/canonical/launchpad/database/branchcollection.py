@@ -398,3 +398,27 @@ class VisibleBranchCollection(GenericBranchCollection):
         raise InvalidFilter(
             "Cannot filter for branches visible by user %r, already "
             "filtering for %r" % (person, self._user))
+
+    def getMergeProposalsForReviewer(self, reviewer, status=None):
+        """See `IBranchCollection`."""
+        tables = [
+            BranchMergeProposal,
+            Join(CodeReviewVoteReference,
+                 CodeReviewVoteReference.branch_merge_proposalID == \
+                 BranchMergeProposal.id),
+            LeftJoin(CodeReviewComment,
+                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
+
+        expressions = [
+            CodeReviewVoteReference.reviewer == reviewer,
+            BranchMergeProposal.source_branchID.is_in(
+                self._getBranchIdQuery()),
+            BranchMergeProposal.target_branchID.is_in(
+                self._getVisibilityExpression())]
+        if status is not None:
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(status))
+        result = self.store.using(*tables).find(
+            BranchMergeProposal, expressions)
+        result.order_by(Desc(CodeReviewComment.vote))
+        return result

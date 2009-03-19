@@ -15,6 +15,7 @@ from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.browser.person import PersonNavigation, PersonView
 from canonical.launchpad.ftests import login_person
+from canonical.launchpad.interfaces.personproduct import IPersonProduct
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
@@ -129,9 +130,10 @@ class TestBranchTraversal(TestCaseWithFactory):
         self.assertEqual(branch, self.traverse(segments))
 
     def test_product_only(self):
+        # Traversal to the product returns an IPersonProduct.
         product = self.factory.makeProduct()
-        self.assertRaises(
-            NotFound, self.traverse, [product.name])
+        target = self.traverse([product.name])
+        self.assertTrue(IPersonProduct.providedBy(target))
 
     def test_product_branch_no_such_product(self):
         product_name = self.factory.getUniqueString()
@@ -140,10 +142,11 @@ class TestBranchTraversal(TestCaseWithFactory):
             NotFound, self.traverse, [product_name, branch_name])
 
     def test_product_branch_no_such_branch(self):
+        # Since the branch is not found, an IPersonProduct is returned.
         product = self.factory.makeProduct()
         branch_name = self.factory.getUniqueString()
-        self.assertRaises(
-            NotFound, self.traverse, [product.name, branch_name])
+        target = self.traverse([product.name, branch_name])
+        self.assertTrue(IPersonProduct.providedBy(target))
 
     def test_package_branch(self):
         branch = self.factory.makePackageBranch(owner=self.person)

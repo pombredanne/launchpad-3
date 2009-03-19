@@ -212,7 +212,7 @@ class PersonRequestedReviewsView(PersonBMPListingView):
     def getVisibleProposalsForUser(self):
         """Branch merge proposals that are visible by the logged in user."""
         return self._getCollection().getMergeProposalsForReviewer(
-            self._getUserFromContext(), self._queue_status)
+            self.getUserFromContext(), self._queue_status)
 
 
 class PersonApprovedMergesView(PersonBMPListingView):

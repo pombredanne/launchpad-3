@@ -30,7 +30,7 @@ message.
     >>> browser.open('http://code.launchpad.dev/~kinnison')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'no-branch-message'))
-    There are no branches related to Daniel Silverstone today.
+    There are no branches related to Daniel Silverstone in Launchpad today.
 
 
 == Owned Branches ==
@@ -110,7 +110,7 @@ If there are no branches, it will say so nicely.
     ...     eric_browser.open('http://code.launchpad.dev/~eric')
     ...     print extract_text(find_tag_by_id(eric_browser.contents, tag))
     >>> open_page_and_print_tag('no-branch-message')
-    There are no branches related to Eric the Viking today.
+    There are no branches related to Eric the Viking in Launchpad today.
 
 Let's add a branch.
 

@@ -17,11 +17,16 @@ from canonical.launchpad.interfaces.personproduct import IPersonProduct
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp import (
     Link, Navigation, StandardLaunchpadFacets)
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 class PersonProductNavigation(Navigation):
     """No-op navigation object."""
     usedfor = IPersonProduct
+
+    def traverse(self, path_segment):
+        """Any traversal from here is not found."""
+        raise NotFoundError
 
 
 class PersonProductBreadcrumbBuilder(BreadcrumbBuilder):

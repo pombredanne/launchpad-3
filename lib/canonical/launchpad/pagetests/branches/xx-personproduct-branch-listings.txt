@@ -13,9 +13,6 @@ When there are no branches, a helpful message is shown.
     >>> browser.open('http://code.launchpad.dev/~eric/fooix')
     >>> print_tag_with_id(browser.contents, 'no-branch-message')
     There are no branches of Fooix owned by Eric in Launchpad today.
-    You can use Launchpad as a registry for Bazaar branches, and encourage
-    broader community participation in your project using distributed
-    version control.
 
 If we create a couple of fooix branches, and a few other branches, we can see
 that only the fooix branches are shown.

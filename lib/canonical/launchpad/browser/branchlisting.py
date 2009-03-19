@@ -661,13 +661,15 @@ class PersonBranchCountMixin:
     @cachedproperty
     def active_review_count(self):
         """Return the number of active reviews for the user."""
-        return self._getCountCollection().getMergeProposals(
+        return self._getCountCollection().ownedBy(
+            self._getPersonFromContext()).getMergeProposals(
             [BranchMergeProposalStatus.NEEDS_REVIEW]).count()
 
     @cachedproperty
     def approved_merge_count(self):
         """Return the number of active reviews for the user."""
-        return self._getCountCollection().getMergeProposals(
+        return self._getCountCollection().ownedBy(
+            self._getPersonFromContext()).getMergeProposals(
             [BranchMergeProposalStatus.CODE_APPROVED]).count()
 
     @cachedproperty
@@ -749,9 +751,18 @@ class PersonBaseBranchListingView(BranchListingView, PersonBranchCountMixin):
         return self.user.inTeam(self._getPersonFromContext())
 
     @property
-    def no_branches_message(self):
-        return "There are no branches related to %s today." % (
-            self.context.displayname)
+    def no_branch_message(self):
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
+            message = (
+                'There are branches related to %s but none of them match the '
+                'current filter criteria for this page. '
+                'Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches related to %s '
+                'in Launchpad today.')
+        return message % self.context.displayname
 
 
 class PersonRegisteredBranchesView(PersonBaseBranchListingView):
@@ -1259,10 +1270,6 @@ class PersonProductOwnedBranchesView(PersonBaseBranchListingView):
                 'Try filtering on "Any Status".')
         else:
             message = (
-                'There are no branches of %s owned by %s '
-                'in Launchpad today. You can use Launchpad as a registry for '
-                'Bazaar branches, and encourage broader community '
-                'participation in your project using '
-                'distributed version control.')
+                'There are no branches of %s owned by %s in Launchpad today.')
         return message % (
             self.context.product.displayname, self.context.person.displayname)
