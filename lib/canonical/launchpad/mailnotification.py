@@ -688,7 +688,7 @@ def get_bug_edit_notification_texts(bug_delta):
                 change_info += changerow
 
             for fieldname, displayattrname in (
-                ("status", "title"), ("target", "name")):
+                ("status", "title"),):
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
