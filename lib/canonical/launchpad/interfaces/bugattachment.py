@@ -24,7 +24,8 @@ from canonical.launchpad import _
 
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported)
+    call_with, export_as_webservice_entry, export_write_operation, exported,
+    REQUEST_USER)
 
 
 class BugAttachmentType(DBEnumeratedType):
@@ -80,6 +81,7 @@ class IBugAttachment(IHasBug):
         Reference(IMessage, title=_("The message that was created when we "
                                     "added this attachment.")))
 
+    @call_with(user=REQUEST_USER)
     @export_write_operation()
     def removeFromBug(user):
         """Remove the attachment from the bug."""
