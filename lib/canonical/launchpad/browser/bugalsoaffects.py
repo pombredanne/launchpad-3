@@ -246,13 +246,14 @@ class BugTaskCreationStep(AlsoAffectsStep):
                 return
 
         if data.get('product') is not None:
-            target = data['product']
+            task_target = data['product']
         else:
-            target = data['distribution']
+            task_target = data['distribution']
             if data.get('sourcepackagename') is not None:
-                target = target.data['sourcepackagename']
+                task_target = task_target.getSourcePackage(
+                    data['sourcepackagename'])
         self.task_added = self.context.bug.addTask(
-            getUtility(ILaunchBag).user, target)
+            getUtility(ILaunchBag).user, task_target)
         task_added = self.task_added
 
         if extracted_bug is not None:
