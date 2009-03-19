@@ -23,10 +23,6 @@ nor the menu link to offer mentoring.
   >>> page_mentoring_offer not in anon_browser.contents
   True
   >>> anon_browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
   >>> page_mentoring_offer not in anon_browser.contents
   True
 
@@ -38,23 +34,11 @@ to retract it at the same time.
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> print browser.getLink(menu_mentoring_offer).url
   http://bugs.launchpad.dev/tomcat/+bug/2/+mentor
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
   >>> page_mentoring_retract in browser.contents
   False
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
   >>> page_mentoring_offer in browser.contents
   True
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
   >>> page_mentoring_retract in browser.contents
   False
 
@@ -63,17 +47,9 @@ ability to offer mentorship:
 
   >>> browser = setupBrowser(auth="Basic no-team-memberships@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
   >>> page_mentoring_offer in browser.contents
   False
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
   >>> page_mentoring_offer in browser.contents
   False
 
@@ -94,10 +70,6 @@ complete.
 Now let's look at a spec which is complete:
 
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/thinclient-local-devices')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
   >>> page_mentoring_offer in browser.contents
   False
 
