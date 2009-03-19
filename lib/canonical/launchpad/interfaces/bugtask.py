@@ -854,6 +854,7 @@ class IBugTaskDelta(Interface):
         """)
     statusexplanation = Attribute("The new value of the status notes.")
     bugwatch = Attribute("The bugwatch which governs this task.")
+    milestone = Attribute("The milestone for which this task is scheduled.")
 
 
 # XXX Brad Bollenbach 2006-08-03 bugs=55089:

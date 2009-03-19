@@ -5,12 +5,15 @@
 import unittest
 
 from zope.event import notify
+from zope.interface import providedBy
 
 from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskImportance, IBugTask)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
@@ -27,15 +30,18 @@ class TestBugChanges(unittest.TestCase):
         self.bug = self.factory.makeBug(owner=self.user)
         self.saveOldChanges()
 
-    def saveOldChanges(self):
-        """Save the old changes to the bug.
+    def saveOldChanges(self, bug=None):
+        """Save the old changes to a bug.
 
         This method should be called after all the setup is done.
         """
-        self.old_activities = list(self.bug.activity)
+        if bug is None:
+            bug = self.bug
+
+        self.old_activities = list(bug.activity)
         self.old_notification_ids = [
             notification.id
-            for notification in BugNotification.selectBy(bug=self.bug)]
+            for notification in BugNotification.selectBy(bug=bug)]
 
     def changeAttribute(self, obj, attribute, new_value):
         """Set the value of `attribute` on `obj` to `new_value`.
@@ -402,6 +408,39 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_notification=attachment_removed_notification,
             expected_activity=attachment_removed_activity)
+
+    def test_change_bugtask_importance(self):
+        # When a bugtask's importance is changed, things should happen.
+        product = self.factory.makeProduct(owner=self.user)
+        bug = self.factory.makeBug(product=product, owner=self.user)
+
+        bug_task = bug.bugtasks[0]
+        self.saveOldChanges(bug=bug)
+        bug_task_before_modification = Snapshot(
+            bug_task, providing=providedBy(bug_task))
+        bug_task.transitionToImportance(BugTaskImportance.HIGH, user=self.user)
+        notify(ObjectModifiedEvent(
+            bug_task, bug_task_before_modification,
+            ['importance'], user=self.user))
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: importance' % bug_task.bugtargetname,
+            'oldvalue': 'Undecided',
+            'newvalue': 'High',
+            'message': None,
+            }
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n   Importance: Undecided => High' %
+                bug_task.bugtargetname),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification, bug=bug)
 
 
 def test_suite():
