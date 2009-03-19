@@ -283,11 +283,6 @@ class TestGetByLPPath(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    # XXX: JonathanLange 2009-01-13 spec=package-branches: All of these tests
-    # should be adjusted to assume less about the structure of branch names.
-    # In particular, they should not call factory.makeBranch unless they have
-    # to, instead calling the helper aliases.
-
     def test_getByLPPath_with_three_parts(self):
         """Test the behaviour with three-part names."""
         branch_set = getUtility(IBranchLookup)

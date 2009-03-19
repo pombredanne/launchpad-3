@@ -208,7 +208,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 str(URI(host=host, scheme=scheme, path=path)))
         return result
 
-    # XXX: Use the returns_fault decorator.
+    # XXX: JonathanLange 2009-03-19 spec=package-branches: Use the
+    # returns_fault decorator.
     def resolve_lp_path(self, path):
         """See `IPublicCodehostingAPI`."""
         strip_path = path.strip('/')
@@ -217,7 +218,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         branch_set = getUtility(IBranchLookup)
         try:
             branch, suffix, series = branch_set.getByLPPath(strip_path)
-            # XXX: Manually checking the permission kind of blows.
+            # XXX: JonathanLange 2009-03-19: Manually checking the permission
+            # kind of blows.
             if not check_permission('launchpad.View', branch):
                 if series is None:
                     raise NoSuchBranch(strip_path)
@@ -232,7 +234,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 if IProject.providedBy(pillar):
                     pillar_type = 'project group'
                 elif IDistribution.providedBy(pillar):
-                    # XXX: We actually want to support matching against this!
+                    # XXX: JonathanLange 2009-03-13 spec=package-branches: We
+                    # actually want to support matching against this!
                     pillar_type = 'distribution'
                 else:
                     raise AssertionError(

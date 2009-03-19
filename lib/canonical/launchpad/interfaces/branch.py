@@ -1353,7 +1353,8 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
     # series should be self limiting.  We are not looking to enforce
     # extra strictness in this case, but instead let it manage itself.
 
-    # XXX: This should not dispatch on Branch.product is None
+    # XXX: JonathanLange 2009-03-19 spec=package-branches: This should not
+    # dispatch on Branch.product is None
     if not branch.private and branch.product is not None:
         if is_dev_focus:
             return lp_prefix + branch.product.name

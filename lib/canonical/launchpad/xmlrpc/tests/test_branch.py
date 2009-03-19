@@ -24,10 +24,6 @@ from canonical.testing import DatabaseFunctionalLayer
 class TestExpandURL(TestCaseWithFactory):
     """Test the way that URLs are expanded."""
 
-    # XXX: Many (most? all?) of these tests should be moved to
-    # database/tests/test_branch.py, since they are testing the core
-    # translation. These tests should basically test the error handling.
-
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
