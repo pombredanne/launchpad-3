@@ -360,7 +360,7 @@ class TestBugChanges(unittest.TestCase):
         cve_linked_activity = {
             'person': self.user,
             'whatchanged': 'cve linked',
-            'oldvalue': '',
+            'oldvalue': None,
             'newvalue': cve.sequence,
             }
 
@@ -387,7 +387,7 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'whatchanged': 'cve unlinked',
             'oldvalue': cve.sequence,
-            'newvalue': '',
+            'newvalue': None,
             }
 
         cve_unlinked_notification = {
