@@ -1078,6 +1078,7 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 
 .official-tags-layout-table .left-column,
 .official-tags-layout-table .right-column {
+  vertical-align: top;
   width: 45%;
 }
 
