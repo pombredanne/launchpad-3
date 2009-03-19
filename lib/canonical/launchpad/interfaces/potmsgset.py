@@ -2,7 +2,7 @@
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int, Object, Text, TextLine
+from zope.schema import Bool, Int, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.pomsgid import IPOMsgID
