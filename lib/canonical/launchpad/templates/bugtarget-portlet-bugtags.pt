@@ -21,7 +21,8 @@
       </tr>
     </table>
 
-    <p style="text-align:right">
+    <p tal:condition="view/show_manage_tags_link"
+       style="text-align:right">
       <a tal:attributes="href context/fmt:url/+manage-official-tags">
         <img src="/@@/edit" alt="Edit official tags" />
       </a>
