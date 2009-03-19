@@ -36,6 +36,8 @@ from canonical.launchpad.interfaces.productseries import (
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.sourcepackagename import (
+    NoSuchSourcePackageName)
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -236,8 +238,8 @@ class BranchLookup:
             except StopIteration:
                 raise NoDefaultBranch(series, 'distribution series')
             sourcepackage = series.getSourcePackage(sourcepackagename)
-            #if sourcepackage is None:
-            #    raise NoSuchSourcePackageName(sourcepackagename)
+            if sourcepackage is None:
+                raise NoSuchSourcePackageName(sourcepackagename)
             return sourcepackage
         raise InvalidBranchIdentifier(path)
 

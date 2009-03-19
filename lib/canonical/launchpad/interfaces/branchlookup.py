@@ -95,6 +95,10 @@ class IBranchLookup(Interface):
             existing series.
         :raises NoBranchForSeries: If the product series referred to does not
             have an associated branch.
+        :raises NoSuchSourcePackageName: If the source packagae referred to
+            does not exist.
+        :raises NoDefaultBranch: If there is no default branch possible for
+            the given shortcut.
         :raises InvalidProductName: If the given product in a product
             or product series shortcut is an invalid name for a product.
 

@@ -15,7 +15,7 @@ from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries)
+    IBranchLookup, NoBranchForSeries)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -24,6 +24,8 @@ from canonical.launchpad.interfaces.product import (
     InvalidProductName, NoSuchProduct)
 from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from canonical.launchpad.interfaces.sourcepackagename import (
+    NoSuchSourcePackageName)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -423,6 +425,15 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual(
             (branch, None, None),
             self.branch_lookup.getByLPPath(package.path))
+
+    def test_no_such_sourcepackagename(self):
+        # getByLPPath raises `NoSuchSourcePackageName` if the package in
+        # distro/series/package doesn't exist.
+        distroseries = self.factory.makeDistroRelease()
+        path = '%s/%s/doesntexist' % (
+            distroseries.distribution.name, distroseries.name)
+        self.assertRaises(
+            NoSuchSourcePackageName, self.branch_lookup.getByLPPath, path)
 
     # This test fails right now.
     def xfail_test_resolves_product_to_dev_focus_branch_trailing_path(self):
