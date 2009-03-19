@@ -287,10 +287,17 @@ class TestGetByLPPath(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.branch_lookup = getUtility(IBranchLookup)
 
-    def test_getByLPPath_with_three_parts(self):
-        """Test the behaviour with three-part names."""
+    def test_invalid_branch(self):
+        # getByLPPath raises `InvalidBranchIdentifier` if it's given a path
+        # that couldn't possibly ever refer to a branch.
         self.assertRaises(
             InvalidBranchIdentifier, self.branch_lookup.getByLPPath, 'a/b/c')
+
+    def test_error_fallthrough_product_branch(self):
+        # getByLPPath raises `NoSuchPerson` if the person component is not
+        # found, then `NoSuchProduct` if the person component is found but the
+        # product component isn't, then `NoSuchBranch` if the first two
+        # components are found.
         self.assertRaises(
             NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/bb/c')
         owner = self.factory.makePerson(name='aa')
@@ -299,50 +306,90 @@ class TestGetByLPPath(TestCaseWithFactory):
         product = self.factory.makeProduct('bb')
         self.assertRaises(
             NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/bb/c')
-        branch = self.factory.makeProductBranch(
-            owner=owner, product=product, name='c')
-        self.assertEqual(
-            (branch, None, None), self.branch_lookup.getByLPPath('~aa/bb/c'))
 
-    def test_getByLPPath_with_junk_branch(self):
-        """Test the behaviour with junk branches."""
+    def test_resolve_product_branch_unique_name(self):
+        # getByLPPath returns the branch, no trailing path and no series if
+        # given the unique name of an existing product branch.
+        branch = self.factory.makeProductBranch()
+        self.assertEqual(
+            (branch, None, None),
+            self.branch_lookup.getByLPPath(branch.unique_name))
+
+    def test_error_fallthrough_personal_branch(self):
+        # getByLPPath raises `NoSuchPerson` if the first component doesn't
+        # match an existing person, and `NoSuchBranch` if the last component
+        # doesn't match an existing branch.
+        self.assertRaises(
+            NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/+junk/c')
         owner = self.factory.makePerson(name='aa')
         self.assertRaises(
             NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/+junk/c')
-        branch = self.factory.makePersonalBranch(owner=owner, name='c')
+
+    def test_resolve_personal_branch_unique_name(self):
+        # getByLPPath returns the branch, no trailing path and no series if
+        # given the unique name of an existing junk branch.
+        branch = self.factory.makePersonalBranch()
         self.assertEqual(
             (branch, None, None),
-            self.branch_lookup.getByLPPath('~aa/+junk/c'))
+            self.branch_lookup.getByLPPath(branch.unique_name))
 
-    def test_getByLPPath_with_two_parts(self):
-        """Test the behaviour with two-part names."""
+    def test_error_fallthrough_product_series_branch(self):
+        # For the short name of a series branch, getByLPPath raises
+        # `NoSuchProduct` if the first component refers to a non-existent
+        # product, and `NoSuchSeries` if the second component refers to a
+        # non-existent series.
         self.assertRaises(
             NoSuchProduct, self.branch_lookup.getByLPPath, 'bb/dd')
         product = self.factory.makeProduct('bb')
         self.assertRaises(
             NoSuchSeries, self.branch_lookup.getByLPPath, 'bb/dd')
-        series = self.factory.makeSeries(name='dd', product=product)
+
+    def test_no_product_series_branch(self):
+        # getByLPPath raises `NoBranchForSeries` if there's no branch
+        # registered linked to the requested series.
+        series = self.factory.makeSeries()
+        short_name = '%s/%s' % (series.product.name, series.name)
         self.assertRaises(
-            NoBranchForSeries, self.branch_lookup.getByLPPath, 'bb/dd')
+            NoBranchForSeries, self.branch_lookup.getByLPPath, short_name)
+
+    def test_resolve_product_series_branch(self):
+        # getByLPPath resolves the short name for a product series to the
+        # branch associated with that series, and includes the series in the
+        # tuple.
+        series = self.factory.makeSeries()
         series.user_branch = self.factory.makeAnyBranch()
+        short_name = '%s/%s' % (series.product.name, series.name)
         self.assertEqual(
             (series.user_branch, None, series),
-            self.branch_lookup.getByLPPath('bb/dd'))
+            self.branch_lookup.getByLPPath(short_name))
 
-    def test_getByLPPath_with_one_part(self):
-        """Test the behaviour with one names."""
+    def test_product_branch_with_no_product(self):
+        # getByLPPath raises `NoSuchProduct` when resolving an lp path of
+        # 'product' if the product doesn't exist.
+        self.assertRaises(NoSuchProduct, self.branch_lookup.getByLPPath, 'bb')
+
+    def test_product_branch_with_invalid_product(self):
+        # getByLPPath raises `InvalidProductIdentifier` when resolving an lp
+        # path for a completely invalid product development focus branch.
         self.assertRaises(
             InvalidProductIdentifier, self.branch_lookup.getByLPPath, 'b')
-        self.assertRaises(NoSuchProduct, self.branch_lookup.getByLPPath, 'bb')
-        # We are not testing the security proxy here, so remove it.
-        product = removeSecurityProxy(self.factory.makeProduct('bb'))
+
+    def test_product_with_no_dev_focus(self):
+        # getByLPPath raises `NoBranchForSeries` if the product is found but
+        # doesn't have a development focus branch.
+        product = self.factory.makeProduct()
         self.assertRaises(
-            NoBranchForSeries, self.branch_lookup.getByLPPath, 'bb')
-        branch = self.factory.makeAnyBranch()
-        product.development_focus.user_branch = branch
+            NoBranchForSeries, self.branch_lookup.getByLPPath, product.name)
+
+    def test_resolves_product_to_dev_focus_branch(self):
+        # getByLPPath resolves 'product' to the development focus branch for
+        # the product and the series that is the development focus.
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product)
+        removeSecurityProxy(product).development_focus.user_branch = branch
         self.assertEqual(
             (branch, None, product.development_focus),
-            self.branch_lookup.getByLPPath('bb'))
+            self.branch_lookup.getByLPPath(product.name))
 
 
 def test_suite():
