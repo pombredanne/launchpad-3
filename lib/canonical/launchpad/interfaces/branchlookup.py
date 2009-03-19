@@ -66,13 +66,13 @@ class IBranchLookup(Interface):
             codehosting URI.
         """
 
-    def getByUrl(url, default=None):
+    def getByUrl(url):
         """Find a branch by URL.
 
         Either from the external specified in Branch.url, from the URL on
         http://bazaar.launchpad.net/ or the lp: URL.
 
-        Return the default value if no match was found.
+        Return None if no match was found.
         """
 
     def getByLPPath(path):

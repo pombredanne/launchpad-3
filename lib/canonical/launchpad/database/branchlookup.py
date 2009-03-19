@@ -65,34 +65,35 @@ class BranchLookup:
         else:
             return None
 
-    def getByUrl(self, url, default=None):
+    def _uriHostAllowed(self, uri):
+        """Is 'uri' for an allowed host?"""
+        host = uri.host
+        if host is None:
+            host = ''
+        allowed_hosts = set(config.codehosting.lp_url_hosts.split(','))
+        return host in allowed_hosts
+
+    def getByUrl(self, url):
         """See `IBranchLookup`."""
         assert not url.endswith('/')
         try:
             uri = URI(url)
         except InvalidURIError:
             return None
+
         unique_name = self.uriToUniqueName(uri)
         if unique_name is not None:
-            branch = self.getByUniqueName(unique_name)
-        elif uri.scheme == 'lp':
-            branch = None
-            allowed_hosts = set()
-            for host in config.codehosting.lp_url_hosts.split(','):
-                if host == '':
-                    host = None
-                allowed_hosts.add(host)
-            if uri.host in allowed_hosts:
-                try:
-                    branch = self.getByLPPath(uri.path.lstrip('/'))[0]
-                except NoSuchBranch:
-                    pass
-        else:
-            branch = Branch.selectOneBy(url=url)
-        if branch is None:
-            return default
-        else:
-            return branch
+            return self.getByUniqueName(unique_name)
+
+        if uri.scheme == 'lp':
+            if not self._uriHostAllowed(uri):
+                return None
+            try:
+                return self.getByLPPath(uri.path.lstrip('/'))[0]
+            except NoSuchBranch:
+                return None
+
+        return Branch.selectOneBy(url=url)
 
     def getByUniqueName(self, unique_name):
         """Find a branch by its unique name.
@@ -194,6 +195,10 @@ class BranchLookup:
 
     def getByLPPath(self, path):
         """See `IBranchLookup`."""
+        # XXX: It's kind of shitty that this returns series -- it's just a
+        # trick to let us raise convincing errors if the branch is private.
+        # There's got to be a better way -- perhaps a property on branch that
+        # points to the relevant object?
         branch = suffix = series = None
         try:
             branch, suffix = self._getByPath(path)
