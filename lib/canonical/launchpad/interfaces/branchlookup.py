@@ -73,6 +73,6 @@ class IBranchLookup(Interface):
         :return: a tuple of `IBranch`, extra_path, series. 'series' is the
             series, if any, used to perform the lookup. It's returned so that
             we can raise informative errors when we match a private branch.
-            'extra_path' is used to make things like 'bzr cat lp:foo/README'
-            work.
+            'extra_path' is used to make things like 'bzr cat
+            lp:~foo/bar/baz/README' work.
         """

@@ -315,6 +315,15 @@ class TestGetByLPPath(TestCaseWithFactory):
             (branch, None, None),
             self.branch_lookup.getByLPPath(branch.unique_name))
 
+    def test_resolve_product_branch_unique_name_with_trailing(self):
+        # getByLPPath returns the branch and the trailing path (with no
+        # series) if the given path is inside an existing branch.
+        branch = self.factory.makeProductBranch()
+        path = '%s/foo/bar/baz' % (branch.unique_name,)
+        self.assertEqual(
+            (branch, 'foo/bar/baz', None),
+            self.branch_lookup.getByLPPath(path))
+
     def test_error_fallthrough_personal_branch(self):
         # getByLPPath raises `NoSuchPerson` if the first component doesn't
         # match an existing person, and `NoSuchBranch` if the last component
@@ -332,6 +341,15 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual(
             (branch, None, None),
             self.branch_lookup.getByLPPath(branch.unique_name))
+
+    def test_resolve_personal_branch_unique_name_with_trailing(self):
+        # getByLPPath returns the branch and the trailing path (with no
+        # series) if the given path is inside an existing branch.
+        branch = self.factory.makePersonalBranch()
+        path = '%s/foo/bar/baz' % (branch.unique_name,)
+        self.assertEqual(
+            (branch, 'foo/bar/baz', None),
+            self.branch_lookup.getByLPPath(path))
 
     def test_error_fallthrough_product_series_branch(self):
         # For the short name of a series branch, getByLPPath raises
@@ -390,6 +408,18 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual(
             (branch, None, product.development_focus),
             self.branch_lookup.getByLPPath(product.name))
+
+    # This test fails right now.
+    def xfail_test_resolves_product_to_dev_focus_branch_trailing_path(self):
+        # getByLPPath resolves 'product' to the development focus branch for
+        # the product and the series that is the development focus.
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product)
+        removeSecurityProxy(product).development_focus.user_branch = branch
+        path = '%s/foo/bar/baz' % (product.name,)
+        self.assertEqual(
+            (branch, 'foo/bar/baz', product.development_focus),
+            self.branch_lookup.getByLPPath(path))
 
 
 def test_suite():
