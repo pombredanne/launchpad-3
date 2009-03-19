@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
+from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -186,8 +187,6 @@ class BranchLookup:
             branch, suffix = self._getByPath(path)
             if suffix == '':
                 suffix = None
-        except NoSuchBranch:
-            raise
         except InvalidNamespace:
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
@@ -226,7 +225,7 @@ class BranchLookup:
         else:
             series = product.getSeries(series_name)
             if series is None:
-                raise faults.NoSuchSeries(series_name, product)
+                raise NoSuchProductSeries(series_name, product)
         branch = series.series_branch
         if branch is None:
             raise faults.NoBranchForSeries(series)

@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import NoSuchProduct
+from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
@@ -229,6 +230,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                     raise faults.NoBranchForSeries(series)
         except NoSuchBranch:
             return self._getUniqueNameResultDict(strip_path)
+        except NoSuchProductSeries, e:
+            raise faults.NoSuchSeries(e.name, e.product)
         except NoSuchProduct, e:
             product_name = e.name
             pillar = getUtility(IPillarNameSet).getByName(product_name)

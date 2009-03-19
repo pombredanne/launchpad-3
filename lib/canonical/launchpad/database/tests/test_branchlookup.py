@@ -18,10 +18,10 @@ from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
+from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.xmlrpc.faults import (
-    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
-    NoSuchSeries)
+    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries)
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -360,7 +360,7 @@ class TestGetByLPPath(TestCaseWithFactory):
             NoSuchProduct, self.branch_lookup.getByLPPath, 'bb/dd')
         product = self.factory.makeProduct('bb')
         self.assertRaises(
-            NoSuchSeries, self.branch_lookup.getByLPPath, 'bb/dd')
+            NoSuchProductSeries, self.branch_lookup.getByLPPath, 'bb/dd')
 
     def test_no_product_series_branch(self):
         # getByLPPath raises `NoBranchForSeries` if there's no branch
