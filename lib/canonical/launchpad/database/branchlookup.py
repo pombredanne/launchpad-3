@@ -27,12 +27,15 @@ from canonical.launchpad.interfaces.branchlookup import (
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
 from canonical.launchpad.interfaces.productseries import (
     IProductSeries, NoSuchProductSeries)
 from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -217,12 +220,21 @@ class BranchLookup:
         series = pillar.getSeries(series_name)
         if series is None:
             raise NoSuchProductSeries(series_name, pillar)
-        try:
-            segments.next()
-        except StopIteration:
-            return series
-        else:
-            raise InvalidBranchIdentifier(path)
+        if IProductSeries.providedBy(series):
+            try:
+                segments.next()
+            except StopIteration:
+                return series
+        elif IDistroSeries.providedBy(series):
+            try:
+                sourcepackagename = segments.next()
+            except StopIteration:
+                raise NoDefaultBranch(series, 'distribution series')
+            sourcepackage = series.getSourcePackage(sourcepackagename)
+            #if sourcepackage is None:
+            #    raise NoSuchSourcePackageName(sourcepackagename)
+            return sourcepackage
+        raise InvalidBranchIdentifier(path)
 
     def _getBranchAndSeriesForObject(self, obj):
         # XXX: This should be a series of adapters.
@@ -230,6 +242,8 @@ class BranchLookup:
             return obj.development_focus.series_branch, obj.development_focus
         if IProductSeries.providedBy(obj):
             return obj.series_branch, obj
+        if ISourcePackage.providedBy(obj):
+            return obj.getBranch(PackagePublishingPocket.RELEASE), None
         if IProject.providedBy(obj):
             raise NoDefaultBranch(obj, 'project group')
         if IDistribution.providedBy(obj):

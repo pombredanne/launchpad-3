@@ -12,15 +12,18 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
     IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, NoSuchProduct)
 from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -402,6 +405,24 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual(
             (branch, None, product.development_focus),
             self.branch_lookup.getByLPPath(product.name))
+
+    def test_resolves_source_package_path_to_release_branch(self):
+        # getByLPPath resolves 'distro/series/package' to the official branch
+        # for the release pocket of that package in that series.
+        branch = self.factory.makePackageBranch()
+        package = branch.sourcepackage
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        login_person(registrant)
+        try:
+            package.setBranch(
+                PackagePublishingPocket.RELEASE, branch, registrant)
+        finally:
+            logout()
+        login(ANONYMOUS)
+        self.assertEqual(
+            (branch, None, None),
+            self.branch_lookup.getByLPPath(package.path))
 
     # This test fails right now.
     def xfail_test_resolves_product_to_dev_focus_branch_trailing_path(self):
