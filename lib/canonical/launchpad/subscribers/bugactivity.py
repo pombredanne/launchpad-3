@@ -245,5 +245,5 @@ def notify_bug_watch_modified(modified_bug_watch, event):
     if old_watch.url == new_watch.url:
         # Nothing interesting was modified, don't record any changes.
         return
-    bug.addChange(BugWatchRemoved(UTC_NOW, event.user, old_watch))
-    bug.addChange(BugWatchAdded(UTC_NOW, event.user, new_watch))
+    bug.addChange(BugWatchRemoved(UTC_NOW, IPerson(event.user), old_watch))
+    bug.addChange(BugWatchAdded(UTC_NOW, IPerson(event.user), new_watch))
