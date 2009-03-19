@@ -502,41 +502,37 @@ class TestBugChanges(unittest.TestCase):
 
     def test_target_bugtask_to_sourcepackage(self):
         # When a bugtask's target is changed, things should happen.
-        distro = self.factory.makeDistribution()
-        distroseries = self.factory.makeDistroRelease(distribution=distro)
-        target = self.factory.makeSourcePackage(distroseries=distroseries)
-        new_target = self.factory.makeSourcePackage(
-            distroseries=distroseries)
+        target = self.factory.makeDistributionSourcePackage()
+        new_target = self.factory.makeDistributionSourcePackage(
+            distribution=target.distribution)
 
         source_package_bug = self.factory.makeBug(owner=self.user)
         source_package_bug_task = source_package_bug.addTask(
             owner=self.user, target=target)
-        source_package_bug_task.distribution = target.distribution
         self.saveOldChanges(source_package_bug)
 
         bug_task_before_modification = Snapshot(
             source_package_bug_task,
             providing=providedBy(source_package_bug_task))
-
         source_package_bug_task.transitionToTarget(new_target)
+
         notify(ObjectModifiedEvent(
-            source_package_bug_task.bug_task, bug_task_before_modification,
-            ['target'], user=self.user))
+            source_package_bug_task, bug_task_before_modification,
+            ['target', 'sourcepackagename'], user=self.user))
 
         expected_notification = {
             'text': (
-                u'** Changed in: %s\n      '
-                'Product: %s => %s' % (
+                u'** Changed in: %s\nSourcepackagename: %s => %s' % (
                 source_package_bug_task.bugtargetname,
-                bug_task_before_modification.bugtargetdisplayname,
-                source_package_bug_task.bugtargetdisplayname)),
+                bug_task_before_modification.target.name,
+                source_package_bug_task.target.name)),
             'person': self.user,
             }
 
         self.assertRecordedChange(
             expected_activity=None,
             expected_notification=expected_notification,
-            bug=self.bug_task.bug)
+            bug=source_package_bug)
 
 
 def test_suite():
