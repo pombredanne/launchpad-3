@@ -1601,6 +1601,14 @@ method returns an empty SelectResults.
     >>> jblack_ppas.count()
     0
 
+The method getPrivatePPAs() will return a result set of all PPAs that are
+private.
+
+    >>> p3as = archive_set.getPrivatePPAs()
+    >>> for p3a in p3as:
+    ...     print p3a.title
+    Private PPA for Celso Providelo
+
 For the next test we will make Celso's PPA public again, so it can
 appear in public lists. We do that because that PPA contains relevant
 contents for testing.
@@ -2098,9 +2106,7 @@ Repeating this source copy gives an error:
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
     Traceback (most recent call last):
     ...
-    CannotCopy:
-        package1 1.1 in hoary (same version already building...
-        package2 1.0 in hoary (same version already building...
+    CannotCopy: Packages already copied.
 
 Repeating this copy with binaries also gives an error:
 

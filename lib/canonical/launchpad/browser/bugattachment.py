@@ -98,7 +98,7 @@ class BugAttachmentEditView(LaunchpadFormView):
             ' It will be possible to download it until it has been'
             ' automatically removed from the server.',
             url=self.context.libraryfile.http_url, name=self.context.title))
-        self.context.removeFromBug()
+        self.context.removeFromBug(user=self.user)
 
     def updateContentType(self, new_content_type):
         """Update the attachment content type."""
