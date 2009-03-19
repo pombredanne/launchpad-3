@@ -15,6 +15,8 @@ import os
 from zope.component import getUtility
 from zope.interface import Interface, implements
 
+from lazr.uri import URI
+
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
@@ -31,8 +33,8 @@ from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from lazr.uri import URI
 from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.xmlrpc.helpers import return_fault
 
 
 class IBranchSetAPI(Interface):
@@ -208,12 +210,14 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 str(URI(host=host, scheme=scheme, path=path)))
         return result
 
-    # XXX: Use the returns_fault decorator.
-    def resolve_lp_path(self, path):
+    @return_fault
+    def _resolve_lp_path(self, path):
         """See `IPublicCodehostingAPI`."""
+        # Separate method because Zope's mapply raises errors if we use
+        # decorators in XMLRPC methods. No idea why.
         strip_path = path.strip('/')
         if strip_path == '':
-            return faults.InvalidBranchIdentifier(path)
+            raise faults.InvalidBranchIdentifier(path)
         branch_set = getUtility(IBranchLookup)
         try:
             branch, suffix, series = branch_set.getByLPPath(strip_path)
@@ -237,12 +241,14 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 else:
                     raise AssertionError(
                         "pillar of unknown type %s" % pillar)
-                return faults.NoDefaultBranchForPillar(
+                raise faults.NoDefaultBranchForPillar(
                     product_name, pillar_type)
             else:
-                return faults.NoSuchProduct(product_name)
+                raise faults.NoSuchProduct(product_name)
         except NoSuchPerson, e:
-            return faults.NoSuchPersonWithName(e.name)
-        except faults.LaunchpadFault, e:
-            return e
+            raise faults.NoSuchPersonWithName(e.name)
         return self._getResultDict(branch, suffix)
+
+    def resolve_lp_path(self, path):
+        """See `IPublicCodehostingAPI`."""
+        return self._resolve_lp_path(path)
