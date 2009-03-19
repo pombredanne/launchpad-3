@@ -21,18 +21,6 @@
   <div metal:fill-slot="main"
        tal:define="message view/retry_build; error view/error|nothing">
 
-    <p
-      tal:condition="message"
-      tal:content="message"
-      class="informational message"
-    />
-
-    <p
-      tal:condition="error"
-      tal:content="error"
-      class="error message"
-    />
-
     <tal:can_reset condition="context/can_be_retried">
       <p>The status of <dfn tal:content="context/title">BUILD</dfn> is
          <span tal:replace="context/buildstate/title"/>.</p>
@@ -45,6 +33,7 @@
       <form name="RETRY" action="" method="POST">
         <input name="RETRY" type="hidden" value="1"/>
         <input type="submit" value="Retry Build"/>
+        or <a tal:attributes="href context/fmt:url">Cancel</a>
       </form>
     </tal:can_reset>
 

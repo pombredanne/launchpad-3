@@ -121,7 +121,9 @@ class BuildView(LaunchpadView):
     def retry_build(self):
         """Check user confirmation and perform the build record retry."""
         if not self.context.can_be_retried:
-            self.error = 'Build can not be retried'
+            self.request.response.addErrorNotification(
+                'Build can not be retried')
+            self.request.response.redirect(canonical_url(self.context))
             return
 
         # retrieve user confirmation
@@ -132,7 +134,8 @@ class BuildView(LaunchpadView):
 
         # invoke context method to retry the build record
         self.context.retry()
-        return 'Build record active'
+        self.request.response.addInfoNotification('Build record active')
+        self.request.response.redirect(canonical_url(self.context))
 
     @property
     def user_can_retry_build(self):
