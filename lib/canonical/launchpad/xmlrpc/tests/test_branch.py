@@ -24,10 +24,6 @@ from canonical.testing import DatabaseFunctionalLayer
 class TestExpandURL(TestCaseWithFactory):
     """Test the way that URLs are expanded."""
 
-    # XXX: Many (most? all?) of these tests should be moved to
-    # database/tests/test_branch.py, since they are testing the core
-    # translation. These tests should basically test the error handling.
-
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -89,7 +85,7 @@ class TestExpandURL(TestCaseWithFactory):
             'http://bazaar.launchpad.dev/%s' % trunk.unique_name]
         self.assertEqual(dict(urls=urls), results)
 
-    def test_productOnly(self):
+    def test_product_only(self):
         # lp:product expands to the branch associated with development focus
         # of the product.
         trunk = self.product.development_focus.user_branch
@@ -107,7 +103,7 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertFault(
             'doesntexist/trunk', faults.NoSuchProduct('doesntexist'))
 
-    def test_projectGroup(self):
+    def test_project_group(self):
         # Resolving lp:///project_group_name' should explain that project
         # groups don't have default branches.
         project_group = self.factory.makeProject()
@@ -116,7 +112,7 @@ class TestExpandURL(TestCaseWithFactory):
             faults.NoDefaultBranchForPillar(
                 project_group.name, 'project group'))
 
-    def test_distroName(self):
+    def test_distro_name(self):
         # Resolving lp:///distro_name' should explain that distributions don't
         # have default branches.
         distro = self.factory.makeDistribution()
@@ -125,7 +121,7 @@ class TestExpandURL(TestCaseWithFactory):
             faults.NoDefaultBranchForPillar(
                 distro.name, 'distribution'))
 
-    def test_invalidProductName(self):
+    def test_invalid_product_name(self):
         # If we get a string that cannot be a name for a product where we
         # expect the name of a product, we should error appropriately.
         invalid_name = '+' + self.factory.getUniqueString()
@@ -133,7 +129,7 @@ class TestExpandURL(TestCaseWithFactory):
             invalid_name,
             faults.InvalidProductIdentifier(invalid_name))
 
-    def test_productAndSeries(self):
+    def test_product_and_series(self):
         # lp:product/series expands to the branch associated with the product
         # series 'series' on 'product'.
         series = self.factory.makeSeries(
@@ -149,7 +145,7 @@ class TestExpandURL(TestCaseWithFactory):
                        self.product.development_focus.name),
             self.product.development_focus.user_branch.unique_name)
 
-    def test_developmentFocusHasNoBranch(self):
+    def test_development_focus_has_no_branch(self):
         # Return a NoBranchForSeries fault if the development focus has no
         # branch associated with it.
         product = self.factory.makeProduct()
@@ -157,7 +153,7 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertFault(
             product.name, faults.NoBranchForSeries(product.development_focus))
 
-    def test_seriesHasNoBranch(self):
+    def test_series_has_no_branch(self):
         # Return a NoBranchForSeries fault if the series has no branch
         # associated with it.
         series = self.factory.makeSeries(user_branch=None)
@@ -165,7 +161,7 @@ class TestExpandURL(TestCaseWithFactory):
             '%s/%s' % (series.product.name, series.name),
             faults.NoBranchForSeries(series))
 
-    def test_noSuchSeries(self):
+    def test_no_such_series(self):
         # Return a NoSuchSeries fault there is no series of the given name
         # associated with the product.
         self.assertFault(
@@ -181,7 +177,7 @@ class TestExpandURL(TestCaseWithFactory):
         trunk = self.product.development_focus.user_branch
         self.assertResolves(trunk.unique_name, trunk.unique_name)
 
-    def test_mirroredBranch(self):
+    def test_mirrored_branch(self):
         # The unique name of a mirrored branch resolves to the unique name of
         # the branch.
         arbitrary_branch = self.factory.makeAnyBranch(
@@ -189,7 +185,7 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertResolves(
             arbitrary_branch.unique_name, arbitrary_branch.unique_name)
 
-    def test_noSuchBranch_product(self):
+    def test_no_such_branch_product(self):
         # Resolve paths to branches even if there is no branch of that name.
         # We do this so that users can push new branches to lp: URLs.
         owner = self.factory.makePerson()
@@ -197,7 +193,7 @@ class TestExpandURL(TestCaseWithFactory):
             owner.name, self.product.name)
         self.assertResolves(nonexistent_branch, nonexistent_branch)
 
-    def test_noSuchBranch_personal(self):
+    def test_no_such_branch_personal(self):
         # Resolve paths to junk branches.
         # This test added to make sure we don't raise a fault when looking for
         # the '+junk' project, which doesn't actually exist.
@@ -205,7 +201,7 @@ class TestExpandURL(TestCaseWithFactory):
         nonexistent_branch = '~%s/+junk/doesntexist' % owner.name
         self.assertResolves(nonexistent_branch, nonexistent_branch)
 
-    def test_noSuchBranch_package(self):
+    def test_no_such_branch_package(self):
         # Resolve paths to package branches even if there's no branch of that
         # name, so that we can push new branches using lp: URLs.
         owner = self.factory.makePerson()
@@ -214,7 +210,7 @@ class TestExpandURL(TestCaseWithFactory):
             owner.name, sourcepackage.path)
         self.assertResolves(nonexistent_branch, nonexistent_branch)
 
-    def test_resolveBranchWithNoSuchProduct(self):
+    def test_resolve_branch_with_no_such_product(self):
         # If we try to resolve a branch that refers to a non-existent product,
         # then we return a NoSuchProduct fault.
         owner = self.factory.makePerson()
@@ -223,7 +219,7 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertFault(
             nonexistent_product_branch, faults.NoSuchProduct('doesntexist'))
 
-    def test_resolveBranchWithNoSuchOwner(self):
+    def test_resolve_branch_with_no_such_owner(self):
         # If we try to resolve a branch that refers to a non-existent owner,
         # then we return a NoSuchPerson fault.
         nonexistent_owner_branch = "~doesntexist/%s/%s" % (
@@ -232,7 +228,7 @@ class TestExpandURL(TestCaseWithFactory):
             nonexistent_owner_branch,
             faults.NoSuchPersonWithName('doesntexist'))
 
-    def test_tooManySegments(self):
+    def test_too_many_segments(self):
         # If we have more segments than are necessary to refer to a branch,
         # then attach these segments to the resolved url.
         # We do this so that users can do operations like 'bzr cat
@@ -241,7 +237,7 @@ class TestExpandURL(TestCaseWithFactory):
         longer_path = os.path.join(arbitrary_branch.unique_name, 'qux')
         self.assertResolves(longer_path, longer_path)
 
-    def test_tooManySegmentsNoSuchBranch(self):
+    def test_too_many_segments_no_such_branch(self):
         # If we have more segments than are necessary to refer to a branch,
         # then attach these segments to the resolved url, even if there is no
         # branch corresponding to the start of the URL.
@@ -257,11 +253,11 @@ class TestExpandURL(TestCaseWithFactory):
             '~' + person.name, product.name, branch_name, extra_path)
         self.assertResolves(longer_path, longer_path)
 
-    def test_emptyPath(self):
+    def test_empty_path(self):
         # An empty path is an invalid identifier.
         self.assertFault('', faults.InvalidBranchIdentifier(''))
 
-    def test_missingTilde(self):
+    def test_missing_tilde(self):
         # If it looks like a branch's unique name, but is missing a tilde,
         # then it is an invalid branch identifier.
         self.assertFault(
@@ -276,11 +272,11 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertFault(
             unique_name, faults.InvalidBranchIdentifier(unique_name))
 
-    def test_allSlashes(self):
+    def test_all_slashes(self):
         # A path of all slashes is an invalid identifier.
         self.assertFault('///', faults.InvalidBranchIdentifier('///'))
 
-    def test_trailingSlashes(self):
+    def test_trailing_slashes(self):
         # Trailing slashes are trimmed.
         # Trailing slashes on lp:product//
         trunk = self.product.development_focus.user_branch
@@ -294,7 +290,7 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertResolves(
             arbitrary_branch.unique_name + '//', arbitrary_branch.unique_name)
 
-    def test_privateBranch(self):
+    def test_private_branch(self):
         # Invisible branches are resolved as if they didn't exist, so that we
         # reveal the least possile amount of information about them.
         # For fully specified branch names, this means resolving the lp url.
@@ -305,7 +301,7 @@ class TestExpandURL(TestCaseWithFactory):
         unique_name = removeSecurityProxy(arbitrary_branch).unique_name
         self.assertResolves(unique_name, unique_name)
 
-    def test_privateBranchOnSeries(self):
+    def test_private_branch_on_series(self):
         # We resolve invisible branches as if they don't exist.  For
         # references to product series, this means returning a
         # NoBranchForSeries fault.
@@ -320,6 +316,7 @@ class TestExpandURL(TestCaseWithFactory):
 
     def test_privateBranchAsDevelopmentFocus(self):
         # We resolve invisible branches as if they don't exist.
+        #
         # References to a product resolve to the branch associated with the
         # development focus. If that branch is private, other views will
         # indicate that there is no branch on the development focus. We do the
@@ -331,32 +328,32 @@ class TestExpandURL(TestCaseWithFactory):
             self.product.name,
             faults.NoBranchForSeries(self.product.development_focus))
 
-    def test_privateBranchAsUser(self):
+    def test_private_branch_as_user(self):
         # We resolve invisible branches as if they don't exist.
+        #
         # References to a product resolve to the branch associated with the
         # development focus. If that branch is private, other views will
         # indicate that there is no branch on the development focus. We do the
         # same.
+        #
         # Create the owner explicitly so that we can get its email without
         # resorting to removeSecurityProxy.
         email = self.factory.getUniqueEmailAddress()
         arbitrary_branch = self.makePrivateBranch(
             owner=self.factory.makePerson(email=email))
         login(email)
-        try:
-            self.assertResolves(
-                arbitrary_branch.unique_name, arbitrary_branch.unique_name)
-        finally:
-            logout()
+        self.addCleanup(logout)
+        self.assertResolves(
+            arbitrary_branch.unique_name, arbitrary_branch.unique_name)
 
-    def test_remoteBranch(self):
+    def test_remote_branch(self):
         # For remote branches, return results that link to the actual remote
         # branch URL.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.REMOTE)
         result = self.api.resolve_lp_path(branch.unique_name)
         self.assertEqual([branch.url], result['urls'])
 
-    def test_remoteBranchNoURL(self):
+    def test_remote_branch_no_url(self):
         # Raise a Fault for remote branches with no URL.
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.REMOTE, url=None)
