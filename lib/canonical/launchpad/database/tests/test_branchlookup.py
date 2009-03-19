@@ -287,12 +287,6 @@ class TestGetByLPPath(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.branch_lookup = getUtility(IBranchLookup)
 
-    def test_invalid_branch(self):
-        # getByLPPath raises `InvalidBranchIdentifier` if it's given a path
-        # that couldn't possibly ever refer to a branch.
-        self.assertRaises(
-            InvalidBranchIdentifier, self.branch_lookup.getByLPPath, 'a/b/c')
-
     def test_error_fallthrough_product_branch(self):
         # getByLPPath raises `NoSuchPerson` if the person component is not
         # found, then `NoSuchProduct` if the person component is found but the

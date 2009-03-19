@@ -199,24 +199,26 @@ class BranchLookup:
         return branch, suffix, series
 
     def _traverseToShortcut(self, path):
-        segments = path.split('/')
-        if len(segments) == 1:
-            product_name, series_name = segments[0], None
-        elif len(segments) == 2:
-            product_name, series_name = tuple(segments)
-        else:
-            raise InvalidBranchIdentifier(path)
+        segments = iter(path.split('/'))
+        product_name = segments.next()
         if not valid_name(product_name):
             raise InvalidProductName(product_name)
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
             raise NoSuchProduct(product_name)
-        if series_name is None:
+        try:
+            series_name = segments.next()
+        except StopIteration:
             return product
         series = product.getSeries(series_name)
         if series is None:
             raise NoSuchProductSeries(series_name, product)
-        return series
+        try:
+            segments.next()
+        except StopIteration:
+            return series
+        else:
+            raise InvalidBranchIdentifier(path)
 
     def _getBranchAndSeriesForObject(self, obj):
         if IProduct.providedBy(obj):

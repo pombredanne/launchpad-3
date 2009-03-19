@@ -257,21 +257,6 @@ class TestExpandURL(TestCaseWithFactory):
         # An empty path is an invalid identifier.
         self.assertFault('', faults.InvalidBranchIdentifier(''))
 
-    def test_missing_tilde(self):
-        # If it looks like a branch's unique name, but is missing a tilde,
-        # then it is an invalid branch identifier.
-        self.assertFault(
-            'foo/bar/baz', faults.InvalidBranchIdentifier('foo/bar/baz'))
-        self.assertFault(
-            'foo/bar/baz/qux',
-            faults.InvalidBranchIdentifier('foo/bar/baz/qux'))
-
-        # Should be invalid even if the branch exists.
-        trunk = self.product.development_focus.user_branch
-        unique_name = trunk.unique_name.lstrip('~')
-        self.assertFault(
-            unique_name, faults.InvalidBranchIdentifier(unique_name))
-
     def test_all_slashes(self):
         # A path of all slashes is an invalid identifier.
         self.assertFault('///', faults.InvalidBranchIdentifier('///'))
