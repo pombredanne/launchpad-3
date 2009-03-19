@@ -254,6 +254,41 @@ class PackageUpload(SQLBase):
                 "Cannot build any of the architectures requested: %s" %
                 sourcepackagerelease.architecturehintlist)
 
+    def _giveKarma(self):
+        """Assign karma as appropriate for an accepted upload."""
+        # Give some karma to the uploader for source uploads only.
+        if self.sources.count() == 0:
+            return
+
+        changed_by = self.sources[0].sourcepackagerelease.creator
+        if self.signing_key is not None:
+            uploader = self.signing_key.owner
+        else:
+            uploader = None
+
+        if self.archive.is_ppa:
+            main_karma_action = 'ppauploadaccepted'
+        else:
+            main_karma_action = 'distributionuploadaccepted'
+
+        distribution = self.distroseries.distribution
+        sourcepackagename = self.sources[
+            0].sourcepackagerelease.sourcepackagename
+
+        # The package creator always gets his karma.
+        changed_by.assignKarma(
+            main_karma_action, distribution=distribution,
+            sourcepackagename=sourcepackagename)
+
+        if self.archive.is_ppa:
+            return
+
+        # If a sponsor was involved, give him some too.
+        if uploader is not None and changed_by != uploader:
+            uploader.assignKarma(
+                'sponsoruploadaccepted', distribution=distribution,
+                sourcepackagename=sourcepackagename)
+
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
         debug(logger, "Setting it to ACCEPTED")
@@ -274,6 +309,7 @@ class PackageUpload(SQLBase):
             pas_verify=pas_verify, logger=logger)
         self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
         self._closeBugs(changesfile_path, logger)
+        self._giveKarma()
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
@@ -297,6 +333,9 @@ class PackageUpload(SQLBase):
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
         close_bugs_for_queue_item(self)
+
+        # Give some karma!
+        self._giveKarma()
 
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""

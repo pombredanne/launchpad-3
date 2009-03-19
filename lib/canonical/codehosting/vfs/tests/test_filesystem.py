@@ -100,18 +100,6 @@ class TestFilesystem(TestCaseWithTransport):
             transport.has(
                 '~%s/%s/shiny-new-thing' % (team.name, product.name)))
 
-    def test_make_team_junk_branch_directory(self):
-        # Teams do not have +junk products
-        # XXX: JonathanLange 2008-08-16: We don't need to test this here,
-        # since it's already tested at the XMLRPC server level. We should
-        # delete this test once we add tests for fault-to-bzr-error
-        # translation.
-        team = self.factory.makeTeam(self.requester)
-        transport = self.getTransport()
-        self.assertRaises(
-            errors.PermissionDenied,
-            transport.mkdir, '~%s/+junk/new-branch' % team.name)
-
     def test_make_product_directory_for_nonexistent_product(self):
         # Making a branch directory for a non-existent product is not allowed.
         # Products must first be registered in Launchpad.

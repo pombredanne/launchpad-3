@@ -22,7 +22,7 @@ import urllib
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller
-from zope.component import getUtility, queryMultiAdapter
+from zope.component import getMultiAdapter, getUtility, queryMultiAdapter
 from zope.interface import implements
 from zope.publisher.browser import BrowserRequest
 from zope.publisher.interfaces import IPublication, IPublishTraverse, NotFound
@@ -209,7 +209,13 @@ class TestPublication:
     def handleException(self, object, request, exc_info, retry_allowed=1):
         """Prints the exception."""
         traceback.print_exception(*exc_info)
+        exception = exc_info[1]
+        # Reproduce the behavior of ZopePublication by looking up a view
+        # for this exception.
+        view = getMultiAdapter((exception, request), name='index.html')
         exc_info = None
+        request.response.reset()
+        request.response.setResult(view())
 
     def endRequest(self, request, ob):
         """Ends the interaction."""
@@ -228,7 +234,7 @@ class CookbookWebServiceTestPublication(WebServiceTestPublication):
 class WebServiceCaller:
     """A class for making calls to lazr.restful web services."""
 
-    def __init__(self, handle_errors=False, http_caller=None,
+    def __init__(self, handle_errors=True, http_caller=None,
                  *args, **kwargs):
         """Create a WebServiceCaller.
         :param handle_errors: Should errors raise exception or be handled by
@@ -430,7 +436,7 @@ class CookbookWebServiceCaller(WebServiceCaller):
 
     base_url = "https://cookbooks.dev/"
 
-    def __init__(self, handle_errors=False):
+    def __init__(self, handle_errors=True):
         super(CookbookWebServiceCaller, self).__init__(
             handle_errors, CookbookWebServiceHTTPCaller())
 

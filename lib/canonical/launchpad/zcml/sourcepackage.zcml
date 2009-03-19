@@ -23,6 +23,12 @@
       />
   </class>
 
+  <securedutility
+     component="canonical.launchpad.database.sourcepackage.SourcePackage"
+     provides="canonical.launchpad.interfaces.sourcepackage.ISourcePackageFactory">
+    <allow interface="canonical.launchpad.interfaces.sourcepackage.ISourcePackageFactory" />
+  </securedutility>
+
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.ISourcePackage"
