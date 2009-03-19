@@ -3,6 +3,11 @@
 The summary of the interaction between an `Account` and an OpenID
 Relying Party is represented by the OpenIDRPSummary object.
 
+    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> dbpolicy = SSODatabasePolicy(LaunchpadTestRequest())
+    >>> dbpolicy.beforeTraversal()
+
 
 == IOpenIDRPSummarySet ==
 
@@ -278,3 +283,6 @@ database does not have a constraint to guard against this.
      ...
     AssertionError: More than 1 account has the OpenID identifier of
                     http://openid.launchpad.dev/+id/knightsOfNi.
+
+    >>> dbpolicy.afterCall()
+

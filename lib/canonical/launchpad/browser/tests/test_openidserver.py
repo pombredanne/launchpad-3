@@ -26,16 +26,35 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.testing.pages import setupBrowser
+from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
 
-class SimpleRegistrationTestCase(unittest.TestCase):
-    """Tests for Simple Registration helpers in OpenIDMixin"""
+class SSODatabasePolicyTestCase(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        self.dbpolicy = SSODatabasePolicy(LaunchpadTestRequest())
+        self.dbpolicy.beforeTraversal()
+        super(SSODatabasePolicyTestCase, self).setUp()
+
+    def tearDown(self):
+        super(SSODatabasePolicyTestCase, self).tearDown()
+        self.dbpolicy.afterCall()
+
+
+class SimpleRegistrationTestCase(SSODatabasePolicyTestCase):
+    """Tests for Simple Registration helpers in OpenIDMixin"""
+
+    def setUp(self):
         login(ANONYMOUS)
+        super(SSODatabasePolicyTestCase, self).setUp()
+
+    def tearDown(self):
+        super(SSODatabasePolicyTestCase, self).tearDown()
+        logout()
 
     def test_sreg_field_names(self):
         # Test that sreg_field_names returns an appropriate value
@@ -99,9 +118,8 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             ('timezone', u'Europe/Paris')])
 
 
-class PreAuthorizeRPViewTestCase(unittest.TestCase):
+class PreAuthorizeRPViewTestCase(SSODatabasePolicyTestCase):
     """Test for the PreAuthorizeRPView."""
-    layer = DatabaseFunctionalLayer
 
     def test_pre_authorize_works_with_slave_store(self):
         """
@@ -147,10 +165,8 @@ class FakeOpenIdRequest:
         return self.args
 
 
-class OpenIDMixin_shouldReauthenticate_TestCase(unittest.TestCase):
+class OpenIDMixin_shouldReauthenticate_TestCase(SSODatabasePolicyTestCase):
     """Test cases for the shouldReauthenticate() period."""
-
-    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Sets up a very simple openid_mixin with a FakeOpenIdRequest.

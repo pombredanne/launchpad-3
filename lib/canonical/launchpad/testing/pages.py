@@ -99,21 +99,39 @@ class WebServiceCaller:
 
         Other parameters are passed to the HTTPCaller used to make the calls.
         """
-        if oauth_consumer_key is not None and oauth_access_key is not None:
-            login(ANONYMOUS)
-            self.consumer = getUtility(IOAuthConsumerSet).getByKey(
-                oauth_consumer_key)
-            self.access_token = self.consumer.getAccessToken(
-                oauth_access_key)
-            logout()
-        else:
-            self.consumer = None
-            self.access_token = None
+        self._oauth_consumer_key = oauth_consumer_key
+        self._oauth_access_key = oauth_access_key
 
         self.handle_errors = handle_errors
 
         # Set up a delegate to make the actual HTTP calls.
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
+
+    @property
+    def consumer(self):
+        self._initialize()
+        return self._consumer
+
+    @property
+    def access_token(self):
+        self._initialize()
+        return self._access_token
+
+    def _initialize(self):
+        """We defer loading the consumer until needed rather than in the
+        constructor, as we can't assume we have the required db permissions.
+        """
+        if (self.oauth_consumer_key is not None
+            and self.oauth_access_key is not None):
+            login(ANONYMOUS)
+            self._consumer = getUtility(IOAuthConsumerSet).getByKey(
+                self._oauth_consumer_key)
+            self._access_token = self._consumer.getAccessToken(
+                self._oauth_access_key)
+            logout()
+        else:
+            self._consumer = None
+            self._access_token = None
 
     def getAbsoluteUrl(self, resource_path, api_version=DEFAULT_API_VERSION):
         """Convenience method for creating a url in tests.

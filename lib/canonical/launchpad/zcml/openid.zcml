@@ -252,7 +252,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
         path_expression="string:+rpconfig"
-        parent_utility="canonical.launchpad.interfaces.IOpenIDApplication"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <browser:navigation

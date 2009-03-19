@@ -37,12 +37,19 @@ recently, using the OpenID service.
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)
+    >>> from canonical.launchpad.webapp.dbpolicy import (
+    ...     SSODatabasePolicy)
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> dbpolicy = SSODatabasePolicy(LaunchpadTestRequest())
+    >>> dbpolicy.beforeTraversal()
     >>> login(ANONYMOUS)
+    >>> sabdfl_person = getUtility(IPersonSet).getByName('sabdfl')
+    >>> sabdfl_account = getUtility(IAccountSet).get(sabdfl_person.accountID)
     >>> summary = getUtility(IOpenIDRPSummarySet).record(
-    ...     getUtility(IPersonSet).getByName('sabdfl').account,
-    ...     'http://example.com/',
+    ...     sabdfl_account, 'http://example.com/',
     ...     date_used=datetime(2009, 01, 01, tzinfo=pytz.UTC))
     >>> logout()
+    >>> dbpolicy.afterCall()
 
     >>> browser.reload()
     >>> print extract_text(find_tag_by_id(browser.contents, 'visited-sites'))

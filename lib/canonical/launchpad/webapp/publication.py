@@ -166,6 +166,11 @@ class LaunchpadBrowserPublication(
         self.thread_locals.db_policy = IDatabasePolicy(request)
         self.thread_locals.db_policy.beforeTraversal()
 
+        # XXX: Debug shite
+        if request.getURL().startswith('http://openid.'):
+            from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+            assert isinstance(self.thread_locals.db_policy, SSODatabasePolicy)
+
         getUtility(IOpenLaunchBag).clear()
 
         # Set the default layer.
