@@ -534,6 +534,25 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=expected_notification,
             bug=source_package_bug)
 
+    def test_add_bugwatch_to_bugtask(self):
+        # Adding a BugWatch to a bug task only records an entry in the
+        # BugNotification table.
+        bug_watch = self.factory.makeBugWatch(bug=self.bug_task.bug)
+        self.saveOldChanges(bug=self.bug_task.bug)
+
+        self.changeAttribute(self.bug_task, 'bugwatch', bug_watch)
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n     Bugwatch: None => %s' % (
+                self.bug_task.bugtargetname, bug_watch.title)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=None,
+            expected_notification=expected_notification,
+            bug=self.bug_task.bug)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
