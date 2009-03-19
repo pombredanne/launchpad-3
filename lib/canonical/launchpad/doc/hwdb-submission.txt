@@ -24,7 +24,6 @@ The POST data consists of the following fields:
     >>> from StringIO import StringIO
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IHWDBApplication
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> data = StringIO('some data.')
     >>> data.filename = 'hardware-info'
     >>> form={'field.date_created':    u'2007-08-01',
