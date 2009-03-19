@@ -246,6 +246,9 @@ of this procedure.
     The status of i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     is Failed to build.
     Retrying this build will destroy its history and logs.
+    By default, this build will be retried only after other pending builds;
+    please contact a build daemon administrator if you need special
+    treatment.
     Are you sure ?
 
 We'll also set up a second browser pointing at this page, for later.

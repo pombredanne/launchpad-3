@@ -37,6 +37,9 @@
       <p>The status of <dfn tal:content="context/title">BUILD</dfn> is
          <span tal:replace="context/buildstate/title"/>.</p>
       <p>Retrying this build will destroy its history and logs.</p>
+      <p>By default, this build will be retried only after other pending
+         builds; please contact a build daemon administrator if you need
+         special treatment.</p>
       <p>Are you sure ?</p>
 
       <form name="RETRY" action="" method="POST">
