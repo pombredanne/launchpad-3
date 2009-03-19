@@ -575,5 +575,39 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=expected_notification,
             bug=self.bug_task.bug)
 
+    def test_assign_bugtask(self):
+        # Assigning a bug task to someone adds entries to the bug
+        # activity and notifications sets.
+        bug_task_before_modification = Snapshot(
+            self.bug_task, providing=providedBy(self.bug_task))
+
+        self.bug_task.transitionToAssignee(self.user)
+        notify(ObjectModifiedEvent(
+            self.bug_task, bug_task_before_modification,
+            ['assignee'], user=self.user))
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: assignee' % self.bug_task.bugtargetname,
+            'oldvalue': None,
+            'newvalue': self.user.name,
+            'message': None,
+            }
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n     Assignee: (unassigned) => '
+                '%s (%s)' % (
+                self.bug_task.bugtargetname, self.user.displayname,
+                self.user.name)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=self.bug_task.bug)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
