@@ -95,8 +95,16 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
 
         Other parameters are passed to the HTTPCaller used to make the calls.
         """
-        self._oauth_consumer_key = oauth_consumer_key
-        self._oauth_access_key = oauth_access_key
+        if oauth_consumer_key is not None and oauth_access_key is not None:
+            login(ANONYMOUS)
+            self.consumer = getUtility(IOAuthConsumerSet).getByKey(
+                oauth_consumer_key)
+            self.access_token = self.consumer.getAccessToken(
+                oauth_access_key)
+            logout()
+        else:
+            self.consumer = None
+            self.access_token = None
 
         self.handle_errors = handle_errors
 
