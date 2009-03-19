@@ -1098,13 +1098,20 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 .official-tags-layout-table ul {
   list-style-type: none;
   padding-left: 0 !important;
-  margin-left: 0 !important;
+  margin: 0 !important;
 }
 
 .official-tags-layout-table li.selected {
   background-color: #eee;
 }
 
+.official-tags-layout-table .list-scrollable-area {
+  height: 10em;
+  overflow-y: scroll;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #eee;
+}
 
 /* === Portlets === */
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */

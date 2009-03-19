@@ -39,8 +39,10 @@
       </tr>
       <tr>
         <td id="left-column" class="left-column">
-          <ul id="official-tags-list">
-          </ul>
+          <div class="list-scrollable-area">
+            <ul id="official-tags-list">
+            </ul>
+          </div>
         </td>
         <td id="middle-column" class="middle-column">
           <input type="submit" value="&larr;"
@@ -58,16 +60,24 @@
           </form>
         </td>
         <td id="right-column" class="right-column">
-          <ul id="other-tags-list">
-          </ul>
+          <div class="list-scrollable-area">
+            <ul id="other-tags-list">
+            </ul>
+          </div>
         </td>
       </tr>
       <tr>
         <td class="left-column">
+          <br />
           <table class="input-field-layout-table">
             <tr>
+              <td colspan="2">
+                Add a new official tag:
+              </td>
+            </tr>
+            <tr>
               <td style="width: 100%">
-                <input type="text" id="new-tag-text" style="width: 100%" />
+                 <input type="text" id="new-tag-text" style="width: 100%" />
               </td>
               <td>
                 <input type="submit" value="Add"
