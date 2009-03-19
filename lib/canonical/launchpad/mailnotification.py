@@ -28,8 +28,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.bugchange import (
     get_bug_change_class)
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import block_implicit_flushes
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
+from canonical.launchpad.components.bugchange import (
+    BugWatchAdded, BugWatchRemoved)
 from canonical.launchpad.interfaces import (
     IBugTask, IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
     INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
@@ -944,19 +947,11 @@ def notify_bug_watch_modified(modified_bug_watch, event):
     modified_bug_watch must be an IBugWatch. event must be an
     IObjectModifiedEvent.
     """
-    old = event.object_before_modification
-    new = event.object
-    if ((old.bugtracker != new.bugtracker) or
-        (old.remotebug != new.remotebug)):
-        # there is a difference worth notifying about here
-        # so let's keep going
-        bug_delta = BugDelta(
-            bug=new.bug,
-            bugurl=canonical_url(new.bug),
-            user=IPerson(event.user),
-            bugwatch={'old' : old, 'new' : new})
-
-        add_bug_change_notifications(bug_delta)
+    old_watch = event.object_before_modification
+    new_watch = event.object
+    bug = new_watch.bug
+    bug.addChange(BugWatchRemoved(UTC_NOW, event.user, old_watch))
+    bug.addChange(BugWatchAdded(UTC_NOW, event.user, new_watch))
 
 
 @block_implicit_flushes

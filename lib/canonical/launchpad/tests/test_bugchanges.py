@@ -71,7 +71,7 @@ class TestBugChanges(unittest.TestCase):
                 expected_activities = expected_activity
             self.assertEqual(len(new_activities), len(expected_activities))
             for expected_activity in expected_activities:
-                added_activity = new_activities.pop()
+                added_activity = new_activities.pop(0)
                 self.assertEqual(
                     added_activity.person, expected_activity['person'])
                 self.assertEqual(
@@ -96,7 +96,7 @@ class TestBugChanges(unittest.TestCase):
             self.assertEqual(
                 len(new_notifications), len(expected_notifications))
             for expected_notification in expected_notifications:
-                [added_notification] = new_notifications
+                added_notification = new_notifications.pop(0)
                 self.assertEqual(
                     added_notification.message.text_contents,
                     expected_notification['text'])
@@ -236,12 +236,12 @@ class TestBugChanges(unittest.TestCase):
         bug_watch = self.bug.addWatch(bugtracker, '42', self.user)
         old_url = bug_watch.url
         self.saveOldChanges()
-        self.changeAttribute(bug_watch, 'remotebug', '84')
+        old_remotebug = self.changeAttribute(bug_watch, 'remotebug', '84')
 
         bugwatch_removal_activity = {
             'person': self.user,
             'whatchanged': 'bug watch removed',
-            'oldvalue': bug_watch.url,
+            'oldvalue': old_url,
             }
         bugwatch_addition_activity = {
             'person': self.user,
@@ -253,8 +253,8 @@ class TestBugChanges(unittest.TestCase):
             'text': (
                 "** Bug watch removed: %s #%s\n"
                 "   %s" % (
-                    bug_watch.bugtracker.title, bug_watch.remotebug,
-                    bug_watch.url)),
+                    bug_watch.bugtracker.title, old_remotebug,
+                    old_url)),
             'person': self.user,
             }
         bugwatch_addition_notification = {
