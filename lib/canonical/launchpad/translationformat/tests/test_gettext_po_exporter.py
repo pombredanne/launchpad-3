@@ -93,6 +93,7 @@ class GettextPOExporterTestCase(unittest.TestCase):
             msgstr[3] ""
 
             #, fuzzy
+            #| msgid "zog"
             msgid "zig"
             msgstr "zag"
 

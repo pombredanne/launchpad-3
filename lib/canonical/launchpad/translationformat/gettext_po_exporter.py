@@ -39,6 +39,23 @@ def comments_text_representation(translation_message):
     u'#, fuzzy'
 
     >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'foo'
+    >>> translation_message.addTranslation(
+    ...     TranslationConstants.SINGULAR_FORM, u'bar')
+    >>> translation_message.comment = u'  line1\n| msgid line2\n'
+    >>> comments_text_representation(translation_message)
+    u'#  line1\n#| msgid line2'
+
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'foo'
+    >>> translation_message.addTranslation(
+    ...     TranslationConstants.SINGULAR_FORM, u'bar')
+    >>> translation_message.comment = u'  line1\n| msgid line2\n'
+    >>> translation_message.file_references = u'src/file.c'
+    >>> comments_text_representation(translation_message)
+    u'#  line1\n#: src/file.c\n#| msgid line2'
+
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid_singular = u'a'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'b')
@@ -54,20 +71,27 @@ def comments_text_representation(translation_message):
     >>> comments_text_representation(translation_message)
     u'#, fuzzy, c-format'
     '''
-    text = []
+    comment_lines = []
+    comment_lines_previous_msgids = []
     # Comment and source_comment always end in a newline, so
     # splitting by \n always results in an empty last element.
+    # Previous msgsid comments (indicated by a | symbol) have to come
+    # after the other comments to preserve the order expected by msgfmt.
     if translation_message.comment:
         for line in translation_message.comment.split('\n')[:-1]:
-            text.append(u'#' + line)
+            comment_line = u'#' + line
+            if line.startswith('|'):
+                comment_lines_previous_msgids.append(comment_line)
+            else:
+                comment_lines.append(comment_line)
     if not translation_message.is_obsolete:
         # Source comments are only exported if it's not an obsolete entry.
         if translation_message.source_comment:
             for line in translation_message.source_comment.split('\n')[:-1]:
-                text.append(u'#. ' + line)
+                comment_lines.append(u'#. ' + line)
         if translation_message.file_references:
             for line in translation_message.file_references.split('\n'):
-                text.append(u'#: ' + line)
+                comment_lines.append(u'#: ' + line)
     if translation_message.flags:
         flags = sorted(translation_message.flags)
         if 'fuzzy' in flags:
@@ -75,9 +99,9 @@ def comments_text_representation(translation_message):
             # tools do.
             flags.remove('fuzzy')
             flags.insert(0, 'fuzzy')
-        text.append(u'#, %s' % u', '.join(flags))
+        comment_lines.append(u'#, %s' % u', '.join(flags))
 
-    return u'\n'.join(text)
+    return u'\n'.join(comment_lines + comment_lines_previous_msgids)
 
 
 def wrap_text(text, prefix, wrap_width):
