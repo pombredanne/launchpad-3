@@ -443,6 +443,8 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual(sourcepackage, exception.sourcepackage)
         self.assertEqual(PackagePublishingPocket.RELEASE, exception.pocket)
 
+    # XXX: test for pocket-linked branch paths
+
     # This test fails right now.
     def xfail_test_resolves_product_to_dev_focus_branch_trailing_path(self):
         # getByLPPath resolves 'product' to the development focus branch for

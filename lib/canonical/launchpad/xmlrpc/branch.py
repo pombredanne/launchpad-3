@@ -223,14 +223,25 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         try:
             branch, suffix, series = branch_set.getByLPPath(strip_path)
             # XXX: JonathanLange 2009-03-19: Manually checking the permission
-            # kind of blows.
+            # kind of blows. Also, all we're doing here is a crappy thing to
+            # make sure that we don't leak out privacy information. This could
+            # perhaps be pushed further down into the model, or perhaps we can
+            # expose the model's internal traversal mechanism to get the
+            # linked object.
             if not check_permission('launchpad.View', branch):
                 if series is None:
                     raise NoSuchBranch(strip_path)
                 else:
                     raise faults.NoBranchForSeries(series)
         except NoSuchBranch:
+            # If the branch isn't found, but it looks like a valid name, then
+            # resolve it anyway, treating the path like a branch's unique
+            # name. This lets people push new branches up to Launchpad using
+            # lp: URL syntax.
             return self._getUniqueNameResultDict(strip_path)
+        # XXX: all of this is repetitive and dirty. Alternatives are directly
+        # raising faults (blech) or some automated way of reraising as faults,
+        # or just moving this code out.
         except NoBranchForSeries, e:
             raise faults.NoBranchForSeries(e.series)
         except InvalidBranchIdentifier, e:

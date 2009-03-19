@@ -213,12 +213,15 @@ class BranchLookup:
         return branch, suffix, series
 
     def _traverseToShortcut(self, path):
+        # XXX: this is really, really ugly and unclear. Perhaps Zope can teach
+        # us traversal tricks?
         segments = iter(path.split('/'))
         pillar_name = segments.next()
         if not valid_name(pillar_name):
             raise InvalidProductName(pillar_name)
         pillar = getUtility(IPillarNameSet).getByName(pillar_name)
         if pillar is None:
+            # XXX: no necessarily no such *product*.
             raise NoSuchProduct(pillar_name)
         try:
             series_name = segments.next()
@@ -226,6 +229,8 @@ class BranchLookup:
             return pillar
         series = pillar.getSeries(series_name)
         if series is None:
+            # XXX: no necessarily a *product* series, could be a distro
+            # series.
             raise NoSuchProductSeries(series_name, pillar)
         if IProductSeries.providedBy(series):
             try:
@@ -239,6 +244,7 @@ class BranchLookup:
                 raise NoDefaultBranch(series, 'distribution series')
             sourcepackage = series.getSourcePackage(sourcepackagename)
             if sourcepackage is None:
+                # XXX: Not handled by resolve_lp_path.
                 raise NoSuchSourcePackageName(sourcepackagename)
             return sourcepackage
         raise InvalidBranchIdentifier(path)

@@ -30,12 +30,15 @@ class NoBranchForSeries(Exception):
         Exception.__init__(self, "%r has no branch" % (product_series,))
 
 
+# XXX: Perhaps NoBranchForSeries and NoBranchForSourcePackage could share a
+# base class?
 class NoBranchForSourcePackage(Exception):
     """Raised when we wrongly assume a source package has a branch."""
 
     def __init__(self, sourcepackage, pocket):
         self.sourcepackage = sourcepackage
         self.pocket = pocket
+        # XXX: Exception message doesn't include pocket -- is kind of crap.
         Exception.__init__(self, "%r has no branch" % (sourcepackage,))
 
 
@@ -89,29 +92,31 @@ class IBranchLookup(Interface):
 
         Recognized formats:
         "~owner/product/name" (same as unique name)
+        "distro/series/sourcepackage" (official branch for release pocket of
+            the version of a sourcepackage in a distro series)
         "product/series" (branch associated with a product series)
         "product" (development focus of product)
 
+        :raises InvalidBranchIdentifier: If the given path could never
+            possibly match a branch.
+        :raises InvalidProductName: If the given product in a product
+            or product series shortcut is an invalid name for a product.
+        :raises NoBranchForSeries: If the product series referred to does not
+            have an associated branch.
+        :raises NoBranchForSourcePackage: If there is no official branch at
+            the path described.
+        :raises NoDefaultBranch: If there is no default branch possible for
+            the given shortcut.
+        :raises NoSuchBranch: If we can't find a branch that matches the
+            branch component of the path.
         :raises NoSuchPerson: If we can't find a person who matches the person
             component of the path.
         :raises NoSuchProduct: If we can't find a product that matches the
             product component of the path.
-        :raises NoSuchBranch: If we can't find a branch that matches the
-            branch component of the path.
-        :raises InvalidBranchIdentifier: If the given path could never
-            possibly match a branch.
         :raises NoSuchProductSeries: If the series component doesn't match an
             existing series.
-        :raises NoBranchForSeries: If the product series referred to does not
-            have an associated branch.
         :raises NoSuchSourcePackageName: If the source packagae referred to
             does not exist.
-        :raises NoDefaultBranch: If there is no default branch possible for
-            the given shortcut.
-        :raises NoBranchForSourcePackage: If there is no official branch at
-            the path described.
-        :raises InvalidProductName: If the given product in a product
-            or product series shortcut is an invalid name for a product.
 
         :return: a tuple of `IBranch`, extra_path, series. 'series' is the
             series, if any, used to perform the lookup. It's returned so that
