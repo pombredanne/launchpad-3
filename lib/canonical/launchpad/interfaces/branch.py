@@ -1148,15 +1148,6 @@ class IBranch(IHasOwner, IHasBranchTarget):
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
-    def __getitem__(branch_id):
-        """Return the branch with the given id.
-
-        Raise NotFoundError if there is no such branch.
-        """
-
-    def __iter__():
-        """Return an iterator that will go through all branches."""
-
     def count():
         """Return the number of branches in the database.
 

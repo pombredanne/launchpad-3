@@ -40,7 +40,6 @@ from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
-from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
     BranchType, BranchTypeError, CannotDeleteBranch, ControlFormat,
@@ -49,7 +48,6 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
@@ -835,13 +833,6 @@ class BranchSet:
     """The set of all branches."""
 
     implements(IBranchSet)
-
-    def __getitem__(self, branch_id):
-        """See `IBranchSet`."""
-        branch = getUtility(IBranchLookup).get(branch_id)
-        if branch is None:
-            raise NotFoundError(branch_id)
-        return branch
 
     def __iter__(self):
         """See `IBranchSet`."""

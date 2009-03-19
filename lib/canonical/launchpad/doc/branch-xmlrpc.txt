@@ -452,7 +452,6 @@ not hosted on Launchpad and are only available (if at all) on remote
 sites. For these branches, resolve_lp_path returns only a single URL.
 
     >>> from canonical.launchpad.interfaces import (BranchType, IPersonSet)
-    >>> from canonical.launchpad.interfaces.branch import IBranchSet
     >>> arbitrary_person = getUtility(IPersonSet).getByName('name12')
     >>> from canonical.launchpad.interfaces.branchnamespace import (
     ...     get_branch_namespace)

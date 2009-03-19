@@ -89,19 +89,6 @@ It returns None if there is no branch with the specified ID.
     >>> print branch_lookup.get(-1)
     None
 
-BranchSet's __getitem__ also fetches branches by ID.
-
-    >>> branchset[branch.id].name
-    u'foobar'
-
-It differs from .get() by the fact that it raises NotFoundError if
-there is no branch with the specified ID.
-
-    >>> branchset[-1]
-    Traceback (most recent call last):
-      ...
-    NotFoundError: ...
-
 
 == Creating branches ==
 

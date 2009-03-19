@@ -20,7 +20,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.database.branch import (
-    BranchSet, ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
+    ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
     DeletionCallable, DeletionOperation)
 from canonical.launchpad.database.branchjob import BranchDiffJob
 from canonical.launchpad.database.branchmergeproposal import (
@@ -33,10 +33,10 @@ from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
-    ANONYMOUS, login, login_person, logout, syncUpdate)
+    login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType, CannotDeleteBranch,
-    CodeReviewNotificationLevel, CreateBugParams, IBranchSet, IBugSet,
+    CodeReviewNotificationLevel, CreateBugParams, IBugSet,
     ILaunchpadCelebrities, IPersonSet, IProductSet, ISpecificationSet,
     InvalidBranchMergeProposal, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
@@ -449,7 +449,6 @@ class TestBranchDeletionConsequences(TestCase):
         self.factory = LaunchpadObjectFactory()
         # Has to be a product branch because of merge proposals.
         self.branch = self.factory.makeProductBranch()
-        self.branch_set = getUtility(IBranchSet)
         # The owner of the branch is subscribed to the branch when it is
         # created.  The tests here assume no initial connections, so
         # unsubscribe the branch owner here.
