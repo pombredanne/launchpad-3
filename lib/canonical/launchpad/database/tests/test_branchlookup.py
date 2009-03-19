@@ -283,63 +283,66 @@ class TestGetByLPPath(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    # XXX: JonathanLange 2009-01-13 spec=package-branches: All of these tests
-    # should be adjusted to assume less about the structure of branch names.
-    # In particular, they should not call factory.makeBranch unless they have
-    # to, instead calling the helper aliases.
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.branch_lookup = getUtility(IBranchLookup)
 
     def test_getByLPPath_with_three_parts(self):
         """Test the behaviour with three-part names."""
-        branch_set = getUtility(IBranchLookup)
         self.assertRaises(
-            InvalidBranchIdentifier, branch_set.getByLPPath, 'a/b/c')
+            InvalidBranchIdentifier, self.branch_lookup.getByLPPath, 'a/b/c')
         self.assertRaises(
-            NoSuchPerson, branch_set.getByLPPath, '~aa/bb/c')
+            NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/bb/c')
         owner = self.factory.makePerson(name='aa')
-        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, '~aa/bb/c')
+        self.assertRaises(
+            NoSuchProduct, self.branch_lookup.getByLPPath, '~aa/bb/c')
         product = self.factory.makeProduct('bb')
-        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/bb/c')
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/bb/c')
         branch = self.factory.makeProductBranch(
             owner=owner, product=product, name='c')
         self.assertEqual(
-            (branch, None, None), branch_set.getByLPPath('~aa/bb/c'))
+            (branch, None, None), self.branch_lookup.getByLPPath('~aa/bb/c'))
 
     def test_getByLPPath_with_junk_branch(self):
         """Test the behaviour with junk branches."""
         owner = self.factory.makePerson(name='aa')
-        branch_set = getUtility(IBranchLookup)
-        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/+junk/c')
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/+junk/c')
         branch = self.factory.makePersonalBranch(owner=owner, name='c')
         self.assertEqual(
-            (branch, None, None), branch_set.getByLPPath('~aa/+junk/c'))
+            (branch, None, None),
+            self.branch_lookup.getByLPPath('~aa/+junk/c'))
 
     def test_getByLPPath_with_two_parts(self):
         """Test the behaviour with two-part names."""
-        branch_set = getUtility(IBranchLookup)
-        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb/dd')
+        self.assertRaises(
+            NoSuchProduct, self.branch_lookup.getByLPPath, 'bb/dd')
         product = self.factory.makeProduct('bb')
-        self.assertRaises(NoSuchSeries, branch_set.getByLPPath, 'bb/dd')
+        self.assertRaises(
+            NoSuchSeries, self.branch_lookup.getByLPPath, 'bb/dd')
         series = self.factory.makeSeries(name='dd', product=product)
-        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb/dd')
+        self.assertRaises(
+            NoBranchForSeries, self.branch_lookup.getByLPPath, 'bb/dd')
         series.user_branch = self.factory.makeAnyBranch()
         self.assertEqual(
             (series.user_branch, None, series),
-            branch_set.getByLPPath('bb/dd'))
+            self.branch_lookup.getByLPPath('bb/dd'))
 
     def test_getByLPPath_with_one_part(self):
         """Test the behaviour with one names."""
-        branch_set = getUtility(IBranchLookup)
         self.assertRaises(
-            InvalidProductIdentifier, branch_set.getByLPPath, 'b')
-        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb')
+            InvalidProductIdentifier, self.branch_lookup.getByLPPath, 'b')
+        self.assertRaises(NoSuchProduct, self.branch_lookup.getByLPPath, 'bb')
         # We are not testing the security proxy here, so remove it.
         product = removeSecurityProxy(self.factory.makeProduct('bb'))
-        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb')
+        self.assertRaises(
+            NoBranchForSeries, self.branch_lookup.getByLPPath, 'bb')
         branch = self.factory.makeAnyBranch()
         product.development_focus.user_branch = branch
         self.assertEqual(
             (branch, None, product.development_focus),
-            branch_set.getByLPPath('bb'))
+            self.branch_lookup.getByLPPath('bb'))
 
 
 def test_suite():
