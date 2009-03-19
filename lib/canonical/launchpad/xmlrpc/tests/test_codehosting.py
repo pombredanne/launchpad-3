@@ -18,8 +18,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
-    BranchCreationNoTeamOwnedJunkBranches, BranchType,
-    BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
@@ -555,7 +554,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_id = self.branchfs.createBranch(
             registrant.id, escape('/~%s/+junk/%s' % (team.name, name)))
         login(ANONYMOUS)
-        branch = self.branch_set.get(branch_id)
+        branch = self.branch_lookup.get(branch_id)
         self.assertEqual(team, branch.owner)
         self.assertEqual(None, branch.product)
         self.assertEqual(name, branch.name)
