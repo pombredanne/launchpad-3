@@ -415,7 +415,8 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=attachment_removed_activity)
 
     def test_change_bugtask_importance(self):
-        # When a bugtask's importance is changed, things should happen.
+        # When a bugtask's importance is changed, BugActivity and
+        # BugNotification get updated.
         bug_task_before_modification = Snapshot(
             self.bug_task, providing=providedBy(self.bug_task))
         self.bug_task.transitionToImportance(
@@ -445,7 +446,8 @@ class TestBugChanges(unittest.TestCase):
             bug=self.bug_task.bug)
 
     def test_change_bugtask_status(self):
-        # When a bugtask's status is changed, things should happen.
+        # When a bugtask's status is changed, BugActivity and
+        # BugNotification get updated.
         bug_task_before_modification = Snapshot(
             self.bug_task, providing=providedBy(self.bug_task))
         self.bug_task.transitionToStatus(
@@ -475,7 +477,8 @@ class TestBugChanges(unittest.TestCase):
             bug=self.bug_task.bug)
 
     def test_target_bugtask_to_product(self):
-        # When a bugtask's target is changed, things should happen.
+        # When a bugtask's target is changed, BugActivity and
+        # BugNotification get updated.
         bug_task_before_modification = Snapshot(
             self.bug_task, providing=providedBy(self.bug_task))
 
@@ -501,7 +504,8 @@ class TestBugChanges(unittest.TestCase):
             bug=self.bug_task.bug)
 
     def test_target_bugtask_to_sourcepackage(self):
-        # When a bugtask's target is changed, things should happen.
+        # When a bugtask's target is changed, BugActivity and
+        # BugNotification get updated.
         target = self.factory.makeDistributionSourcePackage()
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
@@ -637,6 +641,61 @@ class TestBugChanges(unittest.TestCase):
                 '(unassigned)' % (
                 self.bug_task.bugtargetname, self.user.displayname,
                 self.user.name)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=self.bug_task.bug)
+
+    def test_target_bugtask_to_milestone(self):
+        # When a bugtask is targetted to a milestone BugActivity and
+        # BugNotification records will be created.
+        milestone = self.factory.makeMilestone(product=self.bug_task.product)
+        self.changeAttribute(self.bug_task, 'milestone', milestone)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: milestone' % self.bug_task.bugtargetname,
+            'oldvalue': None,
+            'newvalue': milestone.name,
+            'message': None,
+            }
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n    Milestone: None => %s' % (
+                self.bug_task.bugtargetname, milestone.name)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=self.bug_task.bug)
+
+    def test_untarget_bugtask_from_milestone(self):
+        # When a bugtask is untargetted from a milestone both
+        # BugActivity and BugNotification records will be created.
+        milestone = self.factory.makeMilestone(product=self.bug_task.product)
+        self.changeAttribute(self.bug_task, 'milestone', milestone)
+        self.saveOldChanges(self.bug_task.bug)
+
+        self.changeAttribute(self.bug_task, 'milestone', None)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: milestone' % self.bug_task.bugtargetname,
+            'newvalue': None,
+            'oldvalue': milestone.name,
+            'message': None,
+            }
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n    Milestone: %s => None' % (
+                self.bug_task.bugtargetname, milestone.name)),
             'person': self.user,
             }
 
