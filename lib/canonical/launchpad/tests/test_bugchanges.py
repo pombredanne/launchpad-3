@@ -13,7 +13,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugtask import (
-    BugTaskImportance, IBugTask)
+    BugTaskImportance, BugTaskStatus, IBugTask)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
@@ -435,6 +435,36 @@ class TestBugChanges(unittest.TestCase):
         expected_notification = {
             'text': (
                 u'** Changed in: %s\n   Importance: Undecided => High' %
+                self.bug_task.bugtargetname),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=self.bug_task.bug)
+
+    def test_change_bugtask_status(self):
+        # When a bugtask's importance is changed, things should happen.
+        bug_task_before_modification = Snapshot(
+            self.bug_task, providing=providedBy(self.bug_task))
+        self.bug_task.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, user=self.user)
+        notify(ObjectModifiedEvent(
+            self.bug_task, bug_task_before_modification, ['status'],
+            user=self.user))
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: status' % self.bug_task.bugtargetname,
+            'oldvalue': 'New',
+            'newvalue': 'Fix Released',
+            'message': None,
+            }
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n       Status: New => Fix Released' %
                 self.bug_task.bugtargetname),
             'person': self.user,
             }
