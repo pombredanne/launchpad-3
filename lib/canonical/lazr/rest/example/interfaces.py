@@ -119,7 +119,8 @@ class ICookbookSet(IHasGet):
     def find_recipes(search):
         """Search for recipes across cookbooks."""
 
-    @export_factory_operation(ICookbook, ['name', 'cuisine', 'copyright_date'])
+    @export_factory_operation(ICookbook,
+                              ['name', 'cuisine', 'copyright_date'])
     def create(name, cuisine, copyright_date):
         """Create a new cookbook."""
 

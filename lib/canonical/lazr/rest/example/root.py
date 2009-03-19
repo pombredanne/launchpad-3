@@ -15,7 +15,6 @@ from zope.interface import implements
 from zope.traversing.browser.interfaces import IAbsoluteURL
 from zope.component import adapts, getUtility
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.security.checker import CheckerPublic
 
 from canonical.lazr.rest import ServiceRootResource
 from canonical.lazr.interfaces.rest import (
@@ -23,7 +22,6 @@ from canonical.lazr.interfaces.rest import (
 from canonical.lazr.rest.example.interfaces import (
     AlreadyNouvelle, ICookbook, ICookbookSet, IDish, IDishSet, IRecipe,
     IRecipeSet, IHasGet, NameAlreadyTaken)
-from canonical.lazr.security import protect_schema
 
 
 #Entry classes.
