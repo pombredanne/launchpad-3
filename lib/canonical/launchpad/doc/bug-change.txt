@@ -431,3 +431,20 @@ Or remove one.
     >>> print attachment_change.getBugNotification()['text']
     ** Attachment removed: "sample-attachment"
        http...
+
+
+== BugTaskAttributeChange ==
+
+BugTaskAttributeChange is a generic BugChange that can be used to
+represent a change in the attributes of one of a Bug's BugTasks.
+
+    >>> from canonical.launchpad.interfaces.bugtask import (
+    ...     BugTaskStatus, BugTaskImportance)
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTaskAttributeChange)
+
+    >>> task_attribute_change = BugTaskAttributeChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='status',
+    ...     old_value=BugTaskStatus.NEW,
+    ...     new_value=BugTaskStatus.FIXRELEASED)

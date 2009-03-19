@@ -302,6 +302,10 @@ class BugAttachmentChange(AttributeChange):
         return {'text': message}
 
 
+class BugTaskAttributeChange(AttributeChange):
+    """Used to represent a change in a BugTask's attributes."""
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
