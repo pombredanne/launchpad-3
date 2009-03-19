@@ -26,8 +26,9 @@ from canonical.launchpad.interfaces.branchlookup import (
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.product import (
-    InvalidProductName, IProductSet, NoSuchProduct)
-from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
+    InvalidProductName, IProduct, IProductSet, NoSuchProduct)
+from canonical.launchpad.interfaces.productseries import (
+    IProductSeries, NoSuchProductSeries)
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -197,6 +198,33 @@ class BranchLookup:
             branch, series = self._getDefaultProductBranch(path)
         return branch, suffix, series
 
+    def _traverseToShortcut(self, path):
+        segments = path.split('/')
+        if len(segments) == 1:
+            product_name, series_name = segments[0], None
+        elif len(segments) == 2:
+            product_name, series_name = tuple(segments)
+        else:
+            raise InvalidBranchIdentifier(path)
+        if not valid_name(product_name):
+            raise InvalidProductName(product_name)
+        product = getUtility(IProductSet).getByName(product_name)
+        if product is None:
+            raise NoSuchProduct(product_name)
+        if series_name is None:
+            return product
+        series = product.getSeries(series_name)
+        if series is None:
+            raise NoSuchProductSeries(series_name, product)
+        return series
+
+    def _getBranchAndSeriesForObject(self, obj):
+        if IProduct.providedBy(obj):
+            return obj.development_focus.series_branch, obj.development_focus
+        if IProductSeries.providedBy(obj):
+            return obj.series_branch, obj
+        raise "what the fuck was that?!?"
+
     def _getDefaultProductBranch(self, path):
         """Return the branch with the shortcut 'path'.
 
@@ -212,25 +240,8 @@ class BranchLookup:
             exists, but does not have a branch.
         :return: The branch.
         """
-        segments = path.split('/')
-        if len(segments) == 1:
-            product_name, series_name = segments[0], None
-        elif len(segments) == 2:
-            product_name, series_name = tuple(segments)
-        else:
-            raise InvalidBranchIdentifier(path)
-        if not valid_name(product_name):
-            raise InvalidProductName(product_name)
-        product = getUtility(IProductSet).getByName(product_name)
-        if product is None:
-            raise NoSuchProduct(product_name)
-        if series_name is None:
-            series = product.development_focus
-        else:
-            series = product.getSeries(series_name)
-            if series is None:
-                raise NoSuchProductSeries(series_name, product)
-        branch = series.series_branch
+        result = self._traverseToShortcut(path)
+        branch, series = self._getBranchAndSeriesForObject(result)
         if branch is None:
             raise NoBranchForSeries(series)
         return branch, series
