@@ -58,12 +58,6 @@ $(API_INDEX): $(WADL_FILE) $(WADL_XSL)
 
 apidoc: compile $(API_INDEX)
 
-check_sourcecode_dependencies:
-	# Use the check_for_launchpad rule which runs tests over a smaller
-	# set of libraries, for performance and reliability reasons.
-	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
-
 check_loggerhead_on_merge:
 	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
 	# depends on it (yet).
@@ -78,6 +72,13 @@ dbfreeze_check:
 
 check_merge: dbfreeze_check
 	${PYTHON} lib/canonical/tests/test_no_conflict_marker.py
+
+check_sourcecode_merge: build check
+	# This can be removed once we move to zc.buildout and we have versioned
+	# dependencies, but for now we run both Launchpad and all other
+	# dependencies tests to any merge to sourcecode.
+	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
+		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
@@ -297,6 +298,6 @@ tags:
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_loggerhead_on_merge  check_merge check_sourcecode_dependencies\
+	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches
