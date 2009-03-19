@@ -431,6 +431,37 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=task_added_notification,
             expected_activity=task_added_activity)
 
+    def test_bugtask_added_assignee(self):
+        # Adding a bug task adds entries in both BugActivity and
+        # BugNotification.
+        target = self.factory.makeProduct()
+        added_task = self.bug.addTask(self.user, target)
+        added_task.transitionToAssignee(self.factory.makePerson())
+        notify(ObjectCreatedEvent(added_task, user=self.user))
+
+        task_added_activity = {
+            'person': self.user,
+            'whatchanged': 'bug', #'bug task added',
+            'message': 'assigned to %s' % target.bugtargetname,
+            #'newvalue': target.bugtargetname,
+            }
+
+        task_added_notification = {
+            'person': self.user,
+            'text': (
+                '** Also affects: %s\n'
+                '   Importance: %s\n'
+                '     Assignee: %s (%s)\n'
+                '       Status: %s' % (
+                    target.bugtargetname, added_task.importance.title,
+                    added_task.assignee.displayname, added_task.assignee.name,
+                    added_task.status.title))
+            }
+
+        self.assertRecordedChange(
+            expected_notification=task_added_notification,
+            expected_activity=task_added_activity)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
