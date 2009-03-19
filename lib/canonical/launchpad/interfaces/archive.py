@@ -32,6 +32,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, Object, List, Text, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -41,7 +42,6 @@ from canonical.launchpad.interfaces.gpg import IGPGKey
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
@@ -111,9 +111,11 @@ class IArchivePublic(IHasOwner):
         title=_("Publish"), required=False,
         description=_("Whether the archive is to be published or not."))
 
-    private = Bool(
-        title=_("Private"), required=False,
-        description=_("Whether the archive is private to the owner or not."))
+    private = exported(
+        Bool(
+            title=_("Private"), required=False,
+            description=_(
+                "Whether the archive is private to the owner or not.")))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,
@@ -566,6 +568,24 @@ class IArchivePublic(IHasOwner):
         :return The new `IPackageCopyRequest`
         """
 
+    # XXX: noodles 2009-03-02 bug=336779: This should be moved into
+    # IArchiveView once the archive permissions are updated to grant
+    # IArchiveView to archive subscribers.
+    def newAuthToken(person, token=None, date_created=None):
+        """Create a new authorisation token.
+
+        XXX: noodles 2009-03-12 bug=341600 This method should not be exposed
+        through the API as we do not yet check that the callsite has
+        launchpad.Edit on the person.
+
+        :param person: An IPerson whom this token is for
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given
+        :param date_created: Optional, defaults to now
+
+        :return: A new IArchiveAuthToken
+        """
+
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
@@ -759,17 +779,6 @@ class IArchiveAppend(Interface):
         :raises PocketNotFound: if the pocket name is invalid
         :raises DistroSeriesNotFound: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
-        """
-
-    def newAuthToken(person, token=None, date_created=None):
-        """Create a new authorisation token.
-
-        :param person: An IPerson whom this token is for
-        :param token: Optional unicode text to use as the token. One will be
-            generated if not given
-        :param date_created: Optional, defaults to now
-
-        :return: A new IArchiveAuthToken
         """
 
     def newSubscription(subscriber, registrant, date_expires=None,
@@ -971,6 +980,9 @@ class IArchiveSet(Interface):
         :return: A queryset of all the archives for the given
             distribution matching the given params.
         """
+
+    def getPrivatePPAs():
+        """Return a result set containing all private PPAs."""
 
 
 class ArchivePurpose(DBEnumeratedType):

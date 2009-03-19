@@ -15,8 +15,9 @@ __all__ = [
 from zope.event import notify
 from zope.interface import implements
 
+from lazr.lifecycle.event import ObjectDeletedEvent
+
 from canonical.launchpad import _
-from canonical.launchpad.event import SQLObjectDeletedEvent
 from canonical.launchpad.interfaces import IBugBranch
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
@@ -85,8 +86,7 @@ class BugBranchEditView(LaunchpadEditFormView):
 
     @action('Delete', name='delete')
     def delete_action(self, action, data):
-        notify(SQLObjectDeletedEvent(self.context, user=self.user))
-        self.context.destroySelf()
+        self.context.bug.removeBranch(self.context.branch, self.user)
 
 
 class BugBranchBranchInlineEditView(BugBranchEditView):

@@ -16,9 +16,11 @@ __all__ = [
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
+    'ArchiveViewBase',
     'traverse_distro_archive',
     'traverse_named_ppa',
     ]
+
 
 from zope.app.form.browser import TextAreaWidget
 from zope.app.form.interfaces import IInputWidget
@@ -45,6 +47,8 @@ from canonical.launchpad.interfaces.archive import (
     IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -190,6 +194,25 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
         return None
 
+    @stepthrough('+subscriptions')
+    def traverse_subscription(self, person_name):
+        try:
+            person = getUtility(IPersonSet).getByName(person_name)
+        except NotFoundError:
+            return None
+
+        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            person, archive=self.context)
+
+        # If a person is subscribed with a direct subscription as well as
+        # via a team, subscriptions will contain both, so need to grab
+        # the direct subscription:
+        for subscription in subscriptions:
+            if subscription.subscriber == person:
+                return subscription
+
+        return None
+
     @stepthrough('+upload')
     def traverse_upload_permission(self, name):
         """Traverse the data part of the URL for upload permissions."""
@@ -236,7 +259,7 @@ class ArchiveContextMenu(ContextMenu):
 
     usedfor = IArchive
     links = ['ppa', 'admin', 'edit', 'builds', 'delete', 'copy',
-             'edit_dependencies']
+             'edit_dependencies', 'manage_subscribers']
 
     def ppa(self):
         text = 'View PPA'
@@ -246,6 +269,21 @@ class ArchiveContextMenu(ContextMenu):
     def admin(self):
         text = 'Administer archive'
         return Link('+admin', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Append')
+    def manage_subscribers(self):
+        text = 'Manage subscriptions'
+        link = Link('+subscriptions', text, icon='edit')
+
+        # This link should only be available for private archives:
+        if not self.context.private:
+            link.enabled = False
+
+        # XXX: noodles 2009-03-10 bug=340405. This link is disabled until
+        # the cron-job supporting private archive subscriptions is enabled.
+        link.enabled = False
+
+        return link
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):

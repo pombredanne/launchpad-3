@@ -164,12 +164,12 @@ def adapt_suite(adapter, base_suite):
     return suite
 
 
-def create_branch_with_one_revision(branch_dir):
+def create_branch_with_one_revision(branch_dir, format=None):
     """Create a dummy Bazaar branch at the given directory."""
     if not os.path.exists(branch_dir):
         os.makedirs(branch_dir)
     try:
-        tree = BzrDir.create_standalone_workingtree(branch_dir)
+        tree = BzrDir.create_standalone_workingtree(branch_dir, format)
     except FileExists:
         return
     f = open(os.path.join(branch_dir, 'hello'), 'w')

@@ -28,6 +28,8 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
+from canonical.launchpad.interfaces.translations import (
+    TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.validators import LaunchpadValidationError
 
@@ -200,27 +202,21 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                       'security contact.'),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    # XXX: jamesh 2006-09-05:
-    # While it would be more sensible to call this ProductSeries.branch,
-    # I've used this name to make sure code that works with the
-    # vcs-imports branch (which used to be called branch) doesn't use
-    # this attribute by accident.
-
-    series_branch = Choice(
-        title=_('Series Branch'),
-        vocabulary='BranchRestrictedOnProduct',
-        readonly=True,
-        description=_("The Bazaar branch for this series."))
-
-    user_branch = exported(
+    branch = exported(
         ReferenceChoice(
             title=_('Branch'),
             vocabulary='BranchRestrictedOnProduct',
             schema=IBranch,
             required=False,
             description=_("The Bazaar branch for this series.  Leave blank "
-                          "if this series is not maintained in Bazaar.")),
-        exported_as='branch')
+                          "if this series is not maintained in Bazaar.")))
+
+    translations_autoimport_mode = Choice(
+        title=_('Import mode'),
+        vocabulary=TranslationsBranchImportMode,
+        required=True,
+        description=_("Specify which files will be imported from the "
+                      "source code branch."))
 
     def getRelease(version):
         """Get the release in this series that has the specified version.
@@ -248,15 +244,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
 
-    import_branch = Choice(
-        title=_('Import Branch'),
-        vocabulary='Branch',
-        description=_("The Bazaar branch for this series imported from "
-                      "upstream version control. Note that there may be "
-                      "many branches associated with a given series, such "
-                      "as the branches of individual tarball releases. "
-                      "This branch is the real upstream code, mapped into "
-                      "Bazaar from CVS or SVN."))
     # where are the tarballs released from this branch placed?
     releasefileglob = TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,

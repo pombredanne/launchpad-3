@@ -836,4 +836,3 @@ error. Nothing was copied to Ubuntu-team PPA.
 
     >>> ubuntu_team_ppa.getPublishedSources().count()
     0
-

@@ -118,6 +118,8 @@
               tal:attributes="src string:${yui}/plugin/plugin.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/widget/widget.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/cookie/cookie.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>

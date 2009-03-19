@@ -42,7 +42,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import (
-    HasMilestonesMixin, Milestone, ProjectMilestone)
+    Milestone, ProjectMilestone, milestone_sort_key)
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.product import Product
@@ -270,6 +270,14 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Customize `search_params` for this milestone."""
         search_params.setProject(self)
 
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        official_bug_tags = set()
+        for product in self.products:
+            official_bug_tags.update(product.official_bug_tags)
+        return sorted(official_bug_tags)
+
     def getUsedBugTags(self):
         """See `IHasBugs`."""
         if not self.products:
@@ -375,8 +383,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         milestones = shortlist(
             [ProjectMilestone(self, name, dateexpected, active)
              for name, dateexpected, active in result])
-        return sorted(milestones, key=HasMilestonesMixin.milestone_sort_key,
-                      reverse=True)
+        return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     @property
     def milestones(self):
@@ -498,8 +505,7 @@ class ProjectSet:
         if bazaar:
             clauseTables.add('Product')
             clauseTables.add('ProductSeries')
-            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
-                           'ProductSeries.user_branch IS NOT NULL)')
+            queries.append('(ProductSeries.branch IS NOT NULL)')
             queries.append('ProductSeries.product=Product.id')
 
         if text:

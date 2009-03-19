@@ -19,6 +19,10 @@ from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
 from storm.expr import Not
 from storm.store import Store
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+from lazr.uri import find_uris_in_text
+
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -27,7 +31,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import Message
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BugTrackerType, BugWatchErrorType, IBugTrackerSet, IBugWatch,
     IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
@@ -35,9 +38,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend, urlsplit
-from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.webapp.uri import find_uris_in_text
-
 
 BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
@@ -122,7 +122,7 @@ class BugWatch(SQLBase):
                 getUtility(ILaunchpadCelebrities).bug_watch_updater)
 
             if linked_bugtask.importance != old_bugtask.importance:
-                event = SQLObjectModifiedEvent(
+                event = ObjectModifiedEvent(
                     linked_bugtask, old_bugtask, ['importance'],
                     user=getUtility(ILaunchpadCelebrities).bug_watch_updater)
                 notify(event)
@@ -149,7 +149,7 @@ class BugWatch(SQLBase):
             # We don't yet support updating the assignee of bug watches.
             linked_bugtask.transitionToAssignee(None)
             if linked_bugtask.status != old_bugtask.status:
-                event = SQLObjectModifiedEvent(
+                event = ObjectModifiedEvent(
                     linked_bugtask, old_bugtask, ['status'],
                     user=getUtility(ILaunchpadCelebrities).bug_watch_updater)
                 notify(event)

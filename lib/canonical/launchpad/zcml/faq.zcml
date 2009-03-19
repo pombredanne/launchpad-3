@@ -21,17 +21,17 @@
     />
   <subscriber
     for="canonical.launchpad.interfaces.IFAQ
-         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+         lazr.lifecycle.interfaces.IObjectModifiedEvent"
     handler="canonical.launchpad.subscribers.faq.update_last_updated"
     />
   <subscriber
     for="canonical.launchpad.interfaces.IFAQ
-         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+         lazr.lifecycle.interfaces.IObjectCreatedEvent"
     handler="canonical.launchpad.subscribers.karma.faq_created"
     />
   <subscriber
     for="canonical.launchpad.interfaces.IFAQ
-         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+         lazr.lifecycle.interfaces.IObjectModifiedEvent"
     handler="canonical.launchpad.subscribers.karma.faq_edited"
     />
   <browser:url

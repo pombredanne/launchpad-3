@@ -116,8 +116,8 @@ when a subscriber to the new package is already subscribed to the bug:
     >>> from zope.event import notify
 
     >>> import transaction
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> from canonical.launchpad.mail import stub
 
@@ -133,7 +133,7 @@ when a subscriber to the new package is already subscribed to the bug:
     >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
     ...     ubuntu_pmount.sourcepackagename)
 
-    >>> source_package_changed = SQLObjectModifiedEvent(
+    >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state,
     ...     ["id", "title", "sourcepackagename"])
 
@@ -225,7 +225,7 @@ package to None.
 
     >>> bug_one_in_ubuntu_firefox.sourcepackagename = None
 
-    >>> source_package_changed = SQLObjectModifiedEvent(
+    >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state, ["sourcepackagename"])
 
     >>> notify(source_package_changed)
@@ -253,7 +253,7 @@ add such a team as a subscriber.
     >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
     ...     ubuntu_pmount.sourcepackagename)
 
-    >>> source_package_changed = SQLObjectModifiedEvent(
+    >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state, ["sourcepackagename"])
 
     >>> notify(source_package_changed)
@@ -287,7 +287,7 @@ and then the bug gets reassigned to mozilla firefox:
     >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
     ...     ubuntu_firefox.sourcepackagename)
 
-    >>> source_package_changed = SQLObjectModifiedEvent(
+    >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state,
     ...     ["id", "title", "sourcepackagename"])
 
@@ -338,7 +338,7 @@ Bar gets subscribed to the bug in the process:
 
     >>> bug_two_in_ubuntu.product = mozilla_firefox
 
-    >>> product_changed = SQLObjectModifiedEvent(
+    >>> product_changed = ObjectModifiedEvent(
     ...     bug_two_in_ubuntu, old_state, ["id", "title", "product"])
 
     >>> notify(product_changed)

@@ -8,6 +8,7 @@ __all__ = [
     'BrowserWindowDimensions',
     'IcingContribFolder',
     'EdubuntuIcingFolder',
+    'get_launchpad_views',
     'Hierarchy',
     'IcingFolder',
     'KubuntuIcingFolder',
@@ -96,7 +97,7 @@ from canonical.launchpad.webapp.interfaces import (
     NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.url import urlparse, urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.xmlrpc.faults import NoBranchForSeries, NoSuchSeries
@@ -1037,3 +1038,30 @@ class BrowserWindowDimensions(LaunchpadView):
 
     def render(self):
         return u'Thanks.'
+
+
+def get_launchpad_views(cookies):
+    """The state of optional page elements the user may choose to view.
+
+    :param cookies: The request.cookies object that contains launchpad_views.
+    :return: A dict of all the view states.
+    """
+    views = {
+        'small_maps': True,
+        }
+    cookie = cookies.get('launchpad_views', '')
+    if len(cookie) > 0:
+        pairs = cookie.split('&')
+        for pair in pairs:
+            parts = pair.split('=')
+            if len(parts) != 2:
+                # The cookie is malformed, possibly hacked.
+                continue
+            key, value = parts
+            if not key in views:
+                # The cookie may be hacked.
+                continue
+            # 'false' is the value that the browser script sets to disable a
+            # part of a page. Any other value is considered to be 'true'.
+            views[key] = value != 'false'
+    return views

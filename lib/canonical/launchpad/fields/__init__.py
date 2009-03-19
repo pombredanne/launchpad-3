@@ -83,7 +83,7 @@ from zope.security.interfaces import ForbiddenAttribute
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
 

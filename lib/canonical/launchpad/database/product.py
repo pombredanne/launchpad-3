@@ -37,7 +37,8 @@ from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import (
+    BugTargetBase, OfficialBugTagTargetMixin)
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.launchpad.database.bugwatch import BugWatch
@@ -159,7 +160,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
-              HasMilestonesMixin):
+              HasMilestonesMixin, OfficialBugTagTargetMixin):
 
     """A Product."""
 
@@ -297,7 +298,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        default_branch = self.development_focus.series_branch
+        default_branch = self.development_focus.branch
         if default_branch is None:
             return None
         elif default_branch.last_mirrored is None:
@@ -897,7 +898,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # Set the ID of the new ProductSeries to avoid flush order
         # loops in ProductSet.createProduct()
         return ProductSeries(productID=self.id, owner=owner, name=name,
-                             summary=summary, user_branch=branch)
+                             summary=summary, branch=branch)
 
     def getRelease(self, version):
         return ProductRelease.selectOne("""
@@ -941,7 +942,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMergeProposals(self, status=None, visible_by_user=None):
         """See `IProduct`."""
-        if not status:
+        if status is None:
             status = (
                 BranchMergeProposalStatus.CODE_APPROVED,
                 BranchMergeProposalStatus.NEEDS_REVIEW,
@@ -1206,8 +1207,7 @@ class ProductSet:
             queries.append('BugTask.product=Product.id')
         if bazaar:
             clauseTables.add('ProductSeries')
-            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
-                           'ProductSeries.user_branch IS NOT NULL)')
+            queries.append('(ProductSeries.branch IS NOT NULL)')
         if 'ProductSeries' in clauseTables:
             queries.append('ProductSeries.product=Product.id')
         if not show_inactive:

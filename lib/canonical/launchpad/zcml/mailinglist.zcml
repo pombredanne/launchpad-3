@@ -72,13 +72,13 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.IMailingList
-	 canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+	 lazr.lifecycle.interfaces.IObjectModifiedEvent"
     handler="canonical.launchpad.mailnotification.notify_mailinglist_activated"
     />
 
   <subscriber
     for="canonical.launchpad.interfaces.IMessageApproval
-         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+         lazr.lifecycle.interfaces.IObjectCreatedEvent"
     handler="canonical.launchpad.mailnotification.notify_message_held"
     />
 

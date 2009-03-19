@@ -1,0 +1,141 @@
+= Introduction =
+
+The service root (/[version]/) is a resource that responds to GET by
+describing the web service. The description is a JSON map full of
+links to the top-level web service objects.
+
+  >>> from canonical.lazr.testing.webservice import CookbookWebServiceCaller
+  >>> webservice = CookbookWebServiceCaller()
+
+  >>> top_level_response = webservice.get("/")
+  >>> top_level_links = top_level_response.jsonBody()
+  >>> sorted(top_level_links.keys())
+  [u'cookbooks_collection_link', u'dishes_collection_link',
+   u'resource_type_link']
+  >>> top_level_links['cookbooks_collection_link']
+  u'http://api.cookbooks.dev/1.0/cookbooks'
+
+  >>> top_level_links['resource_type_link']
+  u'http://api.cookbooks.dev/1.0#service-root'
+
+The client can explore the entire web service by following these links
+to other resources, and following the links served in those resources'
+JSON representations, and so on. If the client doesn't know the
+capabilities of a certain resource it can request a WADL
+representation of that resource (see the xx-wadl.txt test) and find
+out.
+
+There is no XHTML representation available for the service root.
+
+  >>> print webservice.get('/', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  ...
+
+Though web services in general support all HTTP methods, this
+particular resource supports only GET. Eventually it will also support
+HEAD and OPTIONS.
+
+  >>> for method in ['HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']:
+  ...     print webservice("/", method)
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+
+
+== Conditional GET ==
+
+The service root never changes except when the web service is
+upgraded. To avoid getting it more often than that, a client can store
+the value of the 'ETag' response header the first time it retrieves
+the service root.
+
+  >>> etag = top_level_response.getHeader('ETag')
+  >>> etag is None
+  False
+
+The value of 'ETag' can be used in a subsequent request as the
+'If-None-Match' request header. If the client's old ETag matches the
+current ETag, the representation won't be served again.
+
+  >>> conditional_response = webservice.get(
+  ...     '/', headers={'If-None-Match' : etag})
+  >>> conditional_response.getStatus()
+  304
+  >>> conditional_response.getBody()
+  ''
+
+  >>> conditional_response = webservice.get(
+  ...     '/', headers={'If-None-Match' : '"a-very-old-etag"'})
+  >>> conditional_response.getStatus()
+  200
+  >>> conditional_response.jsonBody()
+  {...}
+
+You can specify a number of etags in If-None-Match. You'll get a new
+representation only if *none* of them match:
+
+  >>> conditional_response = webservice.get(
+  ...     '/',
+  ...     headers={'If-None-Match' : '"a-very-old-etag", %s' %  etag})
+  >>> conditional_response.getStatus()
+  304
+
+  >>> conditional_response = webservice.get(
+  ...     '/',
+  ...     headers={'If-None-Match' : '"a-very-old-etag", "another-etag"'})
+  >>> conditional_response.getStatus()
+  200
+
+
+== Compression ==
+
+You can get a compressed representation by setting the TE request
+header to "gzip" or "deflate". The "Transfer-Encoding" response
+header will show the compression algorithm used.
+
+  >>> from cStringIO import StringIO
+  >>> from gzip import GzipFile
+  >>> gzipped_response = webservice.get(
+  ...     '/', headers={'TE' : 'gzip'})
+  >>> gzipped_response.getHeader("Transfer-Encoding")
+  'gzip'
+  >>> GzipFile(fileobj=StringIO(gzipped_response.getBody())).read()
+  '{...}'
+
+  >>> import zlib
+  >>> deflated_response = webservice.get(
+  ...     '/', headers={'TE' : 'deflate'})
+  >>> deflated_response.getHeader("Transfer-Encoding")
+  'deflate'
+  >>> zlib.decompress(deflated_response.getBody())
+  '{...}'
+
+The syntax for TE is the same as the syntax for the more popular
+Accept header. It allows you to specify multiple transfer encodings
+and rank them in order of preference. (See
+http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.1)
+
+  >>> response = webservice.get(
+  ...     '/', headers={'TE' : 'deflate, gzip'})
+  >>> response.getHeader("Transfer-Encoding")
+  'deflate'
+
+  >>> response = webservice.get(
+  ...     '/',
+  ...     headers={'TE' : 'deflate;q=0.8, unsupported;q=1.0, gzip;q=0.9'})
+  >>> response.getHeader("Transfer-Encoding")
+  'gzip'

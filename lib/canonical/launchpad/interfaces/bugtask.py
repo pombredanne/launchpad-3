@@ -45,6 +45,8 @@ from zope.schema import (
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
+from lazr.enum import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -60,8 +62,6 @@ from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.lazr import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
@@ -946,7 +946,7 @@ class BugTaskSearchParams:
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
                  bug_commenter=None, omit_targeted=False,
-                 date_closed=None):
+                 date_closed=None, affected_user=None):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -975,6 +975,7 @@ class BugTaskSearchParams:
         self.nominated_for = nominated_for
         self.bug_commenter = bug_commenter
         self.date_closed = date_closed
+        self.affected_user = affected_user
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1033,8 +1034,9 @@ class BugTaskSearchParams:
                        importance=None,
                        assignee=None, bug_reporter=None, bug_supervisor=None,
                        bug_commenter=None, bug_subscriber=None, owner=None,
-                       has_patch=None, has_cve=None, distribution=None,
-                       tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
+                       affected_user=None, has_patch=None, has_cve=None,
+                       distribution=None, tags=None,
+                       tags_combinator=BugTagsSearchCombinator.ALL,
                        omit_duplicates=True, omit_targeted=None,
                        status_upstream=None, milestone_assignment=None,
                        milestone=None, component=None, nominated_for=None,
@@ -1051,6 +1053,7 @@ class BugTaskSearchParams:
         search_params.bug_commenter = bug_commenter
         search_params.subscriber = bug_subscriber
         search_params.owner = owner
+        search_params.affected_user = affected_user
         search_params.distribution = distribution
         if has_patch:
             # Import this here to avoid circular imports
@@ -1156,6 +1159,13 @@ class IBugTaskSet(Interface):
         If more than one BugTaskSearchParams is given, return the union of
         IBugTasks which match any of them, with the results ordered by the
         orderby specified in the first BugTaskSearchParams object.
+        """
+
+    def getAssignedMilestonesFromSearch(search_results):
+        """Returns distinct milestones for the given tasks.
+
+        :param search_results: A result set yielding BugTask objects,
+            typically the result of calling `BugTaskSet.search()`.
         """
 
     def createTask(bug, product=None, productseries=None, distribution=None,
@@ -1286,10 +1296,6 @@ class IAddBugTaskForm(Interface):
     bug_url = StrippedTextLine(
         title=_('URL'), required=False, constraint=valid_remote_bug_url,
         description=_("The URL of this bug in the remote bug tracker."))
-    visited_steps = TextLine(
-        title=_('Visited steps'), required=False,
-        description=_("Used to keep track of the steps we visited in a "
-                      "wizard-like form."))
 
 
 class IAddBugTaskWithProductCreationForm(Interface):

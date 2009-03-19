@@ -1147,7 +1147,7 @@ gets over-long.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-    >>> bug_three.unsubscribe(sample_person)
+    >>> bug_three.unsubscribe(sample_person, sample_person)
     >>> bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
     >>> commit()
 
@@ -1636,7 +1636,7 @@ notification level greater or equal to METADATA.
     >>> from canonical.launchpad.mailnotification import (
     ...     add_bug_change_notifications)
     >>> from canonical.launchpad.webapp import canonical_url
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> subscription_no_priv.bug_notification_level = (

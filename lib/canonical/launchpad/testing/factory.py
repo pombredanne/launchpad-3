@@ -224,11 +224,26 @@ class LaunchpadObjectFactory(ObjectFactory):
             pocket)
         return location
 
-    def makeAccount(self, displayname, status=AccountStatus.ACTIVE,
-                    rationale=AccountCreationRationale.UNKNOWN):
-        """Create and return a new Account."""
-        account = getUtility(IAccountSet).new(rationale, displayname)
+    def makeAccount(self, displayname, email=None, password=None,
+                    status=AccountStatus.ACTIVE,
+                    rationale=AccountCreationRationale.UNKNOWN,
+                    commit=True):
+        """Create and return a new Account.
+
+        If commit is True, we do a transaction.commit() at the end so that the
+        newly created objects can be seen in other stores as well.
+        """
+        account = getUtility(IAccountSet).new(
+            rationale, displayname, password=password)
         removeSecurityProxy(account).status = status
+        if email is None:
+            email = self.getUniqueEmailAddress()
+        email = self.makeEmail(
+            email, person=None, account=account,
+            email_status=EmailAddressStatus.PREFERRED)
+        if commit:
+            import transaction
+            transaction.commit()
         return account
 
     def makePerson(self, *args, **kwargs):
@@ -636,10 +651,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         naked_branch = removeSecurityProxy(branch)
         naked_branch.startMirroring()
         naked_branch.mirrorComplete('rev1')
-        # Likewise, we might not have permission to set the user_branch of the
+        # Likewise, we might not have permission to set the branch of the
         # development focus series.
         naked_series = removeSecurityProxy(product.development_focus)
-        naked_series.user_branch = branch
+        naked_series.branch = branch
         return branch
 
     def makeBranchMergeQueue(self, name=None):
@@ -675,28 +690,30 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant, target_branch, dependent_branch=dependent_branch,
             review_diff=review_diff, initial_comment=initial_comment)
 
+        unsafe_proposal = removeSecurityProxy(proposal)
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
             # The initial state is work in progress, so do nothing.
             pass
         elif set_state == BranchMergeProposalStatus.NEEDS_REVIEW:
-            proposal.requestReview()
+            unsafe_proposal.requestReview()
         elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
-            proposal.approveBranch(
+            unsafe_proposal.approveBranch(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.REJECTED:
-            proposal.rejectBranch(
+            unsafe_proposal.rejectBranch(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.MERGED:
-            proposal.markAsMerged()
+            unsafe_proposal.markAsMerged()
         elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
-            proposal.mergeFailed(proposal.target_branch.owner)
+            unsafe_proposal.mergeFailed(proposal.target_branch.owner)
         elif set_state == BranchMergeProposalStatus.QUEUED:
-            proposal.commit_message = self.getUniqueString('commit message')
-            proposal.enqueue(
+            unsafe_proposal.commit_message = self.getUniqueString(
+                'commit message')
+            unsafe_proposal.enqueue(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.SUPERSEDED:
-            proposal.resubmit(proposal.registrant)
+            unsafe_proposal.resubmit(proposal.registrant)
         else:
             raise AssertionError('Unknown status: %s' % set_state)
 
@@ -772,9 +789,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent, sequence)
 
+    def makeBranchRevision(self, branch, revision_id, sequence=None):
+        revision = self.makeRevision(rev_id=revision_id)
+        return branch.createBranchRevision(sequence, revision)
+
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
-                date_created=None):
+                date_created=None, description=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -794,7 +815,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString(), private=private,
-            datecreated=date_created)
+            datecreated=date_created, description=description)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -870,7 +891,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, bugtrackertype)
 
-    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
+    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
+                     owner=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -880,7 +902,10 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         if bug is None:
             bug = self.makeBug()
-        owner = self.makePerson()
+
+        if owner is None:
+            owner = self.makePerson()
+
         return getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
 
@@ -1119,14 +1144,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         MessageChunk(message=message, sequence=1, content=content)
         return message
 
-    def makeSeries(self, user_branch=None, import_branch=None,
-                   name=None, product=None):
+    def makeSeries(self, branch=None, name=None, product=None):
         """Create a new, arbitrary ProductSeries.
 
-        :param user_branch: If supplied, the branch to set as
-            ProductSeries.user_branch.
-        :param import_branch: If supplied, the branch to set as
-            ProductSeries.import_branch.
+        :param branch: If supplied, the branch to set as
+            ProductSeries.branch.
         :param product: If supplied, the name of the series.
         :param product: If supplied, the series is created for this product.
             Otherwise, a new product is created.
@@ -1139,9 +1161,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
         series = naked_product.newSeries(
-            product.owner, name, self.getUniqueString(), user_branch)
-        if import_branch is not None:
-            series.import_branch = import_branch
+            product.owner, name, self.getUniqueString(), branch)
+        if branch is not None:
+            series.branch = branch
         syncUpdate(series)
         return series
 
@@ -1388,7 +1410,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             sourcepackagename = self.makeSourcePackageName()
         if distroseries is None:
             distroseries = self.makeDistroRelease()
-        return SourcePackage(sourcepackagename, distroseries)
+        return distroseries.getSourcePackage(sourcepackagename)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None):

@@ -12,14 +12,14 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import ProxyFactory
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import IQuestionReopening, QuestionStatus
 from canonical.launchpad.validators.person import validate_public_person
 
@@ -79,5 +79,5 @@ def create_questionreopening(question, event):
             priorstate=old_question.status)
 
     reopening = ProxyFactory(reopening)
-    notify(SQLObjectCreatedEvent(reopening, user=reopen_msg.owner))
+    notify(ObjectCreatedEvent(reopening, user=reopen_msg.owner))
 

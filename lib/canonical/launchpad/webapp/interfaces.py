@@ -11,9 +11,10 @@ from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from lazr.batchnavigator.interfaces import IBatchNavigator
+from lazr.enum import DBEnumeratedType, DBItem, use_template
 
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem, use_template
 
 
 class TranslationUnavailable(Exception):
@@ -55,16 +56,6 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
 
     One example would be a URL containing uppercase letters.
     """
-
-
-class InvalidBatchSizeError(AssertionError):
-    """Received a batch parameter that exceed our configured max size."""
-
-    # XXX flacoste 2008/05/09 bug=185958:
-    # Ideally, we would use webservice_error, to set this up and
-    # register the view, but cyclic imports prevents us from doing
-    # so. This should be fixed once we move webapp stuff into LAZR.
-    __lazr_webservice_error__ = 400
 
 
 class ILaunchpadContainer(Interface):
@@ -765,28 +756,6 @@ class IErrorReportRequest(Interface):
 #
 # Batch Navigation
 #
-
-class IBatchNavigator(Interface):
-    """A batch navigator for a specified set of results."""
-
-    batch = Attribute("The IBatch for which navigation links are provided.")
-
-    heading = Attribute(
-        "The heading describing the kind of objects in the batch.")
-
-    def setHeadings(singular, plural):
-        """Set the heading for singular and plural results."""
-
-    def prevBatchURL():
-        """Return a URL to the previous chunk of results."""
-
-    def nextBatchURL():
-        """Return a URL to the next chunk of results."""
-
-    def batchPageURLs():
-        """Return a list of links representing URLs to pages of
-        results."""
-
 
 class ITableBatchNavigator(IBatchNavigator):
     """A batch navigator for tabular listings."""

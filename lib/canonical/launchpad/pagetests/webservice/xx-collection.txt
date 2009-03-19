@@ -1,5 +1,8 @@
 = Introduction =
 
+These tests are being ported to the lazr.restful example
+webservice. Once they're all ported, this file will be removed.
+
 All collections published by the Launchpad web service work pretty
 much the same way. This document illustrates the general features of
 entries, using Launchpad's collections of people/teams and bugs as
@@ -142,6 +145,7 @@ The elements of a collection can be looked up by unique identifier:
   default_renewal_period: None
   display_name: u'Launchpad Administrators'
   expired_members_collection_link: u'http://.../~admins/expired_members'
+  hardware_submissions_collection_link: u'http://.../~admins/hardware_submissions'
   hide_email_addresses: False
   homepage_content: None
   invited_members_collection_link: u'http://.../~admins/invited_members'

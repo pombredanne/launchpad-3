@@ -15,7 +15,7 @@ Log-in an administrator to avoid permission problems.
 Make a trunk branch and set as the development focus branch.
 
     >>> trunk = factory.makeProductBranch(product=fooix)
-    >>> fooix.development_focus.user_branch = trunk
+    >>> fooix.development_focus.branch = trunk
 
 Make a single proposal for albert that is needing review by robert.
 
@@ -100,7 +100,7 @@ and approved merges.
 
     >>> browser.open('http://code.launchpad.dev/~albert')
     >>> print_tag_with_id(browser.contents, 'page-summary')
-    Related branches: 1 (1 registered, 1 owned, 1 subscribed)
+    1 owned branch, 1 registered branch, 1 subscribed branch
     1 active proposal, 0 approved merges, 0 requested reviews
 
     >>> browser.getLink('approved merges').click()
@@ -115,7 +115,7 @@ of their reviews
 
     >>> browser.open('http://code.launchpad.dev/~robert/+requestedreviews')
     >>> print_tag_with_id(browser.contents, 'page-summary')
-    Related branches: 0 (0 registered, 0 owned, 0 subscribed)
+    0 owned branches, 0 registered branches, 0 subscribed branches
     0 active proposals, 0 approved merges, 1 requested review
 
     >>> print_tag_with_id(browser.contents, 'proposal-listing')

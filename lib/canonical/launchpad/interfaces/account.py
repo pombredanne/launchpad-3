@@ -18,10 +18,10 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 
 

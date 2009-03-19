@@ -20,6 +20,8 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -27,7 +29,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.database.productseries import ProductSeries
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     BranchType, CodeImportJobState, CodeImportReviewStatus, IBranchSet,
     ICodeImport, ICodeImportEventSet, ICodeImportSet, ILaunchpadCelebrities,
@@ -65,7 +66,7 @@ class CodeImport(SQLBase):
     @property
     def series(self):
         """See `ICodeImport`."""
-        return ProductSeries.selectOneBy(import_branch=self.branch)
+        return ProductSeries.selectOneBy(branch=self.branch)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
@@ -78,6 +79,8 @@ class CodeImport(SQLBase):
     cvs_module = StringCol(default=None)
 
     svn_branch_url = StringCol(default=None)
+
+    git_repo_url = StringCol(default=None)
 
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)
@@ -206,7 +209,7 @@ class CodeImportSet:
             review_status=review_status)
 
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
-        notify(SQLObjectCreatedEvent(code_import))
+        notify(ObjectCreatedEvent(code_import))
 
         # If created in the reviewed state, create a job.
         if review_status == CodeImportReviewStatus.REVIEWED:

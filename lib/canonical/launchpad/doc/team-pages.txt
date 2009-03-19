@@ -96,6 +96,15 @@ After a member has set his location, the map will be rendered.
     >>> team_view.request.needs_gmap2
     True
 
+The small_maps key in the launchpad_views cookie can be set by the viewing
+user to 'false' to indicate that small maps are not wanted.
+
+    >>> cookie = 'launchpad_views=small_maps=false'
+    >>> team_view = create_initialized_view(
+    ...     ubuntu_team, '+index', cookie=cookie)
+    >>> team_view.request.needs_gmap2
+    False
+
 
 == +map ==
 

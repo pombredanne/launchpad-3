@@ -39,7 +39,7 @@
 
   <subscriber
       for="canonical.launchpad.interfaces.ICodeImport
-           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="canonical.launchpad.mailout.codeimport.new_import" />
 
   <facet facet="branches">

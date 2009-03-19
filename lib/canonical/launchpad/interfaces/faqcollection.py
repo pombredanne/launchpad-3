@@ -14,9 +14,9 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import TextLine
+from lazr.enum import EnumeratedType, Item
 
 from canonical.launchpad import _
-from canonical.lazr.enum import EnumeratedType, Item
 
 
 class FAQSort(EnumeratedType):

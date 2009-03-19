@@ -14,14 +14,13 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int, TextLine
-from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 
 class TranslationPermission(DBEnumeratedType):
@@ -162,9 +161,6 @@ class ITranslationGroup(IHasOwner):
     def __getitem__(languagecode):
         """Retrieve the translator for the given language in this group."""
 
-    def __iter__():
-        """Return an iterator over the translators in the group."""
-
     # adding and removing translators
     def remove_translator(language):
         """Remove the translator for this language from the group."""
@@ -174,7 +170,7 @@ class ITranslationGroup(IHasOwner):
         """Add a new object."""
 
 
-class ITranslationGroupSet(IAddFormCustomization):
+class ITranslationGroupSet(Interface):
     """A container for translation groups."""
 
     title = Attribute('Title')
@@ -185,7 +181,7 @@ class ITranslationGroupSet(IAddFormCustomization):
     def __iter__():
         """Iterate through the translation groups in this set."""
 
-    def new(name, title, summary, owner):
+    def new(name, title, summary, translation_guide_url, owner):
         """Create a new translation group."""
 
     def getByPerson(person):

@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, ALLOW_RELEASE_BUILDS)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 component_dependencies = {

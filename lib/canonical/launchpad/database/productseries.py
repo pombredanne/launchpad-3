@@ -48,6 +48,8 @@ from canonical.launchpad.interfaces import (
     SpecificationSort)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.interfaces.translations import (
+    TranslationsBranchImportMode)
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
@@ -73,10 +75,13 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_public_person, notNull=False, default=None)
-    import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
-                               default=None)
-    user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
+    branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
+    translations_autoimport_mode = EnumCol(
+        dbName='translations_autoimport_mode',
+        notNull=True,
+        schema=TranslationsBranchImportMode,
+        default=TranslationsBranchImportMode.NO_IMPORT)
     # where are the tarballs released from this branch placed?
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
@@ -143,13 +148,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def security_contact(self):
         """See IProductSeries."""
         return self.product.security_contact
-
-    @property
-    def series_branch(self):
-        """See IProductSeries."""
-        if self.user_branch is not None:
-            return self.user_branch
-        return self.import_branch
 
     def getPOTemplate(self, name):
         """See IProductSeries."""
@@ -328,6 +326,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
 
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.product.official_bug_tags
+
     def getUsedBugTags(self):
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
@@ -499,6 +502,5 @@ class ProductSeriesSet:
         branch_ids = [branch.id for branch in branches]
         return store.find(
             ProductSeries,
-            Or(In(ProductSeries.user_branchID, branch_ids),
-               In(ProductSeries.import_branchID, branch_ids))).order_by(
+            In(ProductSeries.branchID, branch_ids)).order_by(
             ProductSeries.name)

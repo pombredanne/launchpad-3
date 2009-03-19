@@ -42,3 +42,79 @@ Not everyone can modify it however:
     ...
     Unauthorized: (...)
     <BLANKLINE>
+
+
+== Official Bug Tags ==
+
+We can access official bug tag targets and add and remove tags. We create a new
+product, owned by ~salgado.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> product = factory.makeProduct(name='tags-test-product', owner=salgado)
+    >>> logout()
+
+The webserice client is logged in as salgado, so we can add a new official tag.
+
+    >>> print webservice.named_post(
+    ...     '/tags-test-product', 'addOfficialBugTag',
+    ...     tag='test-bug-tag')
+    HTTP/1.1 200 Ok
+    ...
+    <BLANKLINE>
+    null
+
+And we can remove it.
+
+    >>> print webservice.named_post(
+    ...     '/tags-test-product', 'removeOfficialBugTag',
+    ...     tag='test-bug-tag')
+    HTTP/1.1 200 Ok
+    ...
+    <BLANKLINE>
+    null
+
+But a different user can't.
+
+    >>> print user_webservice.named_post(
+    ...     '/tags-test-product', 'addOfficialBugTag',
+    ...     tag='test-bug-tag')
+    HTTP/1.1 401 Unauthorized
+    ...
+    <BLANKLINE>
+
+Official tags must conform to the same format as ordinary tags.
+
+    >>> print webservice.named_post(
+    ...     '/tags-test-product', 'addOfficialBugTag',
+    ...     tag='an invalid tag !!!')
+    HTTP/1.1 400 Bad Request
+    ...
+    tag: an invalid tag !!!
+
+We can also access official tags as a list.
+
+    >>> from simplejson import dumps
+    >>> tags_test_product = webservice.get('/tags-test-product').jsonBody()
+    >>> tags_test_product['official_bug_tags']
+    []
+    >>> print webservice.patch(
+    ...     '/tags-test-product', 'application/json',
+    ...     dumps({'official_bug_tags': [u'foo', u'bar']}))
+    HTTP/1.1 209 Content Returned...
+
+    >>> tags_test_product = webservice.get('/tags-test-product').jsonBody()
+    >>> tags_test_product['official_bug_tags']
+    [u'bar', u'foo']
+
+    >>> login('foo.bar@canonical.com')
+    >>> distribution = factory.makeDistribution(name='testix')
+    >>> logout()
+    >>> print webservice.patch(
+    ...     '/testix', 'application/json',
+    ...     dumps({'official_bug_tags': [u'foo', u'bar']}))
+    HTTP/1.1 209 Content Returned...
+

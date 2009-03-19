@@ -25,14 +25,17 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.components.bugchange import (
+    get_bug_change_class)
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
+from lazr.lifecycle.interfaces import IObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     IBugTask, IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
-    INotificationRecipientSet, IPersonSet, ISpecification,
+    INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
+from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.structuralsubscription import (
@@ -357,7 +360,7 @@ def update_security_contact_subscriptions(modified_bugtask, event):
         new_product = bugtask_after_modification.product
         if new_product.security_contact:
             bugtask_after_modification.bug.subscribe(
-                new_product.security_contact, event.user)
+                new_product.security_contact, IPerson(event.user))
 
 
 def get_bugmail_from_address(person, bug):
@@ -609,45 +612,20 @@ def get_bug_edit_notification_texts(bug_delta):
             change_info += '   %s' % new_bug_dupe.title
             changes.append(change_info)
 
-    if bug_delta.title is not None:
-        change_info = u"** Summary changed:\n\n"
-        change_info += u"- %s\n" % bug_delta.title['old']
-        change_info += u"+ %s" % bug_delta.title['new']
-        changes.append(change_info)
-
-    if bug_delta.description is not None:
-        description_diff = get_unified_diff(
-            bug_delta.description['old'],
-            bug_delta.description['new'], 72)
-
-        change_info = u"** Description changed:\n\n"
-        change_info += description_diff
-        changes.append(change_info)
-
-    if bug_delta.private is not None:
-        if bug_delta.private['new']:
-            visibility = "Private"
-        else:
-            visibility = "Public"
-        changes.append(u"** Visibility changed to: %s" % visibility)
-
-    if bug_delta.security_related is not None:
-        if bug_delta.security_related['new']:
-            changes.append(
-                u"** This bug has been flagged as a security issue")
-        else:
-            changes.append(
-                u"** This bug is no longer flagged as a security issue")
-
-    if bug_delta.tags is not None:
-        new_tags = set(bug_delta.tags['new'])
-        old_tags = set(bug_delta.tags['old'])
-        added_tags = sorted(new_tags.difference(old_tags))
-        removed_tags = sorted(old_tags.difference(new_tags))
-        if added_tags:
-            changes.append(u'** Tags added: %s' % ' '.join(added_tags))
-        if removed_tags:
-            changes.append(u'** Tags removed: %s' % ' '.join(removed_tags))
+    # The order of the field names in this list is important; this is
+    # the order in which changes will appear both in the bug activity
+    # log and in notification emails.
+    bug_change_field_names = [
+        'title', 'description', 'private', 'security_related', 'tags',
+        ]
+    for field_name in bug_change_field_names:
+        field_delta = getattr(bug_delta, field_name)
+        if field_delta is not None:
+            bug_change_class = get_bug_change_class(bug_delta.bug, field_name)
+            change_info = bug_change_class(
+                when=None, person=bug_delta.user, what_changed=field_name,
+                old_value=field_delta['old'], new_value=field_delta['new'])
+            changes.append(change_info)
 
     if bug_delta.bugwatch is not None:
         old_bug_watch = bug_delta.bugwatch.get('old')
@@ -809,7 +787,7 @@ def get_bug_delta(old_bug, new_bug, user):
 def notify_bug_added(bug, event):
     """Send an email notification that a bug was added.
 
-    Event must be an ISQLObjectCreatedEvent.
+    Event must be an IObjectCreatedEvent.
     """
 
     bug.addCommentNotification(bug.initial_message)
@@ -820,11 +798,11 @@ def notify_bug_modified(modified_bug, event):
     """Notify the Cc'd list that this bug has been modified.
 
     modified_bug bug must be an IBug. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     bug_delta = get_bug_delta(
         old_bug=event.object_before_modification,
-        new_bug=event.object, user=event.user)
+        new_bug=event.object, user=IPerson(event.user))
 
     if bug_delta is not None:
         add_bug_change_notifications(bug_delta)
@@ -887,9 +865,15 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
             old_bugtask, recipients=old_bugtask_recipients,
             level=BugNotificationLevel.METADATA)
         recipients.update(old_bugtask_recipients)
-    for text_change in changes:
-        bug_delta.bug.addChangeNotification(
-            text_change, person=bug_delta.user, recipients=recipients)
+    for change in changes:
+        # XXX 2009-03-17 gmb [bug=344125]
+        #     This if..else should be removed once the new BugChange API
+        #     is complete and ubiquitous.
+        if IBugChange.providedBy(change):
+            bug_delta.bug.addChange(change)
+        else:
+            bug_delta.bug.addChangeNotification(
+                change, person=bug_delta.user, recipients=recipients)
 
 
 @block_implicit_flushes
@@ -898,14 +882,14 @@ def notify_bugtask_added(bugtask, event):
     somewhere else.
 
     bugtask must be in IBugTask. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     bugtask = event.object
 
     bug_delta = BugDelta(
         bug=bugtask.bug,
         bugurl=canonical_url(bugtask.bug),
-        user=event.user,
+        user=IPerson(event.user),
         added_bugtasks=bugtask)
 
     add_bug_change_notifications(bug_delta)
@@ -917,14 +901,14 @@ def notify_bugtask_edited(modified_bugtask, event):
     on this task.
 
     modified_bugtask must be an IBugTask. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     bugtask_delta = event.object.getDelta(event.object_before_modification)
     bug_delta = BugDelta(
         bug=event.object.bug,
         bugurl=canonical_url(event.object.bug),
         bugtask_deltas=bugtask_delta,
-        user=event.user)
+        user=IPerson(event.user))
 
     add_bug_change_notifications(
         bug_delta, old_bugtask=event.object_before_modification)
@@ -941,7 +925,7 @@ def notify_bug_comment_added(bugmessage, event):
     """Notify CC'd list that a message was added to this bug.
 
     bugmessage must be an IBugMessage. event must be an
-    ISQLObjectCreatedEvent. If bugmessage.bug is a duplicate the
+    IObjectCreatedEvent. If bugmessage.bug is a duplicate the
     comment will also be sent to the dup target's subscribers.
     """
     bug = bugmessage.bug
@@ -953,12 +937,12 @@ def notify_bug_watch_added(watch, event):
     """Notify CC'd list that a new watch has been added for this bug.
 
     watch must be an IBugWatch. event must be an
-    ISQLObjectCreatedEvent.
+    IObjectCreatedEvent.
     """
     bug_delta = BugDelta(
         bug=watch.bug,
         bugurl=canonical_url(watch.bug),
-        user=event.user,
+        user=IPerson(event.user),
         bugwatch={'new' : watch})
 
     add_bug_change_notifications(bug_delta)
@@ -969,7 +953,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
     """Notify CC'd bug subscribers that a bug watch was edited.
 
     modified_bug_watch must be an IBugWatch. event must be an
-    ISQLObjectModifiedEvent.
+    IObjectModifiedEvent.
     """
     old = event.object_before_modification
     new = event.object
@@ -980,7 +964,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
         bug_delta = BugDelta(
             bug=new.bug,
             bugurl=canonical_url(new.bug),
-            user=event.user,
+            user=IPerson(event.user),
             bugwatch={'old' : old, 'new' : new})
 
         add_bug_change_notifications(bug_delta)
@@ -990,12 +974,12 @@ def notify_bug_watch_modified(modified_bug_watch, event):
 def notify_bug_cve_added(bugcve, event):
     """Notify CC'd list that a new cve ref has been added to this bug.
 
-    bugcve must be an IBugCve. event must be an ISQLObjectCreatedEvent.
+    bugcve must be an IBugCve. event must be an IObjectCreatedEvent.
     """
     bug_delta = BugDelta(
         bug=bugcve.bug,
         bugurl=canonical_url(bugcve.bug),
-        user=event.user,
+        user=IPerson(event.user),
         cve={'new': bugcve.cve})
 
     add_bug_change_notifications(bug_delta)
@@ -1004,12 +988,12 @@ def notify_bug_cve_added(bugcve, event):
 def notify_bug_cve_deleted(bugcve, event):
     """Notify CC'd list that a cve ref has been removed from this bug.
 
-    bugcve must be an IBugCve. event must be an ISQLObjectDeletedEvent.
+    bugcve must be an IBugCve. event must be an IObjectDeletedEvent.
     """
     bug_delta = BugDelta(
         bug=bugcve.bug,
         bugurl=canonical_url(bugcve.bug),
-        user=event.user,
+        user=IPerson(event.user),
         cve={'old': bugcve.cve})
 
     add_bug_change_notifications(bug_delta)
@@ -1027,7 +1011,7 @@ def notify_bug_became_question(event):
     change_info = '\n'.join([
         '** bug changed to question:\n'
         '   %s' %  canonical_url(question)])
-    bug.addChangeNotification(change_info, person=event.user)
+    bug.addChangeNotification(change_info, person=IPerson(event.user))
 
 
 @block_implicit_flushes
@@ -1035,13 +1019,13 @@ def notify_bug_attachment_added(bugattachment, event):
     """Notify CC'd list that a new attachment has been added.
 
     bugattachment must be an IBugAttachment. event must be an
-    ISQLObjectCreatedEvent.
+    IObjectCreatedEvent.
     """
     bug = bugattachment.bug
     bug_delta = BugDelta(
         bug=bug,
         bugurl=canonical_url(bug),
-        user=event.user,
+        user=IPerson(event.user),
         attachment={'new' : bugattachment})
 
     add_bug_change_notifications(bug_delta)
@@ -1056,7 +1040,7 @@ def notify_bug_attachment_removed(bugattachment, event):
     change_info = '\n'.join([
         '** Attachment removed: "%s"\n' % bugattachment.title,
         '   %s' %  bugattachment.libraryfile.http_url])
-    bug.addChangeNotification(change_info, person=event.user)
+    bug.addChangeNotification(change_info, person=IPerson(event.user))
 
 
 @block_implicit_flushes
@@ -1219,6 +1203,7 @@ class QuestionNotification:
         """
         self.question = question
         self.event = event
+        self.user = IPerson(self.event.user)
         self.initialize()
         if self.shouldNotify():
             self.send()
@@ -1230,7 +1215,7 @@ class QuestionNotification:
         Default is Event Person Display Name <question#@answertracker_domain>
         """
         return format_address(
-            self.event.user.displayname,
+            self.user.displayname,
             'question%s@%s' % (
                 self.question.id, config.answertracker.email_domain))
 
@@ -1635,8 +1620,8 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
 
     def initialize(self):
         """Create a notifcation for a linked bug status change."""
-        assert ISQLObjectModifiedEvent.providedBy(self.event), (
-            "Should only be subscribed for ISQLObjectModifiedEvent.")
+        assert IObjectModifiedEvent.providedBy(self.event), (
+            "Should only be subscribed for IObjectModifiedEvent.")
         assert IBugTask.providedBy(self.event.object), (
             "Should only be subscribed for IBugTask modification.")
         self.bugtask = self.event.object
@@ -1644,7 +1629,8 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
 
     def shouldNotify(self):
         """Only send notification when the status changed."""
-        return self.bugtask.status != self.old_bugtask.status
+        return (self.bugtask.status != self.old_bugtask.status
+                and self.bugtask.bug.private == False)
 
     def getSubject(self):
         """See QuestionNotification."""
@@ -1658,7 +1644,7 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
             wrapper = MailWrapper()
             statusexplanation = (
                 'Status change explanation given by %s:\n\n%s\n' % (
-                    self.event.user.displayname,
+                    self.user.displayname,
                     wrapper.format(self.bugtask.statusexplanation)))
         else:
             statusexplanation = ''
@@ -1684,10 +1670,11 @@ def specification_notification_subject(spec):
 @block_implicit_flushes
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""
-    spec_delta = spec.getDelta(event.object_before_modification, event.user)
+    user = IPerson(event.user)
+    spec_delta = spec.getDelta(event.object_before_modification, user)
     if spec_delta is None:
         # XXX: Bjorn Tillenius 2006-03-08:
-        #      Ideally, if an ISQLObjectModifiedEvent event is generated,
+        #      Ideally, if an IObjectModifiedEvent event is generated,
         #      spec_delta shouldn't be None. I'm not confident that we
         #      have enough test yet to assert this, though.
         return
@@ -1736,20 +1723,20 @@ def notify_specification_modified(spec, event):
         # sending notification for the change.
         return
     body = get_email_template('specification-modified.txt') % {
-        'editor': event.user.displayname,
+        'editor': user.displayname,
         'info_fields': '\n'.join(info_lines),
         'spec_title': spec.title,
         'spec_url': canonical_url(spec)}
 
     for address in spec.notificationRecipientAddresses():
-        simple_sendmail_from_person(event.user, address, subject, body)
+        simple_sendmail_from_person(user, address, subject, body)
 
 
 
 @block_implicit_flushes
 def notify_specification_subscription_created(specsub, event):
     """Notify a user that they have been subscribed to a blueprint."""
-    user = event.user
+    user = IPerson(event.user)
     spec = specsub.specification
     person = specsub.person
     subject = specification_notification_subject(spec)
@@ -1769,7 +1756,7 @@ def notify_specification_subscription_modified(specsub, event):
     """Notify a subscriber to a blueprint that their
     subscription has changed.
     """
-    user = event.user
+    user = IPerson(event.user)
     spec = specsub.specification
     person = specsub.person
     # Only send a notification if the

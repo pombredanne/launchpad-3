@@ -679,12 +679,8 @@ COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
 completed an import test or sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last successfully completed a production sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch''s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
-COMMENT ON COLUMN ProductSeries.import_branch IS 'The VCS imports branch for
-this product series.  If user_branch is not set, then this is considered the
-product series branch.';
-COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
-series, as set by the user.  If this is not set, then import_branch is
-considered to be the product series branch';
+COMMENT ON COLUMN ProductSeries.branch IS 'The branch for this product
+series.';
 COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'At what
 level the import of translations from a branch in codehosting will happen:
 None, POT files only, POT and PO files. See also the corresponding Enum.';
@@ -2029,6 +2025,9 @@ COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified an
 COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
+
+-- OpenIdNonce
+COMMENT ON TABLE OpenIdNonce IS 'Nonces for our OpenID consumer.';
 
 -- OpenIdRPConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
