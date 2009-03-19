@@ -26,11 +26,11 @@ from canonical.launchpad.interfaces.bugtask import IBugTask
 def get_bug_change_class(obj, field_name):
     """Return a suitable IBugChange to describe obj and field_name."""
     if IBugTask.providedBy(obj):
-        lookup = BUGTASK_CHANGE_LOOKUP
+        return BUGTASK_CHANGE_LOOKUP.get(field_name, BugChangeBase)
+    elif IBug.providedBy(obj):
+        return BUG_CHANGE_LOOKUP.get(field_name, BugChangeBase)
     else:
-        lookup = BUG_CHANGE_LOOKUP
-
-    return lookup.get(field_name, BugChangeBase)
+        return BugChangeBase
 
 
 class BugChangeBase:
