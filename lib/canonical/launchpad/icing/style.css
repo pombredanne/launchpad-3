@@ -1105,6 +1105,11 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
   background-color: #eee;
 }
 
+.official-tags-layout-table ul .tag-used-count {
+  color: #888;
+  font-size: 75%;
+}
+
 .official-tags-layout-table .list-scrollable-area {
   height: 10em;
   overflow-y: scroll;
