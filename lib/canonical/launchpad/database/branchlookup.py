@@ -18,12 +18,12 @@ from canonical.launchpad.interfaces.branchlookup import (
     IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
-from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
+from canonical.launchpad.interfaces.product import (
+    InvalidProductName, IProductSet, NoSuchProduct)
 from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.xmlrpc import faults
 
 from lazr.uri import InvalidURIError, URI
 
@@ -217,7 +217,7 @@ class BranchLookup:
         else:
             raise InvalidBranchIdentifier(path)
         if not valid_name(product_name):
-            raise faults.InvalidProductIdentifier(product_name)
+            raise InvalidProductName(product_name)
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
             raise NoSuchProduct(product_name)

@@ -18,10 +18,10 @@ from canonical.launchpad.interfaces.branchlookup import (
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.person import NoSuchPerson
-from canonical.launchpad.interfaces.product import NoSuchProduct
+from canonical.launchpad.interfaces.product import (
+    InvalidProductName, NoSuchProduct)
 from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.xmlrpc.faults import InvalidProductIdentifier
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -390,7 +390,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # getByLPPath raises `InvalidProductIdentifier` when resolving an lp
         # path for a completely invalid product development focus branch.
         self.assertRaises(
-            InvalidProductIdentifier, self.branch_lookup.getByLPPath, 'b')
+            InvalidProductName, self.branch_lookup.getByLPPath, 'b')
 
     def test_product_with_no_dev_focus(self):
         # getByLPPath raises `NoBranchForSeries` if the product is found but

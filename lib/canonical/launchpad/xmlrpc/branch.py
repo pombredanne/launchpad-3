@@ -29,7 +29,8 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.product import NoSuchProduct
+from canonical.launchpad.interfaces.product import (
+    InvalidProductName, NoSuchProduct)
 from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -235,6 +236,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             raise faults.NoBranchForSeries(e.series)
         except InvalidBranchIdentifier, e:
             raise faults.InvalidBranchIdentifier(e.path)
+        except InvalidProductName, e:
+            raise faults.InvalidProductIdentifier(e.name)
         except NoSuchProductSeries, e:
             raise faults.NoSuchSeries(e.name, e.product)
         except NoSuchProduct, e:

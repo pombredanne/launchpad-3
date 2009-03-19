@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'InvalidProductName',
     'IProduct',
     'IProductEditRestricted',
     'IProductCommercialRestricted',
@@ -57,6 +58,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.sourceforgeproject import (
     sourceforge_project_name_validator)
@@ -840,6 +842,14 @@ class NoSuchProduct(NameLookupFailed):
     """Raised when we try to find a product that doesn't exist."""
 
     _message_prefix = "No such product"
+
+
+class InvalidProductName(LaunchpadValidationError):
+
+    def __init__(self, name):
+        self.name = name
+        LaunchpadValidationError.__init__(
+            self, "Invalid name for product: %s." % (name,))
 
 
 # Fix circular imports.
