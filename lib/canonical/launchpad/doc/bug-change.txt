@@ -408,7 +408,8 @@ You can add an attachment...
      'whatchanged': 'attachment added'}
 
     >>> print attachment_change.getBugNotification()['text']
-    ** Attachment added: sample-attachment http...
+    ** Attachment added: "sample-attachment"
+       http...
 
 Or remove one.
 
@@ -423,4 +424,5 @@ Or remove one.
      'whatchanged': 'attachment removed'}
 
     >>> print attachment_change.getBugNotification()['text']
-    ** Attachment removed: sample-attachment http...
+    ** Attachment removed: "sample-attachment"
+       http...

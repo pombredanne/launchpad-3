@@ -369,7 +369,7 @@ class TestBugChanges(unittest.TestCase):
 
         attachment_added_notification = {
             'person': self.user,
-            'text': '** Attachment added: %s\n   %s' % (
+            'text': '** Attachment added: "%s"\n   %s' % (
                 attachment.title, attachment.libraryfile.http_url),
             }
 
@@ -395,7 +395,7 @@ class TestBugChanges(unittest.TestCase):
 
         attachment_removed_notification = {
             'person': self.user,
-            'text': '** Attachment removed: %s\n   %s' % (
+            'text': '** Attachment removed: "%s"\n   %s' % (
                 attachment.title, attachment.libraryfile.http_url),
             }
 

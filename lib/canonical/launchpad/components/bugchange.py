@@ -290,10 +290,10 @@ class BugAttachmentChange(AttributeChange):
 
     def getBugNotification(self):
         if self.old_value is None:
-            message = "** Attachment added: %s\n   %s" % (
+            message = '** Attachment added: "%s"\n   %s' % (
                 self.new_value.title, self.new_value.libraryfile.http_url)
         else:
-            message = "** Attachment removed: %s\n   %s" % (
+            message = '** Attachment removed: "%s"\n   %s' % (
                 self.old_value.title, self.old_value.libraryfile.http_url)
 
         return {'text': message}
