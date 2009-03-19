@@ -8,6 +8,7 @@ __all__ = [
     'BranchUnlinkedFromBug',
     'BugDescriptionChange',
     'BugTagsChange',
+    'BugTaskAdded',
     'BugTitleChange',
     'BugVisibilityChange',
     'UnsubscribedFromBug',
@@ -90,6 +91,46 @@ class UnsubscribedFromBug(BugChangeBase):
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        return None
+
+
+class BugTaskAdded(BugChangeBase):
+    """A bug task got added to the bug."""
+
+    def __init__(self, when, person, bug_task):
+        super(BugTaskAdded, self).__init__(when, person)
+        self.bug_task = bug_task
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='bug',
+            message='assigned to %s' % self.bug_task.bugtargetname)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        if self.bug_task.bugwatch:
+            change_info = u"** Also affects: %s via\n" % (
+                self.bug_task.bugtargetname)
+            change_info += u"   %s\n" % self.bug_task.bugwatch.url
+        else:
+            change_info = u"** Also affects: %s\n" % (
+                self.bug_task.bugtargetname)
+        change_info += u"%13s: %s\n" % (u"Importance",
+            self.bug_task.importance.title)
+        if self.bug_task.assignee:
+            assignee = self.bug_task.assignee
+            change_info += u"%13s: %s\n" % (u"Assignee",
+                assignee.unique_displayname)
+        change_info += u"%13s: %s" % (
+            u"Status", self.bug_task.status.title)
+        return {
+            'text': change_info,
+            }
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
+        # Send the notification to the default recipients.
         return None
 
 

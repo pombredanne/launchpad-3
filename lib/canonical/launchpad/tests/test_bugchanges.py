@@ -54,7 +54,6 @@ class TestBugChanges(unittest.TestCase):
         """Assert that things were recorded as expected."""
         if bug is None:
             bug = self.bug
-
         new_activities = [
             activity for activity in bug.activity
             if activity not in self.old_activities]
@@ -466,8 +465,9 @@ class TestBugChanges(unittest.TestCase):
         # Adding a bug task adds entries in both BugActivity and
         # BugNotification.
         target = self.factory.makeProduct()
-        added_task = self.bug.addTask(self.user, target)
         bug_watch = self.factory.makeBugWatch(bug=self.bug)
+        self.saveOldChanges()
+        added_task = self.bug.addTask(self.user, target)
         added_task.bugwatch = bug_watch
         notify(ObjectCreatedEvent(added_task, user=self.user))
 

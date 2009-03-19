@@ -13,6 +13,7 @@ from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
     IBug, IBugActivitySet, IMilestone, IPerson, IProductRelease,
     ISourcePackageRelease)
+from canonical.launchpad.components.bugchange import BugTaskAdded
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -127,16 +128,6 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
 
 
 @block_implicit_flushes
-def record_bug_task_added(bug_task, object_created_event):
-    getUtility(IBugActivitySet).new(
-        bug=bug_task.bug,
-        datechanged=UTC_NOW,
-        person=IPerson(object_created_event.user),
-        whatchanged='bug',
-        message='assigned to ' + bug_task.bugtargetname)
-
-
-@block_implicit_flushes
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     """Make an activity note that a bug task was edited."""
     # If the event was triggered by a web service named operation, its
@@ -228,3 +219,14 @@ def record_bugsubscription_edited(bugsubscription_edited,
                     bugsubscription_edited.person.browsername),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
+
+
+@block_implicit_flushes
+def notify_bugtask_added(bugtask, event):
+    """Notify CC'd list that this bug has been marked as needing fixing
+    somewhere else.
+
+    bugtask must be in IBugTask. event must be an
+    IObjectModifiedEvent.
+    """
+    bugtask.bug.addChange(BugTaskAdded(UTC_NOW, IPerson(event.user), bugtask))

@@ -872,25 +872,6 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
 
 
 @block_implicit_flushes
-def notify_bugtask_added(bugtask, event):
-    """Notify CC'd list that this bug has been marked as needing fixing
-    somewhere else.
-
-    bugtask must be in IBugTask. event must be an
-    IObjectModifiedEvent.
-    """
-    bugtask = event.object
-
-    bug_delta = BugDelta(
-        bug=bugtask.bug,
-        bugurl=canonical_url(bugtask.bug),
-        user=IPerson(event.user),
-        added_bugtasks=bugtask)
-
-    add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
 def notify_bugtask_edited(modified_bugtask, event):
     """Notify CC'd subscribers of this bug that something has changed
     on this task.
