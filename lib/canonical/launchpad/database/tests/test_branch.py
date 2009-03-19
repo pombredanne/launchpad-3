@@ -453,10 +453,8 @@ class TestBranchDeletion(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self, 'test@canonical.com')
         self.product = ProductSet().getByName('firefox')
         self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        self.branch_set = BranchSet()
-        self.branch = BranchSet().new(
-            BranchType.HOSTED, 'to-delete', self.user, self.user,
-            self.product, None, 'A branch to delete')
+        self.branch = self.factory.makeProductBranch(
+            name='to-delete', owner=self.user, product=self.product)
         # The owner of the branch is subscribed to the branch when it is
         # created.  The tests here assume no initial connections, so
         # unsubscribe the branch owner here.
@@ -548,9 +546,8 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_landingTargetDisablesDeletion(self):
         """A branch with a landing target cannot be deleted."""
-        target_branch = BranchSet().new(
-            BranchType.HOSTED, 'landing-target', self.user, self.user,
-            self.product, None)
+        target_branch = self.factory.makeProductBranch(
+            name='landing-target', owner=self.user, product=self.product)
         self.branch.addLandingTarget(self.user, target_branch)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch with a landing target is not deletable.")
@@ -558,9 +555,8 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_landingCandidateDisablesDeletion(self):
         """A branch with a landing candidate cannot be deleted."""
-        source_branch = BranchSet().new(
-            BranchType.HOSTED, 'landing-candidate', self.user, self.user,
-            self.product, None)
+        source_branch = self.factory.makeProductBranch(
+            name='landing-candidate', owner=self.user, product=self.product)
         source_branch.addLandingTarget(self.user, self.branch)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch with a landing candidate is not"
@@ -569,12 +565,10 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_dependentBranchDisablesDeletion(self):
         """A branch that is a dependent branch cannot be deleted."""
-        source_branch = BranchSet().new(
-            BranchType.HOSTED, 'landing-candidate', self.user, self.user,
-            self.product, None)
-        target_branch = BranchSet().new(
-            BranchType.HOSTED, 'landing-target', self.user, self.user,
-            self.product, None)
+        source_branch = self.factory.makeProductBranch(
+            name='landing-candidate', owner=self.user, product=self.product)
+        target_branch = self.factory.makeProductBranch(
+            name='landing-target', owner=self.user, product=self.product)
         source_branch.addLandingTarget(self.user, target_branch, self.branch)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch with a dependent target is not deletable.")
@@ -933,25 +927,21 @@ class StackedBranches(TestCaseWithFactory):
             set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
 
 
-class BranchAddLandingTarget(TestCase):
+class BranchAddLandingTarget(TestCaseWithFactory):
     """Exercise all the code paths for adding a landing target."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        login(ANONYMOUS)
-        self.branch_set = BranchSet()
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
         self.product = getUtility(IProductSet).getByName('firefox')
 
         self.user = getUtility(IPersonSet).getByName('no-priv')
-        self.source = self.branch_set.new(
-            BranchType.HOSTED, 'source-branch', self.user, self.user,
-            self.product, None)
-        self.target = self.branch_set.new(
-            BranchType.HOSTED, 'target-branch', self.user, self.user,
-            self.product, None)
-        self.dependent = self.branch_set.new(
-            BranchType.HOSTED, 'dependent-branch', self.user, self.user,
-            self.product, None)
+        self.source = self.factory.makeProductBranch(
+            name='source-branch', owner=self.user, product=self.product)
+        self.target = self.factory.makeProductBranch(
+            name='target-branch', owner=self.user, product=self.product)
+        self.dependent = self.factory.makeProductBranch(
+            name='dependent-branch', owner=self.user, product=self.product)
 
     def tearDown(self):
         logout()

@@ -45,12 +45,14 @@ from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
-from canonical.launchpad.interfaces.branchmergequeue import (
-    IBranchMergeQueueSet)
 from canonical.launchpad.interfaces.branch import (
-    BranchType, IBranchSet, UnknownBranchTypeError)
+    BranchType, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
+from canonical.launchpad.interfaces.branchmergequeue import (
+    IBranchMergeQueueSet)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
@@ -409,7 +411,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IEmailAddressSet).new(
             address, person, email_status, account)
 
-    def makeTeam(self, owner, displayname=None, email=None, name=None,
+    def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
                  visibility=None):
         """Create and return a new, arbitrary Team.
@@ -422,6 +424,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         """
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
@@ -592,10 +596,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
-        branch = getUtility(IBranchSet).new(
-            branch_type, name, registrant, owner, product, url,
-            distroseries=distroseries, sourcepackagename=sourcepackagename,
-            **optional_branch_args)
+
+        namespace = get_branch_namespace(
+            owner, product=product, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        branch = namespace.createBranch(
+            branch_type=branch_type, name=name, registrant=registrant,
+            url=url, **optional_branch_args)
         if private:
             removeSecurityProxy(branch).private = True
         if stacked_on is not None:
@@ -910,7 +917,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             bug, owner, bugtracker, str(remote_bug))
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
-                          comment=None, filename=None, content_type=None):
+                          comment=None, filename=None, content_type=None,
+                          description=None):
         """Create and return a new bug attachment.
 
         :param bug: An `IBug` or a bug ID or name, or None, in which
@@ -924,6 +932,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param filename: A string, or None, in which case a unique
             string will be used.
         :param content_type: The MIME-type of this file.
+        :param description: The description of the attachment.
         :return: An `IBugAttachment`.
         """
         if bug is None:
@@ -934,12 +943,15 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if data is None:
             data = self.getUniqueString()
+        if description is None:
+            description = self.getUniqueString()
         if comment is None:
             comment = self.getUniqueString()
         if filename is None:
             filename = self.getUniqueString()
         return bug.addAttachment(
-            owner, data, comment, filename, content_type=content_type)
+            owner, data, comment, filename, content_type=content_type,
+            description=description)
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
             attachment_contents=None, force_transfer_encoding=False,
