@@ -247,7 +247,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
 
         if data.get('product') is not None:
             target = data['product']
-        else;
+        else:
             target = data['distribution']
             if data.get('sourcepackagename') is not None:
                 target = target.data['sourcepackagename']
