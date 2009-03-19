@@ -445,7 +445,7 @@ class TestBugChanges(unittest.TestCase):
             bug=self.bug_task.bug)
 
     def test_change_bugtask_status(self):
-        # When a bugtask's importance is changed, things should happen.
+        # When a bugtask's status is changed, things should happen.
         bug_task_before_modification = Snapshot(
             self.bug_task, providing=providedBy(self.bug_task))
         self.bug_task.transitionToStatus(
@@ -471,6 +471,32 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=self.bug_task.bug)
+
+    def test_change_bugtask_target(self):
+        # When a bugtask's target is changed, things should happen.
+        bug_task_before_modification = Snapshot(
+            self.bug_task, providing=providedBy(self.bug_task))
+
+        new_target = self.factory.makeProduct(owner=self.user)
+        self.bug_task.transitionToTarget(new_target)
+        notify(ObjectModifiedEvent(
+            self.bug_task, bug_task_before_modification, ['target'],
+            user=self.user))
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n      '
+                'Product: %s => %s' % (
+                self.bug_task.bugtargetname,
+                bug_task_before_modification.bugtargetdisplayname,
+                self.bug_task.bugtargetdisplayname)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=None,
             expected_notification=expected_notification,
             bug=self.bug_task.bug)
 
