@@ -36,9 +36,4 @@
           lazr.lifecycle.interfaces.IObjectModifiedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_bugsubscription_edited" />
 
-  <subscriber
-     for="canonical.launchpad.interfaces.IBugAttachment
-          lazr.lifecycle.interfaces.IObjectCreatedEvent"
-     handler="canonical.launchpad.subscribers.bugactivity.record_bug_attachment_added" />
-
 </configure>
