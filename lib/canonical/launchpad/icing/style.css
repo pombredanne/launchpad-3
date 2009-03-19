@@ -1420,7 +1420,7 @@ p.update-failure-message {
     padding-left: 18px;
 }
 
-p.update-in-progress-message {
+.update-in-progress-message {
     background: url(/@@/spinner) center left no-repeat;
     padding-left: 18px;
 }

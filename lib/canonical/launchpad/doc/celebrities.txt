@@ -180,3 +180,13 @@ There is a 'PPA key guard' celebrity which owns all PPA
     >>> ppa_key_guard = personset.getByName('ppa-key-guard')
     >>> celebs.ppa_key_guard == ppa_key_guard
     True
+
+
+== Ubuntu branches ==
+
+There's a celebrity that is the only Person allowed to set the official branch
+for a source package. It's called ubuntu-branches.
+
+    >>> ubuntu_branches = personset.getByName('ubuntu-branches')
+    >>> celebs.ubuntu_branches == ubuntu_branches
+    True

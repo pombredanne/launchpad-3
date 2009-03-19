@@ -1174,21 +1174,6 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def new(branch_type, name, registrant, owner, product=None, url=None,
-            title=None,
-            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
-            summary=None, whiteboard=None, date_created=None,
-            distroseries=None, sourcepackagename=None):
-        """Create a new branch.
-
-        Raises BranchCreationForbidden if the creator is not allowed
-        to create a branch for the specified product.
-
-        If product, distroseries and sourcepackagename are None (indicating a
-        +junk branch) then the owner must not be a team, except for the
-        special case of the ~vcs-imports celebrity.
-        """
-
     def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 

@@ -57,6 +57,13 @@ class ArchiveSubscriber(Storm):
     cancelled_by_id = Int(name='cancelled_by', allow_none=True)
     cancelled_by = Reference(cancelled_by_id, 'Person.id')
 
+    @property
+    def title(self):
+        """See `IArchiveSubscriber`."""
+        return "Subscription of %s to %s" % (
+            self.subscriber.displayname,
+            self.archive.title)
+
     def cancel(self, cancelled_by):
         """See `IArchiveSubscriber`."""
         self.date_cancelled = UTC_NOW

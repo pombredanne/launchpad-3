@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Date, Datetime, Int, Text
+from zope.schema import Choice, Date, Datetime, Int, Text, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
@@ -93,6 +93,7 @@ class IArchiveSubscriberView(Interface):
         IPerson, title=_("Cancelled By"), required=False,
         description=_("The person who cancelled the subscription."))
 
+    title = TextLine(title=_("Subscription title"), required=False)
 
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""

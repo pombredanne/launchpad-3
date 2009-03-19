@@ -20,8 +20,6 @@ vocabulary_registry = getVocabularyRegistry()
 BUG_INTERESTING_FIELDS = [
     'duplicateof',
     'name',
-    'private',
-    'security_related',
     'tags',
     ]
 
@@ -115,19 +113,6 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
                 whatchanged = 'changed duplicate marker'
             elif oldvalue is not None and newvalue is None:
                 whatchanged = 'removed duplicate marker'
-        elif changed_field == 'private':
-            whatchanged = 'privacy'
-            privacy_values = {'True': 'private', 'False': 'public'}
-            oldvalue = privacy_values[oldvalue]
-            newvalue = privacy_values[newvalue]
-        elif changed_field == 'security_related':
-            whatchanged = 'security'
-            security_values = {
-                'True': 'security vulnerability',
-                'False': 'not security vulnerability',
-                }
-            oldvalue = security_values[oldvalue]
-            newvalue = security_values[newvalue]
         else:
             whatchanged = changed_field
 
@@ -243,15 +228,3 @@ def record_bugsubscription_edited(bugsubscription_edited,
                     bugsubscription_edited.person.browsername),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
-
-
-@block_implicit_flushes
-def record_bug_attachment_added(attachment, created_event):
-    """Record that an attachment was added."""
-    getUtility(IBugActivitySet).new(
-        bug=attachment.bug,
-        datechanged=UTC_NOW,
-        person=IPerson(created_event.user),
-        whatchanged='bug',
-        message="added attachment '%s' (%s)" % (
-            attachment.libraryfile.filename, attachment.title))

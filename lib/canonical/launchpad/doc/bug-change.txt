@@ -267,3 +267,162 @@ within the UI.
 
     >>> print bug_title_change.getBugActivity()['whatchanged']
     summary
+
+
+=== BugVisibilityChange ===
+
+BugVisibilityChange is used to represent a change in a Bug's `private`
+attribute.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugVisibilityChange)
+
+    >>> bug_visibility_change = BugVisibilityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='private', old_value=example_bug.private,
+    ...     new_value=True)
+
+IBug.private is a boolean but to make it more readable we express it in
+activity and notification records as a string, where True = 'Private'
+and False = 'Public'. We also refer to it as "visibility" rather than
+privacy.
+
+    >>> print pretty(bug_visibility_change.getBugActivity())
+    {'newvalue': 'private',
+     'oldvalue': 'public',
+     'whatchanged': 'visibility'}
+
+We also use the 'Private', 'Public' and 'Visibility' terms in the
+notification text.
+
+    >>> print bug_visibility_change.getBugNotification()['text']
+    ** Visibility changed to: Private
+
+If we reverse the changes we'll see the opposite values in the
+notification and activity entries.
+
+    >>> bug_visibility_change = BugVisibilityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='private', old_value=True, new_value=False)
+    >>> print pretty(bug_visibility_change.getBugActivity())
+    {'newvalue': 'public',
+     'oldvalue': 'private',
+     'whatchanged': 'visibility'}
+
+    >>> print bug_visibility_change.getBugNotification()['text']
+    ** Visibility changed to: Public
+
+
+== BugTagsChange ==
+
+BugTagsChange is used to represent a change in a Bug's tag list.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTagsChange)
+
+    >>> tags_change = BugTagsChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='tags',
+    ...     old_value=[u'first-tag', u'second-tag', u'third-tag'],
+    ...     new_value=[u'second-tag', u'third-tag', u'zillionth-tag'])
+
+This change is expressed in the activity entry in the same way as any
+other attribute change. The list of tags is converted to a
+space-separated string for display.
+
+    >>> print pretty(tags_change.getBugActivity())
+    {'newvalue': u'second-tag third-tag zillionth-tag',
+     'oldvalue': u'first-tag second-tag third-tag',
+     'whatchanged': 'tags'}
+
+Addtions and removals are expressed separately in the notification.
+
+    >>> print tags_change.getBugNotification()['text']
+    ** Tags added: zillionth-tag
+    ** Tags removed: first-tag
+
+
+=== BugSecurityChange ===
+
+BugSecurityChange is used to represent a change in a Bug's
+`security_related` attribute.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugSecurityChange)
+
+    >>> bug_security_change = BugSecurityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=False, new_value=True)
+
+IBug.security_related is a boolean but to make it more readable we
+express it in activity and notification records as a short phrase.
+
+Marking a bug as security related causes one set of terms/phrases to
+be used.
+
+    >>> print pretty(bug_security_change.getBugActivity())
+    {'newvalue': 'yes',
+     'oldvalue': 'no',
+     'whatchanged': 'security vulnerability'}
+
+    >>> print bug_security_change.getBugNotification()['text']
+    ** This bug has been flagged as a security vulnerability
+
+Going the other way the phrases are similar.
+
+    >>> bug_security_change = BugSecurityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=True, new_value=False)
+
+    >>> print pretty(bug_security_change.getBugActivity())
+    {'newvalue': 'no',
+     'oldvalue': 'yes',
+     'whatchanged': 'security vulnerability'}
+
+    >>> print bug_security_change.getBugNotification()['text']
+    ** This bug is no longer flagged as a security vulnerability
+
+
+== BugAttachmentChange ==
+
+BugAttachmentChange is used to handle the addition and removal of
+attachments from a bug.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugAttachmentChange)
+
+You can add an attachment...
+
+    >>> attachment = factory.makeBugAttachment(
+    ...     description='sample-attachment')
+    >>> attachment_change = BugAttachmentChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=None, new_value=attachment)
+
+    >>> print pretty(attachment_change.getBugActivity())
+    {'newvalue': u'sample-attachment http://...',
+     'oldvalue': None,
+     'whatchanged': 'attachment added'}
+
+    >>> print attachment_change.getBugNotification()['text']
+    ** Attachment added: "sample-attachment"
+       http...
+
+Or remove one.
+
+    >>> attachment_change = BugAttachmentChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=attachment, new_value=None)
+
+    >>> print pretty(attachment_change.getBugActivity())
+    {'newvalue': None,
+     'oldvalue': u'sample-attachment http://...',
+     'whatchanged': 'attachment removed'}
+
+    >>> print attachment_change.getBugNotification()['text']
+    ** Attachment removed: "sample-attachment"
+       http...

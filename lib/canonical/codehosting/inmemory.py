@@ -476,9 +476,6 @@ class FakeBranchFilesystem:
                  % (registrant.displayname, owner.displayname)))
         product = sourcepackage = None
         if data['product'] == '+junk':
-            if owner.isTeam():
-                return faults.PermissionDenied(
-                    BranchCreationNoTeamOwnedJunkBranches.error_message)
             product = None
         elif data['product'] is not None:
             product = self._product_set.getByName(data['product'])
