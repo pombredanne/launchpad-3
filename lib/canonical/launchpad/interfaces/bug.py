@@ -428,6 +428,13 @@ class IBug(ICanBeMentored):
         Returns an IBugBranch.
         """
 
+    def removeBranch(branch, user):
+        """Unlink a branch from this bug.
+
+        :param branch: The branch being unlinked from the bug
+        :param registrant: The user unlinking the branch
+        """
+
     @call_with(owner=REQUEST_USER)
     @operation_parameters(
         data=Bytes(constraint=bug_attachment_size_constraint),

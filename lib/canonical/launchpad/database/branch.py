@@ -25,8 +25,6 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
-from lazr.lifecycle.event import ObjectCreatedEvent
-
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -44,10 +42,8 @@ from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IProductSet, NotFoundError)
+    IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import (
-    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
-    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner, BranchExists,
     BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
     BranchType, BranchTypeError, CannotDeleteBranch, ControlFormat,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
@@ -56,16 +52,11 @@ from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, NoSuchBranch)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
+    IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
-from canonical.launchpad.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
-from canonical.launchpad.interfaces.branchvisibilitypolicy import (
-    BranchVisibilityRule)
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.validators.person import validate_public_person
@@ -881,198 +872,6 @@ class BranchSet:
             return Branch.get(branch_id)
         except SQLObjectNotFound:
             return default
-
-    def _checkVisibilityPolicy(self, creator, owner, product):
-        """Return a tuple of private flag and person or team to subscribe.
-
-        This method checks the branch visibility policy of the product.  The
-        product can define any number of policies that apply to particular
-        teams.  Each team can have only one policy, and that policy is defined
-        by the enumerated type BranchVisibilityRule.  The possibilities are
-        PUBLIC, PRIVATE, PRIVATE_ONLY, and FORBIDDEN.
-
-        PUBLIC: branches default to public for the team.
-        PRIVATE: branches default to private for the team.
-        PRIVATE_ONLY: branches are created private, and cannot be changed to
-            public.
-        FORBIDDEN: users cannot create branches for that product. The forbidden
-            policy can only apply to all people, not specific teams.
-
-        As well as specifying a policy for particular teams, there can be a
-        policy that applies to everyone.  Since there is no team for everyone,
-        a team policy where the team is None applies to everyone.  If there is
-        no explicit policy set for everyone, then the default applies, which is
-        for branches to be created PUBLIC.
-
-        The user must be in the team of the owner in order to create a branch
-        in the owner's namespace.
-
-        If there is a policy that applies specificly to the owner of the
-        branch, then that policy is applied for the branch.  This is to handle
-        the situation where TeamA is a member of TeamB, TeamA has a PUBLIC
-        policy, and TeamB has a PRIVATE policy.  By pushing to TeamA's branch
-        area, the PUBLIC policy is used.
-
-        If a owner is a member of more than one team that has a specified
-        policy the PRIVATE and PRIVATE_ONLY override PUBLIC policies.
-
-        If the owner is a member of more than one team that has PRIVATE or
-        PRIVATE_ONLY set as the policy, then the branch is created private, and
-        no team is subscribed to it as we can't guess which team the user means
-        to have the visibility.
-        """
-        PUBLIC_BRANCH = (False, None)
-        PRIVATE_BRANCH = (True, None)
-        # You are not allowed to specify an owner that you are not a member
-        # of.
-        if not creator.inTeam(owner):
-            if owner.isTeam():
-                raise BranchCreatorNotMemberOfOwnerTeam(
-                    "%s is not a member of %s"
-                    % (creator.displayname, owner.displayname))
-            else:
-                raise BranchCreatorNotOwner(
-                    "%s cannot create branches owned by %s"
-                    % (creator.displayname, owner.displayname))
-        # If the product is None, then the branch is a +junk branch.
-        if product is None:
-            # The only team that is allowed to own +junk branches is
-            # ~vcs-imports.
-            if (owner.isTeam() and
-                owner != getUtility(ILaunchpadCelebrities).vcs_imports):
-                raise BranchCreationNoTeamOwnedJunkBranches()
-            # All junk branches are public.
-            return PUBLIC_BRANCH
-        # First check if the owner has a defined visibility rule.
-        policy = product.getBranchVisibilityRuleForTeam(owner)
-        if policy is not None:
-            if policy in (BranchVisibilityRule.PRIVATE,
-                          BranchVisibilityRule.PRIVATE_ONLY):
-                return PRIVATE_BRANCH
-            else:
-                return PUBLIC_BRANCH
-
-        rule_memberships = dict(
-            [(item, []) for item in BranchVisibilityRule.items])
-
-        # Here we ignore the team policy that applies to everyone as
-        # that is the base visibility rule and it is checked only if there
-        # are no team policies that apply to the owner.
-        for item in product.getBranchVisibilityTeamPolicies():
-            if item.team is not None and owner.inTeam(item.team):
-                rule_memberships[item.rule].append(item.team)
-
-        private_teams = (
-            rule_memberships[BranchVisibilityRule.PRIVATE] +
-            rule_memberships[BranchVisibilityRule.PRIVATE_ONLY])
-
-        # Private trumps public.
-        if len(private_teams) == 1:
-            # The owner is a member of only one team that has private branches
-            # enabled.  The case where the private_team is the same as the
-            # owner of the branch is caught above where a check is done for a
-            # defined policy for the owner.  So if we get to here, the owner
-            # of the branch is a member of another team that has private
-            # branches enabled, so subscribe the private_team to the branch.
-            return (True, private_teams[0])
-        elif len(private_teams) > 1:
-            # If the owner is a member of multiple teams that specify private
-            # branches, then we cannot guess which team should get subscribed
-            # automatically, so subscribe no-one.
-            return PRIVATE_BRANCH
-        elif len(rule_memberships[BranchVisibilityRule.PUBLIC]) > 0:
-            # If the owner is not a member of any teams that specify private
-            # branches, but is a member of a team that is allowed public
-            # branches, then the branch is created as a public branch.
-            return PUBLIC_BRANCH
-        else:
-            membership_teams = rule_memberships.itervalues()
-            owner_membership = reduce(lambda x, y: x + y, membership_teams)
-            assert len(owner_membership) == 0, (
-                'The owner should not be a member of any team that has '
-                'a specified team policy.')
-
-        # Need to check the base branch visibility policy since there were no
-        # team policies that matches the owner.
-        base_visibility_rule = product.getBaseBranchVisibilityRule()
-        if base_visibility_rule == BranchVisibilityRule.FORBIDDEN:
-            raise BranchCreationForbidden(
-                "You cannot create branches for the product %r"
-                % product.name)
-        elif base_visibility_rule == BranchVisibilityRule.PUBLIC:
-            return PUBLIC_BRANCH
-        else:
-            return PRIVATE_BRANCH
-
-    def new(self, branch_type, name, registrant, owner, product=None,
-            url=None, title=None,
-            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
-            summary=None, whiteboard=None, date_created=None,
-            branch_format=None, repository_format=None, control_format=None,
-            distroseries=None, sourcepackagename=None,
-            merge_control_status=BranchMergeControlStatus.NO_QUEUE):
-        """See `IBranchSet`."""
-        if date_created is None:
-            date_created = UTC_NOW
-
-        # Check the policy for the person creating the branch.
-        private, implicit_subscription = self._checkVisibilityPolicy(
-            registrant, owner, product)
-
-        # Not all code paths that lead to branch creation go via a
-        # schema-validated form (e.g. the register_branch XML-RPC call or
-        # pushing a new branch to codehosting), so we validate the branch name
-        # here to give a nicer error message than 'ERROR: new row for relation
-        # "branch" violates check constraint "valid_name"...'.
-        IBranch['name'].validate(unicode(name))
-
-        # Run any necessary data massage on the branch URL.
-        if url is not None:
-            url = IBranch['url'].normalize(url)
-
-        # Make sure that the new branch has a unique name if not a junk
-        # branch.
-        namespace = get_branch_namespace(
-            owner, product=product, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
-        existing_branch = namespace.getByName(name)
-        if existing_branch is not None:
-            raise BranchExists(existing_branch)
-
-        branch = Branch(
-            registrant=registrant,
-            name=name, owner=owner, product=product, url=url,
-            title=title, lifecycle_status=lifecycle_status, summary=summary,
-            whiteboard=whiteboard, private=private,
-            date_created=date_created, branch_type=branch_type,
-            date_last_modified=date_created, branch_format=branch_format,
-            repository_format=repository_format,
-            control_format=control_format, distroseries=distroseries,
-            sourcepackagename=sourcepackagename,
-            merge_control_status=merge_control_status)
-
-        # Implicit subscriptions are to enable teams to see private branches
-        # as soon as they are created.  The subscriptions can be edited at
-        # a later date if desired.
-        if implicit_subscription is not None:
-            branch.subscribe(
-                implicit_subscription,
-                BranchSubscriptionNotificationLevel.NOEMAIL,
-                BranchSubscriptionDiffSize.NODIFF,
-                CodeReviewNotificationLevel.NOEMAIL)
-
-        # The owner of the branch should also be automatically subscribed
-        # in order for them to get code review notifications.  The implicit
-        # owner subscription does not cause email to be sent about attribute
-        # changes, just merge proposals and code review comments.
-        branch.subscribe(
-            branch.owner,
-            BranchSubscriptionNotificationLevel.NOEMAIL,
-            BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.FULL)
-
-        notify(ObjectCreatedEvent(branch))
-        return branch
 
     @staticmethod
     def URIToUniqueName(uri):
