@@ -184,7 +184,8 @@ empty list of results:
   >>> [r['instructions'] for r in empty_collection['entries']]
   []
 
-Custom operations may have custom error handling.
+Custom operations may have error handling. In this case, the error
+handling is in the validate() method of the 'search' field.
 
   >>> print webservice.get("/cookbooks?ws.op=find_recipes")
   HTTP/1.1 400 Bad Request
@@ -205,9 +206,7 @@ the collection of cookbooks.
   ...         name=name, cuisine=cuisine,
   ...         copyright_date=copyright_date.isoformat())
 
-  >>> cake_url = quote('/cookbooks/The Cake Bible')
-
-  >>> print webservice.get(cake_url)
+  >>> print webservice.get(quote('/cookbooks/The Cake Bible'))
   HTTP/1.1 404 Not Found
   ...
 
@@ -217,7 +216,7 @@ the collection of cookbooks.
   ...
   Location: http://.../cookbooks/The%20Cake%20Bible
 
-  >>> print webservice.get(cake_url)
+  >>> print webservice.get("/cookbooks/The%20Cake%20Bible")
   HTTP/1.1 200 Ok
   ...
 
