@@ -354,4 +354,6 @@ BUG_CHANGE_LOOKUP = {
 
 
 BUGTASK_CHANGE_LOOKUP = {
+    'importance': BugTaskAttributeChange,
+    'status:': BugTaskAttributeChange,
     }
