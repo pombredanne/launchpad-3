@@ -1,6 +1,6 @@
 = Security =
 
-A few tests illustrating how the security model works with the
+These tests illustrate how the security model works with the
 Launchpad data model objects.
 
 
@@ -18,6 +18,12 @@ site.
 
 But the 'no-priv' user can't see bug number 14, which is private.
 
+  >>> print user_webservice.get("/bugs/14")
+  HTTP/1.1 401 Unauthorized
+  ...
+  Bug 14 is private
+  ...
+
   >>> nopriv_output = user_webservice.get(
   ...     "/bugs?ws.size=100").jsonBody()
   >>> nopriv_output['total_size']
@@ -29,6 +35,12 @@ Things are a little different for a user who has permission to see
 private data, but is using an OAuth key that restricts the client to
 operating on public data.
 
+  >>> print public_webservice.get("/bugs/14")
+  HTTP/1.1 401 Unauthorized
+  ...
+  Bug 14 is private
+  ...
+
   >>> public_output = public_webservice.get(
   ...     "/bugs?ws.size=50").jsonBody()
   >>> public_output['total_size']
@@ -36,10 +48,13 @@ operating on public data.
   >>> len(public_output['entries'])
   14
 
-What happened there? This web service request was made by a user who
-can see all 15 bugs, but the user used an OAuth token that only allows
-access to public data. The actual bugs are filtered against the OAuth
-token at a fairly high level, but the number of visible bugs comes
-from database-level code that only respects the user who made the
-request. The user can see 15 bugs, but their token can only see the 14
-public bugs.
+Although this behavior is inconsistent, it doesn't leak any private
+information and implementing it consistently would be very difficult,
+so it's good enough. What happened here is that the web service
+request was made by a user who can see all 15 bugs, but the user used
+an OAuth token that only allows access to public data. The actual bugs
+are filtered against the OAuth token at a fairly high level, but the
+number of visible bugs comes from database-level code that only
+respects the user who made the request. The user can see 15 bugs, but
+their token can only see the 14 public bugs. Fortunately, the mere
+knowledge that there are private bugs isn't a security problem.
