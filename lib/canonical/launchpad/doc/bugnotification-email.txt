@@ -322,9 +322,16 @@ pretend we had just added task five:
 As you might expect, get_bug_edit_notification_texts handles generating the
 text representations of the changes when a bug task is edited.
 
+We use a BugTaskDelta to represent changes to a BugTask.
+
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskStatus, IBugTaskSet)
+    ...     BugTaskStatus, IBugTaskDelta, IBugTaskSet)
     >>> from canonical.launchpad.database.bugtask import BugTaskDelta
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> example_bug_task = factory.makeBugTask()
+    >>> example_delta = BugTaskDelta(example_bug_task)
+    >>> verifyObject(IBugTaskDelta, example_delta)
+    True
 
     >>> edited_bugtask = getUtility(IBugTaskSet).get(3)
     >>> edited_bugtask.transitionToStatus(
