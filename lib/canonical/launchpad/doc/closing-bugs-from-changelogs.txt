@@ -302,7 +302,7 @@ queue items have been processed.
     >>> from canonical.config import config
     >>> script = os.path.join(config.root, "scripts/process-accepted.py")
     >>> process = subprocess.Popen(
-    ...     [sys.executable, script, "ubuntu"])
+    ...     [sys.executable, script, "ubuntu"],
     ...     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     >>> stdout, stderr = process.communicate()
     >>> process.returncode
