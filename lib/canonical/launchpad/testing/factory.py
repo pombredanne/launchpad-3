@@ -242,7 +242,6 @@ class LaunchpadObjectFactory(ObjectFactory):
             email, person=None, account=account,
             email_status=EmailAddressStatus.PREFERRED)
         if commit:
-            import transaction
             transaction.commit()
         return account
 
@@ -380,7 +379,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                 MailingListAutoSubscribePolicy.NEVER
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
-            alternative_address, person, EmailAddressStatus.VALIDATED, account)
+            alternative_address, person, EmailAddressStatus.VALIDATED,
+            account)
         transaction.commit()
         self._stuff_preferredemail_cache(person)
         return person
@@ -1305,16 +1305,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
         return potemplate.newPOFile(language_code, requester=potemplate.owner)
-
-    def makePOMsgID(self, text=None):
-        """Make a new POMsgID or return an existing one if it's there."""
-        if text is None:
-            text = self.getUniqueString()
-        try:
-            msgid = POMsgID.byMsgid(text)
-        except SQLObjectNotFound:
-            msgid = POMsgID(msgid=text)
-        return msgid
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       sequence=None):
