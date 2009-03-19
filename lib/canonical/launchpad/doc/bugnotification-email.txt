@@ -526,7 +526,7 @@ Adding an attachment will generate a notification that looks as follows:
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Attachment added: A screenshot of the problem
+    ** Attachment added: "A screenshot of the problem"
        http://foo.com/screenshot.png
     -----------------------------
 
@@ -541,7 +541,7 @@ Removing an attachment generates a notification, too.
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Attachment removed: A screenshot of the problem
+    ** Attachment removed: "A screenshot of the problem"
        http://foo.com/screenshot.png
     -----------------------------
 
