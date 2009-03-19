@@ -701,7 +701,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             elif IDistroBugTask.providedBy(fake_task):
                 # Create a real distro bug task in this context.
                 real_task = fake_task.bug.addTask(
-                    getUtility(ILaunchBag).user,, fake_task.target)
+                    getUtility(ILaunchBag).user, fake_task.target)
             elif IDistroSeriesBugTask.providedBy(fake_task):
                 self._nominateBug(fake_task.distroseries)
                 return
