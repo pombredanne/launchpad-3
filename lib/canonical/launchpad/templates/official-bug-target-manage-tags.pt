@@ -83,7 +83,7 @@
     </table>
     <div class="actions">
       <input type="submit" value="Save" id="save-button" />
-      or <a href="#" id="cancel-link">Cancel</a>        
+      or <a id="cancel-link" tal:attributes="href view/cancel_url">Cancel</a>        
     </div>
   </div>
   </body>

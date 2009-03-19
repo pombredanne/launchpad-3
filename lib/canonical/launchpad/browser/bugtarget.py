@@ -1295,13 +1295,11 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
                       var used_bug_tags = %s;
                       var official_bug_tags = %s;
                       var valid_name_pattern = %s;
-                      var cancel_url = %s;
                   </script>
                """ % (
                dumps(used_tags),
                dumps(official_tags),
-               dumps(valid_name_pattern.pattern),
-               dumps(self.cancel_url))
+               dumps(valid_name_pattern.pattern))
 
     @property
     def cancel_url(self):
