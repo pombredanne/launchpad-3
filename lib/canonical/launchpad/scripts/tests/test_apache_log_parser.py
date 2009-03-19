@@ -80,14 +80,12 @@ class TestParsedFilesDetection(unittest.TestCase):
         # with a name matching that of an already parsed file but with content
         # differing from the last file with that name parsed, we know we need
         # to parse the file from the start.
-        fd, file_name = tempfile.mkstemp()
-        content1 = 'First Line\nSecond Line'
-        first_line, rest = content1.split('\n', 1)
-        parsed_file = ParsedApacheLog(first_line, len(content1))
+        parsed_file = ParsedApacheLog('First line', bytes_read=1000)
 
         # This file has the same name of the previous one (which has been
         # parsed already), but its first line is different, so we'll have to
         # parse it from the start.
+        fd, file_name = tempfile.mkstemp()
         content2 = 'Different First Line\nSecond Line'
         fd = open(file_name, 'w')
         fd.write(content2)
