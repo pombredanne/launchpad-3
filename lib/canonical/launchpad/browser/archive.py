@@ -14,6 +14,7 @@ __all__ = [
     'ArchiveEditDependenciesView',
     'ArchiveEditView',
     'ArchiveNavigation',
+    'ArchiveNavigationMenu',
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
@@ -75,7 +76,7 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.widgets import (
     LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
 from canonical.widgets.itemswidgets import (
@@ -302,6 +303,16 @@ class ArchiveContextMenu(ContextMenu):
     def edit_dependencies(self):
         text = 'Edit dependencies'
         return Link('+edit-dependencies', text, icon='edit')
+
+
+class ArchiveNavigationMenu(NavigationMenu):
+    """IArchive navigation menu.
+
+    Deliberately empty.
+    """
+    usedfor = IArchive
+    facet = 'overview'
+    links = []
 
 
 class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
