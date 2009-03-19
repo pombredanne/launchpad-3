@@ -931,7 +931,8 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         person = self._context
         url = canonical_url(person, rootsite=rootsite, view_name=view_name)
         image_url = ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
-        return (u'<a href="%s" style="padding-left: 18px; background: url(%s) '
+        return (u'<a href="%s" style="padding-left: 18px; '
+                'background: url(%s) '
                 'center left no-repeat;">%s</a>') % (
             url, image_url, cgi.escape(person.browsername))
 
@@ -947,7 +948,8 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
     def icon_url(self, view_name, rootsite=None):
         """Return the URL for the person's icon."""
-        return ObjectImageDisplayAPI(self._context).icon_url(rootsite=rootsite)
+        return ObjectImageDisplayAPI(self._context).icon_url(
+            rootsite=rootsite)
 
 class TeamFormatterAPI(PersonFormatterAPI):
     """Adapter for `ITeam` objects to a formatted string."""
@@ -973,7 +975,8 @@ class TeamFormatterAPI(PersonFormatterAPI):
         person = self._context
         if not check_permission('launchpad.View', person):
             # This person has no permission to view the team details.
-            image_url = ObjectImageDisplayAPI(person)._default_icon_url(rootsite=rootsite)
+            image_url = ObjectImageDisplayAPI(person)._default_icon_url(
+                rootsite=rootsite)
             return ('<span style="padding-left: 18px; background: url(%s)'
                     'center left no-repeat;">%s</span>') % (
                 image_url, cgi.escape(self.hidden))
@@ -1002,9 +1005,11 @@ class TeamFormatterAPI(PersonFormatterAPI):
         """
         person = self._context
         if not check_permission('launchpad.View', person):
-            image_url = ObjectImageDisplayAPI(person)._default_icon_url(rootsite=rootsite)
+            image_url = ObjectImageDisplayAPI(person)._default_icon_url(
+                rootsite=rootsite)
             return image_url
-        return ObjectImageDisplayAPI(self._context).icon_url(rootsite=rootsite)
+
+        return ObjectImageDisplayAPI(person).icon_url(rootsite=rootsite)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):

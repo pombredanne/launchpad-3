@@ -17,7 +17,6 @@ __all__ = [
     ]
 
 
-import re
 import xmlrpclib
 
 from BeautifulSoup import BeautifulSoup, SoupStrainer
