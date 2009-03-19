@@ -42,7 +42,6 @@ All merge proposals have to be registered by a Person.
 In order to register a merge proposal there has to be a source branch
 and a target branch.
 
-    >>> branch_set = getUtility(IBranchSet)
     >>> branch_lookup = getUtility(IBranchLookup)
     >>> source_branch = branch_lookup.getByUniqueName(
     ...     '~name12/gnome-terminal/klingon')
@@ -381,6 +380,7 @@ branches, there is a method on the branch set that returns the branches that a
 user has previously targeted for merging.
 
     >>> gnome_terminal = branch.product
+    >>> branch_set = getUtility(IBranchSet)
     >>> branches = branch_set.getTargetBranchesForUsersMergeProposals(
     ...     sample_person, gnome_terminal)
     >>> for branch in branches:

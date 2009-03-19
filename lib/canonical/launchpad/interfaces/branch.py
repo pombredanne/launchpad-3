@@ -1148,15 +1148,6 @@ class IBranch(IHasOwner, IHasBranchTarget):
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
-    def __getitem__(branch_id):
-        """Return the branch with the given id.
-
-        Raise NotFoundError if there is no such branch.
-        """
-
-    def __iter__():
-        """Return an iterator that will go through all branches."""
-
     def count():
         """Return the number of branches in the database.
 
@@ -1353,7 +1344,8 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
     # series should be self limiting.  We are not looking to enforce
     # extra strictness in this case, but instead let it manage itself.
 
-    # XXX: This should not dispatch on Branch.product is None
+    # XXX: JonathanLange 2009-03-19 spec=package-branches: This should not
+    # dispatch on Branch.product is None
     if not branch.private and branch.product is not None:
         if is_dev_focus:
             return lp_prefix + branch.product.name
