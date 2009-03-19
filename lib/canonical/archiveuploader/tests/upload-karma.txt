@@ -1,10 +1,13 @@
-= Karma for uploaded packages =
+===========================
+Karma for uploaded packages
+===========================
 
 Uploads through Soyuz will give karma to users when the upload is
 accepted.  This means that uploads that are new will not receive karma until
 they are accepted from the queue.
 
-== Set up test fixtures ==
+Set up test fixtures
+====================
 
 Set up an event listener to show when karma gets assigned.
 
@@ -14,7 +17,8 @@ Set up an event listener to show when karma gets assigned.
     >>> karma_helper.register_listener()
 
 
-== Uploading new sources ==
+Uploading new sources
+=====================
 
 First, uploading a new source does not assign karma immediately.
 
@@ -58,7 +62,8 @@ Poke the queue entry so it looks like Foo Bar (name16) uploaded it:
 You can see that two karma events occurred.
 
 
-== Uploading auto-accepted sources ==
+Uploading auto-accepted sources
+===============================
 
 Auto-accepted sources are also given karma in the same way as queued uploads
 except that the karma is awarded earlier in the processing cycle.
@@ -70,7 +75,8 @@ except that the karma is awarded earlier in the processing cycle.
     Karma added: action=distributionuploadaccepted, distribution=ubuntu
 
 
-== Uploading to PPAs ==
+Uploading to PPAs
+=================
 
 PPA uploads are always auto-accepted and we don't care about sponsors.  They
 will generate another different karma event for the uploader.
@@ -88,7 +94,8 @@ will generate another different karma event for the uploader.
     Karma added: action=ppauploadaccepted, distribution=ubuntu
 
 
-== Clean up ==
+Clean up
+========
 
 Unregister the event listener to make sure we won't interfere in other tests.
 
