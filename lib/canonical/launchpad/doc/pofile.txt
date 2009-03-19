@@ -79,7 +79,8 @@ We need a helper method to better display test results.
     ...                plural = plural[:17] + "..."
     ...         if pofile is not None:
     ...             translation = potmsgset.getCurrentTranslationMessage(
-    ...                 pofile.language, pofile.variant).translations[0]
+    ...                 pofile.potemplate, pofile.language,
+    ...                 pofile.variant).translations[0]
     ...             if len(translation) > 20:
     ...                 translation = translation[:17] + "..."
     ...         print "%2d. %-20s   %-20s   %-20s" % (
@@ -397,7 +398,7 @@ breakage.
     >>> potmsgset = pofile_es.potemplate.getPOTMsgSetByMsgIDText(
     ...     singular_text=u'evolution addressbook')
     >>> translation_message = potmsgset.getCurrentTranslationMessage(
-    ...     pofile_es.language, pofile_es.variant)
+    ...     pofile_es.potemplate, pofile_es.language, pofile_es.variant)
     >>> is_imported = False
     >>> lock_timestamp = datetime.datetime.now(UTC)
     >>> translation_message.potmsgset.updateTranslation(
@@ -703,7 +704,7 @@ The POTMsgSet that are untranslated are the ones that are not complete.
 
     >>> for potmsgset in untranslated_potmsgset:
     ...     pomsgset = potmsgset.getCurrentTranslationMessage(
-    ...         pofile_es.language)
+    ...         pofile_es.potemplate, pofile_es.language)
     ...     assert (pomsgset is None or
     ...             (pomsgset.iscomplete == False))
 
@@ -723,10 +724,10 @@ And the msgid we are looking for.
 
 Now, just to be sure that this entry doesn't exist yet:
 
-    >>> potmsgset = pofile_sr.potemplate.getPOTMsgSetByMsgIDText(
+    >>> potmsgset = pofile_sr.potemplate.getOrCreateSharedPOTMsgSet(
     ...     singular_text=msgid, plural_text=msgid_plural)
     >>> print potmsgset.getCurrentTranslationMessage(
-    ...     pofile_sr.language, pofile_sr.variant)
+    ...     pofile_sr.potemplate, pofile_sr.language, pofile_sr.variant)
     None
 
 Is time to create it.
@@ -793,9 +794,9 @@ translated in Launchpad/rosettaCount plus number of changed in
 Launchpad/updatesCount):
 
     >>> print pofile_changed.currentCount()
-    7
+    6
     >>> print pofile_changed.rosettaCount()
-    0
+    1
     >>> print pofile_changed.updatesCount()
     1
 
@@ -809,11 +810,11 @@ Lets get a single untranslated POTMsgSet.
     >>> untranslated is None
     False
     >>> current = untranslated.getCurrentTranslationMessage(
-    ...     pofile_changed.language)
+    ...     pofile_changed.potemplate, pofile_changed.language)
     >>> current is None
     True
     >>> imported = untranslated.getImportedTranslationMessage(
-    ...     pofile_changed.language)
+    ...     pofile_changed.potemplate, pofile_changed.language)
     >>> imported is None
     True
 
@@ -838,7 +839,7 @@ translation:
 
     >>> for potmsgset in pofile_changed.potemplate:
     ...     tm = potmsgset.getImportedTranslationMessage(
-    ...         pofile_changed.language)
+    ...         pofile_changed.potemplate, pofile_changed.language)
     ...     if tm is not None and tm.is_complete and tm.is_current:
     ...         imported_potmsgset = potmsgset
     ...         break
@@ -898,7 +899,8 @@ Non-editor can only submit a new suggestion on untranslated message.
 
     >>> potmsgset = evolution_es.potemplate.getPOTMsgSetByMsgIDText(
     ...     u'evolution minicard')
-    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     evolution_es.potemplate, evolution_es.language)
 
     # Make sure this entry is unreviewed and untranslated
     >>> print current
@@ -912,7 +914,8 @@ Non-editor can only submit a new suggestion on untranslated message.
     [u'translation']
     >>> new_translation.is_current
     False
-    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     evolution_es.potemplate, evolution_es.language)
     >>> print current
     None
 
@@ -929,7 +932,8 @@ it himself.
     ...     evolution_es, editor, {0: u'translation'},
     ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches() # Store modification dates in database
-    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     evolution_es.potemplate, evolution_es.language)
     >>> print current.translations
     [u'translation']
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
@@ -945,7 +949,8 @@ picked up as a new suggestion, but will be directly set as the translation.
     ...     evolution_es, editor, {0: u'boohoo'},
     ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches() # Store modification dates in database
-    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     evolution_es.potemplate, evolution_es.language)
     >>> print current.translations
     [u'boohoo']
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
@@ -960,14 +965,16 @@ new suggestions.
 
     >>> potmsgset = evolution_es.potemplate.getPOTMsgSetByMsgIDText(
     ...     u'have ')
-    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     evolution_es.potemplate, evolution_es.language)
     >>> print current.translations
     [u'tiene ']
 
     >>> new_translation = potmsgset.updateTranslation(
     ...     evolution_es, noneditor, {0: u'blahblah'},
     ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     evolution_es.potemplate, evolution_es.language)
     >>> print current.translations
     [u'tiene ']
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
@@ -993,12 +1000,12 @@ will not be listed twice in the returned result.
 With this method we can get all POTMsgSet objects that are fully
 translated for a given POFile.
 
-    >>> def print_message_status(potmsgsets, language):
+    >>> def print_message_status(potmsgsets, pofile):
     ...     print "%-10s %-5s %-10s %-11s" % (
     ...         "msgid", "form", "translat.", "Has plurals")
     ...     for potmsgset in potmsgsets:
     ...         translationmessage = potmsgset.getCurrentTranslationMessage(
-    ...             language)
+    ...             pofile.potemplate, pofile.language)
     ...         for index in range(len(translationmessage.translations)):
     ...             msgid = potmsgset.msgid_singular.msgid
     ...             if len(msgid) > 10:
@@ -1015,7 +1022,7 @@ translated for a given POFile.
 
     >>> potmsgsets_translated = evolution_es.getPOTMsgSetTranslated()
     >>> print_message_status(
-    ...     potmsgsets_translated, evolution_es.language)
+    ...     potmsgsets_translated, evolution_es)
     msgid      form  translat.  Has plurals
     evoluti... 0     libreta... False
     current... 0     carpeta... False
@@ -1049,7 +1056,6 @@ created by a certain person.
     [u'%d contacto', u'%d contactos']
     [u'Abrir %d contacto abrir\xe1 %d ventanas nuevas tambi\xe9n.\n\xbfQuiere realmente mostrar este contacto?', u'Abrir %d contactos abrir\xe1 %d ventanas nuevas tambi\xe9n.\n\xbfQuiere realmente mostrar todos estos contactos?']
     [u'Contrase\xf1a de EncFS: ']
-    [u'_A\xf1adir grupo']
 
 If the passed person is None, the call fails with an assertion.
 
@@ -1076,7 +1082,7 @@ This translation file contains untranslated translation-credits message.
     >>> potmsgset = alsa_template.getPOTMsgSetByMsgIDText(
     ...     u'translation-credits')
     >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     alsa_translation.language)
+    ...     alsa_template, alsa_translation.language)
     >>> print current
     None
 
@@ -1088,7 +1094,7 @@ is updated.
     ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_updates()
     >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     alsa_translation.language)
+    ...     alsa_template, alsa_translation.language)
     >>> print current.translations
     [u'Happy translator']
 
@@ -1102,7 +1108,7 @@ If we submit non-published translation, it's refused.
     None
     >>> flush_database_updates()
     >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     alsa_translation.language)
+    ...     alsa_template, alsa_translation.language)
     >>> print current.translations
     [u'Happy translator']
 
@@ -1120,7 +1126,7 @@ Emails of translators is not yet translated.
     >>> emails_of_translators = alsa_template.getPOTMsgSetByMsgIDText(
     ...     u"_: EMAIL OF TRANSLATORS\nYour emails")
     >>> current = emails_of_translators.getCurrentTranslationMessage(
-    ...     alsa_translation.language)
+    ...     alsa_template, alsa_translation.language)
     >>> print current
     None
 
@@ -1138,7 +1144,7 @@ Names of translators are untranslated and there is no message set for them yet.
     >>> names_of_translators = alsa_template.getPOTMsgSetByMsgIDText(
     ...     u"_: NAME OF TRANSLATORS\nYour names")
     >>> current = names_of_translators.getCurrentTranslationMessage(
-    ...     alsa_translation.language)
+    ...     alsa_template, alsa_translation.language)
     >>> print current
     None
 
