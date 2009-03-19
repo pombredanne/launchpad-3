@@ -554,5 +554,26 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=expected_notification,
             bug=self.bug_task.bug)
 
+    def test_remove_bugwatch_from_bugtask(self):
+        # Removing a BugWatch from a bug task only records an entry in the
+        # BugNotification table.
+        bug_watch = self.factory.makeBugWatch(bug=self.bug_task.bug)
+        self.changeAttribute(self.bug_task, 'bugwatch', bug_watch)
+        self.saveOldChanges(bug=self.bug_task.bug)
+
+        self.changeAttribute(self.bug_task, 'bugwatch', None)
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n     Bugwatch: %s => None' % (
+                self.bug_task.bugtargetname, bug_watch.title)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=None,
+            expected_notification=expected_notification,
+            bug=self.bug_task.bug)
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
