@@ -866,10 +866,10 @@ class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
     def icon(self):
         """Return the appropriate <img> tag for the an archive."""
         icon_map = {
-            ArchivePurpose.PRIMARY: '/@@/flame-icon',
-            ArchivePurpose.PARTNER: '/@@/flame-icon',
-            ArchivePurpose.PPA: '/@@/flame-icon',
-            ArchivePurpose.COPY: '/@@/flame-icon',
+            ArchivePurpose.PRIMARY: '/@@/distribution',
+            ArchivePurpose.PARTNER: '/@@/distribution',
+            ArchivePurpose.PPA: '/@@/package-source',
+            ArchivePurpose.COPY: '/@@/distribution',
             }
 
         alt = '[%s]' % self._context.purpose.title
