@@ -55,8 +55,24 @@ class IBranchLookup(Interface):
         "product/series" (branch associated with a product series)
         "product" (development focus of product)
 
-        :return: a tuple of `IBranch`, extra_path, series.  Series is the
-            series, if any, used to perform the lookup.
-        :raises: `BranchNotFound`, `NoBranchForSeries`, and other subclasses
-            of `LaunchpadFault`.
+        :raises NoSuchPerson: If we can't find a person who matches the person
+            component of the path.
+        :raises NoSuchProduct: If we can't find a product that matches the
+            product component of the path.
+        :raises NoSuchBranch: If we can't find a branch that matches the
+            branch component of the path.
+        :raises InvalidBranchIdentifier: If the given path could never
+            possibly match a branch.
+        :raises NoSuchSeries: If the series component doesn't match an
+            existing series.
+        :raises NoBranchForSeries: If the product series referred to does not
+            have an associated branch.
+        :raises InvalidProductIdentifier: If the given product in a product
+            or product series shortcut is an invalid name for a product.
+
+        :return: a tuple of `IBranch`, extra_path, series. 'series' is the
+            series, if any, used to perform the lookup. It's returned so that
+            we can raise informative errors when we match a private branch.
+            'extra_path' is used to make things like 'bzr cat lp:foo/README'
+            work.
         """
