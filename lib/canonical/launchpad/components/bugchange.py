@@ -305,6 +305,43 @@ class BugAttachmentChange(AttributeChange):
 class BugTaskAttributeChange(AttributeChange):
     """Used to represent a change in a BugTask's attributes."""
 
+    display_attribute_map = {
+        'status': 'title',
+        'importance': 'title',
+        }
+
+    def __init__(self, bug_task, when, person, what_changed, old_value,
+                 new_value, recipients=None):
+        super(BugTaskAttributeChange, self).__init__(
+            when, person, what_changed, old_value, new_value, recipients)
+
+        self.bug_task = bug_task
+        display_attribute = self.display_attribute_map[self.what_changed]
+        self.display_old_value = getattr(self.old_value, display_attribute)
+        self.display_new_value = getattr(self.new_value, display_attribute)
+
+    def getBugActivity(self):
+        what_changed = '%s: %s' % (
+            self.bug_task.bugtargetname, self.what_changed)
+
+        return {
+            'whatchanged': what_changed,
+            'oldvalue': self.display_old_value,
+            'newvalue': self.display_new_value,
+            }
+
+    def getBugNotification(self):
+        text = (
+            u"** Changed in: %(bug_target_name)s\n"
+            "%(label)13s: %(oldval)s => %(newval)s\n" % {
+                'bug_target_name': self.bug_task.bugtargetname,
+                'label' : self.what_changed.capitalize(),
+                'oldval' : self.display_old_value,
+                'newval' : self.display_new_value,
+            })
+
+        return {'text': text}
+
 
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
