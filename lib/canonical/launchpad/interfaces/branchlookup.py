@@ -81,11 +81,11 @@ class IBranchLookup(Interface):
             branch component of the path.
         :raises InvalidBranchIdentifier: If the given path could never
             possibly match a branch.
-        :raises NoSuchSeries: If the series component doesn't match an
+        :raises NoSuchProductSeries: If the series component doesn't match an
             existing series.
         :raises NoBranchForSeries: If the product series referred to does not
             have an associated branch.
-        :raises InvalidProductIdentifier: If the given product in a product
+        :raises InvalidProductName: If the given product in a product
             or product series shortcut is an invalid name for a product.
 
         :return: a tuple of `IBranch`, extra_path, series. 'series' is the
