@@ -30,6 +30,10 @@
        permission = "zope.Public" />
   </class>
 
+  <class class="canonical.lazr.rest.example.root.RecipeSet">
+      <allow interface='canonical.lazr.rest.example.interfaces.IRecipeSet' />
+  </class>
+
   <permission id="lazr.View" title="Viewing something" />
 
   <utility
@@ -39,6 +43,7 @@
 
   <utility factory="canonical.lazr.rest.example.root.CookbookSet" />
   <utility factory="canonical.lazr.rest.example.root.DishSet" />
+  <utility factory="canonical.lazr.rest.example.root.RecipeSet" />
 
   <utility
     provides="canonical.lazr.interfaces.rest.IServiceRootResource"

@@ -11,6 +11,7 @@ __all__ = ['AlreadyNouvelle',
            'IDishSet',
            'IHasGet',
            'IRecipe',
+           'IRecipeSet',
            'NameAlreadyTaken']
 
 from zope.interface import Interface
@@ -113,8 +114,8 @@ class ICookbookSet(IHasGet):
     def find_recipes(search):
         """Search for recipes across cookbooks."""
 
-    @export_factory_operation(ICookbook, ['name', 'cuisine'])
-    def create(name, cuisine):
+    @export_factory_operation(ICookbook, ['name', 'cuisine', 'copyright_date'])
+    def create(name, cuisine, copyright_date):
         """Create a new cookbook."""
 
 
@@ -125,3 +126,12 @@ class IDishSet(IHasGet):
     @collection_default_content()
     def getDishes():
         """Return the list of dishes."""
+
+
+class IRecipeSet(IHasGet):
+    """The set of all recipes, annotated for export to the web service."""
+    export_as_webservice_collection(IRecipe)
+
+    @collection_default_content()
+    def getRecipes():
+        """Return the list of recipes."""

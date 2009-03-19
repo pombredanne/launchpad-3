@@ -22,7 +22,7 @@ from canonical.lazr.interfaces.rest import (
     IServiceRootResource, IWebServiceConfiguration)
 from canonical.lazr.rest.example.interfaces import (
     AlreadyNouvelle, ICookbook, ICookbookSet, IDish, IDishSet, IRecipe,
-    IHasGet, NameAlreadyTaken)
+    IRecipeSet, IHasGet, NameAlreadyTaken)
 from canonical.lazr.security import protect_schema
 
 
@@ -34,11 +34,11 @@ class CookbookWebServiceObject:
 class Cookbook(CookbookWebServiceObject):
     """An object representing a cookbook"""
     implements(ICookbook)
-    def __init__(self, name, cuisine, copyright_year):
+    def __init__(self, name, cuisine, copyright_date):
         self.name = name
         self.cuisine = cuisine
         self.recipes = []
-        self.copyright_date = date(copyright_year, 1, 1)
+        self.copyright_date = copyright_date
 
     @property
     def __name__(self):
@@ -103,11 +103,11 @@ class Recipe(CookbookWebServiceObject):
 
     @property
     def __name__(self):
-        return self.dish.name
+        return str(self.id)
 
     @property
     def __parent__(self):
-        return self.cookbook
+        return getUtility(IRecipeSet)
 
 
 # Top-level objects.
@@ -146,15 +146,15 @@ class CookbookSet(CookbookTopLevelObject):
     def find_recipes(self, search):
         recipes = []
         for cookbook in self.cookbooks:
-            recipes.extend(cookbook.find_recipe(search))
+            recipes.extend(cookbook.find_recipes(search))
         return recipes
 
-    def create(self, name, cuisine):
+    def create(self, name, cuisine, copyright_date):
         for cookbook in self.cookbooks:
             if cookbook.name == name:
                 raise NameAlreadyTaken(
                     'A cookbook called "%s" already exists.' % name)
-        cookbook = Cookbook(name, cuisine)
+        cookbook = Cookbook(name, cuisine, copyright_date)
         self.cookbooks.append(cookbook)
         return cookbook
 
@@ -180,13 +180,38 @@ class DishSet(CookbookTopLevelObject):
         return None
 
 
+class RecipeSet(CookbookTopLevelObject):
+    """The set of all recipes."""
+    implements(IRecipeSet)
+
+    __name__ = "recipes"
+
+    def __init__(self, recipes=None):
+        if recipes is None:
+            recipes = RECIPES
+        self.recipes = list(recipes)
+
+    def getRecipes(self):
+        return self.recipes
+
+    def get(self, id):
+        match = [r for r in self.recipes if r.id == id]
+        if len(match) > 0:
+            return match[0]
+        return None
+
+
 # Define some globally accessible sample data.
-C1 = Cookbook(u"Mastering the Art of French Cooking", "French", 1961)
-C2 = Cookbook(u"The Joy of Cooking", "General", 1995)
-C3 = Cookbook(u"James Beard's American Cookery", "American", 1972)
-C4 = Cookbook(u"Everyday Greens", "Vegetarian", 2003)
-C5 = Cookbook(u"I'm Just Here For The Food", "American", 2002)
-C6 = Cookbook(u"Cooking Without Recipes", "General", 1959)
+def year(year):
+    """Turn a year into a datetime.date object."""
+    return date(year, 1, 1)
+
+C1 = Cookbook(u"Mastering the Art of French Cooking", "French", year(1961))
+C2 = Cookbook(u"The Joy of Cooking", "General", year(1995))
+C3 = Cookbook(u"James Beard's American Cookery", "American", year(1972))
+C4 = Cookbook(u"Everyday Greens", "Vegetarian", year(2003))
+C5 = Cookbook(u"I'm Just Here For The Food", "American", year(2002))
+C6 = Cookbook(u"Cooking Without Recipes", "General", year(1959))
 C7 = Cookbook(u"Construsions un repas", "Fran\xc3\xa7ais".decode("utf-8"),
               2007)
 COOKBOOKS = [C1, C2, C3, C4, C5, C6, C7]
@@ -204,6 +229,7 @@ D3 = Dish("Foies de voilaille en aspic")
 C1_D3 = Recipe(6, C1, D3, "Chicken livers sauteed in butter...")
 
 DISHES = [D1, D2, D3]
+RECIPES = [C1_D1, C2_D1, C3_D1, C2_D2, C3_D2, C1_D3]
 
 
 # Define classes for the service root.
@@ -219,7 +245,8 @@ class CookbookServiceRootResource(ServiceRootResource):
     def top_level_names(self):
         """Access or create the list of top-level objects."""
         return {'cookbooks': getUtility(ICookbookSet),
-                'dishes' : getUtility(IDishSet)}
+                'dishes' : getUtility(IDishSet),
+                'recipes' : getUtility(IRecipeSet)}
 
     def get(self, name):
         """Traverse to a top-level object."""

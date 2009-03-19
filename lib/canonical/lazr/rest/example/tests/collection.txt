@@ -18,7 +18,7 @@ collection.
   >>> cookbooks_collection['resource_type_link']
   u'http://...#cookbooks'
   >>> cookbooks_collection['total_size']
-  6
+  7
   >>> cookbooks_collection['next_collection_link']
   u'http://.../cookbooks?ws.start=5&ws.size=5'
   >>> cookbooks_collection.get('prev_collection_link') is None
@@ -54,13 +54,13 @@ You can get other pages of the collection by following links:
   >>> cookbooks_entries = sorted(
   ...     second_batch['entries'], key=itemgetter('name'))
   >>> cookbooks_entries[0]['name']
-  u'Cooking Without Recipes'
+  u'Construsions un repas'
 
 You can also get a larger or smaller batch than the default:
 
   >>> bigger_batch = webservice.get("/cookbooks?ws.size=20").jsonBody()
   >>> len(bigger_batch['entries'])
-  6
+  7
   >>> 'next_collection_link' in bigger_batch
   False
 
@@ -122,6 +122,7 @@ The elements of a collection can be looked up by unique identifier:
   >>> url = quote("/cookbooks/The Joy of Cooking")
   >>> cookbook = webservice.get(url).jsonBody()
   >>> pprint_entry(cookbook)
+  copyright_date: u'1995-01-01'
   cuisine: u'General'
   name: u'The Joy of Cooking'
   recipes_collection_link: u'http://.../cookbooks/The%20Joy%20of%20Cooking/recipes'
@@ -198,10 +199,11 @@ requests. These operations are usually factories. Here's a helper
 method that creates a new cookbook by invoking a factory operation on
 the collection of cookbooks.
 
-  >>> def create_cookbook(name, cuisine):
+  >>> def create_cookbook(name, cuisine, copyright_date):
   ...     return webservice.named_post(
   ...         "/cookbooks", "create", {},
-  ...         name=name, cuisine=cuisine)
+  ...         name=name, cuisine=cuisine,
+  ...         copyright_date=copyright_date.isoformat())
 
   >>> cake_url = quote('/cookbooks/The Cake Bible')
 
@@ -209,7 +211,8 @@ the collection of cookbooks.
   HTTP/1.1 404 Not Found
   ...
 
-  >>> print create_cookbook("The Cake Bible", "Dessert")
+  >>> from datetime import date
+  >>> print create_cookbook("The Cake Bible", "Dessert", date(1988, 1, 1))
   HTTP/1.1 201 Created
   ...
   Location: http://.../cookbooks/The%20Cake%20Bible
@@ -219,9 +222,10 @@ the collection of cookbooks.
   ...
 
 POST operations can have custom validation. For instance, you can't
-create a cookbook with a name that's already in use.
+create a cookbook with a name that's already in use. This exception is
+raised by the create() method itself.
 
-  >>> print create_cookbook("The Cake Bible", "Dessert")
+  >>> print create_cookbook("The Cake Bible", "Dessert", date(1988, 1, 1))
   HTTP/1.1 409 Conflict
   ...
   A cookbook called "The Cake Bible" already exists.

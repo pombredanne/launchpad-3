@@ -167,7 +167,7 @@ the 'find_recipes' operation.
   >>> recipes = webservice.get(
   ...     "%s?ws.op=find_recipes&search=e" % joy_url).jsonBody()
   >>> sorted([r['self_link'] for r in recipes['entries']])
-  [u'...Baked%20beans', u'...Roast%20chicken']
+  [u'.../recipes/2', u'.../recipes/4']
 
 Some entries support custom operations through POST. You can invoke a
 custom operation to modify a cookbook's cuisine, making it seem more
