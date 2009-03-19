@@ -46,6 +46,10 @@
   <utility factory="canonical.lazr.rest.example.root.RecipeSet" />
 
   <utility
+    factory="canonical.lazr.rest.example.root.FeaturedCookbookLink"
+    provides="canonical.lazr.rest.example.interfaces.IFeaturedCookbookLink" />
+
+  <utility
     provides="canonical.lazr.interfaces.rest.IServiceRootResource"
     factory="canonical.lazr.rest.example.root.CookbookServiceRootResource" />
 

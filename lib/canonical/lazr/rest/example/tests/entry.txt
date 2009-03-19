@@ -33,11 +33,6 @@ convert it into Unicode.
   u'Fran\xe7ais'
 
 
-== Redirects ==
-
-TBA.
-
-
 == Content negotiation ==
 
 By varying the 'Accept' header, the client can request either a JSON

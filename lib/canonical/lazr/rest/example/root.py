@@ -123,6 +123,20 @@ class CookbookTopLevelObject(CookbookWebServiceObject):
         raise NotImplementedError()
 
 
+class FeaturedCookbookLink(CookbookTopLevelObject):
+    """A link to the currently featured cookbook."""
+
+    @property
+    def __parent__(self):
+        return getUtility(ICookbookSet)
+
+    @property
+    def __name__(self):
+        return COOKBOOKS[0].name
+
+    link_name = "featured_cookbook"
+
+
 class CookbookSet(CookbookTopLevelObject):
     """The set of all cookbooks."""
     implements(ICookbookSet)
@@ -195,6 +209,7 @@ class RecipeSet(CookbookTopLevelObject):
         return self.recipes
 
     def get(self, id):
+        id = int(id)
         match = [r for r in self.recipes if r.id == id]
         if len(match) > 0:
             return match[0]

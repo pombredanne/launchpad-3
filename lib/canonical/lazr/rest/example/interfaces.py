@@ -18,6 +18,7 @@ from zope.interface import Interface
 from zope.schema import Bool, Date, Int, TextLine, Text
 
 from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.interfaces.rest import ITopLevelEntryLink
 from canonical.lazr.rest.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_factory_operation,
@@ -97,6 +98,10 @@ class ICookbook(IHasGet):
 # Resolve dangling references
 IDish['recipes'].value_type.schema = IRecipe
 IRecipe['cookbook'].schema = ICookbook
+
+
+class IFeaturedCookbookLink(ITopLevelEntryLink):
+    """A marker interface."""
 
 
 class ICookbookSet(IHasGet):

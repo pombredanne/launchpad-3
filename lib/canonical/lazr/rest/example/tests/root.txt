@@ -11,7 +11,8 @@ links to the top-level web service objects.
   >>> top_level_links = top_level_response.jsonBody()
   >>> sorted(top_level_links.keys())
   [u'cookbooks_collection_link', u'dishes_collection_link',
-  u'recipes_collection_link', u'resource_type_link']
+   u'featured_cookbook_link', u'recipes_collection_link',
+   u'resource_type_link']
   >>> top_level_links['cookbooks_collection_link']
   u'http://api.cookbooks.dev/1.0/cookbooks'
 
@@ -139,3 +140,14 @@ http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.1)
   ...     headers={'TE' : 'deflate;q=0.8, unsupported;q=1.0, gzip;q=0.9'})
   >>> response.getHeader("Transfer-Encoding")
   'gzip'
+
+
+== Top-level entry links ==
+
+Most of the links at the top level are links to collections. But an
+especially important entry may also be given a link from the service
+root. The cookbook web service has a 'featured cookbook' which may
+change over time.
+
+  >>> print top_level_links['featured_cookbook_link']
+  http://.../cookbooks/Mastering%20the%20Art%20of%20French%20Cooking
