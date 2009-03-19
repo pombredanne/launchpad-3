@@ -272,6 +272,16 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=[bugwatch_removal_activity,
                                bugwatch_addition_activity])
 
+    def test_bugwatch_not_modified(self):
+        # Firing off a modified event without actually modifying
+        # anything intersting doesn't cause anything to be added to the
+        # activity log.
+        bug_watch = self.factory.makeBugWatch(bug=self.bug)
+        self.saveOldChanges()
+        self.changeAttribute(bug_watch, 'remotebug', bug_watch.remotebug)
+
+        self.assertRecordedChange()
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

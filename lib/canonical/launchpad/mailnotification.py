@@ -950,6 +950,9 @@ def notify_bug_watch_modified(modified_bug_watch, event):
     old_watch = event.object_before_modification
     new_watch = event.object
     bug = new_watch.bug
+    if old_watch.url == new_watch.url:
+        # Nothing interesting was modified, don't record any changes.
+        return
     bug.addChange(BugWatchRemoved(UTC_NOW, event.user, old_watch))
     bug.addChange(BugWatchAdded(UTC_NOW, event.user, new_watch))
 
