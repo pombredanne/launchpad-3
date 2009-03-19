@@ -2,48 +2,36 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-filters">
+  class="portlet" id="portlet-bugfilters">
+  <a id="bugtarget-bugfilters-link"
+     tal:attributes="href context/fmt:url/+bugtarget-portlet-bugfilters-content" >
+  </a>
   <h2>Filters</h2>
-  <div class="portletBody portletContent">
- 
-  <table width="100%">
-    <tr>
-      <td><a tal:attributes="href view/getOpenBugsURL">Open</a></td>
-      <td tal:content="context/open_bugtasks/count">10</td>
-    </tr>
-    <tr tal:condition="view/user">
-      <td>
-        <a href="#" tal:attributes="href view/getBugsAssignedToMeURL">
-          Assigned to me
-        </a>
-      </td>
-      <td tal:content="view/getBugsAssignedToMeCount">50</td>
-    </tr>
-    <tr>
-      <td><a tal:attributes="href view/getCriticalBugsURL">Critical</a></td>
-      <td tal:content="context/critical_bugtasks/count">42</td>
-    </tr>
-    <tr>
-      <td>
-        <a tal:attributes="href view/getNewBugsURL">New</a>
-      </td>
-      <td tal:content="context/new_bugtasks/count">42</td>
-    </tr>
-    <tr>
-      <td>
-        <a tal:attributes="href view/getUnassignedBugsURL">Unassigned</a>
-      </td>
-      <td tal:content="context/unassigned_bugtasks/count">42</td>
-    </tr>
-    <tr>
-      <td>
-        <a tal:attributes="href view/getAllBugsEverReportedURL">
-          All bugs ever reported
-        </a>
-      </td>
-      <td tal:content="context/all_bugtasks/count">42</td>
-    </tr>
-  </table>
-
+  <div id="bugfilters-portlet-spinner"
+       style="text-align: center; display: none">
+    <img src="/@@/spinner" />
   </div>
+    <script type="text/javascript">
+    YUI().use('io-base', 'node', function(Y) {
+      Y.on('domready', function() {
+        var portlet = Y.get('#portlet-bugfilters');
+        Y.get('#bugfilters-portlet-spinner').setStyle('display', 'block');
+
+        function hide_spinner() {
+          Y.get('#bugfilters-portlet-spinner').setStyle('display', 'none');
+        }
+
+        function on_success(transactionid, response, arguments) {
+          hide_spinner();
+          portlet.set('innerHTML',
+                      portlet.get('innerHTML') + response.responseText);
+        }
+
+        var config = {on: {success: on_success,
+                           failure: hide_spinner}};
+        var url = Y.get('#bugtarget-bugfilters-link').getAttribute('href');
+        var request = Y.io(url, config);
+      });
+    });
+   </script>
 </div>
