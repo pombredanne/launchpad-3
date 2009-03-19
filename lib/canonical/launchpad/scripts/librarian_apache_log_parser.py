@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
+from datetime import datetime
 import os
 
 from zope.component import getUtility
@@ -46,6 +47,58 @@ def get_files_to_parse(root, file_names):
 
         files_to_parse[fd] = position
     return files_to_parse
+
+
+def parse_file(fd, start_position):
+    """Parse the given file starting on the given position.
+
+    Return a dictionary mapping days and file_ids (from the librarian) to
+    number of downloads.
+    """
+    # Seek file to given position, read all lines.
+    fd.seek(start_position)
+    lines = fd.readlines()
+    # Always skip the last line as it may be truncated since we're rsyncing
+    # live logs.
+    last_line = lines.pop(-1)
+    parsed_bytes = fd.tell() - len(last_line)
+    if len(lines) == 0:
+        # This probably means we're dealing with a logfile that has been
+        # rotated already, so it should be safe to parse its last line.
+        lines = [last_line]
+        parsed_bytes = fd.tell()
+
+    downloads = {}
+    for line in lines:
+        date, status, request = get_date_status_and_request(line)
+
+        if status != '200':
+            continue
+
+        method, file_id = get_method_and_file_id(request)
+        if method != 'GET':
+            # We're only interested in counting downloads.
+            continue
+
+        day = get_day(date)
+        if day not in downloads:
+            downloads[day] = {}
+        daily_downloads = downloads[day]
+
+        if file_id not in daily_downloads:
+            daily_downloads[file_id] = 0
+        daily_downloads[file_id] += 1
+
+    return downloads, parsed_bytes
+
+
+def get_day(date):
+    """Extract the day from the given date and return it as a datetime."""
+    date, offset = apachelog.parse_date(date)
+    # After the call above, date will be in the 'YYYYMMDD' format, but we need
+    # to break it into pieces that can be fed to datetime().
+    year, month, day = date[0:4], date[4:6], date[6:8]
+    return datetime(int(year), int(month), int(day))
 
 
 def get_date_status_and_request(line):
