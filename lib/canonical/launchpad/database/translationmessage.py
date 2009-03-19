@@ -83,7 +83,7 @@ class TranslationMessageMixIn:
 
     def setPOFile(self, pofile):
         """See `ITransationMessage`."""
-        self.pofile = pofile
+        self.browser_pofile = pofile
 
 
 class DummyTranslationMessage(TranslationMessageMixIn):
@@ -104,7 +104,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
                 'This translation message already exists in the database.')
 
         self.id = None
-        self.pofile = pofile
+        self.browser_pofile = pofile
         self.potemplate = pofile.potemplate
         self.language = pofile.language
         self.variant = pofile.variant
@@ -135,6 +135,10 @@ class DummyTranslationMessage(TranslationMessageMixIn):
     def isHidden(self, pofile):
         """See `ITranslationMessage`."""
         return True
+
+    def getOnePOFile(self):
+        """See `ITranslationMessage`."""
+        return None
 
     @property
     def all_msgstrs(self):
@@ -209,6 +213,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     _table = 'TranslationMessage'
 
+    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=False)
+    browser_pofile = None
     potemplate = ForeignKey(
         foreignKey='POTemplate', dbName='potemplate', notNull=False,
         default=None)
@@ -257,8 +263,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                           storm_validator=validate_is_imported)
     was_obsolete_in_last_import = BoolCol(
         dbName='was_obsolete_in_last_import', notNull=True, default=False)
-
-    pofile = None
 
     # XXX jamesh 2008-05-02:
     # This method is not being called anymore.  The Storm

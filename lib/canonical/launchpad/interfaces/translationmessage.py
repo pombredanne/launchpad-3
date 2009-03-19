@@ -90,6 +90,10 @@ class ITranslationMessage(Interface):
         title=_("The translation file from where this translation comes"),
         readonly=False, required=False, schema=IPOFile)
 
+    browser_pofile = Object(
+        title=_("The translation file from where this translation comes"),
+        readonly=False, required=False, schema=IPOFile)
+
     potemplate = Object(
         title=_("The template this translation is in"),
         readonly=False, required=False, schema=IPOTemplate)
