@@ -616,6 +616,7 @@ def get_bug_edit_notification_texts(bug_delta):
     # log and in notification emails.
     bug_change_field_names = [
         'title', 'description', 'private', 'security_related', 'tags',
+        'attachment',
         ]
     for field_name in bug_change_field_names:
         field_delta = getattr(bug_delta, field_name)
@@ -639,12 +640,6 @@ def get_bug_edit_notification_texts(bug_delta):
                 new_bug_watch.bugtracker.title, new_bug_watch.remotebug)
             change_info += u"   %s" % new_bug_watch.url
             changes.append(change_info)
-
-    if bug_delta.attachment is not None and bug_delta.attachment['new']:
-        added_attachment = bug_delta.attachment['new']
-        change_info = '** Attachment added: "%s"\n' % added_attachment.title
-        change_info += "   %s" % added_attachment.libraryfile.http_url
-        changes.append(change_info)
 
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
@@ -1017,7 +1012,7 @@ def notify_bug_attachment_added(bugattachment, event):
         bug=bug,
         bugurl=canonical_url(bug),
         user=IPerson(event.user),
-        attachment={'new' : bugattachment})
+        attachment={'new' : bugattachment, 'old': None})
 
     add_bug_change_notifications(bug_delta)
 
@@ -1026,12 +1021,13 @@ def notify_bug_attachment_added(bugattachment, event):
 def notify_bug_attachment_removed(bugattachment, event):
     """Notify that an attachment has been removed."""
     bug = bugattachment.bug
-    # Include the URL, since it will still be downloadable until the
-    # Librarian garbage collector removes it.
-    change_info = '\n'.join([
-        '** Attachment removed: "%s"\n' % bugattachment.title,
-        '   %s' %  bugattachment.libraryfile.http_url])
-    bug.addChangeNotification(change_info, person=IPerson(event.user))
+    bug_delta = BugDelta(
+        bug=bug,
+        bugurl=canonical_url(bug),
+        user=IPerson(event.user),
+        attachment={'old' : bugattachment, 'new': None})
+
+    add_bug_change_notifications(bug_delta)
 
 
 @block_implicit_flushes

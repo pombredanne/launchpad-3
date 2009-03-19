@@ -36,7 +36,8 @@ from lazr.lifecycle.event import (
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.components.bugchange import (
-    CveLinkedToBug, CveUnlinkedFromBug, UnsubscribedFromBug)
+    BranchLinkedToBug, BranchUnlinkedFromBug, CveLinkedToBug,
+    CveUnlinkedFromBug, UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -825,9 +826,18 @@ class Bug(SQLBase):
             registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
+        self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch))
         notify(ObjectCreatedEvent(bug_branch))
 
         return bug_branch
+
+    def removeBranch(self, branch, user):
+        """See `IBug`."""
+        bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
+        if bug_branch is not None:
+            self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch))
+            notify(ObjectDeletedEvent(bug_branch, user=user))
+            bug_branch.destroySelf()
 
     def linkCVE(self, cve, user):
         """See `IBug`."""

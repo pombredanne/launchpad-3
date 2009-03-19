@@ -15,12 +15,12 @@ from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.cve import ICveSet
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestBugChanges(unittest.TestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         login('foo.bar@canonical.com')
@@ -166,6 +166,44 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_notification=description_change_notification,
             expected_activity=description_change_activity)
+
+    def test_link_branch(self):
+        # Linking a branch to a bug adds both to the activity log and
+        # sends an e-mail notification.
+        branch = self.factory.makeBranch()
+        self.bug.addBranch(branch, self.user)
+        added_activity = {
+            'person': self.user,
+            'whatchanged': 'branch linked',
+            'newvalue': branch.bzr_identity,
+            }
+        added_notification = {
+            'text': "** Branch linked: %s" % branch.bzr_identity,
+            'person': self.user,
+            }
+        self.assertRecordedChange(
+            expected_activity=added_activity,
+            expected_notification=added_notification)
+
+    def test_unlink_branch(self):
+        # Unlinking a branch from a bug adds both to the activity log and
+        # sends an e-mail notification.
+        branch = self.factory.makeBranch()
+        self.bug.addBranch(branch, self.user)
+        self.saveOldChanges()
+        self.bug.removeBranch(branch, self.user)
+        added_activity = {
+            'person': self.user,
+            'whatchanged': 'branch unlinked',
+            'oldvalue': branch.bzr_identity,
+            }
+        added_notification = {
+            'text': "** Branch unlinked: %s" % branch.bzr_identity,
+            'person': self.user,
+            }
+        self.assertRecordedChange(
+            expected_activity=added_activity,
+            expected_notification=added_notification)
 
     def test_make_private(self):
         # Marking a bug as private adds items to the bug's activity log
@@ -362,6 +400,60 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_activity=cve_unlinked_activity,
             expected_notification=cve_unlinked_notification)
+
+    def test_attachment_added(self):
+        # Adding an attachment to a bug adds entries in both BugActivity
+        # and BugNotification.
+        message = self.factory.makeMessage(owner=self.user)
+        self.bug.linkMessage(message)
+        self.saveOldChanges()
+
+        attachment = self.factory.makeBugAttachment(
+            bug=self.bug, owner=self.user, comment=message)
+
+        attachment_added_activity = {
+            'person': self.user,
+            'whatchanged': 'attachment added',
+            'oldvalue': None,
+            'newvalue': '%s %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        attachment_added_notification = {
+            'person': self.user,
+            'text': '** Attachment added: "%s"\n   %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        self.assertRecordedChange(
+            expected_notification=attachment_added_notification,
+            expected_activity=attachment_added_activity)
+
+    def test_attachment_removed(self):
+        # Removing an attachment from a bug adds entries in both BugActivity
+        # and BugNotification.
+        attachment = self.factory.makeBugAttachment(
+            bug=self.bug, owner=self.user)
+        self.saveOldChanges()
+        attachment.removeFromBug(user=self.user)
+
+        attachment_removed_activity = {
+            'person': self.user,
+            'whatchanged': 'attachment removed',
+            'newvalue': None,
+            'oldvalue': '%s %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        attachment_removed_notification = {
+            'person': self.user,
+            'text': '** Attachment removed: "%s"\n   %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        self.assertRecordedChange(
+            expected_notification=attachment_removed_notification,
+            expected_activity=attachment_removed_activity)
 
 
 def test_suite():

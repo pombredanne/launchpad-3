@@ -103,17 +103,18 @@ there is no branch with the specified ID.
 
 == Creating branches ==
 
-Branches can be created with IBranchSet.new, which takes details like
-the type of the branch -- whether it is mirrored, hosted, imported or
-remote, name, owner, and so on.
+Branches can be created with IBranchNamespace.createBranch, which takes
+details like the type of the branch -- whether it is mirrored, hosted,
+imported or remote, name, and so on.
 
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> registrant = factory.makePerson(name='registrant')
-    >>> new_branch = branchset.new(
+    >>> from canonical.launchpad.interfaces.branchnamespace import (
+    ...     get_branch_namespace)
+    >>> namespace = get_branch_namespace(registrant, factory.makeProduct())
+    >>> new_branch = namespace.createBranch(
     ...     branch_type=BranchType.MIRRORED, name='dev',
-    ...     owner=registrant, registrant=registrant,
-    ...     product=factory.makeProduct(),
-    ...     url=factory.getUniqueURL())
+    ...     registrant=registrant, url=factory.getUniqueURL())
 
     >>> new_branch.name
     u'dev'
@@ -142,62 +143,13 @@ whereas the owner is.
     >>> print new_branch.owner.name
     new-owner
 
-A Branch may or may not be associated to a product, may have no title,
-no summary, and, depending on the branch type, no URL.
-
-Most branches with no URL are hosted on Launchpad (it is also
-possible for a remote branch to have no URL, but this is rare).
-
-    >>> junkowner = factory.makePerson(name='junkowner')
-    >>> junkcode = branchset.new(
-    ...     branch_type=BranchType.HOSTED, name='junkcode', url=None,
-    ...     owner=junkowner, registrant=junkowner, product=None)
-
-    >>> junkcode.name
-    u'junkcode'
-    >>> print repr(junkcode.product)
-    None
-    >>> print repr(junkcode.title)
-    None
-    >>> print repr(junkcode.summary)
-    None
-    >>> print repr(junkcode.url)
-    None
-
-A branch that is not associated with a product may not be owned by a
-team, however.
-
-    >>> team = factory.makeTeam(owner=junkcode.owner)
-    >>> teamjunkcode = branchset.new(
-    ...     branch_type=BranchType.HOSTED, name='teamjunkcode', product=None,
-    ...     owner=factory.makeTeam(owner=junkowner), registrant=junkowner,
-    ...     url=None)
-    Traceback (most recent call last):
-      ...
-    BranchCreationNoTeamOwnedJunkBranches: ...
-
-The ~vcs-imports celebrity team is exempt from this restriction to
-allow the creation of code import branches without an associated
-product.
-
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    >>> vcs_imports_junkcode = branchset.new(
-    ...     branch_type=BranchType.HOSTED, name='junkcode', owner=vcs_imports,
-    ...     registrant=vcs_imports.teamowner, url=None, product=None)
-    >>> print repr(vcs_imports_junkcode.product)
-    None
-    >>> print vcs_imports_junkcode.owner.name
-    vcs-imports
-
 Branch names must start with a number or a letter (upper or lower
 case) and -, +, _ and @ are allowed after that.
 
     >>> owner = factory.makePerson()
-    >>> branchset.new(
+    >>> namespace.createBranch(
     ...     branch_type=BranchType.HOSTED, name='invalid name!',
-    ...     owner=owner, registrant=owner, product=factory.makeProduct(),
-    ...     url=None)
+    ...     registrant=registrant)
     Traceback (most recent call last):
       ...
     LaunchpadValidationError: Invalid branch name 'invalid name!'.  Branch ...
@@ -285,6 +237,8 @@ definite order.
     >>> make_new_scanned_branch('oldest')
     >>> make_new_scanned_branch('middling')
     >>> make_new_scanned_branch('young')
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     >>> make_new_scanned_branch(
     ...     'imported', owner=vcs_imports, branch_type=BranchType.IMPORTED)
 
@@ -675,16 +629,6 @@ names if possible.
     >>> print branch.bzr_identity
     lp://dev/landscape/experimental
 
-Junk branches associated with a series do not get the short form of
-bzr_identity.
-
-    >>> print junkcode.product
-    None
-    >>> series.user_branch = junkcode
-    >>> syncUpdate(series)
-    >>> print junkcode.bzr_identity
-    lp://dev/~junkowner/+junk/junkcode
-
 
 == Branch Scan List ==
 
@@ -774,91 +718,6 @@ deletable then an exception is raised.
 
 More details can be found in the file
 canonical/launchpad/database/tests/test_branch.py.
-
-    >>> person = factory.makePerson(name='person')
-    >>> product_a = factory.makeProduct(name='a')
-    >>> branch = branchset.new(
-    ...     BranchType.MIRRORED, 'to-delete', person, person, product_a,
-    ...     'http://example.com/branches/to-delete', 'A branch to delete')
-    >>> print branch.unique_name
-    ~person/a/to-delete
-
-Even though the branch has an implicit subscriber, the branch is deletable.
-
-    >>> branch.canBeDeleted()
-    True
-    >>> branch.destroySelf()
-    >>> print branchset.getByUniqueName('~person/a/to-delete')
-    None
-
-The requirements for deleting the branch can be discovered:
-
-    >>> branch = branchset.new(
-    ...     BranchType.MIRRORED, 'to-delete', person, person, product_a,
-    ...     'http://example.com/branches/to-delete', 'A branch to delete')
-
-The keys in the requirements are the objects that are associated with the
-branch.
-
-Deletion can be forced by supplying break_references=True.  This will delete
-items that have mandantory references to this branch, and alter items with
-optional references to this branch.  (Of course, this will fail if
-the user does not have appropriate permissions.)
-
-    >>> branch.destroySelf(break_references=True)
-    >>> print branchset.getByUniqueName(
-    ...     '~person/a/to-delete')
-    None
-
-Branches with revisions are deletable.
-
-    >>> branch = branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
-    >>> branch.revision_count
-    1
-    >>> branch.canBeDeleted()
-    True
-    >>> branch.destroySelf()
-    >>> print branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
-    None
-    >>> logout()
-
-A user without launchpad.Edit cannot delete a branch.
-
-    >>> login('no-priv@canonical.com')
-    >>> message = factory.makeCodeReviewComment()
-    >>> branch = message.branch_merge_proposal.target_branch
-    >>> branch.destroySelf(break_references=True)
-    Traceback (most recent call last):
-    Unauthorized: (<Branch ...>, 'destroySelf', 'launchpad.Edit')
-
-Even if users with no delete rights on the branch could somehow access
-the page, they still wouldn't be able to delete the message.  The message
-is listed as not "allowed":
-
-    >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> branch_delete_view = getMultiAdapter(
-    ...   (branch, LaunchpadTestRequest()), name="+delete")
-    >>> deletion_requirements = [
-    ...     "%s allowed: %s" % (req[0].__class__.__name__, req[3])
-    ...     for req in branch_delete_view.display_deletion_requirements]
-    >>> for req in sorted(deletion_requirements):
-    ...     print req
-    BranchMergeProposal allowed: False
-
-
-The "allowed: False" status is mirrored in the display.
-
-    >>> request = LaunchpadTestRequest(
-    ...   method='POST',
-    ...   form={'field.actions.delete_branch': 'Delete'})
-    >>> branch_delete_view = getMultiAdapter(
-    ...   (branch, request), name="+delete")
-    >>> branch_delete_view.delete_branch_action.success({})
-    >>> for notice in request.response.notifications:
-    ...     print notice.message
-    This branch cannot be deleted.
-    >>> logout()
 
 
 == Branch references ==

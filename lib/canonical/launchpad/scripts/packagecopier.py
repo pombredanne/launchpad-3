@@ -129,19 +129,19 @@ def get_ancestry_candidate(source, archive, series, pocket):
     return ancestry
 
 
-def check_archive_conflicts(source, archive, pocket, include_binaries):
+def check_archive_conflicts(source, archive, series, include_binaries):
     """Check for possible conflicts in the destination archive.
 
     Check if there is a source with the same name and version published
-    in the destination archive. If it exists (regardless of the series) and
-    it has built or will build binaries, do not copy without binaries. This
-    is because the copied source will rebuild binaries that conflict with
-    existing ones. Even when the binaries are included, they are checked for
-    conflict.
+    in the destination archive. If it exists (regardless of the series
+    and pocket) and it has built or will build binaries, do not copy
+    without binaries. This is because the copied source will rebuild
+    binaries that conflict with existing ones. Even when the binaries
+    are included, they are checked for conflict.
 
     :param source: context `ISourcePackagePublishingHistory`;
     :param archive: destination `IArchive`.
-    :param pocket: destination `PackagePublishingPocket`.
+    :param series: destination `IDistroSeries`.
     :param include_binaries: boolean indicating whether or not binaries
         are considered in the copy.
 
@@ -151,7 +151,7 @@ def check_archive_conflicts(source, archive, pocket, include_binaries):
     destination_archive_conflicts = archive.getPublishedSources(
         name=source.sourcepackagerelease.name,
         version=source.sourcepackagerelease.version,
-        pocket=pocket, status=active_publishing_status,
+        status=active_publishing_status,
         exact_match=True)
 
     if destination_archive_conflicts.count() == 0:
@@ -167,6 +167,30 @@ def check_archive_conflicts(source, archive, pocket, include_binaries):
     # the archive because they will conflict with the existent ones.
     published_binaries = set()
     for candidate in destination_archive_conflicts:
+
+        # If the candidate refers to a different sourcepackagerelease with
+        # the same name and version there is a high chance that they have
+        # conflicting files that cannot be published in the repository pool.
+        # So, we deny the copy until the existing source gets deleted (and
+        # removed from the archive).
+        if (source.sourcepackagerelease.id !=
+            candidate.sourcepackagerelease.id):
+            raise CannotCopy(
+                'a different source with the same version is published '
+                'in the destination archive')
+
+        # If the conflicting candidate (which we already know refer to the
+        # same sourcepackagerelease) was found in the copy destination
+        # series we don't have to check its building status, because it's
+        # not going to change in terms of new builds and the resulting
+        # binaries will match. See more details in
+        # `ISourcePackageRelease.getBuildsByArch`.
+        if candidate.distroseries.id == series.id:
+            continue
+
+        # Conflicting candidates building in a different series are a
+        # blocker for the copy. The copied source will certainly produce
+        # conflicting binaries.
         if not is_completely_built(candidate):
             raise CannotCopy(
                 "same version already building in the destination archive "
@@ -185,7 +209,7 @@ def check_archive_conflicts(source, archive, pocket, include_binaries):
 
         # Update published binaries inventory for the conflicting candidates.
         archive_binaries = set(
-            pub_binary.binarypackagerelease
+            pub_binary.binarypackagerelease.id
             for pub_binary in candidate.getPublishedBinaries())
         published_binaries.update(archive_binaries)
 
@@ -201,10 +225,10 @@ def check_archive_conflicts(source, archive, pocket, include_binaries):
         # only be a superset of the set of BinaryPackageReleases published
         # in the destination archive.
         copied_binaries = set(
-            pub.binarypackagerelease for pub in source.getBuiltBinaries())
+            pub.binarypackagerelease.id for pub in source.getBuiltBinaries())
         if not copied_binaries.issuperset(published_binaries):
-            raise CannotCopy(
-                "binaries conflicting with the existing ones")
+            raise CannotCopy("binaries conflicting with the existing ones")
+
 
 def check_privacy_mismatch(source, archive):
     """Whether or not source files match the archive privacy.
@@ -250,6 +274,9 @@ def check_copy(source, archive, series, pocket, include_binaries,
     :raise CannotCopy when a copy is not allowed to be performed
         containing the reason of the error.
     """
+    if series is None:
+        series = source.distroseries
+
     if deny_privacy_mismatch and check_privacy_mismatch(source, archive):
         raise CannotCopy("Cannot copy private source into public archives.")
 
@@ -259,7 +286,7 @@ def check_copy(source, archive, series, pocket, include_binaries,
 
     # Check if there is already a source with the same name and version
     # published in the destination archive.
-    check_archive_conflicts(source, archive, pocket, include_binaries)
+    check_archive_conflicts(source, archive, series, include_binaries)
 
     ancestry = get_ancestry_candidate(source, archive, series, pocket)
     if ancestry is not None and compare_sources(source, ancestry) < 0:
