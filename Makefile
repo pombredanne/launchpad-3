@@ -77,6 +77,7 @@ dbfreeze_check:
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\)" | wc -l` -eq 0 ]
 
 check_merge: dbfreeze_check
+	${PYTHON} lib/canonical/tests/test_no_conflict_marker.py
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
