@@ -18,16 +18,19 @@ from textwrap import dedent
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.bugchange import (
-    IBugChange)
+from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.bugchange import IBugChange
+from canonical.launchpad.interfaces.bugtask import IBugTask
 
 
 def get_bug_change_class(obj, field_name):
     """Return a suitable IBugChange to describe obj and field_name."""
-    try:
-        return BUG_CHANGE_LOOKUP[field_name]
-    except KeyError:
-        return BugChangeBase
+    if IBugTask.providedBy(obj):
+        lookup = BUGTASK_CHANGE_LOOKUP
+    else:
+        lookup = BUG_CHANGE_LOOKUP
+
+    return lookup.get(field_name, BugChangeBase)
 
 
 class BugChangeBase:
@@ -306,4 +309,8 @@ BUG_CHANGE_LOOKUP = {
     'tags': BugTagsChange,
     'title': BugTitleChange,
     'attachment': BugAttachmentChange,
+    }
+
+
+BUGTASK_CHANGE_LOOKUP = {
     }

@@ -196,6 +196,11 @@ For fields it knows about, it will return a more suitable class.
     >>> get_bug_change_class(example_bug, 'title')
     <class '...BugTitleChange'>
 
+get_bug_change_class will also work for BugTasks.
+
+    >>> get_bug_change_class(example_bug.bugtasks[0], 'importance')
+    <class '...BugChangeBase'>
+
 See component/ftests/test_bugchange.py for some sanity checks.
 
 
