@@ -15,6 +15,11 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.config import config
 from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.distribution import Distribution
+from canonical.launchpad.database.distroseries import DistroSeries
+from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchnamespace import (
@@ -117,7 +122,6 @@ class BranchLookup:
     def _getPersonalBranch(self, person, branch_name):
         """Find a personal branch given its path segments."""
         # Avoid circular imports.
-        from canonical.launchpad.database import Person
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = [Branch, Join(Person, Branch.owner == Person.id)]
         result = store.using(*origin).find(
@@ -132,7 +136,6 @@ class BranchLookup:
     def _getProductBranch(self, person, product, branch_name):
         """Find a product branch given its path segments."""
         # Avoid circular imports.
-        from canonical.launchpad.database import Person, Product
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = [
             Branch,
@@ -152,8 +155,6 @@ class BranchLookup:
         names like ~jml/ubuntu/jaunty/openssh/stuff.
         """
         # Avoid circular imports.
-        from canonical.launchpad.database import (
-            Distribution, DistroSeries, Person, SourcePackageName)
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = [
             Branch,
