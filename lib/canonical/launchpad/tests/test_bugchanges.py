@@ -13,7 +13,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugtask import (
-    BugTaskImportance, BugTaskStatus, IBugTask)
+    BugTaskImportance, BugTaskStatus)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
@@ -27,13 +27,11 @@ class TestBugChanges(unittest.TestCase):
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
         self.user = self.factory.makePerson(displayname='Arthur Dent')
-        self.bug = self.factory.makeBug(owner=self.user)
 
         product = self.factory.makeProduct(owner=self.user)
-        owned_bug = self.factory.makeBug(product=product, owner=self.user)
-        self.bug_task = owned_bug.bugtasks[0]
+        self.bug = self.factory.makeBug(product=product, owner=self.user)
+        self.bug_task = self.bug.bugtasks[0]
         self.saveOldChanges()
-        self.saveOldChanges(bug=owned_bug)
 
     def saveOldChanges(self, bug=None):
         """Save the old changes to a bug.
@@ -442,8 +440,7 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notification,
-            bug=self.bug_task.bug)
+            expected_notification=expected_notification)
 
     def test_change_bugtask_status(self):
         # When a bugtask's status is changed, BugActivity and
@@ -473,8 +470,7 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notification,
-            bug=self.bug_task.bug)
+            expected_notification=expected_notification)
 
     def test_target_bugtask_to_product(self):
         # When a bugtask's target is changed, BugActivity and
@@ -500,8 +496,7 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(
             expected_activity=None,
-            expected_notification=expected_notification,
-            bug=self.bug_task.bug)
+            expected_notification=expected_notification)
 
     def test_target_bugtask_to_sourcepackage(self):
         # When a bugtask's target is changed, BugActivity and
@@ -541,8 +536,8 @@ class TestBugChanges(unittest.TestCase):
     def test_add_bugwatch_to_bugtask(self):
         # Adding a BugWatch to a bug task only records an entry in the
         # BugNotification table.
-        bug_watch = self.factory.makeBugWatch(bug=self.bug_task.bug)
-        self.saveOldChanges(bug=self.bug_task.bug)
+        bug_watch = self.factory.makeBugWatch()
+        self.saveOldChanges()
 
         self.changeAttribute(self.bug_task, 'bugwatch', bug_watch)
 
@@ -555,15 +550,14 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(
             expected_activity=None,
-            expected_notification=expected_notification,
-            bug=self.bug_task.bug)
+            expected_notification=expected_notification)
 
     def test_remove_bugwatch_from_bugtask(self):
         # Removing a BugWatch from a bug task only records an entry in the
         # BugNotification table.
-        bug_watch = self.factory.makeBugWatch(bug=self.bug_task.bug)
+        bug_watch = self.factory.makeBugWatch()
         self.changeAttribute(self.bug_task, 'bugwatch', bug_watch)
-        self.saveOldChanges(bug=self.bug_task.bug)
+        self.saveOldChanges()
 
         self.changeAttribute(self.bug_task, 'bugwatch', None)
 
@@ -576,8 +570,7 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(
             expected_activity=None,
-            expected_notification=expected_notification,
-            bug=self.bug_task.bug)
+            expected_notification=expected_notification)
 
     def test_assign_bugtask(self):
         # Assigning a bug task to someone adds entries to the bug
@@ -609,14 +602,13 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notification,
-            bug=self.bug_task.bug)
+            expected_notification=expected_notification)
 
     def test_unassign_bugtask(self):
         # Unassigning a bug task to someone adds entries to the bug
         # activity and notifications sets.
         self.bug_task.transitionToAssignee(self.user)
-        self.saveOldChanges(self.bug_task.bug)
+        self.saveOldChanges()
 
         bug_task_before_modification = Snapshot(
             self.bug_task, providing=providedBy(self.bug_task))
@@ -646,8 +638,7 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notification,
-            bug=self.bug_task.bug)
+            expected_notification=expected_notification)
 
     def test_target_bugtask_to_milestone(self):
         # When a bugtask is targetted to a milestone BugActivity and
@@ -672,15 +663,14 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notification,
-            bug=self.bug_task.bug)
+            expected_notification=expected_notification)
 
     def test_untarget_bugtask_from_milestone(self):
         # When a bugtask is untargetted from a milestone both
         # BugActivity and BugNotification records will be created.
         milestone = self.factory.makeMilestone(product=self.bug_task.product)
         self.changeAttribute(self.bug_task, 'milestone', milestone)
-        self.saveOldChanges(self.bug_task.bug)
+        self.saveOldChanges()
 
         self.changeAttribute(self.bug_task, 'milestone', None)
 
@@ -701,8 +691,7 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notification,
-            bug=self.bug_task.bug)
+            expected_notification=expected_notification)
 
 
 def test_suite():
