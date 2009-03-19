@@ -230,3 +230,20 @@ def record_bugsubscription_edited(bugsubscription_edited,
                     bugsubscription_edited.person.browsername),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
+
+
+@block_implicit_flushes
+def notify_bug_watch_modified(modified_bug_watch, event):
+    """Notify CC'd bug subscribers that a bug watch was edited.
+
+    modified_bug_watch must be an IBugWatch. event must be an
+    IObjectModifiedEvent.
+    """
+    old_watch = event.object_before_modification
+    new_watch = event.object
+    bug = new_watch.bug
+    if old_watch.url == new_watch.url:
+        # Nothing interesting was modified, don't record any changes.
+        return
+    bug.addChange(BugWatchRemoved(UTC_NOW, event.user, old_watch))
+    bug.addChange(BugWatchAdded(UTC_NOW, event.user, new_watch))
