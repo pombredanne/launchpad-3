@@ -957,35 +957,6 @@ def notify_bug_watch_modified(modified_bug_watch, event):
 
 
 @block_implicit_flushes
-def notify_bug_cve_added(bugcve, event):
-    """Notify CC'd list that a new cve ref has been added to this bug.
-
-    bugcve must be an IBugCve. event must be an IObjectCreatedEvent.
-    """
-    bug_delta = BugDelta(
-        bug=bugcve.bug,
-        bugurl=canonical_url(bugcve.bug),
-        user=IPerson(event.user),
-        cve={'new': bugcve.cve})
-
-    add_bug_change_notifications(bug_delta)
-
-@block_implicit_flushes
-def notify_bug_cve_deleted(bugcve, event):
-    """Notify CC'd list that a cve ref has been removed from this bug.
-
-    bugcve must be an IBugCve. event must be an IObjectDeletedEvent.
-    """
-    bug_delta = BugDelta(
-        bug=bugcve.bug,
-        bugurl=canonical_url(bugcve.bug),
-        user=IPerson(event.user),
-        cve={'old': bugcve.cve})
-
-    add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
 def notify_bug_became_question(event):
     """Notify CC'd list that a bug was made into a question.
 
