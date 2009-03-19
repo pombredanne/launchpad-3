@@ -28,7 +28,12 @@ class TestBugChanges(unittest.TestCase):
         self.factory = LaunchpadObjectFactory()
         self.user = self.factory.makePerson(displayname='Arthur Dent')
         self.bug = self.factory.makeBug(owner=self.user)
+
+        product = self.factory.makeProduct(owner=self.user)
+        owned_bug = self.factory.makeBug(product=product, owner=self.user)
+        self.bug_task = owned_bug.bugtasks[0]
         self.saveOldChanges()
+        self.saveOldChanges(bug=owned_bug)
 
     def saveOldChanges(self, bug=None):
         """Save the old changes to a bug.
@@ -48,7 +53,7 @@ class TestBugChanges(unittest.TestCase):
 
         :return: The value of `attribute` before modification.
         """
-        obj_before_modification = Snapshot(obj, providing=IBug)
+        obj_before_modification = Snapshot(obj, providing=providedBy(obj))
         setattr(obj, attribute, new_value)
         notify(ObjectModifiedEvent(
             obj, obj_before_modification, [attribute], self.user))
@@ -411,21 +416,17 @@ class TestBugChanges(unittest.TestCase):
 
     def test_change_bugtask_importance(self):
         # When a bugtask's importance is changed, things should happen.
-        product = self.factory.makeProduct(owner=self.user)
-        bug = self.factory.makeBug(product=product, owner=self.user)
-
-        bug_task = bug.bugtasks[0]
-        self.saveOldChanges(bug=bug)
         bug_task_before_modification = Snapshot(
-            bug_task, providing=providedBy(bug_task))
-        bug_task.transitionToImportance(BugTaskImportance.HIGH, user=self.user)
+            self.bug_task, providing=providedBy(self.bug_task))
+        self.bug_task.transitionToImportance(
+            BugTaskImportance.HIGH, user=self.user)
         notify(ObjectModifiedEvent(
-            bug_task, bug_task_before_modification,
+            self.bug_task, bug_task_before_modification,
             ['importance'], user=self.user))
 
         expected_activity = {
             'person': self.user,
-            'whatchanged': '%s: importance' % bug_task.bugtargetname,
+            'whatchanged': '%s: importance' % self.bug_task.bugtargetname,
             'oldvalue': 'Undecided',
             'newvalue': 'High',
             'message': None,
@@ -434,13 +435,14 @@ class TestBugChanges(unittest.TestCase):
         expected_notification = {
             'text': (
                 u'** Changed in: %s\n   Importance: Undecided => High' %
-                bug_task.bugtargetname),
+                self.bug_task.bugtargetname),
             'person': self.user,
             }
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notification, bug=bug)
+            expected_notification=expected_notification,
+            bug=self.bug_task.bug)
 
 
 def test_suite():
