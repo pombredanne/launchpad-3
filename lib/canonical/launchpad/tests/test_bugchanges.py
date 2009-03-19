@@ -474,7 +474,7 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=expected_notification,
             bug=self.bug_task.bug)
 
-    def test_change_bugtask_target(self):
+    def test_target_bugtask_to_product(self):
         # When a bugtask's target is changed, things should happen.
         bug_task_before_modification = Snapshot(
             self.bug_task, providing=providedBy(self.bug_task))
@@ -482,8 +482,8 @@ class TestBugChanges(unittest.TestCase):
         new_target = self.factory.makeProduct(owner=self.user)
         self.bug_task.transitionToTarget(new_target)
         notify(ObjectModifiedEvent(
-            self.bug_task, bug_task_before_modification, ['target'],
-            user=self.user))
+            self.bug_task, bug_task_before_modification,
+            ['target', 'product'], user=self.user))
 
         expected_notification = {
             'text': (
@@ -492,6 +492,44 @@ class TestBugChanges(unittest.TestCase):
                 self.bug_task.bugtargetname,
                 bug_task_before_modification.bugtargetdisplayname,
                 self.bug_task.bugtargetdisplayname)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=None,
+            expected_notification=expected_notification,
+            bug=self.bug_task.bug)
+
+    def test_target_bugtask_to_sourcepackage(self):
+        # When a bugtask's target is changed, things should happen.
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroRelease(distribution=distro)
+        target = self.factory.makeSourcePackage(distroseries=distroseries)
+        new_target = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+
+        source_package_bug = self.factory.makeBug(owner=self.user)
+        source_package_bug_task = source_package_bug.addTask(
+            owner=self.user, target=target)
+        source_package_bug_task.distribution = target.distribution
+        self.saveOldChanges(source_package_bug)
+
+        bug_task_before_modification = Snapshot(
+            source_package_bug_task,
+            providing=providedBy(source_package_bug_task))
+
+        source_package_bug_task.transitionToTarget(new_target)
+        notify(ObjectModifiedEvent(
+            source_package_bug_task.bug_task, bug_task_before_modification,
+            ['target'], user=self.user))
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n      '
+                'Product: %s => %s' % (
+                source_package_bug_task.bugtargetname,
+                bug_task_before_modification.bugtargetdisplayname,
+                source_package_bug_task.bugtargetdisplayname)),
             'person': self.user,
             }
 
