@@ -252,6 +252,10 @@ class Hierarchy(LaunchpadView):
         working_url = baseurl
         for segment in urlparts[2].split('/'):
             working_url = urlappend(working_url, segment)
+            # Segments starting with '+' should be ignored because they
+            # will never correspond to an object in navigation.
+            if segment.startswith('+'):
+                continue
             pathurls.append(working_url)
 
         # We assume a 1:1 relationship between the traversed_objects list and
