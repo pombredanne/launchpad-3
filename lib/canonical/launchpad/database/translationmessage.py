@@ -104,6 +104,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
                 'This translation message already exists in the database.')
 
         self.id = None
+        self.pofile = pofile
         self.browser_pofile = pofile
         self.potemplate = pofile.potemplate
         self.language = pofile.language
