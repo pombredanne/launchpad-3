@@ -1171,6 +1171,23 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IPOTemplate
 
+    def checkAuthenticated(self, user):
+        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
+            return True
+
+        if self.obj.distroseries is not None:
+            # For distroseries, both the owners and the owners of its
+            # chosen translation group (if any) are allowed to manage
+            # templates.
+            distro = self.obj.distroseries.distribution
+            if user.inTeam(distro.owner):
+                return True
+            translation_group = distro.translationgroup
+            if translation_group and user.inTeam(translation_group.owner):
+                return True
+
+        return False
+
 
 # XXX: Carlos Perello Marin 2005-05-24 bug=753:
 # This should be using SuperSpecialPermissions when implemented.
@@ -1298,6 +1315,13 @@ class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
     def checkAuthenticated(self, user):
         if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
             return True
+
+        # As a special case, the Ubuntu translation group owners can
+        # manage Ubuntu uploads.
+        if self.obj.is_targeted_to_ubuntu:
+            group = self.obj.distroseries.distribution.translationgroup
+            if group is not None and user.inTeam(group.owner):
+                return True
 
         return False
 
