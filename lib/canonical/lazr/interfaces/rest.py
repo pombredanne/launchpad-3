@@ -42,7 +42,7 @@ from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
 from zope.publisher.interfaces.browser import (
     IBrowserRequest, IDefaultBrowserLayer)
-
+from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 
 # The namespace prefix for LAZR web service-related tags.
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
@@ -357,6 +357,12 @@ class IWebServiceConfiguration(Interface):
         running the webservice. This may be a revision number from version
         control, or a hand-chosen version number.""")
 
+    show_tracebacks = Bool(
+        title=u"Show tracebacks to end-users",
+        default=True,
+        description=u"Whether or not to show tracebacks in an HTTP response "
+        "for a request that raised an exception.")
+
     def createRequest(body_instream, environ):
         """A factory method that creates a request for the web service.
 
@@ -385,3 +391,5 @@ class IWebBrowserInitiatedRequest(Interface):
     know when a request was initiated by a web browser so that
     responses can be tweaked for their benefit.
     """
+
+InvalidBatchSizeError.__lazr_webservice_error__ = 400

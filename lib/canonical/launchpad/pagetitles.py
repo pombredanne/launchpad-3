@@ -135,6 +135,8 @@ archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
 
 archive_index = ContextTitle('%s')
 
+archive_subscriber_edit = ContextTitle('Edit %s')
+
 archive_subscribers = ContextTitle('Manage subscriptions for %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
@@ -853,6 +855,8 @@ openidrpconfig_edit = ContextDisplayName(
     'Edit Relying Party Configuration for %s')
 
 openidrpconfigset_index = 'OpenID Relying Party Configurations'
+
+official_bug_target_manage_tags = 'Manage Official Bug Tags'
 
 def package_bugs(context, view):
     """Return the page title bug in a package."""

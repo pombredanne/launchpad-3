@@ -442,7 +442,7 @@ It's also possible to delete attachments.
     ...     print attachment.title
     Attachment to be deleted
 
-    >>> attachment.removeFromBug()
+    >>> attachment.removeFromBug(user=foobar)
     >>> bug_two.attachments.count()
     0
 

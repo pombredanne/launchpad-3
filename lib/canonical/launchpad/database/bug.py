@@ -35,7 +35,8 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.components.bugchange import UnsubscribedFromBug
+from canonical.launchpad.components.bugchange import (
+    BranchLinkedToBug, BranchUnlinkedFromBug, UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -652,12 +653,16 @@ class Bug(SQLBase):
 
     def addChange(self, change):
         """See `IBug`."""
+        when = change.when
+        if when is None:
+            when = UTC_NOW
+
         # Only try to add something to the activity log if we have some
         # data.
         activity_data = change.getBugActivity()
         if activity_data is not None:
             bug_activity = getUtility(IBugActivitySet).new(
-                self, change.when, change.person,
+                self, when, change.person,
                 activity_data['whatchanged'],
                 activity_data.get('oldvalue'),
                 activity_data.get('newvalue'),
@@ -671,7 +676,7 @@ class Bug(SQLBase):
 
             self.addChangeNotification(
                 notification_data['text'], change.person, recipients,
-                change.when)
+                when)
 
     def expireNotifications(self):
         """See `IBug`."""
@@ -820,9 +825,18 @@ class Bug(SQLBase):
             registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
+        self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch))
         notify(ObjectCreatedEvent(bug_branch))
 
         return bug_branch
+
+    def removeBranch(self, branch, user):
+        """See `IBug`."""
+        bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
+        if bug_branch is not None:
+            self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch))
+            notify(ObjectDeletedEvent(bug_branch, user=user))
+            bug_branch.destroySelf()
 
     def linkCVE(self, cve, user):
         """See `IBug`."""
