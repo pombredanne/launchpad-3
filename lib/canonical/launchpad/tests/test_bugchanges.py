@@ -608,6 +608,43 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=expected_notification,
             bug=self.bug_task.bug)
 
+    def test_unassign_bugtask(self):
+        # Unassigning a bug task to someone adds entries to the bug
+        # activity and notifications sets.
+        self.bug_task.transitionToAssignee(self.user)
+        self.saveOldChanges(self.bug_task.bug)
+
+        bug_task_before_modification = Snapshot(
+            self.bug_task, providing=providedBy(self.bug_task))
+
+        self.bug_task.transitionToAssignee(None)
+
+        notify(ObjectModifiedEvent(
+            self.bug_task, bug_task_before_modification,
+            ['assignee'], user=self.user))
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: assignee' % self.bug_task.bugtargetname,
+            'oldvalue': self.user.name,
+            'newvalue': None,
+            'message': None,
+            }
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n     Assignee: %s (%s) => '
+                '(unassigned)' % (
+                self.bug_task.bugtargetname, self.user.displayname,
+                self.user.name)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=self.bug_task.bug)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
