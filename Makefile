@@ -73,10 +73,10 @@ dbfreeze_check:
 check_merge: dbfreeze_check
 	${PYTHON} lib/canonical/tests/test_no_conflict_marker.py
 
+# This can be removed once we move to zc.buildout and we have versioned
+# dependencies, but for now we run both Launchpad and all other
+# dependencies tests for any merge to sourcecode.
 check_sourcecode_merge: build check
-	# This can be removed once we move to zc.buildout and we have versioned
-	# dependencies, but for now we run both Launchpad and all other
-	# dependencies tests to any merge to sourcecode.
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
