@@ -145,6 +145,13 @@ to simulate a browser request -- that's why we login() here.
     # Undo the custom setup we did above.
     >>> login(ANONYMOUS)
 
+Persons and teams can also specify an alternate rootsite to fmt:url.
+
+    >>> print test_tales("person/fmt:url:bugs", person=sabdfl)
+    http://bugs.launchpad.dev/~sabdfl
+
+    >>> print test_tales("person/fmt:url:feeds", person=sabdfl)
+    http://feeds.launchpad.dev/~sabdfl
 
 == The fmt: namespace to get links ==
 
@@ -223,6 +230,15 @@ If the person has no time_zone specified, we use UTC.
     None
     >>> test_tales("person/fmt:local-time", person=sabdfl)
     '... UTC'
+
+The fmt:icon_url formatter will return the URL for the person's or
+team's icon.
+
+    >>> test_tales("person/fmt:icon_url", person=sabdfl)
+    '/@@/person'
+
+    >>> test_tales("team/fmt:icon_url", team=ubuntu_team)
+    '/@@/team'
 
 
 === Branches ===
