@@ -22,7 +22,8 @@ from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
     IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import NoSuchBranch
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchlookup import (
+    IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -230,6 +231,10 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                     raise faults.NoBranchForSeries(series)
         except NoSuchBranch:
             return self._getUniqueNameResultDict(strip_path)
+        except NoBranchForSeries, e:
+            raise faults.NoBranchForSeries(e.series)
+        except InvalidBranchIdentifier, e:
+            raise faults.InvalidBranchIdentifier(e.path)
         except NoSuchProductSeries, e:
             raise faults.NoSuchSeries(e.name, e.product)
         except NoSuchProduct, e:

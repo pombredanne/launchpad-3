@@ -6,9 +6,27 @@
 __metaclass__ = type
 __all__ = [
     'IBranchLookup',
+    'InvalidBranchIdentifier',
+    'NoBranchForSeries',
     ]
 
 from zope.interface import Interface
+
+
+class InvalidBranchIdentifier(Exception):
+    """Raised when trying to resolve an invalid branch name."""
+
+    def __init__(self, path):
+        self.path = path
+        Exception.__init__(self, "Invalid branch identifier: '%s'" % (path,))
+
+
+class NoBranchForSeries(Exception):
+    """Raised when we wrongly assume a product series has a branch."""
+
+    def __init__(self, product_series):
+        self.series = product_series
+        Exception.__init__(self, "%r has no branch" % (product_series,))
 
 
 class IBranchLookup(Interface):

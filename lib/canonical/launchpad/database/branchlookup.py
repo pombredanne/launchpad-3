@@ -14,7 +14,8 @@ from sqlobject import SQLObjectNotFound
 from canonical.config import config
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.interfaces.branch import NoSuchBranch
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchlookup import (
+    IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
@@ -214,7 +215,7 @@ class BranchLookup:
         elif len(segments) == 2:
             product_name, series_name = tuple(segments)
         else:
-            raise faults.InvalidBranchIdentifier(path)
+            raise InvalidBranchIdentifier(path)
         if not valid_name(product_name):
             raise faults.InvalidProductIdentifier(product_name)
         product = getUtility(IProductSet).getByName(product_name)
@@ -228,5 +229,5 @@ class BranchLookup:
                 raise NoSuchProductSeries(series_name, product)
         branch = series.series_branch
         if branch is None:
-            raise faults.NoBranchForSeries(series)
+            raise NoBranchForSeries(series)
         return branch, series

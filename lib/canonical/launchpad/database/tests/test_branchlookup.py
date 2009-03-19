@@ -13,15 +13,15 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.branch import NoSuchBranch
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchlookup import (
+    IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.xmlrpc.faults import (
-    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries)
+from canonical.launchpad.xmlrpc.faults import InvalidProductIdentifier
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
