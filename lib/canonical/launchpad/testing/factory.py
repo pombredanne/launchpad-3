@@ -33,7 +33,6 @@ from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.processor import ProcessorFamilySet
-from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
@@ -49,7 +48,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
-from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus,
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
@@ -62,10 +61,7 @@ from canonical.launchpad.interfaces.codeimportresult import (
 from canonical.launchpad.interfaces.codeimport import (
     CodeImportReviewStatus, RevisionControlSystems)
 from canonical.launchpad.interfaces.country import ICountrySet
-from canonical.launchpad.interfaces.distribution import (
-    IDistribution, IDistributionSet)
-from canonical.launchpad.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -84,7 +80,7 @@ from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.product import (
-    IProduct, IProductSet, License)
+    IProductSet, License)
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.project import IProjectSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
