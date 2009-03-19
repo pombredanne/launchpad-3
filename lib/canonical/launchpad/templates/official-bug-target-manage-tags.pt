@@ -38,7 +38,32 @@
         <th>Other Tags</th>
       </tr>
       <tr>
-        <td id="left-column">
+        <td id="left-column" class="left-column">
+          <ul id="official-tags-list">
+          </ul>
+        </td>
+        <td id="middle-column" class="middle-column">
+          <input type="submit" value="&larr;"
+                 id="add-official-tags" class="arrow-button"
+                 disabled="true" />
+          <br />
+          <input type="submit" value="&rarr;"
+                 id="remove-official-tags" class="arrow-button"
+                 disabled="true" />
+          <br />
+          <br />
+          <form action="+manage-official-tags" method="post" id="save-form">
+            <input type="hidden" id="field-official_bug_tags" name="field.official_bug_tags" />
+            <input type="hidden" name="field.actions.save" value="Save" />
+          </form>
+        </td>
+        <td id="right-column" class="right-column">
+          <ul id="other-tags-list">
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td class="left-column">
           <table class="input-field-layout-table">
             <tr>
               <td style="width: 100%">
@@ -57,27 +82,10 @@
               The characters "+", "-" and "." are also allowed after the first character.
             </div>
           </div>
-          <ul id="official-tags-list">
-          </ul>
         </td>
-        <td id="middle-column">
-          <input type="submit" value="&larr;"
-                 id="add-official-tags" class="arrow-button"
-                 disabled="true" />
-          <br />
-          <input type="submit" value="&rarr;"
-                 id="remove-official-tags" class="arrow-button"
-                 disabled="true" />
-          <br />
-          <br />
-          <form action="+manage-official-tags" method="post" id="save-form">
-            <input type="hidden" id="field-official_bug_tags" name="field.official_bug_tags" />
-            <input type="hidden" name="field.actions.save" value="Save" />
-          </form>
+        <td class="middle-column">
         </td>
-        <td id="right-column">
-          <ul id="other-tags-list">
-          </ul>
+        <td class="right-column">
         </td>
       </tr>
     </table>

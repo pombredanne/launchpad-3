@@ -1076,17 +1076,17 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
   text-align: left;
 }
 
-.official-tags-layout-table #left-column,
-.official-tags-layout-table #right-column {
+.official-tags-layout-table .left-column,
+.official-tags-layout-table .right-column {
   width: 45%;
 }
 
-.official-tags-layout-table #middle-column {
+.official-tags-layout-table .middle-column {
   text-align: center;
   padding: 5px;
 }
 
-.official-tags-layout-table #middle-column input[type='submit'] {
+.official-tags-layout-table .middle-column input[type='submit'] {
   width: 75px;
 }
 
