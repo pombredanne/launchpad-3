@@ -15,7 +15,7 @@ from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, NoBranchForSeries)
+    IBranchLookup, NoBranchForSeries, NoBranchForSourcePackage)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -434,6 +434,14 @@ class TestGetByLPPath(TestCaseWithFactory):
             distroseries.distribution.name, distroseries.name)
         self.assertRaises(
             NoSuchSourcePackageName, self.branch_lookup.getByLPPath, path)
+
+    def test_no_official_branch(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        exception = self.assertRaises(
+            NoBranchForSourcePackage,
+            self.branch_lookup.getByLPPath, sourcepackage.path)
+        self.assertEqual(sourcepackage, exception.sourcepackage)
+        self.assertEqual(PackagePublishingPocket.RELEASE, exception.pocket)
 
     # This test fails right now.
     def xfail_test_resolves_product_to_dev_focus_branch_trailing_path(self):

@@ -30,6 +30,15 @@ class NoBranchForSeries(Exception):
         Exception.__init__(self, "%r has no branch" % (product_series,))
 
 
+class NoBranchForSourcePackage(Exception):
+    """Raised when we wrongly assume a source package has a branch."""
+
+    def __init__(self, sourcepackage, pocket):
+        self.sourcepackage = sourcepackage
+        self.pocket = pocket
+        Exception.__init__(self, "%r has no branch" % (sourcepackage,))
+
+
 class NoDefaultBranch(Exception):
     """Raised when asked to resolve a path that never has a default branch."""
 
@@ -99,6 +108,8 @@ class IBranchLookup(Interface):
             does not exist.
         :raises NoDefaultBranch: If there is no default branch possible for
             the given shortcut.
+        :raises NoBranchForSourcePackage: If there is no official branch at
+            the path described.
         :raises InvalidProductName: If the given product in a product
             or product series shortcut is an invalid name for a product.
 
