@@ -158,6 +158,22 @@ Duplicate tags are converted to a single instance.
     [u'bar', u'foo']
 
 
+=== Large and Small Bug Tags Widget ===
+
+A regular BugTagsWidget is rendered as an <input> tag,
+
+    >>> print tags_widget()
+    <input...type="text"...
+
+A LargeBugTagsWidget is rendered as a <textarea>,
+
+    >>> from canonical.widgets.bug import LargeBugTagsWidget
+    >>> large_text_widget = LargeBugTagsWidget(
+    ...     bug_tags_field, tag_field, request)
+    >>> print large_text_widget()
+    <textarea...
+
+
 == Searching ==
 
 We can search for bugs with some specific tag.
