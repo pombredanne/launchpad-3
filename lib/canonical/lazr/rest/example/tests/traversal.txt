@@ -3,22 +3,15 @@ just by defining a get() method like the one seen in Python's dict
 class. In fact, a dict will work fine.
 
   >>> from canonical.lazr.rest.example.traversal import TraverseWithGet
-  >>> class HasParent:
-  ...     def __init__(self):
-  ...         __parent__ = None
-
-  >>> obj1, obj2 = HasParent(), HasParent()
+  >>> obj1, obj2 = object(), object()
   >>> context = {"name1":obj1, "name2":obj2}
   >>> request = object()
   >>> container = TraverseWithGet(context, request)
 
-TraverseWithGet's publishTraverse() implementation automatically sets
-the __parent__ attribute of the traversed-to object.
+Traversal is handled with the context's get() method.
 
   >>> value = container.publishTraverse(request, "name1")
   >>> value == obj1
-  True
-  >>> value.__parent__ == context
   True
 
 If the object cannot be found, publishTraverse raises a NotFound

@@ -10,6 +10,7 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+from zope.security.checker import CheckerPublic
 
 class CookbookWebServiceConfiguration:
     """A configuration object for the cookbook web service."""
@@ -17,6 +18,7 @@ class CookbookWebServiceConfiguration:
 
     path_override = "api"
     service_version_uri_prefix = "1.0"
-    view_permission = "lazr.View"
+    view_permission = CheckerPublic
     use_https = False
     code_revision = "test.revision"
+    show_tracebacks = True

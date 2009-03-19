@@ -132,6 +132,7 @@ class LaunchpadCelebrities:
     commercial_admin = CelebrityDescriptor(IPersonSet, 'commercial-admins')
     lp_translations = CelebrityDescriptor(IProductSet, 'rosetta')
     ppa_key_guard = CelebrityDescriptor(IPersonSet, 'ppa-key-guard')
+    ubuntu_branches = CelebrityDescriptor(IPersonSet, 'ubuntu-branches')
 
     @property
     def ubuntu_archive_mirror(self):

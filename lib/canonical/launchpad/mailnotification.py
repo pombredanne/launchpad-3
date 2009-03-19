@@ -612,7 +612,14 @@ def get_bug_edit_notification_texts(bug_delta):
             change_info += '   %s' % new_bug_dupe.title
             changes.append(change_info)
 
-    for field_name in ['title', 'description']:
+    # The order of the field names in this list is important; this is
+    # the order in which changes will appear both in the bug activity
+    # log and in notification emails.
+    bug_change_field_names = [
+        'title', 'description', 'private', 'security_related', 'tags',
+        'attachment',
+        ]
+    for field_name in bug_change_field_names:
         field_delta = getattr(bug_delta, field_name)
         if field_delta is not None:
             bug_change_class = get_bug_change_class(bug_delta.bug, field_name)
@@ -621,31 +628,6 @@ def get_bug_edit_notification_texts(bug_delta):
                 old_value=field_delta['old'], new_value=field_delta['new'])
             changes.append(change_info)
 
-    if bug_delta.private is not None:
-        if bug_delta.private['new']:
-            visibility = "Private"
-        else:
-            visibility = "Public"
-        changes.append(u"** Visibility changed to: %s" % visibility)
-
-    if bug_delta.security_related is not None:
-        if bug_delta.security_related['new']:
-            changes.append(
-                u"** This bug has been flagged as a security issue")
-        else:
-            changes.append(
-                u"** This bug is no longer flagged as a security issue")
-
-    if bug_delta.tags is not None:
-        new_tags = set(bug_delta.tags['new'])
-        old_tags = set(bug_delta.tags['old'])
-        added_tags = sorted(new_tags.difference(old_tags))
-        removed_tags = sorted(old_tags.difference(new_tags))
-        if added_tags:
-            changes.append(u'** Tags added: %s' % ' '.join(added_tags))
-        if removed_tags:
-            changes.append(u'** Tags removed: %s' % ' '.join(removed_tags))
-
     if bug_delta.cve is not None:
         new_cve = bug_delta.cve.get('new', None)
         old_cve = bug_delta.cve.get('old', None)
@@ -653,12 +635,6 @@ def get_bug_edit_notification_texts(bug_delta):
             changes.append(u"** CVE removed: %s" % old_cve.url)
         if new_cve:
             changes.append(u"** CVE added: %s" % new_cve.url)
-
-    if bug_delta.attachment is not None and bug_delta.attachment['new']:
-        added_attachment = bug_delta.attachment['new']
-        change_info = '** Attachment added: "%s"\n' % added_attachment.title
-        change_info += "   %s" % added_attachment.libraryfile.http_url
-        changes.append(change_info)
 
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
@@ -993,7 +969,7 @@ def notify_bug_attachment_added(bugattachment, event):
         bug=bug,
         bugurl=canonical_url(bug),
         user=IPerson(event.user),
-        attachment={'new' : bugattachment})
+        attachment={'new' : bugattachment, 'old': None})
 
     add_bug_change_notifications(bug_delta)
 
@@ -1002,12 +978,13 @@ def notify_bug_attachment_added(bugattachment, event):
 def notify_bug_attachment_removed(bugattachment, event):
     """Notify that an attachment has been removed."""
     bug = bugattachment.bug
-    # Include the URL, since it will still be downloadable until the
-    # Librarian garbage collector removes it.
-    change_info = '\n'.join([
-        '** Attachment removed: "%s"\n' % bugattachment.title,
-        '   %s' %  bugattachment.libraryfile.http_url])
-    bug.addChangeNotification(change_info, person=IPerson(event.user))
+    bug_delta = BugDelta(
+        bug=bug,
+        bugurl=canonical_url(bug),
+        user=IPerson(event.user),
+        attachment={'old' : bugattachment, 'new': None})
+
+    add_bug_change_notifications(bug_delta)
 
 
 @block_implicit_flushes

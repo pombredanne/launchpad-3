@@ -351,8 +351,8 @@ The destination series always default to 'The same series'.
     ...     'Destination series').displayValue
     ['The same series']
 
-When he requests the copy a error is raised, since a copy of a
-published source to 'This PPA' and 'The same series' is not allowed
+When he requests the action, nothing is copied, since a copy of a
+published source to 'This PPA' and 'The same series' has no effect,
 because it results in publishing cruft (the former publishing record
 will be dominated and the archive won't be changed).
 
@@ -360,12 +360,10 @@ will be dominated and the archive won't be changed).
     >>> messages = get_feedback_messages(jblack_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    There is 1 error.
-    The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already building in the destination archive for Hoary)
+    All packages already copied to PPA for James Blackwell.
 
 Without thinking much James erroneously selects 'hoary' series and
-pushes the copy button. The same error is raised.
+pushes the copy button. The same message is rendered.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -377,9 +375,7 @@ pushes the copy button. The same error is raised.
     >>> messages = get_feedback_messages(jblack_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    There is 1 error.
-    The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already building in the destination archive for Hoary)
+    All packages already copied to PPA for James Blackwell.
 
 Darn, now James being more careful and re-selects the 'pmount' source
 and 'grumpy' as Destination Series.
@@ -782,8 +778,8 @@ sources to ensure the binaries are really there.
 
 Not using his brain again, James tries to copy the two sources to the
 same location within James Blackwell Friends' PPAs, pretty much as if
-he was trying to break Launchpad. Poor James, this time he gets a
-plural error message.
+he was trying to break Launchpad. Poor James, this time he gets
+completely ignored.
 
     >>> jblack_browser.getLink('Copy packages').click()
 
@@ -798,12 +794,7 @@ plural error message.
     >>> messages = get_feedback_messages(jblack_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    There is 1 error.
-    The following sources cannot be copied:
-    iceweasel 1.0 in hoary (same version already has published
-        binaries in the destination archive),
-    pmount 0.1-1 in hoary (same version already has published
-        binaries in the destination archive)
+    All packages already copied to PPA for James Blackwell Friends.
 
 James goes wild and decided to create a new team PPA for his sandbox
 tests.
@@ -1094,7 +1085,8 @@ to copy the *same* version with different contents to grumpy in his PPA.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: foo 1.1 in hoary
-    (binaries conflicting with the existing ones)
+    (a different source with the same version is published in the
+     destination archive)
 
 James thinks that his last chance will be copying the just-uploaded
 foo-9.9 source from 'James-Friend's PPA.

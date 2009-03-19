@@ -4,8 +4,12 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchLinkedToBug',
+    'BranchUnlinkedFromBug',
     'BugDescriptionChange',
+    'BugTagsChange',
     'BugTitleChange',
+    'BugVisibilityChange',
     'BugWatchAdded',
     'BugWatchRemoved',
     'UnsubscribedFromBug',
@@ -147,6 +151,52 @@ class BugWatchRemoved(BugChangeBase):
         return None
 
 
+class BranchLinkedToBug(BugChangeBase):
+    """A branch got linked to the bug."""
+
+    def __init__(self, when, person, branch):
+        super(BranchLinkedToBug, self).__init__(when, person)
+        self.branch = branch
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='branch linked',
+            newvalue=self.branch.bzr_identity)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {'text': '** Branch linked: %s' % self.branch.bzr_identity}
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
+        # Send the notification to the default recipients.
+        return None
+
+
+class BranchUnlinkedFromBug(BugChangeBase):
+    """A branch got unlinked from the bug."""
+
+    def __init__(self, when, person, branch):
+        super(BranchUnlinkedFromBug, self).__init__(when, person)
+        self.branch = branch
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='branch unlinked',
+            oldvalue=self.branch.bzr_identity)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {'text': '** Branch unlinked: %s' % self.branch.bzr_identity}
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
+        # Send the notification to the default recipients.
+        return None
+
+
 class BugDescriptionChange(AttributeChange):
     """Describes a change to a bug's description."""
 
@@ -180,7 +230,138 @@ class BugTitleChange(AttributeChange):
         return {'text': notification_text}
 
 
+class BugVisibilityChange(AttributeChange):
+    """Describes a change to a bug's visibility."""
+
+    def _getVisibilityString(self, private):
+        """Return a string representation of `private`.
+
+        :return: 'Public' if private is False, 'Private' if
+            private is True.
+        """
+        if private:
+            return 'Private'
+        else:
+            return 'Public'
+
+    def getBugActivity(self):
+        # Use _getVisibilityString() to set old and new values
+        # correctly. We lowercase them for UI consistency in the
+        # activity log.
+        old_value = self._getVisibilityString(self.old_value)
+        new_value = self._getVisibilityString(self.new_value)
+        return {
+           'oldvalue': old_value.lower(),
+           'newvalue': new_value.lower(),
+           'whatchanged': 'visibility',
+           }
+
+    def getBugNotification(self):
+        visibility_string = self._getVisibilityString(self.new_value)
+        return {'text': "** Visibility changed to: %s" % visibility_string}
+
+
+class BugSecurityChange(AttributeChange):
+    """Describes a change to a bug's security setting."""
+
+    activity_mapping = {
+        (False, True): ('no', 'yes'),
+        (True, False): ('yes', 'no'),
+        }
+
+    notification_mapping = {
+        (False, True):
+            u"** This bug has been flagged as a security vulnerability",
+        (True, False):
+            u"** This bug is no longer flagged as a security vulnerability",
+        }
+
+    def getBugActivity(self):
+        old_value, new_value = self.activity_mapping[
+            (self.old_value, self.new_value)]
+        return {
+           'oldvalue': old_value,
+           'newvalue': new_value,
+           'whatchanged': 'security vulnerability',
+           }
+
+    def getBugNotification(self):
+        return {
+            'text': self.notification_mapping[
+                (self.old_value, self.new_value)]
+            }
+
+
+class BugTagsChange(AttributeChange):
+    """Used to represent a change to an `IBug`s tags."""
+
+    def getBugActivity(self):
+        # Convert the new and old values into space-separated strings of
+        # tags.
+        new_value = " ".join(sorted(set(self.new_value)))
+        old_value = " ".join(sorted(set(self.old_value)))
+
+        return {
+            'newvalue': new_value,
+            'oldvalue': old_value,
+            'whatchanged': self.what_changed,
+            }
+
+    def getBugNotification(self):
+        new_tags = set(self.new_value)
+        old_tags = set(self.old_value)
+        added_tags = new_tags.difference(old_tags)
+        removed_tags = old_tags.difference(new_tags)
+
+        messages = []
+        if len(added_tags) > 0:
+            messages.append(
+                "** Tags added: %s" % " ".join(sorted(added_tags)))
+        if len(removed_tags) > 0:
+            messages.append(
+                "** Tags removed: %s" % " ".join(sorted(removed_tags)))
+
+        return {'text': "\n".join(messages)}
+
+
+class BugAttachmentChange(AttributeChange):
+    """Used to represent a change to an `IBug`'s attachments."""
+
+    def getBugActivity(self):
+        if self.old_value is None:
+            what_changed = "attachment added"
+            old_value = None
+            new_value = "%s %s" % (
+                self.new_value.title, self.new_value.libraryfile.http_url)
+        else:
+            what_changed = "attachment removed"
+            attachment = self.new_value
+            old_value = "%s %s" % (
+                self.old_value.title, self.old_value.libraryfile.http_url)
+            new_value = None
+
+        return {
+            'newvalue': new_value,
+            'oldvalue': old_value,
+            'whatchanged': what_changed,
+            }
+
+    def getBugNotification(self):
+        if self.old_value is None:
+            message = '** Attachment added: "%s"\n   %s' % (
+                self.new_value.title, self.new_value.libraryfile.http_url)
+        else:
+            message = '** Attachment removed: "%s"\n   %s' % (
+                self.old_value.title, self.old_value.libraryfile.http_url)
+
+        return {'text': message}
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
+    'private': BugVisibilityChange,
+    'security_related': BugSecurityChange,
+    'tags': BugTagsChange,
     'title': BugTitleChange,
+    'attachment': BugAttachmentChange,
     }
