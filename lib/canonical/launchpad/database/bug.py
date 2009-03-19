@@ -36,8 +36,7 @@ from lazr.lifecycle.event import (
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.components.bugchange import (
-    BranchLinkedToBug, BranchUnlinkedFromBug, CveLinkedToBug,
-    CveUnlinkedFromBug, UnsubscribedFromBug)
+    BranchLinkedToBug, BranchUnlinkedFromBug, UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -843,7 +842,6 @@ class Bug(SQLBase):
         """See `IBug`."""
         if cve not in self.cves:
             bugcve = BugCve(bug=self, cve=cve)
-            self.addChange(CveLinkedToBug(when=None, person=user, cve=cve))
             notify(ObjectCreatedEvent(bugcve, user=user))
             return bugcve
 
@@ -858,8 +856,6 @@ class Bug(SQLBase):
         """See `IBug`."""
         for cve_link in self.cve_links:
             if cve_link.cve.id == cve.id:
-                self.addChange(
-                    CveUnlinkedFromBug(when=None, person=user, cve=cve))
                 notify(ObjectDeletedEvent(cve_link, user=user))
                 BugCve.delete(cve_link.id)
                 break
