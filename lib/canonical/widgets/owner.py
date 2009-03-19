@@ -97,5 +97,3 @@ class HiddenUserWidget(RequestWidget):
 
     def getInputValue(self):
         return getUtility(ILaunchBag).user
-
-

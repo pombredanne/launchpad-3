@@ -9,14 +9,13 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Register a new team</h1>
-    </metal:heading>
+<body>
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_form/form">
+   <h1>Register a new team</h1>
+
+   <div metal:use-macro="context/@@launchpad_form/form">
 
         <p metal:fill-slot="extra_info">
           Use a team to group people involved in a common task.
@@ -27,8 +26,8 @@
 
     </div>
 
+    <metal:js use-macro="context/@@+person-macros/private-team-js" />
+
   </div>
-  </body>
-
+</body>
 </html>
-

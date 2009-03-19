@@ -29,6 +29,15 @@ will use the config value:
     >>> external_debbugs.db_location == config.malone.debbugs_db_location
     True
 
+DebBugs, of course, implements IExternalBugTracker.
+
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     IExternalBugTracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> verifyObject(IExternalBugTracker, external_debbugs)
+    True
+
 
 == Retrieving bug status from the debbugs database ==
 
@@ -88,7 +97,7 @@ tested later.
     >>> external_debbugs.sync_comments = False
     >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
-    INFO:...:Updating 5 watches on http://...
+    INFO:...:Updating 5 watches for 5 bugs on http://...
 
     >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> for bug_watch_id in bug_watch_ids:
@@ -587,7 +596,7 @@ tracker.
     >>> process.returncode
     0
     >>> print err
-    INFO    Updating 1 watches on http://bugs.debian.org
+    INFO    Updating 1 watches for 1 bugs on http://bugs.debian.org
     INFO    Imported 4 comments for remote bug 237001...
     INFO    Imported debbugs #237001 as Launchpad bug #...
     INFO    Imported debbugs #322535 as Launchpad bug #...
@@ -629,3 +638,24 @@ the script gets notified about it.
     >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
     [1]
 
+
+== Getting the remote product for a bug ==
+
+We can get the remote product for a bug by calling getRemoteProduct() on
+a DebBugs instance. In actual fact this is a wrapper around
+getBugTargetName(), since the package in DebBugs is a "remote product"
+in Launchpad.
+
+    >>> external_debbugs = DebBugs(
+    ...     'http://example.com/', db_location=test_db_location)
+
+    >>> print external_debbugs.getRemoteProduct('237001')
+    evolution
+
+Trying to call getRemoteProduct() on a bug that doesn't exist will raise
+a BugNotFound error.
+
+    >>> print external_debbugs.getRemoteProduct('42')
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 42

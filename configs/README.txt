@@ -39,7 +39,7 @@ to load and manage its state.
 The directories in configs/ represent environment's config `instance`.
 Environment and instance are synonymous in this case. The instance is
 often set by the LPCONFIG environment variable, but an app may override
-this. The test,py calls:
+this. The test.py calls:
 
     config.setInstance('testrunner')
 

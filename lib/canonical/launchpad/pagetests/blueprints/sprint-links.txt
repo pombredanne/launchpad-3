@@ -20,7 +20,7 @@ sample data. We will use Sample Person, who has no special privileges.
 
 Then we are going to propose it for the meeting agenda:
 
-  >>> browser.getLink('Propose for sprint').click()
+  >>> browser.getLink('Propose for meeting agenda').click()
   >>> browser.title
   'Put blueprint on sprint agenda'
 
@@ -69,7 +69,7 @@ classes don't know about their own permissions and security).
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/kde-desktopfile-langpacks')
   >>> 'Approved for the meeting agenda' in browser.contents
   False
-  >>> browser.getLink('Propose for sprint').click()
+  >>> browser.getLink('Propose for meeting agenda').click()
   >>> sprint_field = browser.getControl(name='field.sprint')
   >>> sprint_field.value = ['paris']
   >>> browser.getControl('Continue').click()

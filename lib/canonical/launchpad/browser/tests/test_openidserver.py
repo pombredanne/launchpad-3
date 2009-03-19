@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from urllib import urlencode
 import unittest
 
-from openid.message import Message
+from openid.message import Message, OPENID2_NS
+from openid.server.server import OpenIDResponse
 
 from zope.component import getUtility
 from zope.session.interfaces import ISession
@@ -21,6 +22,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.database.openidserver import OpenIDAuthorization
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.testing.pages import setupBrowser
@@ -59,7 +61,7 @@ class SimpleRegistrationTestCase(unittest.TestCase):
     def test_sreg_fields(self):
         # Test that user details are extracted correctly.
         class FieldValueTest(OpenIDMixin):
-            user = getUtility(IPersonSet).getByEmail('david@canonical.com')
+            account = getUtility(IPersonSet).getByEmail('david@canonical.com')
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
                 'x_address1', 'x_address2', 'x_city', 'x_province',
@@ -84,7 +86,7 @@ class SimpleRegistrationTestCase(unittest.TestCase):
         person = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         self.assertEqual(person.lastShippedRequest(), None)
         class FieldValueTest(OpenIDMixin):
-            user = person
+            account = person.account
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
                 'x_address1', 'x_address2', 'x_city', 'x_province',
@@ -155,11 +157,14 @@ class OpenIDMixin_shouldReauthenticate_TestCase(unittest.TestCase):
 
         The user is set-up to have logged 90 days ago.
         """
+        class ShouldReauthenticateTest(OpenIDMixin):
+            # Must create this class so that we can override account, which is
+            # a @property on OpenIDMixin.
+            account = object()
         self.request = LaunchpadTestRequest(
             SERVER_URL='http://openid.launchpad.net/+openid')
         login("test@canonical.com", self.request)
-        self.openid_mixin = OpenIDMixin(None, self.request)
-        self.openid_mixin.user = object()
+        self.openid_mixin = ShouldReauthenticateTest(None, self.request)
         self.openid_mixin.request = self.request
         self.openid_request = FakeOpenIdRequest()
         self.openid_mixin.openid_request = self.openid_request
@@ -208,6 +213,53 @@ class OpenIDMixin_shouldReauthenticate_TestCase(unittest.TestCase):
             datetime.utcnow() - timedelta(seconds=3601))
         self.openid_request.args['max_auth_age'] = '3600'
         self.assertEquals(True, self.openid_mixin.shouldReauthenticate())
+
+
+class OpenIDMixin_checkTeamMembership_TestCase(TestCaseWithFactory):
+    """Test cases for the checkTeamMembership() method."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.request = LaunchpadTestRequest(
+            SERVER_URL='http://openid.launchpad.net/+openid')
+        login("test@canonical.com", self.request)
+        self.person = getUtility(IPersonSet).getByEmail(
+            'guilherme.salgado@canonical.com')
+        self.account = self.factory.makeAccount(
+            'Test account, without a person')
+        class CheckTeamMembershipTest(OpenIDMixin):
+            # Must create this class so that we can override account, which is
+            # a @property on OpenIDMixin.
+            account = None
+        self.openid_mixin = CheckTeamMembershipTest(None, self.request)
+        self.openid_mixin.request = self.request
+        self.openid_request = FakeOpenIdRequest()
+        self.openid_request.args = {'query_membership': 'admins'}
+        self.openid_request.namespace = OPENID2_NS
+        self.openid_response = OpenIDResponse(self.openid_request)
+        self.openid_mixin.openid_request = self.openid_request
+
+    def tearDown(self):
+        logout()
+
+    def test_personless_account(self):
+        # A call to checkTeamMembership() won't add anything to the OpenID
+        # response if the account has no Person associated with.
+        self.openid_mixin.account = self.account
+        self.openid_mixin.checkTeamMembership(self.openid_response)
+        self.failUnlessEqual(self.openid_response.fields.args, {})
+
+    def test_full_fledged_account(self):
+        # A call to checkTeamMembership() will add stuff to the OpenID
+        # response if the account has a Person associated with.
+        self.openid_mixin.account = self.person.account
+        self.openid_mixin.checkTeamMembership(self.openid_response)
+        self.failUnlessEqual(
+            self.openid_response.fields.args,
+            {('http://ns.launchpad.net/2007/openid-teams', 'is_member'):
+                'admins'})
 
 
 def test_suite():

@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007, 20008, 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """The interface for branch merge proposals."""
@@ -15,6 +15,8 @@ __all__ = [
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
     'IBranchMergeProposalListingBatchNavigator',
+    'ICreateMergeProposalJob',
+    'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
     'UserNotBranchReviewer',
@@ -24,18 +26,19 @@ __all__ = [
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
-from canonical.launchpad.interfaces import IBranch
+from canonical.launchpad.interfaces import IBranch, IPerson
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.lazr import DBEnumeratedType, DBItem
-from canonical.lazr.fields import Reference
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported,
-    operation_parameters)
+    call_with, export_as_webservice_entry, export_read_operation,
+    export_write_operation, exported, operation_parameters,
+    operation_returns_entry, REQUEST_USER)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -183,16 +186,8 @@ class IBranchMergeProposal(Interface):
             readonly=True,
             description=_("The current state of the proposal.")))
 
-    reviewer = exported(
-        PublicPersonChoice(
-            title=_('Default Review Team'),
-            required=False,
-            vocabulary='ValidPersonOrTeam',
-            description=_("The reviewer of a branch is the person or team "
-                          "that is responsible for reviewing proposals and "
-                          "merging into this branch.")))
-
-
+    # Not to be confused with a code reviewer. A code reviewer is someone who
+    # can vote or has voted on a proposal.
     reviewer = exported(
         PublicPersonChoice(
             title=_('Review person or team'), required=False,
@@ -294,11 +289,29 @@ class IBranchMergeProposal(Interface):
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
-    all_comments = Attribute(
-        _("All messages discussing this merge proposal"))
+    all_comments = exported(
+        CollectionField(
+            title=_("All messages discussing this merge proposal"),
+            value_type=Reference(schema=Interface), # ICodeReviewComment
+            readonly=True))
 
+    address = exported(
+        TextLine(
+            title=_('The email address for this proposal.'),
+            readonly=True,
+            description=_('Any emails sent to this address will result'
+                          'in comments being added.')))
+
+    @operation_parameters(
+        id=Int(
+            title=_("A CodeReviewComment ID.")))
+    @operation_returns_entry(Interface) # ICodeReviewComment
+    @export_read_operation()
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
+
+    def getVoteReference(id):
+        """Return the CodeReviewVoteReference with the specified ID."""
 
     def getNotificationRecipients(min_level):
         """Return the people who should be notified.
@@ -312,8 +325,12 @@ class IBranchMergeProposal(Interface):
 
 
     # Cannot specify value type without creating a circular dependency
-    votes = List(
-        title=_('The votes cast or expected for this proposal'),
+    votes = exported(
+        CollectionField(
+            title=_('The votes cast or expected for this proposal'),
+            value_type=Reference(schema=Interface), #ICodeReviewVoteReference
+            readonly=True
+            )
         )
 
     def isValidTransition(next_state, user=None):
@@ -412,6 +429,11 @@ class IBranchMergeProposal(Interface):
         user-entered data like the whiteboard.
         """
 
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A person for which the reviewer status is in question."),
+            schema=IPerson))
+    @export_read_operation()
     def isPersonValidReviewer(reviewer):
         """Return true if the `reviewer` is able to review the proposal.
 
@@ -438,6 +460,12 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A reviewer."), schema=IPerson),
+        review_type=Text())
+    @call_with(registrant=REQUEST_USER)
+    @export_write_operation()
     def nominateReviewer(reviewer, registrant, review_type=None):
         """Set the specified person as a reviewer.
 
@@ -451,6 +479,12 @@ class IBranchMergeProposal(Interface):
         :return: A `CodeReviewVoteReference` or None.
         """
 
+    @operation_parameters(
+        subject=Text(), content=Text(),
+        vote=Choice(vocabulary='CodeReviewVote'), review_type=Text(),
+        parent=Reference(schema=Interface))
+    @call_with(owner=REQUEST_USER)
+    @export_write_operation()
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None):
         """Create an ICodeReviewComment associated with this merge proposal.
@@ -530,7 +564,7 @@ class IBranchMergeProposalGetter(Interface):
     def getProposalsForContext(context, status=None, visible_by_user=None):
         """Return BranchMergeProposals associated with the context.
 
-        :param context: Either a 'Person' or 'Product'.
+        :param context: Either an `IPerson` or `IProduct`.
         :param status: An iterable of queue_status of the proposals to return.
             If None is specified, all the proposals of all possible states
             are returned.
@@ -544,10 +578,13 @@ class IBranchMergeProposalGetter(Interface):
             understood.
         """
 
-    def getProposalsForReviewer(context, status=None, visible_by_user=None):
-        """Returen BranchMergeProposals associated with a reviewer.
+    def getProposalsForReviewer(reviewer, status=None, visible_by_user=None):
+        """Return BranchMergeProposals that have the given reviewer.
 
-        :param context: Either a 'Person' or 'Product'.
+        That is, all merge proposals that 'reviewer' has voted on or has been
+        invited to vote on.
+
+        :param reviewer: An `IPerson` who is a reviewer.
         :param status: An iterable of queue_status of the proposals to return.
             If None is specified, all the proposals of all possible states
             are returned.
@@ -559,6 +596,12 @@ class IBranchMergeProposalGetter(Interface):
             the branch, and to LP admins.
         :raises BadBranchMergeProposalSearchContext: If the context is not
             understood.
+        """
+
+    def getVotesForProposals(proposals):
+        """Return a dict containing a mapping of proposals to vote references.
+
+        The values of the dict are lists of CodeReviewVoteReference objects.
         """
 
     def getVoteSummariesForProposals(proposals):
@@ -572,6 +615,26 @@ class IBranchMergeProposalGetter(Interface):
 
 for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
+
+
+class ICreateMergeProposalJob(Interface):
+    """A Job that creates a branch merge proposal.
+
+    It uses a Message, which must contain a merge directive.
+    """
+
+    def run():
+        """Run this job and create the merge proposals."""
+
+
+class ICreateMergeProposalJobSource(Interface):
+    """Acquire MergeProposalJobs."""
+
+    def create(message_bytes):
+        """Return a CreateMergeProposalJob for this message."""
+
+    def iterReady():
+        """Iterate through jobs that are ready to run."""
 
 
 class IMergeProposalCreatedJob(Interface):

@@ -136,6 +136,126 @@ email addresses state is NONE_AVAILABLE.
     []
 
 
+== Languages ==
+
+The PersonView provides a comma separated list of languages that a person
+speaks. The contact details portlet displays the user languages.
+
+English is the default language in Launchpad. If the user has not set
+his preferred languages, English is used.
+
+    >>> sample_person.languages
+    []
+
+    >>> login(ANONYMOUS)
+    >>> view = create_view(sample_person, '+portlet-contact-details')
+    >>> print view.languages
+    English
+
+This assumption is visible to the user when he views his own profile page,
+and he can set his preferred languages if he wants to make a correction.
+The list of languages is alphabetized.
+
+    >>> from canonical.launchpad.interfaces.language import ILanguageSet
+
+    >>> languageset = getUtility(ILanguageSet)
+    >>> sample_person.addLanguage(languageset.getLanguageByCode('so'))
+    >>> sample_person.addLanguage(languageset.getLanguageByCode('fr'))
+
+    >>> view = create_view(sample_person, '+portlet-contact-details')
+    >>> print view.languages
+    French, Somali
+
+Teams may have languages too. English is the default if the team has not
+set a language.
+
+    >>> landscape_developers.languages
+    []
+
+    >>> view = create_view(landscape_developers, '+portlet-contact-details')
+    >>> print view.languages
+    English
+
+Teams most often set just one language that is used for the Answers
+application. If the language is a variant, the variation is shown
+in parenthesis.
+
+    >>> landscape_developers.addLanguage(
+    ...     languageset.getLanguageByCode('pt_BR'))
+    >>> view = create_view(landscape_developers, '+portlet-contact-details')
+    >>> print view.languages
+    Portuguese (Brazil)
+
+
+== Location ==
+
+The Person profile page contains the location portlet that shows a map.
+The map requires the google GMap JavaScript to display, so the views set
+the state of the request's needs_gmap2 attribute to True only when the
+user has set his latitude, it is visible, and the viewing user wishes
+to see it. The map is not rendered if the user has not set his location.
+
+    >>> sample_person.latitude is None
+    True
+
+    >>> person_view = create_initialized_view(sample_person, '+index')
+    >>> person_view.request.needs_gmap2
+    False
+
+The map_portlet_html property that creates the map cannot be called.
+
+    >>> print person_view.map_portlet_html
+    Traceback (most recent call last):
+     ...
+    AssertionError: Can't generate the map for a person who hasn't set
+                    a visible location.
+
+If the user set's his location, but does not make it visible, needs_gmap2
+will still be False and the map_portlet_html property cannot be called.
+
+    >>> login_person(sample_person)
+    >>> sample_person.setLocation(
+    ...     38.81, 77.1, 'America/New_York', sample_person)
+    >>> sample_person.setLocationVisibility(False)
+    >>> login('no-priv@canonical.com')
+
+    >>> person_view = create_initialized_view(sample_person, '+index')
+    >>> person_view.request.needs_gmap2
+    False
+    >>> print person_view.map_portlet_html
+    Traceback (most recent call last):
+     ...
+    AssertionError: Can't generate the map for a person who hasn't set
+                    a visible location.
+
+When the user set's his visibility to True, needs_gmap2 will be true and
+the map_portlet_html can be called.
+
+    >>> login_person(sample_person)
+    >>> sample_person.setLocationVisibility(True)
+
+    >>> person_view = create_initialized_view(sample_person, '+index')
+    >>> person_view.request.needs_gmap2
+    True
+    >>> print person_view.map_portlet_html
+    <script type="text/javascript">
+      YUI().use('node', 'lp.mapping', function(Y) { ...
+
+The small_maps key in the launchpad_views cookie can be set of the viewing
+user to 'false' to indicate that small maps are not wanted. While needs_gmap2
+is False, the map_portlet_html property's markup is still needed to render
+the 'Show maps' checkbox.
+
+    >>> cookie = 'launchpad_views=small_maps=false'
+    >>> person_view = create_initialized_view(
+    ...     sample_person, '+index', cookie=cookie)
+    >>> person_view.request.needs_gmap2
+    False
+    >>> print person_view.map_portlet_html
+    <script type="text/javascript">
+      YUI().use('node', 'lp.mapping', function(Y) { ...
+
+
 == Things a person is working on ==
 
 PersonView is the base for many views for Person objects. It provides

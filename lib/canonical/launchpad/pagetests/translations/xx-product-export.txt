@@ -4,7 +4,7 @@ Products and product series that use Translations offer complete
 translation downloads.
 
     >>> user_browser.open('http://translations.launchpad.dev/evolution')
-    >>> download = user_browser.getLink('Download translations')
+    >>> download = user_browser.getLink('Download "trunk"')
 
 For products, that option downloads translations for the series that is
 currently the preferred translation target.
@@ -17,7 +17,7 @@ Another way of getting that same export would be to browse to the series
 first and requesting a download there.
 
     >>> user_browser.open('http://translations.launchpad.dev/evolution/trunk')
-    >>> user_browser.getLink('Download translations').click()
+    >>> user_browser.getLink('Download').click()
     >>> user_browser.url
     'http://translations.launchpad.dev/evolution/trunk/+export'
 
@@ -45,7 +45,7 @@ Translations.
     >>> product.official_rosetta = False
     >>> product.sync()
     >>> user_browser.open('http://translations.launchpad.dev/evolution')
-    >>> user_browser.getLink('Download translations')
+    >>> user_browser.getLink('Download "trunk"')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -54,7 +54,7 @@ Translations.
     >>> product.official_rosetta = True
     >>> product.sync()
     >>> user_browser.open('http://translations.launchpad.dev/evolution')
-    >>> user_browser.getLink('Download translations') is not None
+    >>> user_browser.getLink('Download "trunk"') is not None
     True
 
 
@@ -63,23 +63,16 @@ Translations.
 Only logged-in users get the option to request downloads.
 
     >>> anon_browser.open('http://translations.launchpad.dev/evolution/')
-    >>> anon_browser.getLink('Download translations').click()
+    >>> anon_browser.getLink('Download "trunk"').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-We can see its placeholder in development mode:
+We can't see its placeholder in non-development mode:
 
     >>> from canonical.config import config
     >>> config.devmode
     True
-    >>> for tag in find_tags_by_class(
-    ...     anon_browser.contents, 'menu-link-translationdownload-disabled'):
-    ...     print tag.renderContents()
-    Download translations (disabled)
-
-But not when it's non-development mode:
-
     >>> config.devmode = False
     >>> anon_browser.open('http://translations.launchpad.dev/evolution/')
     >>> for tag in find_tags_by_class(

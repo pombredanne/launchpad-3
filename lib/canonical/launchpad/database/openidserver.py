@@ -22,7 +22,8 @@ from openid.store.sqlstore import PostgreSQLStore
 import psycopg2
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
-from storm.expr import Or
+from storm.expr import Desc, Or
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements, classProvides
 
@@ -62,38 +63,27 @@ class OpenIDAuthorization(SQLBase):
     date_expires = UtcDateTimeCol(notNull=True)
     trust_root = StringCol(notNull=True)
 
-    # IOpenIDAuthorization.person is deprecated
-    @property
-    def person(self):
-        return Store.of(self).find(Person, account=self.account).one()
-
-    @property
-    def personID(self):
-        return self.person.id
-
 
 class OpenIDAuthorizationSet:
     implements(IOpenIDAuthorizationSet)
 
-    def isAuthorized(self, person, trust_root, client_id):
+    def isAuthorized(self, account, trust_root, client_id):
         """See IOpenIDAuthorizationSet."""
         return  OpenIDAuthorization.select("""
             account = %s
             AND trust_root = %s
             AND date_expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             AND (client_id IS NULL OR client_id = %s)
-            """ % sqlvalues(person.accountID, trust_root, client_id)
+            """ % sqlvalues(account, trust_root, client_id)
             ).count() > 0
 
-    def authorize(self, person, trust_root, expires, client_id=None):
+    def authorize(self, account, trust_root, expires, client_id=None):
         """See IOpenIDAuthorizationSet."""
         if expires is None:
             expires = NEVER_EXPIRES
 
-        assert not person.isTeam(), 'Attempting to authorize a team.'
-
         existing = OpenIDAuthorization.selectOneBy(
-                accountID=person.accountID,
+                accountID=account.id,
                 trust_root=trust_root,
                 client_id=client_id
                 )
@@ -102,12 +92,19 @@ class OpenIDAuthorizationSet:
             existing.date_expires = expires
         else:
             # Even though OpenIDAuthorizationSet always uses the master
-            # store, it's likely that the person can come from the slave.
+            # store, it's likely that the account can come from the slave.
             # That's why we are using the ID to create the reference.
             OpenIDAuthorization(
-                    accountID=person.accountID, trust_root=trust_root,
+                    accountID=account.id, trust_root=trust_root,
                     date_expires=expires, client_id=client_id
                     )
+
+    def getByAccount(self, account):
+        """See `IOpenIDAuthorizationSet`."""
+        store = Store.of(account)
+        result = store.find(OpenIDAuthorization, account=account)
+        result.order_by(Desc(OpenIDAuthorization.date_created))
+        return result
 
 
 class OpenIDRPConfig(SQLBase):
@@ -284,7 +281,7 @@ class OpenIDRPSummarySet:
         summaries = OpenIDRPSummary.select("""
             account != %s
             AND openid_identifier = %s
-            """ % sqlvalues(account.id, identifier))
+            """ % sqlvalues(account, identifier))
         if summaries.count() > 0:
             raise AssertionError(
                 'More than 1 account has the OpenID identifier of %s.' %

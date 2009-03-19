@@ -1,5 +1,8 @@
 = Introduction =
 
+These tests are being ported to the lazr.restful example
+webservice. Once they're all ported, this file will be removed.
+
 All collections published by the Launchpad web service work pretty
 much the same way. This document illustrates the general features of
 entries, using Launchpad's collections of people/teams and bugs as
@@ -32,6 +35,14 @@ collection.
   u'http://.../bugs/12'
   >>> bugs_entries[-1]['title']
   u'jokosher exposes personal details in its actions portlet'
+
+There are no XHTML representations available for collections.
+
+  >>> print webservice.get('/bugs', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  ...
 
 You can get other pages of the collection by following links:
 
@@ -134,6 +145,7 @@ The elements of a collection can be looked up by unique identifier:
   default_renewal_period: None
   display_name: u'Launchpad Administrators'
   expired_members_collection_link: u'http://.../~admins/expired_members'
+  hardware_submissions_collection_link: u'http://.../~admins/hardware_submissions'
   hide_email_addresses: False
   homepage_content: None
   invited_members_collection_link: u'http://.../~admins/invited_members'
@@ -208,7 +220,7 @@ like a collection.
   >>> s_people['total_size']
   8
   >>> s_people['next_collection_link']
-  u'http://.../people?ws.op=find&text=s&ws.start=5&ws.size=5'
+  u'http://.../people?text=s&ws.op=find&ws.start=5&ws.size=5'
   >>> sorted(p['name'] for p in s_people['entries'])
   [u'keybuk', u'salgado', u'sigurd-ubuntu', u'sjoerd', u'stevea']
 
@@ -250,7 +262,7 @@ the collection of people.
   HTTP/1.1 201 Created
   ...
   Location: http://.../~serviceteam
-  <BLANKLINE>
+  ...
 
   >>> print webservice.get('/~serviceteam')
   HTTP/1.1 200 Ok
@@ -260,7 +272,7 @@ the collection of people.
   HTTP/1.1 201 Created
   ...
   Location: http://.../~serviceteam2
-  <BLANKLINE>
+  ...
 
   >>> print webservice.get('/~serviceteam2')
   HTTP/1.1 200 Ok

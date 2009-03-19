@@ -5,23 +5,29 @@
   omit-tag="">
 
   <tr class="archive_package_row">
-    <td style="white-space: nowrap"><input type="checkbox"
-           tal:condition="view/allow_selection"
-           tal:attributes="value context/id;
-                           id string:field.selected_sources.${context/id}"
-           name="field.selected_sources" /><a href="#"
-           tal:attributes="onclick
-           string:return toggleExpandableTableRow('pub${context/id}');"
-           ><img src="/@@/treeCollapsed" alt="Show files" title="Show files"
-                 tal:attributes="id string:pub${context/id}-arrow" /></a>
-         <tal:source_name content="context/sourcepackagerelease/title"
-         >foo - 1.0</tal:source_name>
+    <td style="white-space: nowrap">
+      <input
+        name="field.selected_sources" type="checkbox"
+        tal:condition="view/allow_selection"
+        tal:attributes="value context/id;
+                        id string:field.selected_sources.${context/id}"/>
+      <a class="expander"
+         tal:attributes="id string:pub${context/id}-expander;
+                         href string:+sourcepub/${context/id}/+listing-archive-extra">
+        <img src="/@@/treeCollapsed" alt="Show details" title="Show details"
+             tal:attributes="id string:pub${context/id}-arrow" />
+        <img src="/@@/package-source" />
+        <tal:source_name replace="context/sourcepackagerelease/title">
+          foo - 1.0
+        </tal:source_name>
+      </a>
     </td>
     <td>
       <tal:view_changesfile
         define="changesfile context/sourcepackagerelease/upload_changesfile">
         <a tal:condition="changesfile"
-          tal:attributes="href string:+files/${changesfile/filename}"
+           tal:attributes="href string:+files/${changesfile/filename};
+                           title changesfile/filename"
           >(changesfile)</a>
       </tal:view_changesfile>
     </td>
@@ -56,64 +62,11 @@
       </tal:related_builds>
     </td>
   </tr>
-  <tr tal:attributes="id string:pub${context/id}"
-      tal:define="published_source_and_binary_files
-                  view/published_source_and_binary_files"
-      style="display: none">
+  <tr tal:attributes="id string:pub${context/id}" style="display: none">
     <td colspan="7">
-      <h3>Publishing details</h3>
-        <tal:block replace="structure context/@@+record-details" />
-      <h3>Changelog</h3>
-        <tal:changelog
-           replace="structure context/sourcepackagerelease/@@+changelog"/>
-      <div tal:attributes="id string:diff-for-${context/sourcepackagerelease/version}"
-           tal:define="diffs context/sourcepackagerelease/package_diffs"
-           tal:condition="diffs">
-        <h3>Available diffs</h3>
-        <ul>
-           <li tal:repeat="diff diffs">
-              <tal:pending condition="not: diff/date_fulfilled">
-                 <tal:pending-diff replace="diff/title">
-                   1.0 (in Ubuntu) to 1.1
-                 </tal:pending-diff>
-              </tal:pending>
-              <tal:fulfilled condition="diff/date_fulfilled">
-                 <a tal:attributes="href string:+files/${diff/diff_content/filename}"
-                    tal:content="diff/title">1.0 (in Ubuntu) to 1.1</a>
-                 (<tal:size
-                    replace="diff/diff_content/content/filesize/fmt:bytes"
-                    >100 bytes</tal:size>)
-              </tal:fulfilled>
-           </li>
-        </ul>
-      </div>
-      <h3>Builds</h3>
-      <ul style="margin-top: 0; margin-bottom: 0">
-        <li tal:repeat="build view/builds">
-          <tal:icon replace="structure build/image:icon" />
-          <a tal:attributes="href build/fmt:url"
-             tal:content="build/distroarchseries/architecturetag">i386</a>
-        </li>
-      </ul>
-      <tal:built-packages condition="view/built_packages" omit-tag="">
-        <h3>Built Packages</h3>
-        <ul tal:repeat="package view/built_packages"
-            style="margin-top: 0; margin-bottom: 0">
-          <li>
-            <b><tal:name replace="package/binarypackagename"/></b>
-            <tal:summary replace="package/summary"/>
-          </li>
-        </ul>
-      </tal:built-packages>
-      <h3>Download files from Librarian</h3>
-      <span tal:condition="not: published_source_and_binary_files"
-         style="padding-left: 1em">No files published for this package.</span>
-      <ul tal:repeat="file published_source_and_binary_files"
-          style="margin-top: 0; margin-bottom: 0">
-        <li><a tal:attributes ="href string:+files/${file/filename}"
-               tal:content="string:${file/filename}"></a>
-                (<span tal:content="file/filesize/fmt:bytes" />)</li>
-      </ul>
+      <div class="package-details"
+           tal:attributes="id string:pub${context/id}-container" />
     </td>
   </tr>
+
 </tal:root>

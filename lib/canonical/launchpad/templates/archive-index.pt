@@ -14,6 +14,9 @@
       <tal:devmode condition="devmode">
         <tal:archive_js define="lp_js string:${icingroot}/build">
           <script type="text/javascript"
+                  tal:attributes="src string:${lp_js}/soyuz/base.js">
+          </script>
+          <script type="text/javascript"
                   tal:attributes="src string:${lp_js}/soyuz/lp_dynamic_dom_updater.js">
           </script>
           <script type="text/javascript"
@@ -22,25 +25,15 @@
         </tal:archive_js>
       </tal:devmode>
       <script type="text/javascript">
-YUI().use(
-    'node', 'soyuz.update_archive_build_statuses', 'io-base',
-    'lazr.anim', function(Y) {
+YUI().use('io-base', 'lazr.anim', 'node', 'soyuz-base',
+          'soyuz.update_archive_build_statuses', function(Y) {
+
 
 /*
  * Update the page based on the XHR response.
  */
-function doUpdate(transaction_id, response) {
-    var container = Y.Node.create('<div>');
-    container.set('innerHTML', response.responseText);
-
-    var target_node = Y.get('#package_counters');
-    target_node.replaceChild(
-        container, target_node.query('p'));
-
-    var anim = Y.lazr.anim.green_flash({
-        node: container
-    });
-    anim.run();
+function doUpdate(transaction_id, response, args) {
+    args.container.set('innerHTML', response.responseText);
 }
 
 
@@ -48,30 +41,18 @@ function doUpdate(transaction_id, response) {
  * Communicate the update has failed and allow the user to retry
  * the operation.
  */
-function informFailure(transaction_id, response) {
-    var text = Y.Node.create('<span>');
-    text.set('innerHTML', 'Failed to fetch information.');
+function informFailure(transaction_id, response, args) {
+    function retry_handler (e) {
+        e.preventDefault();
+        dispatchUpdate();
+    };
 
-    var retry_link = Y.Node.create('<a>')
-    retry_link.set('id', 'retry-repository-size-update');
-    retry_link.set('href', '');
-    retry_link.set('innerHTML', 'Retry');
-    retry_link.on(
-        'click',
-        function (e) {
-            e.preventDefault();
-            dispatchUpdate();
-            }
-    );
+    var failure_message = Y.soyuz.makeFailureNode(
+        'Failed to fetch repository size ...', retry_handler);
 
-    var failure_message = Y.Node.create('<p>');
-    failure_message.set('id', 'failure-message');
-    failure_message.appendChild(text);
-    failure_message.appendChild(retry_link);
+    args.container.set('innerHTML', '');
+    args.container.appendChild(failure_message);
 
-    var target_node = Y.get('#package_counters');
-    target_node.replaceChild(
-        failure_message, target_node.query('p'));
     var anim = Y.lazr.anim.red_flash({
         node: failure_message
         });
@@ -83,27 +64,26 @@ function informFailure(transaction_id, response) {
  * Communicate an update is in progress and fire the XHR.
  */
 function dispatchUpdate () {
-    var text = Y.Node.create('<span>');
-    text.set('innerHTML', 'Updating archive size information ...');
+    in_progress_message = Y.soyuz.makeInProgressNode(
+        'Fetching repository size ...')
 
-    var in_progress_message = Y.Node.create('<p>');
-    in_progress_message.set('id', 'in-progress-message');
-    in_progress_message.appendChild(text);
+    var container = Y.get('#package_counters div');
+    container.set('innerHTML', '');
+    container.appendChild(in_progress_message)
 
-    var target_node = Y.get('#package_counters');
-    target_node.replaceChild(
-        in_progress_message, target_node.query('p'));
+    var uri = '+repository-size';
+    var xhr_config = {
+        on: {
+            success: doUpdate,
+            failure: informFailure
+        },
+        arguments: {
+            'container': container
+        }
+    };
 
     Y.io(uri, xhr_config);
 }
-
-var uri = '+repository-size';
-var xhr_config = {
-    on: {
-        success: doUpdate,
-        failure: informFailure
-    }
-};
 
 Y.on("domready", dispatchUpdate);
 });
@@ -112,25 +92,11 @@ Y.on("domready", dispatchUpdate);
 div#package_counters p {
     line-height: 3.6em;
 }
-
-div#package_counters p#failure-message {
-    background: url(/@@/no) center left no-repeat;
-    padding-left: 18px;
-}
-
-div#package_counters p#in-progress-message {
-    background: url(/@@/spinner) center left no-repeat;
-    padding-left: 18px;
-}
-
-div#package_counters #retry-repository-size-update {
-    padding-left: 5px;
-}
       </style>
     </metal:block>
 
     <div metal:fill-slot="main"
-         tal:define="archive_active view/is_active;
+         tal:define="archive_active view/has_sources;
                      archive_label view/archive_label"
          tal:attributes="class string:archive">
 
@@ -153,6 +119,10 @@ div#package_counters #retry-repository-size-update {
       <div class="actions" style="float:right;">
         <tal:administer
           define="link context/menu:context/admin"
+          condition="link/enabled"
+          replace="structure link/render" />
+        <tal:manage-subscribers
+          define="link context/menu:context/manage_subscribers"
           condition="link/enabled"
           replace="structure link/render" />
         <tal:edit
@@ -223,8 +193,8 @@ div#package_counters #retry-repository-size-update {
            tal:condition="signing_key">
         <p>This repository is signed with
           <a tal:attributes="href signing_key/keyserverURL">
-            <code tal:content="signing_key/fingerprint">
-              0123456789012345678901234567890123456789
+            <code tal:content="signing_key/displayname">
+              1024R/23456789
             </code></a> OpenPGP key.
           <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories"
           >Follow these instructions</a>
@@ -255,10 +225,12 @@ div#package_counters #retry-repository-size-update {
 
       <div id="package_counters">
         <h2>Repository disk usage</h2>
-        <p class="discreet">
-           Package counters and estimated archive size temporarily
-           unavailable.
-        </p>
+        <div>
+          <p class="discreet">
+            Package counters and estimated archive size temporarily
+            unavailable.
+          </p>
+        </div>
       </div>
 
       <div class="actions" style="clear:right;float:right;">
@@ -275,6 +247,9 @@ div#package_counters #retry-repository-size-update {
           condition="link/enabled"
           replace="structure link/render" />
       </div>
+
+      <metal:package_filter_form
+              use-macro="context/@@+macros/package-filter-form" />
 
       <metal:package-list
           use-macro="context/@@+macros/source-package-list" />

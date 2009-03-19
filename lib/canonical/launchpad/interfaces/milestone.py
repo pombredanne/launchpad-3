@@ -17,6 +17,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
 from canonical.launchpad.interfaces.bugtarget import IHasBugs
+from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description
@@ -121,6 +122,9 @@ class IMilestone(IHasBugs):
                  readonly=True))
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
+
+# Avoid circular imports
+IBugTask['milestone'].schema = IMilestone
 
 
 class IMilestoneSet(Interface):

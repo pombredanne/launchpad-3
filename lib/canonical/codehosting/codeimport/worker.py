@@ -16,11 +16,12 @@ import os
 import shutil
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
+from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.osutils import pumpfile
 from bzrlib.urlutils import join as urljoin
+from bzrlib.upgrade import upgrade
 
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.codeimport.foreigntree import (
@@ -28,7 +29,7 @@ from canonical.codehosting.codeimport.foreigntree import (
 from canonical.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from canonical.config import config
-from canonical.launchpad.interfaces import RevisionControlSystems
+from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
 
 from cscvs.cmds import totla
 import cscvs
@@ -55,10 +56,18 @@ class BazaarBranchStore:
 
         :return: A Bazaar working tree for the branch of `code_import`.
         """
+        remote_url = self._getMirrorURL(db_branch_id)
         try:
-            bzr_dir = BzrDir.open(self._getMirrorURL(db_branch_id))
+            bzr_dir = BzrDir.open(remote_url)
         except NotBranchError:
             return BzrDir.create_standalone_workingtree(target_path)
+        if bzr_dir.needs_format_conversion(
+                    format=BzrDirFormat.get_default_format()):
+            try:
+                bzr_dir.root_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
+            upgrade(remote_url)
         bzr_dir.sprout(target_path)
         return BzrDir.open(target_path).open_workingtree()
 

@@ -16,7 +16,10 @@ Set up required objects
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
     >>> eric_browser.open(merge_proposal_url)
     >>> eric_browser.getLink('Add a comment').click()
-    >>> eric_browser.getControl(name='field.comment').value = 'my body'
+    >>> eric_browser.getControl(name='field.comment').value = ('This is a '
+    ... 'very long comment about what things should be done to the source '
+    ... 'branch to land it.  When this comment is replied to, it '
+    ... 'should wrap the line properly.')
     >>> eric_browser.getControl(name='field.actions.add').click()
     >>> eric_browser.url == merge_proposal_url
     True
@@ -36,7 +39,9 @@ to the main merge proposal page.
     >>> print_comments('boardCommentDetails')
     Eric the Viking wrote ...
     >>> print_comments('boardCommentBody')
-    my body
+    This is a very long comment about what things should be done to the
+    source branch to land it. When this comment is replied to, it should
+    wrap the line properly.
     >>> print_comments('commentSuffix')
     Reply
 
@@ -55,8 +60,11 @@ We can reply to a comment.
 
     >>> eric_browser.open(merge_proposal_url)
     >>> eric_browser.getLink('Reply').click()
-    >>> print eric_browser.getControl(name='field.comment').value
-    "my body"
+    >>> print eric_browser.getControl(name='field.comment').value.replace(
+    ...     '\r\n', '\n') # doctest: -NORMALIZE_WHITESPACE
+    > This is a very long comment about what things should be done to the source
+    > branch to land it.  When this comment is replied to, it should wrap the line
+    > properly.
 
     >>> eric_browser.getControl(name='field.comment').value = ('I like this.\n'
     ... 'I wish I had time to review it properly\n\n'
@@ -65,30 +73,10 @@ We can reply to a comment.
 
 After this, we are taken to the main page for the merge proposal
 
-The comment is shown in full, but hidden, and is shown with javascipt.
-The shorter comment is shown with a hyperlink to show the full comment.
-If javascript is not available, the link takes the user to a view that
-shows the entire message.
-
-If the summary is over three lines, then it ends with an ellipsis.
-
-    >>> print_comments(
-    ...     'boardCommentBody', eric_browser, index=2) #doctest: -ELLIPSIS
-    I like this.
-    I wish I had time to review it properly ...
-    (show full message)
-
-    >>> eric_browser.getLink('show full message').click()
-    >>> print_comments('boardCommentBody', eric_browser)
+    >>> print_comments('boardCommentBody', eric_browser, index=1)
     I like this.
     I wish I had time to review it properly
     This is a longer message with several lines
-
-The comment's view page has a link that takes us back to the merge proposal.
-
-    >>> eric_browser.getLink('Back to merge proposal').click()
-    >>> bool(eric_browser.url == merge_proposal_url)
-    True
 
 
 == Reviewing ==
@@ -102,9 +90,9 @@ vote summary table.
     >>> eric_browser.getControl('Review type').value = 'timeless'
     >>> eric_browser.getControl('Save Review').click()
 
-    >>> print_comments('boardCommentDetails', eric_browser, index=3)
+    >>> print_comments('boardCommentDetails', eric_browser, index=2)
     timeless Abstain   Eric the Viking voted ...second...ago
-    >>> print_comments('boardCommentBody', eric_browser, index=3)
+    >>> print_comments('boardCommentBody', eric_browser, index=2)
 
 
 == Vote summaries ==
@@ -116,3 +104,4 @@ in a table at the top of the page.
     ...     eric_browser.contents, 'code-review-votes'))
     Reviewer         Review Type    Date Requested    Status
     Eric the Viking  timeless       ...               Abstain ...second...ago
+    Review via email: mp+1@code.launchpad.dev

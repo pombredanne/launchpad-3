@@ -318,3 +318,11 @@ padding-bottom: 1em;
 font-size: 8pt;
 text-align:right;
 }
+
+#left-link-holder {
+float: left; 
+margin: 0 20px; 
+padding-bottom: 1em; 
+font-size: 8pt;
+text-align: left;
+}

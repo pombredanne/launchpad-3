@@ -566,12 +566,12 @@ attributes.
 
 == Events ==
 
-Each of the workflow methods will trigger a SQLObjectCreatedEvent for
-the message they create and a SQLObjectModifiedEvent for the question.
+Each of the workflow methods will trigger a ObjectCreatedEvent for
+the message they create and a ObjectModifiedEvent for the question.
 
     # Register an event listener that will print event it receives.
-    >>> from canonical.launchpad.event.interfaces import (
-    ...     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
+    >>> from lazr.lifecycle.interfaces import (
+    ...     IObjectCreatedEvent, IObjectModifiedEvent)
     >>> from canonical.launchpad.interfaces import IQuestion
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> def print_event(object, event):
@@ -579,30 +579,30 @@ the message they create and a SQLObjectModifiedEvent for the question.
     ...         event.__class__.__name__.split('.')[-1],
     ...         object.__class__.__name__.split('.')[-1])
     >>> questionmessage_event_listener = TestEventListener(
-    ...     IQuestionMessage, ISQLObjectCreatedEvent, print_event)
+    ...     IQuestionMessage, IObjectCreatedEvent, print_event)
     >>> question_event_listener = TestEventListener(
-    ...     IQuestion, ISQLObjectModifiedEvent, print_event)
+    ...     IQuestion, IObjectModifiedEvent, print_event)
 
 Changing the status triggers the event:
 
     >>> login(stub.preferredemail.email)
     >>> msg = question.setStatus(stub, QuestionStatus.EXPIRED, 'Status change.')
-    Received SQLObjectCreatedEvent on QuestionMessage
-    Received SQLObjectModifiedEvent on Question
+    Received ObjectCreatedEvent on QuestionMessage
+    Received ObjectModifiedEvent on Question
 
 Example of a workflow method that triggers the events:
 
     >>> msg = question.reject(stub, 'Close this question.')
-    Received SQLObjectCreatedEvent on QuestionMessage
-    Received SQLObjectModifiedEvent on Question
+    Received ObjectCreatedEvent on QuestionMessage
+    Received ObjectModifiedEvent on Question
 
 Even only adding a comment without changing the status will send
 these events.
 
     >>> login('test@canonical.com')
     >>> msg = question.addComment(sample_person, 'A comment')
-    Received SQLObjectCreatedEvent on QuestionMessage
-    Received SQLObjectModifiedEvent on Question
+    Received ObjectCreatedEvent on QuestionMessage
+    Received ObjectModifiedEvent on Question
 
     # Cleanup
     >>> questionmessage_event_listener.unregister()
@@ -617,7 +617,7 @@ is reopened, a QuestionReopening is created.
     # QuestionReopening is created.
     >>> from canonical.launchpad.interfaces import IQuestionReopening
     >>> reopening_event_listener = TestEventListener(
-    ...     IQuestionReopening, ISQLObjectCreatedEvent, print_event)
+    ...     IQuestionReopening, IObjectCreatedEvent, print_event)
 
 The most common use case is when a user confirms a solution, and then
 comes back to say that it doesn't work in fact.
@@ -636,7 +636,7 @@ comes back to say that it doesn't work in fact.
     ...     "Actually, altough the installer boots properly. I'm not able "
     ...     "to pass beyond the partitioning.",
     ...     datecreated=now_plus_three_hours)
-    Received SQLObjectCreatedEvent on QuestionReopening
+    Received ObjectCreatedEvent on QuestionReopening
 
 The reopening record is available through the reopenings attribute.
 
@@ -679,7 +679,7 @@ back to OPEN after having been rejected.
     ...     stub, QuestionStatus.OPEN, 'Disregard previous rejection. '
     ...     'Sample Person was having a bad day.',
     ...     datecreated=now_plus_two_hours)
-    Received SQLObjectCreatedEvent on QuestionReopening
+    Received ObjectCreatedEvent on QuestionReopening
 
     >>> reopening = question.reopenings[0]
     >>> print reopening.reopener.name

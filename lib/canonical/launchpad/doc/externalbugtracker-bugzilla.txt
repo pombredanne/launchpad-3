@@ -7,11 +7,21 @@ ExternalBugTracker works.
 
 == Basics ==
 
-The class that implements EBT is called Bugzilla. It works differently
-depending on which version of Bugzilla it is talking to. If it's a
-version we can't parse, UnparseableBugTrackerVersion is raised:
+The class that implements ExternalBugTracker is called Bugzilla.
 
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     IExternalBugTracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> external_bugzilla = Bugzilla('http://example.com')
+    >>> verifyObject(IExternalBugTracker, external_bugzilla)
+    True
+
+The Bugzilla ExternalBugTracker works differently depending on which
+version of Bugzilla it is talking to. If it's a version we can't parse,
+UnparseableBugTrackerVersion is raised:
+
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B4')
@@ -174,6 +184,8 @@ if the bug is closed:
     "Won't Fix"
     >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
     'Invalid'
+    >>> external_bugzilla.convertRemoteStatus('CLOSED UPSTREAM').title
+    'Fix Released'
 
 If the status can't be converted an UnknownRemoteStatusError will be
 returned.
@@ -198,7 +210,7 @@ update:
     3224:
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, gnome_bugzilla.watches)
-    INFO:...:Updating 2 watches on http://bugzilla.gnome.org/bugs
+    INFO:...:Updating 2 watches for 2 bugs on http://bugzilla.gnome.org/bugs
     WARNING:...Didn't find bug u'304070' on
     http://bugzilla.gnome.org/bugs (local bugs: 15).
 
@@ -238,7 +250,7 @@ Then updateBugWatches() will make one request per bug watch:
     >>> external_bugzilla.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, gnome_bugzilla.watches)
-    INFO:...:Updating 7 watches on http://bugzilla.gnome.org/bugs
+    INFO:...:Updating 7 watches for 7 bugs on http://bugzilla.gnome.org/bugs
     CALLED _postPage()
     CALLED _postPage()
     CALLED _postPage()
@@ -284,7 +296,7 @@ updateBugWatches() issues only one request to update all watches:
     >>> external_bugzilla.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, gnome_bugzilla.watches)
-    INFO:...:Updating 207 watches on http://bugzilla.gnome.org/bugs
+    INFO:...:Updating 207 watches for 207 bugs...
     CALLED _postPage()
     WARNING:...:Didn't find bug u'304070' on
     http://bugzilla.gnome.org/bugs (local bugs: 15).
@@ -315,7 +327,7 @@ updated:
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
     >>> bug_watch_updater.updateBugWatches(external_bugzilla, [bug_watch])
-    INFO:...:Updating 1 watches on http://bugzilla.gnome.org/bugs
+    INFO:...:Updating 1 watches for 1 bugs on http://bugzilla.gnome.org/bugs
     >>> bug_watch.lastchanged == old_last_changed
     True
 
@@ -349,7 +361,7 @@ synced:
 
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [thunderbird_task.bugwatch])
-    INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
+    INFO:...:Updating 1 watches for 1 bugs on https://bugzilla.mozilla.org
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
@@ -370,7 +382,7 @@ status mapping.
     ...     getUtility(IPersonSet).getByName('no-priv'))
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [thunderbird_task.bugwatch])
-    INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
+    INFO:...:Updating 1 watches for 1 bugs on https://bugzilla.mozilla.org
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
@@ -394,7 +406,7 @@ same remote bug, both will of course be updated.
     >>> bug_watch2_id = bug_watch2.id
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [bug_watch1, bug_watch2])
-    INFO:...:Updating 2 watches on https://bugzilla.mozilla.org
+    INFO:...:Updating 2 watches for 1 bugs on https://bugzilla.mozilla.org
 
     >>> bug_watch1 = getUtility(IBugWatchSet).get(bug_watch1_id)
     >>> print bug_watch1.remotestatus
@@ -424,3 +436,40 @@ it can be displayed to the user.
     >>> bug_watch2 = getUtility(IBugWatchSet).get(bug_watch2_id)
     >>> bug_watch2.last_error_type.title
     'Unparsable Bug'
+
+
+== Getting Remote Product ==
+
+getRemoteProduct() returns the product a remote bug is associated with
+in Bugzilla. getRemoteProduct() has to be called after
+initializeRemoteBugDB() has been called, in order for the bug
+information to be fetched from the external Bugzilla instance.
+
+    >>> external_bugzilla = TestBugzilla()
+    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.initializeRemoteBugDB(['84'])
+    >>> external_bugzilla.remote_bug_product['84']
+    u'product-84'
+    >>> external_bugzilla.getRemoteProduct('84')
+    u'product-84'
+
+Sometimes we might not get the product in the bug listing. In these
+cases getRemoteProduct() returns None.
+
+    >>> external_bugzilla = TestBugzilla()
+    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> # Make the buglist XML not include the product tag.
+    >>> external_bugzilla.bug_item_file = 'gnome_bug_li_item_noproduct.xml'
+    >>> external_bugzilla.initializeRemoteBugDB(['84'])
+    >>> print external_bugzilla.getRemoteProduct('84')
+    None
+
+Requesting the product for a bug that doesn't exist raises BugNotFound.
+
+    >>> external_bugzilla = TestBugzilla()
+    >>> external_bugzilla.bugzilla_bugs = {84: ('RESOLVED', 'FIXED')}
+    >>> external_bugzilla.initializeRemoteBugDB(['84'])
+    >>> external_bugzilla.getRemoteProduct('42')
+    Traceback (most recent call last):
+    ...
+    BugNotFound: 42

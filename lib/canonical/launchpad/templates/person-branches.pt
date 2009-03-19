@@ -27,16 +27,16 @@
 
   <h1 tal:content="view/heading">Bazaar branches</h1>
 
-  <div id="no-branch-message" tal:condition="not: view/total_branch_count">
+  <div id="no-branch-message" tal:condition="not: view/has_branches">
     <p>
       There are no branches related to
-      <tal:user replace="context/displayname"/> today.
+      <tal:user replace="context/fmt:displayname"/> today.
     </p>
   </div>
 
   <tal:summary replace="structure context/@@+codesummary"/>
 
-  <tal:has-branches condition="view/total_branch_count">
+  <tal:has-branches condition="view/has_branches">
 
     <tal:branchlisting
         content="structure branches/@@+branch-listing" />
@@ -45,40 +45,5 @@
   <div tal:replace="structure context/@@+portlet-teambranches" />
 
 </div>
-
-<metal:block fill-slot="help">
-
-  <p>Launchpad is integrated with the <a
-    href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
-    href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
-
-  <p>This page lists all the branches which are related to a person or team.
-    A person or team can be related to a branch in several ways:</p>
-
-  <ul>
-    <li>The <strong>registrant</strong> of a branch is responsible for
-      administering this branch. The registrant can edit all the branch
-      details. Upload branches can only be modified (with <code>bzr
-      push</code>, <code>commit</code>, etc.) by the registrant.</li>
-
-    <li>The <strong>author</strong> is the person being given credit for the
-      branch. The author cannot modify the branch in any way, and should
-      normally be the same as the registrant. We have both fields to allow
-      you to register a branch which is useful for you and the community,
-      and which you want to monitor through Launchpad, but for which you
-      are not the author.</li>
-
-    <li>A <strong>subscriber</strong> is a person expressing interest in a
-      branch. Subscribing to a branch does not give any right, and is only
-      useful to link to a branch from a person's page.</li>
-  </ul>
-
-  <p>If a person or team is both the <em>registrant</em> and the
-    <em>author</em> of a branch, it appears as the <em>author</em>. A person or
-    team is presented as the registrant only if the branch has different
-    author, or if the author is not specified.</p>
-
-</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
-
 </body>
 </html>

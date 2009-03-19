@@ -2,16 +2,21 @@
 
 The HWDB API allows access to the HWDB tables.
 
+
 == The HWDB application root ==
 
 The HWDB application root provides the core methods to access HWDB
-tables.
+tables. It also provides the set of known package names appearing
+in the table HWDriver.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from canonical.lazr.testing.webservice import (
+    ...     pprint_collection, pprint_entry)
     >>> hwdb_root = webservice.get('/+hwdb').jsonBody()
     >>> pprint_entry(hwdb_root)
+    package_names: [u'linux-image-2.6.24-19-generic']
     resource_type_link: u'http://api.launchpad.dev/beta/#hwdb'
     self_link: u'http://api.launchpad.dev/beta/+hwdb'
+
 
 === Device Queries and Devices ===
 
@@ -331,6 +336,69 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     NotFound: Object: <canonical.launchpad.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
+Once we've got a driver, we can search for submissions associated with it.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions').jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+We can filter the list of drivers by distribution.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     distribution=webservice.getAbsoluteUrl('/ubuntu')).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     distribution=webservice.getAbsoluteUrl('/debian')).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+We can filter the list of drivers by distribution series.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary')).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/warty')).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+We can filter the list of drivers by processor architecture.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     architecture='i386').jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     architecture='powerpc').jsonBody()
+    >>> print submissions['total_size']
+    0
+
+We can filter by distribution series and processor architecture.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+driver/1', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary'),
+    ...     architecture='i386').jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
 
 === HWDB submissions and submission queries ===
 
@@ -361,7 +429,7 @@ Accessing the raw submission data yields a redirect to a Librarian URL.
     Content-Length: 0
     Content-Type: text/plain
     Location: http://localhost:58000/92/sample-submission-2.xml
-    <BLANKLINE>
+    ...
 
 A 404 error is returned when a client tries to access a non-existent
 submission.
@@ -440,7 +508,7 @@ distribution...
     >>> print submissions['total_size']
     0
 
-...and for a specific processor architecture.
+...for a specific processor architecture...
 
     >>> parameters = {
     ...     'ws.op': 'getSubmissions',
@@ -460,6 +528,82 @@ distribution...
     ...     '/+hwdb/+device/2?' + urlencode(parameters)).jsonBody()
     >>> print submissions['total_size']
     0
+
+...for a specific distro series...
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary')).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/warty')).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and the combination of a distro series and processor architecture.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary'),
+    ...     architecture='i386').jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary'),
+    ...     architecture='powerpc').jsonBody()
+    >>> print submissions['total_size']
+    0
+
+But we can't supply both distribution and distroseries.
+
+    >>> print webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     distribution=webservice.getAbsoluteUrl('/ubuntu'),
+    ...     distroseries=webservice.getAbsoluteUrl('/ubuntu/hoary'))
+    HTTP/1.1 400 Bad Request
+    ...
+    Only one of `distribution` or `distroseries` can be present.
+    ...
+    <BLANKLINE>
+
+We can query for submissions from a particular user.
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     owner=webservice.getAbsoluteUrl('/~name12')).jsonBody()
+    >>> for submission in submissions['entries']:
+    ...     print submission['submission_key']
+    sample-submission
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb/+device/2', 'getSubmissions',
+    ...     owner=webservice.getAbsoluteUrl('/~name20')).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+=== Getting all submissions for a user ===
+
+We can get all of a user's hardware submissions by retrieving their
+`hardware_submissions` collection.
+
+    >>> name12 = webservice.get(webservice.getAbsoluteUrl('/~name12')).jsonBody()
+    >>> pprint_collection(
+    ...     webservice.get(
+    ...         name12['hardware_submissions_collection_link']).jsonBody())
+    resource_type_link: u'http://.../#h_w_submission-page-resource'
+    start: 0
+    total_size: 2
+    ...
+    submission_key: u'sample-submission'
+    ...
+
 
 === Submission Devices ===
 

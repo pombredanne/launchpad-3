@@ -17,12 +17,22 @@
 <div metal:fill-slot="main">
 
   <h1>Delete branch</h1>
+
+  <tal:has-stacked-branches condition="view/stacked_branches_count">
+    This branch cannot be deleted as it has
+    <em><tal:count replace="view/stacked_branches_count"/></em>
+    <tal:text replace="view/stacked_branches_text">branches</tal:text>
+    sharing revisions.
+  </tal:has-stacked-branches>
+
+  <tal:has-no-stacked-branches condition="not: view/stacked_branches_count">
+
   <tal:deletelist condition="view/branch_deletion_actions/delete">
     The following items must be <em>deleted</em>:
     <ul>
       <tal:actions repeat="row view/branch_deletion_actions/delete">
         <li>
-          <img src="/@@/no" title="Insufficient privilages"
+          <img src="/@@/no" title="Insufficient privileges"
                tal:condition="not:row/allowed"/>
               <tal:item tal:content="structure row/item/fmt:link" />
               (<tal:reason tal:content="row/reason" />)
@@ -35,7 +45,7 @@
     <ul>
       <tal:actions repeat="row view/branch_deletion_actions/break_link">
         <li>
-          <img src="/@@/no" title="Insufficient privilages"
+          <img src="/@@/no" title="Insufficient privileges"
                tal:condition="not:row/allowed"/>
               <tal:item tal:content="structure row/item/fmt:link" />
               (<tal:reason tal:content="row/reason" />)
@@ -48,7 +58,7 @@
     <ul>
       <tal:actions repeat="row view/branch_deletion_actions/alter">
         <li>
-          <img src="/@@/no" title="Insufficient privilages"
+          <img src="/@@/no" title="Insufficient privileges"
                tal:condition="not:row/allowed"/>
               <tal:item tal:content="structure row/item/fmt:link" />
               (<tal:reason tal:content="row/reason" />)
@@ -66,6 +76,9 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
   </div>
+
+  </tal:has-no-stacked-branches>
+
 </div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
 </body>
 </html>

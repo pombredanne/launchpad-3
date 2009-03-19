@@ -41,10 +41,12 @@ test all the product menu classes below.
     ...             traceback.print_exc(file=sys.stdout)
 
     >>> from canonical.launchpad.browser.product import (
-    ...     ProductBranchesMenu, ProductBugsMenu,
+    ...     ProductBugsMenu,
     ...     ProductEditNavigationMenu, ProductNavigationMenu,
     ...     ProductOverviewMenu, ProductSpecificationsMenu,
     ...     ProductTranslationsMenu)
+    >>> from canonical.launchpad.browser.branchlisting import (
+    ...     ProductBranchesMenu)
     >>> firefox = getUtility(IProductSet)['firefox']
 
 
@@ -129,6 +131,8 @@ facet is not applied correctly before using getMultiAdapter().
         ProductNavigation: unknown template
     announcements: http://launchpad.dev/firefox/+announcements
         SimpleViewClass: hasannouncements-index.pt
+    branchvisibility: http://launchpad.dev/firefox/+branchvisibility
+        SimpleViewClass: branch-visibility.pt
     downloads: http://launchpad.dev/firefox/+download
         SimpleViewClass: product-files.pt
 

@@ -118,8 +118,9 @@
                 tal:content="structure script" />
       </form>
       <p id="application-summary">
-        Launchpad&rsquo;s bug tracker allows collaboration
-        between software teams on bug reports and fixes.
+        Launchpad&rsquo;s bug tracker helps software teams to 
+        collaborate on bug reports and fixes. 
+        (<a href="https://help.launchpad.net/Bugs">Read our guide</a>)
       </p>
       <div class="columns">
         <div class="two column left">

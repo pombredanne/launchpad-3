@@ -42,13 +42,13 @@ from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
 from canonical.launchpad.database.bugtracker import *
 from canonical.launchpad.database.pofile import *
+from canonical.launchpad.database.pofiletranslator import *
 from canonical.launchpad.database.potemplate import *
 from canonical.launchpad.database.potmsgset import *
 from canonical.launchpad.database.pomsgid import *
 from canonical.launchpad.database.potranslation import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
-from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *
 from canonical.launchpad.database.sourcepackagename import *
 from canonical.launchpad.database.sourcepackagerelease import *

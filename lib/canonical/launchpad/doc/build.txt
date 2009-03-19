@@ -38,8 +38,8 @@ Let's check the complex properties of a build object.
     True
 
     >>> firefox_build.buildlog = 34
-    >>> firefox_build.buildlog.http_url
-    'http://localhost:58000/34/evolution-2.2-test.pot'
+    >>> print firefox_build.build_log_url
+    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/18/+files/evolution-2.2-test.pot
 
     >>> firefox_build.changesfile
     <LibraryFileAlias ...>
@@ -150,9 +150,15 @@ build-failedtoupload-workflow.txt for further information.
     >>> print active_build.upload_log
     None
 
+    >>> print active_build.upload_log_url
+    None
+
     >>> active_build.storeUploadLog('sample upload log.')
     >>> print active_build.upload_log.filename
     upload_9_log.txt
+
+    >>> print active_build.upload_log_url
+    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9/+files/upload_9_log.txt
 
 Once the transaction is committed, the file is available in the
 librarian, and we can retrieve its contents.
@@ -470,6 +476,38 @@ First we'll define a helper to print the build summary:
     There are some builds waiting to be built.
     Relevant builds:
      - i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+
+The build set class furthermore provides a mechanism to load build-related
+data from the database for a given set of builds:
+
+    >>> from storm.expr import In
+    >>> from canonical.launchpad.database.build import Build
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    >>> results = list(store.find(Build, In(Build.id, (2,6,7,8))))
+    >>> rset = removeSecurityProxy(bs)._prefetchBuildData(results)
+    >>> def filename_or_none(item):
+    ...     if item is not None:
+    ...         return '%s' % item.filename
+    ...     else:
+    ...         return 'n/a'
+    >>> def id_or_none(item):
+    ...     if item is not None:
+    ...         return '%d' % item.id
+    ...     else:
+    ...         return 'n/a'
+    >>> for row in rset:
+    ...     (sourcepackagerelease, buildlog,
+    ...      sourcepackagename, buildlog_content, builder) = row
+    ...     print(
+    ...         'builder: %s, spr: %s, log: %s' %
+    ...         (id_or_none(builder),
+    ...          sourcepackagerelease.title, filename_or_none(buildlog)))
+    builder:   1, spr: mozilla-firefox - 0.9, log: netapplet-1.0.0.tar.gz
+    builder:   1, spr:          foobar - 1.0, log: netapplet-1.0.0.tar.gz
+    builder:   1, spr:        pmount - 0.1-1, log: netapplet-1.0.0.tar.gz
+    builder: n/a, spr: mozilla-firefox - 0.9, log: n/a
 
 
 == IHadBuildRecords.getBuildRecords() Implementations ==
@@ -999,16 +1037,29 @@ after the commit the retried jobs are ready to be dispatched.
 IBuild's content class is wrapped in a Zope security wrapper that prevents
 access to private builds for unauthorised users.
 
-cprov's archive is private which makes its builds private.
+cprov's archive is private which makes its builds private.  We'll add
+an extra build that is not published anywhere but in his PPA.
 
     >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
     >>> removeSecurityProxy(cprov).archive.private = True
+    >>> private_source_pub = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='privacy-test',
+    ...     architecturehintlist='i386',
+    ...     archive=cprov.archive)
+    >>> [private_build] = private_source_pub.createMissingBuilds()
+    >>> private_build.builder = bob
     >>> flush_database_updates()
 
 Accessing the cprov builds when logged in as admin will see the records:
 
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
+    cprov: i386 build of privacy-test 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -1020,6 +1071,7 @@ Likewise when logged in as cprov:
     >>> login('celso.providelo@canonical.com')
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
+    cprov: i386 build of privacy-test 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -1046,8 +1098,6 @@ Define a helper function to catch the security exception:
 And try to access the builds:
 
     >>> print_builds_with_exception(bob_builds)
-    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
 
 When logged in as anonymous this will generate a securtity exception
@@ -1056,8 +1106,6 @@ when accessing the builds:
     >>> login(ANONYMOUS)
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_builds_with_exception(bob_builds)
-    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
 
 == Estimated Build Duration ==
@@ -1068,11 +1116,7 @@ set from previous builds' 'buildduration' values.
 We will use SoyuzTestPublisher to generate coherent publications to
 test this behaviour.
 
-    >>> from canonical.launchpad.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
     >>> login('foo.bar@canonical.com')
-    >>> test_publisher.prepareBreezyAutotest()
 
 Create oldest SourcePackageRelease instance.
 

@@ -545,10 +545,10 @@ class POTemplate(SQLBase, RosettaStats):
             path_variant = '@%s' % variant
 
         potemplate_dir = os.path.dirname(self.path)
-        path = '%s/%s-%s%s.po' % (potemplate_dir,
+        path = '%s-%s%s.po' % (
             self.translation_domain, language_code, path_variant)
-        return path
 
+        return os.path.join(potemplate_dir, path)
 
     def newPOFile(self, language_code, variant=None, requester=None):
         """See `IPOTemplate`."""

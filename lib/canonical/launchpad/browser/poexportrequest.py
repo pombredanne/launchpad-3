@@ -10,8 +10,12 @@ from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    IPOExportRequestSet, ITranslationExporter, TranslationFileFormat)
+from canonical.launchpad.interfaces.poexportrequest import (
+    IPOExportRequestSet)
+from canonical.launchpad.interfaces.translationexporter import (
+    ITranslationExporter)
+from canonical.launchpad.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from canonical.launchpad.webapp import (canonical_url, LaunchpadView)
 
 
@@ -37,6 +41,15 @@ class BaseExportView(LaunchpadView):
         """
         raise NotImplementedError
 
+    def modifyFormat(self, format):
+        """ Optional overridable: do any other controls modify the format?
+
+        :param format: The name of the reported format or None if it could
+            not be determined.
+        :returns: The modified format.
+        """
+        return format
+
     def initialize(self):
         self.request_set = getUtility(IPOExportRequestSet)
 
@@ -49,7 +62,7 @@ class BaseExportView(LaunchpadView):
             return
 
         bad_format_message = _("Please select a valid format for download.")
-        format_name = self.request.form.get("format")
+        format_name = self.modifyFormat(self.request.form.get("format"))
         if format_name is None:
             self.request.response.addErrorNotification(bad_format_message)
             return

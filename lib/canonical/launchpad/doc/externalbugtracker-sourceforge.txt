@@ -164,7 +164,7 @@ remote status for, the bug watch that we have created.
     >>> sourceforge = TestSourceForge(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)
-    INFO:...:Updating 1 watches on http://bugs.some.where
+    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: Open:None
 
@@ -198,13 +198,14 @@ tracker with a variety of statuses.
 By default, SourceForge ExternalBugTrackers will only import one bug at
 a time so as to avoid tripping SourceForge's rate limiting filters. So
 even if we pass it 10 bug watches to update only one will actually be
-updated:
+updated. In this case it will be the first bug watch that hasn't yet
+been checked.
 
     >>> sourceforge.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, sorted(example_bug_tracker.watches))
-    INFO:...:Updating 1 watches on http://bugs.some.where
-    CALLED _getPage(u'support/tracker.php?aid=1722250')
+    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
+    CALLED _getPage(u'support/tracker.php?aid=1722251')
 
 For the sake of this test we can set the bug tracker's batch_size to
 None so that it will process all the updates at once:
@@ -215,7 +216,7 @@ None so that it will process all the updates at once:
     >>> sourceforge.batch_size = None
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)
-    INFO:...:Updating 10 watches on http://bugs.some.where
+    INFO:...:Updating 10 watches for 10 bugs on http://bugs.some.where
     CALLED _getPage(u'support/tracker.php?aid=1722250')
     CALLED _getPage(u'support/tracker.php?aid=1722251')
     CALLED _getPage(u'support/tracker.php?aid=1722252')
@@ -243,3 +244,34 @@ statuses:
     Remote bug 1722257: Fix Committed
     Remote bug 1722258: Invalid
     Remote bug 1722259: Won't Fix
+
+
+== Getting the remote product for a bug ==
+
+It's possible to get the remote product for a bug by calling
+SourceForge.getRemoteProduct(). In SourceForge's case, what we refer to
+in Launchpad as a 'remote product' is a combination of (group_id, atid),
+where 'group_id' is the ID of the 'artifact group' on SourceForge to
+which a bug belongs and 'atid' is the 'artifact tracker ID'. This allows
+us to pinpoint the specific SourceForge tracker to which the bug
+belongs. The remote product is returned by getRemoteProduct() as an
+ampersand-separated string.
+
+    >>> print sourceforge.getRemoteProduct('1722250')
+    155120&794532
+
+If you try to get the remote product of a bug that doesn't exist you'll
+get a BugNotFound error.
+
+    >>> print sourceforge.getRemoteProduct(999999999)
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 999999999
+
+If SourceForge can't find the group_id and atid for the bug (for example
+if the bug is private), getRemoteProduct() will return None.
+
+    >>> sourceforge.trace_calls = False
+    >>> sourceforge.initializeRemoteBugDB([99])
+    >>> print sourceforge.getRemoteProduct(99)
+    None

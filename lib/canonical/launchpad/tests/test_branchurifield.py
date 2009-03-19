@@ -20,13 +20,12 @@ from canonical.testing import LaunchpadZopelessLayer
 class TestBranchURIField(TestCase):
     """Test the validation logic for Branch URI fields.
 
-    Users can register their external Bazaar branches on Launchpad by providing
-    a URI. Launchpad will then attempt to mirror those branches to the
-    supermirror.
+    Users can register their external Bazaar branches on Launchpad by
+    providing a URI. Launchpad will then attempt to mirror those branches.
 
-    Many valid URIs are not valid branch URIs. In particular, anything URI that
-    points to Launchpad is invalid, because all of the URIs for branches on
-    Launchpad are generated from database fields and are thus subject to
+    Many valid URIs are not valid branch URIs. In particular, anything URI
+    that points to Launchpad is invalid, because all of the URIs for branches
+    on Launchpad are generated from database fields and are thus subject to
     change. Further, branches cannot be on the root of a site, nor are users
     allowed to register a branch that is already being mirrored.
     """

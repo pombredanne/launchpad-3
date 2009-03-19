@@ -3,19 +3,19 @@
 == Filing a Bug ==
 
 There are three objects on which you can file a bug. An
-SQLObjectCreatedEvent is published when the bug is filed. Let's register
+ObjectCreatedEvent is published when the bug is filed. Let's register
 an event listener to demonstrate this.
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> import transaction
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+    >>> from lazr.lifecycle.event import IObjectCreatedEvent
     >>> from canonical.launchpad.interfaces import IBug
     >>> def on_created_event(object, event):
-    ...     print "SQLObjectCreatedEvent: %r" % object
+    ...     print "ObjectCreatedEvent: %r" % object
     >>> on_created_listener = TestEventListener(
-    ...     IBug, ISQLObjectCreatedEvent, on_created_event)
+    ...     IBug, IObjectCreatedEvent, on_created_event)
 
 1. Filing a bug on a distribution.
 
@@ -49,7 +49,7 @@ comment, of the bug report.
     >>> launchbag.add(ubuntu)
 
     >>> ubuntu_filebug.initialize()
-    SQLObjectCreatedEvent: <Bug at ...>
+    ObjectCreatedEvent: <Bug at ...>
 
     >>> launchbag.clear()
 
@@ -86,7 +86,7 @@ the bugtask.
     >>> firefox_filebug = getMultiAdapter((firefox, request), name="+filebug")
 
     >>> firefox_filebug.initialize()
-    SQLObjectCreatedEvent: <Bug at ...>
+    ObjectCreatedEvent: <Bug at ...>
 
 3. Filing a bug on a distribution source package.
 
@@ -108,7 +108,7 @@ You can also access the +filebug page from a sourcepackage.
     >>> launchbag.add(ubuntu)
 
     >>> ubuntu_firefox_filebug.initialize()
-    SQLObjectCreatedEvent: <Bug at ...>
+    ObjectCreatedEvent: <Bug at ...>
 
     >>> launchbag.clear()
 
@@ -191,9 +191,10 @@ If we go ahead and modify the description, however:
     >>> ubuntu_bugview.wasDescriptionModified()
     True
 
-The displayable comments for a bug are returned doing:
+The displayable comments for a bug can be obtained from the view
+property visible_comments_for_display.
 
-    >>> viewable_comments = ubuntu_bugview.getBugCommentsForDisplay()
+    >>> viewable_comments = ubuntu_bugview.visible_comments_for_display
 
 Because we omit the first comment, and because the third comment is
 indentical to the second, we really only display one comment:
@@ -320,7 +321,7 @@ However, if we now unsubscribe Foo Bar, it will say
 'Subscribe/Unsubscribe' since he will have the option of either
 subscribing himself or unsubscribing the Launchpad team.
 
-    >>> bug_one.unsubscribe(foo_bar)
+    >>> bug_one.unsubscribe(foo_bar, foo_bar)
 
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
@@ -336,7 +337,7 @@ other team, it will say only 'Subscribe'.
     >>> shipit_team = getUtility(IPersonSet).getByName('shipit-admins')
     >>> foo_bar.inTeam(shipit_team)
     False
-    >>> bug_one.unsubscribe(launchpad_team)
+    >>> bug_one.unsubscribe(launchpad_team, foo_bar)
     >>> bug_one.subscribe(shipit_team, shipit_team)
     <BugSubscription at ...>
 
@@ -702,7 +703,7 @@ a bug watch will have a can_be_shown property of False.
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
     >>> print view.user
     None
-    >>> for comment in view.getBugCommentsForDisplay():
+    >>> for comment in view.visible_comments_for_display:
     ...     comment.can_be_shown
     False
     False
@@ -724,7 +725,7 @@ The same is true for people not in the comment syncing team.
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
     >>> view.user.name
     u'no-priv'
-    >>> for comment in view.getBugCommentsForDisplay():
+    >>> for comment in view.visible_comments_for_display:
     ...     comment.can_be_shown
     False
     False
@@ -742,7 +743,7 @@ People in the team get to see the comments.
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
     >>> view.user.name
     u'no-priv'
-    >>> for comment in view.getBugCommentsForDisplay():
+    >>> for comment in view.visible_comments_for_display:
     ...     comment.can_be_shown
     True
     True
@@ -766,7 +767,7 @@ users.
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
     >>> print view.user
     None
-    >>> for comment in view.getBugCommentsForDisplay():
+    >>> for comment in view.visible_comments_for_display:
     ...     comment.can_be_shown
     True
     True

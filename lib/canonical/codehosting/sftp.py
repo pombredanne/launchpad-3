@@ -35,8 +35,7 @@ from twisted.python import util
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.codehosting.branchfs import (
-    AsyncLaunchpadTransport, LaunchpadServer)
+from canonical.codehosting.vfs import AsyncLaunchpadTransport, LaunchpadServer
 from canonical.codehosting.sshserver import accesslog
 from canonical.config import config
 from canonical.twistedsupport import gatherResults
@@ -245,9 +244,9 @@ def _get_transport_for_dir(directory):
 def avatar_to_sftp_server(avatar):
     user_id = avatar.user_id
     hosted_transport = _get_transport_for_dir(
-        config.codehosting.branches_root)
+        config.codehosting.hosted_branches_root)
     mirror_transport = _get_transport_for_dir(
-        config.supermirror.branchesdest)
+        config.codehosting.mirrored_branches_root)
     server = LaunchpadServer(
         avatar.branchfs_proxy, user_id, hosted_transport, mirror_transport)
     server.setUp()

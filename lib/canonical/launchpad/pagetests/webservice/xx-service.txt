@@ -132,12 +132,12 @@ resource yields a 415 error.
 The only supported media types are ones that begin with 'application/json'.
 
   >>> print webservice.patch("/~salgado", 'application/json', "{}")
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
   >>> print webservice.patch(
   ...     "/~salgado", 'application/json; charset=UTF-8', "{}")
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 
@@ -178,16 +178,17 @@ to a different host.
 Requests on these hosts also honor the standard Launchpad authorization
 scheme (and don't require OAuth).
 
-    >>> from canonical.launchpad.testing.pages import WebServiceCaller
-    >>> noauth_webservice = WebServiceCaller()
+    >>> from canonical.launchpad.testing.pages import (
+    ...     LaunchpadWebServiceCaller)
+    >>> noauth_webservice = LaunchpadWebServiceCaller()
     >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
     >>> print noauth_webservice.get(
     ...     'http://bugs.launchpad.dev/api/beta/people/+me',
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 303 See Other
     ...
-    Location: http://bugs.launchpad.dev/api/beta/~name12
-    <BLANKLINE>
+    Location: http://bugs.launchpad.dev/api/beta/~name12...
+    ...
 
 But the regular authentication still doesn't work on the normal API
 virtual host:

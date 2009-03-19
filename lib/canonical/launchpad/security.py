@@ -57,7 +57,8 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.location import IPersonLocation
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
-from canonical.launchpad.interfaces.milestone import IMilestone
+from canonical.launchpad.interfaces.milestone import (
+    IMilestone, IProjectMilestone)
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
 from canonical.launchpad.interfaces.pofile import IPOFile
@@ -77,6 +78,8 @@ from canonical.launchpad.interfaces.productrelease import (
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.question import IQuestion
 from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.interfaces.seriessourcepackagebranch import (
+    ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
     IStandardShipItRequest, IStandardShipItRequestSet)
@@ -119,11 +122,27 @@ class AuthorizationBase:
         return False
 
     def checkAuthenticated(self, user):
-        """See `IAuthorization.checkAuthenticated`.
+        """Return True if the given person has the given permission.
+
+        This method is implemented by security adapters that have not
+        been updated to work in terms of IAccount.
 
         :return: True or False.
         """
         return False
+
+    def checkAccountAuthenticated(self, account):
+        """See `IAuthorization.checkAccountAuthenticated`.
+
+        :return: True or False.
+        """
+        # For backward compatibility, delegate to one of
+        # checkAuthenticated() or checkUnauthenticated().
+        person = IPerson(account)
+        if person is None:
+            return self.checkUnauthenticated()
+        else:
+            return self.checkAuthenticated(person)
 
 
 class ViewByLoggedInUser(AuthorizationBase):
@@ -182,11 +201,12 @@ class EditAccount(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IAccount
 
-    # This is wrong as we need to give an Account rather than a
-    # Person ability to edit an account.
-    def checkAuthenticated(self, user):
-        return ((user.account is not None and user.account.id == self.obj.id)
-                or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+    def checkAccountAuthenticated(self, account):
+        if account == self.obj:
+            return True
+        user = IPerson(account, None)
+        return (user is not None and
+                user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
 
 class ViewAccount(EditAccount):
@@ -512,6 +532,14 @@ class AdminShippingRequestSetByShipItAdmins(
     usedfor = IShippingRequestSet
 
 
+class EditProjectMilestoneNever(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IProjectMilestone
+
+    def checkAuthenticated(self, user):
+        """IProjectMilestone is a fake content object."""
+        return False
+
 class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IMilestone
@@ -662,6 +690,15 @@ class EditPersonBySelf(AuthorizationBase):
     def checkAuthenticated(self, user):
         """A user can edit the Person who is herself."""
         return self.obj.id == user.id
+
+
+class EditAccountBySelf(AuthorizationBase):
+    permission = 'launchpad.Special'
+    usedfor = IAccount
+
+    def checkAccountAuthenticated(self, account):
+        """A user can edit the Account who is herself."""
+        return self.obj == account
 
 
 class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
@@ -1985,17 +2022,35 @@ class ViewEmailAddress(AuthorizationBase):
 
     def checkUnauthenticated(self):
         """See `AuthorizationBase`."""
+        # Email addresses without an associated Person cannot be seen by
+        # anonymous users.
+        if self.obj.person is None:
+            return False
         return not self.obj.person.hide_email_addresses
 
-    def checkAuthenticated(self, user):
+    def checkAccountAuthenticated(self, account):
         """Can the user see the details of this email address?
 
         If the email address' owner doesn't want his email addresses to be
         hidden, anyone can see them.  Otherwise only the owner himself or
         admins can see them.
         """
+        # Always allow users to see their own email addresses.
+        if self.obj.account == account:
+            return True
+
+        # Email addresses without an associated Person cannot be seen by
+        # others.
+        if self.obj.person is None:
+            return False
+
         if not self.obj.person.hide_email_addresses:
             return True
+
+        user = IPerson(account, None)
+        if user is None:
+            return False
+
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
@@ -2024,3 +2079,41 @@ class EditArchivePermissionSet(AuthorizationBase):
             globalErrorUtility.raising(info)
             return False
         return user.inTeam(techboard)
+
+
+class LinkOfficialSourcePackageBranches(AuthorizationBase):
+    """Who can source packages to their official branches?
+
+    Only members of the ~ubuntu-branches celebrity team! Or admins.
+    """
+
+    permission = 'launchpad.Edit'
+    usedfor = ISeriesSourcePackageBranchSet
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(celebrities.ubuntu_branches)
+            or user.inTeam(celebrities.admin))
+
+
+class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
+    """Who can change the links from source packages to their branches?
+
+    Only members of the ~ubuntu-branches celebrity team! Or admins.
+    """
+
+    permission = 'launchpad.Edit'
+    usedfor = ISeriesSourcePackageBranch
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(celebrities.ubuntu_branches)
+            or user.inTeam(celebrities.admin))

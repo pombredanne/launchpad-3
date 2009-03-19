@@ -10,6 +10,36 @@
 >
 
   <body>
+    <metal:block fill-slot="head_epilogue">
+    <style>
+    .disabledpochanged, .disabledpochanged a {
+        color: lightgray;
+    }
+    </style>
+    <script type="text/javascript">
+    YUI().use('node', 'event', function(Y){
+        Y.on('domready', function(){
+            // The pochanged option is only available for the PO format.
+            var formatlist = Y.get('#div_format select');
+            var checkbox = Y.get('#div_pochanged input');
+            var changedtext = Y.get('#div_pochanged span');
+            function toggle_pochanged() {
+                if (formatlist.get('value') == 'PO') {
+                    changedtext.removeClass('disabledpochanged');
+                    checkbox.set('disabled', false);
+                }
+                else {
+                    changedtext.addClass('disabledpochanged');
+                    checkbox.set('disabled', true);
+                }
+            }
+            formatlist.on('change', toggle_pochanged);
+            // Initialise the state of the controls.
+            toggle_pochanged();
+        });
+    });
+    </script>
+    </metal:block>
     <div metal:fill-slot="main">
       <div>
         <a tal:attributes="href context/potemplate/fmt:url"
@@ -25,21 +55,28 @@
         translation
       </h1>
       <form action="" method="post">
-        <div class="field" tal:repeat="format view/formats">
-          <label>
-            <input type="radio" name="format"
-                   tal:attributes="
-                     value format/value;
-                     checked format/is_default" />
-            <span tal:content="format/title">translation format</span>
+        <div id="div_format" class="field" style="clear: left">
+          <label for="sel_format">Format:</label>
+          <select name="format" id="sel_format">
+            <option
+              tal:repeat="format view/formats"
+              tal:content="format/title"
+              tal:attributes="
+                   value format/value;
+                   selected format/is_default"
+              >PO format</option>
+           </select>
+        </div>
+        <div id="div_pochanged" class="field" style="margin-top: 10px">
+          <input type="checkbox" name="pochanged" id="cb_pochanged"
+                 value="POCHANGED" />
+          <label for="cb_pochanged">
+            <span><noscript><em>PO format only:</em></noscript>
+            Only strings that differ from packaged versions
+            (<a href="https://help.launchpad.net/Translations/PartialPOExport"
+                target="_blank">What's this?</a>).</span>
           </label>
         </div>
-        <p>
-          Please see the
-          <a href="https://help.launchpad.net/Translations/PartialPOExport"
-             target="_blank">Help Page</a>
-          for information on the use of the partial PO format.
-        </p>
         <p>
           Once the file is ready for download, Launchpad will e-mail
           <code tal:content="view/user/preferredemail/email">user@domain</code>

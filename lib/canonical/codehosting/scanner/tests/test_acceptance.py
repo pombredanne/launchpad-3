@@ -19,7 +19,7 @@ from bzrlib.urlutils import local_path_from_url
 import transaction
 from zope.component import getUtility
 
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision, LoomTestMixin)

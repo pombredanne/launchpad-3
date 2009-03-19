@@ -6,6 +6,8 @@ __all__ = [
     'DirectEmailAuthorization',
     'Message',
     'MessageChunk',
+    'MessageJob',
+    'MessageJobAction',
     'MessageSet',
     'UserToUserEmail',
     ]
@@ -19,6 +21,8 @@ from cStringIO import StringIO as cStringIO
 from datetime import datetime
 from operator import attrgetter
 
+from canonical.database.enumcol import EnumCol
+from lazr.enum import DBEnumeratedType, DBItem
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
@@ -32,12 +36,14 @@ import pytz
 from canonical.config import config
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
+from canonical.launchpad.database.job import Job
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
     UnknownSender)
 from canonical.launchpad.interfaces.message import (
-    IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageSet,
-    IUserToUserEmail, InvalidEmailMessage)
+    IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageJob,
+    IMessageSet, IUserToUserEmail, InvalidEmailMessage)
+from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.validators.person import validate_public_person
 from lazr.config import as_timedelta
 
@@ -608,6 +614,59 @@ class UserToUserEmail(Storm):
         # constructor to add self to the store.  Also, this closely mimics
         # what the SQLObject compatibility layer does.
         Store.of(sender).add(self)
+
+
+class MessageJobAction(DBEnumeratedType):
+    """MessageJob action
+
+    The action that a job should perform.
+    """
+
+    CREATE_MERGE_PROPOSAL = DBItem(1, """
+        Create a merge proposal.
+
+        Create a merge proposal from a message which must contain a merge
+        directive.
+        """)
+
+
+class MessageJob(Storm):
+    """A job for processing messages."""
+
+    implements(IMessageJob)
+    # XXX: AaronBentley 2009-02-05 bug=325883: This table is poorly named.
+    __storm_table__ = 'MergeDirectiveJob'
+
+    id = Int(primary=True)
+
+    jobID = Int('job', allow_none=False)
+    job = Reference(jobID, Job.id)
+
+    message_bytesID = Int('merge_directive', allow_none=False)
+    message_bytes = Reference(message_bytesID, 'LibraryFileAlias.id')
+
+    action = EnumCol(enum=MessageJobAction)
+
+    def __init__(self, message_bytes, action):
+        Storm.__init__(self)
+        self.job = Job()
+        self.message_bytes = message_bytes
+        self.action = action
+
+    def destroySelf(self):
+        """See `IMessageJob`."""
+        self.job.destroySelf()
+        Store.of(self).remove(self)
+
+    def sync(self):
+        """Update the database with all changes for this object."""
+        store = Store.of(self)
+        store.flush()
+        store.autoreload(self)
+
+    def getMessage(self):
+        """See `IMessageJob`."""
+        return signed_message_from_string(self.message_bytes.read())
 
 
 class DirectEmailAuthorization:

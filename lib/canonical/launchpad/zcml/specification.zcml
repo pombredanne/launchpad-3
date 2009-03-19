@@ -59,12 +59,12 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.ISpecification
-         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+         lazr.lifecycle.interfaces.IObjectCreatedEvent"
     handler="canonical.launchpad.subscribers.karma.spec_created" />
 
   <subscriber
     for="canonical.launchpad.interfaces.ISpecification
-         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+         lazr.lifecycle.interfaces.IObjectModifiedEvent"
     handler="canonical.launchpad.subscribers.karma.spec_modified" />
 
   <!-- these pages are simple enough they don't need browser code -->
@@ -84,6 +84,9 @@
       name="+listing-compact"
       template="../templates/specification-listing-compact.pt" />
     <browser:page
+      name="+portlet-lifecycle"
+      template="../templates/specification-portlet-lifecycle.pt" />
+    <browser:page
       name="+portlet-subscribers"
       template="../templates/specification-portlet-subscribers.pt" />
     <browser:page
@@ -102,6 +105,9 @@
     for="canonical.launchpad.interfaces.ISpecification"
     permission="zope.Public"
     class="canonical.launchpad.browser.SpecificationSimpleView">
+    <browser:page
+      name="+portlet-branches"
+      template="../templates/specification-portlet-branches.pt" />
     <browser:page
       name="+listing-detailed"
       template="../templates/specification-listing-detailed.pt" />
@@ -383,12 +389,12 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.ISpecification
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.specification.specification_goalstatus" />
 
 <subscriber
    for="canonical.launchpad.interfaces.ISpecification
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.mailnotification.notify_specification_modified" />
 
 </configure>

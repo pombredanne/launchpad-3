@@ -134,7 +134,7 @@ linked to bugtrackers are also linked.
     GnomeGBug GTracker
     http://bugzilla.gnome.org/bugs
       --> http://bugzilla.gnome.org/bugs
-    GNOME
+    GNOME Terminal, GNOME
     Bugzilla
     2
     ------------------------

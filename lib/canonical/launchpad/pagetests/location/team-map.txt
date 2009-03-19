@@ -7,9 +7,12 @@ with their locations displayed.
     >>> nopriv_browser.open('http://launchpad.dev/~guadamen')
     >>> body = find_main_content(nopriv_browser.contents)
     >>> mapdiv = find_tag_by_id(str(body), 'team_map_div')
-    >>> 'renderTeamMapSmall' in str(body)
+    >>> 'lp.mapping.renderTeamMapSmall(' in str(body)
     True
-    >>> 'src="http://maps.google.com/maps' in str(nopriv_browser.contents)
+    >>> markup = str(nopriv_browser.contents)
+    >>> 'src="http://maps.google.com/maps' in markup
+    True
+    >>> 'build/lp/mapping.js' in markup
     True
 
 You should also be able to see a map of the team, with links to the people

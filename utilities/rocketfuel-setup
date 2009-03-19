@@ -139,13 +139,34 @@ if [ ! -e ~/.ssh/config ]; then
     touch ~/.ssh/config
 fi
 
+ssh_config_mod=0
 grep -q "^GSSAPIAuthentication" ~/.ssh/config
 if [ $? -ne 0 ]; then
+  ssh_config_mod=1
   echo "Please add the following directive to your ~/.ssh/config:
 ------------------------------------------------------------
 GSSAPIAuthentication no
 ------------------------------------------------------------
+
 "
+fi
+if [ "$whoami" != "$lpusername" ]; then
+  if [ "$ssh_config_mod" -ne "0" ]
+  then
+    intro="Also ensure"
+  else
+    ssh_config_mod=1
+    intro="Ensure"
+  fi
+  echo "$intro the following directive is in your ~/.ssh/config:
+------------------------------------------------------------
+Host bazaar.launchpad.net
+    User $lpusername
+------------------------------------------------------------
+"
+fi
+
+if [ "$ssh_config_mod" -ne "0" ]; then
   read
 fi
 
@@ -250,20 +271,29 @@ if [ ! -e $LPDEV_SOURCES ]; then
   sudo touch $LPDEV_SOURCES
 fi
 
-grep -q "^deb http://lpdebs.canonical.com/" $LPDEV_SOURCES
+LP_DEBS="deb http://lpdebs.canonical.com/${DISTRIB_CODENAME} ./"
+grep -q "^${LP_DEBS}" $LPDEV_SOURCES
 if [ $? -ne 0 ]; then
-  echo "Adding LP package respository to package source list."
-  echo "deb http://lpdebs.canonical.com/${DISTRIB_CODENAME} ./" | sudo tee -a $LPDEV_SOURCES
+  echo "Adding lpdebs package repository to package source list."
+  echo "$LP_DEBS" | sudo tee -a $LPDEV_SOURCES
 fi
 
-grep -q "^deb http://ppa.launchpad.net/bzr/ubuntu" $LPDEV_SOURCES
+LP_PPA="deb http://ppa.launchpad.net/launchpad/ppa/ubuntu ${DISTRIB_CODENAME} main"
+grep -q "^${LP_PPA}" $LPDEV_SOURCES
 if [ $? -ne 0 ]; then
-  echo "Adding Bazaar PPA repository to package source list."
-  echo "deb http://ppa.launchpad.net/bzr/ubuntu ${DISTRIB_CODENAME} main" | sudo tee -a $LPDEV_SOURCES
+  echo "Adding ~launchpad PPA repository to package source list."
+  echo "$LP_PPA"  | sudo tee -a $LPDEV_SOURCES
+fi
+
+BZR_PPA="deb http://ppa.launchpad.net/bzr/ppa/ubuntu ${DISTRIB_CODENAME} main"
+grep -q "^${BZR_PPA}" $LPDEV_SOURCES
+if [ $? -ne 0 ]; then
+  echo "Adding ~bzr PPA repository to package source list."
+  echo "$BZR_PPA" | sudo tee -a $LPDEV_SOURCES
 fi
 
 # Get the key used to sign the launchpad-developer-dependencies in the PPA.
-REQUIRED_PPA_KEYS="0A5174AF 2B97B7B8"
+REQUIRED_PPA_KEYS="0A5174AF 8C6C1EFD"
 for key in $REQUIRED_PPA_KEYS; do
    sudo apt-key list | grep -q $key
    if [ $? -ne 0 ]; then
@@ -281,23 +311,27 @@ for key in $REQUIRED_PPA_KEYS; do
    fi
 done
 
-sudo aptitude update
-dpkg -s launchpad-developer-dependencies | grep -q "^Status:.*installed"
-if [ $? -ne 0 ]; then
-  echo "Installing launchpad-developer-dependencies package..."
-  sudo aptitude install launchpad-developer-dependencies
+do_install() {
+  dpkg -s $pkg | grep -q "^Status: install ok installed"
   if [ $? -ne 0 ]; then
-    echo "Unable to install LP developer dependencies"
-    exit 1
+    echo "Installing $pkg package..."
+    sudo aptitude install $pkg
+    if [ $? -ne 0 ]; then
+      echo "Unable to install $pkg."
+      exit 1
+    fi
   fi
-fi
+  }
 
-# Create the document root to avoid Apache warnings
+sudo aptitude update
+REQUIRED_PACKAGES="launchpad-developer-dependencies apache2 apache2-mpm-worker"
+for pkg in $REQUIRED_PACKAGES; do
+  do_install;
+done
+
+# Create the document root(s) to avoid Apache warnings
 mkdir -p /var/tmp/bazaar.launchpad.dev/static
-
-# Create an empty rewritemap file so that Apache will start.
-mkdir -p /var/tmp/bazaar.launchpad.dev/config
-touch /var/tmp/bazaar.launchpad.dev/config/launchpad-lookup.txt
+mkdir -p /var/tmp/bazaar.launchpad.dev/mirrors
 
 sudo a2enmod proxy > /dev/null
 if [ $? -ne 0 ]; then
@@ -510,10 +544,10 @@ Thank you for using this script. You can improve it for everyone by
 committing changes to LP in utilities/rocketfuel-setup.
 
 Before you can submit branches to PQM, you need to visit:
-https://wiki.canonical.com/EmailSetup
-and find the current SMTP server password and enter it in the appropriate
-place in $HOME/.bazaar/locations.conf
-Alternatively, configure it to use your own SMTP server locally.
+https://wiki.canonical.com/EmailSetup and find the current SMTP server
+password and enter it in the appropriate place in
+HOME/.bazaar/bazaar.conf.  Alternatively, configure it to use your own
+SMTP server locally.
 
 You should use the following commands to manage your Rocketfuel:
 
@@ -532,7 +566,7 @@ You should use the following commands to manage your Rocketfuel:
     yet landed on trunk.
 
  rocketfuel-push
-    Push all of your branches to devpad, so that you have a server-side
+    Push all of your branches to Launchpad, so that you have a server-side
     backup of everything.
 
 Happy hacking!

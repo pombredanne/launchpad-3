@@ -1,5 +1,9 @@
 = Creating a new team =
 
+== As a regular user ==
+
+Regular users can create teams.
+
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/people/')
     >>> browser.getLink('Register a team').click()
@@ -78,3 +82,55 @@ Now we enter a valid email address that's not registered in Launchpad.
     might use 'greylisting', which could delay the message for up to an hour
     or two.)
 
+== As an administrator ==
+
+Administrators can create teams in much the same manner but they will
+also be given the ability to change the team's visibility
+
+    >>> admin_browser.open('http://launchpad.dev/people/')
+    >>> admin_browser.getLink('Register a team').click()
+
+    >>> admin_browser.url
+    'http://launchpad.dev/people/+newteam'
+
+    >>> admin_browser.title
+    'Register a new team in Launchpad'
+
+    >>> admin_browser.getControl(name='field.name').value = 'super-secret'
+    >>> admin_browser.getControl('Visibility').value = ['PRIVATE_MEMBERSHIP']
+    >>> admin_browser.getControl('Display Name').value = 'Shhhh'
+    >>> admin_browser.getControl(
+    ...     'Team Description').value = 'my own team description'
+    >>> admin_browser.getControl('Subscription period').value = '365'
+    >>> admin_browser.getControl('Renewal period').value = '365'
+    >>> admin_browser.getControl('Open Team').selected = True
+    >>> admin_browser.getControl(
+    ...     name='field.subscriptionpolicy').value = ['RESTRICTED']
+    >>> admin_browser.getControl('Create').click()
+
+    >>> admin_browser.url
+    'http://launchpad.dev/~super-secret'
+
+    >>> admin_browser.title
+    'Shhhh in Launchpad'
+
+A team with Private Membership visibility must be Restricted.
+
+    >>> admin_browser.open('http://launchpad.dev/people/')
+    >>> admin_browser.getLink('Register a team').click()
+
+    >>> admin_browser.getControl(name='field.name').value = 'super-duper-secret'
+    >>> admin_browser.getControl('Display Name').value = 'Shhhh'
+    >>> admin_browser.getControl(
+    ...     'Team Description').value = 'my own team description'
+    >>> admin_browser.getControl('Subscription period').value = '365'
+    >>> admin_browser.getControl('Renewal period').value = '365'
+    >>> admin_browser.getControl('Open Team').selected = True
+    >>> admin_browser.getControl(
+    ...     name='field.subscriptionpolicy').value = ['OPEN']
+    >>> admin_browser.getControl('Visibility').value = ['PRIVATE_MEMBERSHIP']
+    >>> admin_browser.getControl('Create').click()
+    >>> for message in get_feedback_messages(admin_browser.contents):
+    ...     print message
+    There is 1 error.
+    Private teams must have a Restricted subscription policy.

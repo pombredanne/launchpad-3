@@ -36,6 +36,10 @@
       template="../templates/sourcepackagepublishinghistory-listing-archive-detailed.pt"
       />
     <browser:page
+      name="+listing-archive-extra"
+      template="../templates/sourcepackagepublishinghistory-listing-archive-extra.pt"
+      />
+    <browser:page
       name="+record-details"
       template="../templates/packagepublishing-details.pt"
       />

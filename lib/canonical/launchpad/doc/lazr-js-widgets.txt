@@ -1,0 +1,57 @@
+LAZR JS Wrappers
+================
+
+The canonical.widgets.lazrjs module contains a bunch of wrapper
+for widgets defined in Lazr-JS.
+
+TextLineEditorWidget
+--------------------------
+
+We have a convenient wrapper for the inlineedit/editor JS widget in
+TextLineEditorWidget.
+
+    >>> from canonical.launchpad.webapp.publisher import canonical_url
+    >>> from canonical.widgets.lazrjs import TextLineEditorWidget
+    >>> bug = factory.makeBug(title='My bug is > important')
+
+The wrapper takes as arguments the object and the attribute of the
+object that is being edited, as well as the URL to use for editing when
+when JS is turned off.
+
+    >>> widget = TextLineEditorWidget(
+    ...     bug, 'title', canonical_url(bug.bugtasks[0], view_name='+edit'))
+
+The widget is rendered by executing it, it prints out the attribute
+content.
+
+    >>> print widget()
+    <h1 id="..."><span class="yui-editable_text-text">My bug is &gt;
+        important</span>
+    </h1>
+
+In addition, when the logged in user can edit the value, there is a link to
+the edit view that appears as well as a <script> tag that will change that
+link into an AJAX control when JS is available:
+
+    >>> login('no-priv@canonical.com')
+    >>> print widget()
+    <h1 id="..."><span class="yui-editable_text-text">My bug is &gt;
+        important</span>
+        <a href="http://bugs.launchpad.dev/.../+edit"
+           class="yui-editable_text-trigger"
+        ><img src="/@@/edit" alt="[edit]" title="Edit" /></a>
+    </h1>
+    <script>
+    ...
+    </script>
+
+The id and title attribute to use can be passed via parameters to the
+constructor:
+
+    >>> widget = TextLineEditorWidget(
+    ...     bug, 'title', canonical_url(bug.bugtasks[0], view_name='+edit'),
+    ...     id="bug-title", title="Edit this summary")
+    >>> print widget()
+    <h1 id="bug-title">...
+        ><img src="/@@/edit" alt="[edit]" title="Edit this summary" />...
+

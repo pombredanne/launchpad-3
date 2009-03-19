@@ -6,19 +6,24 @@ __metaclass__ = type
 
 import unittest
 
+import transaction
+
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease)
 from canonical.launchpad.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
+from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
-class TestDistroSeriesCurrentSourceReleases(unittest.TestCase):
+class TestDistroSeriesCurrentSourceReleases(TestCase):
     """Test for DistroSeries.getCurrentSourceReleases()."""
 
     layer = LaunchpadFunctionalLayer
@@ -139,7 +144,68 @@ class TestDistroSeriesCurrentSourceReleases(unittest.TestCase):
         self.assertEqual(releases[bar_package].version, '1.0')
 
 
+class TestDistroSeriesSet(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def _get_translatables(self):
+        distro_series_set = getUtility(IDistroSeriesSet)
+        # Get translatables as a sequence of names of the series.
+        return sorted(
+            [series.name for series in distro_series_set.translatables()])
+
+    def _ref_translatables(self, expected=None):
+        # Return the reference value, merged with expected data.
+        if expected is None:
+            return self.ref_translatables
+        if isinstance(expected, list):
+            return sorted(self.ref_translatables + expected)
+        return sorted(self.ref_translatables + [expected])
+
+    def test_translatables(self):
+        # translatables() returns all distroseries that have potemplates
+        # and are not set to "hide all translations".
+        # See whatever distroseries sample data already has.
+        self.ref_translatables = self._get_translatables()
+
+        new_distroseries = (
+            self.factory.makeDistroRelease(name=u"sampleseries"))
+        new_distroseries.hide_all_translations = False
+        transaction.commit()
+        translatables = self._get_translatables()
+        self.failUnlessEqual(
+            translatables, self._ref_translatables(),
+            "A newly created distroseries should not be translatable but "
+            "translatables() returns %r instead of %r." % (
+                translatables, self._ref_translatables())
+            )
+
+        new_sourcepackagename = self.factory.makeSourcePackageName()
+        new_potemplate = self.factory.makePOTemplate(
+            distroseries=new_distroseries,
+            sourcepackagename=new_sourcepackagename)
+        transaction.commit()
+        translatables = self._get_translatables()
+        self.failUnlessEqual(
+            translatables, self._ref_translatables(u"sampleseries"),
+            "After assigning a PO template, a distroseries should be "
+            "translatable but translatables() returns %r instead of %r." % (
+                translatables,
+                self._ref_translatables(u"sampleseries"))
+            )
+
+        new_distroseries.hide_all_translations = True
+        transaction.commit()
+        translatables = self._get_translatables()
+        self.failUnlessEqual(
+            translatables, self._ref_translatables(),
+            "After hiding all translation, a distroseries should not be "
+            "translatable but translatables() returns %r instead of %r." % (
+                translatables, self._ref_translatables()))
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestDistroSeriesCurrentSourceReleases))
+    suite.addTest(unittest.makeSuite(TestDistroSeriesSet))
     return suite

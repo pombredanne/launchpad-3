@@ -244,7 +244,7 @@ Updater and get a bug watch and a bugtask to test with.
     >>> debian_bugwatch = debian_task.bugwatch
     >>> old_remotestatus = debian_bugwatch.remotestatus
 
-When a bugtask is modified, an SQLObjectModifiedEvent is fired off in
+When a bugtask is modified, an ObjectModifiedEvent is fired off in
 order to trigger mail notification. Let's register a listener, so that
 we can confirm that an event is indeed fired off.
 
@@ -258,10 +258,9 @@ we can confirm that an event is indeed fired off.
     ...             bugtask.importance.title)
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from canonical.launchpad.interfaces import IBugTask
-    >>> from canonical.launchpad.event.interfaces import (
-    ...     ISQLObjectModifiedEvent)
+    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
     >>> event_listener = TestEventListener(
-    ...     IBugTask, ISQLObjectModifiedEvent, print_bugtask_modified)
+    ...     IBugTask, IObjectModifiedEvent, print_bugtask_modified)
 
 If we pass in a different Malone status than the existing one, an event
 will be fired off, even though the remote status stays the same.
@@ -452,7 +451,38 @@ slaves must be updated through their conjoined master.
     >>> bug_watch_updater = BugWatchUpdater(transaction, FakeLogger())
     >>> external_bugtracker = TestRoundup(bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
-    INFO Updating 1 watches on http://some.where
+    INFO Updating 1 watches for 1 bugs on http://some.where
 
     >>> bug.bugtasks[0].status.title
     'New'
+
+
+== Getting linked bug watches for a product ==
+
+Product has a method, getLinkedBugWatches, for getting all the bug
+watches that are linked to a bug task targeted to the Product.
+
+    >>> product = factory.makeProduct(official_malone=False)
+    >>> [bug_watch.remotebug for bug_watch in product.getLinkedBugWatches()]
+    []
+
+    >>> product = factory.makeProduct(official_malone=False)
+    >>> bug_task = factory.makeBugTask(target=product)
+    >>> bug_watch = factory.makeBugWatch(remote_bug='42')
+    >>> bug_task.bugwatch = bug_watch
+    >>> product.bugtracker = bug_watch.bugtracker
+    >>> [bug_watch.remotebug for bug_watch in product.getLinkedBugWatches()]
+    [u'42']
+
+It's not uncommon to link to other bug trackers than the one the Product
+is using officially, for example to link to related bugs. To avoid
+errors, we ignore such bug watches.
+
+    >>> product = factory.makeProduct(official_malone=False)
+    >>> bug_task = factory.makeBugTask(target=product)
+    >>> bug_watch = factory.makeBugWatch(remote_bug='84')
+    >>> bug_task.bugwatch = bug_watch
+    >>> product.bugtracker == bug_watch.bugtracker
+    False
+    >>> [bug_watch.remotebug for bug_watch in product.getLinkedBugWatches()]
+    []

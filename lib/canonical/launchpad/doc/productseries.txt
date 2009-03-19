@@ -85,61 +85,6 @@ Let's check that the new series is properly associated to its product.
     >>> firefox.getSeries('emacs') == emacs
     True
 
-ProductSeriesSet implements two methods to search the database for
-IProductSeries that have RCS details set. It returns an IProductSeries
-or None.
-
-    >>> from canonical.launchpad.interfaces import IProductSeriesSet
-
-    >>> cvsroot = ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
-    >>> cvsmodule = 'evolution'
-    >>> cvsbranch = 'MAIN'
-    >>> svnrepository = 'svn://testing.com'
-    >>> productseriesset = getUtility(IProductSeriesSet)
-    >>> productseries = productseriesset.getByCVSDetails(cvsroot, cvsmodule,
-    ...     cvsbranch)
-    >>> productseries.name
-    u'trunk'
-
-    >>> productseries = productseriesset.getBySVNDetails(svnrepository)
-    >>> print productseries
-    None
-
-
-== Release series ==
-
-A product series can have any number of releases associated with it.
-These are created with the addRelease() method of IProductSeries.
-
-    >>> login_person(firefox_1_0.owner)
-    >>> firefox_109 = firefox_1_0.addRelease('1.0.9', owner)
-    >>> from canonical.launchpad.interfaces.productrelease import (
-    ...     IProductRelease)
-    >>> verifyObject(IProductRelease, firefox_109)
-    True
-
-A product release can be deleted using its destroySelf() method, as long
-as it doesn't have any IProductReleaseFiles associated with it.
-
-    >>> firefox_109.files.count()
-    0
-    >>> firefox_109.destroySelf()
-    >>> print firefox_1_0.getRelease('1.0.9')
-    None
-
-If a product release has files associated with it, though, it can't be
-deleted.
-
-    >>> firefox_1010 = firefox_1_0.addRelease('1.0.10', owner)
-    >>> firefox_1010.addReleaseFile('test', 'test', 'text/plain', owner)
-    <ProductReleaseFile...
-    >>> firefox_1010.destroySelf()
-    Traceback (most recent call last):
-    ...
-    AssertionError:...
-    >>> firefox_1_0.getRelease('1.0.10')
-    <ProductRelease...
-
 
 == Specification Listings ==
 

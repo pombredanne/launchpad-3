@@ -4,10 +4,15 @@
 
 This wrapper starts a test Launchpad instance that can be
 used by Windmill.
+
+If the --server-only option is given, only the Launchpad server
+is started.  This allows one to invoke the windmill script multiple
+time directly.
 """
 
 import os
 import sys
+import time
 
 # Fix-up our path so that we can find all the modules.
 here = os.path.dirname(os.path.realpath(__file__))
@@ -47,8 +52,12 @@ def setUpLaunchpad():
     LayerProcessController.startAppServer()
     sys.stderr.write('done.\n')
 
-if __name__ == '__main__':
-    setUpLaunchpad()
+
+def runWindmill():
+    """Start windmill using our command line arguments.
+
+    This function exits once windmill has terminated.
+    """
     windmill_cmdline = [
         os.path.join(here, 'utilities', 'windmill.py'),
         ]
@@ -59,4 +68,22 @@ if __name__ == '__main__':
         windmill.wait()
     except KeyboardInterrupt:
         os.kill(windmill.pid, signal.SIGTERM)
+
+
+def waitForInterrupt():
+    """Sits in a sleep loop waiting for a Ctrl-C."""
+    try:
+        sys.stderr.write('Waiting for Ctrl-C...\n')
+        while True:
+            time.sleep(10)
+    except KeyboardInterrupt:
+        pass
+
+
+if __name__ == '__main__':
+    setUpLaunchpad()
+    if sys.argv[1] == '--server-only':
+        waitForInterrupt()
+    else:
+        runWindmill()
     sys.stderr.write('Shutting down Launchpad...\n')

@@ -1,6 +1,5 @@
 Check to see no CoC signature is registered for Mark:
 
-  >>> from canonical.launchpad.ftests import login
   >>> admin_browser.open('http://localhost:9000/codeofconduct/console')
   >>> admin_browser.getControl(name='searchfor').value = ["all"]
   >>> admin_browser.getControl(name='name').value = "mark"
@@ -27,21 +26,20 @@ Ensure the CoC was acknowledge by searching in the CoC Admin Console:
   >>> admin_browser.getControl(name='search').click()
   >>> 'paper submission accepted by Foo Bar' in admin_browser.contents
   True
-  >>> '<a href="/~sabdfl">' in admin_browser.contents
+  >>> '<a href="http://launchpad.dev/~sabdfl"' in admin_browser.contents
   True
   >>> '[ACTIVE]' in admin_browser.contents
   True
 
 Test if the advertisement email was sent:
 
-  >>> import email, re
+  >>> import email
   >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> msg = email.message_from_string(raw_msg)
   >>> print msg.get_payload(decode=True)
   <BLANKLINE>
   ...
-  User: 'Mark Shuttleworth' 
+  User: 'Mark Shuttleworth'
   Paper Submitted acknowledge by Foo Bar
   ...
-

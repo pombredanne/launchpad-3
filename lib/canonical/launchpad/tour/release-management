@@ -65,9 +65,7 @@ Launchpad&rsquo;s extensive search to discover your work.
                             <img src="images/rm/1.png" alt="Lines of development" />                        </p>
                         <p>
                             
-Launchpad calls these <em>series</em> and helps you to organise your work &mdash; code, translations, bug reports and so on &mdash; around them. Through series, your community can work in parallel on different major releases of your software.</p>
- 
-                        <p>
+Launchpad calls these <em>series</em> and helps you to organise your work &mdash; code, translations, bug reports and so on &mdash; around them. Through series, your community can work in parallel on different major releases of your software.<br /><br />
                             By targeting <a href="bugs" accesskey="e" tabindex="3">bug reports</a> and <a href="feature-tracking" accesskey="f" tabindex="4">chunks of work</a> to future releases, trusted members of your community can help you to create a light-weight roadmap for the future of your project.
                         </p>
                     </div>
@@ -95,10 +93,11 @@ Launchpad calls these <em>series</em> and helps you to organise your work &mdash
                             <img src="images/rm/lp-diamond.png" alt="Launchpad diamond logo" />
                         </p>
                         <p>
-                        <a href="https://launchpad.net/projects/+new-guided">Registering your project</a> with Launchpad gives you access to a community of thousands, as well as six applications that will help you plan, develop, improve and distribute your software.</p>
-                        <p> You can pick and choose which of Launchpad's tools are most appropriate for you. Even if you're not planning to use Launchpad directly, registering can help you find new contributors and users. Launchpad is free of charge for free software projects (<a href="https://help.launchpad.net/Legal/ProjectLicensing">find out more about our licensing policy</a>).</p>
-<p>If you haven't already, <a href="https://launchpad.net/+login">create a Launchpad user account</a> and take a look around.</p>
-<p>To find out more about how Launchpad can be useful to you, <a href="mailto:feedback@launchpad.net">get in touch</a> and we'll be glad to talk.</p>
+                        <a href="https://launchpad.net/projects/+new-guided">Registering your project</a> with Launchpad gives you access to a community of thousands, as well as six applications that will help you plan, develop, improve and distribute your software<br />
+                        <br />It's free for open source projects. You can also <a href="mailto:feedback@launchpad.net">talk to us about commercial subscriptions</a>.<br />
+                        <br />You can pick and choose which of Launchpad's tools are most appropriate for you. Even if you're not planning to use Launchpad directly, registering can help you find new contributors and users. Launchpad is free of charge for free software projects (<a href="https://help.launchpad.net/Legal/ProjectLicensing">find out more about our licensing policy</a>).<br />
+                        <br />If you haven't already, <a href="https://launchpad.net/+login">create a Launchpad user account</a> and take a look around.<br />
+                        <br />To find out more about how Launchpad can be useful to you, <a href="mailto:feedback@launchpad.net">get in touch</a> and we'll be glad to talk.</p>
 <ul class="further-links">
                         </ul>
                     </div>

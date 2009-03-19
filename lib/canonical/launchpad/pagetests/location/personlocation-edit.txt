@@ -92,7 +92,7 @@ it), the visibility can only be changed by the person himself.
 Once hidden, other users can't see nor change it.
 
     >>> name12_browser.open('http://launchpad.dev/~no-priv')
-    >>> print str(find_tag_by_id(name12_browser.contents, 'portlet-map'))
+    >>> print str(find_tag_by_id(name12_browser.contents, 'person_map_div'))
     None
     >>> name12_browser.open('http://launchpad.dev/~no-priv/+editlocation')
     Traceback (most recent call last):

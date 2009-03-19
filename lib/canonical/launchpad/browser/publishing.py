@@ -215,27 +215,34 @@ class SourcePublishingRecordView(BasePublishingRecordView):
 
     @property
     def published_source_and_binary_files(self):
-        """Return list of dicts describing all files published
-           for a certain source publication.
-        """
-        files = sorted(self.context.getSourceAndBinaryLibraryFiles(),
-                       key=lambda l: l.filename)
-        ret = []
+        """Return list of dictionaries representing published files."""
+        files = sorted(
+            self.context.getSourceAndBinaryLibraryFiles(),
+            key=attrgetter('filename'))
+        result = []
         urls = set()
-        for f in files:
-            d = {}
-            url = f.http_url
+        for library_file in files:
+            url = library_file.http_url
             if url in urls:
                 # Don't print out the same file multiple times. This
                 # actually happens for arch-all builds, and is
                 # particularly irritating for PPAs.
                 continue
             urls.add(url)
-            d["url"] = url
-            d["filename"] = f.filename
-            d["filesize"] = f.content.filesize
-            ret.append(d)
-        return ret
+
+            custom_dict = {}
+            custom_dict["url"] = url
+            custom_dict["filename"] = library_file.filename
+            custom_dict["filesize"] = library_file.content.filesize
+            if (library_file.filename.endswith('.deb') or
+                library_file.filename.endswith('.udeb')):
+                custom_dict['class'] = 'binary'
+            else:
+                custom_dict['class'] = 'source'
+
+            result.append(custom_dict)
+
+        return result
 
     @property
     def built_packages(self):

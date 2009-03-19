@@ -58,13 +58,13 @@ for these.
 
     >>> browser.getLink('pending proposals').click()
     >>> print browser.title
-    Active code reviews for Fooix
+    Pending proposals
 
 The proposals are listed in a table that shows the source and target branches,
 who requested the merge, the date the review was requested, and the vote
 summary.
 
-    >>> print_tag_with_id(browser.contents, 'proposal-listing')
+    >>> print_tag_with_id(browser.contents, "proposals")
     Branch Merge Proposal   Requested By          Activity
     lp://dev/~albert/fooix/review &rArr; lp://dev/fooix
             Albert        ...                     None
@@ -92,7 +92,7 @@ and approved merges.
 
     >>> browser.open('http://code.launchpad.dev/~albert')
     >>> print_tag_with_id(browser.contents, 'page-summary')
-    Related branches: 1 (1 registered, 1 owned, 1 subscribed)
+    1 owned branch, 1 registered branch, 1 subscribed branch
     1 active proposal, 0 approved merges, 0 requested reviews
 
     >>> browser.getLink('approved merges').click()
@@ -107,7 +107,7 @@ of their reviews
 
     >>> browser.open('http://code.launchpad.dev/~robert/+requestedreviews')
     >>> print_tag_with_id(browser.contents, 'page-summary')
-    Related branches: 0 (0 registered, 0 owned, 0 subscribed)
+    0 owned branches, 0 registered branches, 0 subscribed branches
     0 active proposals, 0 approved merges, 1 requested review
 
     >>> print_tag_with_id(browser.contents, 'proposal-listing')

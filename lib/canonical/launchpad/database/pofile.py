@@ -10,7 +10,6 @@ __all__ = [
     'POFileSet',
     'POFileToChangedFromPackagedAdapter',
     'POFileToTranslationFileDataAdapter',
-    'POFileTranslator',
     ]
 
 import datetime
@@ -34,8 +33,7 @@ from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import TranslationMessage
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.pofile import (
-    IPOFile, IPOFileSet, IPOFileTranslator)
+from canonical.launchpad.interfaces.pofile import IPOFile, IPOFileSet
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
 from canonical.launchpad.interfaces.translationexporter import (
@@ -788,6 +786,7 @@ class POFile(SQLBase, POFileMixIn):
         #   everything but the messages with errors. We handle it returning a
         #   list of faulty messages.
         import_rejected = False
+        needs_notification_for_imported = False
         error_text = None
         try:
             errors = translation_importer.importFile(entry_to_import, logger)
@@ -812,6 +811,7 @@ class POFile(SQLBase, POFileMixIn):
             import_rejected = True
             error_text = str(exception)
             entry_to_import.error_output = error_text
+            needs_notification_for_imported = True
         except OutdatedTranslationError:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
@@ -897,6 +897,13 @@ class POFile(SQLBase, POFileMixIn):
             # file, we tag it as FAILED.
             entry_to_import.status = RosettaImportStatus.FAILED
         else:
+            if (entry_to_import.is_published and
+                not needs_notification_for_imported):
+                # If it's a published upload (i.e. from a package or bzr
+                # branch), do not send success notifications unless they
+                # are needed.
+                subject = None
+
             entry_to_import.status = RosettaImportStatus.IMPORTED
             # Assign karma to the importer if this is not an automatic import
             # (all automatic imports come from the rosetta expert user) and
@@ -1208,20 +1215,6 @@ class POFileSet:
         """See `IPOFileSet`."""
         return POFile.select(
             "id >= %s" % quote(starting_id), orderBy="id", limit=batch_size)
-
-
-class POFileTranslator(SQLBase):
-    """See `IPOFileTranslator`."""
-
-    implements(IPOFileTranslator)
-    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
-    person = ForeignKey(
-        dbName='person', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
-    latest_message = ForeignKey(foreignKey='TranslationMessage',
-        dbName='latest_message', notNull=True)
-    date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
-        notNull=False, default=None)
 
 
 class POFileToTranslationFileDataAdapter:

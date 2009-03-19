@@ -23,6 +23,9 @@
         <th tal:condition="context/show_column/vote_summary|nothing">
           Activity
         </th>
+        <th tal:condition="context/show_column/preview_diff|nothing">
+          Diff
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -37,7 +40,7 @@
           </a>
         </td>
         <td>
-          <tal:registrant content="structure proposal/registrant/fmt:link" />
+          <tal:registrant replace="structure proposal/registrant/fmt:link" />
           <tal:date replace="proposal/date_review_requested/fmt:displaydate"/>
         </td>
 
@@ -71,9 +74,12 @@
             </tal:reviewer-not-team>
           </tal:review-vote>
         </td>
-        <td tal:condition="context/show_column/vote_summary|nothing"
-            tal:content="structure proposal/vote_summary">
-          Vote Summary
+        <td tal:condition="context/show_column/vote_summary|nothing">
+          <metal:votes use-macro="proposal/@@+bmp-macros/vote-summary"/>
+        </td>
+        <td tal:condition="context/show_column/preview_diff|nothing">
+          <tal:diff-link condition="proposal/preview_diff"
+                         replace="structure proposal/preview_diff/fmt:link"/>
         </td>
       </tr>
     </tbody>

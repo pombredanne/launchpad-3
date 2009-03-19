@@ -30,19 +30,36 @@ class TestBugTracker(TestCaseWithFactory):
         for type in BugTrackerType.items:
             bugtracker = self.factory.makeBugTracker(bugtrackertype=type)
 
-            bug_filing_url = bugtracker.getBugFilingLink(None)
+            bugtracker_urls = bugtracker.getBugFilingAndSearchLinks(None)
+            bug_filing_url = bugtracker_urls['bug_filing_url']
+            bug_search_url = bugtracker_urls['bug_search_url']
+
             if bugtracker.multi_product:
                 self.assertTrue(
                     bug_filing_url is None,
-                    "getBugFilingURL() should return None for BugTrackers "
-                    "of type %s when no remote product is passed." %
+                    "getBugFilingAndSearchLinks() should return a "
+                    "bug_filing_url of None for BugTrackers of type %s when "
+                    "no remote product is passed." %
+                    type.title)
+                self.assertTrue(
+                    bug_search_url is None,
+                    "getBugFilingAndSearchLinks() should return a "
+                    "bug_search_url of None for BugTrackers of type %s when "
+                    "no remote product is passed." %
                     type.title)
             else:
                 self.assertTrue(
                     bug_filing_url is not None,
-                    "getBugFilingURL() should not return None for "
-                    "BugTrackers of type %s when no remote product is "
-                    "passed." % type.title)
+                    "getBugFilingAndSearchLinks() should not return a "
+                    "bug_filing_url of None for BugTrackers of type %s when "
+                    "no remote product is passed." %
+                    type.title)
+                self.assertTrue(
+                    bug_search_url is not None,
+                    "getBugFilingAndSearchLinks() should not return a "
+                    "bug_search_url of None for BugTrackers of type %s when "
+                    "no remote product is passed." %
+                    type.title)
 
 
 def test_suite():

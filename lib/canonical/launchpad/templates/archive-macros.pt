@@ -3,29 +3,152 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
 
+<metal:expandable_table_js define-macro="expandable-table-js">
+  <tal:comment replace="nothing">
+    Javascript needed for expanding/collapsing archive package list
+    row containing extra publication information via XHR.
+  </tal:comment>
+
+<script type="text/javascript">
+YUI().use('node', 'io-base', 'lazr.anim', 'soyuz-base', function(Y) {
+
+
+/*
+ * Communicate the update has failed and allow the user to retry
+ * the operation.
+ */
+function informFailure(transaction_id, response, args) {
+    function retry_handler(e) {
+        e.preventDefault();
+        startUpdate(args.container);
+    };
+
+    var failure_message = Y.soyuz.makeFailureNode(
+        'Failed to fetch package details.', retry_handler);
+
+    args.container.set('innerHTML', '');
+    args.container.appendChild(failure_message);
+
+    var anim = Y.lazr.anim.red_flash({
+        node: args.container
+        });
+    anim.run();
+}
+
+
+/*
+ * Update the row with the XHR response.
+ */
+function doUpdate(transaction_id, response, args) {
+    args.container.set('innerHTML', response.responseText);
+}
+
+
+/*
+ * Dispatch a XHR for updating the given container.
+ */
+function startUpdate(container) {
+    in_progress_message = Y.soyuz.makeInProgressNode(
+        'Fetching package details ...')
+
+    container.set('innerHTML', '');
+    container.appendChild(in_progress_message);
+
+    var config = {
+        on: {
+            'success': doUpdate,
+            'failure': informFailure
+        },
+        arguments: {
+            'container': container,
+        }
+    };
+
+    var pub_id = container.get('id').replace(
+        '-container', '').replace('pub', '');
+    var uri = '+sourcepub/' + pub_id + '/+listing-archive-extra';
+    Y.io(uri, config);
+}
+
+
+/*
+ * Toggle the visibility of the expander targeted and the visual of
+ * the expander itself.
+ */
+function toggleExpandableRow(expander) {
+    var row = Y.get('#' + expander.get('id').replace('-expander', ''));
+    var icon = expander.query('img');
+
+    var row_display = row.getStyle('display');
+    if (row_display == 'none') {
+        row.setStyle('display', 'table-row');
+        icon.set('src', '/@@/treeExpanded');
+        var container = Y.get('#' + row.get('id') + '-container');
+        if (trim(container.get('innerHTML')) == ''){
+            startUpdate(container);
+        }
+    }
+    else {
+        row.setStyle('display', 'none');
+        icon.set('src', '/@@/treeCollapsed');
+    }
+}
+
+
+/*
+ * Setup expander handlers and pre-load 'treeExpanded', 'no' and
+ * 'spinner' images for better reponsiveness.
+ */
+function setupPackageListExpanders() {
+    var spinner = new Image();
+    spinner.src = '/@@/spinner';
+
+    var no = new Image();
+    no.src = '/@@/no';
+
+    var tree_expanded = new Image();
+    tree_expanded.src = '/@@/treeExpanded';
+
+    function expander_handler (e) {
+        e.preventDefault();
+        toggleExpandableRow(e.currentTarget);
+    };
+
+    // Note: there are situations, such as displaying empty result
+    // sets, when there will not be any links for expanders on the page.
+    var expanders = Y.all('#packages_list a.expander');
+    if (expanders !== null){
+        expanders.on("click", expander_handler);
+    }
+}
+
+Y.on('domready', setupPackageListExpanders);
+});
+</script>
+
+<style type="text/css" media="screen, print">
+div.package-details {
+    padding-left: 4em;
+    padding-bottom: 1em;
+}
+</style>
+
+
+</metal:expandable_table_js>
+
 <metal:source_package_list define-macro="source-package-list">
   <tal:comment replace="nothing">
     Presents a table listing all the published source packages for an
     archive.
   </tal:comment>
 
-  <div style="padding-top: 1em;" tal:define="batch view/search_results">
-    <form name="package_search" action="" method="GET" style="clear:both">
-      <label for="name">Package name contains:</label>
-      <input id="field.name_filter" title="Package Name" size="20"
-              type="text" name="field.name_filter"
-              tal:attributes="value request/field.name_filter|nothing"/>
-      <tal:status_filter
-          replace="structure view/plain_status_filter_widget" /> in
-      <tal:series_filter
-          replace="structure view/plain_series_filter_widget" />
-      <input type="submit" value="Filter" />
-    </form>
+  <div style="padding-top: 1em;" tal:define="batch view/batched_sources">
 
     <tal:navigation_top
         replace="structure view/batchnav/@@+navigation-links-upper" />
 
-    <table class="listing" id="packages_list" tal:condition="batch">
+    <table class="listing" id="packages_list"
+           tal:condition="batch">
       <thead>
         <tr class="archive_package_row">
         <th colspan="2">Source</th>
@@ -38,9 +161,18 @@
         </tr>
       </thead>
       <tbody>
-        <tal:block repeat="publishing batch"
-                   replace="structure publishing/@@+listing-archive-detailed">
-        </tal:block>
+        <tal:non_selectable repeat="publishing batch"
+                   replace="structure publishing/@@+listing-archive-detailed"
+                   condition="not:view/selectable_sources">
+        </tal:non_selectable>
+        <tal:selectable condition="view/selectable_sources">
+          <tal:each_term define="widget nocall:view/widgets/selected_sources"
+                         repeat="term widget/vocabulary">
+            <tal:block
+              define="pub term/value"
+              replace="structure pub/@@+listing-archive-detailed-selectable" />
+          </tal:each_term>
+        </tal:selectable>
       </tbody>
     </table>
 
@@ -48,10 +180,13 @@
         replace="structure view/batchnav/@@+navigation-links-lower" />
 
     <div id="empty-result"
-            tal:define="name_filter request/field.name_filter|nothing"
+            tal:define="name_filter view/specified_name_filter|nothing"
             tal:condition="not: batch">
       No matching package for '<tal:name_filter replace="name_filter" />'.
     </div>
+
+    <metal:js
+      use-macro="context/@@+macros/expandable-table-js" />
 
   </div>
 
@@ -82,13 +217,13 @@
           <tr tal:repeat="request requests">
             <td tal:define="archive request/source_archive">
               <a tal:attributes="href archive/fmt:url"
-                 tal:content="archive/title" 
+                 tal:content="archive/title"
                  tal:condition="archive/is_ppa" />
-              <tal:archive_title replace="archive/title" 
+              <tal:archive_title replace="archive/title"
                                  condition="not: archive/is_ppa" />
             </td>
             <td>
-              <tal:distroseries 
+              <tal:distroseries
                   replace="request/source_distroseries/displayname" />-<tal:src_pocket
                   replace="request/source_pocket/name/fmt:lower" />
               <tal:component condition="request/source_component">
@@ -96,8 +231,7 @@
                   replace="request/source_component/name" />)
               </tal:component>
             </td>
-            <td><a tal:attributes="href request/requester/fmt:url"
-                   tal:content="request/requester/displayname" /></td>
+            <td><a tal:replace="structure request/requester/fmt:link" /></td>
             <td tal:content="request/date_created/fmt:approximatedate" />
             <td tal:content="request/status/name/capitalize" />
           </tr>
@@ -106,78 +240,6 @@
     </tal:request_list>
   </tal:block>
 </metal:package_copy_request_list>
-
-<metal:selectable_sources define-macro="selectable-sources">
-
-  <tal:comment replace="nothing">
-    Presents a table with selectable sources for an
-    IArchiveSelectableSourceView.
-  </tal:comment>
-
-  <tal:search define="name_widget nocall:view/widgets/name_filter;
-                      status_widget nocall:view/widgets/status_filter">
-     <label tal:attributes="for name_widget/name">
-       Show only sources with name matching:
-     </label>
-     <input tal:replace="structure name_widget" />
-     <input tal:replace="structure status_widget" />
-     <input
-       tal:replace="structure view/actions/field.actions.update/render" />
-  </tal:search>
-
-  <tal:no_sources tal:condition="not:view/available_sources_size">
-    <div id="empty-result" style="border: 1px solid;">
-      <p>No matching source packages for '<tal:name_filter
-         tal:replace="request/field.name_filter|nothing" />'.</p>
-    </div>
-  </tal:no_sources>
-
-  <tal:sources condition="view/available_sources_size"
-               define="widget nocall:view/widgets/selected_sources;
-                       field_name widget/context/__name__;
-                       error python:view.getFieldError(field_name);">
-    <table class="listing" style="margin-top: 1em;">
-      <thead>
-      <tr class="archive_package_row">
-        <th colspan="2">Source</th>
-        <th tal:condition="context/owner/isTeam">Uploader</th>
-        <th>Published</th>
-        <th>Status</th>
-        <th>Series</th>
-        <th>Section</th>
-        <th>Build Status</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tal:terms tal:repeat="term widget/vocabulary">
-        <tal:block
-          define="pub term/value"
-          replace="structure pub/@@+listing-archive-detailed-selectable" />
-      </tal:terms>
-      </tbody>
-      <tfoot tal:condition="view/has_undisplayed_sources">
-         <tr>
-           <td colspan="8" tal:condition="context/owner/isTeam">
-             <div>Presenting only <tal:presented replace="
-               view/max_sources_presented"/> of <tal:available replace="
-               view/available_sources_size" /> available sources.</div>
-           </td>
-           <td colspan="7" tal:condition="not: context/owner/isTeam">
-             <div>Presenting only <tal:presented replace="
-               view/max_sources_presented"/> of <tal:available replace="
-               view/available_sources_size" /> available sources.</div>
-           </td>
-         </tr>
-      </tfoot>
-    </table>
-    <input tal:attributes="name string:${widget/name}-empty-marker"
-           type="hidden" value="1" />
-    <div class="error message" tal:condition="error"
-         tal:content="structure error">Error message</div>
-  </tal:sources>
-
-</metal:selectable_sources>
-
 
 <metal:package_counters define-macro="package-counters">
 
@@ -239,5 +301,24 @@
     </tbody>
   </table>
 </metal:build_status_summary>
+
+<metal:package_filter_form define-macro="package-filter-form">
+  <tal:comment replace="nothing">
+    Present the filtering form used on a few archive pages.
+  </tal:comment>
+
+  <form class="package-search-filter" action="" method="GET">
+    <label for="name">Package name contains:</label>
+    <input id="field.name_filter" title="Package Name" size="20"
+            type="text" name="field.name_filter"
+            tal:attributes="value request/field.name_filter|nothing"/>
+    <tal:status_filter
+        replace="structure view/plain_status_filter_widget" /> in
+    <tal:series_filter
+        replace="structure view/plain_series_filter_widget" />
+    <input type="submit" value="Filter" />
+  </form>
+
+</metal:package_filter_form>
 
 </tal:root>

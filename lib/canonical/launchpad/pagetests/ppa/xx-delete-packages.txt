@@ -71,13 +71,13 @@ matching the given text.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'nonexistentpackage'
-    >>> admin_browser.getControl("Update").click()
+    >>> admin_browser.getControl("Filter").click()
     >>> print_ppa_packages(admin_browser.contents)
-    No matching source packages for 'nonexistentpackage'.
+    No matching package for 'nonexistentpackage'.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'pmount'
-    >>> admin_browser.getControl("Update").click()
+    >>> admin_browser.getControl("Filter").click()
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
@@ -139,7 +139,7 @@ deletion comment, simulating a XSS attack. The current code will
 automaticaly quote the text entered by the user resulting in an
 entirely readable content.
 
-    >>> admin_browser.getControl("Update").click()
+    >>> admin_browser.getControl("Filter").click()
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
     >>> admin_browser.getControl(
@@ -223,7 +223,7 @@ the form re-submission tests.
 
 Multiple packages can be deleted in one single batch.
 
-    >>> admin_browser.getControl("Update").click()
+    >>> admin_browser.getControl("Filter").click()
 
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['28', '29']
@@ -370,20 +370,20 @@ overview page.
     foo - 1.0                    Superseded Hoary           Base
 
 We don't show the publishing details for binary packages, but the
-presence of 'Built Packages' and the binary filename in the 'Files'
+presence of 'Built packages' and the binary filename in the 'Files'
 section indicates to the user that it is still published.
 
-    >>> details_section_id = 'pub%d' % foo_pub_src.id
-    >>> details_section = find_tag_by_id(
-    ...     user_browser.contents, details_section_id)
-    >>> print extract_text(details_section)
+    >>> expander_url = user_browser.getLink(
+    ...     id='pub%s-expander' % foo_pub_src.id).url
+    >>> anon_browser.open(expander_url)
+    >>> print extract_text(anon_browser.contents)
     Publishing details
     Changelog
     Builds
       i386
-    Built Packages
+    Built packages
       foo-bin Foo app is great
-    Download files from Librarian
+    Package files
       foo-bin_1.0_i386.deb (18 bytes)
       foo_1.0.dsc (28 bytes)
 
@@ -399,16 +399,17 @@ available for deletion because it contains a PUBLISHED binary.
         Status
     foo - 1.0                    Superseded Hoary           Base
 
-    >>> details_section = find_tag_by_id(
-    ...     user_browser.contents, details_section_id)
-    >>> print extract_text(details_section)
+    >>> expander_url = user_browser.getLink(
+    ...     id='pub%s-expander' % foo_pub_src.id).url
+    >>> anon_browser.open(expander_url)
+    >>> print extract_text(anon_browser.contents)
     Publishing details
     Changelog
     Builds
       i386
-    Built Packages
+    Built packages
       foo-bin Foo app is great
-    Download files from Librarian
+    Package files
       foo-bin_1.0_i386.deb (18 bytes)
       foo_1.0.dsc (28 bytes)
 
@@ -423,15 +424,15 @@ records are presented.
 
     >>> user_browser.getControl(
     ...     name='field.status_filter').value = ['published']
-    >>> user_browser.getControl("Update").click()
+    >>> user_browser.getControl("Filter").click()
     >>> print_ppa_packages(user_browser.contents)
-    No matching source packages for ''.
+    No matching package for ''.
 
 When he selects 'Superseded' the SUPERSEDED source shows up again.
 
     >>> user_browser.getControl(
     ...     name='field.status_filter').value = ['superseded']
-    >>> user_browser.getControl("Update").click()
+    >>> user_browser.getControl("Filter").click()
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
@@ -459,7 +460,7 @@ source and binaries are marked as DELETED and the corresponding
 
 After the deletion, any user accessing No-privileges' PPA page can see
 a row representing 'foo' and it is marked as 'superseded'. In its
-corresponding expandable area, he can see that the 'Built Packages'
+corresponding expandable area, he can see that the 'Built packages'
 section is omitted, however the source and binary files can be
 downloaded from librarian.
 
@@ -475,16 +476,17 @@ opposed to being truncated after the fisrt 20 characters.
         Status
     foo - 1.0                    Deleted    Hoary           Base
 
-    >>> details_section = find_tag_by_id(
-    ...     user_browser.contents, details_section_id)
-    >>> print extract_text(details_section)
+    >>> expander_url = user_browser.getLink(
+    ...     id='pub%s-expander' % foo_pub_src.id).url
+    >>> anon_browser.open(expander_url)
+    >>> print extract_text(anon_browser.contents)
     Publishing details
     Deleted ... ago by No Privileges Person
     Deletion of a number of base pairs that is not evenly divisible by three will lead to a frameshift mutation.
     Changelog
     Builds
       i386
-    Download files from Librarian
+    Package files
       foo-bin_1.0_i386.deb (18 bytes)
       foo_1.0.dsc (28 bytes)
 
@@ -513,10 +515,11 @@ links at the end of the section.
     >>> user_browser.getControl(
     ...    name='field.status_filter').value = ['superseded']
     >>> user_browser.getControl('Filter', index=0).click()
-    >>> details_section = find_tag_by_id(
-    ...     user_browser.contents, details_section_id)
 
-    >>> print extract_text(details_section)
+    >>> expander_url = user_browser.getLink(
+    ...     id='pub%s-expander' % foo_pub_src.id).url
+    >>> anon_browser.open(expander_url)
+    >>> print extract_text(anon_browser.contents)
     Publishing details
     Removed from disk ... ago.
     Deleted ... ago by No Privileges Person
@@ -525,7 +528,7 @@ links at the end of the section.
     Changelog
     Builds
       i386
-    Download files from Librarian
+    Package files
       foo-bin_1.0_i386.deb (18 bytes)
       foo_1.0.dsc (28 bytes)
 

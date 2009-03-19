@@ -12,7 +12,7 @@ from bzrlib.urlutils import join
 
 from zope.component import getUtility
 
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -38,9 +38,11 @@ def main(args):
         print 'External URL:', branch.url
     branch_path = branch_id_to_path(branch.id)
     if branch.branch_type == BranchType.HOSTED:
-        hosted_path = join(config.codehosting.branches_root, branch_path)
+        hosted_path = join(
+            config.codehosting.hosted_branches_root, branch_path)
         print 'Hosted copy:',  hosted_path
-    mirrored_path = join(config.supermirror.branchesdest, branch_path)
+    mirrored_path = join(
+        config.codehosting.mirrored_branches_root, branch_path)
     print 'Mirrored copy:', mirrored_path
 
 

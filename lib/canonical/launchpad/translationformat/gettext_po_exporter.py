@@ -590,9 +590,7 @@ class GettextPOChangedExporter(GettextPOExporterBase):
         # 'context' is ignored because it's only required by the way the
         # exporters are instantiated but it isn't used by this class.
         self.format = TranslationFileFormat.POCHANGED
-        self.supported_source_formats = [
-            TranslationFileFormat.PO,
-            TranslationFileFormat.KDEPO]
+        self.supported_source_formats = []
 
     def _makeExportedHeader(self, translation_file, charset=None):
         """Create a header for changed PO files.

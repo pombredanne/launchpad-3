@@ -9,7 +9,7 @@ First, load the svg-support spec on Firefox:
 Now, let's make sure we can see the retargeting page for it, as the Foo Bar
 administrator:
 
-  >>> admin_browser.getLink("Re-target blueprint").click()
+  >>> admin_browser.getLink("Retarget").click()
 
 The page contains a link back to the blueprint, in case we change our
 mind.
@@ -28,7 +28,7 @@ We can move the blueprint to Evolution.
 OK. Now, it follows that we should be able to retarget it immediately from
 evolution, to a distribution. Let's try redhat.
 
-  >>> admin_browser.getLink("Re-target blueprint").click()
+  >>> admin_browser.getLink("Retarget").click()
   >>> admin_browser.getControl("For").value = "redhat"
   >>> admin_browser.getControl("Retarget Blueprint").click()
   >>> admin_browser.url
@@ -38,7 +38,7 @@ And similarly, this should now be on Red Hat, and we should be able to send
 it straight back to firefox. This means that the data set should finish this
 test in the same state that it was when we started.
 
-  >>> admin_browser.getLink("Re-target blueprint").click()
+  >>> admin_browser.getLink("Retarget").click()
   >>> admin_browser.getControl("For").value = "firefox"
   >>> admin_browser.getControl("Retarget Blueprint").click()
   >>> admin_browser.url
@@ -47,7 +47,7 @@ test in the same state that it was when we started.
 If we try to reassign the spec to a target which doesn't exist, we don't
 blow up:
 
-  >>> admin_browser.getLink("Re-target blueprint").click()
+  >>> admin_browser.getLink("Retarget").click()
   >>> admin_browser.getControl("For").value = "foo bar"
   >>> admin_browser.getControl("Retarget Blueprint").click()
 

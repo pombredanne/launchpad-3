@@ -6,7 +6,6 @@
 
   <!-- Archive -->
   <class class="canonical.launchpad.database.Archive">
-    <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.archive.IArchivePublic"/>
     <require
       permission="launchpad.View"
@@ -174,6 +173,17 @@
       template="../templates/archive-edit-dependencies.pt"
       facet="overview"
       name="+edit-dependencies"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.Admin"
+    class="canonical.launchpad.browser.archivesubscription.ArchiveSubscribersView">
+    <browser:page
+      name="+subscriptions"
+      facet="overview"
+      template="../templates/archive-subscribers.pt"
       />
   </browser:pages>
 

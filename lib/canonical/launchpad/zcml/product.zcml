@@ -29,7 +29,7 @@
                       license_info licenses
                       bug_reporting_guidelines
                       commercial_subscription redeemSubscriptionVoucher
-                      remote_product"
+                      remote_product official_bug_tags"
       />
 <!-- sabdfl 2006-04-10 I put "name" in the admin group because
       with Bazaar now in place, lots of people can have personal
@@ -91,7 +91,7 @@
     <!-- IStructuralSubscriptionTarget -->
     <allow attributes="bug_subscriptions getSubscriptions
                        getSubscription getBugNotificationsRecipients
-                       parent_subscription_target" />
+                       parent_subscription_target target_type_display" />
     <require
         permission="launchpad.AnyPerson"
         attributes="addSubscription addBugSubscription
@@ -383,16 +383,16 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.product.ProductActiveReviewsView"
+    class="canonical.launchpad.browser.branchmergeproposallisting.ProductActiveReviewsView"
     permission="zope.Public"
     facet="branches"
     name="+activereviews"
-    template="../templates/product-mergeproposals.pt"
+    template="../templates/product-active-reviews.pt"
     />
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.product.ProductApprovedMergesView"
+    class="canonical.launchpad.browser.branchmergeproposallisting.ProductApprovedMergesView"
     permission="zope.Public"
     facet="branches"
     name="+approvedmerges"
@@ -544,10 +544,10 @@
   <class class="canonical.launchpad.database.ProductSet">
     <allow
       attributes="title people all_active get getByName getProductsWithBranches
-                  getProductsWithUserDevelopmentBranches createProduct search latest
-                  getTranslatables featuredTranslatables count_all count_translatables
-                  count_bounties count_buggy count_featureful count_reviewed count_answered
-                  count_codified"
+                  createProduct search latest getTranslatables
+                  featuredTranslatables count_all count_translatables
+                  count_bounties count_buggy count_featureful count_reviewed
+                  count_answered count_codified"
       />
   </class>
 

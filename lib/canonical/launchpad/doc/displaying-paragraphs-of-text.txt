@@ -274,7 +274,7 @@ Bug.setPrivate adds all indirect subscribers to the bug as direct
 subscribers, but we want to see what the bug looks like if we're not a
 subscriber.
 
-    >>> firefox_crashes.unsubscribe(current_user)
+    >>> firefox_crashes.unsubscribe(current_user, current_user)
 
 A private bug has a title "private bug".
 
@@ -345,27 +345,28 @@ After login, a link:
     True
 
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">OOPS 38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS 38C23</a></p>
 
 OOPS references can take a number of forms:
 
     >>> text = 'oops 38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">oops 38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">oops 38C23</a></p>
 
     >>> text = 'OOPS-38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">OOPS-38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS-38C23</a></p>
 
     >>> text = 'OOPS C3'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/C3">OOPS C3</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=C3">OOPS C3</a></p>
 
     >>> text = 'OOPS   38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">OOPS   38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS   38C23</a></p>
 
-It should work if the configuration value doesn't end with a slash:
+If the configuration value doesn't end with a slash, we won't add one. This
+lets us configure the URL to use query parameters.
 
     >>> from canonical.config import config
     >>> oops_root_url = """
@@ -375,7 +376,7 @@ It should work if the configuration value doesn't end with a slash:
     >>> config.push('oops_root_url', oops_root_url)
     >>> text = 'OOPS 38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="http://foo/bar/38C23">OOPS 38C23</a></p>
+    <p><a href="http://foo/bar38C23">OOPS 38C23</a></p>
     >>> config_data = config.pop('oops_root_url')
 
 Check against false positives:

@@ -12,7 +12,7 @@ __all__ = [
     'IStaticDiffSource',
     ]
 
-from zope.schema import Bytes, Int, Text, TextLine
+from zope.schema import Bool, Bytes, Int, Text, TextLine
 from zope.interface import Interface
 
 from canonical.lazr.fields import Reference
@@ -62,10 +62,11 @@ class IStaticDiff(Interface):
 class IStaticDiffSource(Interface):
     """Component that can acquire StaticDiffs."""
 
-    def acquire(from_revision_id, to_revision_id, repository):
+    def acquire(from_revision_id, to_revision_id, repository, filename=None):
         """Get or create a StaticDiff."""
 
-    def acquireFromText(from_revision_id, to_revision_id, text):
+    def acquireFromText(from_revision_id, to_revision_id, text,
+                        filename=None):
         """Get or create a StaticDiff from a string.
 
         If a StaticDiff exists for this revision_id pair, the text is ignored.
@@ -109,3 +110,9 @@ class IPreviewDiff(IDiff):
         Reference(
             Interface, readonly=True,
             title=_('The branch merge proposal that diff relates to.')))
+
+    stale = exported(
+        Bool(readonly=True, description=_(
+                'If the preview diff is stale, it is out of date when '
+                'compared to the tip revisions of the source, target, and '
+                'possibly dependent branches.')))

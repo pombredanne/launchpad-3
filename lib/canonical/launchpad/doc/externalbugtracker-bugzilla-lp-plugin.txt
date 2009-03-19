@@ -361,6 +361,30 @@ error will be raised. We can add a sample bug to demonstrate this.
     >>> del bugzilla._bugs[999]
 
 
+== Getting the remote product ==
+
+getRemoteProduct() returns the product a remote bug is associated with
+in Bugzilla. 
+
+    >>> bugzilla.xmlrpc_transport.bugs[2]['product']
+    'HeartOfGold'
+    >>> bugzilla.getRemoteProduct(2)
+    'HeartOfGold'
+
+A bug alias can also be given to getRemoteProduct().
+
+    >>> bugzilla.getRemoteProduct('bug-two')
+    'HeartOfGold'
+
+If the product is requested for a bug that can't be found, BugNotFound
+is raised.
+
+    >>> bugzilla.getRemoteProduct(12345)
+    Traceback (most recent call last):
+    ...
+    BugNotFound: 12345
+
+
 == Retrieving remote comments ==
 
 BugzillaLPPlugin implments the ISupportsCommentImport interface, which

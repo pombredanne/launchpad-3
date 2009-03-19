@@ -105,6 +105,16 @@ You can list development distroseriess:
     ...     print devdist.name
     hoary
 
+You can use the has_published_binaries property to find out if the
+distribution has any binaries on disk.  This is useful when searching for
+packages and you need to tailor any user messages about what types of packages
+are available.
+
+    >>> ubuntu.has_published_binaries
+    True
+
+    >>> gentoo.has_published_binaries
+    False
 
 == Guessing package names ==
 
@@ -301,6 +311,49 @@ and even on substrings:
     DistributionSourcePackage: alsa-utils
     DistributionSourcePackage: foobar
     DistributionSourcePackage: commercialpackage
+
+
+=== Searching for binary packages ===
+
+There are two useful functions for searching binary packages related
+to the distribution, searchBinaryPackages() and searchBinaryPackagesFTI().
+The former only does binary package name matches (optionally a substring
+match) and the latter uses the PostgreSQL Full Text Index searches.
+
+Both functions return DistributionSourcePackageCache objects, which
+makes it very easy to associate the binary name with its source.
+
+An exact match search with no matches on any package name returns
+an empty result set:
+
+    >>> results = ubuntu.searchBinaryPackages("mozilla", exact_match=True)
+    >>> results.count()
+    0
+
+Loosening to substring matches gives another result:
+
+    >>> results = ubuntu.searchBinaryPackages("mozilla", exact_match=False)
+    >>> print results[0]
+    <security proxied canonical.launchpad.database.distributionsourcepackagecache.DistributionSourcePackageCache instance ...
+
+    >>> print [result.name for result in results]
+    [u'mozilla-firefox']
+    >>> print [result.binpkgnames for result in results]
+    [u'mozilla-firefox']
+
+We can do an FTI search:
+
+    >>> fti_results = ubuntu.searchBinaryPackagesFTI("rubbish")
+    >>> fti_results.count()
+    0
+
+    >>> fti_results = ubuntu.searchBinaryPackagesFTI("browser")
+    >>> print results[0]
+    <security proxied canonical.launchpad.database.distributionsourcepackagecache.DistributionSourcePackageCache instance ...
+
+    >>> print [result.name for result in fti_results]
+    [u'mozilla-firefox']
+
 
 === Finding distroseriess and pockets from distribution names ===
 

@@ -65,6 +65,17 @@ class IExternalBugTracker(Interface):
     def convertRemoteImportance(remote_importance):
         """Convert a remote importance to a BugTaskImportance item."""
 
+    def getRemoteProduct(remote_bug):
+        """Return the remote product for a given remote bug.
+
+        :param remote_bug: The ID of the remote bug for which to return
+            the remote product.
+        :return: The remote product for `remote_bug`. If no remote
+            product is recorded for `remote_bug` return None.
+        :raise BugNotFound: If `remote_bug` doesn't exist for the bug
+            tracker.
+        """
+
 
 class ISupportsCommentImport(IExternalBugTracker):
     """An external bug tracker that supports comment imports."""
@@ -163,3 +174,4 @@ class ISupportsBackLinking(IExternalBugTracker):
         :param launchpad_bug_id: The ID of the Launchpad bug that's
             watching the remote bug.
         """
+

@@ -16,8 +16,8 @@ __all__ = [
 
 from zope.schema import Choice, Datetime, Int, Text
 from zope.interface import Attribute, Interface
+from lazr.enum import DBEnumeratedType, DBItem
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.interface import copy_field
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (

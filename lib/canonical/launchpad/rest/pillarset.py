@@ -8,14 +8,12 @@ __all__ = [
     'PillarSetLink',
     ]
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
-from canonical.lazr.interfaces.rest import (
-    IServiceRootResource, ITopLevelEntryLink)
+from canonical.lazr.interfaces.rest import ITopLevelEntryLink
 
 
 class IPillarSetLink(ITopLevelEntryLink, ICanonicalUrlData):

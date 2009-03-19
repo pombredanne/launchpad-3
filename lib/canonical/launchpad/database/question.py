@@ -30,6 +30,10 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import LeftJoin
 from storm.store import Store
 
+from lazr.enum import DBItem, Item
+from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
     IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
@@ -55,21 +59,17 @@ from canonical.launchpad.database.questionbug import QuestionBug
 from canonical.launchpad.database.questionmessage import QuestionMessage
 from canonical.launchpad.database.questionsubscription import (
     QuestionSubscription)
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
-from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lazr import DBItem, Item
 
 
 class notify_question_modified:
-    """Decorator that sends a SQLObjectModifiedEvent after a workflow action.
+    """Decorator that sends a ObjectModifiedEvent after a workflow action.
 
     This decorator will take a snapshot of the object before the call to
     the decorated workflow_method. It will fire an
-    SQLObjectModifiedEvent after the method returns.
+    ObjectModifiedEvent after the method returns.
 
     The list of edited_fields will be computed by comparing the snapshot
     with the modified question. The fields that are checked for
@@ -80,9 +80,9 @@ class notify_question_modified:
     """
 
     def __call__(self, func):
-        """Return the SQLObjectModifiedEvent decorator."""
+        """Return the ObjectModifiedEvent decorator."""
         def notify_question_modified(self, *args, **kwargs):
-            """Create the SQLObjectModifiedEvent decorator."""
+            """Create the ObjectModifiedEvent decorator."""
             old_question = Snapshot(self, providing=providedBy(self))
             msg = func(self, *args, **kwargs)
 
@@ -92,7 +92,7 @@ class notify_question_modified:
                 if getattr(self, field) != getattr(old_question, field):
                     edited_fields.append(field)
 
-            notify(SQLObjectModifiedEvent(
+            notify(ObjectModifiedEvent(
                 self, object_before_modification=old_question,
                 edited_fields=edited_fields, user=msg.owner))
             return msg
@@ -455,13 +455,33 @@ class Question(SQLBase, BugLinkTargetMixin):
                 store.flush()
                 return
 
-    def getSubscribers(self):
+    def getDirectSubscribers(self):
+        """See `IQuestion`.
+
+        This method is sorted so that it iterates like getDirectRecipients().
+        """
+        return sorted(
+            self.subscribers, key=operator.attrgetter('displayname'))
+
+    def getIndirectSubscribers(self):
+        """See `IQuestion`.
+
+        This method adds the assignee and is sorted so that it iterates like
+        getIndirectRecipients().
+        """
+        subscribers = set(
+            self.target.getAnswerContactsForLanguage(self.language))
+        if self.assignee:
+            subscribers.add(self.assignee)
+        return sorted(subscribers, key=operator.attrgetter('displayname'))
+
+    def getRecipients(self):
         """See `IQuestion`."""
-        subscribers = self.getDirectSubscribers()
-        subscribers.update(self.getIndirectSubscribers())
+        subscribers = self.getDirectRecipients()
+        subscribers.update(self.getIndirectRecipients())
         return subscribers
 
-    def getDirectSubscribers(self):
+    def getDirectRecipients(self):
         """See `IQuestion`."""
         subscribers = NotificationRecipientSet()
         reason = ("You received this question notification because you are "
@@ -469,7 +489,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         subscribers.add(self.subscribers, reason, 'Subscriber')
         return subscribers
 
-    def getIndirectSubscribers(self):
+    def getIndirectRecipients(self):
         """See `IQuestion`."""
         subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:
@@ -515,7 +535,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
         tktmsg = QuestionMessage(
             question=self, message=msg, action=action, new_status=new_status)
-        notify(SQLObjectCreatedEvent(tktmsg, user=tktmsg.owner))
+        notify(ObjectCreatedEvent(tktmsg, user=tktmsg.owner))
         # Make sure we update the relevant date of response or query.
         if update_question_dates:
             if owner == self.owner:
@@ -537,7 +557,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         buglink = BugLinkTargetMixin.unlinkBug(self, bug)
         if buglink:
             # Additionnaly, unsubscribe the question's owner to the bug
-            bug.unsubscribe(self.owner)
+            bug.unsubscribe(self.owner, self.owner)
         return buglink
 
     # Template methods for BugLinkTargetMixin.
@@ -1072,7 +1092,7 @@ class QuestionTargetMixin:
             title=title, description=description, owner=owner,
             datecreated=datecreated, language=language,
             **self.getTargetTypes())
-        notify(SQLObjectCreatedEvent(question))
+        notify(ObjectCreatedEvent(question))
         return question
 
     def createQuestionFromBug(self, bug):

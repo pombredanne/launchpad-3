@@ -1,15 +1,17 @@
 # Copyright 2008-2009 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0213
+# pylint: disable-msg=E0213,E0211
 
 """Interface for a branch namespace."""
 
 __metaclass__ = type
 __all__ = [
     'get_branch_namespace',
+    'IBranchCreationPolicy',
     'IBranchNamespace',
     'IBranchNamespaceSet',
     'InvalidNamespace',
     'lookup_branch_namespace',
+    'split_unique_name',
     ]
 
 from zope.component import getUtility
@@ -25,8 +27,8 @@ class IBranchNamespace(Interface):
         "The name of the namespace. This is prepended to the branch name.")
 
     def createBranch(branch_type, name, registrant, url=None, title=None,
-                     lifecycle_status=BranchLifecycleStatus.NEW, summary=None,
-                     whiteboard=None):
+                     lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
+                     summary=None, whiteboard=None):
         """Create and return an `IBranch` in this namespace."""
 
     def createBranchWithPrefix(branch_type, prefix, registrant, url=None):
@@ -63,6 +65,53 @@ class IBranchNamespace(Interface):
 
     def isNameUsed(name):
         """Is 'name' already used in this namespace?"""
+
+
+class IBranchCreationPolicy(Interface):
+    """Methods relating to branch creation and validation."""
+
+    def getPrivacySubscriber():
+        """Get the implicit privacy subscriber for a new branch.
+
+        :return: An `IPerson` or None.
+        """
+
+    def canCreateBranches(user):
+        """Is the user allowed to create branches for this namespace?
+
+        :param user: An `IPerson`.
+        :return: A Boolean value.
+        """
+
+    def areNewBranchesPrivate():
+        """Are new branches by the user created private?
+
+        No check is made about whether or not a user can create branches.
+
+        :return: A Boolean value.
+        """
+
+    def validateRegistrant(registrant):
+        """Check that the registrant can create a branch on this namespace.
+
+        :param registrant: An `IPerson`.
+        :raises BranchCreatorNotMemberOfOwnerTeam: if the namespace owner is
+            a team, and the registrant is not in that team.
+        :raises BranchCreatorNotOwner: if the namespace owner is an individual
+            and the registrant is not the owner.
+        :raises BranchCreationForbidden: if the registrant is not allowed to
+            create a branch in this namespace due to privacy rules.
+        """
+
+    def validateBranchName(name):
+        """Check the branch `name`.
+
+        :param name: A branch name, either string or unicode.
+        :raises BranchExists: if a branch with the `name` exists already in
+            the namespace.
+        :raises LaunchpadValidationError: if the name doesn't match the
+            validation constraints on IBranch.name.
+        """
 
 
 class IBranchNamespaceSet(Interface):
@@ -198,3 +247,8 @@ def get_branch_namespace(person, product=None, distroseries=None,
 
 def lookup_branch_namespace(namespace_name):
     return getUtility(IBranchNamespaceSet).lookup(namespace_name)
+
+
+def split_unique_name(unique_name):
+    """Return the namespace and branch name of a unique name."""
+    return unique_name.rsplit('/', 1)

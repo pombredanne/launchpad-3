@@ -1384,6 +1384,7 @@ returned.
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Team', u'Mark Shuttleworth'),
      (u'Ubuntu Translators', u'Rosetta Administrators'),
+     (u'Ubuntu branches', u'Ubuntu-branches-owner'),
      (u'VCS imports', u'Robert Collins'),
      (u'Warty Gnome Team', u'Mark Shuttleworth'),
      (u'Warty Security Team', u'Mark Shuttleworth'),
@@ -1401,6 +1402,7 @@ text to match against the team name.  Still, you only get teams back.
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Team', u'Mark Shuttleworth'),
      (u'Ubuntu Translators', u'Rosetta Administrators'),
+     (u'Ubuntu branches', u'Ubuntu-branches-owner'),
      (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search('team'))

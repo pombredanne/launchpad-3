@@ -17,6 +17,7 @@ __all__ = [
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
+    'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
     'ITeamContactAddressForm',
@@ -30,6 +31,7 @@ __all__ = [
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
+    'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
@@ -37,13 +39,14 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import (Bool, Choice, Datetime, Int, List, Object, Text,
+    TextLine)
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
-from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
@@ -80,9 +83,14 @@ from canonical.launchpad.interfaces.teammembership import (
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 from canonical.launchpad.interfaces.wikiname import IWikiName
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
+from canonical.launchpad.webapp.authorization import check_permission
+
+
+PRIVATE_TEAM_PREFIX = 'private-'
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -321,9 +329,17 @@ class PersonVisibility(DBEnumeratedType):
 
 
 class PersonNameField(BlacklistableContentNameField):
-    """A Person's name, which is unique."""
+    """A `Person` team name, which is unique and performs psuedo blacklisting.
 
+    If the team name is not unique, and the clash is with a private team,
+    return the blacklist message.  Also return the blacklist message if the
+    private prefix is used but the user is not privileged to create private
+    teams.
+    """
     errormessage = _("%s is already in use by another person or team.")
+
+    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
+                         "administrators.")
 
     @property
     def _content_iface(self):
@@ -333,6 +349,30 @@ class PersonNameField(BlacklistableContentNameField):
     def _getByName(self, name):
         """Return a Person by looking up his name."""
         return getUtility(IPersonSet).getByName(name, ignore_merged=False)
+
+    def _validate(self, input):
+        """See `UniqueField`."""
+        # If the name didn't change then we needn't worry about validating it.
+        if self.unchanged(input):
+            return
+
+        if not check_permission('launchpad.Commercial', self.context):
+            # Commercial admins can create private teams, with or without the
+            # private prefix.
+
+            if input.startswith(PRIVATE_TEAM_PREFIX):
+                raise LaunchpadValidationError(self.blacklistmessage % input)
+
+            # If a non-privileged user attempts to use an existing name AND
+            # the existing project is private, then return the blacklist
+            # message rather than the message indicating the project exists.
+            existing_object = self._getByAttribute(input)
+            if (existing_object is not None and
+                existing_object.visibility != PersonVisibility.PUBLIC):
+                raise LaunchpadValidationError(self.blacklistmessage % input)
+
+        # Perform the normal validation, including the real blacklist checks.
+        super(PersonNameField, self)._validate(input)
 
 
 class IPersonChangePassword(Interface):
@@ -388,21 +428,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     id = Int(title=_('ID'), required=True, readonly=True)
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
-    name = exported(
-        PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")))
-    displayname = exported(
-        StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-            description=_(
-                "Your name as you would like it displayed throughout "
-                "Launchpad. Most people use their full name here.")),
-        exported_as='display_name')
     password = PasswordField(
         title=_('Password'), required=True, readonly=False)
     karma = exported(
@@ -712,15 +737,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                       "member of the 'ubuntumembers' team or she has more "
                       "than MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT karma "
                       "entries."))
-    unique_displayname = TextLine(
-        title=_('Return a string of the form $displayname ($name).'))
-    browsername = Attribute(
-        'Return a textual name suitable for display in a browser.')
 
     archive = exported(
         Reference(title=_("Personal Package Archive"),
                   description=_("The Archive owned by this person, his PPA."),
                   schema=Interface)) # Really IArchive, see archive.py
+
+    ppas = Attribute(
+        "List of PPAs owned by this person or team ordered by name.")
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
@@ -771,6 +795,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                 """),
             readonly=True, required=False,
             value_type=Reference(schema=Interface)))
+
+    hardware_submissions = exported(CollectionField(
+            title=_("Hardware submissions"),
+            readonly=True, required=False,
+            value_type=Reference(schema=Interface))) # HWSubmission
 
     @invariant
     def personCannotHaveIcon(person):
@@ -824,7 +853,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     def setContactAddress(email):
         """Set the given email address as this team's contact address.
 
-        This method must be used only for teams.
+        This method must be used only for teams, unless the disable argument
+        is True.
 
         If the team has a contact address its status will be changed to
         VALIDATED.
@@ -834,6 +864,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     def setPreferredEmail(email):
         """Set the given email address as this person's preferred one.
+
+        If ``email`` is None, the preferred email address is unset, which
+        will make the person invalid.
 
         This method must be used only for people, not teams.
         """
@@ -858,6 +891,21 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """Deprecated.  Use IPerson.is_team instead.
 
         True if this Person is actually a Team, otherwise False.
+        """
+
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary='BranchMergeProposalStatus')))
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal
+    @export_read_operation()
+    def getMergeProposals(status=None, visible_by_user=None):
+        """Returns all merge proposals of a given status.
+
+        :param status: A list of statuses to filter with.
+        :param visible_by_user: Normally the user who is asking.
+        :returns: A list of `IBranchMergeProposal`.
         """
 
     # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
@@ -1154,10 +1202,38 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :return: True if the user was subscribed, false if they weren't.
         """
 
+    def getPPAByName(name):
+        """Return a PPA with the given name if it exists or None.
+
+        :param name: A string with the exact name of the ppa being looked up.
+
+        :return: an `IArchive` record corresponding to the PPA or None if it
+            was not found.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
 
+    name = exported(
+        PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")))
+    displayname = exported(
+        StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "Your name as you would like it displayed throughout "
+                "Launchpad. Most people use their full name here.")),
+        exported_as='display_name')
+    browsername = Attribute(
+        'Return a textual name suitable for display in a browser.')
+    unique_displayname = TextLine(
+        title=_('Return a string of the form $displayname ($name).'))
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once
@@ -1392,7 +1468,7 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPersonAdminWriteRestricted(Interface):
+class IPersonCommAdminWriteRestricted(Interface):
     """IPerson attributes that require launchpad.Admin permission to set."""
 
     visibility = exported(
@@ -1430,21 +1506,9 @@ class IPersonSpecialRestricted(Interface):
         :param comment: An explanation of why the account status changed.
         """
 
-    def reactivateAccount(comment, password, preferred_email):
-        """Reactivate this person's Launchpad account.
-
-        Set the account status to ACTIVE and possibly restore the user's
-        name. The preferred email address is set.
-
-        :param comment: An explanation of why the account status changed.
-        :param password: The user's password, it cannot be None.
-        :param preferred_email: The `EmailAddress` to set as the user's
-            preferred email address. It cannot be None.
-        """
-
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IPersonAdminWriteRestricted, IPersonSpecialRestricted,
+              IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
               IHasStanding, ISetLocation):
     """A Person."""
     export_as_webservice_entry(plural_name='people')

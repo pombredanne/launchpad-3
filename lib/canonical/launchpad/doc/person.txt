@@ -233,6 +233,21 @@ A Person may be linked to an Account.
     >>> person.account.openid_identifier
     u'no-priv_oid'
 
+And when the person is linked to an account, it's possible to adapt that
+account into an IPerson.
+
+    >>> IPerson(person.account) == person
+    True
+
+We can't adapt an account which has no person associated with, though.
+
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     AccountCreationRationale, IAccountSet)
+    >>> personless_account = getUtility(IAccountSet).new(
+    ...     AccountCreationRationale.UNKNOWN, 'Display name')
+    >>> print IPerson(personless_account, None)
+    None
+
 
 === Personal standing ===
 
@@ -636,7 +651,8 @@ BugSubscription.subscribed_by attributes.
     >>> myteam = person_set.getByName('myteam')
     >>> guadamen = person_set.getByName('guadamen')
     >>> bug = bug_set.get(1)
-    >>> BugSubscription(bug=bug, person=myteam, subscribed_by=guadamen)
+    >>> bug_subscription = BugSubscription(bug=bug, person=myteam,
+    ...     subscribed_by=guadamen)
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person
@@ -694,10 +710,12 @@ address:
     >>> print_people(personset.find('ubuntu'))
     Mirror Administrators (ubuntu-mirror-admins): []
     Sigurd Gartmann (sigurd-ubuntu): [u'sigurd-ubuntu@brogar.org']
+    Ubuntu branches (ubuntu-branches): []
     Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
     Ubuntu Gnome Team (name18): []
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Ubuntu Translators (ubuntu-translators): []
+    Ubuntu-branches-owner (ubuntu-branches-owner): [u'ubuntu-branches-owner@example.com']
 
     >>> print_people(personset.find('steve.alexander'))
     Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']
@@ -1007,6 +1025,7 @@ for a Person:
 
     >>> for pt in carlos.translation_history:
     ...     print pt.pofile.title
+    English (en) trans... of pkgconf-mozilla in Ubuntu Hoary package "mozilla"
     Spanish (es) translation of alsa-utils in alsa-utils trunk
     Spanish (es) translation of man in Ubuntu Hoary package "evolution"
     Spanish (es) translation of evolution-2.2 in Evolution trunk
@@ -1326,4 +1345,3 @@ be raised.
     Traceback (most recent call last):
       ...
     InvalidName: ThisIsn'tValid is not a valid name for a person.
-

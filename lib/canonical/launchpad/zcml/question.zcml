@@ -17,7 +17,8 @@
                     target can_be_reopened reopenings canReject
                     can_request_info can_give_info can_give_answer
                     can_confirm_answer can_reopen
-                    subscriptions isSubscribed getSubscribers
+                    subscriptions isSubscribed getRecipients
+                    getDirectRecipients getIndirectRecipients
                     getDirectSubscribers getIndirectSubscribers"
       />
     <require

@@ -80,54 +80,36 @@ vocabulary for selecting a series filter:
     Breezy Badger Autotest
     Warty
 
-An ArchiveView provides a getPublishingRecords() method that can be used
-to get all the publishing records for an archive:
+An ArchiveView provides helpers to display the counts of source and
+binary packages within the archive:
 
-    >>> for publishing in ppa_archive_view.getPublishingRecords():
+    >>> print ppa_archive_view.source_count_text
+    3 source packages
+
+    >>> print ppa_archive_view.binary_count_text
+    3 binary packages
+
+An ArchiveView provides a batched_sources property that can be used
+to get the current batch of publishing records for an archive:
+
+    >>> for publishing in ppa_archive_view.batched_sources:
     ...     print publishing.source_package_name
     cdrkit
     iceweasel
     pmount
 
-The getPublishingRecords() method can also filter by distroseries when
+The batched_sources property will also be filtered by distroseries when
 appropriate:
 
     >>> filtered_view = create_initialized_view(
     ...     cprov.archive,
     ...     name="+index",
     ...     method='GET',
-    ...     form={'field.series_filter': 'warty'})
-    >>> for publishing in filtered_view.getPublishingRecords():
+    ...     query_string='field.series_filter=warty')
+    >>> for publishing in filtered_view.batched_sources:
     ...     print publishing.source_package_name
     iceweasel
     pmount
-
-
-== ArchiveSourceSelectionFormView ==
-
-The ArchiveSourceSelectionFormView defines two members that subclasses
-must define to use.
-
-    >>> from canonical.launchpad.browser.archive import (
-    ...      ArchiveSourceSelectionFormView)
-
-    >>> class BadView(ArchiveSourceSelectionFormView):
-    ...     pass
-
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> empty_request = LaunchpadTestRequest(form={})
-    >>> bad_view = BadView(None, empty_request)
-
-    >>> bad_view.default_status_filter
-    Traceback (most recent call last):
-    ...
-    NotImplementedError: Default status_filter should be defined by
-    callsites.
-
-    >>> bad_view.getSources()
-    Traceback (most recent call last):
-    ...
-    NotImplementedError: Source lookup should be implemented by callsites.
 
 
 == ArchivePackageDeletionView ==
@@ -154,53 +136,20 @@ build the page.
 We query the available PUBLISHED sources and use them to build the
 'selected_sources' widget.
 
-    >>> [pub.id for pub in view.sources]
+    >>> [pub.id for pub in view.batched_sources]
     [27, 28, 29]
 
-    >>> view.has_sources
-    True
-
-    >>> view.available_sources_size
-    3
-
-    >>> len(view.widgets.get('selected_sources').vocabulary)
-    3
-
-The 'selected_sources' widget has a limit controlled via a hard-coded
-view attribute. We only present up to 'max_sources_presented' options
-and if the available number options exceed this number, we present a
-warning message to the user. The local limit is 20.
-
-    >>> view.max_sources_presented
-    20
-
-    >>> view.has_undisplayed_sources
-    False
-
-Using a lower limit we can see the described mechanism working.
-
-    >>> view.max_sources_presented = 2
-    >>> view.initialize()
-
-    >>> view.available_sources_size
-    3
-
-    >>> view.has_undisplayed_sources
+    >>> view.has_sources_for_display
     True
 
     >>> len(view.widgets.get('selected_sources').vocabulary)
-    2
-
-Restoring the default widget limit.
-
-    >>> view.max_sources_presented = 50
-    >>> view.initialize()
+    3
 
 This view also provides package filtering by source package name, so
 the user can refine the available options presented. By default all
 available sources are presented with empty filter.
 
-    >>> for pub in view.sources:
+    >>> for pub in view.batched_sources:
     ...     print pub.displayname
     cdrkit 1.0 in breezy-autotest
     iceweasel 1.0 in warty
@@ -211,11 +160,31 @@ filtered results.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+delete-packages",
-    ...     form={
-    ...         'field.name_filter': 'pmount',
-    ...         })
+    ...     query_string="field.name_filter=pmount")
 
-    >>> for pub in view.sources:
+    >>> for pub in view.batched_sources:
+    ...     print pub.displayname
+    pmount 0.1-1 in warty
+
+Similarly, the sources can be filtered by series:
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+delete-packages",
+    ...     query_string="field.series_filter=warty")
+
+    >>> for pub in view.batched_sources:
+    ...     print pub.displayname
+    iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
+
+The page also uses all the built in batching features:
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+delete-packages",
+    ...     query_string="field.series_filter=warty",
+    ...     form={'batch': '1', 'start': '1'})
+
+    >>> for pub in view.batched_sources:
     ...     print pub.displayname
     pmount 0.1-1 in warty
 
@@ -233,9 +202,7 @@ which the available options already exclude the deleted items.
     ...         'field.selected_sources-empty-marker': 1,
     ...         })
 
-    >>> view.available_sources_size
-    0
-    >>> view.has_sources
+    >>> view.has_sources_for_display
     False
 
     >>> import transaction
@@ -247,10 +214,7 @@ situation and ignore it. See bug #185922 for reference.
 
     >>> view.initialize()
 
-    >>> view.available_sources_size
-    0
-
-    >>> view.has_sources
+    >>> view.has_sources_for_display
     False
 
     >>> len(view.errors)
@@ -637,19 +601,25 @@ different 'source' provider, which may include deleted sources, and a
 different default status filter (only published sources are presented
 by default).
 
-    >>> [pub.status.name for pub in view.sources]
-    []
+    >>> view.has_sources_for_display
+    False
+
+In this case, the template can use the has_sources
+property to identify that, even though there aren't any sources to
+display, it's not because the archive isn't active, but rather just
+that the user has filtered the sources:
+
+    >>> view.has_sources
+    True
 
 All sources in Celso's PPA were just-deleted, so we have to tweak the
 'status_filter' to see them.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages",
-    ...     form={
-    ...         'field.status_filter': 'any',
-    ...         })
+    ...     query_string="field.status_filter=any")
 
-    >>> [pub.status.name for pub in view.sources]
+    >>> [pub.status.name for pub in view.batched_sources]
     ['DELETED', 'DELETED', 'DELETED']
 
 This view contains three properties. The first is a list of the PPAs
@@ -866,4 +836,3 @@ error. Nothing was copied to Ubuntu-team PPA.
 
     >>> ubuntu_team_ppa.getPublishedSources().count()
     0
-

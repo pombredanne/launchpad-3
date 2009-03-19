@@ -1,0 +1,130 @@
+= Introduction =
+
+All collections published by a lazr.restful web service work pretty
+much the same way. This document illustrates the general features of
+collections, using the cookbook service's collections of cookbooks and
+authors as examples.
+
+  >>> from canonical.lazr.testing.webservice import CookbookWebServiceCaller
+  >>> webservice = CookbookWebServiceCaller()
+
+
+== Collections and pagination ===
+
+A collection responds to GET by serving one page of the objects in the
+collection.
+
+  >>> cookbooks_collection = webservice.get("/cookbooks").jsonBody()
+  >>> cookbooks_collection['resource_type_link']
+  u'http://...#cookbooks'
+  >>> cookbooks_collection['total_size']
+  6
+  >>> cookbooks_collection['next_collection_link']
+  u'http://.../cookbooks?ws.start=5&ws.size=5'
+  >>> cookbooks_collection.get('prev_collection_link') is None
+  True
+
+  >>> from operator import itemgetter
+  >>> cookbooks_entries = sorted(
+  ...     cookbooks_collection['entries'], key=itemgetter('name'))
+  >>> len(cookbooks_entries)
+  5
+  >>> cookbooks_entries[0]['name']
+  u'Everyday Greens'
+  >>> cookbooks_entries[0]['self_link']
+  u'http://.../cookbooks/Everyday%20Greens'
+  >>> cookbooks_entries[-1]['name']
+  u'The Joy of Cooking'
+
+There are no XHTML representations available for collections.
+
+  >>> print webservice.get('/cookbooks', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  ...
+
+You can get other pages of the collection by following links:
+
+  >>> result = webservice.get("/cookbooks?ws.start=5&ws.size=5")
+  >>> second_batch = result.jsonBody()
+  >>> 'next_collection_link' in second_batch
+  False
+
+  >>> cookbooks_entries = sorted(
+  ...     second_batch['entries'], key=itemgetter('name'))
+  >>> cookbooks_entries[0]['name']
+  u'Cooking Without Recipes'
+
+You can also get a larger or smaller batch than the default:
+
+  >>> bigger_batch = webservice.get("/cookbooks?ws.size=20").jsonBody()
+  >>> len(bigger_batch['entries'])
+  6
+  >>> 'next_collection_link' in bigger_batch
+  False
+
+  >>> smaller_batch = webservice.get("/cookbooks?ws.size=2").jsonBody()
+  >>> len(smaller_batch['entries'])
+  2
+  >>> smaller_batch['next_collection_link']
+  u'http://.../cookbooks?ws.start=2&ws.size=2'
+
+
+But requesting a batch size higher than the maximum configured value
+results in a 400 error.
+
+    >>> print webservice.get("/cookbooks?ws.start=0&ws.size=1000")
+    HTTP/1.1 400 Bad Request
+    ...
+    Content-Type: text/plain...
+    <BLANKLINE>
+    Maximum for "ws.size" parameter is ...
+
+A collection may be empty.
+
+  >>> from urllib import quote
+  >>> url = quote("/cookbooks/Cooking Without Recipes/recipes")
+  >>> result = webservice.get(url)
+  >>> list(result.jsonBody()['entries'])
+  []
+
+
+== Visibility ==
+
+TBA
+
+
+== Element lookup ==
+
+The elements of a collection can be looked up by unique identifier:
+
+  >>> from canonical.lazr.testing.webservice import pprint_entry
+  >>> url = quote("/cookbooks/The Joy of Cooking")
+  >>> cookbook = webservice.get(url).jsonBody()
+  >>> pprint_entry(cookbook)
+  cuisine: u'General'
+  name: u'The Joy of Cooking'
+  recipes_collection_link: u'http://.../cookbooks/The%20Joy%20of%20Cooking/recipes'
+  resource_type_link: u'http://...#cookbook'
+  self_link: u'http://.../cookbooks/The%20Joy%20of%20Cooking'
+
+A collection may be scoped to an element:
+
+  >>> url = quote("/dishes/Roast chicken/recipes")
+  >>> result = webservice.get(url).jsonBody()
+  >>> print result['resource_type_link']
+  http://...#recipe-page-resource
+  >>> cookbooks_with_recipe = sorted(
+  ...     [r['cookbook_link'] for r in result['entries']])
+  >>> len(cookbooks_with_recipe)
+  3
+  >>> print cookbooks_with_recipe[0]
+  http://.../cookbooks/James%20Beard%27s%20American%20Cookery
+  >>> print cookbooks_with_recipe[-1]
+  http://.../cookbooks/The%20Joy%20of%20Cooking
+
+
+== Named operations ==
+
+TBA

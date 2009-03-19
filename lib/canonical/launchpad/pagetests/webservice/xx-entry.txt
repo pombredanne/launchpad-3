@@ -31,6 +31,39 @@ that person's canonical URL.
   HTTP/1.1 303 See Other
   ...
   Location: http://.../~salgado
+  ...
+
+The redirect has an extra twist when the resource was requested from a
+web browser as opposed to a web service client. When a web browser
+follows a redirect, it does not re-send the Accept header from the
+original request. This can lead to Launchpad serving the wrong
+document. To avoid this problem, Launchpad sends the original Accept
+header in the redirect URL itself, so it can look it up when the
+browser follows the redirect.
+
+  >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
+  >>> print http("""GET /api/beta/people/+me HTTP/1.1
+  ... Host: launchpad.dev
+  ... Authorization: %s""" % sample_auth)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://launchpad.dev/api/beta/~name12?ws.accept=application/json
+  ...
+
+Upon getting this response, Firefox (for example) makes a request to
+http://launchpad.dev/api/beta/~name12?ws.accept=application/json,
+sending an Accept header that asks for an HTML representation. Because
+of the ws.accept query parameter, Launchpad knows that a JSON
+representation is "really" what's desired.
+
+  >>> print http("""GET /api/beta/~name12?ws.accept=application/json HTTP/1.1
+  ... Host: launchpad.dev
+  ... Accept: application/xhtml+xml
+  ... Authorization: %s""" % sample_auth)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  ...
 
 Data is served encoded in UTF-8; a good client will automatically
 convert it into Unicode.
@@ -42,15 +75,17 @@ convert it into Unicode.
 == Content negotiation ==
 
 By varying the 'Accept' header, the client can request either a JSON
-representation of an entry, or a WADL description of the entry's
-capabilities.
+or XHTML representation of an entry, or a WADL description of the
+entry's capabilities.
 
-  >>> def negotiated_type(accept_header):
-  ...     return webservice.get('/~salgado',
-  ...                           accept_header).getHeader('Content-Type')
+  >>> def negotiated_type(accept_header, uri='/~salgado'):
+  ...     return webservice.get(uri, accept_header).getHeader('Content-Type')
 
   >>> negotiated_type('application/json')
   'application/json'
+
+  >>> negotiated_type('application/xhtml+xml')
+  'application/xhtml+xml'
 
   >>> negotiated_type('application/vd.sun.wadl+xml')
   'application/vd.sun.wadl+xml'
@@ -64,6 +99,9 @@ capabilities.
   >>> negotiated_type('application/json, application/vd.sun.wadl+xml')
   'application/json'
 
+  >>> negotiated_type('application/json, application/xhtml+xml')
+  'application/json'
+
   >>> negotiated_type('application/vd.sun.wadl+xml, text/html, '
   ...                 'application/json')
   'application/vd.sun.wadl+xml'
@@ -71,9 +109,85 @@ capabilities.
   >>> negotiated_type('application/json;q=0.5, application/vd.sun.wadl+xml')
   'application/vd.sun.wadl+xml'
 
-  >>> negotiated_type('application/json;q=0,'
+  >>> negotiated_type('application/json;q=0, application/xhtml+xml;q=0.05,'
   ...                 'application/vd.sun.wadl+xml;q=0.1')
   'application/vd.sun.wadl+xml'
+
+  >>> def qs_negotiated_type(query_string, header):
+  ...     uri = '/~salgado?ws.accept=' + query_string
+  ...     return negotiated_type(header, uri)
+
+The client can also set the 'ws.accept' query string variable, which
+will take precedence over any value set for the Accept header.
+
+  >>> qs_negotiated_type('application/json', None)
+  'application/json'
+
+  >>> qs_negotiated_type('application/json', 'application/xhtml+xml')
+  'application/json'
+
+  >>> negotiated_type('application/json;q=0, application/xhtml+xml;q=0.5,'
+  ...                 'application/json;q=0.5, application/xhtml+xml;q=0,')
+  'application/xhtml+xml'
+
+
+== XHTML representations ==
+
+Every entry has an XHTML representation. The default representation is
+a simple definition list.
+
+  >>> print webservice.get('/~salgado', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <dl ...>
+  ...
+  </dl>
+
+But it's possible to define a custom HTML view for a particular object
+type. Here's a simple view that serves some hard-coded HTML.
+
+  >>> class DummyView:
+  ...
+  ...     def __init__(*args):
+  ...         pass
+  ...
+  ...     def __call__(*args):
+  ...         return "<html>foo</html>"
+
+Register the view as the IWebServiceClientRequest view for an IPerson entry...
+
+  >>> from canonical.lazr.interfaces.rest import IWebServiceClientRequest
+  >>> from canonical.launchpad.interfaces import IPerson
+  >>> from zope.interface.interfaces import IInterface
+  >>> view_name = "canonical.lazr.rest.resource.EntryResource"
+  >>> from zope.component import getGlobalSiteManager
+  >>> manager = getGlobalSiteManager()
+  >>> manager.registerAdapter(
+  ...      factory=DummyView, required=[IPerson, IWebServiceClientRequest],
+  ...      provided=IInterface, name=view_name)
+
+...and the XHTML representation of an IPerson will be the result of
+calling a DummyView object.
+
+  >>> print webservice.get('/~salgado', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <html>foo</html>
+
+Before we continue, here's some cleanup code to remove the custom view
+we just defined.
+
+  >>> from zope.component import getGlobalSiteManager
+  >>> ignored = getGlobalSiteManager().unregisterAdapter(
+  ...      factory=DummyView, required=[IPerson, IWebServiceClientRequest],
+  ...      provided=IInterface, name=view_name)
+
+  >>> print webservice.get('/~salgado', 'application/xhtml+xml')
+  HTTP/1.1 200 Ok
+  ...
+  <dl ...>
+  ...
+  </dl>
 
 
 == Custom operations ==
@@ -131,6 +245,7 @@ Trying to invoke a nonexistent custom operation yields an error.
   ...
   No such operation: no_such_operation
 
+
 == Modification ==
 
 It's possible to modify an entry by sending to the server a document
@@ -150,13 +265,17 @@ entry's state, in which case the client should use PUT.
   ...                       headers)
 
 Here we use the web service to change the user 'salgado' so that their
-display name is in uppercase.
+display name is in uppercase. The data returned is the new JSON
+representation of the object.
 
   >>> print modify_person('salgado', {'display_name' : 'GUILHERME SALGADO'},
   ...                     'PATCH')
-  HTTP/1.1 200 Ok
-  Content-Length: 0
+  HTTP/1.1 209 Content Returned
   ...
+  Content-Type: application/json
+  ...
+  <BLANKLINE>
+  {...}
 
   >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
@@ -169,7 +288,7 @@ use the web service to change the person's name to 'salgado2'.
   HTTP/1.1 301 Moved Permanently
   ...
   Location: http://.../~salgado2
-  <BLANKLINE>
+  ...
 
 At this point we can no longer manipulate the 'salgado' Person by
 sending HTTP requests to http://api.launchpad.dev/~salgado,
@@ -181,7 +300,7 @@ http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
   HTTP/1.1 301 Moved Permanently
   ...
   Location: http://.../~salgado
-  <BLANKLINE>
+  ...
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
 clients support PATCH. It's possible to fake a PATCH request with
@@ -195,7 +314,7 @@ value of Content-Type.
   ...     {'X-HTTP-Method-Override' : 'PATCH',
   ...      'Content-Type': 'not-a-valid-content/type',
   ...      'X-Content-Type-Override': 'application/json'})
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 If you try to use X-HTTP-Method-Override when the underlying HTTP
@@ -214,7 +333,9 @@ at hand, you can use the PUT method.
 
 We happen to have a full document from when we sent a GET request to
 the 'salgado' Person. Modifying that document and PUTting it back is
-less work than constructing a new document and sending it with PATCH.
+less work than constructing a new document and sending it with
+PATCH. As with PATCH, a successful PUT serve the new representation of
+the object that was modified.
 
   >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
@@ -222,8 +343,10 @@ less work than constructing a new document and sending it with PATCH.
 
   >>> salgado['display_name'] = 'Guilherme Salgado'
   >>> print modify_person('salgado', salgado, 'PUT')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
+  <BLANKLINE>
+  {...}
 
   >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
@@ -234,24 +357,105 @@ JSON hash), any document that works with a PUT request will also work
 with a PATCH request.
 
   >>> print modify_person('salgado', salgado, 'PATCH')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 
-=== Conditional PUT and PATCH ===
+=== Content negotiation during modification ===
+
+When making a PATCH, you don't have to get a JSON representation
+back. You can also get an HTML representation.
+
+  >>> print modify_person('salgado', salgado, 'PATCH',
+  ...                     headers={'Accept': 'application/xhtml+xml'})
+  HTTP/1.1 209 Content Returned
+  ...
+  Content-Type: application/xhtml+xml
+  ...
+  <?xml version="1.0"?>
+  ...
+
+You can even get a WADL representation, though that's pretty useless.
+
+  >>> print modify_person('salgado', salgado, 'PATCH',
+  ...                     headers={'Accept': 'application/vd.sun.wadl+xml'})
+  HTTP/1.1 209 Content Returned
+  ...
+  Content-Type: application/vd.sun.wadl+xml
+  ...
+
+
+=== Server-side modification ===
+
+Sometimes the server will transparently modify a value sent by the
+client, to clean it up or put it into a canonical form. For this
+purpose, the response to a PUT or PATCH request includes a brand new
+JSON representation of the object, so that the client can know whether
+and which changes were made.
+
+Here's an example. Fields that contain URIs have a URI canonicalizer
+associated with them.
+
+    >>> def set_project_wiki_url(project_url, value):
+    ...     project = webservice.get(project_url).jsonBody()
+    ...     repr = simplejson.dumps({'wiki_url': value})
+    ...     headers = {'Content-type': 'application/json'}
+    ...     return webservice(project_url, "PATCH", repr, headers)
+
+    >>> firefox = webservice.get('/firefox').jsonBody()
+    >>> print firefox['wiki_url']
+    None
+    >>> first_etag = firefox['http_etag']
+
+Send in a URI with no trailing slash and it'll be transparently
+changed to have a trailing slash. Whitespace will also be trimmed. The
+document returned from the POST request will be the new
+representation, modified by both client and server.
+
+    >>> firefox = set_project_wiki_url(
+    ...     "/firefox", "   http://www.notrailingslash.com ").jsonBody()
+    >>> print firefox['wiki_url']
+    http://www.notrailingslash.com/
+    >>> firefox['http_etag'] == first_etag
+    False
+
+Send in a URI with a trailing slash, and the data will not be modified.
+
+    >>> firefox = set_project_wiki_url(
+    ...     "/firefox", "http://www.trailingslash.com/").jsonBody()
+    >>> print firefox['wiki_url']
+    http://www.trailingslash.com/
+
+The canonicalization works for PUT requests as well.
+
+    >>> firefox['wiki_url'] = "http://www.stillnotrailingslash.com"
+    >>> firefox = webservice("/firefox", "PUT", simplejson.dumps(firefox),
+    ...                      {'Content-type': 'application/json'}).jsonBody()
+    >>> print firefox['wiki_url']
+    http://www.stillnotrailingslash.com/
+
+Bad data is not canonicalized.
+
+    >>> print set_project_wiki_url("/firefox", "not-a-url")
+    HTTP/1.1 400 Bad Request
+    ...
+    wiki_url: "not-a-url" is not a valid URI
+
+
+=== Conditional GET, PUT and PATCH ===
 
 When you GET an entry you're given an ETag; an opaque string that
 changes whenever the entry changes.
 
   >>> response = webservice.get('/~salgado')
-  >>> etag = response._response.getHeader('ETag')
+  >>> salgado_etag = response._response.getHeader('ETag')
   >>> salgado = response.jsonBody()
 
 The ETag is present in the HTTP response headers when you GET an
 entry, but it's also present in the representation of the entry
 itself.
 
-  >>> salgado['http_etag'] == etag
+  >>> salgado['http_etag'] == salgado_etag
   True
 
 This is so you can get the ETags for all the entries in a collection
@@ -268,6 +472,29 @@ ETag you'd get if you got that entry individually.
   >>> first_person['http_etag'] == first_person_2['http_etag']
   True
 
+When you make a GET request, you can provide the ETag as the
+If-None-Match header. This lets you save time when the resource hasn't
+changed.
+
+  >>> print webservice.get('/~salgado',
+  ...                      headers={'If-None-Match': salgado_etag})
+  HTTP/1.1 304 Not Modified
+  ...
+
+Conditional GET works the same way whether the request goes through
+the 'api' virtual host or through the website-level interface designed
+for Ajax.
+
+  >>> etag = 'dummy-etag'
+  >>> request = """GET /api/beta/~salgado HTTP/1.1
+  ... Host: launchpad.dev
+  ... If-None-Match: %s
+  ... Authorization: %s"""
+  >>> etag = http(request % (etag, sample_auth))._response.getHeader("Etag")
+  >>> print http(request % (etag, sample_auth))
+  HTTP/1.1 304 Not Modified
+  ...
+
 When you make a PUT or PATCH request, you can provide the ETag as the
 If-Match header. This lets you detect changes that other people made
 to the entry, so your changes don't overwrite theirs.
@@ -276,8 +503,8 @@ If the ETag you provide in If-Match matches the entry's current ETag,
 your request goes through.
 
   >>> print modify_person('salgado', salgado, 'PATCH',
-  ...                     {'If-Match' : etag})
-  HTTP/1.1 200 Ok
+  ...                     {'If-Match' : salgado_etag})
+  HTTP/1.1 209 Content Returned
   ...
 
 If the ETags don't match, it's because somebody modified the entry
@@ -293,8 +520,8 @@ If you specify a number of ETags, and any of them match, your request
 will go through.
 
   >>> print modify_person('salgado', salgado, 'PATCH',
-  ...                     {'If-Match' : '"an-old-etag", %s' % etag})
-  HTTP/1.1 200 Ok
+  ...                     {'If-Match' : '"an-old-etag", %s' % salgado_etag})
+  HTTP/1.1 209 Content Returned
   ...
 
 Both PUT and PATCH requests work this way.
@@ -343,7 +570,7 @@ attribute, but it has to be the same as the current value.
 
   >>> print modify_person(
   ...     'salgado', {'date_created' : salgado['date_created']}, 'PATCH')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 You can't change the link to an entry's associated collection.
@@ -362,7 +589,7 @@ collection link; you just can't _change_ the value.
   >>> print modify_person('salgado',
   ...                     {'memberships_details_collection_link' : link },
   ...                      'PATCH')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 You can't directly change an entry's URL address.
@@ -431,7 +658,7 @@ relationships to other objects. Here we change the owner of the
   u'http://.../~sabdfl'
   >>> admins['team_owner_link'] = webservice.getAbsoluteUrl('/~salgado')
   >>> print modify_person('admins', admins, 'PUT')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 Identification of the owner is done by specifying a URL; a random
@@ -441,7 +668,7 @@ string won't work.
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  team_owner_link: No such object "A random string".
+  team_owner_link: "A random string" is not a valid URI.
 
 But not just any URL will do. It has to identify an object in the web
 service.
@@ -540,28 +767,28 @@ Or it might be a date that's not in UTC.
 There are five ways to specify UTC:
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025Z')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025+00:00')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025+0000')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025-00:00')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025-0000')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 
 A value with a missing timezone is treated as UTC.
 
   >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025')
-  HTTP/1.1 200 Ok
+  HTTP/1.1 209 Content Returned
   ...
 

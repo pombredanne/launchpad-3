@@ -10,15 +10,14 @@
   i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="main" class="pillar">
+    <div metal:fill-slot="main" class="pillar"
+      tal:define="overview_menu context/menu:overview">
       <div class="section">
 
       <tal:mugshot replace="structure context/image:mugshot" />
       <div
         style="float:right"
-        tal:define="link context/menu:overview/edit"
-        tal:condition="link/enabled"
-        tal:content="structure link/render"
+        tal:content="structure overview_menu/edit/fmt:link-icon"
       />
       <h1 tal:content="context/title"/>
       <div
@@ -62,7 +61,7 @@
             />
           </a>
           <a
-            tal:define="link context/menu:overview/mentorship"
+            tal:define="link overview_menu/mentorship"
             tal:condition="context/mentoring_offers/count"
             tal:attributes="href link/url"
           >

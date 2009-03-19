@@ -29,7 +29,7 @@ from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.branch import (
     BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.branchnamespace import (
-    InvalidNamespace, lookup_branch_namespace)
+    InvalidNamespace, lookup_branch_namespace, split_unique_name)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
@@ -228,7 +228,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 return faults.InvalidPath(branch_path)
             escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
             try:
-                namespace_name, branch_name = escaped_path.rsplit('/', 1)
+                namespace_name, branch_name = split_unique_name(escaped_path)
             except ValueError:
                 return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)

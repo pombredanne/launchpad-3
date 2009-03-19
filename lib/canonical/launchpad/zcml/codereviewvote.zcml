@@ -9,6 +9,12 @@
     <allow interface="canonical.launchpad.interfaces.ICodeReviewVoteReference" />
   </class>
 
+  <browser:url
+      for="canonical.launchpad.interfaces.ICodeReviewVoteReference"
+      path_expression="string:+review/${id}"
+      attribute_to_parent="branch_merge_proposal"
+      rootsite="code" />
+
   <subscriber
     for="canonical.launchpad.interfaces.ICodeReviewVoteReference
          canonical.launchpad.event.interfaces.IReviewerNominatedEvent"

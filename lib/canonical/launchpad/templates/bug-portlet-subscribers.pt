@@ -4,12 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet"
   id="portlet-subscribers"
-  tal:define="
-    bug context/bug|context;
-    direct_subscriptions bug/getDirectSubscriptions;
-    from_dupes_subscriptions bug/getSubscriptionsFromDuplicates;
-    also_notified_subscribers bug/getAlsoNotifiedSubscribers
-  "
   metal:define-macro="custom"
 >
   <div class="section" tal:define="context_menu context/menu:context"
@@ -17,51 +11,34 @@
     <div tal:content="structure context_menu/subscription/render" />
     <div tal:content="structure context_menu/addsubscriber/render" />
   </div>
-  <div class="section" id="subscribers-direct">
-    <h2>Subscribers</h2>
-      <div
-        tal:condition="direct_subscriptions"
-        tal:repeat="subscription direct_subscriptions"
-      >
-        <a
-          tal:attributes="
-            href subscription/person/fmt:url;
-            title subscription/display_subscribed_by;
-          "
-        >
-          <tal:block replace="structure subscription/person/image:icon" /> 
-          <tal:block replace="subscription/person/browsername" />
-        </a>
-      </div>
-      <div tal:condition="not:direct_subscriptions">None</div>
+  <a id="subscribers-content-link"
+     tal:define="bug context/bug|context"
+     tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-content"></a>
+  <div id="subscribers-portlet-spinner"
+       style="text-align: center; display: none">
+    <img src="/@@/spinner" />
   </div>
-  <div
-    tal:condition="from_dupes_subscriptions"
-    id="subscribers-from-duplicates"
-    class="section"
-  >
-    <h2>From duplicates</h2>
-    <div tal:repeat="subscription from_dupes_subscriptions">
-      <a
-        tal:attributes="
-          href subscription/person/fmt:url;
-          title subscription/display_subscribed_by;
-        "
-      >
-        <tal:block replace="structure subscription/person/image:icon" /> 
-        <tal:block replace="subscription/person/browsername" />
-      </a>
-    </div>
-  </div>
-  <div
-    tal:condition="also_notified_subscribers"
-    id="subscribers-indirect"
-    class="Section"
-  >
-    <h2>Also notified</h2>
-    <div
-      tal:repeat="subscriber also_notified_subscribers"
-      tal:content="structure subscriber/fmt:link"
-    />
-  </div>
+  <script type="text/javascript">
+    YUI().use('io-base', 'node', function(Y) {
+      Y.on('domready', function() {
+        Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
+
+        function hide_spinner() {
+          Y.get('#subscribers-portlet-spinner').setStyle('display', 'none');
+        }
+
+        function on_success(transactionid, response, arguments) {
+          hide_spinner();
+          var portlet = Y.get('#portlet-subscribers');
+          portlet.set('innerHTML',
+                      portlet.get('innerHTML') + response.responseText);
+        }
+
+        var config = {on: {success: on_success,
+                           failure: hide_spinner}};
+        var url = Y.get('#subscribers-content-link').getAttribute('href').replace('bugs.', '');
+        Y.io(url, config);
+      });
+    });
+  </script>
 </div>

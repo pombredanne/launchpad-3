@@ -36,23 +36,30 @@ def process(mlist, msg, msgdata):
     # mailing list.  They are also not Launchpad members in good standing or
     # we'd have already approved the message.  So now the message must be held
     # in Launchpad for approval via the LP u/i.
-    sender = msg.get_sender()
-    # Hold the message in Mailman too so that it's easier to resubmit it after
-    # approval via the LP u/i.  If the team administrator ends up rejecting
-    # the message, it will also be easy to discard it on the Mailman side.
-    # But this way, we don't have to reconstitute the message from the
-    # librarian if it gets approved.   However, unlike the standard Moderate
-    # handler, we don't craft all the notification messages about this hold.
-    # We also need to keep track of the message-id (which better be unique)
-    # because that's how we communicate about the message's status.
-    request_id = mlist.HoldMessage(msg, 'Not subscribed', msgdata)
+    hold(mlist, msg, msgdata, 'Not subscribed')
+
+
+def hold(mlist, msg, msgdata, annotation):
+    """Hold the message in both Mailman and Launchpad.
+
+    `annotation` is an arbitrary string required by the API.
+    """
+    # Hold the message in Mailman and Launchpad so that it's easier to
+    # resubmit it after approval via the LP u/i.  If the team administrator
+    # ends up rejecting the message, it will also be easy to discard it on the
+    # Mailman side.  But this way, we don't have to reconstitute the message
+    # from the librarian if it gets approved.  However, unlike the standard
+    # Moderate handler, we don't craft all the notification messages about
+    # this hold.  We also need to keep track of the message-id (which better
+    # be unique) because that's how we communicate about the message's status.
+    request_id = mlist.HoldMessage(msg, annotation, msgdata)
+    assert mlist.Locked(), (
+        'Mailing list should be locked: %s' % mlist.internal_name())
     # This is a hack because by default Mailman cannot look up held messages
     # by message-id.  This works because Mailman's persistency layer simply
     # pickles the MailList object, mostly without regard to a known schema.
-    assert mlist.Locked(), (
-        'Mailing list should be locked: %s', mlist.internal_name())
-    # For lists that were created before first-post moderation landed, add the
-    # mapping between message-ids and request-ids.
+    #
+    # Mapping: message-id -> request-id
     holds = getattr(mlist, 'held_message_ids', None)
     if holds is None:
         holds = mlist.held_message_ids = {}
@@ -67,7 +74,7 @@ def process(mlist, msg, msgdata):
         raise Errors.DiscardMessage
     holds[message_id] = request_id
     # In addition to Message-ID, the librarian requires a Date header.
-    if msg.get('date') is None:
+    if 'date' not in msg:
         msg['Date'] = formatdate()
     # Store the message in the librarian.
     proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)

@@ -220,7 +220,7 @@ for the branch's canonical location.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(get_branch_details_table())
     Project: GNOME Terminal (Unspecified)
-    Status: New
+    Status: Development
     Upload URL: Only Sample Person can upload to this branch.
       If you are Sample Person please log in for upload directions.
 
@@ -233,9 +233,9 @@ been mirrored:
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> branch = getUtility(IBranchSet).new(
-    ...     BranchType.MIRRORED, name='mirrored', registrant=no_priv,
-    ...     owner=no_priv, product=None, url='http://example.com/mirrored',
+    >>> branch = factory.makePersonalBranch(
+    ...     branch_type=BranchType.MIRRORED, name='mirrored',
+    ...     owner=no_priv, url='http://example.com/mirrored',
     ...     title='Disabled branch')
     >>> branch.last_mirrored = datetime(
     ...     year=2007, month=10, day=1, tzinfo=pytz.timezone('UTC'))
@@ -246,7 +246,7 @@ been mirrored:
     >>> browser.open(
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirrored')
     >>> print extract_text(get_branch_details_table())
-    Status: New
+    Status: Development
     Location: http://example.com/mirrored
     Last mirrored: 2007-10-01
     Next mirror: Disabled
@@ -268,9 +268,9 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> branch = getUtility(IBranchSet).new(
-    ...     BranchType.MIRRORED, name='mirror-disabled', registrant=no_priv,
-    ...     owner=no_priv, product=None, url='http://example.com/disabled',
+    >>> branch = factory.makePersonalBranch(
+    ...     branch_type=BranchType.MIRRORED, name='mirror-disabled',
+    ...     owner=no_priv, url='http://example.com/disabled',
     ...     title='Disabled branch')
     >>> branch.next_mirror_time = None
     >>> flush_database_updates()
@@ -280,7 +280,7 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirror-disabled')
     >>> print extract_text(get_branch_details_table())
-    Status: New
+    Status: Development
     Location: http://example.com/disabled
     Last mirrored: Not mirrored yet
     Next mirror: Disabled
@@ -358,7 +358,7 @@ So we need to fake that here.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
     Project: The Landscape Project (Unspecified)
-    Status: New
+    Status: Development
     Get this branch:
       bzr branch lp://dev/~landscape-developers/landscape/trunk
     ...
@@ -370,7 +370,7 @@ Public branches use the lp spec bzr lookup name.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
     Project: GNOME Terminal (Unspecified)
-    Status: New
+    Status: Development
     Get this branch: bzr branch lp://dev/~name12/gnome-terminal/scanned
     ...
 

@@ -9,7 +9,7 @@ to the spec about E4X.
 First, let's make sure we can see the link called "Subscribe..."
 
     >>> browser.open("http://blueprints.launchpad.dev/firefox/+spec/e4x")
-    >>> subscribe_link = browser.getLink('Subscribe')
+    >>> subscribe_link = browser.getLink('Subscribe yourself')
     >>> subscribe_link is not None
     True
 
@@ -50,9 +50,9 @@ subscribed.
     >>> 'subscriber-essential' in browser.contents
     True
 
-Now the link should say "Unsubscribe" in the actions menu.
+Now the link should say "Modify subscription" in the actions menu.
 
-    >>> submod_link = browser.getLink('Unsubscribe')
+    >>> submod_link = browser.getLink('Modify subscription')
     >>> submod_link is not None
     True
 
@@ -88,7 +88,7 @@ the Subscribers portlet.
 We don't really want to be subscribed, so lets unsubscribe from that spec.
 We load the subscription page, and now the button says "Unsubscribe".
 
-    >>> browser.getLink('Unsubscribe').click()
+    >>> browser.getLink('Modify subscription').click()
     >>> unsubit = browser.getControl(name='unsubscribe')
     >>> unsubit.value
     'Unsubscribe'

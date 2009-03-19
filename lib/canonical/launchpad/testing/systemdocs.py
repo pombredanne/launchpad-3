@@ -17,6 +17,11 @@ import logging
 import os
 import sys
 
+# pprint25 is a copy of pprint.py from Python 2.5, which is almost
+# identical to that in 2.4 except that it resolves an ordering issue
+# which makes the 2.4 version unsuitable for use in a doctest.
+import pprint25
+
 import transaction
 from zope.component import getUtility, getMultiAdapter
 from zope.testing import doctest
@@ -150,7 +155,7 @@ class SpecialOutputChecker(doctest.OutputChecker):
 
 
 def create_view(context, name, form=None, layer=None, server_url=None,
-                method='GET', principal=None):
+                method='GET', principal=None, query_string=None, cookie=None):
     """Return a view based on the given arguments.
 
     :param context: The context for the view.
@@ -160,10 +165,13 @@ def create_view(context, name, form=None, layer=None, server_url=None,
     :param server_url: The URL from where this request was done.
     :param method: The method used in the request. Defaults to 'GET'.
     :param principal: The principal for the request, if there is one.
+    :param query_string: The query string for the request.
+    :patam cookie: The HTTP_COOKIE value for the request.
     :return: The view class for the given context and the name.
     """
     request = LaunchpadTestRequest(
-        form=form, SERVER_URL=server_url, method=method)
+        form=form, SERVER_URL=server_url, QUERY_STRING=query_string,
+        HTTP_COOKIE=cookie, method=method)
     if principal is not None:
         request.setPrincipal(principal)
     if layer is not None:
@@ -172,7 +180,8 @@ def create_view(context, name, form=None, layer=None, server_url=None,
 
 
 def create_initialized_view(context, name, form=None, layer=None,
-                            server_url=None, method=None, principal=None):
+                            server_url=None, method=None, principal=None,
+                            query_string=None, cookie=None):
     """Return a view that has already been initialized."""
     if method is None:
         if form is None:
@@ -180,7 +189,8 @@ def create_initialized_view(context, name, form=None, layer=None,
         else:
             method = 'POST'
     view = create_view(
-        context, name, form, layer, server_url, method, principal)
+        context, name, form, layer, server_url, method, principal,
+        query_string, cookie)
     view.initialize()
     return view
 
@@ -220,6 +230,7 @@ def setGlobs(test):
     test.globs['factory'] = LaunchpadObjectFactory()
     test.globs['ordered_dict_as_string'] = ordered_dict_as_string
     test.globs['verifyObject'] = verifyObject
+    test.globs['pretty'] = pprint25.PrettyPrinter(width=1).pformat
 
 
 def setUp(test):

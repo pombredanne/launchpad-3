@@ -36,15 +36,14 @@ from zope.formlib import form
 from zope.interface import Interface, implements
 from zope.publisher.interfaces import NotFound
 from zope.schema import Choice, Text
+from lazr.delegates import delegates
+from lazr.enum import EnumeratedType, Item
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
-from lazr.delegates import delegates
-from canonical.lazr.enum import EnumeratedType, Item
 from canonical.lazr.interface import copy_field
-
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
@@ -74,6 +73,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
@@ -82,10 +82,9 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, IPrimaryContext)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
@@ -110,23 +109,7 @@ class BranchURL:
 
     @property
     def path(self):
-        return '%s/%s' % (self.branch.container.name, self.branch.name)
-
-
-class BranchPrimaryContext:
-    """The primary context is the product if there is one."""
-
-    # XXX: JonathanLange 2008-12-08 spec=package-branches: Not sure what
-    # should happen to this class, given that IBranchContainer does something
-    # fairly similar.
-
-    implements(IPrimaryContext)
-
-    def __init__(self, branch):
-        if branch.product is not None:
-            self.context = branch.product
-        else:
-            self.context = branch.owner
+        return '%s/%s' % (self.branch.target.name, self.branch.name)
 
 
 class BranchHierarchy(Hierarchy):
@@ -134,8 +117,9 @@ class BranchHierarchy(Hierarchy):
 
     def items(self):
         """See `Hierarchy`."""
-        obj = IPrimaryContext(self.context).context
-        return self._breadcrumbs([(obj, canonical_url(obj))])
+        return self._breadcrumbs(
+            (obj, canonical_url(obj))
+            for obj in IHasBranchTarget(self.context).target.components)
 
 
 class BranchBadges(HasBadgeBase):
@@ -252,7 +236,7 @@ class BranchContextMenu(ContextMenu):
     facet = 'branches'
     links = ['whiteboard', 'edit', 'delete_branch', 'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
-             'register_merge', 'landing_candidates', 'merge_queue',
+             'register_merge', 'landing_candidates',
              'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
              ]
 
@@ -321,13 +305,6 @@ class BranchContextMenu(ContextMenu):
         else:
             text = 'Link to a bug report'
         return Link('+linkbug', text, icon='add')
-
-    def merge_queue(self):
-        text = 'View merge queue'
-        # Only enable this view if the branch is a target of some
-        # branch merge proposals.
-        enabled = self.context.landing_candidates.count() > 0
-        return Link('+merge-queue', text, enabled=enabled)
 
     def link_blueprint(self):
         if self.context.spec_links:
@@ -714,11 +691,26 @@ class BranchDeletionView(LaunchpadFormView):
             reqs.append((item, action, reason, allowed))
         return reqs
 
+    @cachedproperty
+    def stacked_branches_count(self):
+        """Cache a count of the branches stacked on this."""
+        return self.context.getStackedBranches().count()
+
+    def stacked_branches_text(self):
+        """Cache a count of the branches stacked on this."""
+        if self.stacked_branches_count == 1:
+            return _('branch')
+        else:
+            return _('branches')
+
     def all_permitted(self):
         """Return True if all deletion requirements are permitted, else False.
 
         Uses display_deletion_requirements as its source data.
         """
+        # Not permitted if there are any branches stacked on this.
+        if self.stacked_branches_count > 0:
+            return False
         return len([item for item, action, reason, allowed in
             self.display_deletion_requirements if not allowed]) == 0
 
@@ -728,13 +720,8 @@ class BranchDeletionView(LaunchpadFormView):
         branch = self.context
         if self.all_permitted():
             # Since the user is going to delete the branch, we need to have
-            # somewhere valid to send them next.  If the branch is junk, we
-            # send the user back to the code listing for the branch owner,
-            # otherwise we send them to the branch listing of the product.
-            if branch.product is None:
-                self.next_url = canonical_url(branch.owner)
-            else:
-                self.next_url = canonical_url(branch.product)
+            # somewhere valid to send them next.
+            self.next_url = canonical_url(branch.target)
             message = "Branch %s deleted." % branch.unique_name
             self.context.destroySelf(break_references=True)
             self.request.response.addNotification(message)
@@ -938,12 +925,12 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """Handle a request to create a new branch for this product."""
         try:
             ui_branch_type = data['branch_type']
-            self.branch = getUtility(IBranchSet).new(
+            namespace = get_branch_namespace(
+                data['owner'], product=data['product'])
+            self.branch = namespace.createBranch(
                 branch_type=BranchType.items[ui_branch_type.name],
                 name=data['name'],
                 registrant=self.user,
-                owner=data['owner'],
-                product=data['product'],
                 url=data.get('url'),
                 title=data['title'],
                 summary=data['summary'],

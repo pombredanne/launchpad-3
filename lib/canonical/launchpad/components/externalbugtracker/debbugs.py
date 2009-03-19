@@ -338,3 +338,13 @@ class DebBugs(ExternalBugTracker):
         # with debbugs, which uses angle-brackets in its message IDS (as
         # does Launchpad).
         return "<%s>" % sent_msg_id
+
+    def getRemoteProduct(self, remote_bug):
+        """Return the remote product for a bug.
+
+        See `IExternalBugTracker`.
+        """
+        # For DebBugs, we want to return the package name associated
+        # with the bug. Since getBugTargetName() does this already we
+        # simply call that.
+        return self.getBugTargetName(remote_bug)

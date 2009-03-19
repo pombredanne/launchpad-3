@@ -24,8 +24,12 @@ records to disk, including configuration and indexes.
     True
     >>> cprov_archive.authorized_size
     1024
-    >>> cprov_archive.whiteboard
-    u'It is not my fault.'
+    >>> print cprov_archive.whiteboard
+    It is not my fault.
+    >>> print cprov_archive.signing_key
+    None
+    >>> print cprov_archive.signing_key_fingerprint
+    None
     >>> cprov_archive.private
     False
     >>> cprov_archive.require_virtualized
@@ -35,6 +39,10 @@ records to disk, including configuration and indexes.
     >>> cprov_archive.binaries_cached
     3
     >>> cprov_archive.is_ppa
+    True
+    >>> cprov_archive.is_main
+    False
+    >>> cprov_archive.distribution.main_archive.is_main
     True
     >>> cprov_archive.total_count
     4
@@ -326,6 +334,12 @@ Combining 'name' and 'distroseries' filters:
     0
     >>> cprov_archive.getPublishedSources(
     ...     name='cd', distroseries=breezy_autotest).count()
+    1
+
+Using the 'published_since_date' filter:
+
+    >>> cprov_archive.getPublishedSources(
+    ...     published_since_date='2007-07-09 14:00:00').count()
     1
 
 
@@ -867,6 +881,14 @@ The status filter can also be a sequence of status.
     >>> cprov_archive.getSourcesForDeletion(
     ...      name='ice', status=irrelevant_status).count()
     1
+
+The series filter can be used to return only sources from a certain
+series:
+
+    >>> cprov_archive.getSourcesForDeletion(distroseries=warty).count()
+    2
+    >>> cprov_archive.getSourcesForDeletion(distroseries=hoary).count()
+    0
 
 The source publication is only excluded from 'deletion list' when its
 binary is also DELETED.
@@ -1585,6 +1607,14 @@ method returns an empty SelectResults.
     >>> jblack_ppas.count()
     0
 
+The method getPrivatePPAs() will return a result set of all PPAs that are
+private.
+
+    >>> p3as = archive_set.getPrivatePPAs()
+    >>> for p3a in p3as:
+    ...     print p3a.title
+    Private PPA for Celso Providelo
+
 For the next test we will make Celso's PPA public again, so it can
 appear in public lists. We do that because that PPA contains relevant
 contents for testing.
@@ -2082,9 +2112,7 @@ Repeating this source copy gives an error:
     >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
     Traceback (most recent call last):
     ...
-    CannotCopy:
-        package1 1.1 in hoary (same version already building...
-        package2 1.0 in hoary (same version already building...
+    CannotCopy: Packages already copied.
 
 Repeating this copy with binaries also gives an error:
 
@@ -2142,7 +2170,7 @@ As with syncSources() you need to have edit permission on the archive.
     Traceback (most recent call last):
     ...
     Unauthorized...
-    
+
 Login as sabdfl to continue.
 
     >>> login("mark@hbd.com")
@@ -2198,9 +2226,8 @@ The 'sandbox archive' is a PPA that was newly created above.
     >>> uber_copy.publish
     False
 
-== The name uniqueness constraints for archives ==
 
-The names of PPAs must be unique per owner and distribution.
+== The name uniqueness constraints for archives ==
 
 The names of archives other than PPAs must be unique for a given
 distribution. Trying to create an archive with the same name and
@@ -2223,3 +2250,75 @@ archives.
     ...
     AssertionError: archive 'uber-partner' exists ... in 'uberdistro'.
 
+The names of PPAs must be unique per owner and distribution.
+
+    >>> print sabdfl.archive.title
+    PPA for Mark Shuttleworth
+
+    >>> print sabdfl.archive.name
+    ppa
+
+    >>> dup_ppa = getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='ppa')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Person 'sabdfl' already has a PPA named 'ppa'.
+
+While multiple PPAs per user isn't yet fully suported we may create
+other PPAs, but they won't affect the existing traversal from IPerson
+to a single IArchive.
+
+    >>> another_ppa = getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='nightly')
+
+    >>> print another_ppa.owner.displayname
+    Mark Shuttleworth
+
+    >>> print another_ppa.name
+    nightly
+
+`IPerson.archive` is still pointing to the PPA named 'ppa'.
+
+    >>> print sabdfl.archive.title
+    PPA for Mark Shuttleworth
+
+    >>> print sabdfl.archive.name
+    ppa
+
+The ppas named differently than the default ('ppa') have a slightly
+different title format, including their names.
+
+    >>> print another_ppa.title
+    PPA named nightly for Mark Shuttleworth
+
+
+== Looking up named PPAs ==
+
+Additionally to the locked 'archive' property, `IPerson` also offers
+`ppas` property and `getPPAByName` method.
+
+`IPerson.ppas` returns a list with all PPA owned by the context person
+or team ordered by name.
+
+    >>> for ppa in sabdfl.ppas:
+    ...     print ppa.name
+    nightly
+    ppa
+
+`IPerson.getPPAByName` allows call sites to look up PPAs owned by the
+context person with a given name (exact match).
+
+    >>> default_ppa = sabdfl.getPPAByName('ppa')
+    >>> default_ppa == sabdfl.archive
+    True
+
+    >>> nightly_ppa = sabdfl.getPPAByName('nightly')
+    >>> another_ppa == nightly_ppa
+    True
+
+When there are not matching PPAs, None is returned.
+
+    >>> print sabdfl.getPPAByName('not-found')
+    None

@@ -17,12 +17,14 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.publishing import (
-    getPublisher, Publisher)
+    Publisher, getPublisher, sha256)
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
+from canonical.launchpad.interfaces.binarypackagerelease import (
+    BinaryPackageFormat)
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
@@ -31,6 +33,7 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.interfaces.archivesigningkey import (
     IArchiveSigningKey)
+from canonical.launchpad.testing import get_lsb_information
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.zeca.ftests.harness import ZecaTestSetup
 
@@ -444,6 +447,8 @@ class TestPublisher(TestPublisherBase):
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
 
+        # Pending source and binary publications.
+        # The binary description explores index formatting properties.
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=cprov.archive)
@@ -453,11 +458,20 @@ class TestPublisher(TestPublisherBase):
                         "space but not trailing.  \n    It does nothing, "
                         "though")[0]
 
+        # Ignored (deleted) source publication that will not be listed in
+        # the index and a pending 'udeb' binary package.
+        ignored_source = self.getPubSource(
+            status=PackagePublishingStatus.DELETED,
+            archive=cprov.archive)
+        pub_udeb = self.getPubBinaries(
+            pub_source=ignored_source, binaryname='bingo',
+            description='nice udeb', format=BinaryPackageFormat.UDEB)[0]
+
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
         archive_publisher.C_writeIndexes(False)
 
-        # A compressed and uncompressed Sources file is written;
+        # A compressed and uncompressed Sources file are written;
         # ensure that they are the same after uncompressing the former.
         index_contents = self._checkCompressedFile(
             archive_publisher, os.path.join('source', 'Sources.gz'),
@@ -478,7 +492,7 @@ class TestPublisher(TestPublisherBase):
              ''],
             index_contents)
 
-        # A compressed and an uncompressed Packages file is written;
+        # A compressed and an uncompressed Packages file are written;
         # ensure that they are the same after uncompressing the former.
         index_contents = self._checkCompressedFile(
             archive_publisher, os.path.join('binary-i386', 'Packages.gz'),
@@ -503,9 +517,35 @@ class TestPublisher(TestPublisherBase):
              ''],
             index_contents)
 
+        # A compressed and an uncompressed Packages file are written for
+        # 'debian-installer' section for each architecture. It will list
+        # the 'udeb' files.
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debian-installer', 'binary-i386', 'Packages.gz'),
+            os.path.join('debian-installer', 'binary-i386', 'Packages'))
+
+        self.assertEqual(
+            ['Package: bingo',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Filename: pool/main/f/foo/bingo_666_all.udeb',
+             'Size: 18',
+             'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'Description: Foo app is great',
+             ' nice udeb',
+             ''],
+            index_contents)
+
         # Check if apt_handler.release_files_needed has the right requests.
         # 'source' & 'binary-i386' Release files should be regenerated
-        # for all breezy-autotest components.
+        # for all breezy-autotest components. Note that 'debian-installer'
+        # indexes do not need Release files.
 
         # We always regenerate all Releases file for a given suite.
         self.checkAllRequestedReleaseFiles(archive_publisher)
@@ -678,6 +718,8 @@ class TestPublisher(TestPublisherBase):
     def testAptSHA256(self):
         """Test issues with python-apt in Ubuntu/hardy.
 
+        This test only runs on Ubuntu/hardy systems.
+
         The version of python-apt in Ubuntu/hardy has problems with
         contents containing '\0' character.
 
@@ -697,7 +739,17 @@ class TestPublisher(TestPublisherBase):
         See https://bugs.edge.launchpad.net/soyuz/+bug/243630 and
         https://bugs.edge.launchpad.net/soyuz/+bug/269014.
         """
-        from canonical.archivepublisher.publishing import sha256
+        # XXX cprov 20090218 bug-279248: when hardy's apt gets fixed by a
+        # SRU, this test will fail in PQM/Buildbot. Then we should change
+        # the actual code for passing file descriptors instead of text to
+        # apt (it will perform better this way) and obviously remove this
+        # test.
+
+        # Skip this test if it's not being run on Ubuntu/hardy.
+        lsb_info = get_lsb_information()
+        if (lsb_info.get('ID') != 'Ubuntu' or
+            lsb_info.get('CODENAME') != 'hardy'):
+            return
 
         def _getSHA256(content):
             """Return checksums for the given content.
@@ -826,55 +878,55 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
 
-        plain_sources_md5_line = release_contents[md5_header_index + 7]
+        plain_sources_md5_line = release_contents[md5_header_index + 11]
         self.assertEqual(
             plain_sources_md5_line,
             (' 7d9b0817f5ff4a1d3f53f97bcc9c7658              '
              '229 main/source/Sources'))
-        release_md5_line = release_contents[md5_header_index + 8]
+        release_md5_line = release_contents[md5_header_index + 12]
         self.assertEqual(
             release_md5_line,
             (' f8351af2392a90cb0b62f0feba49fa42              '
              '116 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
-        gz_sources_md5_line = release_contents[md5_header_index + 9]
+        gz_sources_md5_line = release_contents[md5_header_index + 13]
         self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
 
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
 
-        plain_sources_sha1_line = release_contents[sha1_header_index + 7]
+        plain_sources_sha1_line = release_contents[sha1_header_index + 11]
         self.assertEqual(
             plain_sources_sha1_line,
             (' a2da1a8407fc4e2373266e56ccc7afadf8e08a3a              '
              '229 main/source/Sources'))
-        release_sha1_line = release_contents[sha1_header_index + 8]
+        release_sha1_line = release_contents[sha1_header_index + 12]
         self.assertEqual(
             release_sha1_line,
             (' b080b75dcfc245825d5872bb644afe00f2661fa3              '
              '116 main/source/Release'))
         # See above.
-        gz_sources_sha1_line = release_contents[sha1_header_index + 9]
+        gz_sources_sha1_line = release_contents[sha1_header_index + 13]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
 
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
 
-        plain_sources_sha256_line = release_contents[sha256_header_index + 7]
+        plain_sources_sha256_line = release_contents[sha256_header_index + 11]
         self.assertEqual(
             plain_sources_sha256_line,
             (' 979d959ead8ddc29e4347a64058a372d30df58a51a4615b43fb7499'
              '8a9e07c78              229 main/source/Sources'))
-        release_sha256_line = release_contents[sha256_header_index + 8]
+        release_sha256_line = release_contents[sha256_header_index + 12]
         self.assertEqual(
             release_sha256_line,
             (' 8186d7a342c728179da7ce5d045e0a009c4c04cf3f146036d614d29'
              '6fa8c4359              116 main/source/Release'))
         # See above.
-        gz_sources_sha256_line = release_contents[sha256_header_index + 9]
+        gz_sources_sha256_line = release_contents[sha256_header_index + 13]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
 
         # Architecture Release files also have a distinct Origin: for PPAs.

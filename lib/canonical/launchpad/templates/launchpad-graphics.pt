@@ -214,10 +214,6 @@
         <td colspan="2"><img alt="" src="/@@/distribution-logo" /></td>
       </tr>
       <tr>
-        <td>distribution-mugshot</td>
-        <td colspan="2"><img alt="" src="/@@/distribution-mugshot" /></td>
-      </tr>
-      <tr>
         <td>download</td>
         <td><img src="/@@/download" /></td>
         <td rowspan="2">An item that can be downloaded. Links flagged with
@@ -290,6 +286,21 @@
       <tr>
         <td>launchpad-logo</td>
         <td><img alt="" src="/@@/launchpad-logo" /></td>
+      </tr>
+      <tr>
+        <td>launchpad tour</td>
+        <td>
+          <img alt="" src="/@@/tour-icon" />
+        </td>
+        <td>The Launchpad Tour icon</td>
+      </tr>
+      <tr>
+        <td>tour-large</td>
+        <td><img alt="" src="/@@/tour-large" /></td>
+      </tr>
+      <tr>
+        <td>tour-logo</td>
+        <td><img alt="" src="/@@/tour-logo" /></td>
       </tr>
       <tr>
         <td>list</td>
@@ -384,10 +395,6 @@
         <td><img alt="" src="/@@/product-logo" /></td>
       </tr>
       <tr>
-        <td>product-mugshot</td>
-        <td><img alt="" src="/@@/product-mugshot" /></td>
-      </tr>
-      <tr>
         <td>project-badge</td>
         <td><img alt="" src="/@@/project-badge" /></td>
         <td rowspan="4">A group of projects.</td>
@@ -399,10 +406,6 @@
       <tr>
         <td>project-logo</td>
         <td><img alt="" src="/@@/project-logo" /></td>
-      </tr>
-      <tr>
-        <td>project-mugshot</td>
-        <td><img alt="" src="/@@/project-mugshot" /></td>
       </tr>
       <tr>
         <td>read-only</td>

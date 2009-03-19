@@ -15,7 +15,7 @@ __all__ = [
 from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import PasswordField
 
@@ -106,6 +106,14 @@ class LoginTokenType(DBEnumeratedType):
 
         The remote bug tracker will use the LoginToken to authenticate
         Launchpad.
+        """)
+
+    NEWPERSONLESSACCOUNT = DBItem(12, """
+        New Personless Account
+
+        A new personless account is being setup. They need to verify their
+        email address before we allow them to set a password and log in.  At
+        the end, this account will not have a Person associated with.
         """)
 
 

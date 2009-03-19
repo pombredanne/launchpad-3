@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'IPOFileSet',
     'IPOFile',
-    'IPOFileTranslator',
     'IPOFileAlternativeLanguage',
     ]
 
@@ -335,20 +334,3 @@ class IPOFileSet(Interface):
         The number of items in the sequence will only be less than batch_size
         if the end of the table has been reached.
         """
-
-class IPOFileTranslator(Interface):
-    """Represents contributions from people to POFiles."""
-
-    person = Object(
-        title=_('The Person this record represents'), required=True,
-        schema=IPerson)
-
-    pofile = Object(
-        title=_('The `IPOFile` modified by the translator'), required=True,
-        schema=IPOFile)
-
-    latest_message = Attribute(
-        _("Latest translation message added to the translation file."))
-
-    date_last_touched = Datetime(
-        title=_('When was added latest translation message'), required=True)

@@ -6,31 +6,10 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 <body>
-
-<metal:portlets fill-slot="portlets">
-  <tal:current-translation-templates
-    define="templates context/getCurrentTranslationTemplates">
-    <div tal:condition="not: templates" class="portlet">
-      <h2>No templates yet for <span tal:replace="context/name">1.0</span></h2>
-      <div class="portletBody portletContent">
-        <img src="/@@/info" />
-        At this stage there are no translation templates in place for 
-        <span tal:replace="context/title">Mozilla Firefox Series: 1.0</span>.
-        You should make sure that you upload a template (for gettext, a
-        ".pot" file) rather than a translation file (".po").  We will review
-        the template and once it is approved and imported, you will be able to
-        upload translations for it.
-      </div>
-    </div>
-    <tal:per_template repeat="template templates">
-      <div tal:replace="structure template/@@+portlet-langstats" />
-    </tal:per_template>
-  </tal:current-translation-templates>
-</metal:portlets>
 
 <div metal:fill-slot="main">
 

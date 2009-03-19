@@ -88,10 +88,10 @@ is created.  When those jobs are run, the email is sent from the registrant.
 
     >>> #clear any existing notifications
     >>> source_branch = bmp.source_branch
+    >>> factory.makeRevisionsForBranch(source_branch, count=1)
     >>> target_branch = bmp.target_branch
     >>> # Login to delete the proposal.
     >>> login('admin@canonical.com')
-    >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
     >>> bmp.deleteProposal()
     >>> notifications = pop_notifications()
     >>> registrant = factory.makePerson(

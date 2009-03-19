@@ -29,10 +29,10 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     branch_name_validator, CodeImportReviewStatus,
-    CodeReviewNotificationLevel, IBranchSet, ICodeImport,
-    ICodeImportMachineSet,  ICodeImportSet, ILaunchpadCelebrities,
-    RevisionControlSystems)
+    CodeReviewNotificationLevel, ICodeImport, ICodeImportMachineSet,
+    ICodeImportSet, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.branch import BranchExists, IBranch
+from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
     Navigation, stepto)

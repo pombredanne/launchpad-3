@@ -26,14 +26,13 @@ import re
 from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
+from lazr.enum import Item
 
 import pytz
 
 from sqlobject.sqlbuilder import AND, SQLConstant
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol)
-
-from canonical.lazr import Item
 
 from canonical.config import config
 from canonical.uuid import generate_uuid

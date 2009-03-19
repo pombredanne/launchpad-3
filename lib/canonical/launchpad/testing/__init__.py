@@ -1,20 +1,29 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
-import os, shutil, tempfile, unittest
+__metaclass__ = type
+
+from pprint import pformat
+import os
+import shutil
+import tempfile
+import unittest
 
 from storm.store import Store
 
+import transaction
 import zope.event
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.testing.factory import *
+
+from twisted.python.util import mergeFunctionMetadata
 
 
 class FakeTime:
@@ -155,6 +164,15 @@ class TestCase(unittest.TestCase):
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
 
+    def assertEqual(self, a, b, message=''):
+        """Assert that 'a' equals 'b'."""
+        if a == b:
+            return
+        if message:
+            message += '\n'
+        self.fail("%snot equal:\na = %s\nb = %s\n"
+                  % (message, pformat(a), pformat(b)))
+
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
 
@@ -183,6 +201,13 @@ class TestCase(unittest.TestCase):
         """Assert that 'needle' is not in 'haystack'."""
         self.assertFalse(
             needle in haystack, '%r in %r' % (needle, haystack))
+
+    def assertContentEqual(self, iter1, iter2):
+        """Assert that 'iter1' has the same content as 'iter2'."""
+        list1 = sorted(iter1)
+        list2 = sorted(iter2)
+        self.assertEqual(
+            list1, list2, '%s != %s' % (pformat(list1), pformat(list2)))
 
     def assertRaises(self, excClass, callableObj, *args, **kwargs):
         """Assert that a callable raises a particular exception.
@@ -282,7 +307,9 @@ class TestCaseWithFactory(TestCase):
     def setUp(self, user=ANONYMOUS):
         TestCase.setUp(self)
         login(user)
+        self.addCleanup(logout)
         self.factory = LaunchpadObjectFactory()
+        self.real_bzr_server = False
 
     def useTempDir(self):
         """Use a temporary directory for this test."""
@@ -291,10 +318,6 @@ class TestCaseWithFactory(TestCase):
         cwd = os.getcwd()
         os.chdir(tempdir)
         self.addCleanup(lambda: os.chdir(cwd))
-
-    def tearDown(self):
-        logout()
-        TestCase.tearDown(self)
 
     def getUserBrowser(self, url=None):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
@@ -312,19 +335,38 @@ class TestCaseWithFactory(TestCase):
             browser.open(url)
         return browser
 
-    def create_branch_and_tree(self, tree_location='.'):
+    def create_branch_and_tree(self, tree_location='.', product=None,
+                               hosted=False, db_branch=None):
         """Create a database branch, bzr branch and bzr checkout.
 
+        :param tree_location: The path on disk to create the tree at.
+        :param product: The product to associate with the branch.
+        :param hosted: If True, create in the hosted area.  Otherwise, create
+            in the mirrored area.
+        :param db_branch: If supplied, the database branch to use.
         :return: a `Branch` and a workingtree.
         """
         from bzrlib.bzrdir import BzrDir
         from bzrlib.transport import get_transport
-        db_branch = self.factory.makeAnyBranch()
-        transport = get_transport(db_branch.warehouse_url)
-        transport.clone('../..').ensure_base()
-        transport.clone('..').ensure_base()
-        bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
-        return db_branch, bzr_branch.create_checkout(tree_location)
+        if db_branch is None:
+            if product is None:
+                db_branch = self.factory.makeAnyBranch()
+            else:
+                db_branch = self.factory.makeProductBranch(product)
+        if hosted:
+            branch_url = db_branch.getPullURL()
+        else:
+            branch_url = db_branch.warehouse_url
+        if self.real_bzr_server:
+            transaction.commit()
+        transport = get_transport(branch_url)
+        if not self.real_bzr_server:
+            transport.clone('../..').ensure_base()
+            transport.clone('..').ensure_base()
+        self.addCleanup(transport.delete_tree, '.')
+        bzr_branch = BzrDir.create_branch_convenience(branch_url)
+        return db_branch, bzr_branch.create_checkout(
+            tree_location, lightweight=True)
 
     @staticmethod
     def getMirroredPath(branch):
@@ -333,9 +375,8 @@ class TestCaseWithFactory(TestCase):
         This always uses the configured mirrored area, ignoring whatever
         server might be providing lp-mirrored: urls.
         """
-        return os.path.join(
-            config.codehosting.internal_branch_by_id_root,
-            branch_id_to_path(branch.id))
+        base = config.codehosting.internal_branch_by_id_root
+        return os.path.join(base, branch_id_to_path(branch.id))
 
     def createMirroredBranchAndTree(self):
         """Create a database branch, bzr branch and bzr checkout.
@@ -377,15 +418,34 @@ class TestCaseWithFactory(TestCase):
         os.environ['BZR_HOME'] = os.getcwd()
         self.addCleanup(restore_bzr_home)
 
-    def useBzrBranches(self):
-        """Prepare for using bzr branches."""
+    def useBzrBranches(self, real_server=False):
+        """Prepare for using bzr branches.
+
+        This sets up support for lp-hosted and lp-mirrored URLs,
+        changes to a temp directory, and overrides the bzr home directory.
+
+        :param real_server: If true, use the "real" code hosting server,
+            using an xmlrpc server, etc.
+        """
         from canonical.codehosting.scanner.tests.test_bzrsync import (
             FakeTransportServer)
         from bzrlib.transport import get_transport
         self.useTempBzrHome()
-        server = FakeTransportServer(get_transport('.'))
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        self.real_bzr_server = real_server
+        if real_server:
+            server = get_multi_server(write_hosted=True, write_mirrored=True)
+            server.setUp()
+            self.addCleanup(server.destroy)
+        else:
+            os.mkdir('lp-mirrored')
+            mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
+            mirror_server.setUp()
+            self.addCleanup(mirror_server.tearDown)
+            os.mkdir('lp-hosted')
+            hosted_server = FakeTransportServer(
+                get_transport('lp-hosted'), url_prefix='lp-hosted:///')
+            hosted_server.setUp()
+            self.addCleanup(hosted_server.tearDown)
 
 
 def capture_events(callable_obj, *args, **kwargs):
@@ -407,3 +467,38 @@ def capture_events(callable_obj, *args, **kwargs):
         return result, events
     finally:
         zope.event.subscribers[:] = old_subscribers
+
+
+def get_lsb_information():
+    """Returns a dictionary with the LSB host information.
+
+    Code stolen form /usr/bin/lsb-release
+    """
+    distinfo = {}
+    if os.path.exists('/etc/lsb-release'):
+        for line in open('/etc/lsb-release'):
+            line = line.strip()
+            if not line:
+                continue
+            # Skip invalid lines
+            if not '=' in line:
+                continue
+            var, arg = line.split('=', 1)
+            if var.startswith('DISTRIB_'):
+                var = var[8:]
+                if arg.startswith('"') and arg.endswith('"'):
+                    arg = arg[1:-1]
+                distinfo[var] = arg
+
+    return distinfo
+
+
+def with_anonymous_login(function):
+    """Decorate 'function' so that it runs in an anonymous login."""
+    def wrapped(*args, **kwargs):
+        login(ANONYMOUS)
+        try:
+            return function(*args, **kwargs)
+        finally:
+            logout()
+    return mergeFunctionMetadata(function, wrapped)

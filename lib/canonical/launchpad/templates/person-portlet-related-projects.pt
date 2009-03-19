@@ -5,6 +5,7 @@
   omit-tag="">
 
 <div class="portlet" id="portlet-related-projects"
+     tal:define="overview_menu context/menu:overview"
      tal:condition="view/first_five_related_projects">
 
   <h2>Related projects</h2>
@@ -25,8 +26,9 @@
   </table>
   <p>
     <a href="+projects">
-      &raquo; See all projects <span tal:replace="context/title">Foo Bar</span>
-      is involved with
+      &raquo; show all projects
+      <tal:person replace="context/title">Foo Bar</tal:person> is involved
+      with
     </a>
   </p>
 </div>
