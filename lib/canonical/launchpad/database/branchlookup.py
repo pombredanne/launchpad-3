@@ -7,7 +7,7 @@ __metaclass__ = type
 # then get the IBranchLookup utility.
 __all__ = []
 
-from zope.component import getUtility
+from zope.component import adapts, getSiteManager, getUtility
 from zope.interface import implements
 
 from storm.expr import Join
@@ -22,7 +22,7 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, ILinkedBranchTraverser, InvalidBranchIdentifier,
+    IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser,
     NoBranchForSeries, NoBranchForSourcePackage, NoDefaultBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
@@ -45,6 +45,106 @@ from canonical.launchpad.webapp.interfaces import (
 from lazr.uri import InvalidURIError, URI
 
 
+class RootTraversable:
+    """Root traversable for linked branch objects.
+
+    Corresponds to '/' in the path. From here, you can traverse to a
+    distribution or a product.
+    """
+
+    implements(ILinkedBranchTraversable)
+
+    def traverse(self, name, further_path):
+        """See `ITraversable`.
+
+        :raise NoSuchProduct: If 'name' doesn't match an existing pillar.
+        :return: `IPillar`.
+        """
+        if not valid_name(name):
+            raise InvalidProductName(name)
+        pillar = getUtility(IPillarNameSet).getByName(name)
+        if pillar is None:
+            # XXX: no necessarily no such *product*.
+            raise NoSuchProduct(name)
+        return pillar
+
+
+class _BaseTraversable:
+    """Base class for traversable implementations.
+
+    This just defines a very simple constructor.
+    """
+
+    def __init__(self, context):
+        self.context = context
+
+
+class ProductTraversable(_BaseTraversable):
+    """Linked branch traversable for products.
+
+    From here, you can traverse to a product series.
+    """
+
+    adapts(IProduct)
+    implements(ILinkedBranchTraversable)
+
+    def traverse(self, name, further_path):
+        """See `ITraversable`.
+
+        :raises NoSuchProductSeries: if 'name' doesn't match an existing
+            series.
+        :return: `IProductSeries`.
+        """
+        series = self.context.getSeries(name)
+        if series is None:
+            raise NoSuchProductSeries(name, self.context)
+        return series
+
+
+class DistributionTraversable(_BaseTraversable):
+    """Linked branch traversable for distributions.
+
+    From here, you can traverse to a distribution series.
+    """
+
+    adapts(IDistribution)
+    implements(ILinkedBranchTraversable)
+
+    def traverse(self, name, further_path):
+        """See `ITraversable`."""
+        series = self.context.getSeries(name)
+        if series is None:
+            # XXX: NoSuchProductSeries is the wrong exception.
+            # NoSuchDistroSeries would be better.
+            raise NoSuchProductSeries(name, self.context)
+        return series
+
+
+class DistroSeriesTraversable(_BaseTraversable):
+    """Linked branch traversable for distribution series.
+
+    From here, you can traverse to a source package.
+    """
+
+    adapts(IDistroSeries)
+    implements(ILinkedBranchTraversable)
+
+    def traverse(self, name, further_path):
+        """See `ITraversable`."""
+        sourcepackage = self.context.getSourcePackage(name)
+        if sourcepackage is None:
+            # XXX: Not handled by resolve_lp_path.
+            raise NoSuchSourcePackageName(name)
+        return sourcepackage, PackagePublishingPocket.RELEASE
+
+
+# XXX: These probably should be somewhere else.
+sm = getSiteManager()
+sm.registerAdapter(ProductTraversable)
+sm.registerAdapter(DistributionTraversable)
+sm.registerAdapter(DistroSeriesTraversable)
+
+
 class LinkedBranchTraverser:
     """Utility for traversing to objects that can have linked branches."""
 
@@ -52,41 +152,15 @@ class LinkedBranchTraverser:
 
     def traverse(self, path):
         """See `ILinkedBranchTraverser`."""
-        # XXX: this is really, really ugly and unclear. Perhaps Zope can teach
-        # us traversal tricks?
-        segments = iter(path.split('/'))
-        pillar_name = segments.next()
-        if not valid_name(pillar_name):
-            raise InvalidProductName(pillar_name)
-        pillar = getUtility(IPillarNameSet).getByName(pillar_name)
-        if pillar is None:
-            # XXX: no necessarily no such *product*.
-            raise NoSuchProduct(pillar_name)
-        try:
-            series_name = segments.next()
-        except StopIteration:
-            return pillar
-        series = pillar.getSeries(series_name)
-        if series is None:
-            # XXX: no necessarily a *product* series, could be a distro
-            # series.
-            raise NoSuchProductSeries(series_name, pillar)
-        if IProductSeries.providedBy(series):
-            try:
-                segments.next()
-            except StopIteration:
-                return series
-        elif IDistroSeries.providedBy(series):
-            try:
-                sourcepackagename = segments.next()
-            except StopIteration:
-                raise NoDefaultBranch(series, 'distribution series')
-            sourcepackage = series.getSourcePackage(sourcepackagename)
-            if sourcepackage is None:
-                # XXX: Not handled by resolve_lp_path.
-                raise NoSuchSourcePackageName(sourcepackagename)
-            return sourcepackage, PackagePublishingPocket.RELEASE
-        raise InvalidBranchIdentifier(path)
+        segments = path.split('/')
+        traversable = RootTraversable()
+        while segments:
+            name = segments.pop(0)
+            context = traversable.traverse(name, segments)
+            traversable = ILinkedBranchTraversable(context, None)
+            if traversable is None:
+                break
+        return context
 
 
 class BranchLookup:
