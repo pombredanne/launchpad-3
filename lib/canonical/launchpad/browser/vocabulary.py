@@ -17,6 +17,7 @@ from zope.app.form.interfaces import MissingInputError
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import IHasIcon
 from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
@@ -42,18 +43,15 @@ class HugeVocabularyJSONView:
         if search_text is None:
             raise MissingInputError('search_text', '')
 
-        batch_size = int(self.request.form.get('size',
-                                               self.DEFAULT_BATCH_SIZE))
-        offset = int(self.request.form.get('offset', 0))
-
         registry = getVocabularyRegistry()
         vocabulary = registry.get(IHugeVocabulary, name)
 
         matches = vocabulary.searchForTerms(search_text)
+        batch_navigator = BatchNavigator(matches, self.request)
         total_size = matches.count()
 
         result = []
-        for term in matches[offset:offset+batch_size]:
+        for term in batch_navigator.currentBatch():
             entry = dict(value=term.token, title=term.title)
             # Set image url.
             if (IHasIcon.providedBy(term.value)

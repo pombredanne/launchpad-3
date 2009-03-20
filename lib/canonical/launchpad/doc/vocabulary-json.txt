@@ -5,14 +5,20 @@ entries until vocabularies are integrated into the REST API.
 
     >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
     >>> import simplejson
+    >>> from urllib import urlencode
     >>> root = getUtility(ILaunchpadRoot)
     >>> def print_json(json):
     ...     data = simplejson.loads(json)
     ...     print simplejson.dumps(data, sort_keys=True, indent=4)
+    >>> def create_vocabulary_view(form):
+    ...     # The BatchNavigator looks in the query string for GET requests.
+    ...     query_string = urlencode(form)
+    ...     return create_view(root, '+huge-vocabulary',
+    ...                        form=form, query_string=query_string)
 
 The view requires the name of the vocabulary.
 
-    >>> view = create_view(root, '+huge-vocabulary')
+    >>> view = create_vocabulary_view({})
     >>> print_json(view())
     Traceback (most recent call last):
     ...
@@ -21,7 +27,7 @@ The view requires the name of the vocabulary.
 Since it is exporting huge vocabularies, it requires a search term.
 
     >>> form = dict(name='ValidPerson')
-    >>> view = create_view(root, '+huge-vocabulary', form=form)
+    >>> view = create_vocabulary_view(form)
     >>> print_json(view())
     Traceback (most recent call last):
     ...
@@ -30,7 +36,7 @@ Since it is exporting huge vocabularies, it requires a search term.
 The name must be a valid vocabulary.
 
     >>> form = dict(name='invalid-vocabulary', search_text='foo')
-    >>> view = create_view(root, '+huge-vocabulary', form=form)
+    >>> view = create_vocabulary_view(form)
     >>> print_json(view())
     Traceback (most recent call last):
     ...
@@ -39,7 +45,7 @@ The name must be a valid vocabulary.
 A successful search.
 
     >>> form = dict(name='ValidPersonOrTeam', search_text='guadamen')
-    >>> view = create_view(root, '+huge-vocabulary', form=form)
+    >>> view = create_vocabulary_view(form)
     >>> print_json(view())
     {
         "entries": [
@@ -55,18 +61,18 @@ A successful search.
 Multiple entries.
 
     >>> form = dict(name='ValidPersonOrTeam', search_text='admin')
-    >>> view = create_view(root, '+huge-vocabulary', form=form)
+    >>> view = create_vocabulary_view(form)
     >>> result = simplejson.loads(view())
     >>> result['total_size']
     8
     >>> len(result['entries'])
-    7
+    5
 
 Size and offset parameters can be passed in to switch between batches.
 
     >>> form = dict(name='ValidPersonOrTeam', search_text='admin',
-    ...             offset='0', size='1')
-    >>> view = create_view(root, '+huge-vocabulary', form=form)
+    ...             start='0', batch='1')
+    >>> view = create_vocabulary_view(form)
     >>> print_json(view())
     {
         "entries": [
@@ -80,8 +86,8 @@ Size and offset parameters can be passed in to switch between batches.
     }
 
     >>> form = dict(name='ValidPersonOrTeam', search_text='admin',
-    ...             offset='1', size='1')
-    >>> view = create_view(root, '+huge-vocabulary', form=form)
+    ...             start='1', batch='1')
+    >>> view = create_vocabulary_view(form)
     >>> print_json(view())
     {
         "entries": [
