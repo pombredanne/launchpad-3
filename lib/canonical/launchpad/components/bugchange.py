@@ -111,23 +111,24 @@ class BugTaskAdded(BugChangeBase):
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        lines = []
         if self.bug_task.bugwatch:
-            change_info = u"** Also affects: %s via\n" % (
-                self.bug_task.bugtargetname)
-            change_info += u"   %s\n" % self.bug_task.bugwatch.url
+            lines.append(u"** Also affects: %s via" % (
+                self.bug_task.bugtargetname))
+            lines.append(u"   %s" % self.bug_task.bugwatch.url)
         else:
-            change_info = u"** Also affects: %s\n" % (
-                self.bug_task.bugtargetname)
-        change_info += u"%13s: %s\n" % (u"Importance",
-            self.bug_task.importance.title)
+            lines.append(u"** Also affects: %s" % (
+                self.bug_task.bugtargetname))
+        lines.append(u"%13s: %s" % (
+            u"Importance", self.bug_task.importance.title))
         if self.bug_task.assignee:
             assignee = self.bug_task.assignee
-            change_info += u"%13s: %s\n" % (u"Assignee",
-                assignee.unique_displayname)
-        change_info += u"%13s: %s" % (
-            u"Status", self.bug_task.status.title)
+            lines.append(u"%13s: %s" % (
+                u"Assignee", assignee.unique_displayname))
+        lines.append(u"%13s: %s" % (
+            u"Status", self.bug_task.status.title))
         return {
-            'text': change_info,
+            'text': '\n'.join(lines)
             }
 
     def getBugNotificationRecipients(self):
