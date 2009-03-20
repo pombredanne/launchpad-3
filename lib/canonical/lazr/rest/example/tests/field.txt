@@ -3,14 +3,14 @@
 It's possible to get the value of one particular field. You can get a
 JSON or XHTML-fragment representation.
 
-    >>> import simplejson
+    >>> from canonical.lazr.testing.webservice import CookbookWebServiceCaller
+    >>> webservice = CookbookWebServiceCaller()
+
     >>> from urllib import quote
     >>> cookbook_url = quote("/cookbooks/The Joy of Cooking")
     >>> field_url = cookbook_url + "/cuisine"
 
-    >>> from canonical.lazr.testing.webservice import CookbookWebServiceCaller
-    >>> webservice = CookbookWebServiceCaller()
-
+    >>> import simplejson
     >>> def set_cuisine(cuisine):
     ...     """Sets the cuisine for "The Joy of Cooking"."""
     ...     representation = {'cuisine': cuisine}
