@@ -3,9 +3,13 @@
 When a user comes into ShipIt to request server CDs we ask them to
 answer a small survey.
 
-    >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
     >>> browser.open('http://shipit.ubuntu.dev/')
     >>> browser.getLink('Request a CD of Ubuntu Server Edition').click()
+    >>> browser.url
+    'http://shipit.ubuntu.dev/login-server'
+    >>> browser.getControl(name='loginpage_email').value = 'marilize@hbd.com'
+    >>> browser.getControl(name='loginpage_password').value = 'test'
+    >>> browser.getControl('Log In').click()
     >>> browser.title
     'ShipIt Survey'
 

@@ -1,9 +1,8 @@
 # Copyright 2004-2005, 2009 Canonical Ltd.  All rights reserved.
 __all__ = [
     'BranchJob',
-    'RevisionsAddedJob',
+    'RevisionsAddedJob'
     'RevisionMailJob',
-    'RosettaUploadJob',
 ]
 
 from StringIO import StringIO
@@ -23,22 +22,14 @@ from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.codehosting import iter_list_chunks
-from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.database.job import Job
-from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from canonical.launchpad.interfaces.branchjob import (
     IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IRevisionMailJob,
-    IRevisionMailJobSource, IRosettaUploadJob, IRosettaUploadJobSource)
-from canonical.launchpad.interfaces.translations import (
-    TranslationsBranchImportMode)
-from canonical.launchpad.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    IRevisionMailJobSource,)
 from canonical.launchpad.mailout.branch import BranchMailer
-from canonical.launchpad.translationformat.translation_import import (
-    TranslationImporter)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -64,12 +55,6 @@ class BranchJobType(DBEnumeratedType):
         Revisions Added Mail
 
         This job runs against a branch to send emails about added revisions.
-        """)
-
-    ROSETTA_UPLOAD = DBItem(3, """
-        Rosetta Upload
-
-        This job runs against a branch to upload translation files to rosetta.
         """)
 
 
@@ -118,8 +103,6 @@ class BranchJobDerived(object):
     def __init__(self, branch_job):
         self.context = branch_job
 
-    # XXX: henninge 2009-02-20 bug=331919: These two standard operators
-    # should be implemented by delegates().
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
                 self.context == other.context)
@@ -390,135 +373,3 @@ class RevisionsAddedJob(BranchJobDerived):
                  end_revision=info,
                  verbose=True)
         return outf.getvalue()
-
-
-class RosettaUploadJob(BranchJobDerived):
-    """A Job that uploads translation files to Rosetta."""
-
-    implements(IRosettaUploadJob)
-
-    classProvides(IRosettaUploadJobSource)
-
-    class_job_type = BranchJobType.ROSETTA_UPLOAD
-
-    @staticmethod
-    def getMetadata(from_revision_id):
-        return {
-            'from_revision_id': from_revision_id,
-        }
-
-    @property
-    def from_revision_id(self):
-        return self.metadata['from_revision_id']
-
-    @classmethod
-    def create(klass, branch, from_revision_id):
-        """See `IRosettaUploadJobSource`."""
-        if branch is None:
-            return None
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        productseries = store.find(
-            (ProductSeries),
-            ProductSeries.branch == branch,
-            ProductSeries.translations_autoimport_mode !=
-               TranslationsBranchImportMode.NO_IMPORT).any()
-        if productseries is not None:
-            metadata = klass.getMetadata(from_revision_id)
-            branch_job = BranchJob(
-                branch, BranchJobType.ROSETTA_UPLOAD, metadata)
-            return klass(branch_job)
-        else:
-            return None
-
-    def _get_translations_files(self):
-        """Extract the files from the branch tree.
-
-        :returns:  A dict with keys 'po' and 'pot', each mapping to a list
-             containing (file_name, file_content) tuples.
-        """
-        bzrbranch = self.branch.getBzrBranch()
-        from_tree = bzrbranch.repository.revision_tree(
-            self.from_revision_id)
-        to_tree = bzrbranch.repository.revision_tree(
-            self.branch.last_scanned_id)
-        pot_files = []
-        po_files = []
-        importer = TranslationImporter()
-        try:
-            from_tree.lock_read()
-            to_tree.lock_read()
-            for changed_file in to_tree.iter_changes(from_tree):
-                from_kind, to_kind = changed_file[6]
-                if to_kind != 'file':
-                    continue
-                file_id, (from_path, to_path) = changed_file[:2]
-                if importer.isTemplateName(to_path):
-                    append_to = pot_files
-                elif importer.isTranslationName(to_path):
-                    append_to = po_files
-                else:
-                    continue
-                append_to.append((
-                    to_path, to_tree.get_file_text(file_id)))
-        finally:
-            from_tree.unlock()
-            to_tree.unlock()
-        return {'pot': pot_files, 'po': po_files}
-
-    def _upload_types(self, series):
-        """Determine which file types to upload."""
-        if series.translations_autoimport_mode in (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES,):
-            yield 'pot'
-        # Further upload_types will be added here.
-
-    def _uploader_person(self, upload_type, series):
-        """Determine which person is the uploader."""
-        # Default uploader is the driver or owner of the series.
-        uploader = series.driver
-        if uploader is None:
-            uploader = series.owner
-        # For po files, try to determine the author of the latest push.
-        if upload_type == 'po':
-            po_uploader = self.branch.getTipRevision().revision_author.person
-            if po_uploader is not None:
-                uploader = po_uploader
-
-        return uploader
-
-    def run(self):
-        """See `IRosettaUploadJob`."""
-        filenames = self._get_translations_files()
-        # Get the product series that are connected to this branch and
-        # that want to upload translations.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        productseries = store.find(
-            (ProductSeries),
-            ProductSeries.branch == self.branch,
-            ProductSeries.translations_autoimport_mode !=
-               TranslationsBranchImportMode.NO_IMPORT)
-        translation_import_queue = getUtility(ITranslationImportQueue)
-        for series in productseries:
-            for upload_type in self._upload_types(series):
-                uploader = self._uploader_person(upload_type, series)
-                for upload_file_name, upload_file_content in (
-                     filenames[upload_type]):
-                    if len(upload_file_content) == 0:
-                        continue # Skip empty files
-                    translation_import_queue.addOrUpdateEntry(
-                        upload_file_name, upload_file_content,
-                        True, uploader, productseries=series)
-
-    @staticmethod
-    def iterReady():
-        """See `IRosettaUploadJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.using(BranchJob, Job, Branch).find(
-            (BranchJob),
-            And(BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
-                BranchJob.job == Job.id,
-                BranchJob.branch == Branch.id,
-                Branch.last_mirrored_id == Branch.last_scanned_id,
-                Job.id.is_in(Job.ready_jobs)))
-        return (RosettaUploadJob(job) for job in jobs)
-

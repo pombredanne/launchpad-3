@@ -8,7 +8,6 @@ import sys
 import tempfile
 import unittest
 
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -71,6 +70,7 @@ class UtilsTestCase(unittest.TestCase):
         # Test that the get_enum_value() function returns the
         # appropriate enum value, or raises BugXMLSyntaxError if it is
         # not found.
+        from canonical.launchpad.interfaces import BugTaskStatus
         self.assertEqual(bugimport.get_enum_value(BugTaskStatus,
                                                   'FIXRELEASED'),
                          BugTaskStatus.FIXRELEASED)
@@ -153,9 +153,6 @@ class GetPersonTestCase(unittest.TestCase):
         <person xmlns="https://launchpad.net/xmlns/2006/bugs"
                 name="foo" email="foo@example.com">Foo User</person>''')
         person = importer.getPerson(personnode)
-        # Commit as we just made changes to two different stores, and the
-        # rest of these tests require the changes to be visible.
-        transaction.commit()
         self.assertNotEqual(person, None)
         self.assertEqual(person.name, 'foo')
         self.assertEqual(person.displayname, 'Foo User')
@@ -252,10 +249,9 @@ class GetPersonTestCase(unittest.TestCase):
         # email address when verify_users=True.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             'foo@example.com', PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        email = getUtility(IEmailAddressSet).new('foo@preferred.com', person)
-        transaction.commit()
+        email = getUtility(IEmailAddressSet).new('foo@preferred.com',
+                                                 person.id)
         person.setPreferredEmail(email)
-        transaction.commit()
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
 
         product = getUtility(IProductSet).getByName('netapplet')

@@ -75,7 +75,7 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         # Secret is looked up here rather than in __init__, because
         # we can't be sure the database connections are setup at that point.
         if self._secret is None:
-            store = getUtility(IZStorm).get('session', 'launchpad-session:')
+            store = getUtility(IZStorm).get('session')
             result = store.execute("SELECT secret FROM secret")
             self._secret = result.get_one()[0]
         return self._secret

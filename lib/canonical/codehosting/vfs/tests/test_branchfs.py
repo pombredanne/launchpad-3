@@ -327,7 +327,7 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
         branch = self.factory.makeProductBranch()
-        branch.product.development_focus.branch = branch
+        branch.product.development_focus.user_branch = branch
         transport = get_transport(self.server.get_url())
         self.assertRaises(
             errors.NoSuchFile, transport.list_dir, "~%s/%s/.bzr/"

@@ -1,21 +1,5 @@
-#
-# This makefile is used for two task:
-#
-#  - Build a replicated development environment
-#  - Build and replicate the staging database
-#
-# To build a replicated development environment:
-#
-#  $ make -C database/replication devsetup
-#  $ make run
-#
-# To test the staging rebuild script:
-#
-#  $ cd database/replication
-#  $ pg_dump --format=c launchpad_dev > launchpad.dump
-#  $ make stagingsetup STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump
-#  $ make stagingswitch STAGING_CONFIG=dev-staging
-#
+HERE=`pwd`
+
 LAG=10 seconds
 
 DEV_CONFIG=replicated-development
@@ -41,37 +25,17 @@ stop:
 restart: stop start
 
 devsetup:
-	make _prelim LPCONFIG=${DEV_CONFIG} \
-	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave LAG="0 seconds"
-	
+	make _prelim _CONFIG=${DEV_CONFIG} \
+	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave
 	# Build the master database
 	LPCONFIG=${DEV_CONFIG} make -C ../schema
-	
-	# Replicate it
-	make _replicate LPCONFIG=${DEV_CONFIG} \
-	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave LAG="0 seconds"
-	
-	# Replicate it again, so we can test with multiple slaves.
-	-${PGMASSACRE} launchpad_dev_slave2
-	createdb --encoding=UTF8 launchpad_dev_slave2
-	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py start \
-		 node3_node 'dbname=launchpad_dev_slave2 user=slony'
-	LPCONFIG=${DEV_CONFIG} ./new-slave.py 3 launchpad_dev_slave2
-	LPCONFIG=${DEV_CONFIG} ../schema/security.py -d launchpad_dev_slave2
-	
-	# Regenerate the preamble for manual slonik(1) usage.
-	LPCONFIG=${DEV_CONFIG} ./preamble.py > preamble.sk
-
-	# Restart slon daemons with default lag setting.
-	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py stop
-	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py --lag="${LAG}" start
-
+	make _replicate _CONFIG=${DEV_CONFIG} \
+	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave
 
 # Build _new staging databases from a production dump.
 stagingsetup:
-	make _prelim LPCONFIG=${NEW_STAGING_CONFIG} \
-	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
-	    LAG="0 seconds"
+	make _prelim _CONFIG=${NEW_STAGING_CONFIG} \
+	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new
 	# Create the DB with the desired default tablespace.
 	createdb --encoding UTF8 --tablespace ${STAGING_TABLESPACE} \
 	    lpmain_staging_new
@@ -83,64 +47,74 @@ stagingsetup:
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
+	# Analyze the new db performance doesn't suck until autovacuum
+	# gets around to it. This can be done in the background while
+	# the slave is being rebuilt, but needs to start *after* the
+	# subscription has started to avoid the open transaction blocking
+	# the setup. slon automatically analyzes newly
+	# replicated tables on the slave, so no need to analyze the slave
+	# ourselves.
+	(sleep 900; psql -d lpmain_staging_new -c 'analyze;') &
 	# Setup replication
-	make _replicate LPCONFIG=${NEW_STAGING_CONFIG} LAG="0 seconds" \
+	make _replicate _CONFIG=${NEW_STAGING_CONFIG} LAG="0 seconds" \
 	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
 	    _SLAVE_TABLESPACE=${STAGING_TABLESPACE}
+	# Upgrade the _new databases and rebuild acls.
+	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/upgrade.py
+	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/fti.py
+	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/security.py \
+		 -d lpmain_staging_new -U slony
+	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/security.py \
+		 -d lpmain_staging_slave_new -U slony
 
 # Switch the _new staging databases into place.
 stagingswitch:
 	# Stop Slony-I daemons - don't confuse the poor darlings.
-	-LPCONFIG=${NEW_STAGING_CONFIG} ./slon_ctl.py stop
-	-LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py stop
+	make stop LPCONFIG=${NEW_STAGING_CONFIG}
+	make stop LPCONFIG=${STAGING_CONFIG}
 	# Kill the existing staging database if it exists.
-	-${PGMASSACRE} lpmain_staging
-	-${PGMASSACRE} lpmain_staging_slave
+	${PGMASSACRE} lpmain_staging
+	${PGMASSACRE} lpmain_staging_slave
 	# Rename the newly build staging databases.
 	psql -d template1 -c \
 	    "ALTER DATABASE lpmain_staging_new RENAME TO lpmain_staging;"
 	psql -d template1 -c "\
 	    ALTER DATABASE lpmain_staging_slave_new \
 	    RENAME TO lpmain_staging_slave;"
-	# Fix the paths to match.
-	psql -d lpmain_staging -U slony -c \
-	"UPDATE _sl.sl_path SET pa_conninfo=replace(pa_conninfo, '_new', '')"
-	psql -d lpmain_staging_slave -U slony -c \
-	"UPDATE _sl.sl_path SET pa_conninfo=replace(pa_conninfo, '_new', '')"
-	# Start the slon daemons, with requested lag.
-	LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py --lag="${LAG}" start
+	# Generate a suitable preamble, now using the real staging config.
+	LPCONFIG=${STAGING_CONFIG} ./preamble.py > preamble.sk
+	# Change the paths between the nodes to match what they will be soon.
+	echo "\
+	include <preamble.sk>; 				\
+	store path ( 					\
+	    server = @master_node, client=@slave1_node,	\
+	    conninfo=@master_conninfo);			\
+	store path (					\
+	    server = @slave1_node, client=@master_node,	\
+	    conninfo=@slave1_conninfo);			\
+	" | slonik
+	make start LPCONFIG=${STAGING_CONFIG}
 
 _prelim:
-	@echo LPCONFIG currently ${LPCONFIG}
 	# Create the slony PostgreSQL superuser if necessary.
-	-createuser --superuser slony
+	createuser --superuser slony || true
 	# Stop the slon daemons and wait a bit for connections to drop.
-	-./slon_ctl.py stop
+	LPCONFIG=${_CONFIG} make stop
 	sleep 5
 	# Drop any existing databases if they exist
 	${PGMASSACRE} ${_MASTER}
 	${PGMASSACRE} ${_SLAVE}
 
 _replicate:
-	@echo LPCONFIG currently ${LPCONFIG}
-	# Start the slon daemon for the master.
-	./slon_ctl.py start \
-		 node1_node "dbname=${_MASTER} user=slony"
-	# Initialize the cluster and create replication sets.
-	./initialize.py -vv
-	# Create the soon-to-be-slave database, empty at this point.
+	# Create the slave database, empty at this point.
 	createdb --encoding=UTF8 --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
-	# Start the slon daemon for the slave
-	./slon_ctl.py start node2_node "dbname=${_SLAVE} user=slony"
-	# Setup the slave
-	./new-slave.py 2 "dbname=${_SLAVE}"
-	# Upgrade all databases in the cluster and reset security.
-	../schema/upgrade.py
-	../schema/fti.py
-	../schema/security.py --cluster -U slony
-	# Restart slon daemons with default lag setting.
-	./slon_ctl.py stop
-	./slon_ctl.py --lag="${LAG}" start
+	# Start the slon daemons with 0 lag for quick setup.
+	LPCONFIG=${_CONFIG} make start LAG="0 seconds"
 	# Generate a preamble for manual slonik(1) usage.
-	./preamble.py > preamble.sk
+	LPCONFIG=${_CONFIG} ./preamble.py > preamble.sk
+	# Turn the slave into a replica.
+	LPCONFIG=${_CONFIG} ./initialize.py
+	# Restart slon daemons with default lag setting.
+	LPCONFIG=${_CONFIG} make restart LAG="${LAG}"
+
 

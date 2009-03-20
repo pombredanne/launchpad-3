@@ -706,7 +706,7 @@ If no data type is provided, the WADL standard says to default to
 
     >>> description = single_list_value(
     ...     [param for param in new_milestone_repr
-    ...           if param.attrib.get('name') == 'summary'])
+    ...           if param.attrib.get('name') == 'description'])
 
     >>> 'type' in description.attrib
     False
