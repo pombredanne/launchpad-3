@@ -187,10 +187,14 @@ help us describe the change.
     >>> from canonical.launchpad.components.bugchange import (
     ...     get_bug_change_class)
 
-By default, get_bug_change_class() will return BugChangeBase.
+If get_bug_change_class() is asked for a BugChange for an object or
+field that it doesn't know about, it will raise a NoBugChangeFoundError.
 
-    >>> get_bug_change_class(example_bug, 'foobar')
-    <class '...BugChangeBase'>
+    >>> get_bug_change_class(object(), 'fooix')
+    Traceback (most recent call last):
+      ...
+    NoBugChangeFoundError: Unable to find a suitable BugChange for field
+    'fooix' on object <object object at ...>
 
 For fields it knows about, it will return a more suitable class.
 
@@ -200,7 +204,7 @@ For fields it knows about, it will return a more suitable class.
 get_bug_change_class will also work for BugTasks.
 
     >>> get_bug_change_class(example_bug.bugtasks[0], 'importance')
-    <class '...BugChangeBase'>
+    <class '...BugTaskAttributeChange'>
 
 See component/ftests/test_bugchange.py for some sanity checks.
 
@@ -478,7 +482,6 @@ the user what has changed.
     >>> print notification_text #doctest: -NORMALIZE_WHITESPACE
     ** Changed in: heart-of-gold
            Status: New => Fix Released
-    <BLANKLINE>
 
 
 === Importance changes ===
@@ -500,6 +503,3 @@ the user what has changed.
     >>> print notification_text #doctest: -NORMALIZE_WHITESPACE
     ** Changed in: heart-of-gold
        Importance: Undecided => Critical
-    <BLANKLINE>
-
-

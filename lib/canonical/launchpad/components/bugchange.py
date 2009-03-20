@@ -38,7 +38,9 @@ def get_bug_change_class(obj, field_name):
     try:
         return lookup[field_name]
     except KeyError:
-        raise NoBugChangeFoundError(field_name)
+        raise NoBugChangeFoundError(
+            "Unable to find a suitable BugChange for field '%s' on object "
+            "%s" % (field_name, obj))
 
 
 class BugChangeBase:
