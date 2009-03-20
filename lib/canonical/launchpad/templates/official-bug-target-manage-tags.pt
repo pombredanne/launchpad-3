@@ -97,11 +97,13 @@
         <td class="right-column">
         </td>
       </tr>
+      <tr>
+        <td class="actions" colspan="3">
+          <input type="submit" value="Save" id="save-button" disabled="true" />
+          or <a id="cancel-link" tal:attributes="href view/cancel_url">Cancel</a>        
+        </td>
+      </tr>
     </table>
-    <div class="actions">
-      <input type="submit" value="Save" id="save-button" disabled="true" />
-      or <a id="cancel-link" tal:attributes="href view/cancel_url">Cancel</a>        
-    </div>
   </div>
   </body>
 </html>
