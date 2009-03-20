@@ -35,9 +35,12 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.launchpad.components.bugchange import (
+    BranchLinkedToBug, BranchUnlinkedFromBug, UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
+from canonical.launchpad.interfaces.bugactivity import IBugActivitySet
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
@@ -380,10 +383,13 @@ class Bug(SQLBase):
         Store.of(sub).flush()
         return sub
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                self.addChange(UnsubscribedFromBug(
+                    when=UTC_NOW, person=unsubscribed_by,
+                    unsubscribed_user=person))
                 store = Store.of(sub)
                 store.remove(sub)
                 # Make sure that the subscription removal has been
@@ -397,7 +403,7 @@ class Bug(SQLBase):
         bugs_unsubscribed = []
         for dupe in self.duplicates:
             if dupe.isSubscribed(person):
-                dupe.unsubscribe(person)
+                dupe.unsubscribe(person, person)
                 bugs_unsubscribed.append(dupe)
 
         return bugs_unsubscribed
@@ -645,6 +651,33 @@ class Bug(SQLBase):
              bug=self, is_comment=True,
              message=message, recipients=recipients)
 
+    def addChange(self, change):
+        """See `IBug`."""
+        when = change.when
+        if when is None:
+            when = UTC_NOW
+
+        # Only try to add something to the activity log if we have some
+        # data.
+        activity_data = change.getBugActivity()
+        if activity_data is not None:
+            bug_activity = getUtility(IBugActivitySet).new(
+                self, when, change.person,
+                activity_data['whatchanged'],
+                activity_data.get('oldvalue'),
+                activity_data.get('newvalue'),
+                activity_data.get('message'))
+
+        notification_data = change.getBugNotification()
+        if notification_data is not None:
+            recipients = change.getBugNotificationRecipients()
+            assert notification_data.get('text') is not None, (
+                "notification_data must include a `text` value.")
+
+            self.addChangeNotification(
+                notification_data['text'], change.person, recipients,
+                when)
+
     def expireNotifications(self):
         """See `IBug`."""
         for notification in BugNotification.selectBy(
@@ -792,9 +825,18 @@ class Bug(SQLBase):
             registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
+        self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch))
         notify(ObjectCreatedEvent(bug_branch))
 
         return bug_branch
+
+    def removeBranch(self, branch, user):
+        """See `IBug`."""
+        bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
+        if bug_branch is not None:
+            self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch))
+            notify(ObjectDeletedEvent(bug_branch, user=user))
+            bug_branch.destroySelf()
 
     def linkCVE(self, cve, user):
         """See `IBug`."""

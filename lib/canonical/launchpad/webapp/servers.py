@@ -1025,6 +1025,7 @@ class ShipItPublication(LaunchpadBrowserPublication):
 
     root_object_interface = IShipItApplication
 
+
 class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.ShipItUbuntuLayer)
 

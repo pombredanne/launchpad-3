@@ -274,7 +274,7 @@ Bug.setPrivate adds all indirect subscribers to the bug as direct
 subscribers, but we want to see what the bug looks like if we're not a
 subscriber.
 
-    >>> firefox_crashes.unsubscribe(current_user)
+    >>> firefox_crashes.unsubscribe(current_user, current_user)
 
 A private bug has a title "private bug".
 

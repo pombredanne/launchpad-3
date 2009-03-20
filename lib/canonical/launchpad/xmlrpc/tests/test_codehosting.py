@@ -547,16 +547,19 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_team_junk(self):
-        # createBranch cannot create +junk branches on teams -- it raises
-        # PermissionDenied.
-        owner = self.factory.makePerson()
-        team = self.factory.makeTeam(owner)
+        # createBranch can create +junk branches on teams.
+        registrant = self.factory.makePerson()
+        team = self.factory.makeTeam(registrant)
         name = self.factory.getUniqueString()
-        fault = self.branchfs.createBranch(
-            owner.id, escape('/~%s/+junk/%s' % (team.name, name)))
-        expected_fault = faults.PermissionDenied(
-            BranchCreationNoTeamOwnedJunkBranches.error_message)
-        self.assertFaultEqual(expected_fault, fault)
+        branch_id = self.branchfs.createBranch(
+            registrant.id, escape('/~%s/+junk/%s' % (team.name, name)))
+        login(ANONYMOUS)
+        branch = self.branch_set.get(branch_id)
+        self.assertEqual(team, branch.owner)
+        self.assertEqual(None, branch.product)
+        self.assertEqual(name, branch.name)
+        self.assertEqual(registrant, branch.registrant)
+        self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.

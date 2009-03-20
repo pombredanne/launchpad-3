@@ -9,13 +9,13 @@ __all__ = [
     'CreateBugParams',
     'CreatedBugWithNoBugTasksError',
     'IBug',
-    'IBugBecameQuestionEvent',
-    'IBugSet',
-    'IBugDelta',
     'IBugAddForm',
+    'IBugBecameQuestionEvent',
+    'IBugDelta',
+    'IBugSet',
     'IFrontPageBugAddForm',
-    'InvalidBugTargetType',
     'IProjectBugAddForm',
+    'InvalidBugTargetType',
     ]
 
 from zope.component import getUtility
@@ -312,9 +312,9 @@ class IBug(ICanBeMentored):
         :return: an `IBugSubscription`.
         """
 
-    @call_with(person=REQUEST_USER)
+    @call_with(person=REQUEST_USER, unsubscribed_by=REQUEST_USER)
     @export_write_operation()
-    def unsubscribe(person):
+    def unsubscribe(person, unsubscribed_by):
         """Remove this person's subscription to this bug."""
 
     def unsubscribeFromDupes(person):
@@ -383,6 +383,13 @@ class IBug(ICanBeMentored):
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
 
+    def addChange(change):
+        """Record a change to the bug.
+
+        :param change: An `IBugChange` instance from which to take the
+            change data.
+        """
+
     def expireNotifications():
         """Expire any pending notifications that have not been emailed.
 
@@ -419,6 +426,13 @@ class IBug(ICanBeMentored):
         :param status: The status of the fix in the branch
 
         Returns an IBugBranch.
+        """
+
+    def removeBranch(branch, user):
+        """Unlink a branch from this bug.
+
+        :param branch: The branch being unlinked from the bug
+        :param registrant: The user unlinking the branch
         """
 
     @call_with(owner=REQUEST_USER)

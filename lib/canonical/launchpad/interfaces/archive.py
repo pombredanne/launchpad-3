@@ -111,9 +111,11 @@ class IArchivePublic(IHasOwner):
         title=_("Publish"), required=False,
         description=_("Whether the archive is to be published or not."))
 
-    private = Bool(
-        title=_("Private"), required=False,
-        description=_("Whether the archive is private to the owner or not."))
+    private = exported(
+        Bool(
+            title=_("Private"), required=False,
+            description=_(
+                "Whether the archive is private to the owner or not.")))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,
@@ -629,6 +631,11 @@ class IArchiveView(IHasBuildRecords):
             title=_("Exact Match"),
             description=_("Whether or not to filter source names by exact"
                           " matching."),
+            required=False),
+        published_since_date=Datetime(
+            title=_("Published Since Date"),
+            description=_("Return entries whose 'datepublished' is greater "
+                          "than or equal to this date."),
             required=False))
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
@@ -636,17 +643,19 @@ class IArchiveView(IHasBuildRecords):
     @export_read_operation()
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False):
+                            exact_match=False, published_since_date=None):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
-        :param: name: source name filter (exact match or SQL LIKE controlled
-                      by 'exact_match' argument).
-        :param: version: source version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a sequence.
-        :param: distroseries: `IDistroSeries` filter.
-        :param: pocket: `PackagePublishingPocket` filter.
-        :param: exact_match: either or not filter source names by exact
+        :param name: source name filter (exact match or SQL LIKE controlled
+                     by 'exact_match' argument).
+        :param version: source version filter (always exact match).
+        :param status: `PackagePublishingStatus` filter, can be a sequence.
+        :param distroseries: `IDistroSeries` filter.
+        :param pocket: `PackagePublishingPocket` filter.
+        :param exact_match: either or not filter source names by exact
                              matching.
+        :param published_since_date: Only return results whose 'datepublished'
+            is greater than or equal to this date.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
@@ -978,6 +987,9 @@ class IArchiveSet(Interface):
         :return: A queryset of all the archives for the given
             distribution matching the given params.
         """
+
+    def getPrivatePPAs():
+        """Return a result set containing all private PPAs."""
 
 
 class ArchivePurpose(DBEnumeratedType):

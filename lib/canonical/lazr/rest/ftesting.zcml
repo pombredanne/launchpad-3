@@ -1,0 +1,16 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
+    i18n_domain="lazr">
+
+    <include package="zope.app.component" file="meta.zcml" />
+    <include package="zope.component" file="meta.zcml"/>
+    <include package="zope.security" file="meta.zcml"/>
+    <include package="zope.component"/>
+    <include file="configure.zcml" />
+    <include file="meta.zcml" />
+    <include file="example/configure.zcml" />
+
+    <adapter factory="zope.publisher.http.HTTPCharsets" />
+
+</configure>

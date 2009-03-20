@@ -82,7 +82,12 @@
               tal:repeat="subscription view/subscriptions">
             <td tal:content="structure subscription/subscriber/fmt:link" />
             <td tal:content="subscription/date_expires/fmt:date" />
-            <td colspan="2" tal:content="subscription/description" />
+            <td tal:content="subscription/description" />
+            <td>
+              <a tal:attributes="href subscription/fmt:url/+edit">
+                Edit/Cancel <img src="/@@/edit" />
+              </a>
+            </td>
          </tr>
         </tbody>
       </table>

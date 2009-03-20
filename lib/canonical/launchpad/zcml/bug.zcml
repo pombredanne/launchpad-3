@@ -46,11 +46,12 @@
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
                         linkCVE linkCVEAndReturnNothing unlinkCVE findCvesInText
-                        newMessage linkMessage addBranch addAttachment
+                        newMessage linkMessage addBranch removeBranch
+                        addAttachment
                         unsubscribeFromDupes subscribe unsubscribe addNomination
                         expireNotifications setStatus setPrivate
                         convertToQuestion isUserAffected
-                        markUserAffected addTask"
+                        markUserAffected addTask addChange"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
