@@ -5,20 +5,21 @@
 import unittest
 
 from zope.event import notify
+from zope.interface import providedBy
 
 from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.database import BugNotification
-from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.ftests import login
+from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestBugChanges(unittest.TestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         login('foo.bar@canonical.com')
@@ -35,14 +36,15 @@ class TestBugChanges(unittest.TestCase):
         self.old_activities = list(self.bug.activity)
         self.old_notification_ids = [
             notification.id
-            for notification in BugNotification.selectBy(bug=self.bug)]
+            for notification in BugNotification.selectBy(bug=self.bug,
+                                                         orderBy='id')]
 
     def changeAttribute(self, obj, attribute, new_value):
         """Set the value of `attribute` on `obj` to `new_value`.
 
         :return: The value of `attribute` before modification.
         """
-        obj_before_modification = Snapshot(obj, providing=IBug)
+        obj_before_modification = Snapshot(obj, providing=providedBy(obj))
         setattr(obj, attribute, new_value)
         notify(ObjectModifiedEvent(
             obj, obj_before_modification, [attribute], self.user))
@@ -66,31 +68,45 @@ class TestBugChanges(unittest.TestCase):
         if expected_activity is None:
             self.assertEqual(len(new_activities), 0)
         else:
-            self.assertEqual(len(new_activities), 1)
-            [added_activity] = new_activities
-            self.assertEqual(
-                added_activity.person, expected_activity['person'])
-            self.assertEqual(
-                added_activity.whatchanged, expected_activity['whatchanged'])
-            self.assertEqual(
-                added_activity.oldvalue, expected_activity.get('oldvalue'))
-            self.assertEqual(
-                added_activity.newvalue, expected_activity.get('newvalue'))
-            self.assertEqual(
-                added_activity.message, expected_activity.get('message'))
+            if isinstance(expected_activity, dict):
+                expected_activities = [expected_activity]
+            else:
+                expected_activities = expected_activity
+            self.assertEqual(len(new_activities), len(expected_activities))
+            for expected_activity in expected_activities:
+                added_activity = new_activities.pop(0)
+                self.assertEqual(
+                    added_activity.person, expected_activity['person'])
+                self.assertEqual(
+                    added_activity.whatchanged,
+                    expected_activity['whatchanged'])
+                self.assertEqual(
+                    added_activity.oldvalue,
+                    expected_activity.get('oldvalue'))
+                self.assertEqual(
+                    added_activity.newvalue,
+                    expected_activity.get('newvalue'))
+                self.assertEqual(
+                    added_activity.message, expected_activity.get('message'))
 
         if expected_notification is None:
             self.assertEqual(len(new_notifications), 0)
         else:
-            self.assertEqual(len(new_notifications), 1)
-            [added_notification] = new_notifications
+            if isinstance(expected_notification, dict):
+                expected_notifications = [expected_notification]
+            else:
+                expected_notifications = expected_notification
             self.assertEqual(
-                added_notification.message.text_contents,
-                expected_notification['text'])
-            self.assertEqual(
-                added_notification.message.owner,
-                expected_notification['person'])
-            self.assertFalse(added_notification.is_comment)
+                len(new_notifications), len(expected_notifications))
+            for expected_notification in expected_notifications:
+                added_notification = new_notifications.pop(0)
+                self.assertEqual(
+                    added_notification.message.text_contents,
+                    expected_notification['text'])
+                self.assertEqual(
+                    added_notification.message.owner,
+                    expected_notification['person'])
+                self.assertFalse(added_notification.is_comment)
 
     def test_subscribe(self):
         # Subscribing someone to a bug adds an item to the activity log,
@@ -164,6 +180,148 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_notification=description_change_notification,
             expected_activity=description_change_activity)
+
+    def test_bugwatch_added(self):
+        # Adding a BugWatch to a bug adds items to the activity
+        # log and the Bug's notifications.
+        bugtracker = self.factory.makeBugTracker()
+        bug_watch = self.bug.addWatch(bugtracker, '42', self.user)
+
+        bugwatch_activity = {
+            'person': self.user,
+            'whatchanged': 'bug watch added',
+            'newvalue': bug_watch.url,
+            }
+
+        bugwatch_notification = {
+            'text': (
+                "** Bug watch added: %s #%s\n"
+                "   %s" % (
+                    bug_watch.bugtracker.title, bug_watch.remotebug,
+                    bug_watch.url)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_notification=bugwatch_notification,
+            expected_activity=bugwatch_activity)
+
+    def test_bugwatch_removed(self):
+        # Removing a BugWatch from a bug adds items to the activity
+        # log and the Bug's notifications.
+        bugtracker = self.factory.makeBugTracker()
+        bug_watch = self.bug.addWatch(bugtracker, '42', self.user)
+        self.saveOldChanges()
+        self.bug.removeWatch(bug_watch, self.user)
+
+        bugwatch_activity = {
+            'person': self.user,
+            'whatchanged': 'bug watch removed',
+            'oldvalue': bug_watch.url,
+            }
+
+        bugwatch_notification = {
+            'text': (
+                "** Bug watch removed: %s #%s\n"
+                "   %s" % (
+                    bug_watch.bugtracker.title, bug_watch.remotebug,
+                    bug_watch.url)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_notification=bugwatch_notification,
+            expected_activity=bugwatch_activity)
+
+    def test_bugwatch_modified(self):
+        # Modifying a BugWatch is like removing and re-adding it.
+        bugtracker = self.factory.makeBugTracker()
+        bug_watch = self.bug.addWatch(bugtracker, '42', self.user)
+        old_url = bug_watch.url
+        self.saveOldChanges()
+        old_remotebug = self.changeAttribute(bug_watch, 'remotebug', '84')
+
+        bugwatch_removal_activity = {
+            'person': self.user,
+            'whatchanged': 'bug watch removed',
+            'oldvalue': old_url,
+            }
+        bugwatch_addition_activity = {
+            'person': self.user,
+            'whatchanged': 'bug watch added',
+            'newvalue': bug_watch.url,
+            }
+
+        bugwatch_removal_notification = {
+            'text': (
+                "** Bug watch removed: %s #%s\n"
+                "   %s" % (
+                    bug_watch.bugtracker.title, old_remotebug,
+                    old_url)),
+            'person': self.user,
+            }
+        bugwatch_addition_notification = {
+            'text': (
+                "** Bug watch added: %s #%s\n"
+                "   %s" % (
+                    bug_watch.bugtracker.title, bug_watch.remotebug,
+                    bug_watch.url)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_notification=[bugwatch_removal_notification,
+                                   bugwatch_addition_notification],
+            expected_activity=[bugwatch_removal_activity,
+                               bugwatch_addition_activity])
+
+    def test_bugwatch_not_modified(self):
+        # Firing off a modified event without actually modifying
+        # anything intersting doesn't cause anything to be added to the
+        # activity log.
+        bug_watch = self.factory.makeBugWatch(bug=self.bug)
+        self.saveOldChanges()
+        self.changeAttribute(bug_watch, 'remotebug', bug_watch.remotebug)
+
+        self.assertRecordedChange()
+
+    def test_link_branch(self):
+        # Linking a branch to a bug adds both to the activity log and
+        # sends an e-mail notification.
+        branch = self.factory.makeBranch()
+        self.bug.addBranch(branch, self.user)
+        added_activity = {
+            'person': self.user,
+            'whatchanged': 'branch linked',
+            'newvalue': branch.bzr_identity,
+            }
+        added_notification = {
+            'text': "** Branch linked: %s" % branch.bzr_identity,
+            'person': self.user,
+            }
+        self.assertRecordedChange(
+            expected_activity=added_activity,
+            expected_notification=added_notification)
+
+    def test_unlink_branch(self):
+        # Unlinking a branch from a bug adds both to the activity log and
+        # sends an e-mail notification.
+        branch = self.factory.makeBranch()
+        self.bug.addBranch(branch, self.user)
+        self.saveOldChanges()
+        self.bug.removeBranch(branch, self.user)
+        added_activity = {
+            'person': self.user,
+            'whatchanged': 'branch unlinked',
+            'oldvalue': branch.bzr_identity,
+            }
+        added_notification = {
+            'text': "** Branch unlinked: %s" % branch.bzr_identity,
+            'person': self.user,
+            }
+        self.assertRecordedChange(
+            expected_activity=added_activity,
+            expected_notification=added_notification)
 
     def test_make_private(self):
         # Marking a bug as private adds items to the bug's activity log
@@ -310,6 +468,60 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_activity=security_change_activity,
             expected_notification=security_change_notification)
+
+    def test_attachment_added(self):
+        # Adding an attachment to a bug adds entries in both BugActivity
+        # and BugNotification.
+        message = self.factory.makeMessage(owner=self.user)
+        self.bug.linkMessage(message)
+        self.saveOldChanges()
+
+        attachment = self.factory.makeBugAttachment(
+            bug=self.bug, owner=self.user, comment=message)
+
+        attachment_added_activity = {
+            'person': self.user,
+            'whatchanged': 'attachment added',
+            'oldvalue': None,
+            'newvalue': '%s %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        attachment_added_notification = {
+            'person': self.user,
+            'text': '** Attachment added: "%s"\n   %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        self.assertRecordedChange(
+            expected_notification=attachment_added_notification,
+            expected_activity=attachment_added_activity)
+
+    def test_attachment_removed(self):
+        # Removing an attachment from a bug adds entries in both BugActivity
+        # and BugNotification.
+        attachment = self.factory.makeBugAttachment(
+            bug=self.bug, owner=self.user)
+        self.saveOldChanges()
+        attachment.removeFromBug(user=self.user)
+
+        attachment_removed_activity = {
+            'person': self.user,
+            'whatchanged': 'attachment removed',
+            'newvalue': None,
+            'oldvalue': '%s %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        attachment_removed_notification = {
+            'person': self.user,
+            'text': '** Attachment removed: "%s"\n   %s' % (
+                attachment.title, attachment.libraryfile.http_url),
+            }
+
+        self.assertRecordedChange(
+            expected_notification=attachment_removed_notification,
+            expected_activity=attachment_removed_activity)
 
 
 def test_suite():

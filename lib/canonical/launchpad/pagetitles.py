@@ -856,6 +856,8 @@ openidrpconfig_edit = ContextDisplayName(
 
 openidrpconfigset_index = 'OpenID Relying Party Configurations'
 
+official_bug_target_manage_tags = 'Manage Official Bug Tags'
+
 def package_bugs(context, view):
     """Return the page title bug in a package."""
     return 'Bugs in %s' % context.name
