@@ -454,12 +454,24 @@ function update_bug_duplicate(data) {
       </div>
 
       <tal:comments>
-        <tal:comment repeat="comment view/visible_comments_for_display">
-          <tal:comment-box condition="comment/can_be_shown">
-            <metal:comment-box
-                metal:use-macro="context/@@bugcomment-macros/comment-box" />
-          </tal:comment-box>
+        <tal:comment repeat="comment_or_activity view/activity_and_comments">
+          <tal:is-comment
+              define="comment comment_or_activity/comment|nothing"
+              condition="comment">
+            <tal:comment-box condition="comment/can_be_shown">
+              <metal:comment-box
+                  metal:use-macro="context/@@bugcomment-macros/comment-box" />
+            </tal:comment-box>
+          </tal:is-comment>
+
+          <tal:is-activity
+              define="activity comment_or_activity/activity|nothing"
+              condition="activity">
+              <metal:comment-box
+                  metal:use-macro="context/@@bugcomment-macros/activity-box" />
+          </tal:is-activity>
         </tal:comment>
+
         <tal:comment-list-complete
             tal:condition="not:view/visible_comments_truncated_for_display">
           <tal:logged-in condition="view/user">
@@ -468,6 +480,7 @@ function update_bug_duplicate(data) {
               <div tal:content="structure context/@@+addcomment-form" />
             </fieldset>
           </tal:logged-in>
+
           <tal:not-logged-in condition="not: view/user">
             <div align="center" id="add-comment-login-first">
               To post a comment you must <a

@@ -42,7 +42,7 @@ import cgi
 import pytz
 import re
 import urllib
-from operator import attrgetter
+from operator import attrgetter, itemgetter
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
@@ -81,6 +81,8 @@ from canonical.launchpad.webapp import (
 from lazr.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
+from canonical.launchpad.interfaces.bugactivity import IBugActivity
+from canonical.launchpad.interfaces.bugmessage import IBugComment
 from canonical.launchpad.interfaces.bugnomination import (
     BugNominationStatus, IBugNominationSet)
 from canonical.launchpad.interfaces.bug import IBug, IBugSet
@@ -764,6 +766,20 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         comments[0].text_for_display = ''
         assert len(comments) > 0, "A bug should have at least one comment."
         return comments
+
+    @property
+    def activity_and_comments(self):
+        interesting_changes = ['summary', 'visibility']
+        activity_and_comments = [
+            {'comment': comment, 'date': comment.datecreated}
+            for comment in self.visible_comments_for_display]
+        activity_and_comments.extend(
+            {'activity': activity, 'date': activity.datechanged}
+            for activity in self.context.bug.activity
+            if activity.whatchanged in interesting_changes)
+
+        activity_and_comments.sort(key=itemgetter('date'))
+        return activity_and_comments
 
     @cachedproperty
     def visible_comments(self):
