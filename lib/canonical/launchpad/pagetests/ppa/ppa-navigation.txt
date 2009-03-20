@@ -41,8 +41,8 @@ the 'View build records' link.
 
 The user could return to the 'PPA' overview by using the breadcrumb link.
 
-    >>> anon_browser.getLink('default PPA').url
-    'http://launchpad.dev/~cprov/+archive/ppa'
+    >>> print anon_browser.getLink('default PPA').url
+    http://launchpad.dev/%7Ecprov/+archive/ppa
 
 The user can navigate to an individual build details:
 
