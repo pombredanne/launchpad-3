@@ -681,32 +681,6 @@ def get_bug_edit_notification_texts(bug_delta):
                         fieldname, oldval_display, newval_display)
             changes.append(change_info.rstrip())
 
-    if bug_delta.added_bugtasks is not None:
-        # Use zope_isinstance, to ensure that this Just Works with
-        # security-proxied objects.
-        if zope_isinstance(bug_delta.added_bugtasks, (list, tuple)):
-            added_bugtasks = bug_delta.added_bugtasks
-        else:
-            added_bugtasks = [bug_delta.added_bugtasks]
-
-        for added_bugtask in added_bugtasks:
-            if added_bugtask.bugwatch:
-                change_info = u"** Also affects: %s via\n" % (
-                    added_bugtask.bugtargetname)
-                change_info += u"   %s\n" % added_bugtask.bugwatch.url
-            else:
-                change_info = u"** Also affects: %s\n" % (
-                    added_bugtask.bugtargetname)
-            change_info += u"%13s: %s\n" % (u"Importance",
-                added_bugtask.importance.title)
-            if added_bugtask.assignee:
-                assignee = added_bugtask.assignee
-                change_info += u"%13s: %s\n" % (u"Assignee",
-                    assignee.unique_displayname)
-            change_info += u"%13s: %s" % (
-                u"Status", added_bugtask.status.title)
-            changes.append(change_info)
-
     return changes
 
 
