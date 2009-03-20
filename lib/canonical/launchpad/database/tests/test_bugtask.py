@@ -45,6 +45,7 @@ class TestBugTaskDelta(unittest.TestCase):
             distro_source_package_bug_task)
 
     def test_get_delta(self):
+        # Exercise getDelta() with a full set of changes.
         user = self.factory.makePerson()
         product = self.factory.makeProduct(owner=user)
         bug_task = self.factory.makeBugTask(target=product)

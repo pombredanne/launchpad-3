@@ -431,6 +431,7 @@ class BugTaskTargetChange(AttributeChange):
         self.bug_task = bug_task
 
     def getBugActivity(self):
+        """See `IBugChange`."""
         return {
             'whatchanged': 'affects',
             'oldvalue': self.old_value.bugtargetname,
@@ -438,6 +439,7 @@ class BugTaskTargetChange(AttributeChange):
             }
 
     def getBugNotification(self):
+        """See `IBugChange`."""
         text = u"** Retargetted: %s => %s" % (
             self.old_value.bugtargetdisplayname,
             self.new_value.bugtargetdisplayname)
