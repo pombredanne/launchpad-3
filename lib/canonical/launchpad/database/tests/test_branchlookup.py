@@ -316,10 +316,9 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(NoSuchSeries, branch_set.getByLPPath, 'bb/dd')
         series = self.factory.makeSeries(name='dd', product=product)
         self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb/dd')
-        series.user_branch = self.factory.makeAnyBranch()
+        series.branch = self.factory.makeAnyBranch()
         self.assertEqual(
-            (series.user_branch, None, series),
-            branch_set.getByLPPath('bb/dd'))
+            (series.branch, None, series), branch_set.getByLPPath('bb/dd'))
 
     def test_getByLPPath_with_one_part(self):
         """Test the behaviour with one names."""
@@ -331,7 +330,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         product = removeSecurityProxy(self.factory.makeProduct('bb'))
         self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb')
         branch = self.factory.makeAnyBranch()
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
         self.assertEqual(
             (branch, None, product.development_focus),
             branch_set.getByLPPath('bb'))
