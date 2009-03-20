@@ -156,11 +156,11 @@ class TestExpandURL(TestCaseWithFactory):
             faults.NoLinkedBranch(series))
 
     def test_no_such_series(self):
-        # Return a NoSuchSeries fault there is no series of the given name
-        # associated with the product.
+        # Return a NoSuchProductSeries fault there is no series of the given
+        # name associated with the product.
         self.assertFault(
             '%s/%s' % (self.product.name, "doesntexist"),
-            faults.NoSuchSeries("doesntexist", self.product))
+            faults.NoSuchProductSeries("doesntexist", self.product))
 
     # TODO: test no such source package
 

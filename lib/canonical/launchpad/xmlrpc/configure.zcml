@@ -149,7 +149,7 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
-  <class class="canonical.launchpad.xmlrpc.faults.NoSuchSeries">
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchProductSeries">
     <require like_class="xmlrpclib.Fault" />
   </class>
 

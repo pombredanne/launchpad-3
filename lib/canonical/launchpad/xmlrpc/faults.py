@@ -31,7 +31,7 @@ __all__ = [
     'NoSuchPerson',
     'NoSuchPersonWithName',
     'NoSuchProduct',
-    'NoSuchSeries',
+    'NoSuchProductSeries',
     'NoSuchTeamMailingList',
     'NotInTeam',
     'NoUrlForBranch',
@@ -257,7 +257,7 @@ class NoLinkedBranch(LaunchpadFault):
         LaunchpadFault.__init__(self, object_name=component.displayname)
 
 
-class NoSuchSeries(LaunchpadFault):
+class NoSuchProductSeries(LaunchpadFault):
     """There is no such series on a particular project."""
 
     error_code = 180

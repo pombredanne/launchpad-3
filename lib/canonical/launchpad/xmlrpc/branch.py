@@ -235,7 +235,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         except InvalidProductName, e:
             raise faults.InvalidProductIdentifier(e.name)
         except NoSuchProductSeries, e:
-            raise faults.NoSuchSeries(e.name, e.product)
+            raise faults.NoSuchProductSeries(e.name, e.product)
         except NoSuchPerson, e:
             raise faults.NoSuchPersonWithName(e.name)
         except NoSuchProduct, e:

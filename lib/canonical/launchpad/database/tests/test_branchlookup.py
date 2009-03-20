@@ -296,8 +296,8 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
     def test_error_fallthrough_product_series(self):
         # For the short name of a series branch, `traverse` raises
         # `NoSuchProduct` if the first component refers to a non-existent
-        # product, and `NoSuchSeries` if the second component refers to a
-        # non-existent series.
+        # product, and `NoSuchProductSeries` if the second component refers to
+        # a non-existent series.
         self.assertRaises(
             NoSuchProduct, self.traverser.traverse, 'bb/dd')
         product = self.factory.makeProduct('bb')
