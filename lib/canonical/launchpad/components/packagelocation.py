@@ -112,7 +112,7 @@ def build_package_location(distribution_name, suite=None, purpose=None,
         archive = getUtility(IArchiveSet).getByDistroPurpose(
             distribution, purpose)
         if archive is None:
-            raise PackdaageLocationError(
+            raise PackageLocationError(
                 "Could not find %s archive for %s" % (
                 purpose.title, distribution_name))
     elif purpose == ArchivePurpose.COPY:
