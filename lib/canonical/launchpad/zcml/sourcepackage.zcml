@@ -30,12 +30,6 @@
   </securedutility>
 
   <adapter
-    provides="canonical.launchpad.interfaces.IFAQTarget"
-    for="canonical.launchpad.interfaces.ISourcePackage"
-    factory="canonical.launchpad.components.answertracker.sourcepackage_to_faqtarget"
-    />
-
-  <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.ISourcePackage"
     factory="canonical.launchpad.browser.SourcePackageBreadcrumbBuilder"

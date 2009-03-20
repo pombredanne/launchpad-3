@@ -601,30 +601,6 @@ special = {
             tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer
             ),
-    'answer-tracker-notifications-linked-private-bug.txt':
-            LayeredDocFileSuite(
-            '../doc/answer-tracker-notifications-linked-private-bug.txt',
-            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
-            '../doc/answer-tracker-notifications-linked-bug.txt',
-            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'answer-tracker-notifications-linked-bug.txt-uploader':
-            LayeredDocFileSuite(
-                '../doc/answer-tracker-notifications-linked-bug.txt',
-                setUp=uploaderBugLinkedToQuestionSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'answer-tracker-notifications-linked-bug.txt-queued': LayeredDocFileSuite(
-            '../doc/answer-tracker-notifications-linked-bug.txt',
-            setUp=uploadQueueBugLinkedToQuestionSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
-            ),
     'mailinglist-xmlrpc.txt': LayeredDocFileSuite(
             '../doc/mailinglist-xmlrpc.txt',
             setUp=mailingListXMLRPCInternalSetUp,
