@@ -10,7 +10,13 @@
   i18n:domain="malone"
 >
   <body>
+  <metal:block fill-slot="head_epilogue">
+    <link rel="stylesheet" type="text/css"
+      tal:attributes="href string:${icingroot}/lazr/build/overlay/assets/pretty-overlay-core.css" />
+    <link rel="stylesheet" type="text/css"
+          tal:attributes="href string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay-skin.css" />
 
+  </metal:block>
   <div metal:fill-slot="main">
     <h1 tal:content="CONTEXTS/fmt:pagetitle">Manage Official Bug Tags</h1>
 
@@ -85,13 +91,6 @@
               </td>
             </tr>
           </table>
-          <div id="field-error-message" class="error" style="display: none">
-            <div class="message">
-              This is not a valid tag name.
-              Tags must start with a letter or number and be lowercase.
-              The characters "+", "-" and "." are also allowed after the first character.
-            </div>
-          </div>
         </td>
         <td class="middle-column">
         </td>
