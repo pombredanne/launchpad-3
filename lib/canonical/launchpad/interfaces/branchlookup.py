@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'IBranchLookup',
+    'ICanHasLinkedBranch',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
     'InvalidBranchIdentifier',
@@ -14,7 +15,7 @@ __all__ = [
     'NoDefaultBranch',
     ]
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.traversing.interfaces import ITraversable, ITraverser
 
 
@@ -53,6 +54,12 @@ class NoDefaultBranch(Exception):
         self.component = component
         self.component_type = component_type
         Exception.__init__(self, "%r has no default branch." % (component,))
+
+
+class ICanHasLinkedBranch(Interface):
+    """Something that has a linked branch."""
+
+    branch = Attribute("The linked branch.")
 
 
 class ILinkedBranchTraversable(ITraversable):

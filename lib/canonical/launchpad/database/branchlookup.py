@@ -7,8 +7,9 @@ __metaclass__ = type
 # then get the IBranchLookup utility.
 __all__ = []
 
-from zope.component import adapts, getSiteManager, getUtility
-from zope.interface import implements
+from zope.component import (
+    adapter, adapts, getSiteManager, getUtility, queryMultiAdapter)
+from zope.interface import implementer, implements
 
 from storm.expr import Join
 from sqlobject import SQLObjectNotFound
@@ -22,8 +23,9 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser,
-    NoBranchForSeries, NoBranchForSourcePackage, NoDefaultBranch)
+    IBranchLookup, ICanHasLinkedBranch, ILinkedBranchTraversable,
+    ILinkedBranchTraverser, NoBranchForSeries, NoBranchForSourcePackage,
+    NoDefaultBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -31,9 +33,9 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
+from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.productseries import (
     IProductSeries, NoSuchProductSeries)
-from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.sourcepackagename import (
@@ -42,7 +44,16 @@ from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
+from lazr.enum import DBItem
 from lazr.uri import InvalidURIError, URI
+
+
+def adapt(provided, interface):
+    """Adapt 'obj' to 'interface', using multi-adapters if necessary."""
+    required = interface(provided, None)
+    if required is None:
+        required = queryMultiAdapter(provided, interface)
+    return required
 
 
 class RootTraversable:
@@ -138,11 +149,63 @@ class DistroSeriesTraversable(_BaseTraversable):
         return sourcepackage, PackagePublishingPocket.RELEASE
 
 
+class HasLinkedBranch:
+    """A thing that has a linked branch."""
+
+    implements(ICanHasLinkedBranch)
+
+    def __init__(self, branch):
+        self.branch = branch
+
+
+@adapter(IDistribution)
+@implementer(ICanHasLinkedBranch)
+def distribution_linked_branch(distribution):
+    """Distributions cannot have linked branches. Raise a nice error."""
+    raise NoDefaultBranch(distribution, 'distribution')
+
+@adapter(IProject)
+@implementer(ICanHasLinkedBranch)
+def project_linked_branch(project):
+    """Projects cannot have linked branches. Raise a nice error."""
+    raise NoDefaultBranch(project, 'project group')
+
+@adapter(IProductSeries)
+@implementer(ICanHasLinkedBranch)
+def product_series_linked_branch(product_series):
+    """The series branch of a product series is its linked branch."""
+    return HasLinkedBranch(product_series.series_branch)
+
+
+@adapter(IProduct)
+@implementer(ICanHasLinkedBranch)
+def product_linked_branch(product):
+    """The series branch of a product's development focus is its branch."""
+    return HasLinkedBranch(product.development_focus.series_branch)
+
+
+@adapter(ISourcePackage, DBItem)
+@implementer(ICanHasLinkedBranch)
+def source_package_linked_branch(package, pocket):
+    """The official branch for a pocket on a package is its linked branch."""
+    branch = package.getBranch(pocket)
+    # XXX: This shouldn't be here, but it's the easiest way to make the tests
+    # pass.
+    if branch is None:
+        raise NoBranchForSourcePackage(package, pocket)
+    return HasLinkedBranch(package.getBranch(pocket))
+
+
 # XXX: These probably should be somewhere else.
 sm = getSiteManager()
 sm.registerAdapter(ProductTraversable)
 sm.registerAdapter(DistributionTraversable)
 sm.registerAdapter(DistroSeriesTraversable)
+sm.registerAdapter(product_series_linked_branch)
+sm.registerAdapter(product_linked_branch)
+sm.registerAdapter(source_package_linked_branch)
+sm.registerAdapter(distribution_linked_branch)
+sm.registerAdapter(project_linked_branch)
 
 
 class LinkedBranchTraverser:
@@ -331,27 +394,11 @@ class BranchLookup:
         return branch, suffix, series
 
     def _getBranchAndSeriesForObject(self, obj):
-        # XXX: This should be a series of adapters.
-        if IProduct.providedBy(obj):
-            return obj.development_focus.series_branch, obj.development_focus
-        if IProductSeries.providedBy(obj):
-            return obj.series_branch, obj
-        if IProject.providedBy(obj):
-            raise NoDefaultBranch(obj, 'project group')
-        if IDistribution.providedBy(obj):
-            raise NoDefaultBranch(obj, 'distribution')
-        try:
-            package, pocket = obj
-        except ValueError:
-            # Guess it's not a package, pocket tuple then!
-            pass
-        else:
-            if ISourcePackage.providedBy(package):
-                branch = package.getBranch(pocket)
-                if branch is None:
-                    raise NoBranchForSourcePackage(package, pocket)
-                return branch, None
-        raise NoDefaultBranch(obj, 'unknown')
+        has_linked_branch = adapt(obj, ICanHasLinkedBranch)
+        if has_linked_branch is None:
+            raise NoDefaultBranch(obj, 'unknown')
+        branch = has_linked_branch.branch
+        return branch, obj
 
     def _getDefaultProductBranch(self, path):
         """Return the branch with the shortcut 'path'.
