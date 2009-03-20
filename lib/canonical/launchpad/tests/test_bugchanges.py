@@ -13,6 +13,8 @@ from lazr.lifecycle.snapshot import Snapshot
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.structuralsubscription import (
+    BugNotificationLevel)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -52,7 +54,8 @@ class TestBugChanges(unittest.TestCase):
         return getattr(obj_before_modification, attribute)
 
     def assertRecordedChange(self, expected_activity=None,
-                             expected_notification=None, bug=None):
+                             expected_notification=None, bug=None,
+                             recipients=None):
         """Assert that things were recorded as expected."""
         if bug is None:
             bug = self.bug
@@ -95,6 +98,9 @@ class TestBugChanges(unittest.TestCase):
                 expected_notifications = [expected_notification]
             else:
                 expected_notifications = expected_notification
+            if recipients is None:
+                recipients = bug.getBugNotificationRecipients(
+                    level=BugNotificationLevel.METADATA)
             self.assertEqual(
                 len(new_notifications), len(expected_notifications))
             for expected_notification in expected_notifications:
