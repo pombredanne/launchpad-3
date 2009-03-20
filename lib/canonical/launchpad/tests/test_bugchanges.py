@@ -4,6 +4,7 @@
 
 import unittest
 
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
@@ -13,6 +14,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.cve import ICveSet
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
@@ -476,6 +478,56 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_activity=security_change_activity,
             expected_notification=security_change_notification)
+
+    def test_link_cve(self):
+        # Linking a CVE to a bug adds to the bug's activity log and
+        # sends a notification.
+        cve = getUtility(ICveSet)['1999-8979']
+        self.bug.linkCVE(cve, self.user)
+
+        cve_linked_activity = {
+            'person': self.user,
+            'whatchanged': 'cve linked',
+            'oldvalue': None,
+            'newvalue': cve.sequence,
+            }
+
+        cve_linked_notification = {
+            'text': (
+                '** CVE added: http://www.cve.mitre.org/'
+                'cgi-bin/cvename.cgi?name=1999-8979'),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=cve_linked_activity,
+            expected_notification=cve_linked_notification)
+
+    def test_unlink_cve(self):
+        # Unlinking a CVE from a bug adds to the bug's activity log and
+        # sends a notification.
+        cve = getUtility(ICveSet)['1999-8979']
+        self.bug.linkCVE(cve, self.user)
+        self.saveOldChanges()
+        self.bug.unlinkCVE(cve, self.user)
+
+        cve_unlinked_activity = {
+            'person': self.user,
+            'whatchanged': 'cve unlinked',
+            'oldvalue': cve.sequence,
+            'newvalue': None,
+            }
+
+        cve_unlinked_notification = {
+            'text': (
+                '** CVE removed: http://www.cve.mitre.org/'
+                'cgi-bin/cvename.cgi?name=1999-8979'),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=cve_unlinked_activity,
+            expected_notification=cve_unlinked_notification)
 
     def test_attachment_added(self):
         # Adding an attachment to a bug adds entries in both BugActivity

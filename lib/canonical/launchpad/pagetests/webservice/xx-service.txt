@@ -143,12 +143,13 @@ The only supported media types are ones that begin with 'application/json'.
 
 == Resources not exposed on the web service ==
 
-Soyuz build set (exposed on the web at +builds) are not available on the
+Soyuz build set (exposed on the web at builders) are not available on the
 web service:
 
-    >>> print webservice.get("/+builds")
+    >>> print webservice.get("/builders")
     HTTP/1.1 404 Not Found
     ...
+
 
 == API Requests to other hosts ==
 

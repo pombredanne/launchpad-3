@@ -253,6 +253,10 @@ class Hierarchy(LaunchpadView):
         working_url = baseurl
         for segment in urlparts[2].split('/'):
             working_url = urlappend(working_url, segment)
+            # Segments starting with '+' should be ignored because they
+            # will never correspond to an object in navigation.
+            if segment.startswith('+'):
+                continue
             pathurls.append(working_url)
 
         # We assume a 1:1 relationship between the traversed_objects list and
@@ -603,12 +607,22 @@ class LaunchpadRootNavigation(Navigation):
             url = urlappend(url, trailing)
         return self.redirectSubTree(url)
 
+    @stepto('+builds')
+    def redirect_buildfarm(self):
+        """Redirect old /+builds requests to new URL, /builders."""
+        new_url = '/builders'
+        return self.redirectSubTree(
+            urlappend(new_url, '/'.join(self.request.stepstogo)))
+
+    # XXX cprov 2009-03-19 bug=345877: path segments starting with '+'
+    # should never correspond to a valid traversal, they confuse the
+    # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
-        '+builds': IBuilderSet,
+        'builders': IBuilderSet,
         '+code': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
