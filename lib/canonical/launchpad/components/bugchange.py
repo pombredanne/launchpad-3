@@ -8,6 +8,8 @@ __all__ = [
     'BranchUnlinkedFromBug',
     'BugDescriptionChange',
     'BugTagsChange',
+    'BugTaskAttributeChange',
+    'BugTaskTargetChange',
     'BugTitleChange',
     'BugVisibilityChange',
     'BugWatchAdded',
