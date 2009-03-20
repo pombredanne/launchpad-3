@@ -252,7 +252,7 @@ class NoLinkedBranch(LaunchpadFault):
         '%(object_name)s has no branch associated with it.')
 
     def __init__(self, component):
-        # XXX: this will bork on source package pockets with no linked branch.
+        # TODO: this will bork on source package pockets with no linked branch.
         LaunchpadFault.__init__(self, object_name=component.displayname)
 
 
