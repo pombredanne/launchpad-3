@@ -15,7 +15,8 @@ from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, NoBranchForSeries, NoBranchForSourcePackage)
+    IBranchLookup, ILinkedBranchTraverser, NoBranchForSeries,
+    NoBranchForSourcePackage)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -283,6 +284,74 @@ class TestGetByUrl(TestCaseWithFactory):
         self.assertIs(None, branch_set.uriToUniqueName(uri))
 
 
+class TestLinkedBranchTraverser(TestCaseWithFactory):
+    """Tests for the linked branch traverser."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.traverser = getUtility(ILinkedBranchTraverser)
+
+    def assertTraverses(self, path, result):
+        """Assert that 'path' resolves to 'result'."""
+        self.assertEqual(
+            result, self.traverser.traverse(path),
+            "Traversed to wrong result")
+
+    def test_error_fallthrough_product_series(self):
+        # For the short name of a series branch, `traverse` raises
+        # `NoSuchProduct` if the first component refers to a non-existent
+        # product, and `NoSuchSeries` if the second component refers to a
+        # non-existent series.
+        self.assertRaises(
+            NoSuchProduct, self.traverser.traverse, 'bb/dd')
+        product = self.factory.makeProduct('bb')
+        self.assertRaises(
+            NoSuchProductSeries, self.traverser.traverse, 'bb/dd')
+
+    def test_product_series(self):
+        # `traverse` resolves the short name for a product series to the
+        # branch associated with that series, and includes the series in the
+        # tuple.
+        series = self.factory.makeSeries()
+        short_name = '%s/%s' % (series.product.name, series.name)
+        self.assertTraverses(short_name, series)
+
+    def test_product_that_doesnt_exist(self):
+        # `traverse` raises `NoSuchProduct` when resolving an lp path of
+        # 'product' if the product doesn't exist.
+        self.assertRaises(NoSuchProduct, self.traverser.traverse, 'bb')
+
+    def test_invalid_product(self):
+        # `traverse` raises `InvalidProductIdentifier` when resolving an lp
+        # path for a completely invalid product development focus branch.
+        self.assertRaises(
+            InvalidProductName, self.traverser.traverse, 'b')
+
+    def test_product(self):
+        # `traverse` resolves 'product' to the development focus branch for
+        # the product and the series that is the development focus.
+        product = self.factory.makeProduct()
+        self.assertTraverses(product.name, product)
+
+    def test_source_package(self):
+        # `traverse` resolves 'distro/series/package' to the official branch
+        # for the release pocket of that package in that series.
+        package = self.factory.makeSourcePackage()
+        self.assertTraverses(
+            package.path, (package, PackagePublishingPocket.RELEASE))
+
+    def test_no_such_sourcepackagename(self):
+        # `traverse` raises `NoSuchSourcePackageName` if the package in
+        # distro/series/package doesn't exist.
+        distroseries = self.factory.makeDistroRelease()
+        path = '%s/%s/doesntexist' % (
+            distroseries.distribution.name, distroseries.name)
+        self.assertRaises(
+            NoSuchSourcePackageName, self.traverser.traverse, path)
+
+
 class TestGetByLPPath(TestCaseWithFactory):
     """Ensure URLs are correctly expanded."""
 
@@ -350,17 +419,6 @@ class TestGetByLPPath(TestCaseWithFactory):
             (branch, 'foo/bar/baz', None),
             self.branch_lookup.getByLPPath(path))
 
-    def test_error_fallthrough_product_series_branch(self):
-        # For the short name of a series branch, getByLPPath raises
-        # `NoSuchProduct` if the first component refers to a non-existent
-        # product, and `NoSuchSeries` if the second component refers to a
-        # non-existent series.
-        self.assertRaises(
-            NoSuchProduct, self.branch_lookup.getByLPPath, 'bb/dd')
-        product = self.factory.makeProduct('bb')
-        self.assertRaises(
-            NoSuchProductSeries, self.branch_lookup.getByLPPath, 'bb/dd')
-
     def test_no_product_series_branch(self):
         # getByLPPath raises `NoBranchForSeries` if there's no branch
         # registered linked to the requested series.
@@ -369,71 +427,12 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(
             NoBranchForSeries, self.branch_lookup.getByLPPath, short_name)
 
-    def test_resolve_product_series_branch(self):
-        # getByLPPath resolves the short name for a product series to the
-        # branch associated with that series, and includes the series in the
-        # tuple.
-        series = self.factory.makeSeries()
-        series.user_branch = self.factory.makeAnyBranch()
-        short_name = '%s/%s' % (series.product.name, series.name)
-        self.assertEqual(
-            (series.user_branch, None, series),
-            self.branch_lookup.getByLPPath(short_name))
-
-    def test_product_branch_with_no_product(self):
-        # getByLPPath raises `NoSuchProduct` when resolving an lp path of
-        # 'product' if the product doesn't exist.
-        self.assertRaises(NoSuchProduct, self.branch_lookup.getByLPPath, 'bb')
-
-    def test_product_branch_with_invalid_product(self):
-        # getByLPPath raises `InvalidProductIdentifier` when resolving an lp
-        # path for a completely invalid product development focus branch.
-        self.assertRaises(
-            InvalidProductName, self.branch_lookup.getByLPPath, 'b')
-
     def test_product_with_no_dev_focus(self):
         # getByLPPath raises `NoBranchForSeries` if the product is found but
         # doesn't have a development focus branch.
         product = self.factory.makeProduct()
         self.assertRaises(
             NoBranchForSeries, self.branch_lookup.getByLPPath, product.name)
-
-    def test_resolves_product_to_dev_focus_branch(self):
-        # getByLPPath resolves 'product' to the development focus branch for
-        # the product and the series that is the development focus.
-        product = self.factory.makeProduct()
-        branch = self.factory.makeProductBranch(product=product)
-        removeSecurityProxy(product).development_focus.user_branch = branch
-        self.assertEqual(
-            (branch, None, product.development_focus),
-            self.branch_lookup.getByLPPath(product.name))
-
-    def test_resolves_source_package_path_to_release_branch(self):
-        # getByLPPath resolves 'distro/series/package' to the official branch
-        # for the release pocket of that package in that series.
-        branch = self.factory.makePackageBranch()
-        package = branch.sourcepackage
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
-        login_person(registrant)
-        try:
-            package.setBranch(
-                PackagePublishingPocket.RELEASE, branch, registrant)
-        finally:
-            logout()
-        login(ANONYMOUS)
-        self.assertEqual(
-            (branch, None, None),
-            self.branch_lookup.getByLPPath(package.path))
-
-    def test_no_such_sourcepackagename(self):
-        # getByLPPath raises `NoSuchSourcePackageName` if the package in
-        # distro/series/package doesn't exist.
-        distroseries = self.factory.makeDistroRelease()
-        path = '%s/%s/doesntexist' % (
-            distroseries.distribution.name, distroseries.name)
-        self.assertRaises(
-            NoSuchSourcePackageName, self.branch_lookup.getByLPPath, path)
 
     def test_no_official_branch(self):
         sourcepackage = self.factory.makeSourcePackage()

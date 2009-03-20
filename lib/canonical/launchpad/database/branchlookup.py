@@ -52,6 +52,41 @@ class LinkedBranchTraverser:
 
     def traverse(self, path):
         """See `ILinkedBranchTraverser`."""
+        # XXX: this is really, really ugly and unclear. Perhaps Zope can teach
+        # us traversal tricks?
+        segments = iter(path.split('/'))
+        pillar_name = segments.next()
+        if not valid_name(pillar_name):
+            raise InvalidProductName(pillar_name)
+        pillar = getUtility(IPillarNameSet).getByName(pillar_name)
+        if pillar is None:
+            # XXX: no necessarily no such *product*.
+            raise NoSuchProduct(pillar_name)
+        try:
+            series_name = segments.next()
+        except StopIteration:
+            return pillar
+        series = pillar.getSeries(series_name)
+        if series is None:
+            # XXX: no necessarily a *product* series, could be a distro
+            # series.
+            raise NoSuchProductSeries(series_name, pillar)
+        if IProductSeries.providedBy(series):
+            try:
+                segments.next()
+            except StopIteration:
+                return series
+        elif IDistroSeries.providedBy(series):
+            try:
+                sourcepackagename = segments.next()
+            except StopIteration:
+                raise NoDefaultBranch(series, 'distribution series')
+            sourcepackage = series.getSourcePackage(sourcepackagename)
+            if sourcepackage is None:
+                # XXX: Not handled by resolve_lp_path.
+                raise NoSuchSourcePackageName(sourcepackagename)
+            return sourcepackage, PackagePublishingPocket.RELEASE
+        raise InvalidBranchIdentifier(path)
 
 
 class BranchLookup:
@@ -221,59 +256,27 @@ class BranchLookup:
             branch, series = self._getDefaultProductBranch(path)
         return branch, suffix, series
 
-    def _traverseToShortcut(self, path):
-        # XXX: this is really, really ugly and unclear. Perhaps Zope can teach
-        # us traversal tricks?
-        segments = iter(path.split('/'))
-        pillar_name = segments.next()
-        if not valid_name(pillar_name):
-            raise InvalidProductName(pillar_name)
-        pillar = getUtility(IPillarNameSet).getByName(pillar_name)
-        if pillar is None:
-            # XXX: no necessarily no such *product*.
-            raise NoSuchProduct(pillar_name)
-        try:
-            series_name = segments.next()
-        except StopIteration:
-            return pillar
-        series = pillar.getSeries(series_name)
-        if series is None:
-            # XXX: no necessarily a *product* series, could be a distro
-            # series.
-            raise NoSuchProductSeries(series_name, pillar)
-        if IProductSeries.providedBy(series):
-            try:
-                segments.next()
-            except StopIteration:
-                return series
-        elif IDistroSeries.providedBy(series):
-            try:
-                sourcepackagename = segments.next()
-            except StopIteration:
-                raise NoDefaultBranch(series, 'distribution series')
-            sourcepackage = series.getSourcePackage(sourcepackagename)
-            if sourcepackage is None:
-                # XXX: Not handled by resolve_lp_path.
-                raise NoSuchSourcePackageName(sourcepackagename)
-            return sourcepackage
-        raise InvalidBranchIdentifier(path)
-
     def _getBranchAndSeriesForObject(self, obj):
         # XXX: This should be a series of adapters.
         if IProduct.providedBy(obj):
             return obj.development_focus.series_branch, obj.development_focus
         if IProductSeries.providedBy(obj):
             return obj.series_branch, obj
-        if ISourcePackage.providedBy(obj):
-            branch = obj.getBranch(PackagePublishingPocket.RELEASE)
-            if branch is None:
-                raise NoBranchForSourcePackage(
-                    obj, PackagePublishingPocket.RELEASE)
-            return branch, None
         if IProject.providedBy(obj):
             raise NoDefaultBranch(obj, 'project group')
         if IDistribution.providedBy(obj):
             raise NoDefaultBranch(obj, 'distribution')
+        try:
+            package, pocket = obj
+        except ValueError:
+            # Guess it's not a package, pocket tuple then!
+            pass
+        else:
+            if ISourcePackage.providedBy(package):
+                branch = package.getBranch(pocket)
+                if branch is None:
+                    raise NoBranchForSourcePackage(package, pocket)
+                return branch, None
         raise NoDefaultBranch(obj, 'unknown')
 
     def _getDefaultProductBranch(self, path):
@@ -291,7 +294,7 @@ class BranchLookup:
             exists, but does not have a branch.
         :return: The branch.
         """
-        result = self._traverseToShortcut(path)
+        result = getUtility(ILinkedBranchTraverser).traverse(path)
         branch, series = self._getBranchAndSeriesForObject(result)
         if branch is None:
             raise NoBranchForSeries(series)

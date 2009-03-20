@@ -74,7 +74,6 @@ class ILinkedBranchTraverser(ITraverser):
         :return: One of
             * `IProduct`
             * `IProductSeries`
-            * `IBranch`
             * (ISourcePackage, PackagePublishingPocket)
             * `IDistributionSourcePackage`
         """
