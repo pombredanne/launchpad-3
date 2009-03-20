@@ -7,14 +7,15 @@ The example web service implements the CookbookSetTraverse class to
 serve a RedirectResource at /cookbooks/featured. This particular
 RedirectResource redirects you to the currently featured cookbook.
 
-  >>> from canonical.lazr.testing.webservice import CookbookWebServiceCaller
-  >>> webservice = CookbookWebServiceCaller()
+    >>> from canonical.lazr.testing.webservice import (
+    ...     CookbookWebServiceCaller)
+    >>> webservice = CookbookWebServiceCaller()
 
-  >>> print webservice.get("/cookbooks/featured")
-  HTTP/1.1 301 Moved Permanently
-  ...
-  Location: http://.../cookbooks/Mastering%20the%20Art%20of%20French%20Cooking
-  <BLANKLINE>
+    >>> print webservice.get("/cookbooks/featured")
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://.../cookbooks/Mastering%20the%20Art%20of%20French%20Cooking
+    <BLANKLINE>
 
 The redirect has an extra twist when the resource was requested from a
 web browser as opposed to a web service client. When a web browser
@@ -24,12 +25,12 @@ representation (usually HTML instead of JSON). To avoid this problem,
 lazr.restful sends the original Accept header in the redirect URL
 itself, so it can look it up when the browser follows the redirect.
 
-  >>> from canonical.lazr.testing.webservice import (
-  ...     CookbookWebServiceAjaxCaller)
-  >>> ajax = CookbookWebServiceAjaxCaller()
-  >>> print ajax.get("/cookbooks/featured")
-  HTTP/1.1 301 Moved Permanently
-  ...
-  Location: http://.../cookbooks/Mastering%20the%20Art%20of%20French%20Cooking?ws.accept=application/json
-  <BLANKLINE>
+    >>> from canonical.lazr.testing.webservice import (
+    ...     CookbookWebServiceAjaxCaller)
+    >>> ajax = CookbookWebServiceAjaxCaller()
+    >>> print ajax.get("/cookbooks/featured")
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://.../cookbooks/Mastering%20the%20Art%20of%20French%20Cooking?ws.accept=application/json
+    <BLANKLINE>
 
