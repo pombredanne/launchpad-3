@@ -465,7 +465,9 @@ sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check("/+code")
 
->>> check("/+builds/bob/")
+>>> check("/builders")
+>>> check("/builders/bob/")
+>>> check_redirect("/+builds", status=301)
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/pmount/")
 

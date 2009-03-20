@@ -102,6 +102,8 @@ from canonical.launchpad.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
+from canonical.launchpad.database.distributionsourcepackage import (
+    DistributionSourcePackage)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
 from canonical.launchpad.webapp.adapter import StoreSelector
@@ -1400,6 +1402,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
+
+    def makeDistributionSourcePackage(self, sourcepackagename=None,
+                                      distribution=None):
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        if distribution is None:
+            distribution = self.makeDistribution()
+
+        return DistributionSourcePackage(distribution, sourcepackagename)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None):

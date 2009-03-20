@@ -12,6 +12,8 @@ __all__ = [
     'BugVisibilityChange',
     'BugWatchAdded',
     'BugWatchRemoved',
+    'CveLinkedToBug',
+    'CveUnlinkedFromBug',
     'UnsubscribedFromBug',
     'get_bug_change_class',
     ]
@@ -20,15 +22,18 @@ from textwrap import dedent
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.bugchange import (
-    IBugChange)
+from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.bugchange import IBugChange
+from canonical.launchpad.interfaces.bugtask import IBugTask
 
 
 def get_bug_change_class(obj, field_name):
     """Return a suitable IBugChange to describe obj and field_name."""
-    try:
-        return BUG_CHANGE_LOOKUP[field_name]
-    except KeyError:
+    if IBugTask.providedBy(obj):
+        return BUGTASK_CHANGE_LOOKUP.get(field_name, BugChangeBase)
+    elif IBug.providedBy(obj):
+        return BUG_CHANGE_LOOKUP.get(field_name, BugChangeBase)
+    else:
         return BugChangeBase
 
 
@@ -357,6 +362,50 @@ class BugAttachmentChange(AttributeChange):
         return {'text': message}
 
 
+class CveLinkedToBug(BugChangeBase):
+    """Used to represent the linking of a CVE to a bug."""
+
+    def __init__(self, when, person, cve):
+        super(CveLinkedToBug, self).__init__(when, person)
+        self.cve = cve
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            newvalue=self.cve.sequence,
+            whatchanged='cve linked')
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {'text': "** CVE added: %s" % self.cve.url}
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
+        return None
+
+
+class CveUnlinkedFromBug(BugChangeBase):
+    """Used to represent the unlinking of a CVE from a bug."""
+
+    def __init__(self, when, person, cve):
+        super(CveUnlinkedFromBug, self).__init__(when, person)
+        self.cve = cve
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            oldvalue=self.cve.sequence,
+            whatchanged='cve unlinked')
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {'text': "** CVE removed: %s" % self.cve.url}
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
+        return None
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
@@ -364,4 +413,8 @@ BUG_CHANGE_LOOKUP = {
     'tags': BugTagsChange,
     'title': BugTitleChange,
     'attachment': BugAttachmentChange,
+    }
+
+
+BUGTASK_CHANGE_LOOKUP = {
     }
