@@ -65,17 +65,7 @@
 <subscriber
    for="canonical.launchpad.interfaces.IBugCve
         lazr.lifecycle.interfaces.IObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_cve_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugCve
-        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugCve
-        lazr.lifecycle.interfaces.IObjectDeletedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_cve_deleted" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugCve
@@ -110,17 +100,12 @@
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
         lazr.lifecycle.interfaces.IObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_watch_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugWatch
-        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
         lazr.lifecycle.interfaces.IObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_watch_modified" />
+   handler="canonical.launchpad.subscribers.bugactivity.notify_bug_watch_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch

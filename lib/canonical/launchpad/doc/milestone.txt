@@ -274,7 +274,7 @@ list of recipients.
     >>> notification = BugNotification.select("date_emailed IS NULL")[-1]
     >>> print notification.message.chunks[0].content
     ** Changed in: firefox
-           Target: 1.0 => 2.0
+        Milestone: 1.0 => 2.0
     >>> for recipient in notification.recipients:
     ...     print recipient.person.name, recipient.reason_header
     cprov Subscriber (Mozilla Firefox: 1.0)
