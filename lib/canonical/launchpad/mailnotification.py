@@ -635,9 +635,10 @@ def get_bug_edit_notification_texts(bug_delta):
             change_info = u"** Changed in: %s\n" % (
                 bugtask_delta.bugtask.bugtargetname)
 
-            for fieldname, displayattrname in (
+            for fieldname, displayattrname in [
                 ("product", "displayname"), ("sourcepackagename", "name"),
-                ("importance", "title"), ("bugwatch", "title")):
+                ("status", "title"), ("importance", "title"),
+                ("milestone", "name"), ("bugwatch", "title")]:
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
@@ -661,14 +662,6 @@ def get_bug_edit_notification_texts(bug_delta):
                     'newval' : newval_display})
                 change_info += changerow
 
-            for fieldname, displayattrname in (
-                ("status", "title"), ("target", "name")):
-                change = getattr(bugtask_delta, fieldname)
-                if change:
-                    oldval_display, newval_display = _get_task_change_values(
-                        change, displayattrname)
-                    change_info += _get_task_change_row(
-                        fieldname, oldval_display, newval_display)
             changes.append(change_info.rstrip())
 
     if bug_delta.added_bugtasks is not None:
