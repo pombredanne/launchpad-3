@@ -230,7 +230,7 @@ class BranchLookup:
             series = product.getSeries(series_name)
             if series is None:
                 raise faults.NoSuchSeries(series_name, product)
-        branch = series.series_branch
+        branch = series.branch
         if branch is None:
             raise faults.NoBranchForSeries(series)
         return branch, series
