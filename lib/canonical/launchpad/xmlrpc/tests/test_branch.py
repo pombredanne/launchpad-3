@@ -179,7 +179,11 @@ class TestExpandURL(TestCaseWithFactory):
             '%s/%s/doesntexist' % (distribution.name, distroseries.name),
             faults.NoSuchSourcePackageName('doesntexist'))
 
-    # TODO: test source package with no linked branch
+    def test_no_linked_branch_for_source_package(self):
+        # Return a NoLinkedBranch fault if there's no linked branch for the
+        # sourcepackage.
+        package = self.factory.makeSourcePackage()
+        self.assertFault(package.path, faults.NoLinkedBranch(package))
 
     def test_branch(self):
         # The unique name of a branch resolves to the unique name of the
