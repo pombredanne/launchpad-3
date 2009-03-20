@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+import os.path
+
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
@@ -507,8 +509,14 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             in which case an arbitrary unique string is used.
         :returns: The revision of this commit.
         """
+        seen_dirs = set()
         for file_pair in files:
             file_name = file_pair[0]
+            dname, fname = os.path.split(file_name)
+            if dname != '' and dname not in seen_dirs:
+                self.tree.bzrdir.root_transport.mkdir(dname)
+                self.tree.add(dname)
+                seen_dirs.add(dname)
             try:
                 file_content = file_pair[1]
                 if file_content is None:
@@ -559,26 +567,35 @@ class TestRosettaUploadJob(TestCaseWithFactory):
     def test_upload_pot(self):
         # A POT can be uploaded to a product series that is
         # configured to do so, other files are not uploaded.
-        POT_NAME = "foo.pot"
+        pot_name = "foo.pot"
         entries = self._runJobWithFiles(
             TranslationsBranchImportMode.IMPORT_TEMPLATES,
-            ((POT_NAME,), ('eo.po',), ('README',))
+            ((pot_name,), ('eo.po',), ('README',))
             )
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        self.assertEqual(POT_NAME, entry.path)
+        self.assertEqual(pot_name, entry.path)
+
+    def test_upload_pot_subdir(self):
+        # A POT can be uploaded from a subdirectory.
+        pot_path = "subdir/foo.pot"
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES, pot_path)
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual(pot_path, entry.path)
 
     def test_upload_xpi_template(self):
         # XPI templates are indentified by a special name. They are imported
         # like POT files.
-        POT_NAME = "en-US.xpi"
+        pot_name = "en-US.xpi"
         entries = self._runJobWithFiles(
             TranslationsBranchImportMode.IMPORT_TEMPLATES,
-            ((POT_NAME,), ('eo.xpi',), ('README',))
+            ((pot_name,), ('eo.xpi',), ('README',))
             )
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        self.assertEqual(POT_NAME, entry.path)
+        self.assertEqual(pot_name, entry.path)
 
     def test_upload_empty_pot(self):
         # An empty POT cannot be uploaded, if if the product series is
@@ -607,15 +624,15 @@ class TestRosettaUploadJob(TestCaseWithFactory):
 
     def test_upload_changed_files(self):
         # Only changed files are queued for import.
-        POT_NAME = "foo.pot"
+        pot_name = "foo.pot"
         revision_id = self._makeBranchWithTreeAndFiles(
-            ((POT_NAME,), ('eo.po',), ('README',)))
-        self._commitFilesToTree(((POT_NAME,),))
+            ((pot_name,), ('eo.po',), ('README',)))
+        self._commitFilesToTree(((pot_name,),))
         entries = self._runJob(
             TranslationsBranchImportMode.IMPORT_TEMPLATES, revision_id)
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        self.assertEqual(POT_NAME, entry.path)
+        self.assertEqual(pot_name, entry.path)
 
     def test_upload_to_no_import_series(self):
         # Nothing can be uploaded to a product series that is

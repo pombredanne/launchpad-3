@@ -87,25 +87,27 @@ class TranslationBranchApprover(object):
         """The number of IPOTemplate objects that are not matched by path
         to a file being imported.
         """
-        return len(self._potemplateset)-self._n_matched
+        return len(self._potemplateset) - self._n_matched
 
     @property
     def unmatched_files(self):
         """The number of files being imported that are not matched by path
         to an IPOTemplate object.
         """
-        return len(self._potemplates)-self._n_matched
+        return len(self._potemplates) - self._n_matched
 
     @staticmethod
     def makeDomain(path):
         dname, fname = os.path.split(path)
         # Handle generic names and xpi cases
         if fname not in TranslationBranchApprover.GENERIC_TEMPLATE_NAMES:
-            return os.path.splitext(fname)[0]
+            domain, ext = os.path.splitext(fname)
+            return domain
         dname1, dname2 = os.path.split(dname)
         if dname2 not in TranslationBranchApprover.GENERIC_TEMPLATE_DIRS:
             return dname2
-        return os.path.split(dname1)[1] # May be empty if dname1 was empty
+        rest, domain = os.path.split(dname1)
+        return domain # May be empty if dname1 was empty
 
     @staticmethod
     def makeName(domain):
