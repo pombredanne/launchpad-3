@@ -20,15 +20,14 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus,
-    IBranchSet
-    )
+    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
 
 
 def get_import_for_branch_name(branch_unique_name):
     """Return the code import associated with the branch."""
-    branch = getUtility(IBranchSet).getByUniqueName(branch_unique_name)
+    branch = getUtility(IBranchLookup).getByUniqueName(branch_unique_name)
     if branch is not None:
         return branch.code_import
     else:

@@ -53,7 +53,7 @@ from canonical.launchpad.interfaces.announcement import IAnnouncementSet
 from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
-from canonical.launchpad.interfaces.branch import IBranchSet
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
@@ -78,7 +78,6 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.project import IProjectSet
-from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.interfaces.specification import ISpecificationSet
@@ -110,6 +109,8 @@ from canonical.widgets.project import ProjectScopeWidget
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
 from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
+
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class MaloneApplicationNavigation(Navigation):
@@ -595,7 +596,7 @@ class LaunchpadRootNavigation(Navigation):
         """
         path = '/'.join(self.request.stepstogo)
         try:
-            branch_data = getUtility(IBranchSet).getByLPPath(path)
+            branch_data = getUtility(IBranchLookup).getByLPPath(path)
         except (NoBranchForSeries, NoSuchSeries):
             raise NotFoundError
         branch, trailing, series = branch_data
@@ -613,9 +614,9 @@ class LaunchpadRootNavigation(Navigation):
         return self.redirectSubTree(
             urlappend(new_url, '/'.join(self.request.stepstogo)))
 
-    # XXX cprov 20090319: path segments starting with '+' should never
-    # correspond to a valid traversal, they confuse the hierarchical
-    # navigation.
+    # XXX cprov 2009-03-19 bug=345877: path segments starting with '+'
+    # should never correspond to a valid traversal, they confuse the
+    # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
