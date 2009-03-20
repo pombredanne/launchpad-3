@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces.branchlookup import (
     NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
+from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, NoSuchProduct)
@@ -334,6 +335,23 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         package = self.factory.makeSourcePackage()
         self.assertTraverses(
             package.path, (package, PackagePublishingPocket.RELEASE))
+
+    def test_no_such_distribution(self):
+        # `traverse` raises `NoSuchProduct` error if the distribution doesn't
+        # exist. That's because it can't tell the difference between the name
+        # of a product that doesn't exist and the name of a distribution that
+        # doesn't exist.
+        self.assertRaises(
+            NoSuchProduct, self.traverser.traverse,
+            'distro/series/package')
+
+    def test_no_such_distro_series(self):
+        # `traverse` raises `NoSuchDistroSeries` if the distro series doesn't
+        # exist.
+        distro = self.factory.makeDistribution(name='distro')
+        self.assertRaises(
+            NoSuchDistroSeries, self.traverser.traverse,
+            'distro/series/package')
 
     def test_no_such_sourcepackagename(self):
         # `traverse` raises `NoSuchSourcePackageName` if the package in

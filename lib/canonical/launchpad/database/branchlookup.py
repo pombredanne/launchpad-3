@@ -28,7 +28,8 @@ from canonical.launchpad.interfaces.branchlookup import (
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.distroseries import (
+    IDistroSeries, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
@@ -130,9 +131,7 @@ class DistributionTraversable(_BaseTraversable):
         """See `ITraversable`."""
         series = self.context.getSeries(name)
         if series is None:
-            # TODO: NoSuchProductSeries is the wrong exception.
-            # NoSuchDistroSeries would be better.
-            raise NoSuchProductSeries(name, self.context)
+            raise NoSuchDistroSeries(name)
         # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
         # could also try to find a package and then return a reference to its
         # development focus.
