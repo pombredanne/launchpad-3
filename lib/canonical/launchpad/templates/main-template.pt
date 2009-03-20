@@ -132,6 +132,8 @@
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/overlay/overlay.js"></script>
       <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/formoverlay/formoverlay.js"></script>
+      <script type="text/javascript"
               tal:attributes="src string:${lp_js}/lp/lp.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>

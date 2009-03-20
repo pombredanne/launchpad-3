@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Testing infrastructure for the Launchpad application.
 
@@ -33,7 +33,6 @@ from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.processor import ProcessorFamilySet
-from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
@@ -49,7 +48,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
-from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
@@ -62,10 +61,7 @@ from canonical.launchpad.interfaces.codeimportresult import (
 from canonical.launchpad.interfaces.codeimport import (
     CodeImportReviewStatus, RevisionControlSystems)
 from canonical.launchpad.interfaces.country import ICountrySet
-from canonical.launchpad.interfaces.distribution import (
-    IDistribution, IDistributionSet)
-from canonical.launchpad.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -84,7 +80,7 @@ from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.product import (
-    IProduct, IProductSet, License)
+    IProductSet, License)
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.project import IProjectSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
@@ -484,8 +480,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                    **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
-        Any parameters for IBranchSet.new can be specified to override the
-        default ones.
+        Any parameters for `IBranchNamespace.createBranch` can be specified to
+        override the default ones.
         """
         if branch_type is None:
             branch_type = BranchType.HOSTED
@@ -775,37 +771,19 @@ class LaunchpadObjectFactory(ObjectFactory):
             return existing_bugtask
         owner = self.makePerson()
 
-        if IProduct.providedBy(target):
-            target_params = {'product': target}
-        elif IProductSeries.providedBy(target):
+        if IProductSeries.providedBy(target):
             # We can't have a series task without a distribution task.
             self.makeBugTask(bug, target.product)
-            target_params = {'productseries': target}
-        elif IDistribution.providedBy(target):
-            target_params = {'distribution': target}
-        elif IDistributionSourcePackage.providedBy(target):
-            target_params = {
-                'distribution': target.distribution,
-                'sourcepackagename': target.sourcepackagename,
-                }
-        elif IDistroSeries.providedBy(target):
+        if IDistroSeries.providedBy(target):
             # We can't have a series task without a distribution task.
             self.makeBugTask(bug, target.distribution)
-            target_params = {'distroseries': target}
-        elif ISourcePackage.providedBy(target):
+        if ISourcePackage.providedBy(target):
             distribution_package = target.distribution.getSourcePackage(
                 target.sourcepackagename)
             # We can't have a series task without a distribution task.
             self.makeBugTask(bug, distribution_package)
-            target_params = {
-                'distroseries': target.distroseries,
-                'sourcepackagename': target.sourcepackagename,
-                }
-        else:
-            raise AssertionError('Unknown IBugTarget: %r' % target)
 
-        return getUtility(IBugTaskSet).createTask(
-            bug=bug, owner=owner, **target_params)
+        return bug.addTask(owner, target)
 
     def makeBugTracker(self, base_url=None, bugtrackertype=None):
         """Make a new bug tracker."""
