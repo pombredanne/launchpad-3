@@ -1241,8 +1241,7 @@ If a mentoring offer gets made...
 
 ... or a branch gets linked to the bug...
 
-    >>> from canonical.launchpad.interfaces import IBranchSet
-    >>> branch = list(getUtility(IBranchSet))[0]
+    >>> branch = factory.makeAnyBranch()
     >>> bug_three.addBranch(branch, no_priv)
     <BugBranch at ...>
 

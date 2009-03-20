@@ -18,9 +18,7 @@ from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, IBranchSet, IProductSet,
     MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT)
-from canonical.launchpad.testing import (
-    TestCaseWithFactory)
-from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.testing import TestCaseWithFactory
 
 from canonical.testing import DatabaseFunctionalLayer
 
