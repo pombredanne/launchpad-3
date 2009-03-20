@@ -13,7 +13,7 @@ __all__ = [
     'MergeProposalCreatedJob',
     ]
 
-from email.Utils import make_msgid
+from email.Utils import make_msgid, parseaddr
 
 from lazr.delegates import delegates
 from lazr.enum import DBEnumeratedType, DBItem
@@ -69,7 +69,9 @@ from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-        DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
+    MASTER_FLAVOR)
+from canonical.launchpad.webapp.interaction import setupInteraction
 
 
 VALID_TRANSITION_GRAPH = {
@@ -958,9 +960,17 @@ class CreateMergeProposalJob(object):
         """See `ICreateMergeProposalJob`."""
         # Avoid circular import
         from canonical.launchpad.mail.codehandler import CodeHandler
-        from canonical.launchpad.mail.incoming import authenticateEmail
         message = self.getMessage()
-        authenticateEmail(message)
+        # Since the message was checked as signed before it was saved in the
+        # Librarian, just create the principle from the sender and setup the
+        # interaction.
+        name, email_addr = parseaddr(message['From'])
+        authutil = getUtility(IPlacelessAuthUtility)
+        principal = authutil.getPrincipalByLogin(email_addr)
+        if principal is None:
+            raise AssertionError('No principal found for %s' % email_addr)
+        setupInteraction(principal, email_addr)
+
         server = get_multi_server(write_hosted=True)
         server.setUp()
         try:
