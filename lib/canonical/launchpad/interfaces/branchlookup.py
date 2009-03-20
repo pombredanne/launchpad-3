@@ -5,14 +5,13 @@
 
 __metaclass__ = type
 __all__ = [
+    'CannotHaveLinkedBranch',
     'IBranchLookup',
     'ICanHasLinkedBranch',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
     'InvalidBranchIdentifier',
-    'NoBranchForSeries',
-    'NoBranchForSourcePackage',
-    'NoDefaultBranch',
+    'NoLinkedBranch',
     ]
 
 from zope.interface import Attribute, Interface
@@ -27,33 +26,22 @@ class InvalidBranchIdentifier(Exception):
         Exception.__init__(self, "Invalid branch identifier: '%s'" % (path,))
 
 
-class NoBranchForSeries(Exception):
-    """Raised when we wrongly assume a product series has a branch."""
+class CannotHaveLinkedBranch(Exception):
+    """Raised when we try to look up the linked branch for a thing that can't.
+    """
 
-    def __init__(self, product_series):
-        self.series = product_series
-        Exception.__init__(self, "%r has no branch" % (product_series,))
-
-
-# XXX: Perhaps NoBranchForSeries and NoBranchForSourcePackage could share a
-# base class?
-class NoBranchForSourcePackage(Exception):
-    """Raised when we wrongly assume a source package has a branch."""
-
-    def __init__(self, sourcepackage, pocket):
-        self.sourcepackage = sourcepackage
-        self.pocket = pocket
-        # XXX: Exception message doesn't include pocket -- is kind of crap.
-        Exception.__init__(self, "%r has no branch" % (sourcepackage,))
-
-
-class NoDefaultBranch(Exception):
-    """Raised when asked to resolve a path that never has a default branch."""
-
-    def __init__(self, component, component_type):
+    def __init__(self, component):
         self.component = component
-        self.component_type = component_type
-        Exception.__init__(self, "%r has no default branch." % (component,))
+        Exception.__init__(
+            self, "%r cannot have linked branches." % (component,))
+
+
+class NoLinkedBranch(Exception):
+    """Raised when there's no linked branch for a thing."""
+
+    def __init__(self, component):
+        self.component = component
+        Exception.__init__(self, "%r has no linked branch." % (component,))
 
 
 class ICanHasLinkedBranch(Interface):

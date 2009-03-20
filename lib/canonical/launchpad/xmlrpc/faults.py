@@ -13,6 +13,7 @@ __all__ = [
     'BranchCreationForbidden',
     'BranchNameInUse',
     'BranchUniqueNameConflict',
+    'CannotHaveLinkedBranch',
     'check_fault',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
@@ -20,9 +21,8 @@ __all__ = [
     'InvalidBranchName',
     'InvalidProductIdentifier',
     'InvalidBranchUrl',
-    'NoBranchForSeries',
     'NoBranchWithID',
-    'NoDefaultBranchForPillar',
+    'NoLinkedBranch',
     'NoSuchBranch',
     'NoSuchBug',
     'NoSuchDistribution',
@@ -244,17 +244,16 @@ class BadStatus(LaunchpadFault):
         LaunchpadFault.__init__(self, team_name=team_name, status=status)
 
 
-class NoBranchForSeries(LaunchpadFault):
-    """The series has no branch registered with it."""
+class NoLinkedBranch(LaunchpadFault):
+    """The object has no branch registered with it."""
 
     error_code = 170
     msg_template = (
-        'Series %(series_name)s on %(product_name)s has no branch associated '
-        'with it')
+        '%(object_name)s has no branch associated with it.')
 
-    def __init__(self, series):
-        LaunchpadFault.__init__(
-            self, series_name=series.name, product_name=series.product.name)
+    def __init__(self, component):
+        # XXX: this will bork on source package pockets with no linked branch.
+        LaunchpadFault.__init__(self, object_name=component.displayname)
 
 
 class NoSuchSeries(LaunchpadFault):
@@ -300,8 +299,8 @@ class BranchNameInUse(LaunchpadFault):
         LaunchpadFault.__init__(self, error=error)
 
 
-class NoDefaultBranchForPillar(LaunchpadFault):
-    """Raised we try to get a default branch for a pillar that can't have any.
+class CannotHaveLinkedBranch(LaunchpadFault):
+    """Raised when we get a linked branch for a thing that can't have any.
 
     An example of this is trying to get lp:bazaar, where 'bazaar' is a project
     group, or lp:ubuntu, where 'ubuntu' is a distro.
@@ -309,12 +308,13 @@ class NoDefaultBranchForPillar(LaunchpadFault):
 
     error_code = 230
     msg_template = (
-        "%(pillar_name)s is a %(pillar_type)s, and a %(pillar_type)s doesn't "
-        "have a default branch.")
+        "%(component_name)s is a %(component_type)s, and a "
+        "%(component_type)s doesn't have a default branch.")
 
-    def __init__(self, pillar_name, pillar_type):
+    def __init__(self, component):
         LaunchpadFault.__init__(
-            self, pillar_name=pillar_name, pillar_type=pillar_type)
+            self, component_name=component.displayname,
+            component_type=component.__class__.__name__.lower())
 
 
 class InvalidProductIdentifier(LaunchpadFault):

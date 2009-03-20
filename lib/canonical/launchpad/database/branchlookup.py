@@ -23,9 +23,8 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, ICanHasLinkedBranch, ILinkedBranchTraversable,
-    ILinkedBranchTraverser, NoBranchForSeries, NoBranchForSourcePackage,
-    NoDefaultBranch)
+    CannotHaveLinkedBranch, IBranchLookup, ICanHasLinkedBranch,
+    ILinkedBranchTraversable, ILinkedBranchTraverser, NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -33,7 +32,6 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
-from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.productseries import (
     IProductSeries, NoSuchProductSeries)
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
@@ -41,6 +39,7 @@ from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -51,9 +50,12 @@ from lazr.uri import InvalidURIError, URI
 def adapt(provided, interface):
     """Adapt 'obj' to 'interface', using multi-adapters if necessary."""
     required = interface(provided, None)
-    if required is None:
-        required = queryMultiAdapter(provided, interface)
-    return required
+    if required is not None:
+        return required
+    try:
+        return queryMultiAdapter(provided, interface)
+    except TypeError:
+        return None
 
 
 class RootTraversable:
@@ -158,20 +160,6 @@ class HasLinkedBranch:
         self.branch = branch
 
 
-@adapter(IDistribution)
-@implementer(ICanHasLinkedBranch)
-def distribution_linked_branch(distribution):
-    """Distributions cannot have linked branches. Raise a nice error."""
-    raise NoDefaultBranch(distribution, 'distribution')
-
-
-@adapter(IProject)
-@implementer(ICanHasLinkedBranch)
-def project_linked_branch(project):
-    """Projects cannot have linked branches. Raise a nice error."""
-    raise NoDefaultBranch(project, 'project group')
-
-
 @adapter(IProductSeries)
 @implementer(ICanHasLinkedBranch)
 def product_series_linked_branch(product_series):
@@ -190,11 +178,6 @@ def product_linked_branch(product):
 @implementer(ICanHasLinkedBranch)
 def source_package_linked_branch(package, pocket):
     """The official branch for a pocket on a package is its linked branch."""
-    branch = package.getBranch(pocket)
-    # XXX: This shouldn't be here, but it's the easiest way to make the tests
-    # pass.
-    if branch is None:
-        raise NoBranchForSourcePackage(package, pocket)
     return HasLinkedBranch(package.getBranch(pocket))
 
 
@@ -206,8 +189,6 @@ sm.registerAdapter(DistroSeriesTraversable)
 sm.registerAdapter(product_series_linked_branch)
 sm.registerAdapter(product_linked_branch)
 sm.registerAdapter(source_package_linked_branch)
-sm.registerAdapter(distribution_linked_branch)
-sm.registerAdapter(project_linked_branch)
 
 
 class LinkedBranchTraverser:
@@ -387,38 +368,32 @@ class BranchLookup:
         branch = suffix = series = None
         try:
             branch, suffix = self._getByPath(path)
+            if not check_permission('launchpad.View', branch):
+                raise NoSuchBranch(path)
             if suffix == '':
                 suffix = None
         except InvalidNamespace:
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
-            branch, series = self._getDefaultProductBranch(path)
+            result = getUtility(ILinkedBranchTraverser).traverse(path)
+            branch = self._getLinkedBranch(result)
         return branch, suffix, series
 
-    def _getBranchAndSeriesForObject(self, obj):
-        has_linked_branch = adapt(obj, ICanHasLinkedBranch)
-        if has_linked_branch is None:
-            raise NoDefaultBranch(obj, 'unknown')
-        branch = has_linked_branch.branch
-        return branch, obj
+    def _getLinkedBranch(self, provided):
+        """Get the linked branch for 'provided'.
 
-    def _getDefaultProductBranch(self, path):
-        """Return the branch with the shortcut 'path'.
-
-        :param path: A shortcut to a branch.
-        :raise InvalidBranchIdentifier: if 'path' has too many segments to be
-            a shortcut.
-        :raise InvalidProductIdentifier: if 'path' starts with an invalid
-            name for a product.
-        :raise NoSuchProduct: if 'path' starts with a non-existent product.
-        :raise NoSuchSeries: if 'path' refers to a product series and that
-            series does not exist.
-        :raise NoBranchForSeries: if 'path' refers to a product series that
-            exists, but does not have a branch.
-        :return: The branch.
+        :raise CannotHaveLinkedBranch: If 'provided' can never have a linked
+            branch.
+        :raise NoLinkedBranch: If 'provided' could have a linked branch, but
+            doesn't.
+        :return: The linked branch, an `IBranch`.
         """
-        result = getUtility(ILinkedBranchTraverser).traverse(path)
-        branch, series = self._getBranchAndSeriesForObject(result)
+        has_linked_branch = adapt(provided, ICanHasLinkedBranch)
+        if has_linked_branch is None:
+            raise CannotHaveLinkedBranch(provided)
+        branch = has_linked_branch.branch
         if branch is None:
-            raise NoBranchForSeries(series)
-        return branch, series
+            raise NoLinkedBranch(provided)
+        if not check_permission('launchpad.View', branch):
+            raise NoLinkedBranch(provided)
+        return branch

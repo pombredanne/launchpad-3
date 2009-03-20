@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Unit tests for the public codehosting API."""
 
@@ -108,18 +108,13 @@ class TestExpandURL(TestCaseWithFactory):
         # groups don't have default branches.
         project_group = self.factory.makeProject()
         self.assertFault(
-            project_group.name,
-            faults.NoDefaultBranchForPillar(
-                project_group.name, 'project group'))
+            project_group.name, faults.CannotHaveLinkedBranch(project_group))
 
     def test_distro_name(self):
         # Resolving lp:///distro_name' should explain that distributions don't
         # have default branches.
         distro = self.factory.makeDistribution()
-        self.assertFault(
-            distro.name,
-            faults.NoDefaultBranchForPillar(
-                distro.name, 'distribution'))
+        self.assertFault(distro.name, faults.CannotHaveLinkedBranch(distro))
 
     def test_invalid_product_name(self):
         # If we get a string that cannot be a name for a product where we
@@ -146,20 +141,19 @@ class TestExpandURL(TestCaseWithFactory):
             self.product.development_focus.user_branch.unique_name)
 
     def test_development_focus_has_no_branch(self):
-        # Return a NoBranchForSeries fault if the development focus has no
-        # branch associated with it.
+        # Return a NoLinkedBranch fault if the development focus has no branch
+        # associated with it.
         product = self.factory.makeProduct()
         self.assertEqual(None, product.development_focus.user_branch)
-        self.assertFault(
-            product.name, faults.NoBranchForSeries(product.development_focus))
+        self.assertFault(product.name, faults.NoLinkedBranch(product))
 
     def test_series_has_no_branch(self):
-        # Return a NoBranchForSeries fault if the series has no branch
+        # Return a NoLinkedBranch fault if the series has no branch
         # associated with it.
         series = self.factory.makeSeries(user_branch=None)
         self.assertFault(
             '%s/%s' % (series.product.name, series.name),
-            faults.NoBranchForSeries(series))
+            faults.NoLinkedBranch(series))
 
     def test_no_such_series(self):
         # Return a NoSuchSeries fault there is no series of the given name
@@ -289,7 +283,8 @@ class TestExpandURL(TestCaseWithFactory):
     def test_private_branch_on_series(self):
         # We resolve invisible branches as if they don't exist.  For
         # references to product series, this means returning a
-        # NoBranchForSeries fault.
+        # NoLinkedBranch fault.
+        #
         # Removing security proxy because we need to be able to get at
         # attributes of a private branch and these tests are running as an
         # anonymous user.
@@ -297,7 +292,7 @@ class TestExpandURL(TestCaseWithFactory):
         series = self.factory.makeSeries(user_branch=branch)
         self.assertFault(
             '%s/%s' % (series.product.name, series.name),
-            faults.NoBranchForSeries(series))
+            faults.NoLinkedBranch(series))
 
     def test_privateBranchAsDevelopmentFocus(self):
         # We resolve invisible branches as if they don't exist.
@@ -310,8 +305,7 @@ class TestExpandURL(TestCaseWithFactory):
         naked_trunk = removeSecurityProxy(trunk)
         naked_trunk.private = True
         self.assertFault(
-            self.product.name,
-            faults.NoBranchForSeries(self.product.development_focus))
+            self.product.name, faults.NoLinkedBranch(self.product))
 
     def test_private_branch_as_user(self):
         # We resolve invisible branches as if they don't exist.

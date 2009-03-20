@@ -12,14 +12,12 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, ILinkedBranchTraverser, NoBranchForSeries,
-    NoBranchForSourcePackage)
+    CannotHaveLinkedBranch, IBranchLookup, ILinkedBranchTraverser,
+    NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, NoSuchProduct)
@@ -375,6 +373,14 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(
             NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/bb/c')
 
+    def test_private_branch(self):
+        # If the unique name refers to an invisible branch, getByLPPath raises
+        # NoSuchBranch, just as if the branch weren't there at all.
+        branch = self.factory.makeAnyBranch(private=True)
+        path = removeSecurityProxy(branch).unique_name
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, path)
+
     def test_resolve_product_branch_unique_name(self):
         # getByLPPath returns the branch, no trailing path and no series if
         # given the unique name of an existing product branch.
@@ -420,27 +426,40 @@ class TestGetByLPPath(TestCaseWithFactory):
             self.branch_lookup.getByLPPath(path))
 
     def test_no_product_series_branch(self):
-        # getByLPPath raises `NoBranchForSeries` if there's no branch
-        # registered linked to the requested series.
+        # getByLPPath raises `NoLinkedBranch` if there's no branch registered
+        # linked to the requested series.
         series = self.factory.makeSeries()
         short_name = '%s/%s' % (series.product.name, series.name)
-        self.assertRaises(
-            NoBranchForSeries, self.branch_lookup.getByLPPath, short_name)
+        exception = self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, short_name)
+        self.assertEqual(series, exception.component)
 
     def test_product_with_no_dev_focus(self):
-        # getByLPPath raises `NoBranchForSeries` if the product is found but
+        # getByLPPath raises `NoLinkedBranch` if the product is found but
         # doesn't have a development focus branch.
         product = self.factory.makeProduct()
+        exception = self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
+        self.assertEqual(product, exception.component)
+
+    def test_private_linked_branch(self):
+        # If the given path refers to an object with an invisible linked
+        # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
+        # weren't there at all.
+        branch = self.factory.makeProductBranch(private = True)
+        product = removeSecurityProxy(branch).product
+        removeSecurityProxy(product).development_focus.user_branch = branch
         self.assertRaises(
-            NoBranchForSeries, self.branch_lookup.getByLPPath, product.name)
+            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
 
     def test_no_official_branch(self):
         sourcepackage = self.factory.makeSourcePackage()
         exception = self.assertRaises(
-            NoBranchForSourcePackage,
+            NoLinkedBranch,
             self.branch_lookup.getByLPPath, sourcepackage.path)
-        self.assertEqual(sourcepackage, exception.sourcepackage)
-        self.assertEqual(PackagePublishingPocket.RELEASE, exception.pocket)
+        self.assertEqual(
+            (sourcepackage, PackagePublishingPocket.RELEASE),
+            exception.component)
 
     # XXX: test for pocket-linked branch paths
 

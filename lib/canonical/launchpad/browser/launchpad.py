@@ -54,7 +54,7 @@ from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, NoBranchForSeries)
+    CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
@@ -592,7 +592,7 @@ class LaunchpadRootNavigation(Navigation):
         path = '/'.join(self.request.stepstogo)
         try:
             branch_data = getUtility(IBranchLookup).getByLPPath(path)
-        except NoBranchForSeries:
+        except (CannotHaveLinkedBranch, NoLinkedBranch):
             raise NotFoundError
         branch, trailing, series = branch_data
         if branch is None:

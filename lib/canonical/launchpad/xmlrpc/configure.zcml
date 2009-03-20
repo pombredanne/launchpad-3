@@ -145,7 +145,7 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
-  <class class="canonical.launchpad.xmlrpc.faults.NoBranchForSeries">
+  <class class="canonical.launchpad.xmlrpc.faults.NoLinkedBranch">
     <require like_class="xmlrpclib.Fault" />
   </class>
 
@@ -161,7 +161,7 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
-  <class class="canonical.launchpad.xmlrpc.faults.NoDefaultBranchForPillar">
+  <class class="canonical.launchpad.xmlrpc.faults.CannotHaveLinkedBranch">
     <require like_class="xmlrpclib.Fault" />
   </class>
 

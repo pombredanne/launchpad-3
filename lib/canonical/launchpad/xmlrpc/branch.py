@@ -23,8 +23,8 @@ from canonical.launchpad.interfaces import (
     IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries,
-    NoDefaultBranch)
+    CannotHaveLinkedBranch, IBranchLookup, InvalidBranchIdentifier,
+    NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.person import NoSuchPerson
@@ -33,7 +33,6 @@ from canonical.launchpad.interfaces.product import (
 from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.helpers import return_fault
 
@@ -222,17 +221,6 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         branch_set = getUtility(IBranchLookup)
         try:
             branch, suffix, series = branch_set.getByLPPath(strip_path)
-            # XXX: JonathanLange 2009-03-19: Manually checking the permission
-            # kind of blows. Also, all we're doing here is a crappy thing to
-            # make sure that we don't leak out privacy information. This could
-            # perhaps be pushed further down into the model, or perhaps we can
-            # expose the model's internal traversal mechanism to get the
-            # linked object.
-            if not check_permission('launchpad.View', branch):
-                if series is None:
-                    raise NoSuchBranch(strip_path)
-                else:
-                    raise faults.NoBranchForSeries(series)
         except NoSuchBranch:
             # If the branch isn't found, but it looks like a valid name, then
             # resolve it anyway, treating the path like a branch's unique
@@ -242,21 +230,20 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         # XXX: all of this is repetitive and dirty. Alternatives are directly
         # raising faults (blech) or some automated way of reraising as faults,
         # or just moving this code out.
-        except NoBranchForSeries, e:
-            raise faults.NoBranchForSeries(e.series)
         except InvalidBranchIdentifier, e:
             raise faults.InvalidBranchIdentifier(e.path)
         except InvalidProductName, e:
             raise faults.InvalidProductIdentifier(e.name)
         except NoSuchProductSeries, e:
             raise faults.NoSuchSeries(e.name, e.product)
-        except NoDefaultBranch, e:
-            raise faults.NoDefaultBranchForPillar(
-                e.component.name, e.component_type)
         except NoSuchPerson, e:
             raise faults.NoSuchPersonWithName(e.name)
         except NoSuchProduct, e:
             raise faults.NoSuchProduct(e.name)
+        except NoLinkedBranch, e:
+            raise faults.NoLinkedBranch(e.component)
+        except CannotHaveLinkedBranch, e:
+            raise faults.CannotHaveLinkedBranch(e.component)
         return self._getResultDict(branch, suffix)
 
     def resolve_lp_path(self, path):
