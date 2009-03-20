@@ -411,6 +411,29 @@ class BugTaskAttributeChange(AttributeChange):
         return {'text': text.rstrip()}
 
 
+class BugTaskTargetChange(AttributeChange):
+    """Used to represent a change in a BugTask's target."""
+
+    def __init__(self, bug_task, when, person, what_changed,
+                 old_value, new_value, recipients=None):
+        super(BugTaskTargetChange, self).__init__(
+            when, person, what_changed, old_value, new_value, recipients)
+        self.bug_task = bug_task
+
+    def getBugActivity(self):
+        return {
+            'whatchanged': 'affects',
+            'oldvalue': self.old_value.bugtargetname,
+            'newvalue': self.new_value.bugtargetname,
+            }
+
+    def getBugNotification(self):
+        text = u"** Retargetted: %s => %s" % (
+            self.old_value.bugtargetdisplayname,
+            self.new_value.bugtargetdisplayname)
+        return {'text': text}
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
@@ -424,4 +447,5 @@ BUG_CHANGE_LOOKUP = {
 BUGTASK_CHANGE_LOOKUP = {
     'importance': BugTaskAttributeChange,
     'status': BugTaskAttributeChange,
+    'target': BugTaskTargetChange,
     }
