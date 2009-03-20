@@ -4,15 +4,13 @@
 __metaclass__ = type
 
 from unittest import TestLoader
-import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.database.translationbranchapprover import TranslationBranchApprover
+from canonical.launchpad.database.translationbranchapprover import (
+    TranslationBranchApprover)
 from canonical.testing import LaunchpadZopelessLayer
 
 class TestTranslationBranchApprover(TestCaseWithFactory):
@@ -131,15 +129,15 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
             TRANSLATION_DOMAIN, self.entry.potemplate.translation_domain)
 
     def test_duplicate_template_name(self):
-        POT_PATH1="po/foo_domain.pot"
-        POT_PATH2="foo_domain/messages.pot"
+        POT_PATH1 = "po/foo_domain.pot"
+        POT_PATH2 = "foo_domain/messages.pot"
         entry1 = self.queue.addOrUpdateEntry(POT_PATH1,
             self.factory.getUniqueString(), True, self.series.owner,
             productseries=self.series)
         entry2 = self.queue.addOrUpdateEntry(POT_PATH2,
             self.factory.getUniqueString(), True, self.series.owner,
             productseries=self.series)
-        approver = TranslationBranchApprover((POT_PATH1,POT_PATH2),
+        approver = TranslationBranchApprover((POT_PATH1, POT_PATH2),
                                              productseries=self.series)
         approver.approve(entry1)
         self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry1.status)

@@ -242,7 +242,6 @@ class LaunchpadObjectFactory(ObjectFactory):
             email, person=None, account=account,
             email_status=EmailAddressStatus.PREFERRED)
         if commit:
-            import transaction
             transaction.commit()
         return account
 
@@ -380,7 +379,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                 MailingListAutoSubscribePolicy.NEVER
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
-            alternative_address, person, EmailAddressStatus.VALIDATED, account)
+            alternative_address, person,
+            EmailAddressStatus.VALIDATED, account)
         transaction.commit()
         self._stuff_preferredemail_cache(person)
         return person
