@@ -22,8 +22,8 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries,
-    NoBranchForSourcePackage, NoDefaultBranch)
+    IBranchLookup, ILinkedBranchTraverser, InvalidBranchIdentifier,
+    NoBranchForSeries, NoBranchForSourcePackage, NoDefaultBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -43,6 +43,15 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 from lazr.uri import InvalidURIError, URI
+
+
+class LinkedBranchTraverser:
+    """Utility for traversing to objects that can have linked branches."""
+
+    implements(ILinkedBranchTraverser)
+
+    def traverse(self, path):
+        """See `ILinkedBranchTraverser`."""
 
 
 class BranchLookup:

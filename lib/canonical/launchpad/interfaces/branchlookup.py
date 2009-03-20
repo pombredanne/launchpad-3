@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'IBranchLookup',
+    'ILinkedBranchTraverser',
     'InvalidBranchIdentifier',
     'NoBranchForSeries',
     'NoBranchForSourcePackage',
@@ -13,6 +14,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
+from zope.traversing.interfaces import ITraverser
 
 
 class InvalidBranchIdentifier(Exception):
@@ -50,6 +52,32 @@ class NoDefaultBranch(Exception):
         self.component = component
         self.component_type = component_type
         Exception.__init__(self, "%r has no default branch." % (component,))
+
+
+class ILinkedBranchTraverser(ITraverser):
+    """Utility for traversing to an object that can have a linked branch."""
+
+    def traverse(path):
+        """Traverse to the linked object referred to by 'path'.
+
+        :raises NoSuchBranch: If we can't find a branch that matches the
+            branch component of the path.
+        :raises NoSuchPerson: If we can't find a person who matches the person
+            component of the path.
+        :raises NoSuchProduct: If we can't find a product that matches the
+            product component of the path.
+        :raises NoSuchProductSeries: If the series component doesn't match an
+            existing series.
+        :raises NoSuchSourcePackageName: If the source packagae referred to
+            does not exist.
+
+        :return: One of
+            * `IProduct`
+            * `IProductSeries`
+            * `IBranch`
+            * (ISourcePackage, PackagePublishingPocket)
+            * `IDistributionSourcePackage`
+        """
 
 
 class IBranchLookup(Interface):
