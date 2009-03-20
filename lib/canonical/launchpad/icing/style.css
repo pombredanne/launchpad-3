@@ -1074,6 +1074,8 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 
 .official-tags-layout-table th {
   text-align: left;
+  font-size: 1.25em;
+  padding-bottom: 5px;
 }
 
 .official-tags-layout-table .left-column,
@@ -1118,6 +1120,10 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
   border-style: solid;
   border-width: 1px;
   border-color: #eee;
+}
+
+.official-tags-layout-table .left-column .list-scrollable-area {
+  background-color: #fefecc;
 }
 
 /* === Portlets === */
