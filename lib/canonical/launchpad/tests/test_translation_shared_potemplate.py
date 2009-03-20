@@ -1,20 +1,12 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0102
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-from pytz import timezone
 import unittest
 
-import transaction
-
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.translationtemplateitem import (
-    TranslationTemplateItem)
-from canonical.launchpad.interfaces import (
-    ILanguageSet, TranslationFileFormat)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
