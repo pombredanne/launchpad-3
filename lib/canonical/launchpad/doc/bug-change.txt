@@ -45,7 +45,8 @@ But the basic attributes are still available.
 Because the base class is abstract, you can't pass it to
 Bug.addChange().
 
-    >>> example_product = factory.makeProduct(owner=example_person)
+    >>> example_product = factory.makeProduct(
+    ...     owner=example_person, name="heart-of-gold")
     >>> example_bug = factory.makeBug(
     ...     product=example_product, owner=example_person,
     ...     title="Reality is on the blink again",
@@ -186,10 +187,14 @@ help us describe the change.
     >>> from canonical.launchpad.components.bugchange import (
     ...     get_bug_change_class)
 
-By default, get_bug_change_class() will return BugChangeBase.
+If get_bug_change_class() is asked for a BugChange for an object or
+field that it doesn't know about, it will raise a NoBugChangeFoundError.
 
-    >>> get_bug_change_class(example_bug, 'foobar')
-    <class '...BugChangeBase'>
+    >>> get_bug_change_class(object(), 'fooix')
+    Traceback (most recent call last):
+      ...
+    NoBugChangeFoundError: Unable to find a suitable BugChange for field
+    'fooix' on object <object object at ...>
 
 For fields it knows about, it will return a more suitable class.
 
@@ -199,7 +204,7 @@ For fields it knows about, it will return a more suitable class.
 get_bug_change_class will also work for BugTasks.
 
     >>> get_bug_change_class(example_bug.bugtasks[0], 'importance')
-    <class '...BugChangeBase'>
+    <class '...BugTaskAttributeChange'>
 
 See component/ftests/test_bugchange.py for some sanity checks.
 
@@ -467,3 +472,70 @@ Or remove one.
     >>> print attachment_change.getBugNotification()['text']
     ** Attachment removed: "sample-attachment"
        http...
+
+
+== BugTaskAttributeChange ==
+
+BugTaskAttributeChange is a generic BugChange that can be used to
+represent a change in the attributes of one of a Bug's BugTasks.
+
+    >>> from canonical.launchpad.interfaces.bugtask import (
+    ...     BugTaskStatus, BugTaskImportance)
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTaskAttributeChange)
+
+BugTaskAttributeChange takes an instance of BugTask. It uses this to
+work out how to describe to the user which BugTask's attributes have
+changed.
+
+    >>> example_bug_task = example_bug.bugtasks[0]
+    >>> task_attribute_change = BugTaskAttributeChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='status',
+    ...     old_value=BugTaskStatus.NEW,
+    ...     new_value=BugTaskStatus.FIXRELEASED,
+    ...     bug_task=example_bug_task)
+
+Several types of attribute change can be handled by
+BugTaskAttributeChange.
+
+
+=== Status changes ===
+
+Status changes use a BugTaskStatus's `title` attribute to describe to
+the user what has changed.
+
+    >>> status_change = BugTaskAttributeChange(
+    ...     bug_task=example_bug_task, when=nowish, person=example_person,
+    ...     what_changed='status', old_value=BugTaskStatus.NEW,
+    ...     new_value=BugTaskStatus.FIXRELEASED)
+    >>> print pretty(status_change.getBugActivity())
+    {'newvalue': 'Fix Released',
+     'oldvalue': 'New',
+     'whatchanged': u'heart-of-gold: status'}
+
+    >>> notification_text = status_change.getBugNotification()['text']
+    >>> print notification_text #doctest: -NORMALIZE_WHITESPACE
+    ** Changed in: heart-of-gold
+           Status: New => Fix Released
+
+
+=== Importance changes ===
+
+Importance changes use a BugTaskImportance's `title` attribute to describe to
+the user what has changed.
+
+    >>> importance_change = BugTaskAttributeChange(
+    ...     bug_task=example_bug_task, when=nowish, person=example_person,
+    ...     what_changed='importance',
+    ...     old_value=BugTaskImportance.UNDECIDED,
+    ...     new_value=BugTaskImportance.CRITICAL)
+    >>> print pretty(importance_change.getBugActivity())
+    {'newvalue': 'Critical',
+     'oldvalue': 'Undecided',
+     'whatchanged': u'heart-of-gold: importance'}
+
+    >>> notification_text = importance_change.getBugNotification()['text']
+    >>> print notification_text #doctest: -NORMALIZE_WHITESPACE
+    ** Changed in: heart-of-gold
+       Importance: Undecided => Critical

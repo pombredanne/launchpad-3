@@ -631,13 +631,34 @@ def get_bug_edit_notification_texts(bug_delta):
         # security-proxied objects.
         if not zope_isinstance(bugtask_deltas, (list, tuple)):
             bugtask_deltas = [bugtask_deltas]
+
         for bugtask_delta in bugtask_deltas:
-            change_info = u"** Changed in: %s\n" % (
-                bugtask_delta.bugtask.bugtargetname)
+            for field_name in ['importance', 'status']:
+                field_delta = getattr(bugtask_delta, field_name)
+                if field_delta is not None:
+                    bug_change_class = get_bug_change_class(
+                        bugtask_delta.bugtask, field_name)
+                    change = bug_change_class(
+                        bug_task=bugtask_delta.bugtask,
+                        when=None, person=bug_delta.user,
+                        what_changed=field_name,
+                        old_value=field_delta['old'],
+                        new_value=field_delta['new'])
+                    changes.append(change)
+
+        # XXX 2009-03-20 gmb [bug=344125]
+        #     There are two loops over bugtask_deltas here because we
+        #     have two completely unrelated ways of handling certain
+        #     fields as we transition over to the BugChange API. Trying
+        #     to do both in one loop is fraught with pain and
+        #     suffering. The second, eventually-to-be-redundant, loop
+        #     should be removed as part of the final cleanup work on
+        #     moving to the BugChange API.
+        for bugtask_delta in bugtask_deltas:
+            change_info = u''
 
             for fieldname, displayattrname in [
                 ("product", "displayname"), ("sourcepackagename", "name"),
-                ("status", "title"), ("importance", "title"),
                 ("milestone", "name"), ("bugwatch", "title")]:
                 change = getattr(bugtask_delta, fieldname)
                 if change:
@@ -662,7 +683,10 @@ def get_bug_edit_notification_texts(bug_delta):
                     'newval' : newval_display})
                 change_info += changerow
 
-            changes.append(change_info.rstrip())
+            if len(change_info) > 0:
+                change_info = u"** Changed in: %s\n%s" % (
+                    bugtask_delta.bugtask.bugtargetname, change_info)
+                changes.append(change_info.rstrip())
 
     if bug_delta.added_bugtasks is not None:
         # Use zope_isinstance, to ensure that this Just Works with
