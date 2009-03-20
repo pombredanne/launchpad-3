@@ -24,6 +24,16 @@ def test_official_bug_tags_management():
     client.click(link=u'Edit official tags')
     client.waits.forPageLoad(timeout=u'20000')
 
+# There are no official tags defined (the rest of the test depends on that).
+
+    client.asserts.assertElemJS(
+        id=u'official-tags-list',
+        js=u'element.childNodes.length == 0')
+
+# The save button is disabled initially, since there's nothing to change.
+
+    client.asserts.assertElemJS(id=u'save-button', js=u'element.disabled')
+
 # We type a new tag and click 'Add'.
 
     a_new_tag = u'a-new-tag'
@@ -39,9 +49,26 @@ def test_official_bug_tags_management():
                a_new_tag),
         validator=a_new_tag)
 
+# The save button is now enabled.
+
+    client.asserts.assertElemJS(id=u'save-button', js=u'!element.disabled')
+
 # We type another tag, and hit [enter].
 
     another_new_tag = u'another-new-tag'
+    client.type(text=another_new_tag + '?!', id=u'new-tag-text')
+    client.keyPress(
+        options='\\13,true,false,false,false,false',
+        id=u'new-tag-text')
+
+# The tag is invalid, so we get an error message in an overlay.
+
+    client.asserts.assertNode(id=u'yui-pretty-overlay-modal')
+
+# We click the close button to dismiss the error message, type a correct tag and
+# try again.
+
+    client.click(xpath=u'//a[@class="close-button"]')
     client.type(text=another_new_tag, id=u'new-tag-text')
     client.keyPress(
         options='\\13,true,false,false,false,false',
@@ -128,7 +155,16 @@ def test_official_bug_tags_management():
     client.asserts.assertNode(
         xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' % a_new_tag)
     client.asserts.assertNode(
-        (xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
-         another_new_tag))
+        xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
+        another_new_tag)
     client.asserts.assertNode(
         xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' % doc_tag)
+
+# We finish by cleaning after ourselves, to make sure that we leave the
+# database at the same state we found it.
+
+    for tag in [a_new_tag, another_new_tag, doc_tag]:
+        client.click(id=u'tag-checkbox-%s' % tag)
+    client.click(id=u'remove-official-tags')
+    client.click(id=u'save-button')
+    client.waits.forPageLoad(timeout=u'20000')
