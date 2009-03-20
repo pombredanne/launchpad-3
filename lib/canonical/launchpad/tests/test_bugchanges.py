@@ -15,7 +15,6 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus)
-from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -604,6 +603,13 @@ class TestBugChanges(unittest.TestCase):
             self.bug_task, bug_task_before_modification,
             ['target', 'product'], user=self.user))
 
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'affects',
+            'oldvalue': bug_task_before_modification.bugtargetname,
+            'newvalue': self.bug_task.bugtargetname,
+            }
+
         expected_notification = {
             'text': (
                 u'** Changed in: %s\n      '
@@ -615,7 +621,7 @@ class TestBugChanges(unittest.TestCase):
             }
 
         self.assertRecordedChange(
-            expected_activity=None,
+            expected_activity=expected_activity,
             expected_notification=expected_notification)
 
     def test_target_bugtask_to_sourcepackage(self):
@@ -639,6 +645,13 @@ class TestBugChanges(unittest.TestCase):
             source_package_bug_task, bug_task_before_modification,
             ['target', 'sourcepackagename'], user=self.user))
 
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'affects',
+            'oldvalue': bug_task_before_modification.bugtargetname,
+            'newvalue': self.bug_task.bugtargetname,
+            }
+
         expected_notification = {
             'text': (
                 u'** Changed in: %s\nSourcepackagename: %s => %s' % (
@@ -649,7 +662,7 @@ class TestBugChanges(unittest.TestCase):
             }
 
         self.assertRecordedChange(
-            expected_activity=None,
+            expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=source_package_bug)
 
