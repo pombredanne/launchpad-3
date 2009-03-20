@@ -355,29 +355,23 @@ class BranchLookup:
         branch = result.one()
         return branch
 
-    def _getByPath(self, path):
-        """Given a path within a branch, return the branch and the path."""
-        namespace_set = getUtility(IBranchNamespaceSet)
-        if not path.startswith('~'):
-            raise InvalidNamespace(path)
-        segments = iter(path.lstrip('~').split('/'))
-        branch = namespace_set.traverse(segments)
-        return branch, '/'.join(segments)
-
     def getByLPPath(self, path):
         """See `IBranchLookup`."""
         branch = suffix = None
-        try:
-            branch, suffix = self._getByPath(path)
-            if not check_permission('launchpad.View', branch):
-                raise NoSuchBranch(path)
-            if suffix == '':
-                suffix = None
-        except InvalidNamespace:
+        if not path.startswith('~'):
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
             result = getUtility(ILinkedBranchTraverser).traverse(path)
             branch = self._getLinkedBranch(result)
+        else:
+            namespace_set = getUtility(IBranchNamespaceSet)
+            segments = iter(path.lstrip('~').split('/'))
+            branch = namespace_set.traverse(segments)
+            suffix =  '/'.join(segments)
+            if not check_permission('launchpad.View', branch):
+                raise NoSuchBranch(path)
+            if suffix == '':
+                suffix = None
         return branch, suffix
 
     def _getLinkedBranch(self, provided):

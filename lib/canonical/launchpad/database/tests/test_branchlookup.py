@@ -66,11 +66,10 @@ class TestGetByPath(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self._unsafe_branch_set = removeSecurityProxy(
-            getUtility(IBranchLookup))
+        self.branch_lookup = removeSecurityProxy(getUtility(IBranchLookup))
 
     def getByPath(self, path):
-        return self._unsafe_branch_set._getByPath(path)
+        return self.branch_lookup.getByLPPath(path)
 
     def makeRelativePath(self):
         arbitrary_num_segments = 7
@@ -82,7 +81,7 @@ class TestGetByPath(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
+        self.assertEqual(None, suffix)
 
     def test_finds_suffixed_personal_branch(self):
         branch = self.factory.makePersonalBranch()
@@ -110,7 +109,7 @@ class TestGetByPath(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
+        self.assertEqual(None, suffix)
 
     def test_finds_suffixed_product_branch(self):
         branch = self.factory.makeProductBranch()
@@ -140,7 +139,7 @@ class TestGetByPath(TestCaseWithFactory):
         branch = self.factory.makePackageBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
+        self.assertEqual(None, suffix)
 
     def test_missing_package_branch(self):
         owner = self.factory.makePerson()
@@ -163,10 +162,6 @@ class TestGetByPath(TestCaseWithFactory):
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
         self.assertRaises(
             NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
-
-    def test_no_preceding_tilde(self):
-        self.assertRaises(
-            InvalidNamespace, self.getByPath, self.makeRelativePath())
 
     def test_too_short(self):
         person = self.factory.makePerson()
@@ -460,10 +455,35 @@ class TestGetByLPPath(TestCaseWithFactory):
             (sourcepackage, PackagePublishingPocket.RELEASE),
             exception.component)
 
+    def test_distribution_linked_branch(self):
+        # Distributions cannot have linked branches, so `getByLPPath` raises a
+        # `CannotHaveLinkedBranch` error if we try to get the linked branch
+        # for a distribution.
+        distribution = self.factory.makeDistribution()
+        exception = self.assertRaises(
+            CannotHaveLinkedBranch,
+            self.branch_lookup.getByLPPath, distribution.name)
+        self.assertEqual(distribution, exception.component)
+
+    def test_project_linked_branch(self):
+        # Projects cannot have linked branches, so `getByLPPath` raises a
+        # `CannotHaveLinkedBranch` error if we try to get the linked branch
+        # for a project.
+        project = self.factory.makeProject()
+        exception = self.assertRaises(
+            CannotHaveLinkedBranch,
+            self.branch_lookup.getByLPPath, project.name)
+        self.assertEqual(project, exception.component)
+
+    def test_partial_lookup(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = '~%s/%s' % (owner.name, product.name)
+        self.assertRaises(
+            InvalidNamespace, self.branch_lookup.getByLPPath, path)
+
     # XXX: JonathanLange 2009-03-30 spec=package-branches bug=345739: Test for
     # pocket-linked branch paths.
-
-    # TODO: test for partial path lookup, e.g. lp:~foo/bar
 
 
 def test_suite():

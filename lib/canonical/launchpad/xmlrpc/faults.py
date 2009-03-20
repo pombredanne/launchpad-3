@@ -19,6 +19,7 @@ __all__ = [
     'FileBugMissingProductOrDistribution',
     'InvalidBranchIdentifier',
     'InvalidBranchName',
+    'InvalidBranchUniqueName',
     'InvalidProductIdentifier',
     'InvalidBranchUrl',
     'NoBranchWithID',
@@ -428,3 +429,18 @@ class NotFound(LaunchpadFault):
 
     def __init__(self, message="Not found."):
         LaunchpadFault.__init__(self, message=message)
+
+
+class InvalidBranchUniqueName(LaunchpadFault):
+    """Raised when a user tries to resolve a unique name that's incomplete.
+    """
+
+    error_code = 330
+    msg_template = (
+        "%(path)s is too short to be a branch name. Try "
+        "'~<owner>/+junk/<branch>', '~<owner>/<product>/<branch> or "
+        "'~<owner>/<distribution>/<series>/<sourcepackage>/<branch>'.")
+
+    def __init__(self, path):
+        self.path = path
+        LaunchpadFault.__init__(self, path=path)

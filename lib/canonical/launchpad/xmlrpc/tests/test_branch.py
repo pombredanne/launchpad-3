@@ -255,6 +255,13 @@ class TestExpandURL(TestCaseWithFactory):
         # An empty path is an invalid identifier.
         self.assertFault('', faults.InvalidBranchIdentifier(''))
 
+    def test_too_short(self):
+        # Return a nice fault if the unique name is too short.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = '~%s/%s' % (owner.name, product.name)
+        self.assertFault(path, faults.InvalidBranchUniqueName(path))
+
     def test_all_slashes(self):
         # A path of all slashes is an invalid identifier.
         self.assertFault('///', faults.InvalidBranchIdentifier('///'))
