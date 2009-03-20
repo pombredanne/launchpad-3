@@ -10,6 +10,8 @@ from lazr.enum import BaseItem
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad.components.bugchange import (
+    BugWatchAdded, BugWatchRemoved)
 from canonical.launchpad.interfaces import (
     IBug, IBugActivitySet, IMilestone, IPerson, IProductRelease,
     ISourcePackageRelease)
@@ -230,3 +232,20 @@ def notify_bugtask_added(bugtask, event):
     IObjectModifiedEvent.
     """
     bugtask.bug.addChange(BugTaskAdded(UTC_NOW, IPerson(event.user), bugtask))
+
+
+@block_implicit_flushes
+def notify_bug_watch_modified(modified_bug_watch, event):
+    """Notify CC'd bug subscribers that a bug watch was edited.
+
+    modified_bug_watch must be an IBugWatch. event must be an
+    IObjectModifiedEvent.
+    """
+    old_watch = event.object_before_modification
+    new_watch = event.object
+    bug = new_watch.bug
+    if old_watch.url == new_watch.url:
+        # Nothing interesting was modified, don't record any changes.
+        return
+    bug.addChange(BugWatchRemoved(UTC_NOW, IPerson(event.user), old_watch))
+    bug.addChange(BugWatchAdded(UTC_NOW, IPerson(event.user), new_watch))

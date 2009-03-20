@@ -63,8 +63,8 @@ class NamespaceMixin:
             expected_unique_name, branch.unique_name)
 
     def test_createBranch_passes_through(self):
-        # createBranch takes all the arguments that IBranchSet.new takes,
-        # except for the ones that define the namespace.
+        # createBranch takes all the arguments that the `Branch` constructor
+        # takes, except for the ones that define the namespace.
         namespace = self.getNamespace()
         branch_name = self.factory.getUniqueString()
         registrant = removeSecurityProxy(namespace).owner

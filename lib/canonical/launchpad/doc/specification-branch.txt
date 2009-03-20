@@ -11,7 +11,8 @@ the Ubuntu media-integrity-check specifcation has a branch link:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IBranchSet, ILaunchpadCelebrities, IPersonSet)
+    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> spec = ubuntu.getSpecification('media-integrity-check')
 
@@ -36,7 +37,7 @@ The summary can only be changed by non-anonymous users:
 
 We can create a new branch link with the linkBranch() method:
 
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/+junk/junk.contrib')
     >>> user = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> branchlink = spec.linkBranch(branch, user, 'A summary')
