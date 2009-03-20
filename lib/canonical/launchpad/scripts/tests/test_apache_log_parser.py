@@ -53,6 +53,14 @@ class TestLogFileParsing(TestCase):
         '"https://launchpad.net/~ubuntulite/+archive" "Mozilla/5.0 (X11; '
         'U; Linux i686; en-US; rv:1.9b5) Gecko/2008041514 Firefox/3.0b5"')
 
+    def _getLastLineStart(self, fd):
+        """Return the position (in bytes) where the last line of the given
+        file starts.
+        """
+        fd.seek(0)
+        lines = fd.readlines()
+        return fd.tell() - len(lines[-1])
+
     def test_parsing(self):
         # The parse_file() function returns a tuple containing a dict (mapping
         # days and library file IDs to number of downloads) and the total
@@ -72,9 +80,10 @@ class TestLogFileParsing(TestCase):
             sorted(daily_downloads.items()),
             [('12060796', 1), ('8196569', 2), ('9096290', 1)])
 
-        # The last line is skipped, so it's 
+        # The last line is skipped, so we'll record that the file has been
+        # parsed until the beginning of the last line.
         self.assertNotEqual(parsed_bytes, fd.tell())
-        self.assertEqual(parsed_bytes, 952)
+        self.assertEqual(parsed_bytes, self._getLastLineStart(fd))
 
     def test_parsing_last_line(self):
         # When there's only the last line of a given file for us to parse, we
@@ -82,7 +91,8 @@ class TestLogFileParsing(TestCase):
         # line without worrying about whether or not it's been truncated.
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
-        downloads, parsed_bytes = parse_file(fd, start_position=952)
+        downloads, parsed_bytes = parse_file(
+            fd, start_position=self._getLastLineStart(fd))
         self.assertEqual(parsed_bytes, fd.tell())
 
         daily_downloads = downloads[datetime(2008, 6, 13)]
