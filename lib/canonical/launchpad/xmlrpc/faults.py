@@ -455,3 +455,16 @@ class NoSuchDistroSeries(LaunchpadFault):
     def __init__(self, distroseries_name):
         self.distroseries_name = distroseries_name
         LaunchpadFault.__init__(self, distroseries_name=distroseries_name)
+
+
+class NoSuchSourcePackageName(LaunchpadFault):
+    """Raised when the user tries to get a sourcepackage that doesn't exist.
+    """
+
+    error_code = 350
+    msg_template = "No such source package %(sourcepackagename)s."
+
+    def __init__(self, sourcepackagename):
+        self.sourcepackagename = sourcepackagename
+        LaunchpadFault.__init__(self, sourcepackagename=sourcepackagename)
+

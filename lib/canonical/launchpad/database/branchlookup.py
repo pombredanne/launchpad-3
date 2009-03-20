@@ -151,7 +151,6 @@ class DistroSeriesTraversable(_BaseTraversable):
         """See `ITraversable`."""
         sourcepackage = self.context.getSourcePackage(name)
         if sourcepackage is None:
-            # TODO: Not handled by resolve_lp_path.
             raise NoSuchSourcePackageName(name)
         return sourcepackage, PackagePublishingPocket.RELEASE
 

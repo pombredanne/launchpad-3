@@ -167,10 +167,17 @@ class TestExpandURL(TestCaseWithFactory):
         # name on that distribution.
         distro = self.factory.makeDistribution()
         self.assertFault(
-            '%s/%s' % (distro.name, "doesntexist"),
+            '%s/doesntexist/whocares' % distro.name,
             faults.NoSuchDistroSeries("doesntexist"))
 
-    # TODO: test no such source package
+    def test_no_such_source_package(self):
+        # Return a NoSuchSourcePackageName fault if there is no source package
+        # of the given name.
+        distroseries = self.factory.makeDistroRelease()
+        distribution = distroseries.distribution
+        self.assertFault(
+            '%s/%s/doesntexist' % (distribution.name, distroseries.name),
+            faults.NoSuchSourcePackageName('doesntexist'))
 
     # TODO: test source package with no linked branch
 

@@ -32,6 +32,8 @@ from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, NoSuchProduct)
 from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
+from canonical.launchpad.interfaces.sourcepackagename import (
+    NoSuchSourcePackageName)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.xmlrpc import faults
@@ -243,6 +245,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             raise faults.NoSuchProduct(e.name)
         except NoSuchDistroSeries, e:
             raise faults.NoSuchDistroSeries(e.name)
+        except NoSuchSourcePackageName, e:
+            raise faults.NoSuchSourcePackageName(e.name)
         except NoLinkedBranch, e:
             raise faults.NoLinkedBranch(e.component)
         except CannotHaveLinkedBranch, e:
