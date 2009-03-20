@@ -615,6 +615,7 @@ Following the redirect, we can see the new bug watch:
   >>> bug_tracker = webservice.get(bug_watch['bug_tracker_link']).jsonBody()
 
   >>> pprint_entry(bug_tracker)
+  active: True
   base_url: u'https://bugzilla.mozilla.org/'
   base_url_aliases: []
   bug_tracker_type: u'Bugzilla'
@@ -670,6 +671,7 @@ renamed bug tracker.
   >>> bug_tracker_path = response.getHeader('Location')
   >>> bug_tracker = webservice.get(bug_tracker_path).jsonBody()
   >>> pprint_entry(bug_tracker)
+  active: True
   base_url: u'http://bugs.example.com/'
   base_url_aliases: [u'http://bugs.example.com/bugs/', u'http://www.example.com/bugtracker/']
   bug_tracker_type: u'Bugzilla'
@@ -682,6 +684,23 @@ renamed bug tracker.
   summary: u'Where Bob files his bugs.'
   title: u"Bob's Tracker"
   watches_collection_link: u'http://.../bugs/bugtrackers/bob/watches'
+
+Non-admins can't disable a bugtracker through the API.
+
+    >>> print public_webservice.patch(
+    ...     bug_tracker_path, 'application/json',
+    ...     dumps(dict(active=False))).jsonBody()
+    Traceback (most recent call last):
+      ...
+    ValueError: HTTP/1.1 401 Unauthorized...
+
+Admins can, however.
+
+    >>> bug_tracker = webservice.patch(
+    ...     bug_tracker_path, 'application/json',
+    ...     dumps(dict(active=False))).jsonBody()
+    >>> pprint_entry(bug_tracker)
+    active: False...
 
 
 == Bug attachments ==

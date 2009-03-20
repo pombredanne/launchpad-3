@@ -253,7 +253,7 @@ class TestBranchBzrIdentity(TestCaseWithFactory):
         # To avoid dealing with admins, just log in the product owner to set
         # the development focus branch.
         login_person(product.owner)
-        product.development_focus.user_branch = branch
+        product.development_focus.branch = branch
         view = PersonOwnedBranchesView(branch.owner, LaunchpadTestRequest())
         view.initialize()
         navigator = view.branches()

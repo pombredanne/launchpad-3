@@ -17,11 +17,11 @@ import calendar
 import pytz
 import sets
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND)
-from storm.expr import And
-from storm.locals import Unicode
+    BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, SQLRelatedJoin,
+    StringCol)
 from storm.store import Store
+from storm.expr import And, Join
+from storm.locals import Unicode
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -301,7 +301,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        default_branch = self.development_focus.series_branch
+        default_branch = self.development_focus.branch
         if default_branch is None:
             return None
         elif default_branch.last_mirrored is None:
@@ -541,12 +541,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def releases(self):
-        return ProductRelease.select(
-            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
-                ProductSeries.q.productID == self.id),
-            clauseTables=['ProductSeries'],
-            orderBy=['version']
-            )
+        store = Store.of(self)
+        origin = [
+            ProductRelease,
+            Join(Milestone, ProductRelease.milestone == Milestone.id),
+            ]
+        result = store.using(*origin)
+        result = result.find(ProductRelease, Milestone.product == self)
+        return result.order_by(Milestone.name)
 
     @property
     def drivers(self):
@@ -899,7 +901,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # Set the ID of the new ProductSeries to avoid flush order
         # loops in ProductSet.createProduct()
         return ProductSeries(productID=self.id, owner=owner, name=name,
-                             summary=summary, user_branch=branch)
+                             summary=summary, branch=branch)
 
     def getRelease(self, version):
         return ProductRelease.selectOne("""
@@ -968,7 +970,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         store = Store.of(self)
         return store.find(
             BugWatch,
-            And(self == BugTask.product,
+            And(BugTask.product == self.id,
                 BugTask.bugwatch == BugWatch.id,
                 BugWatch.bugtracker == self.getExternalBugTracker()))
 
@@ -1208,8 +1210,7 @@ class ProductSet:
             queries.append('BugTask.product=Product.id')
         if bazaar:
             clauseTables.add('ProductSeries')
-            queries.append('(ProductSeries.import_branch IS NOT NULL OR '
-                           'ProductSeries.user_branch IS NOT NULL)')
+            queries.append('(ProductSeries.branch IS NOT NULL)')
         if 'ProductSeries' in clauseTables:
             queries.append('ProductSeries.product=Product.id')
         if not show_inactive:

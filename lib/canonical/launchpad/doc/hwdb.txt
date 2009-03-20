@@ -398,8 +398,10 @@ the field `owner` is updated.
 
     >>> email = getUtility(IEmailAddressSet).new(
     ...     u'beeblebrox@beeblebrox.net', user)
+    >>> transaction.commit()
     >>> login_person(user)
     >>> user.validateAndEnsurePreferredEmail(email)
+    >>> transaction.commit()
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname
     Beeblebrox
@@ -548,6 +550,7 @@ Links between a bug and a submission must be unique.
     IntegrityError: ... violates unique constraint
     "hwsubmissionbug__submission__bug__key"
 
+    >>> transaction.abort()
 
 == General Search Method ==
 

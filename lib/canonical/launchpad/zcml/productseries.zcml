@@ -18,8 +18,9 @@
             interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="product name owner driver summary user_branch
-                            status releasefileglob import_branch"
+            set_attributes="product name owner driver summary branch
+                            status releasefileglob 
+                            translations_autoimport_mode"
             />
         <require
             permission="launchpad.AnyPerson"
@@ -54,11 +55,11 @@
     <browser:page
       name="+addspec"
       for="canonical.launchpad.interfaces.IProductSeries"
-	  class="canonical.launchpad.browser.NewSpecificationFromProductSeriesView"
-	  facet="specifications"
-	  permission="launchpad.AnyPerson"
-	  template="../templates/specification-add.pt"
-	/>
+      class="canonical.launchpad.browser.NewSpecificationFromProductSeriesView"
+      facet="specifications"
+      permission="launchpad.AnyPerson"
+      template="../templates/specification-add.pt"
+    />
 
     <adapter
         provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
@@ -269,6 +270,16 @@
         facet="translations"
         permission="zope.Public"
         template="../templates/hastranslationimports-index.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+translations-settings"
+        class="canonical.launchpad.browser.ProductSeriesTranslationsSettingsView"
+        facet="translations"
+        permission="launchpad.Edit"
+        template="../templates/productseries-translations-settings.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
