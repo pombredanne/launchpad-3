@@ -164,11 +164,13 @@ def distribution_linked_branch(distribution):
     """Distributions cannot have linked branches. Raise a nice error."""
     raise NoDefaultBranch(distribution, 'distribution')
 
+
 @adapter(IProject)
 @implementer(ICanHasLinkedBranch)
 def project_linked_branch(project):
     """Projects cannot have linked branches. Raise a nice error."""
     raise NoDefaultBranch(project, 'project group')
+
 
 @adapter(IProductSeries)
 @implementer(ICanHasLinkedBranch)
