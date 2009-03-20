@@ -75,6 +75,12 @@ class TranslationBranchApprover(object):
                 if potemplate is not None:
                     self._n_matched += 1
                 self._potemplates[path] = potemplate
+        # The simplest case of exactly one file and one POTemplate object is
+        # always approved.
+        if len(self._potemplateset) == len(self._potemplates) == 1:
+            self._potemplates[self._potemplates.keys()[0]] = (
+                self._potemplateset[0])
+            self.is_approval_possible = True
 
     @property
     def unmatched_objects(self):

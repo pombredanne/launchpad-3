@@ -29,7 +29,7 @@ from canonical.launchpad.interfaces.branchsubscription import (
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    ITranslationImportQueue, RosettaImportStatus)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
@@ -480,6 +480,10 @@ class TestRosettaUploadJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.series = None
+
     def _makeBranchWithTreeAndFile(self, file_name, file_content = None):
         return self._makeBranchWithTreeAndFiles(((file_name, file_content),))
 
@@ -521,9 +525,10 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         return revision_id
 
     def _makeProductSeries(self, mode):
-        self.series = self.factory.makeProductSeries()
-        self.series.branch = self.branch
-        self.series.translations_autoimport_mode = mode
+        if self.series is None:
+            self.series = self.factory.makeProductSeries()
+            self.series.branch = self.branch
+            self.series.translations_autoimport_mode = mode
 
     def _runJobWithFile(self, import_mode, file_name, file_content = None):
         return self._runJobWithFiles(
@@ -620,6 +625,41 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             (('foo.pot',), ('eo.po',), ('README',))
             )
         self.assertEqual([], entries)
+
+    def test_upload_approved(self):
+        # A single new entry should be created approved.
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES, 'foo.pot')
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
+
+    def test_upload_simplest_case_approved(self):
+        # A single new entry should be created approved and linked to the
+        # only POTemplate object in the database, if there is only one such
+        # object for this product series.
+        self._makeBranchWithTreeAndFile('foo.pot')
+        self._makeProductSeries(TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        potemplate = self.factory.makePOTemplate(self.series)
+        entries = self._runJob(None, NULL_REVISION)
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual(potemplate, entry.potemplate)
+        self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
+
+    def test_upload_multiple_approved(self):
+        # A single new entry should be created approved and linked to the
+        # only POTemplate object in the database, if there is only one such
+        # object for this product series.
+        self._makeBranchWithTreeAndFiles(
+            [('foo.pot', None),('bar.pot', None)])
+        self._makeProductSeries(TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        self.factory.makePOTemplate(self.series, path='foo.pot')
+        self.factory.makePOTemplate(self.series, path='bar.pot')
+        entries = self._runJob(None, NULL_REVISION)
+        self.assertEqual(len(entries), 2)
+        self.assertEqual(RosettaImportStatus.APPROVED, entries[0].status)
+        self.assertEqual(RosettaImportStatus.APPROVED, entries[1].status)
 
     def test_iterReady_job_type(self):
         # iterReady only returns RosettaUploadJobs.

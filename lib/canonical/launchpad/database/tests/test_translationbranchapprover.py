@@ -71,13 +71,15 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         self.approver.approve(self.entry)
         self.assertEqual(TEMPLATE_NAME, self.entry.potemplate.name)
 
-    def _setup_one_existing(self, domain):
+    def _setup_one_existing(self, domain, pot_path_queue=None):
         pot_path = domain+'.pot'
+        if pot_path_queue is None:
+            pot_path_queue = pot_path
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.series,
             name=domain.replace('_', '-'), translation_domain=domain,
             path=pot_path)
-        self.entry = self.queue.addOrUpdateEntry(pot_path,
+        self.entry = self.queue.addOrUpdateEntry(pot_path_queue,
             self.factory.getUniqueString(), True, self.series.owner,
             productseries=self.series)
         self.approver = TranslationBranchApprover((pot_path,),
@@ -92,6 +94,14 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         self._setup_one_existing(self.factory.getUniqueString())
         self.approver.approve(self.entry)
         self.assertEqual(self.potemplate, self.entry.potemplate)
+
+    def test_replace_existing_any_path(self):
+        # If just one template file is found in the tree and just one
+        # POTEMPLATE object is in the database, the upload is always approved.
+        self._setup_one_existing(self.factory.getUniqueString(),
+                                 self.factory.getUniqueString()+'.pot')
+        self.approver.approve(self.entry)
+        self.assertEqual(RosettaImportStatus.APPROVED, self.entry.status)
 
     def _setup_add_template(self, new_domain):
         existing_domain = self.factory.getUniqueString()
