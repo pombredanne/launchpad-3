@@ -69,10 +69,6 @@
       <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 
-    <td class="icon left right">
-      <metal:expander metal:use-macro="template/macros/expander" />
-    </td>
-
     <td style="margin: 0; padding: 0; vertical-align: middle">
       <tal:has_watch condition="context/bugwatch">
         <div style="text-decoration: none; padding: 0.25em">

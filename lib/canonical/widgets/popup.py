@@ -291,7 +291,8 @@ class VocabularyPickerWidget(SinglePopupWidget):
             max_description_length=self.max_description_length,
             show_widget_id=self.show_widget_id,
             input_id=self.name)
-        return ('(<a id="%s" href="javascript:">Choose&hellip;</a>)'
+        return ('(<a id="%s" href="javascript:" class="ajax">'
+                'Choose&hellip;</a>)'
                 '\n<script>\n%s\n</script>') % (self.show_widget_id, js)
 
 
