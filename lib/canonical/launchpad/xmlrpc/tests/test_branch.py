@@ -305,7 +305,7 @@ class TestExpandURL(TestCaseWithFactory):
             '%s/%s' % (series.product.name, series.name),
             faults.NoLinkedBranch(series))
 
-    def test_privateBranchAsDevelopmentFocus(self):
+    def test_private_branch_as_development_focus(self):
         # We resolve invisible branches as if they don't exist.
         #
         # References to a product resolve to the branch associated with the
