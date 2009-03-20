@@ -18,14 +18,21 @@ First, we need a hierarchy of objects to build upon:
     >>> class IRecipe(Interface):
     ...     """A recipe in a cookbook."""
 
+    >>> class ICooker(Interface):
+    ...     """A cooker."""
+
+    >>> import os
     >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
     >>> class BaseContent:
     ...     implements(ICanonicalUrlData)
     ...
-    ...     def __init__(self, name, parent):
+    ...     def __init__(self, name, parent, path_prefix=None):
     ...         self.name = name
-    ...         self.path = name
+    ...         if path_prefix is not None:
+    ...             self.path = os.path.join(path_prefix, name)
+    ...         else:
+    ...             self.path = name
     ...         self.inside = parent
     ...         self.rootsite = None
 
@@ -38,9 +45,13 @@ First, we need a hierarchy of objects to build upon:
     >>> class Recipe(BaseContent):
     ...     implements(IRecipe)
 
+    >>> class Cooker(BaseContent):
+    ...     implements(ICooker)
+
 Today we'll be cooking with Spam!
 
     >>> root = Root('', None)
+    >>> cooker = Cooker('jamie', root, '+cooker')
     >>> cookbook = Cookbook('joy-of-cooking', root)
     >>> recipe = Recipe('spam', cookbook)
 
@@ -94,6 +105,22 @@ closest to the hierarchy root.
      <Breadcrumb
         url='http://launchpad.dev/joy-of-cooking/spam'
         text='Spam'>]
+
+The ICooker object contains a path prefix, a segment of the path that
+does not correspond to any object, it's only used to split traversal
+domains. The `Hierarchy` model copes fine with objects like that.
+
+    >>> cooker_request = make_fake_request(
+    ...     'http://launchpad.dev/+cooker/jamie',
+    ...     [root, cooker])
+
+    >>> provideAdapter(
+    ...     TextualBreadcrumbBuilder, [ICooker], IBreadcrumbBuilder)
+
+    >>> cooker_hierarchy = getMultiAdapter(
+    ...     (cooker, cooker_request), name='+hierarchy')
+    >>> cooker_hierarchy.items()
+    [<Breadcrumb url='http://launchpad.dev/+cooker/jamie' text='Jamie'>]
 
 
 == Building IBreadcrumb objects ==

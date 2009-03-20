@@ -264,7 +264,7 @@ A private bugtask, as an anonymous user.
     >>> login("foo.bar@canonical.com")
     >>> distro_series_task.bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
-    >>> distro_series_task.bug.unsubscribe(current_user)
+    >>> distro_series_task.bug.unsubscribe(current_user, current_user)
 
 An IBugWatchSet.
 

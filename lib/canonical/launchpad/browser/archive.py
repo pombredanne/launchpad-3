@@ -50,6 +50,8 @@ from canonical.launchpad.interfaces.archive import (
     default_name_by_purpose)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -193,6 +195,25 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
             pub_id, self.context)
         if results.count() == 1:
             return results[0]
+
+        return None
+
+    @stepthrough('+subscriptions')
+    def traverse_subscription(self, person_name):
+        try:
+            person = getUtility(IPersonSet).getByName(person_name)
+        except NotFoundError:
+            return None
+
+        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            person, archive=self.context)
+
+        # If a person is subscribed with a direct subscription as well as
+        # via a team, subscriptions will contain both, so need to grab
+        # the direct subscription:
+        for subscription in subscriptions:
+            if subscription.subscriber == person:
+                return subscription
 
         return None
 

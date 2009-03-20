@@ -504,6 +504,7 @@ defines common configuration option for the webservice.
     ...     use_https = False
     ...     service_version_uri_prefix = 'beta'
     ...     code_revision = 'test'
+    ...     show_tracebacks = True
     ...
     ...     root = None # Will be set later
     ...     def createRequest(self, body_instream, environ):

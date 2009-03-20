@@ -13,6 +13,7 @@ __all__ = [
     "FileBugGuidedView",
     "FrontPageFileBugAdvancedView",
     "FrontPageFileBugGuidedView",
+    "OfficialBugTagsManageView",
     "ProjectFileBugGuidedView",
     "ProjectFileBugAdvancedView",
     ]
@@ -39,7 +40,8 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import (
+    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
@@ -50,11 +52,11 @@ from canonical.launchpad.interfaces import (
     IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES,
     BugTaskStatus)
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadView, action, canonical_url, custom_widget,
-    safe_action, urlappend)
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
+    canonical_url, custom_widget, safe_action, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
-from canonical.widgets.bug import BugTagsWidget
+from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.webapp.menu import structured
@@ -1263,3 +1265,26 @@ class BugTargetBugTagsView(LaunchpadView):
             {'tag': tag, 'count': count, 'url': self._getSearchURL(tag)}
             for tag, count in bug_tag_counts]
 
+    @property
+    def show_manage_tags_link(self):
+        """Should a link to a "manage official tags" page be shown?"""
+        return (IOfficialBugTagTargetRestricted.providedBy(self.context) and
+                check_permission('launchpad.Edit', self.context))
+
+
+class OfficialBugTagsManageView(LaunchpadEditFormView):
+    """View class for management of official bug tags."""
+
+    schema = IOfficialBugTagTargetPublic
+    custom_widget('official_bug_tags', LargeBugTagsWidget)
+
+    @action('Save', name='save')
+    def save_action(self, action, data):
+        """Action for saving new official bug tags."""
+        self.context.official_bug_tags = data['official_bug_tags']
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        """The URL the user is sent to when clicking the "cancel" link."""
+        return canonical_url(self.context)
