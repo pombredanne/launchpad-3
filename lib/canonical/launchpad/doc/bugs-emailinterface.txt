@@ -2741,8 +2741,11 @@ set the datecreated field of the bug's initial message (see bug
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
-    >>> bug_watch = bug_with_watch.addWatch(bug_tracker, '12345', no_priv)
+    >>> bug_watch = bug_with_watch.addWatch(
+    ...     bug_tracker, '12345', getUtility(ILaunchpadCelebrities).janitor)
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)

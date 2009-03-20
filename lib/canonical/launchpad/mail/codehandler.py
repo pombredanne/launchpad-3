@@ -16,7 +16,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
+from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalExists, IBranchMergeProposalGetter,
     ICreateMergeProposalJobSource, UserNotBranchReviewer)
@@ -370,7 +371,7 @@ class CodeHandler:
             performed.
         :return: source_branch, target_branch
         """
-        mp_target = getUtility(IBranchSet).getByUrl(md.target_branch)
+        mp_target = getUtility(IBranchLookup).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
         if md.bundle is None:
@@ -400,8 +401,8 @@ class CodeHandler:
         :param submitter: The person submitting the merge proposal.
         """
         if url is not None:
-            branches = getUtility(IBranchSet)
-            unique_name = branches.URIToUniqueName(URI(url))
+            branches = getUtility(IBranchLookup)
+            unique_name = branches.uriToUniqueName(URI(url))
             if unique_name is not None:
                 namespace_name, base = split_unique_name(unique_name)
                 return lookup_branch_namespace(namespace_name), base
@@ -430,7 +431,7 @@ class CodeHandler:
 
     def _getSourceNoBundle(self, md, target, submitter):
         """Get a source branch for a merge directive with no bundle."""
-        mp_source = getUtility(IBranchSet).getByUrl(md.source_branch)
+        mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.REMOTE, md.source_branch, target, submitter)
@@ -440,7 +441,7 @@ class CodeHandler:
         """Get a source branch for a merge directive with a bundle."""
         mp_source = None
         if md.source_branch is not None:
-            mp_source = getUtility(IBranchSet).getByUrl(md.source_branch)
+            mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.HOSTED, md.source_branch, target,

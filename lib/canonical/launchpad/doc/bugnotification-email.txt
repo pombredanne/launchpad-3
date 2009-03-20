@@ -378,63 +378,7 @@ edited:
 
 = Adding and editing bug watches =
 
-Here's an example that demonstrates the notification email that gets
-generated when a bug watch is added:
-
-    >>> from zope.interface import implements
-    >>> from canonical.launchpad.interfaces import IBugWatch, IBugTrackerSet
-    >>> bugtrackerset = getUtility(IBugTrackerSet)
-
-    >>> class MockBugWatch:
-    ...     implements(IBugWatch)
-    ...     def __init__(self, bug, bugtracker, remotebug):
-    ...         self.bug = bug
-    ...         self.bugtracker = bugtracker
-    ...         self.remotebug = remotebug
-    ...         self.url = "%sshow_bug.cgi?id=%s" % (
-    ...             bugtracker.baseurl, remotebug)
-    >>> mock_bug_watch = MockBugWatch(
-    ...     bug=edited_bug,
-    ...     bugtracker=getUtility(IBugTrackerSet)["mozilla.org"],
-    ...     remotebug="123")
-
-    >>> bug_delta = BugDelta(
-    ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
-    ...     user=sample_person,
-    ...     bugwatch={'new' : mock_bug_watch})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
-    ...     print "-----------------------------"
-    ** Bug watch added: The Mozilla.org Bug Tracker #123
-       https://bugzilla.mozilla.org/show_bug.cgi?id=123
-    -----------------------------
-
-When edited, we display the change to a bug watch as though the
-previous data was "removed" and the new, current data was "added."
-Let's demonstrate with an example:
-
-    >>> mock_bug_watch_edited = MockBugWatch(
-    ...     bug=edited_bug,
-    ...     bugtracker=getUtility(IBugTrackerSet)["mozilla.org"],
-    ...     remotebug="12")
-
-    >>> bug_delta = BugDelta(
-    ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
-    ...     user=sample_person,
-    ...     bugwatch={'old' : mock_bug_watch, 'new' : mock_bug_watch_edited})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
-    ...     print "-----------------------------"
-    ** Bug watch removed: The Mozilla.org Bug Tracker #123
-       https://bugzilla.mozilla.org/show_bug.cgi?id=123
-    -----------------------------
-    ** Bug watch added: The Mozilla.org Bug Tracker #12
-       https://bugzilla.mozilla.org/show_bug.cgi?id=12
-    -----------------------------
-
-We can also add a bugwatch while adding a new bugtask.
+We can add a bugwatch while adding a new bugtask.
 
     >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> mozilla_bug_watch = getUtility(IBugWatchSet).get(1)
@@ -460,6 +404,7 @@ We can also add a bugwatch while adding a new bugtask.
 
 Adding a CVE will generate a notification that looks as follows:
 
+    >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import CveStatus
 
     >>> class MockCVE:
