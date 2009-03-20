@@ -1127,7 +1127,19 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 }
 
 .official-tag-error-message {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
+.official-tag-error-message-header {
+  font-weight: bold;
+  font-size: 1.25em;
+  margin-left: 1em;
+}
+
+.official-tag-error-message-value {
   color: red;
+  text-decoration: underline;
 }
 
 /* === Portlets === */
