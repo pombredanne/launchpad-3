@@ -239,12 +239,11 @@ class POFileMixIn(RosettaStats):
         -- Like in findPOTMsgSetsContaining(), to avoid seqscans on
         -- POTranslation table, we do ILIKE comparison on them in
         -- a subselect which is first filtered by the POFile.
-        (POTMsgSet.id IN (
-          SELECT POTMsgSet.id FROM POTMsgSet
-            JOIN TranslationMessage
-              ON TranslationMessage.potmsgset=POTMsgSet.id
+          SELECT TranslationMessage.potmsgset
+            FROM TranslationMessage
             JOIN TranslationTemplateItem
-              ON POTMsgSet.id=TranslationTemplateItem.potmsgset
+              ON TranslationMessage.potmsgset
+                   = TranslationTemplateItem.potmsgset
             WHERE
               TranslationTemplateItem.potemplate = %(potemplate)s AND
               TranslationMessage.language = %(language)s AND
@@ -254,12 +253,18 @@ class POFileMixIn(RosettaStats):
                   POTranslation.id IN (
                     SELECT DISTINCT(msgstr%(plural_form)d)
                       FROM TranslationMessage AS tm_ids
-                      WHERE tm_ids.language=%(language)s AND
-                            tm_ids.variant %(variant_query)s
+                      JOIN TranslationTemplateItem
+                        ON tm_ids.potmsgset=TranslationTemplateItem.potmsgset
+                      WHERE
+                        TranslationTemplateItem.potemplate
+                          = %(potemplate)s AND
+                        TranslationTemplateItem.sequence > 0 AND
+                        tm_ids.language=%(language)s AND
+                        tm_ids.variant %(variant_query)s
                   ) AND
                   POTranslation.translation
                     ILIKE '%%' || %(text)s || '%%')
-                  ))""" % dict(potemplate=quote(pofile.potemplate),
+                    """ % dict(potemplate=quote(pofile.potemplate),
                                language=quote(pofile.language),
                                variant_query=variant_query,
                                plural_form=plural_form,
@@ -275,30 +280,41 @@ class POFileMixIn(RosettaStats):
         -- To avoid seqscans on POMsgID table (what LIKE usually
         -- does), we do ILIKE comparison on them in a subselect first
         -- filtered by this POTemplate.
-           ((POTMsgSet.msgid_singular IS NOT NULL AND
-             POTMsgSet.msgid_singular IN (
-               SELECT POMsgID.id FROM POMsgID
-                 WHERE id IN (
-                   SELECT DISTINCT(msgid_singular)
-                     FROM POTMsgSet
-                     JOIN TranslationTemplateItem
-                       ON TranslationTemplateItem.potmsgset = POTMsgSet.id
-                     WHERE TranslationTemplateItem.potemplate=%s
-                 ) AND
-                 msgid ILIKE '%%' || %s || '%%')) OR
+          SELECT POTMsgSet.id
+            FROM POTMsgSet
+            WHERE
+              (POTMsgSet.msgid_singular IS NOT NULL AND
+               POTMsgSet.msgid_singular IN (
+                 SELECT POMsgID.id FROM POMsgID
+                   WHERE id IN (
+                     SELECT DISTINCT(msgid_singular)
+                       FROM POTMsgSet
+                       JOIN TranslationTemplateItem
+                         ON TranslationTemplateItem.potmsgset = POTMsgSet.id
+                       WHERE
+                         TranslationTemplateItem.potemplate=%s AND
+                         TranslationTemplateItem.sequence > 0
+                   ) AND
+                   msgid ILIKE '%%' || %s || '%%'))
+          UNION
         -- Step 1b: like above, just on msgid_plural.
-            (POTMsgSet.msgid_plural IS NOT NULL AND
-             POTMsgSet.msgid_plural IN (
-               SELECT POMsgID.id FROM POMsgID
-                 WHERE id IN (
-                   SELECT DISTINCT(msgid_plural)
-                     FROM POTMsgSet
-                     JOIN TranslationTemplateItem
-                       ON TranslationTemplateItem.potmsgset = POTMsgSet.id
-                     WHERE TranslationTemplateItem.potemplate=%s
-                 ) AND
-                 msgid ILIKE '%%' || %s || '%%'))
-           )""" % (quote(self.potemplate), quote_like(text),
+          SELECT POTMsgSet.id
+            FROM POTMsgSet
+            WHERE
+              (POTMsgSet.msgid_plural IS NOT NULL AND
+               POTMsgSet.msgid_plural IN (
+                 SELECT POMsgID.id FROM POMsgID
+                   WHERE id IN (
+                     SELECT DISTINCT(msgid_plural)
+                       FROM POTMsgSet
+                       JOIN TranslationTemplateItem
+                         ON TranslationTemplateItem.potmsgset = POTMsgSet.id
+                       WHERE
+                         TranslationTemplateItem.potemplate=%s AND
+                         TranslationTemplateItem.sequence > 0
+                   ) AND
+                   msgid ILIKE '%%' || %s || '%%'))
+            """ % (quote(self.potemplate), quote_like(text),
                    quote(self.potemplate), quote_like(text))
         return english_match
 
@@ -325,19 +341,16 @@ class POFileMixIn(RosettaStats):
                     en_pofile, 0, text)
 
             # Do not look for translations in a DummyPOFile.
+            search_clauses = [english_match]
             if self.id is not None:
-                search_clauses = [english_match]
                 for plural_form in range(self.plural_forms):
                     translation_match = self._getTranslationSearchQuery(
                         self, plural_form, text)
                     search_clauses.append(translation_match)
 
-                clauses.append("(" + " OR ".join(search_clauses) + ")")
-            else:
-                clauses.append(english_match)
+            all_potmsgsets_query = "(" + " UNION ".join(search_clauses) + ")"
 
-        return POTMsgSet.select(" AND ".join(clauses),
-                                clauseTables=['TranslationTemplateItem'],
+        return POTMsgSet.select(" POTMsgSet.id IN " + all_potmsgsets_query,
                                 orderBy='sequence')
 
 
