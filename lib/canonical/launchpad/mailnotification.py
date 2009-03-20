@@ -24,14 +24,9 @@ from zope.component import getAdapter, getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.components.bugchange import get_bug_change_class
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from lazr.lifecycle.interfaces import IObjectModifiedEvent
-from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.components.bugchange import (
-    get_bug_change_class)
+from canonical.launchpad.components.bugchange import get_bug_change_class
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
     INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
