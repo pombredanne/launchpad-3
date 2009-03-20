@@ -390,6 +390,42 @@ Going the other way the phrases are similar.
     ** This bug is no longer flagged as a security vulnerability
 
 
+=== CveLinkedToBug / CveUnlinkedFromBug ===
+
+These describe the linking or unlinking of a CVE to a bug.
+
+    >>> from canonical.launchpad.interfaces.cve import ICveSet
+    >>> cve = getUtility(ICveSet)['1999-8979']
+
+getBugNotification() returns a formatted description of the change
+when a CVE is linked to a bug.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     CveLinkedToBug, CveUnlinkedFromBug)
+
+    >>> bug_cve_linked = CveLinkedToBug(
+    ...     when=nowish, person=example_person, cve=cve)
+
+    >>> print pretty(bug_cve_linked.getBugActivity())
+    {'newvalue': u'1999-8979',
+     'whatchanged': 'cve linked'}
+
+    >>> print bug_cve_linked.getBugNotification()['text']
+    ** CVE added: http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979
+
+And when a CVE is unlinked from a bug.
+
+    >>> bug_cve_unlinked = CveUnlinkedFromBug(
+    ...     when=nowish, person=example_person, cve=cve)
+
+    >>> print pretty(bug_cve_unlinked.getBugActivity())
+    {'oldvalue': u'1999-8979',
+     'whatchanged': 'cve unlinked'}
+
+    >>> print bug_cve_unlinked.getBugNotification()['text']
+    ** CVE removed: http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979
+
+
 == BugAttachmentChange ==
 
 BugAttachmentChange is used to handle the addition and removal of
