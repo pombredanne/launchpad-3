@@ -12,6 +12,7 @@ from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.mail import get_msgid
 from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, IMergeProposalCreatedJobSource)
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.mailout.branch import BranchMailer, RecipientReason
 from canonical.launchpad.webapp import canonical_url
 
@@ -30,7 +31,7 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
     if event.user is None:
         return
     mailer = BMPMailer.forModification(
-        event.object_before_modification, merge_proposal, event.user)
+        event.object_before_modification, merge_proposal, IPerson(event.user))
     if mailer is not None:
         mailer.sendAll()
 

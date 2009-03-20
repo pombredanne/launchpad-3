@@ -11,7 +11,7 @@
     :widgets_matrix: A matrix in which each row contains a ShipItFlavour and
                      one quantity widget for each ShipItArchitecture that we
                      ship CDs. These widgets should always be ordered according
-                     to their architectures, and the order should be 
+                     to their architectures, and the order should be
                      the same as in view/ordered_architectures.
 
     :view/ordered_architectures: A list of ShipItArchitecture objects in the
@@ -142,11 +142,11 @@
 <metal:previous_requests define-macro="previous_requests">
   <tal:comment replace="nothing">
     This macro expects the following variables defined:
-        :user: The logged in user.
+        :account: An IShipitAccount for the logged in user.
   </tal:comment>
 
   <ul>
-    <li tal:repeat="pastorder user/pastShipItRequests">
+    <li tal:repeat="pastorder account/pastShipItRequests">
       <span tal:replace="pastorder/getTotalCDs" /> CDs requested
       <span
         tal:attributes="title pastorder/daterequested/fmt:datetime"
@@ -203,7 +203,7 @@
            <div id="search">
             <tal:block condition="request/lp:person">
               <form action="/+logout" class="login" method="post">
-                Logged in as <span tal:replace="request/lp:person/displayname" />
+                Logged in as <span tal:replace="request/lp:person/fmt:displayname" />
                   &ndash;
                 <input type="submit" value="Log Out" />
               </form>

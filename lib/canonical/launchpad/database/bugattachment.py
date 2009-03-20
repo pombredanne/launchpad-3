@@ -7,13 +7,13 @@ __all__ = ['BugAttachment', 'BugAttachmentSet']
 from zope.event import notify
 from zope.interface import implements
 
+from lazr.lifecycle.event import ObjectCreatedEvent, ObjectDeletedEvent
+
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.event.sqlobjectevent import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.interfaces import (
     BugAttachmentType, IBugAttachmentSet, IBugAttachment, NotFoundError)
 
@@ -38,9 +38,9 @@ class BugAttachment(SQLBase):
     message = ForeignKey(
         foreignKey='Message', dbName='message', notNull=True)
 
-    def removeFromBug(self):
+    def removeFromBug(self, user):
         """See IBugAttachment."""
-        notify(SQLObjectDeletedEvent(self))
+        notify(ObjectDeletedEvent(self, user))
         self.destroySelf()
 
 class BugAttachmentSet:
@@ -70,5 +70,5 @@ class BugAttachmentSet:
             bug=bug, libraryfile=filealias, type=attach_type, title=title,
             message=message)
         if send_notifications:
-            notify(SQLObjectCreatedEvent(attachment))
+            notify(ObjectCreatedEvent(attachment, user=message.owner))
         return attachment

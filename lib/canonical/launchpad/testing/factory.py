@@ -39,22 +39,23 @@ from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.processor import ProcessorFamilySet
-from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
     IArchiveSet, ArchivePurpose)
-from canonical.launchpad.interfaces.branchmergequeue import (
-    IBranchMergeQueueSet)
 from canonical.launchpad.interfaces.branch import (
-    BranchType, IBranchSet, UnknownBranchTypeError)
+    BranchType, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
+from canonical.launchpad.interfaces.branchmergequeue import (
+    IBranchMergeQueueSet)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
-from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
@@ -67,10 +68,7 @@ from canonical.launchpad.interfaces.codeimportresult import (
 from canonical.launchpad.interfaces.codeimport import (
     CodeImportReviewStatus, RevisionControlSystems)
 from canonical.launchpad.interfaces.country import ICountrySet
-from canonical.launchpad.interfaces.distribution import (
-    IDistribution, IDistributionSet)
-from canonical.launchpad.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -89,7 +87,7 @@ from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.product import (
-    IProduct, IProductSet, License)
+    IProductSet, License)
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.project import IProjectSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
@@ -221,11 +219,25 @@ class LaunchpadObjectFactory(ObjectFactory):
             pocket)
         return location
 
-    def makeAccount(self, displayname, status=AccountStatus.ACTIVE,
-                    rationale=AccountCreationRationale.UNKNOWN):
-        """Create and return a new Account."""
-        account = getUtility(IAccountSet).new(rationale, displayname)
+    def makeAccount(self, displayname, email=None, password=None,
+                    status=AccountStatus.ACTIVE,
+                    rationale=AccountCreationRationale.UNKNOWN,
+                    commit=True):
+        """Create and return a new Account.
+
+        If commit is True, we do a transaction.commit() at the end so that the
+        newly created objects can be seen in other stores as well.
+        """
+        account = getUtility(IAccountSet).new(
+            rationale, displayname, password=password)
         removeSecurityProxy(account).status = status
+        if email is None:
+            email = self.getUniqueEmailAddress()
+        email = self.makeEmail(
+            email, person=None, account=account,
+            email_status=EmailAddressStatus.PREFERRED)
+        if commit:
+            transaction.commit()
         return account
 
     def makePerson(self, *args, **kwargs):
@@ -391,7 +403,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IEmailAddressSet).new(
             address, person, email_status, account)
 
-    def makeTeam(self, owner, displayname=None, email=None, name=None,
+    def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
                  visibility=None):
         """Create and return a new, arbitrary Team.
@@ -404,6 +416,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         """
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
@@ -574,10 +588,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
-        branch = getUtility(IBranchSet).new(
-            branch_type, name, registrant, owner, product, url,
-            distroseries=distroseries, sourcepackagename=sourcepackagename,
-            **optional_branch_args)
+
+        namespace = get_branch_namespace(
+            owner, product=product, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        branch = namespace.createBranch(
+            branch_type=branch_type, name=name, registrant=registrant,
+            url=url, **optional_branch_args)
         if private:
             removeSecurityProxy(branch).private = True
         if stacked_on is not None:
@@ -672,28 +689,30 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant, target_branch, dependent_branch=dependent_branch,
             review_diff=review_diff, initial_comment=initial_comment)
 
+        unsafe_proposal = removeSecurityProxy(proposal)
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
             # The initial state is work in progress, so do nothing.
             pass
         elif set_state == BranchMergeProposalStatus.NEEDS_REVIEW:
-            proposal.requestReview()
+            unsafe_proposal.requestReview()
         elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
-            proposal.approveBranch(
+            unsafe_proposal.approveBranch(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.REJECTED:
-            proposal.rejectBranch(
+            unsafe_proposal.rejectBranch(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.MERGED:
-            proposal.markAsMerged()
+            unsafe_proposal.markAsMerged()
         elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
-            proposal.mergeFailed(proposal.target_branch.owner)
+            unsafe_proposal.mergeFailed(proposal.target_branch.owner)
         elif set_state == BranchMergeProposalStatus.QUEUED:
-            proposal.commit_message = self.getUniqueString('commit message')
-            proposal.enqueue(
+            unsafe_proposal.commit_message = self.getUniqueString(
+                'commit message')
+            unsafe_proposal.enqueue(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.SUPERSEDED:
-            proposal.resubmit(proposal.registrant)
+            unsafe_proposal.resubmit(proposal.registrant)
         else:
             raise AssertionError('Unknown status: %s' % set_state)
 
@@ -769,9 +788,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent, sequence)
 
+    def makeBranchRevision(self, branch, revision_id, sequence=None):
+        revision = self.makeRevision(rev_id=revision_id)
+        return branch.createBranchRevision(sequence, revision)
+
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
-                date_created=None):
+                date_created=None, description=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -791,7 +814,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString(), private=private,
-            datecreated=date_created)
+            datecreated=date_created, description=description)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -823,37 +846,19 @@ class LaunchpadObjectFactory(ObjectFactory):
             return existing_bugtask
         owner = self.makePerson()
 
-        if IProduct.providedBy(target):
-            target_params = {'product': target}
-        elif IProductSeries.providedBy(target):
+        if IProductSeries.providedBy(target):
             # We can't have a series task without a distribution task.
             self.makeBugTask(bug, target.product)
-            target_params = {'productseries': target}
-        elif IDistribution.providedBy(target):
-            target_params = {'distribution': target}
-        elif IDistributionSourcePackage.providedBy(target):
-            target_params = {
-                'distribution': target.distribution,
-                'sourcepackagename': target.sourcepackagename,
-                }
-        elif IDistroSeries.providedBy(target):
+        if IDistroSeries.providedBy(target):
             # We can't have a series task without a distribution task.
             self.makeBugTask(bug, target.distribution)
-            target_params = {'distroseries': target}
-        elif ISourcePackage.providedBy(target):
+        if ISourcePackage.providedBy(target):
             distribution_package = target.distribution.getSourcePackage(
                 target.sourcepackagename)
             # We can't have a series task without a distribution task.
             self.makeBugTask(bug, distribution_package)
-            target_params = {
-                'distroseries': target.distroseries,
-                'sourcepackagename': target.sourcepackagename,
-                }
-        else:
-            raise AssertionError('Unknown IBugTarget: %r' % target)
 
-        return getUtility(IBugTaskSet).createTask(
-            bug=bug, owner=owner, **target_params)
+        return bug.addTask(owner, target)
 
     def makeBugTracker(self, base_url=None, bugtrackertype=None):
         """Make a new bug tracker."""
@@ -867,7 +872,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, bugtrackertype)
 
-    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
+    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
+                     owner=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -877,12 +883,16 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         if bug is None:
             bug = self.makeBug()
-        owner = self.makePerson()
+
+        if owner is None:
+            owner = self.makePerson()
+
         return getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
-                          comment=None, filename=None, content_type=None):
+                          comment=None, filename=None, content_type=None,
+                          description=None):
         """Create and return a new bug attachment.
 
         :param bug: An `IBug` or a bug ID or name, or None, in which
@@ -896,6 +906,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param filename: A string, or None, in which case a unique
             string will be used.
         :param content_type: The MIME-type of this file.
+        :param description: The description of the attachment.
         :return: An `IBugAttachment`.
         """
         if bug is None:
@@ -906,12 +917,15 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if data is None:
             data = self.getUniqueString()
+        if description is None:
+            description = self.getUniqueString()
         if comment is None:
             comment = self.getUniqueString()
         if filename is None:
             filename = self.getUniqueString()
         return bug.addAttachment(
-            owner, data, comment, filename, content_type=content_type)
+            owner, data, comment, filename, content_type=content_type,
+            description=description)
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
             attachment_contents=None, force_transfer_encoding=False,
@@ -1382,7 +1396,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             sourcepackagename = self.makeSourcePackageName()
         if distroseries is None:
             distroseries = self.makeDistroRelease()
-        return SourcePackage(sourcepackagename, distroseries)
+        return distroseries.getSourcePackage(sourcepackagename)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None):

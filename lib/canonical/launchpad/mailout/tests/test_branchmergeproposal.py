@@ -13,7 +13,7 @@ from canonical.testing import (
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.database.diff import StaticDiff
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.launchpad.ftests import login, login_person
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -203,7 +203,7 @@ new commit message
         merge_proposal, subscriber = self.makeProposalWithSubscriber()
         snapshot = BranchMergeProposalDelta.snapshot(merge_proposal)
         merge_proposal.commit_message = 'new message'
-        event = SQLObjectModifiedEvent(merge_proposal, snapshot, None)
+        event = ObjectModifiedEvent(merge_proposal, snapshot, None)
         pop_notifications()
         send_merge_proposal_modified_notifications(merge_proposal, event)
         emails = pop_notifications()
@@ -217,7 +217,7 @@ new commit message
         """Should not send emails if no delta."""
         merge_proposal, subscriber = self.makeProposalWithSubscriber()
         snapshot = BranchMergeProposalDelta.snapshot(merge_proposal)
-        event = SQLObjectModifiedEvent(merge_proposal, snapshot, None)
+        event = ObjectModifiedEvent(merge_proposal, snapshot, None)
         pop_notifications()
         send_merge_proposal_modified_notifications(merge_proposal, event)
         emails = pop_notifications()

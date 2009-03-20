@@ -13,6 +13,9 @@ __all__ = [
     'IBranchDiffJobSource',
     'IRevisionMailJob',
     'IRevisionMailJobSource',
+    'IRevisionsAddedJobSource',
+    'IRosettaUploadJob',
+    'IRosettaUploadJobSource',
     ]
 
 
@@ -90,3 +93,47 @@ class IRevisionMailJobSource(Interface):
 
     def iterReady():
         """Iterate through ready IRevisionMailJobs."""
+
+
+class IRevisionsAddedJob(Interface):
+    """A Job to send emails about revisions added to a branch."""
+
+    def run():
+        """Send the mails as specified by this job."""
+
+
+class IRevisionsAddedJobSource(Interface):
+    """A utility to create and retrieve RevisionMailJobs."""
+
+    def create(branch, last_scanned_id, last_revision_id, from_address):
+        """Create and return a new object that implements IRevisionMailJob."""
+
+    def iterReady():
+        """Iterate through ready IRevisionsAddedJobSource."""
+
+
+class IRosettaUploadJob(Interface):
+    """A job to upload translation files to Rosetta."""
+
+    from_revision_id = TextLine(
+        title=_('The revision id to compare against.'))
+
+    def run():
+        """Extract translation files from the branch passed in by the factory
+        (see IRosettaUploadJobSource) and put them into the translations
+        import queue.
+        """
+
+
+class IRosettaUploadJobSource(Interface):
+
+    def create(branch, from_revision_id):
+        """Construct a new object that implements IRosettaUploadJob.
+
+        :param branch: The database branch to exract files from.
+        :param from_revision_id: The revision id to compare against.
+        """
+
+    def iterReady():
+        """Iterate through ready IRosettaUploadJobs."""
+

@@ -1386,6 +1386,7 @@ returned.
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Team', u'Mark Shuttleworth'),
      (u'Ubuntu Translators', u'Rosetta Administrators'),
+     (u'Ubuntu branches', u'Ubuntu-branches-owner'),
      (u'VCS imports', u'Robert Collins'),
      (u'Warty Gnome Team', u'Mark Shuttleworth'),
      (u'Warty Security Team', u'Mark Shuttleworth'),
@@ -1403,6 +1404,7 @@ text to match against the team name.  Still, you only get teams back.
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Team', u'Mark Shuttleworth'),
      (u'Ubuntu Translators', u'Rosetta Administrators'),
+     (u'Ubuntu branches', u'Ubuntu-branches-owner'),
      (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search('team'))
@@ -1771,85 +1773,6 @@ _clauseTables).
     >>> debian = getUtility(ILaunchpadCelebrities).debian
     >>> debian in featured_project_vocabulary
     False
-
-
-=== FAQ ===
-
-The FAQ vocabulary contains all the FAQs available in a particular
-collection. It provides the IHugeVocabulary interface.
-
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
-
-    >>> vocabulary = vocabulary_registry.get(firefox, 'FAQ')
-    >>> verifyObject(IHugeVocabulary, vocabulary)
-    True
-
-    >>> print vocabulary.displayname
-    Select a FAQ
-
-It contains all the FAQs of the collection, but not those from other
-collections:
-
-    >>> firefox_faqs = set(firefox.searchFAQs())
-    >>> vocabulary_faqs = set(term.value for term in vocabulary)
-    >>> firefox_faqs.symmetric_difference(vocabulary_faqs)
-    set([])
-
-And it only contains FAQs:
-
-    >>> u'10' in vocabulary
-    False
-
-The term's token is the FAQ's id and its title is the FAQ's title:
-
-    >>> firefox_faq = firefox.getFAQ(10)
-    >>> term = vocabulary.getTerm(firefox_faq)
-    >>> term.token
-    '10'
-    >>> print term.title
-    How do I install plugins (Shockwave, QuickTime, etc.)?
-
-Asking for something which isn't a FAQ of the target raises LookupError:
-
-    >>> ubuntu_faq = ubuntu.getFAQ(1)
-    >>> vocabulary.getTerm(ubuntu_faq)
-    Traceback (most recent call last):
-      ...
-    LookupError:...
-
-Since IHugeVocabulary extends IVocabularyTokenized, the term can also
-be retrieved by token:
-
-    >>> term = vocabulary.getTermByToken(u'10')
-    >>> print term.title
-    How do I install plugins (Shockwave, QuickTime, etc.)?
-
-Trying to retrieve an invalid or non-existent token raises LookupError:
-
-    >>> vocabulary.getTermByToken('not a good token')
-    Traceback (most recent call last):
-      ...
-    LookupError:...
-
-    >>> vocabulary.getTermByToken('1001')
-    Traceback (most recent call last):
-      ...
-    LookupError:...
-
-The searchForTerms() method returns a CountableIterator of terms that
-are similar to the query:
-
-    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
-    >>> terms = vocabulary.searchForTerms('Problem showing SVG')
-    >>> isinstance(terms, CountableIterator)
-    True
-    >>> terms.count()
-    2
-    >>> for term in terms:
-    ...     print term.title
-    How do I troubleshoot problems with extensions/themes?
-    How do I install Java?
 
 
 == SpecificationDepCandidatesVocabulary ==

@@ -97,7 +97,7 @@ tested later.
     >>> external_debbugs.sync_comments = False
     >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
-    INFO:...:Updating 5 watches on http://...
+    INFO:...:Updating 5 watches for 5 bugs on http://...
 
     >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> for bug_watch_id in bug_watch_ids:
@@ -341,10 +341,12 @@ DebBugs implements all of these.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestDebBugs, TestDebianBug)
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug = getUtility(IBugSet).get(4)
-    >>> bug_watch = bug.addWatch(debbugs, '1234', no_priv)
+    >>> bug_watch = bug.addWatch(
+    ...     debbugs, '1234', getUtility(ILaunchpadCelebrities).janitor)
     >>> external_debbugs = TestDebBugs(
     ...     'http://example.com/', {'1234': TestDebianBug(
     ...         package='evolution', id=1234)})
@@ -579,7 +581,6 @@ bug numbers to be imported. It will link the bugs to the debbugs bug
 tracker.
 
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
     >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
     []
@@ -596,7 +597,7 @@ tracker.
     >>> process.returncode
     0
     >>> print err
-    INFO    Updating 1 watches on http://bugs.debian.org
+    INFO    Updating 1 watches for 1 bugs on http://bugs.debian.org
     INFO    Imported 4 comments for remote bug 237001...
     INFO    Imported debbugs #237001 as Launchpad bug #...
     INFO    Imported debbugs #322535 as Launchpad bug #...

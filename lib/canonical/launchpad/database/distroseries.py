@@ -93,7 +93,8 @@ from canonical.launchpad.interfaces.publishing import (
     active_publishing_status, ICanPublishPackages, PackagePublishingPocket,
     PackagePublishingStatus)
 from canonical.launchpad.interfaces.queue import IHasQueueItems
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.sourcepackage import (
+    ISourcePackage, ISourcePackageFactory)
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 from canonical.launchpad.interfaces.specification import (
@@ -414,6 +415,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Customize `search_params` for this distribution series."""
         search_params.setDistroSeries(self)
 
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.distribution.official_bug_tags
+
     def getUsedBugTags(self):
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
@@ -605,7 +611,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 name = SourcePackageName.byName(name)
             except SQLObjectNotFound:
                 return None
-        return SourcePackage(sourcepackagename=name, distroseries=self)
+        return getUtility(ISourcePackageFactory).new(
+            sourcepackagename=name, distroseries=self)
 
     def getBinaryPackage(self, name):
         """See `IDistroSeries`."""

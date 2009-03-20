@@ -28,15 +28,20 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     call_with, export_as_webservice_entry, export_factory_operation, exported,
-    rename_parameters_as, REQUEST_USER)
+    export_operation_as, export_write_operation, rename_parameters_as,
+    REQUEST_USER)
+
 
 class MilestoneNameField(ContentNameField):
+    """A field that can get the milestone from different contexts."""
 
     @property
     def _content_iface(self):
+        """The interface this field manages."""
         return IMilestone
 
     def _getByName(self, name):
+        """Return the named milestone from the context."""
         # IProductSeries and IDistroSeries are imported here to
         # avoid an import loop.
         from canonical.launchpad.interfaces.productseries import (
@@ -148,11 +153,22 @@ class IMilestone(IHasBugs):
         :returns: `IProductRelease` object.
         """
 
+    @export_write_operation()
+    @export_operation_as('delete')
+    def destroySelf():
+        """Delete this milestone.
+
+        This method must not be used if this milestone has a product
+        release.
+        """
+
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone
 
 
 class IMilestoneSet(Interface):
+    """An set provides access `IMilestone`s."""
+
     def __iter__():
         """Return an iterator over all the milestones for a thing."""
 

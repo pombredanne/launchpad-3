@@ -229,23 +229,23 @@ class LoginOrRegister:
 
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        if principal.person is None:
+        if principal is None or not principal.validate(password):
+            self.login_error = "The email address and password do not match."
+        elif principal.person is None:
             logInPrincipalAndMaybeCreatePerson(self.request, principal, email)
             self.redirectMinusLogin()
-        elif (principal is not None and
-              principal.person.account_status == AccountStatus.DEACTIVATED):
+        elif principal.person.account_status == AccountStatus.DEACTIVATED:
             self.login_error = _(
                 'The email address belongs to a deactivated account. '
                 'Use the "Forgotten your password" link to reactivate it.')
-        elif (principal is not None
-            and principal.person.account_status == AccountStatus.SUSPENDED):
+        elif principal.person.account_status == AccountStatus.SUSPENDED:
             email_link = (
                 'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
             self.login_error = _(
                 'The email address belongs to a suspended account. '
                 'Contact a <a href="%s">Launchpad admin</a> '
                 'about this issue.' % email_link)
-        elif principal is not None and principal.validate(password):
+        else:
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
                 self.login_error = _(
@@ -270,8 +270,6 @@ class LoginOrRegister:
                 # such as having them flagged as OLD by a email bounce
                 # processor or manual changes by the DBA.
                 self.login_error = "This account cannot be used."
-        else:
-            self.login_error = "The email address and password do not match."
 
     def process_registration_form(self):
         """A user has asked to join launchpad.

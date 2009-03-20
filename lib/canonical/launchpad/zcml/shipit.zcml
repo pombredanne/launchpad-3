@@ -106,6 +106,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipitFrontPageView"
+        layer="canonical.launchpad.layers.ShipItKUbuntuLayer"
         permission="zope.Public"
         name="+index"
         template="../templates/shipit-index.pt" />
@@ -128,19 +129,30 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipItLoginView"
+        class="canonical.launchpad.browser.ShipitOpenIDLoginView"
         permission="zope.Public"
         name="login"
-        template="../templates/shipit-login.pt"
         />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipItLoginForServerCDsView"
+        class="canonical.launchpad.browser.ShipitOpenIDLoginForServerCDsView"
         permission="zope.Public"
         name="login-server"
-        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
-        template="../templates/shipit-login.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipitOpenIDCallbackView"
+        permission="zope.Public"
+        name="callback"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipitOpenIDCallbackForServerCDsView"
+        permission="zope.Public"
+        name="callback-server"
         />
 
     <browser:page
@@ -416,5 +428,15 @@
         provides="canonical.launchpad.interfaces.IShipItSurveySet">
         <allow interface="canonical.launchpad.interfaces.IShipItSurveySet" />
     </securedutility>
+
+    <!-- ShipitAccount -->
+    <class class="canonical.launchpad.database.ShipitAccount">
+        <allow interface="canonical.launchpad.interfaces.IShipitAccount" />
+    </class>
+
+    <adapter for="canonical.launchpad.interfaces.account.IAccount"
+      provides="canonical.launchpad.interfaces.shipit.IShipitAccount"
+      factory="canonical.launchpad.database.shipit.ShipitAccount"
+      />
 
 </configure>

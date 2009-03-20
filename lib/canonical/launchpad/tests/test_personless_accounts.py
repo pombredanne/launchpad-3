@@ -21,22 +21,21 @@ class TestPersonlessAccountPermissions(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, 'no-priv@canonical.com')
+        self.email = 'test@example.com'
         self.account = self.factory.makeAccount(
-            'Test account, without a person')
-        self.account_email = self.factory.makeEmail(
-            'test@example.com', None, self.account)
+            'Test account, without a person', email=self.email)
 
     def test_can_view_their_emails(self):
-        login('test@example.com')
+        login(self.email)
         self.failUnless(
-            check_permission('launchpad.View', self.account_email))
+            check_permission('launchpad.View', self.account.preferredemail))
 
     def test_can_view_their_own_details(self):
-        login('test@example.com')
+        login(self.email)
         self.failUnless(check_permission('launchpad.View', self.account))
 
     def test_can_change_their_own_details(self):
-        login('test@example.com')
+        login(self.email)
         self.failUnless(check_permission('launchpad.Edit', self.account))
 
     def test_emails_of_personless_acounts_cannot_be_seen_by_others(self):
@@ -45,11 +44,13 @@ class TestPersonlessAccountPermissions(TestCaseWithFactory):
         # IPerson.hide_email_addresses, so for accounts that have no
         # associated Person, we will hide the email addresses from others.
         login('no-priv@canonical.com')
-        self.failIf(check_permission('launchpad.View', self.account_email))
+        self.failIf(check_permission(
+            'launchpad.View', self.account.preferredemail))
 
         # Anonymous users can't see them either.
         login(ANONYMOUS)
-        self.failIf(check_permission('launchpad.View', self.account_email))
+        self.failIf(check_permission(
+            'launchpad.View', self.account.preferredemail))
 
 
 def test_suite():

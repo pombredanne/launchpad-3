@@ -8,6 +8,7 @@ __all__ = [
     'BrowserWindowDimensions',
     'IcingContribFolder',
     'EdubuntuIcingFolder',
+    'get_launchpad_views',
     'Hierarchy',
     'IcingFolder',
     'KubuntuIcingFolder',
@@ -77,7 +78,6 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.project import IProjectSet
-from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.interfaces.specification import ISpecificationSet
@@ -96,7 +96,7 @@ from canonical.launchpad.webapp.interfaces import (
     NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.url import urlparse, urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.xmlrpc.faults import NoBranchForSeries, NoSuchSeries
@@ -109,6 +109,8 @@ from canonical.widgets.project import ProjectScopeWidget
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
 from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
+
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class MaloneApplicationNavigation(Navigation):
@@ -1037,3 +1039,30 @@ class BrowserWindowDimensions(LaunchpadView):
 
     def render(self):
         return u'Thanks.'
+
+
+def get_launchpad_views(cookies):
+    """The state of optional page elements the user may choose to view.
+
+    :param cookies: The request.cookies object that contains launchpad_views.
+    :return: A dict of all the view states.
+    """
+    views = {
+        'small_maps': True,
+        }
+    cookie = cookies.get('launchpad_views', '')
+    if len(cookie) > 0:
+        pairs = cookie.split('&')
+        for pair in pairs:
+            parts = pair.split('=')
+            if len(parts) != 2:
+                # The cookie is malformed, possibly hacked.
+                continue
+            key, value = parts
+            if not key in views:
+                # The cookie may be hacked.
+                continue
+            # 'false' is the value that the browser script sets to disable a
+            # part of a page. Any other value is considered to be 'true'.
+            views[key] = value != 'false'
+    return views

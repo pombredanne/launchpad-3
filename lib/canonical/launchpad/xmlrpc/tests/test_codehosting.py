@@ -8,7 +8,6 @@ import datetime
 import pytz
 import unittest
 
-from bzrlib.tests import adapt_tests, TestScenarioApplier
 from bzrlib.urlutils import escape
 
 from zope.component import getUtility
@@ -16,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
     BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranchSet,
@@ -62,12 +61,18 @@ class TestRunWithLogin(TestCaseWithFactory):
         # run_with_login logs in as user given as the first argument
         # to the method being decorated.
         username = run_with_login(self.person.id, get_logged_in_username)
+        # person.name is a protected field so we must be logged in before
+        # attempting to access it.
+        login(ANONYMOUS)
         self.assertEqual(self.person.name, username)
+        logout()
 
     def test_loginAsRequesterName(self):
         # run_with_login can take a username as well as user id.
         username = run_with_login(self.person.name, get_logged_in_username)
+        login(ANONYMOUS)
         self.assertEqual(self.person.name, username)
+        logout()
 
     def test_logoutAtEnd(self):
         # run_with_login logs out once the decorated method is
@@ -89,7 +94,9 @@ class TestRunWithLogin(TestCaseWithFactory):
         # run_with_login passes in the Launchpad Person object of the
         # requesting user.
         user = run_with_login(self.person.id, lambda x: x)
+        login(ANONYMOUS)
         self.assertEqual(self.person.name, user.name)
+        logout()
 
     def test_invalidRequester(self):
         # A method wrapped with run_with_login raises NotFoundError if
@@ -540,16 +547,19 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_team_junk(self):
-        # createBranch cannot create +junk branches on teams -- it raises
-        # PermissionDenied.
-        owner = self.factory.makePerson()
-        team = self.factory.makeTeam(owner)
+        # createBranch can create +junk branches on teams.
+        registrant = self.factory.makePerson()
+        team = self.factory.makeTeam(registrant)
         name = self.factory.getUniqueString()
-        fault = self.branchfs.createBranch(
-            owner.id, escape('/~%s/+junk/%s' % (team.name, name)))
-        expected_fault = faults.PermissionDenied(
-            BranchCreationNoTeamOwnedJunkBranches.error_message)
-        self.assertFaultEqual(expected_fault, fault)
+        branch_id = self.branchfs.createBranch(
+            registrant.id, escape('/~%s/+junk/%s' % (team.name, name)))
+        login(ANONYMOUS)
+        branch = self.branch_set.get(branch_id)
+        self.assertEqual(team, branch.owner)
+        self.assertEqual(None, branch.product)
+        self.assertEqual(name, branch.name)
+        self.assertEqual(registrant, branch.registrant)
+        self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.
@@ -1030,16 +1040,6 @@ class LaunchpadDatabaseFrontend:
         return getUtility(IScriptActivitySet).getLastActivity(activity_name)
 
 
-class PullerEndpointScenarioApplier(TestScenarioApplier):
-
-    scenarios = [
-        ('db', {'frontend': LaunchpadDatabaseFrontend,
-                'layer': DatabaseFunctionalLayer}),
-        ('inmemory', {'frontend': InMemoryFrontend,
-                      'layer': FunctionalLayer}),
-        ]
-
-
 def test_suite():
     loader = unittest.TestLoader()
     suite = unittest.TestSuite()
@@ -1048,7 +1048,22 @@ def test_suite():
          loader.loadTestsFromTestCase(BranchPullQueueTest),
          loader.loadTestsFromTestCase(BranchFileSystemTest),
          ])
-    adapt_tests(puller_tests, PullerEndpointScenarioApplier(), suite)
+    scenarios = [
+        ('db', {'frontend': LaunchpadDatabaseFrontend,
+                'layer': DatabaseFunctionalLayer}),
+        ('inmemory', {'frontend': InMemoryFrontend,
+                      'layer': FunctionalLayer}),
+        ]
+    try:
+        from bzrlib.tests import multiply_tests
+        multiply_tests(puller_tests, scenarios, suite)
+    except ImportError:
+        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
+        # once sourcecode/bzr has bzr.dev r4102.
+        from bzrlib.tests import adapt_tests, TestScenarioApplier
+        applier = TestScenarioApplier()
+        applier.scenarios = scenarios
+        adapt_tests(puller_tests, applier, suite)
     suite.addTests(
         map(loader.loadTestsFromTestCase,
             [TestRunWithLogin, TestIterateSplit]))

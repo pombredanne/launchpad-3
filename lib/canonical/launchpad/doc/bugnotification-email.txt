@@ -110,9 +110,16 @@ But of course, security related bugs are private by default:
 
 = Editing a bug =
 
-get_bug_edit_notification_texts accepts an object that provides
-IBugDelta, and returns a list of text representations of the changes
-made to the bug.
+get_bug_edit_notification_texts() accepts an object that provides
+IBugDelta, and returns a list of the changes made to the bug. The list
+will contain a mix of IBugChange objects and strings, depending on how
+get_bug_edit_notification_texts() handles the change internally.
+
+
+    # XXX 2009-03-17 gmb [bug=344125]:
+    #     Returning strings is deprecated for future additions to
+    #     get_bug_edit_notification_texts() but will remain in place
+    #     until the transition to the IBugChange API is complete.
 
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> edited_bug = getUtility(IBugSet).get(2)
@@ -137,8 +144,19 @@ made to the bug.
     >>> IBugDelta.providedBy(bug_delta)
     True
 
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+The change representations for changes to the title and description of
+the bug will be IBugChange objects.
+
+    >>> from canonical.launchpad.interfaces.bugchange import IBugChange
+    >>> changes = get_bug_edit_notification_texts(bug_delta)
+    >>> for change in changes:
+    ...     IBugChange.providedBy(change)
+    True
+    True
+
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Summary changed:
     <BLANKLINE>
@@ -168,8 +186,9 @@ is wrapped properly:
     ...     user=sample_person,
     ...     description={'new': edited_bug.description,
     ...                  'old': old_description})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Description changed:
     <BLANKLINE>
@@ -200,12 +219,25 @@ logins to a user that is explicitly subscribed to this bug):
     ...     user=sample_person,
     ...     private={'old': False, 'new': edited_bug.private},
     ...     security_related={'old': False, 'new': edited_bug.security_related})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+
+Both the privacy and security-related change representations provide
+IBugChange.
+
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     if IBugChange.providedBy(change):
+    ...         notification = change.getBugNotification()
+    ...         text_representation = notification['text']
+    ...     else:
+    ...         text_representation = change
+    ...
+    ...     print IBugChange.providedBy(change)
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
+    True
     ** Visibility changed to: Private
     -----------------------------
-    ** This bug has been flagged as a security issue
+    True
+    ** This bug has been flagged as a security vulnerability
     -----------------------------
 
 Now we set the bug public, and not security-related and check if the
@@ -220,12 +252,13 @@ e-mail sent changed as well.
     ...     user=sample_person,
     ...     private={'old': True, 'new': edited_bug.private},
     ...     security_related={'old': True, 'new': edited_bug.security_related})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Visibility changed to: Public
     -----------------------------
-    ** This bug is no longer flagged as a security issue
+    ** This bug is no longer flagged as a security vulnerability
     -----------------------------
 
 Let's add some tags to a bug:
@@ -237,8 +270,9 @@ Let's add some tags to a bug:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     tags={'old': old_tags, 'new': edited_bug.tags})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Tags added: bar foo
     -----------------------------
@@ -252,11 +286,11 @@ If we change one tag, it's basically removing one and adding another:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     tags={'old': old_tags, 'new': edited_bug.tags})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Tags added: baz
-    -----------------------------
     ** Tags removed: bar
     -----------------------------
 
@@ -337,63 +371,7 @@ edited:
 
 = Adding and editing bug watches =
 
-Here's an example that demonstrates the notification email that gets
-generated when a bug watch is added:
-
-    >>> from zope.interface import implements
-    >>> from canonical.launchpad.interfaces import IBugWatch, IBugTrackerSet
-    >>> bugtrackerset = getUtility(IBugTrackerSet)
-
-    >>> class MockBugWatch:
-    ...     implements(IBugWatch)
-    ...     def __init__(self, bug, bugtracker, remotebug):
-    ...         self.bug = bug
-    ...         self.bugtracker = bugtracker
-    ...         self.remotebug = remotebug
-    ...         self.url = "%sshow_bug.cgi?id=%s" % (
-    ...             bugtracker.baseurl, remotebug)
-    >>> mock_bug_watch = MockBugWatch(
-    ...     bug=edited_bug,
-    ...     bugtracker=getUtility(IBugTrackerSet)["mozilla.org"],
-    ...     remotebug="123")
-
-    >>> bug_delta = BugDelta(
-    ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
-    ...     user=sample_person,
-    ...     bugwatch={'new' : mock_bug_watch})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
-    ...     print "-----------------------------"
-    ** Bug watch added: The Mozilla.org Bug Tracker #123
-       https://bugzilla.mozilla.org/show_bug.cgi?id=123
-    -----------------------------
-
-When edited, we display the change to a bug watch as though the
-previous data was "removed" and the new, current data was "added."
-Let's demonstrate with an example:
-
-    >>> mock_bug_watch_edited = MockBugWatch(
-    ...     bug=edited_bug,
-    ...     bugtracker=getUtility(IBugTrackerSet)["mozilla.org"],
-    ...     remotebug="12")
-
-    >>> bug_delta = BugDelta(
-    ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
-    ...     user=sample_person,
-    ...     bugwatch={'old' : mock_bug_watch, 'new' : mock_bug_watch_edited})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
-    ...     print "-----------------------------"
-    ** Bug watch removed: The Mozilla.org Bug Tracker #123
-       https://bugzilla.mozilla.org/show_bug.cgi?id=123
-    -----------------------------
-    ** Bug watch added: The Mozilla.org Bug Tracker #12
-       https://bugzilla.mozilla.org/show_bug.cgi?id=12
-    -----------------------------
-
-We can also add a bugwatch while adding a new bugtask.
+We can add a bugwatch while adding a new bugtask.
 
     >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> mozilla_bug_watch = getUtility(IBugWatchSet).get(1)
@@ -419,6 +397,7 @@ We can also add a bugwatch while adding a new bugtask.
 
 Adding a CVE will generate a notification that looks as follows:
 
+    >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import CveStatus
 
     >>> class MockCVE:
@@ -487,11 +466,27 @@ Adding an attachment will generate a notification that looks as follows:
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
-    ...     attachment={'new' : attachment})
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     attachment={'new' : attachment, 'old': None})
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Attachment added: "A screenshot of the problem"
+       http://foo.com/screenshot.png
+    -----------------------------
+
+Removing an attachment generates a notification, too.
+
+    >>> bug_delta = BugDelta(
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     attachment={'old' : attachment, 'new': None})
+    >>> for change in get_bug_edit_notification_texts(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
+    ** Attachment removed: "A screenshot of the problem"
        http://foo.com/screenshot.png
     -----------------------------
 

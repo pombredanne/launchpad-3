@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BadBranchSearchContext',
     'bazaar_identity',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'branch_name_validator',
@@ -20,8 +19,6 @@ __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchMergeControlStatus',
-    'BranchPersonSearchContext',
-    'BranchPersonSearchRestriction',
     'BranchType',
     'BranchTypeError',
     'CannotDeleteBranch',
@@ -34,7 +31,6 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchNavigationMenu',
-    'IBranchPersonSearchContext',
     'IBranchSet',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
@@ -49,7 +45,7 @@ from cgi import escape
 from datetime import timedelta
 import re
 
-# ensure correct plugins are loaded
+# Ensure correct plugins are loaded. Do not delete this line.
 import canonical.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
@@ -68,15 +64,16 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
 from zope.component import getUtility
-from zope.interface import implements, Interface, Attribute
+from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Int, Choice, Text, TextLine, Datetime)
 
-from canonical.lazr.enum import (
+from lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported)
+    export_as_webservice_entry, export_write_operation, exported,
+    operation_parameters, operation_returns_entry)
 
 from canonical.config import config
 
@@ -467,10 +464,6 @@ class NoSuchBranch(NameLookupFailed):
     _message_prefix = "No such branch"
 
 
-class BadBranchSearchContext(Exception):
-    """The context is not valid for a branch search."""
-
-
 def get_blacklisted_hostnames():
     """Return a list of hostnames blacklisted for Branch URLs."""
     hostnames = config.codehosting.blacklisted_hostnames
@@ -505,7 +498,7 @@ class BranchURIField(URIField):
     def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
-        from canonical.launchpad.webapp.uri import URI
+        from lazr.uri import URI
 
         super(BranchURIField, self)._validate(value)
 
@@ -1016,6 +1009,21 @@ class IBranch(IHasOwner, IHasBranchTarget):
         """
 
     # subscription-related methods
+    @operation_parameters(
+        person=Reference(
+            title=_("The person to subscribe."),
+            schema=IPerson),
+        notification_level=Choice(
+            title=_("The level of notification to subscribe to."),
+            vocabulary='BranchSubscriptionNotificationLevel'),
+        max_diff_lines=Choice(
+            title=_("The max number of lines for diff email."),
+            vocabulary='BranchSubscriptionDiffSize'),
+        code_review_level=Choice(
+            title=_("The level of code review notification emails."),
+            vocabulary='CodeReviewNotificationLevel'))
+    @operation_returns_entry(Interface) # Really IBranchSubscription
+    @export_write_operation()
     def subscribe(person, notification_level, max_diff_lines,
                   code_review_level):
         """Subscribe this person to the branch.
@@ -1166,21 +1174,6 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def new(branch_type, name, registrant, owner, product=None, url=None,
-            title=None,
-            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
-            summary=None, whiteboard=None, date_created=None,
-            distroseries=None, sourcepackagename=None):
-        """Create a new branch.
-
-        Raises BranchCreationForbidden if the creator is not allowed
-        to create a branch for the specified product.
-
-        If product, distroseries and sourcepackagename are None (indicating a
-        +junk branch) then the owner must not be a team, except for the
-        special case of the ~vcs-imports celebrity.
-        """
-
     def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 
@@ -1194,7 +1187,7 @@ class IBranchSet(Interface):
         codehosting URLs of remote branches and mirrors, but not their
         remote URLs.
 
-        :param uri: An instance of webapp.uri.URI
+        :param uri: An instance of lazr.uri.URI
         :return: The unique name if possible, None if the URI is not a valid
             codehosting URI.
         """
@@ -1295,31 +1288,6 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getBranchesForContext(
-        context=None,
-        lifecycle_statuses=None,
-        visible_by_user=None):
-        """Branches associated with the context.
-
-        :param context: If None, all possible branches are returned, otherwise
-            the results will be appropriately filtered by the type of the
-            context.
-        :type context: Something that implements IProject, IProduct, or
-            IPerson.
-        :param lifecycle_statuses: If lifecycle_statuses evaluates to False
-            then branches of any lifecycle_status are returned, otherwise
-            only branches with a lifecycle_status of one of the
-            lifecycle_statuses are returned.
-        :type lifecycle_statuses: One or more values from the
-            BranchLifecycleStatus enumeration.
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        """
-
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
         """Return the most recently created branches for the product.
 
@@ -1394,58 +1362,6 @@ class BranchLifecycleStatusFilter(EnumeratedType):
 
         Show all the branches.
         """)
-
-
-class BranchPersonSearchRestriction(EnumeratedType):
-    """How to further restrict the query for a branch search for people."""
-
-    ALL = Item("""
-        All related branches
-
-        All branches owned, registered or subscribed to by the person.
-        """)
-
-    REGISTERED = Item("""
-        Registered branches
-
-        Only return the branches registered by the person.
-        """)
-
-    OWNED = Item("""
-        Owned branches
-
-        Only return the branches owned by the person.
-        """)
-
-    SUBSCRIBED = Item("""
-        Subscribed branches
-
-        Only return the branches subscribed to by the person.
-        """)
-
-
-class IBranchPersonSearchContext(Interface):
-    """A `Person` with a search restriction."""
-
-    person = PublicPersonChoice(
-        title=_('Person'), required=True,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The person to restrict the branch search to."))
-
-    restriction = Choice(
-        title=_("Search restriction"), required=True,
-        vocabulary=BranchPersonSearchRestriction)
-
-
-class BranchPersonSearchContext:
-    """The simple implementation for the person search context."""
-    implements(IBranchPersonSearchContext)
-
-    def __init__(self, person, restriction=None):
-        self.person = person
-        if restriction is None:
-            restriction = BranchPersonSearchRestriction.ALL
-        self.restriction = restriction
 
 
 class IBranchCloud(Interface):

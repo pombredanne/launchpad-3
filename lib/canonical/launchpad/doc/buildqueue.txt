@@ -155,13 +155,6 @@ IBuildQueueSet provides a method to retrieve the active job:
     ...     bq.id, bq.builder.name
     (1, u'bob')
 
-A method to fetch all BuildQueue instances inside a list of ids (see
-build.txt):
-
-    >>> for bq in bqset.fetchByBuildIds([1, 2, 8]):
-    ...     bq.id, bq.build.id
-    (1, 8)
-
 Another method to fetch the BuildQueue being processed for a builder,
 there should be only one since the builders are sigle-task
 applications:

@@ -17,6 +17,7 @@ __all__ = [
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
+    'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
     'ITeamContactAddressForm',
@@ -38,13 +39,14 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import (Bool, Choice, Datetime, Int, List, Object, Text,
+    TextLine)
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
-from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
@@ -72,8 +74,6 @@ from canonical.launchpad.interfaces.location import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.interfaces.questioncollection import (
-    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.teammembership import (
@@ -87,6 +87,8 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.authorization import check_permission
 
+from lp.answers.interfaces.questioncollection import (
+    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 
 PRIVATE_TEAM_PREFIX = 'private-'
 
@@ -426,21 +428,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     id = Int(title=_('ID'), required=True, readonly=True)
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
-    name = exported(
-        PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")))
-    displayname = exported(
-        StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-            description=_(
-                "Your name as you would like it displayed throughout "
-                "Launchpad. Most people use their full name here.")),
-        exported_as='display_name')
     password = PasswordField(
         title=_('Password'), required=True, readonly=False)
     karma = exported(
@@ -744,17 +731,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
-    is_trusted_on_shipit = Bool(
-        title=_('Is this a trusted person on shipit?'),
-        description=_("A person is considered trusted on shipit if she's a "
-                      "member of the 'ubuntumembers' team or she has more "
-                      "than MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT karma "
-                      "entries."))
-    unique_displayname = TextLine(
-        title=_('Return a string of the form $displayname ($name).'))
-    browsername = Attribute(
-        'Return a textual name suitable for display in a browser.')
-
     archive = exported(
         Reference(title=_("Personal Package Archive"),
                   description=_("The Archive owned by this person, his PPA."),
@@ -812,6 +788,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                 """),
             readonly=True, required=False,
             value_type=Reference(schema=Interface)))
+
+    hardware_submissions = exported(CollectionField(
+            title=_("Hardware submissions"),
+            readonly=True, required=False,
+            value_type=Reference(schema=Interface))) # HWSubmission
 
     @invariant
     def personCannotHaveIcon(person):
@@ -905,6 +886,21 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         True if this Person is actually a Team, otherwise False.
         """
 
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary='BranchMergeProposalStatus')))
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal
+    @export_read_operation()
+    def getMergeProposals(status=None, visible_by_user=None):
+        """Returns all merge proposals of a given status.
+
+        :param status: A list of statuses to filter with.
+        :param visible_by_user: Normally the user who is asking.
+        :returns: A list of `IBranchMergeProposal`.
+        """
+
     # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
     # schema of IMailingList, but setting that up correctly causes a circular
     # import error with interfaces.mailinglists that is too difficult to
@@ -987,31 +983,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
         To be used when membership changes are enacted. Only meant to be
         used between TeamMembership and Person objects.
-        """
-
-    def lastShippedRequest():
-        """Return this person's last shipped request, or None."""
-
-    def pastShipItRequests():
-        """Return the requests made by this person that can't be changed
-        anymore.
-
-        Any request that is cancelled, denied or sent for shipping can't be
-        changed.
-        """
-
-    def shippedShipItRequestsOfCurrentSeries():
-        """Return all requests made by this person that were sent to the
-        shipping company already.
-
-        This only includes requests for CDs of
-        ShipItConstants.current_distroseries.
-        """
-
-    def currentShipItRequest():
-        """Return this person's unshipped ShipIt request, if there's one.
-
-        Return None otherwise.
         """
 
     def searchTasks(search_params, *args):
@@ -1212,6 +1183,25 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
 
+    name = exported(
+        PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")))
+    displayname = exported(
+        StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "Your name as you would like it displayed throughout "
+                "Launchpad. Most people use their full name here.")),
+        exported_as='display_name')
+    browsername = Attribute(
+        'Return a textual name suitable for display in a browser.')
+    unique_displayname = TextLine(
+        title=_('Return a string of the form $displayname ($name).'))
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once

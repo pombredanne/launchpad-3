@@ -139,14 +139,14 @@ prevented from using the private attribute to mark bug #6 private:
 We must use setPrivate:
 
     >>> from zope.event import notify
-    >>> from canonical.launchpad.event import (
-    ...     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.event import (
+    ...     ObjectModifiedEvent, ObjectCreatedEvent)
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> old_state = Snapshot(firefox_crashes, providing=IBug)
     >>> firefox_crashes.setPrivate(True, current_user())
     True
-    >>> bug_set_private = SQLObjectModifiedEvent(
+    >>> bug_set_private = ObjectModifiedEvent(
     ...     firefox_crashes, old_state,
     ...     ["id", "title", "private"])
 
@@ -221,7 +221,7 @@ And again, let's fake setting the bug private:
     >>> old_state = Snapshot(blackhole_trash_folder, providing=IBug)
     >>> blackhole_trash_folder.setPrivate(True, current_user())
     True
-    >>> bug_set_private = SQLObjectModifiedEvent(
+    >>> bug_set_private = ObjectModifiedEvent(
     ...     blackhole_trash_folder, old_state,
     ...     ["id", "title", "private"])
 
@@ -298,7 +298,7 @@ When a public bug is filed:
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
     >>> params.setBugTarget(product=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
-    >>> notify(SQLObjectCreatedEvent(added_bug))
+    >>> notify(ObjectCreatedEvent(added_bug))
     >>> public_bug = bugset.get(added_bug.id)
 
 the submitter and the maintainer are directly subscribed. Note that
@@ -340,7 +340,7 @@ When a private bug is filed:
     ...     private=True)
     >>> params.setBugTarget(product=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
-    >>> notify(SQLObjectCreatedEvent(added_bug))
+    >>> notify(ObjectCreatedEvent(added_bug))
     >>> private_bug = bugset.get(added_bug.id)
 
 *only* the submitter is directly subscribed:
@@ -370,7 +370,7 @@ sourcepackage. E.g.
     ...     owner=foobar, private=True)
     >>> params.setBugTarget(distribution=ubuntu, sourcepackagename=evolution)
     >>> added_bug = getUtility(IBugSet).createBug(params)
-    >>> notify(SQLObjectCreatedEvent(added_bug))
+    >>> notify(ObjectCreatedEvent(added_bug))
     >>> private_bug = bugset.get(added_bug.id)
     >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
     [u'name16']
@@ -433,7 +433,7 @@ Changing the bug summary.
 
     >>> firefox_bug.title = "a new title"
 
-    >>> bug_summary_changed = SQLObjectModifiedEvent(
+    >>> bug_summary_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["title"])
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
@@ -449,7 +449,7 @@ Changing the description.
 
     >>> firefox_bug.description = "a new description"
 
-    >>> bug_description_changed = SQLObjectModifiedEvent(
+    >>> bug_description_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["description"])
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
@@ -482,7 +482,7 @@ Modifying a bugtask will update IBug.date_last_updated.
     >>> firefox_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, current_user())
 
-    >>> bugtask_modified = SQLObjectModifiedEvent(
+    >>> bugtask_modified = ObjectModifiedEvent(
     ...     firefox_task, bugtask_before_modification,
     ...     ["status", "importance"])
 
@@ -507,7 +507,7 @@ Adding a new task.
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(SQLObjectCreatedEvent(thunderbird_task))
+    >>> notify(ObjectCreatedEvent(thunderbird_task))
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
@@ -522,7 +522,7 @@ createTask(), above.
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(SQLObjectCreatedEvent(redfish_task))
+    >>> notify(ObjectCreatedEvent(redfish_task))
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
@@ -533,7 +533,7 @@ You can also add bugs for a specific distro.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_task = firefox_bug.addTask(
     ...     owner=foobar, target=ubuntu)
-    >>> notify(SQLObjectCreatedEvent(ubuntu_task))
+    >>> notify(ObjectCreatedEvent(ubuntu_task))
 
     >>> print ubuntu_task.distribution.title
     Ubuntu Linux
@@ -543,7 +543,7 @@ And for a specific distribution series.
     >>> warty = ubuntu.getSeries('warty')
     >>> warty_task = firefox_bug.addTask(
     ...     owner=foobar, target=warty)
-    >>> notify(SQLObjectCreatedEvent(warty_task))
+    >>> notify(ObjectCreatedEvent(warty_task))
 
     >>> print warty_task.distroseries.title
     The Warty Warthog Release
@@ -553,7 +553,7 @@ Also for a specific distribution source package.
     >>> linux_source = ubuntu.getSourcePackage('linux-source-2.6.15')
     >>> linux_task = firefox_bug.addTask(
     ...     owner=foobar, target=linux_source)
-    >>> notify(SQLObjectCreatedEvent(linux_task))
+    >>> notify(ObjectCreatedEvent(linux_task))
 
     >>> print linux_task.bugtargetname
     linux-source-2.6.15 (Ubuntu)
@@ -567,7 +567,7 @@ And for a distro series source package.
     ...     sourcepackagename=firefox_package.sourcepackagename)
     >>> warty_fox_task = firefox_bug.addTask(
     ...     owner=foobar, target=warty_fox_package)
-    >>> notify(SQLObjectCreatedEvent(warty_fox_task))
+    >>> notify(ObjectCreatedEvent(warty_fox_task))
 
     >>> print warty_fox_task.bugtargetname
     mozilla-firefox (Ubuntu Warty)
@@ -594,7 +594,7 @@ Changing bug visibility.
     >>> firefox_bug.setPrivate(True, current_user())
     True
 
-    >>> bug_visibility_changed = SQLObjectModifiedEvent(
+    >>> bug_visibility_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["private"])
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
@@ -612,7 +612,7 @@ Changing bug security.
     False
     >>> firefox_bug.security_related = True
 
-    >>> bug_security_changed = SQLObjectModifiedEvent(
+    >>> bug_security_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["security_related"])
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
@@ -630,7 +630,7 @@ Marking as duplicate.
     None
     >>> firefox_bug.duplicateof = firefox_crashes
 
-    >>> bug_duplicateof_changed = SQLObjectModifiedEvent(
+    >>> bug_duplicateof_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["duplicateof"])
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
@@ -667,7 +667,7 @@ Adding an attachment.
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(SQLObjectCreatedEvent(attachment))
+    >>> notify(ObjectCreatedEvent(attachment))
 
     >>> firefox_bug.attachments.count()
     1
@@ -684,7 +684,7 @@ Editing an attachment.
 
     >>> attachment.title = "a new title"
 
-    >>> attachment_changed = SQLObjectModifiedEvent(
+    >>> attachment_changed = ObjectModifiedEvent(
     ...     attachment, attachment_before_modification,
     ...     ["title"])
 
@@ -724,7 +724,7 @@ Editing a branch.
 
     >>> bug_branch.status = BugBranchStatus.BESTFIX
 
-    >>> bug_branch_changed = SQLObjectModifiedEvent(
+    >>> bug_branch_changed = ObjectModifiedEvent(
     ...     bug_branch, branch_before_modification, ["status"])
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
@@ -746,7 +746,7 @@ Linking to a CVE.
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(SQLObjectCreatedEvent(bug_cveref))
+    >>> notify(ObjectCreatedEvent(bug_cveref))
 
     >>> firefox_bug.cve_links.count()
     1
@@ -769,7 +769,7 @@ Linking to an external bug tracker.
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(SQLObjectCreatedEvent(bugwatch))
+    >>> notify(ObjectCreatedEvent(bugwatch))
 
     >>> firefox_bug.watches.count()
     1
@@ -789,8 +789,9 @@ Editing the external bug watch.
 
     >>> bugwatch.remotebug = '5678'
 
-    >>> bugwatch_changed = SQLObjectModifiedEvent(
-    ...     bugwatch, bugwatch_before_modification, ["remotebug"])
+    >>> bugwatch_changed = ObjectModifiedEvent(
+    ...     bugwatch, bugwatch_before_modification, ["remotebug"],
+    ...     bugwatch.bug.owner)
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
@@ -818,7 +819,7 @@ IBug.date_last_updated.
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> firefox_bug.unsubscribe(ubuntu_team)
+    >>> firefox_bug.unsubscribe(ubuntu_team, ubuntu_team)
 
     >>> firefox_bug.date_last_updated == current_date_last_updated
     True
@@ -828,7 +829,7 @@ IBug.date_last_updated.
 
     >>> subscription = firefox_bug.subscribe(ubuntu_team, ubuntu_team)
 
-    >>> notify(SQLObjectCreatedEvent(subscription))
+    >>> notify(ObjectCreatedEvent(subscription))
 
     >>> firefox_bug.date_last_updated == current_date_last_updated
     True

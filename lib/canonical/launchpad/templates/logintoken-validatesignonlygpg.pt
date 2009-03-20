@@ -20,8 +20,8 @@
       </metal:heading>
 
       <p metal:fill-slot="extra_info">
-        Confirm the key <code tal:content="context/fingerprint"/> by 
-        <tal:name replace="context/requester/displayname">Foo Bar</tal:name>
+        Confirm the key <code tal:content="context/fingerprint"/> by
+        <tal:name replace="context/requester/fmt:displayname">Foo Bar</tal:name>
       </p>
 
       <div metal:fill-slot="extra_top">

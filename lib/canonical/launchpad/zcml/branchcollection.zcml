@@ -8,6 +8,10 @@
     <allow interface="canonical.launchpad.interfaces.branchcollection.IBranchCollection" />
   </class>
 
+  <class class="canonical.launchpad.database.branchcollection.VisibleBranchCollection">
+    <allow interface="canonical.launchpad.interfaces.branchcollection.IBranchCollection" />
+  </class>
+
   <adapter for="storm.store.Store"
            provides="canonical.launchpad.interfaces.branchcollection.IBranchCollection"
            factory="canonical.launchpad.database.branchcollection.GenericBranchCollection"

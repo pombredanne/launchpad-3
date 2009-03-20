@@ -3,20 +3,20 @@
 There are several views of the branches related to a person.
 
 
-== Related Branches ==
+== Owned Branches ==
 
 First, check that the condensed branch listing page works:
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> print browser.title
-    Bazaar branches related to Sample Person
+    Bazaar branches owned by Sample Person
 
 The heading in the main content is the same as the page title text.
 
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main.h1)
-    Bazaar branches related to Sample Person
+    Bazaar branches owned by Sample Person
 
 
 == Default view for a person on code root site ==
@@ -121,7 +121,7 @@ Let's add a branch.
 The summary is now shown.
 
     >>> open_page_and_print_tag('page-summary')
-    Related branches: 1 (1 registered, 1 owned, 1 subscribed)
+    1 owned branch, 1 registered branch, 1 subscribed branch
     0 active proposals, 0 approved merges, 0 requested reviews
 
 Now we'll create another branch, and unsubscribe the owner from it.
@@ -132,6 +132,6 @@ Now we'll create another branch, and unsubscribe the owner from it.
     >>> logout()
 
     >>> open_page_and_print_tag('page-summary')
-    Related branches: 2 (2 registered, 2 owned, 1 subscribed)
+    2 owned branches, 2 registered branches, 1 subscribed branch
     0 active proposals, 0 approved merges, 0 requested reviews
 

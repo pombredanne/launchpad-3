@@ -37,7 +37,7 @@ from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 class BadBranchMergeProposalAddress(Exception):

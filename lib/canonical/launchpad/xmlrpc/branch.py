@@ -20,6 +20,8 @@ from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
     IBranchSet, IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import NoSuchBranch
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -28,7 +30,7 @@ from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -108,10 +110,11 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 branch_type = BranchType.MIRRORED
             else:
                 branch_type = BranchType.HOSTED
-            branch = branch_set.new(
+            namespace = get_branch_namespace(owner, product)
+            branch = namespace.createBranch(
                 branch_type=branch_type,
-                name=branch_name, registrant=registrant, owner=owner,
-                product=product, url=branch_url, title=branch_title,
+                name=branch_name, registrant=registrant,
+                url=branch_url, title=branch_title,
                 summary=branch_description)
             if branch_type == BranchType.MIRRORED:
                 branch.requestMirror()

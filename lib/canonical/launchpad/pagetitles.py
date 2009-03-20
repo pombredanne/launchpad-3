@@ -135,6 +135,10 @@ archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
 
 archive_index = ContextTitle('%s')
 
+archive_subscriber_edit = ContextTitle('Edit %s')
+
+archive_subscribers = ContextTitle('Manage subscriptions for %s')
+
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Code'
@@ -306,10 +310,6 @@ def bugwatch_comments(context, view):
     """Return the title for a page of imported comments for a bug watch."""
     return "Bug #%d - Comments imported from bug watch %s on %s" % (
         context.bug.id, context.remotebug, context.bugtracker.title)
-
-# bugpackageinfestations_index is a redirect
-
-# bugproductinfestations_index is a redirect
 
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
@@ -799,6 +799,8 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
+milestone_delete = ContextTitle('Delete %s')
+
 announcement_add = 'Make an announcement'
 
 announcement_delete = 'Permanently delete this announcement'
@@ -856,6 +858,8 @@ openidrpconfig_edit = ContextDisplayName(
 
 openidrpconfigset_index = 'OpenID Relying Party Configurations'
 
+official_bug_target_manage_tags = 'Manage Official Bug Tags'
+
 def package_bugs(context, view):
     """Return the page title bug in a package."""
     return 'Bugs in %s' % context.name
@@ -877,6 +881,9 @@ people_newteam = 'Register a new team in Launchpad'
 people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
+
+person_archive_subscriptions = ContextDisplayName(
+    'Private archive subscriptions for %s')
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
@@ -1102,6 +1109,8 @@ productseries_review = ContextTitle('Review %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
+productseries_translations_settings = 'Settings for translations'
+
 productseries_ubuntupkg = 'Ubuntu source package'
 
 project_add = 'Register a project group with Launchpad'
@@ -1245,6 +1254,8 @@ shipit_index_edubuntu = 'Getting Edubuntu'
 shipit_index_ubuntu = 'Request an Ubuntu CD'
 
 shipit_login = 'ShipIt'
+
+shipit_login_error = 'ShipIt - Unsuccessful login'
 
 shipit_myrequest = "Your ShipIt order"
 

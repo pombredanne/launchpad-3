@@ -17,8 +17,7 @@ import re
 from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 from CVS.protocol import CVSRoot, CvsRootError
-
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, URIField
@@ -36,17 +35,25 @@ class RevisionControlSystems(DBEnumeratedType):
     CVS = DBItem(1, """
         Concurrent Versions System
 
-        The Concurrent Version System is very widely used among
-        older open source projects, it was the first widespread
-        open source version control system in use.
+        Imports from CVS via CSCVS.
         """)
 
     SVN = DBItem(2, """
         Subversion
 
-        Subversion aims to address some of the shortcomings in
-        CVS, but retains the central server bottleneck inherent
-        in the CVS design.
+        Imports from SVN using CSCVS.
+        """)
+
+    BZR_SVN = DBItem(3, """
+        Subversion via bzr-svn
+
+        Imports from SVN using bzr-svn.
+        """)
+
+    GIT = DBItem(4, """
+        Git
+
+        Imports from Git using bzr-git.
         """)
 
 
@@ -169,6 +176,17 @@ class ICodeImport(Interface):
             "The URL of a Subversion branch, starting with svn:// or"
             " http(s)://. Only trunk branches are imported."),
         allowed_schemes=["http", "https", "svn"],
+        allow_userinfo=False, # Only anonymous access is supported.
+        allow_port=True,
+        allow_query=False,    # Query makes no sense in Subversion.
+        allow_fragment=False, # Fragment makes no sense in Subversion.
+        trailing_slash=False) # See http://launchpad.net/bugs/56357.
+
+    git_repo_url = URIField(title=_("Git URL"), required=False,
+        description=_(
+            "The URL of the git repository.  The MASTER branch will be "
+            "imported."),
+        allowed_schemes=["git"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
         allow_query=False,    # Query makes no sense in Subversion.

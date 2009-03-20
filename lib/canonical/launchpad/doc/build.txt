@@ -477,6 +477,38 @@ First we'll define a helper to print the build summary:
     Relevant builds:
      - i386 build of pmount 0.1-1 in ubuntu warty RELEASE
 
+The build set class furthermore provides a mechanism to load build-related
+data from the database for a given set of builds:
+
+    >>> from storm.expr import In
+    >>> from canonical.launchpad.database.build import Build
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    >>> results = list(store.find(Build, In(Build.id, (2,6,7,8))))
+    >>> rset = removeSecurityProxy(bs)._prefetchBuildData(results)
+    >>> def filename_or_none(item):
+    ...     if item is not None:
+    ...         return '%s' % item.filename
+    ...     else:
+    ...         return 'n/a'
+    >>> def id_or_none(item):
+    ...     if item is not None:
+    ...         return '%d' % item.id
+    ...     else:
+    ...         return 'n/a'
+    >>> for row in rset:
+    ...     (sourcepackagerelease, buildlog,
+    ...      sourcepackagename, buildlog_content, builder) = row
+    ...     print(
+    ...         'builder: %s, spr: %s, log: %s' %
+    ...         (id_or_none(builder),
+    ...          sourcepackagerelease.title, filename_or_none(buildlog)))
+    builder:   1, spr: mozilla-firefox - 0.9, log: netapplet-1.0.0.tar.gz
+    builder:   1, spr:          foobar - 1.0, log: netapplet-1.0.0.tar.gz
+    builder:   1, spr:        pmount - 0.1-1, log: netapplet-1.0.0.tar.gz
+    builder: n/a, spr: mozilla-firefox - 0.9, log: n/a
+
 
 == IHadBuildRecords.getBuildRecords() Implementations ==
 

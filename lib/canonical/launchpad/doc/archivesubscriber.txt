@@ -8,6 +8,15 @@ viewable by other uploaders and the person in the subscription.
 
 See also archiveauthtoken.txt.
 
+First, create a person 'joesmith' and a team 'team_cprov':
+
+    >>> login('foo.bar@canonical.com')
+    >>> joesmith = factory.makePerson(name="joesmith", displayname="Joe Smith",
+    ...     password="test", email="joe@example.com")
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName("cprov")
+    >>> team_cprov = factory.makeTeam(cprov, "Team Cprov")
+    >>> logout()
 
 == Creating new subscriptions ==
 
@@ -18,13 +27,9 @@ log in as an unprivileged user.
 
     >>> login("no-priv@canonical.com")
 
-We can create a new subscription for name12 to access cprov's PPA like this:
+We can create a new subscription for joesmith to access cprov's PPA like this:
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> cprov = getUtility(IPersonSet).getByName("cprov")
-    >>> name12 = getUtility(IPersonSet).getByName("name12")
-
-    >>> new_sub = cprov.archive.newSubscription(name12, cprov)
+    >>> new_sub = cprov.archive.newSubscription(joesmith, cprov)
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -32,10 +37,10 @@ We can create a new subscription for name12 to access cprov's PPA like this:
 That failed because only people who have launchpad.Append (basically, upload
 access) on the context archive are allowed to create subscriptions.
 
-Users cannot create their own subscriptions either.  Log in as name12:
+Users cannot create their own subscriptions either.  Log in as joesmith:
 
-    >>> login("test@canonical.com")
-    >>> new_token = cprov.archive.newSubscription(name12, cprov)
+    >>> login("joe@example.com")
+    >>> new_token = cprov.archive.newSubscription(joesmith, cprov)
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -44,29 +49,21 @@ If we log in as cprov it will work:
 
     >>> login("celso.providelo@canonical.com")
     >>> new_sub = cprov.archive.newSubscription(
-    ...     name12, cprov, description=u"subscription for name12")
+    ...     joesmith, cprov, description=u"subscription for joesmith")
 
 The new subscription is returned and reflects the data:
 
-    >>> print new_sub.archive.title
-    PPA for Celso Providelo
-
-    >>> print new_sub.subscriber.name
-    name12
+    >>> print new_sub.title
+    Subscription of Joe Smith to PPA for Celso Providelo
 
     >>> print new_sub.registrant.name
     cprov
 
     >>> print new_sub.description
-    subscription for name12
+    subscription for joesmith
 
     >>> print new_sub.status.name
-    ACTIVE
-
-Commit the new subscription to the database.
-
-    >>> from storm.store import Store
-    >>> Store.of(new_sub).commit()
+    CURRENT
 
 Subscriptions also contain some date information:
 
@@ -76,6 +73,32 @@ Subscriptions also contain some date information:
     >>> print new_sub.date_expires
     None
 
+Add another subscription for the test user, this time to sabdfl's ppa:
+
+    >>> login("mark@hbd.com")
+    >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
+    >>> new_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
+    ...     joesmith, sabdfl, description=u"subscription for joesmith")
+
+And also a subscription for a Team:
+
+    >>> new_team_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
+    ...     team_cprov, sabdfl, description=u"Access for cprov team")
+
+Explicitly set the date_created for testing purposes:
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> new_sub.date_created = datetime(2009, 2, 26, tzinfo=pytz.UTC)
+    >>> new_sub_to_sabdfl_ppa.date_created = datetime(
+    ...     2009, 2, 22, tzinfo=pytz.UTC)
+    >>> new_team_sub_to_sabdfl_ppa.date_created = datetime(
+    ...     2009, 2, 24, tzinfo=pytz.UTC)
+
+Commit the new subscriptions to the database.
+
+    >>> from storm.store import Store
+    >>> Store.of(new_sub).commit()
 
 == Retrieving existing subscriptions ==
 
@@ -85,7 +108,7 @@ privilege which applies to the person in the subscriptions and launchpad
 admins.
 
     >>> from canonical.launchpad.interfaces.archivesubscriber import (
-    ...     IArchiveSubscriberSet)
+    ...     ArchiveSubscriberStatus, IArchiveSubscriberSet)
     >>> sub_set = getUtility(IArchiveSubscriberSet)
 
     >>> login("no-priv@canonical.com")
@@ -95,9 +118,9 @@ admins.
     ...
     Unauthorized:...
 
-Log in as name12, who is the person in the subscription.
+Log in as joesmith, who is the person in the subscription.
 
-    >>> login("test@canonical.com")
+    >>> login("joe@example.com")
 
 And retrieve the subscription by subscriber and archive:
 
@@ -105,8 +128,98 @@ And retrieve the subscription by subscriber and archive:
     PPA for Celso Providelo
 
     >>> print sub_set.getByArchive(new_sub.archive)[0].subscriber.name
-    name12
+    joesmith
 
+The getBySubscriber() method takes an optional archive parameter for
+finding a subscription for a particular user in a particular archive:
+
+    >>> print sub_set.getBySubscriber(
+    ...     new_sub.subscriber, new_sub.archive)[0].archive.title
+    PPA for Celso Providelo
+
+By default the getBySubscriber() and getByArchive() methods return
+all current subscriptions, most recently created first:
+
+    >>> login('mark@hbd.com')
+    >>> for subscription in sub_set.getBySubscriber(new_sub.subscriber):
+    ...     print subscription.archive.title
+    ...     print subscription.date_created.date()
+    PPA for Celso Providelo      2009-02-26
+    PPA for Mark Shuttleworth    2009-02-22
+
+    >>> for subscription in sub_set.getByArchive(sabdfl.archive):
+    ...     print subscription.subscriber.displayname
+    ...     print subscription.date_created.date()
+    Team Cprov      2009-02-24
+    Joe Smith       2009-02-22
+
+If we cancel one of the subscriptions:
+
+    >>> login("mark@hbd.com")
+    >>> new_sub_to_sabdfl_ppa.status = ArchiveSubscriberStatus.CANCELLED
+    >>> login("joe@example.com")
+
+then the cancelled subscription no longer appears in the results
+of getBySubscriber() and getByArchive():
+
+    >>> sub_set.getBySubscriber(new_sub.subscriber).count()
+    1
+    >>> sub_set.getByArchive(sabdfl.archive).count()
+    1
+
+Unless we explicitly ask for all subscriptions - not just the current ones:
+
+    >>> sub_set.getBySubscriber(
+    ...     new_sub.subscriber, current_only=False).count()
+    2
+    >>> sub_set.getByArchive(sabdfl.archive, current_only=False).count()
+    2
+
+The getBySubscriber() method includes by default subscriptions for teams
+to which the provided subscriber belongs:
+
+    >>> joesmith.join(team_cprov)
+    >>> for subscription in sub_set.getBySubscriber(joesmith):
+    ...     print subscription.archive.title
+    ...     print subscription.description
+    PPA for Celso Providelo        subscription for joesmith
+    PPA for Mark Shuttleworth      Access for cprov team
+
+Finally, many callsites of getBySubscriber() will be interested not only
+in each subscription of the subscriber, but also the generated
+ArchiveAuthToken for each subscription of the subscriber. These can
+be returned as well using the the getBySubscriberWithActiveToken():
+
+First create a token for joesmith's subscription for cprov's archive:
+
+    >>> joesmith_token = cprov.archive.newAuthToken(joesmith, u"test_token")
+
+Now print out all subscriptions with their tokens for joesmith:
+
+    >>> def print_subscriptions_with_tokens(subs_with_tokens):
+    ...     for subscription, token in subs_with_tokens:
+    ...         if token:
+    ...             token_text = token.token
+    ...         else:
+    ...             token_text = "None"
+    ...         print subscription.archive.title
+    ...         print token_text
+    >>> print_subscriptions_with_tokens(
+    ...     sub_set.getBySubscriberWithActiveToken(joesmith))
+    PPA for Celso Providelo            test_token
+    PPA for Mark Shuttleworth          None
+
+Deactivated tokens are not included with the returned token for a
+subscription:
+
+    >>> login("celso.providelo@canonical.com")
+    >>> joesmith_token.deactivate()
+    >>> login("joe@example.com")
+
+    >>> print_subscriptions_with_tokens(
+    ... sub_set.getBySubscriberWithActiveToken(joesmith))
+    PPA for Celso Providelo            None
+    PPA for Mark Shuttleworth          None
 
 == Amending Subscriptions ==
 

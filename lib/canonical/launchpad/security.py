@@ -47,8 +47,6 @@ from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.entitlement import IEntitlement
-from canonical.launchpad.interfaces.faq import IFAQ
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
@@ -76,8 +74,8 @@ from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.question import IQuestion
-from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.interfaces.seriessourcepackagebranch import (
+    ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
 from canonical.launchpad.interfaces.shipit import (
     IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
     IStandardShipItRequest, IStandardShipItRequestSet)
@@ -102,6 +100,11 @@ from canonical.launchpad.interfaces.translator import (
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
+
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 
 class AuthorizationBase:
@@ -136,7 +139,7 @@ class AuthorizationBase:
         """
         # For backward compatibility, delegate to one of
         # checkAuthenticated() or checkUnauthenticated().
-        person = IPerson(account)
+        person = IPerson(account, None)
         if person is None:
             return self.checkUnauthenticated()
         else:
@@ -2077,3 +2080,41 @@ class EditArchivePermissionSet(AuthorizationBase):
             globalErrorUtility.raising(info)
             return False
         return user.inTeam(techboard)
+
+
+class LinkOfficialSourcePackageBranches(AuthorizationBase):
+    """Who can source packages to their official branches?
+
+    Only members of the ~ubuntu-branches celebrity team! Or admins.
+    """
+
+    permission = 'launchpad.Edit'
+    usedfor = ISeriesSourcePackageBranchSet
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(celebrities.ubuntu_branches)
+            or user.inTeam(celebrities.admin))
+
+
+class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
+    """Who can change the links from source packages to their branches?
+
+    Only members of the ~ubuntu-branches celebrity team! Or admins.
+    """
+
+    permission = 'launchpad.Edit'
+    usedfor = ISeriesSourcePackageBranch
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (
+            user.inTeam(celebrities.ubuntu_branches)
+            or user.inTeam(celebrities.admin))

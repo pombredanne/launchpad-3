@@ -24,13 +24,13 @@ Adding a private branch that is only visible by No Privileges Person
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     BranchType, IBranchSet, IPersonSet, IProductSet)
+    ...     BranchType, IPersonSet, IProductSet)
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> landscape = getUtility(IProductSet).getByName('landscape')
-    >>> branch = getUtility(IBranchSet).new(
-    ...     BranchType.HOSTED, name='testing-branch', registrant=no_priv,
-    ...     owner=no_priv, product=None, url=None, title='A Private Branch')
+    >>> branch = factory.makePersonalBranch(
+    ...     branch_type=BranchType.HOSTED, name='testing-branch',
+    ...     owner=no_priv, title='A Private Branch')
     >>> branch.private = True
     >>> branch.product = landscape
     >>> flush_database_updates()
@@ -148,7 +148,7 @@ viewable branches.
     ...         print "No landscape branches"
 
     >>> print_person_code_listing(anon_browser)
-    Total of 10 branches listed
+    Total of 9 branches listed
     No landscape branches
     >>> print_person_code_listing(anon_browser, '/+ownedbranches')
     Total of 9 branches listed
@@ -158,7 +158,7 @@ viewable branches.
     No landscape branches
 
     >>> print_person_code_listing(no_priv_browser)
-    Total of 10 branches listed
+    Total of 9 branches listed
     No landscape branches
     >>> print_person_code_listing(no_priv_browser, '/+ownedbranches')
     Total of 9 branches listed
@@ -168,8 +168,7 @@ viewable branches.
     No landscape branches
 
     >>> print_person_code_listing(landscape_dev_browser)
-    Total of 12 branches listed
-    lp://dev/~landscape-developers/landscape/trunk  Development   ...
+    Total of 10 branches listed
     lp://dev/~name12/landscape/feature-x            Development   ...
     >>> print_person_code_listing(landscape_dev_browser, '/+ownedbranches')
     Total of 10 branches listed
@@ -180,8 +179,7 @@ viewable branches.
     lp://dev/~name12/landscape/feature-x            Development   ...
 
     >>> print_person_code_listing(admin_browser)
-    Total of 12 branches listed
-    lp://dev/~landscape-developers/landscape/trunk  Development   ...
+    Total of 10 branches listed
     lp://dev/~name12/landscape/feature-x            Development   ...
     >>> print_person_code_listing(admin_browser, '/+ownedbranches')
     Total of 10 branches listed

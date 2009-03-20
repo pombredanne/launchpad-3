@@ -210,7 +210,7 @@ update:
     3224:
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, gnome_bugzilla.watches)
-    INFO:...:Updating 2 watches on http://bugzilla.gnome.org/bugs
+    INFO:...:Updating 2 watches for 2 bugs on http://bugzilla.gnome.org/bugs
     WARNING:...Didn't find bug u'304070' on
     http://bugzilla.gnome.org/bugs (local bugs: 15).
 
@@ -250,7 +250,7 @@ Then updateBugWatches() will make one request per bug watch:
     >>> external_bugzilla.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, gnome_bugzilla.watches)
-    INFO:...:Updating 7 watches on http://bugzilla.gnome.org/bugs
+    INFO:...:Updating 7 watches for 7 bugs on http://bugzilla.gnome.org/bugs
     CALLED _postPage()
     CALLED _postPage()
     CALLED _postPage()
@@ -296,7 +296,7 @@ updateBugWatches() issues only one request to update all watches:
     >>> external_bugzilla.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, gnome_bugzilla.watches)
-    INFO:...:Updating 207 watches on http://bugzilla.gnome.org/bugs
+    INFO:...:Updating 207 watches for 207 bugs...
     CALLED _postPage()
     WARNING:...:Didn't find bug u'304070' on
     http://bugzilla.gnome.org/bugs (local bugs: 15).
@@ -327,7 +327,7 @@ updated:
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
     >>> bug_watch_updater.updateBugWatches(external_bugzilla, [bug_watch])
-    INFO:...:Updating 1 watches on http://bugzilla.gnome.org/bugs
+    INFO:...:Updating 1 watches for 1 bugs on http://bugzilla.gnome.org/bugs
     >>> bug_watch.lastchanged == old_last_changed
     True
 
@@ -361,7 +361,7 @@ synced:
 
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [thunderbird_task.bugwatch])
-    INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
+    INFO:...:Updating 1 watches for 1 bugs on https://bugzilla.mozilla.org
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
@@ -382,7 +382,7 @@ status mapping.
     ...     getUtility(IPersonSet).getByName('no-priv'))
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [thunderbird_task.bugwatch])
-    INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
+    INFO:...:Updating 1 watches for 1 bugs on https://bugzilla.mozilla.org
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
@@ -406,7 +406,7 @@ same remote bug, both will of course be updated.
     >>> bug_watch2_id = bug_watch2.id
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [bug_watch1, bug_watch2])
-    INFO:...:Updating 2 watches on https://bugzilla.mozilla.org
+    INFO:...:Updating 2 watches for 1 bugs on https://bugzilla.mozilla.org
 
     >>> bug_watch1 = getUtility(IBugWatchSet).get(bug_watch1_id)
     >>> print bug_watch1.remotestatus

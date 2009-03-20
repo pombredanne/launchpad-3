@@ -12,10 +12,12 @@ from datetime import datetime
 import logging
 import pytz
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
+from storm.expr import In, LeftJoin
 
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
@@ -24,6 +26,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IBuildQueue, IBuildQueueSet,
     NotFoundError, PackagePublishingPocket, SourcePackageUrgency)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class BuildQueue(SQLBase):
@@ -293,15 +297,6 @@ class BuildQueueSet(object):
         """See `IBuildQueueSet`."""
         return BuildQueue.select('buildstart is not null')
 
-    def fetchByBuildIds(self, build_ids):
-        """See `IBuildQueueSet`."""
-        if len(build_ids) == 0:
-            return []
-
-        return BuildQueue.select(
-            "buildqueue.build IN %s" % ','.join(sqlvalues(build_ids)),
-            prejoins=['builder'])
-
     def calculateCandidates(self, archseries):
         """See `IBuildQueueSet`."""
         if not archseries:
@@ -320,3 +315,22 @@ class BuildQueueSet(object):
             query, clauseTables=['Build'], orderBy=['-BuildQueue.lastscore'])
 
         return candidates
+
+    def getForBuilds(self, build_ids):
+        """See `IBuildQueueSet`."""
+        # Avoid circular import problem.
+        from canonical.launchpad.database.builder import Builder
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        origin = (
+            BuildQueue,
+            LeftJoin(
+                Builder,
+                BuildQueue.builderID == Builder.id),
+            )
+        result_set = store.using(*origin).find(
+            (BuildQueue, Builder),
+            In(BuildQueue.buildID, build_ids))
+
+        return result_set

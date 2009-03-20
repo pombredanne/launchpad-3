@@ -133,6 +133,28 @@ To mark a bug as private, we patch the `private` attribute of the bug.
   ...     bug_twelve['self_link'], 'application/json', dumps(dict(private=False)))
   HTTP/1.1 209 Content Returned...
 
+Similarly, to mark a bug as a duplicate, we patch the `duplicate_of_link`
+attribute of the bug.
+
+  >>> print bug_twelve['duplicate_of_link']
+  None
+  >>> print webservice.patch(
+  ...       bug_twelve['self_link'], 'application/json',
+  ...       dumps(dict(duplicate_of_link=bug_one['self_link'])))
+  HTTP/1.1 209 Content Returned...
+  >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
+  >>> print bug_twelve['duplicate_of_link']
+  http://api.launchpad.dev/beta/bugs/1
+
+Now set it back to none:
+
+  >>> print webservice.patch(
+  ...       bug_twelve['self_link'], 'application/json',
+  ...       dumps(dict(duplicate_of_link=None)))
+  HTTP/1.1 209 Content Returned...
+  >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
+  >>> print bug_twelve['duplicate_of_link']
+  None
 
 == Bugs as message targets ==
 
@@ -593,6 +615,7 @@ Following the redirect, we can see the new bug watch:
   >>> bug_tracker = webservice.get(bug_watch['bug_tracker_link']).jsonBody()
 
   >>> pprint_entry(bug_tracker)
+  active: True
   base_url: u'https://bugzilla.mozilla.org/'
   base_url_aliases: []
   bug_tracker_type: u'Bugzilla'
@@ -648,6 +671,7 @@ renamed bug tracker.
   >>> bug_tracker_path = response.getHeader('Location')
   >>> bug_tracker = webservice.get(bug_tracker_path).jsonBody()
   >>> pprint_entry(bug_tracker)
+  active: True
   base_url: u'http://bugs.example.com/'
   base_url_aliases: [u'http://bugs.example.com/bugs/', u'http://www.example.com/bugtracker/']
   bug_tracker_type: u'Bugzilla'
@@ -660,6 +684,23 @@ renamed bug tracker.
   summary: u'Where Bob files his bugs.'
   title: u"Bob's Tracker"
   watches_collection_link: u'http://.../bugs/bugtrackers/bob/watches'
+
+Non-admins can't disable a bugtracker through the API.
+
+    >>> print public_webservice.patch(
+    ...     bug_tracker_path, 'application/json',
+    ...     dumps(dict(active=False))).jsonBody()
+    Traceback (most recent call last):
+      ...
+    ValueError: HTTP/1.1 401 Unauthorized...
+
+Admins can, however.
+
+    >>> bug_tracker = webservice.patch(
+    ...     bug_tracker_path, 'application/json',
+    ...     dumps(dict(active=False))).jsonBody()
+    >>> pprint_entry(bug_tracker)
+    active: False...
 
 
 == Bug attachments ==
