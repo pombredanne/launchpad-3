@@ -395,16 +395,17 @@ Cancelled changes in the administration form redirects the user to the
 PPA overview page and discards the changes.
 
     >>> admin_browser.getControl("Cancel").click()
-    >>> admin_browser.title
-    'Private PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+    >>> print admin_browser.title
+    Private PPA for Carlos Perelló Marín
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.whiteboard").value = (
     ...    'It should be discarded.')
     >>> admin_browser.getControl("Cancel").click()
 
-    >>> admin_browser.title
-    'Private PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+    >>> print admin_browser.title
+    Private PPA for Carlos Perelló Marín
+
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
     PPA whiteboard:

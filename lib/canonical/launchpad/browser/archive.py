@@ -812,7 +812,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             if self.can_copy_to_context_ppa and self.context == ppa:
                 required = False
                 continue
-            terms.append(SimpleTerm(ppa, str(ppa.owner.name), ppa.title))
+            terms.append(
+                SimpleTerm(ppa, str(ppa.owner.name), ppa.displayname))
 
         return form.Fields(
             Choice(__name__='destination_archive',
@@ -947,12 +948,12 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                 '<p>All packages already copied to '
                 '<a href="%s">%s</a>.</p>' % (
                     canonical_url(destination_archive),
-                    destination_archive.title))
+                    destination_archive.displayname))
         else:
             messages.append(
                 '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
                     canonical_url(destination_archive),
-                    destination_archive.title))
+                    destination_archive.displayname))
             messages.append('<ul>')
             messages.append(
                 "\n".join(['<li>%s</li>' % copy.displayname
@@ -1169,7 +1170,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         # Present a page notification describing the action.
         self._messages.append('<p>Dependencies removed:')
         for dependency in selected_dependencies:
-            self._messages.append('<br/>%s' % dependency.title)
+            self._messages.append('<br/>%s' % dependency.displayname)
         self._messages.append('</p>')
 
     def _add_ppa_dependencies(self, data):
@@ -1183,7 +1184,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             getUtility(IComponentSet)['main'])
 
         self._messages.append(
-            '<p>Dependency added: %s</p>' % dependency_candidate.title)
+            '<p>Dependency added: %s</p>' % dependency_candidate.displayname)
 
     def _add_primary_dependencies(self, data):
         """Record the selected dependency."""
