@@ -612,8 +612,8 @@ class TestBugChanges(unittest.TestCase):
 
         expected_notification = {
             'text': u"** Retargetted: %s => %s" % (
-                self.bug_task.bugtargetdisplayname,
-                bug_task_before_modification.bugtargetdisplayname),
+                bug_task_before_modification.bugtargetdisplayname,
+                self.bug_task.bugtargetdisplayname),
             'person': self.user,
             }
 
@@ -646,13 +646,13 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'whatchanged': 'affects',
             'oldvalue': bug_task_before_modification.bugtargetname,
-            'newvalue': self.bug_task.bugtargetname,
+            'newvalue': source_package_bug_task.bugtargetname,
             }
 
         expected_notification = {
             'text': u"** Retargetted: %s => %s" % (
-                self.bug_task.bugtargetdisplayname,
-                bug_task_before_modification.bugtargetdisplayname),
+                bug_task_before_modification.bugtargetdisplayname,
+                source_package_bug_task.bugtargetdisplayname),
             'person': self.user,
             }
 

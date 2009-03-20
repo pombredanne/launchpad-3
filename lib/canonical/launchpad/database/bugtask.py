@@ -1015,7 +1015,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # calculate the differences in the fields that both types of tasks
         # have in common
-        for field_name in ("status", "importance",
+        for field_name in ("target", "status", "importance",
                            "assignee", "bugwatch", "milestone"):
             old_val = getattr(old_task, field_name)
             new_val = getattr(self, field_name)
