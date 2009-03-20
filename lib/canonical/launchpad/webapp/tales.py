@@ -879,7 +879,7 @@ class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
         """
 
     def icon(self):
-        """Return the appropriate <img> tag for the an archive."""
+        """Return the appropriate <img> tag for an archive."""
         icon_map = {
             ArchivePurpose.PRIMARY: '/@@/distribution',
             ArchivePurpose.PARTNER: '/@@/distribution',

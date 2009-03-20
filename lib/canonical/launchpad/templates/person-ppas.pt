@@ -9,7 +9,8 @@
         <tr tal:condition="ppa/required:launchpad.View">
           <td><tal:icon replace="structure ppa/image:icon" /></td>
           <td>
-            <a tal:content="ppa/title" tal:attributes="href ppa/fmt:url" />
+            <a tal:content="ppa/displayname"
+               tal:attributes="href ppa/fmt:url" />
           </td>
         </tr>
       </tal:ppa_line>
