@@ -389,6 +389,11 @@ class BugTaskAttributeChange(AttributeChange):
         self.display_new_value = getattr(self.new_value, display_attribute)
 
     def getBugActivity(self):
+        """Return the bug activity data for this change as a dict.
+
+        The `whatchanged` value of the dict refers to the `BugTask`'s
+        target so as to make it clear in which task the change was made.
+        """
         what_changed = '%s: %s' % (
             self.bug_task.bugtargetname, self.what_changed)
 
@@ -399,6 +404,11 @@ class BugTaskAttributeChange(AttributeChange):
             }
 
     def getBugNotification(self):
+        """Return the bug notification text for this change.
+
+        The notification will refer to the `BugTask`'s target so as to
+        make it clear in which task the change was made.
+        """
         text = (
             u"** Changed in: %(bug_target_name)s\n"
             "%(label)13s: %(oldval)s => %(newval)s\n" % {
