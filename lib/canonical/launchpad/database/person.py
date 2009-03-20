@@ -54,7 +54,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.answercontact import AnswerContact
+from lp.answers.model.answercontact import AnswerContact
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
@@ -112,8 +112,6 @@ from canonical.launchpad.interfaces.personnotification import (
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
@@ -155,12 +153,14 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
-from canonical.launchpad.database.question import QuestionPersonSearch
+from lp.answers.model.question import QuestionPersonSearch
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 class ValidPersonCache(SQLBase):
     """Flags if a Person is active and usable in Launchpad.
