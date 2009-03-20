@@ -8,7 +8,7 @@ import unittest
 
 from canonical.launchpad.database.librarian import ParsedApacheLog
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
-    get_date_status_and_request, get_day, get_files_to_parse,
+    get_host_date_status_and_request, get_day, get_files_to_parse,
     get_method_and_file_id, parse_file)
 from canonical.launchpad.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
@@ -23,7 +23,9 @@ class TestLineParsing(TestCase):
     def test_return_value(self):
         fd = open(
             os.path.join(here, 'apache-log-files', 'librarian-oneline.log'))
-        date, status, request = get_date_status_and_request(fd.read())
+        host, date, status, request = get_host_date_status_and_request(
+            fd.read())
+        self.assertEqual(host, '201.158.154.121')
         self.assertEqual(date, '[13/Jun/2008:18:38:57 +0100]')
         self.assertEqual(status, '200')
         self.assertEqual(

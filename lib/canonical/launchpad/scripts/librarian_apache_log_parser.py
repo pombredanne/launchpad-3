@@ -70,7 +70,7 @@ def parse_file(fd, start_position):
 
     downloads = {}
     for line in lines:
-        date, status, request = get_date_status_and_request(line)
+        host, date, status, request = get_host_date_status_and_request(line)
 
         if status != '200':
             continue
@@ -101,11 +101,11 @@ def get_day(date):
     return datetime(int(year), int(month), int(day))
 
 
-def get_date_status_and_request(line):
-    """Extract the date, status and request from the given line of log."""
+def get_host_date_status_and_request(line):
+    """Extract the host, date, status and request from the given line."""
     # The keys in the 'data' dictionary below are the Apache log format codes.
     data = parser.parse(line)
-    return data['%t'], data['%>s'], data['%r']
+    return data['%h'], data['%t'], data['%>s'], data['%r']
 
 
 def get_method_and_file_id(request):
