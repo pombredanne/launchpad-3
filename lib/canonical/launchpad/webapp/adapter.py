@@ -27,16 +27,15 @@ import transaction
 from zope.component import getUtility
 from zope.interface import (
     classImplements, classProvides, alsoProvides, implements)
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config, dbconfig, DatabaseConfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.lazr.utils import safe_hasattr
-from canonical.launchpad.interfaces import (
-    IMasterObject, IMasterStore, ISlaveStore)
+from canonical.launchpad.interfaces import IMasterObject, IMasterStore
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
-    ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
+    AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
     MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
 
@@ -425,29 +424,30 @@ install_tracer(LaunchpadStatementTracer())
 
 
 class StoreSelector:
+    """See `canonical.launchpad.webapp.interfaces.IStoreSelector`."""
     classProvides(IStoreSelector)
 
     @staticmethod
-    def push(dbpolicy):
+    def push(db_policy):
         """See `IStoreSelector`."""
         if not hasattr(_local, 'db_policies'):
-            _local.dbpolicies = []
-        _local.dbpolicies.append(dbpolicy)
+            _local.db_policies = []
+        _local.db_policies.append(db_policy)
 
     @staticmethod
     def pop():
         """See `IStoreSelector`."""
-        _local.dbpolicies.pop()
+        _local.db_policies.pop()
 
     @staticmethod
     def get(name, flavor):
         """See `IStoreSelector`."""
         try:
-            dbpolicy = _local.db_policies[-1]
+            db_policy = _local.db_policies[-1]
         except (AttributeError, IndexError):
-            dbpolicy = MasterDatabasePolicy(None)
+            db_policy = MasterDatabasePolicy(None)
 
-        return dbpolicy.getStore(name, flavor)
+        return db_policy.getStore(name, flavor)
 
 
 # There are not many tables outside of the main replication set, so we
@@ -504,4 +504,3 @@ def get_object_from_master_store(obj):
 def get_store_name(store):
     """Helper to retrieve the store name for a ZStorm Store."""
     return getUtility(IZStorm).get_name(store)
-

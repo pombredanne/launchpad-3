@@ -105,8 +105,7 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import (
-        ALL_STORES, IStoreSelector, MASTER_FLAVOR)
+from canonical.launchpad.webapp.interfaces import IStoreSelector
 
 SPACE = ' '
 
@@ -135,7 +134,7 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
 
 def default_master_store(func):
     """Decorator to temporarily set the default Store to the master.
-    
+
     In some cases, such as in the middle of a page test story,
     we might be calling factory methods with the default Store set
     to the slave which breaks stuff. For instance, if we set an account's
@@ -374,7 +373,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                 MailingListAutoSubscribePolicy.NEVER
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
-            alternative_address, person, EmailAddressStatus.VALIDATED, account)
+            alternative_address, person,
+            EmailAddressStatus.VALIDATED, account)
         transaction.commit()
         self._stuff_preferredemail_cache(person)
         return person

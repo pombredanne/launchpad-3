@@ -98,24 +98,23 @@ class SlaveDatabasePolicy(BaseDatabasePolicy):
     """
     def getStore(self, name, flavor):
         """See `IDatabasePolicy`.
-        
+
         :raises DisallowedStore: on a request to access a master Store.
         """
         if flavor == MASTER_FLAVOR:
             raise DisallowedStore(name, flavor)
-        return super(MasterDatabasePolicy, self).getStore(name, SLAVE_FLAVOR)
+        return super(SlaveDatabasePolicy, self).getStore(name, SLAVE_FLAVOR)
 
 
 class LaunchpadDatabasePolicy(BaseDatabasePolicy):
     """Default database policy for web requests.
-    
+
     Selects the DEFAULT_FLAVOR based on the request.
     """
 
     def __init__(self, request):
         """Calculate the default flavor based on the request."""
-
-        self.request = request
+        super(LaunchpadDatabasePolicy, self).__init__(request)
 
         # Detect if this is a read only request or not.
         self.read_only = request.method in ['GET', 'HEAD']
@@ -137,7 +136,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         # on the master, despite the fact it might take a while for
         # those changes to propagate to the slave databases.
         elif self.read_only:
-            lag = self.getReplicationLag(MAIN_STORE)
+            lag = self.getReplicationLag()
             if (lag is not None
                 and lag > timedelta(seconds=config.database.max_usable_lag)):
                 # Don't use the slave at all if lag is greater than the
@@ -209,7 +208,6 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         :returns: timedelta, or None if this isn't a replicated environment,
         """
         # Support the test suite hook.
-        global _test_lag
         if _test_lag is not None:
             return _test_lag
 
