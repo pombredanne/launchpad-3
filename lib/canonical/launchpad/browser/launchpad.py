@@ -606,12 +606,22 @@ class LaunchpadRootNavigation(Navigation):
             url = urlappend(url, trailing)
         return self.redirectSubTree(url)
 
+    @stepto('+builds')
+    def redirect_buildfarm(self):
+        """Redirect old /+builds requests to new URL, /builders."""
+        new_url = '/builders'
+        return self.redirectSubTree(
+            urlappend(new_url, '/'.join(self.request.stepstogo)))
+
+    # XXX cprov 20090319: path segments starting with '+' should never
+    # correspond to a valid traversal, they confuse the hierarchical
+    # navigation.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
-        '+builds': IBuilderSet,
+        'builders': IBuilderSet,
         '+code': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
