@@ -171,7 +171,7 @@ them has been marked private. The private one cannot be retrieved.
 
 If a resource itself is visible to the client, but it contains
 information that's not visible, the information will be
-redacted. Here, a cookbook resource are visible to our client, but its
+redacted. Here, a cookbook resource is visible to our client, but its
 value for the 'confirmed' field is not visible.
 
     >>> cookbook = webservice.get(greens_url).jsonBody()
@@ -498,7 +498,7 @@ Both PUT and PATCH requests work this way.
 
 In addition to changing an object's data fields, you can change its
 relationships to other objects. Here we change which dish a recipe is
-a recipe for.
+for.
 
     >>> recipe_url = '/recipes/3'
     >>> recipe = webservice.get(recipe_url).jsonBody()

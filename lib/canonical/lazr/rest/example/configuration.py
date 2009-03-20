@@ -29,6 +29,6 @@ class CookbookWebServiceConfiguration:
     def createRequest(self, body_instream, environ):
         """See `IWebServiceConfiguration`."""
         request = WebServiceTestRequest(body_instream, environ)
-        request.setPublication(WebServiceTestPublication(
-                getUtility(IServiceRootResource)))
+        request.setPublication(
+            WebServiceTestPublication(getUtility(IServiceRootResource)))
         return request
