@@ -238,11 +238,10 @@ defined, then None is returned.
 == Policy checks during branch creation ==
 
 The branch visibility policy is checked during branch creation through
-the IBranchSet utility.
+the relevant IBranchNamespace implementation.
 
     >>> from canonical.launchpad.ftests import login
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBranchSet
     >>> evolution.setBranchVisibilityTeamPolicy(
     ...     None, BranchVisibilityRule.FORBIDDEN)
     >>> vcs_imports_team = person_set.getByName('vcs-imports')
@@ -294,7 +293,6 @@ created as a private branch, but since there are two teams that specify
 privacy, the branch is created so only Foo Bar can see it.  It is up to
 Foo Bar to subscribe the appropriate team at a later date.
 
-    >>> from canonical.launchpad.interfaces import BranchType
     >>> branch = factory.makeProductBranch(
     ...     name="testing-1", owner=foo_bar, product=evolution)
     >>> branch.private
