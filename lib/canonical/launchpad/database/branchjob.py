@@ -27,6 +27,8 @@ from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.productseries import ProductSeries
+from canonical.launchpad.database.translationbranchapprover import (
+    TranslationBranchApprover)
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from canonical.launchpad.interfaces.branchjob import (
@@ -401,6 +403,12 @@ class RosettaUploadJob(BranchJobDerived):
 
     class_job_type = BranchJobType.ROSETTA_UPLOAD
 
+    def __init__(self, branch_job):
+        BranchJobDerived.__init__(self, branch_job)
+
+        self.file_names = {'pot': [], 'po': []}
+        self.changed_files = {'pot': [], 'po': []}
+
     @staticmethod
     def getMetadata(from_revision_id):
         return {
@@ -430,40 +438,53 @@ class RosettaUploadJob(BranchJobDerived):
         else:
             return None
 
-    def _get_translations_files(self):
-        """Extract the files from the branch tree.
+    def _init_translation_file_lists(self):
+        """Initialize the member variables that hold the information about
+        the relevant files.
 
-        :returns:  A dict with keys 'po' and 'pot', each mapping to a list
-             containing (file_name, file_content) tuples.
+        The information is collected from the branch tree and stored in the
+        following member variables:
+        * file_names is a dictionary of two lists ('pot', 'po') of file names
+          that are POT or PO files respectively. This includes all files,
+          changed or unchanged.
+        * changed_files is a dictionary of two lists ('pot', 'po') of tuples
+          of (file_name, file_content) of all changed files that are POT or
+          PO files respectively.
         """
+
         bzrbranch = self.branch.getBzrBranch()
         from_tree = bzrbranch.repository.revision_tree(
             self.from_revision_id)
         to_tree = bzrbranch.repository.revision_tree(
             self.branch.last_scanned_id)
-        pot_files = []
-        po_files = []
+
         importer = TranslationImporter()
+
         try:
-            from_tree.lock_read()
             to_tree.lock_read()
-            for changed_file in to_tree.iter_changes(from_tree):
-                from_kind, to_kind = changed_file[6]
-                if to_kind != 'file':
-                    continue
-                file_id, (from_path, to_path) = changed_file[:2]
-                if importer.isTemplateName(to_path):
-                    append_to = pot_files
-                elif importer.isTranslationName(to_path):
-                    append_to = po_files
-                else:
-                    continue
-                append_to.append((
-                    to_path, to_tree.get_file_text(file_id)))
+            for dir, files in to_tree.walkdirs():
+                for afile in files:
+                    file_path, file_type = afile[1:3]
+                    if file_type != 'file':
+                        continue
+                    if importer.isTemplateName(file_path):
+                        append_to = 'pot'
+                    elif importer.isTranslationName(file_path):
+                        append_to = 'po'
+                    else:
+                        continue
+                    self.file_names[append_to].append(file_path)
+
+            from_tree.lock_read()
+            for pot_po in ('pot', 'po'):
+                for changed_file in to_tree.iter_changes(
+                        from_tree, specific_files=self.file_names[pot_po]):
+                    file_id, (from_path, to_path) = changed_file[:2]
+                    self.changed_files[pot_po].append((
+                        to_path, to_tree.get_file_text(file_id)))
         finally:
             from_tree.unlock()
             to_tree.unlock()
-        return {'pot': pot_files, 'po': po_files}
 
     def _upload_types(self, series):
         """Determine which file types to upload."""
@@ -488,7 +509,9 @@ class RosettaUploadJob(BranchJobDerived):
 
     def run(self):
         """See `IRosettaUploadJob`."""
-        filenames = self._get_translations_files()
+        # This is not called upon job creation because the branch would
+        # neither have been mirrored nor scanned then.
+        self._init_translation_file_lists()
         # Get the product series that are connected to this branch and
         # that want to upload translations.
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
@@ -499,15 +522,18 @@ class RosettaUploadJob(BranchJobDerived):
                TranslationsBranchImportMode.NO_IMPORT)
         translation_import_queue = getUtility(ITranslationImportQueue)
         for series in productseries:
+            approver = TranslationBranchApprover(
+                sum(self.file_names.itervalues(),[]), productseries=series)
             for upload_type in self._upload_types(series):
                 uploader = self._uploader_person(upload_type, series)
                 for upload_file_name, upload_file_content in (
-                     filenames[upload_type]):
+                     self.changed_files[upload_type]):
                     if len(upload_file_content) == 0:
                         continue # Skip empty files
-                    translation_import_queue.addOrUpdateEntry(
+                    entry = translation_import_queue.addOrUpdateEntry(
                         upload_file_name, upload_file_content,
                         True, uploader, productseries=series)
+                    approver.approve(entry)
 
     @staticmethod
     def iterReady():

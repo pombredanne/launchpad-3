@@ -79,7 +79,7 @@ class TranslationBranchApprover(object):
         # always approved.
         if len(self._potemplateset) == len(self._potemplates) == 1:
             self._potemplates[self._potemplates.keys()[0]] = (
-                self._potemplateset[0])
+                list(self._potemplateset)[0])
             self.is_approval_possible = True
 
     @property
