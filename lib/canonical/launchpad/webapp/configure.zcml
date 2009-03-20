@@ -526,6 +526,38 @@
         provides="canonical.launchpad.webapp.interfaces.IStoreSelector">
     </utility>
 
+    <!-- Storm Store adapters, adapting a Storm subclass or instance
+         to the correct Store for that tables replication set.
+      -->
+    <adapter
+        provides="canonical.launchpad.interfaces.IStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_store"
+        />
+    <adapter
+        provides="canonical.launchpad.interfaces.IMasterStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_master_store"
+        />
+    <adapter
+        provides="canonical.launchpad.interfaces.ISlaveStore"
+        for="zope.interface.Interface"
+        factory="canonical.launchpad.webapp.adapter.get_slave_store"
+        />
+    <adapter
+        provides="canonical.launchpad.interfaces.IMasterObject"
+        for="canonical.launchpad.interfaces.IDBObject"
+        trusted="yes"
+        factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
+        />
+    <class class="storm.store.Store">
+        <implements interface="canonical.launchpad.interfaces.IStore" />
+        <allow attributes="get" />
+    </class>
+    <class class="canonical.database.sqlbase.SQLBase">
+        <implements interface="canonical.launchpad.interfaces.IDBObject" />
+    </class>
+
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/launchpad.png" />
 

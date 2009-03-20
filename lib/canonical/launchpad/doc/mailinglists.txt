@@ -653,6 +653,10 @@ A list in the active state is not safe to purge.
 
 By deactivating the mailing list, we make it safe to purge.
 
+    >>> # Need to commit, or security checks fail because team isn't yet
+    >>> # available via the auth Store yet.
+    >>> import transaction
+    >>> transaction.commit()
     >>> list_six.deactivate()
     >>> list_six.transitionToStatus(MailingListStatus.INACTIVE)
     >>> print list_six.status.name

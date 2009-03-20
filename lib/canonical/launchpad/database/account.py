@@ -22,14 +22,13 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.openidserver import OpenIDRPSummary
+from canonical.launchpad.interfaces import IMasterObject, IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -97,7 +96,7 @@ class Account(SQLBase):
         # XXX: salgado, 2009-02-26: Instead of doing what we do below, we
         # should just provide a hook for callsites to do other stuff that's
         # not directly related to the account itself.
-        person = self.person
+        person = IMasterObject(self.person, None)
         if person is not None:
             # Since we have a person associated with this account, it may be
             # used to log into Launchpad, and so it may not have a preferred
@@ -115,21 +114,28 @@ class Account(SQLBase):
     # The password is actually stored in a separate table for security
     # reasons, so use a property to hide this implementation detail.
     def _get_password(self):
-        password = AccountPassword.selectOneBy(account=self)
+        # We have to force the switch to the auth store, because the
+        # AccountPassword table is not visible via the main store
+        # for security reasons.
+        password = IStore(AccountPassword).find(
+            AccountPassword, accountID=self.id).one()
         if password is None:
             return None
         else:
             return password.password
 
     def _set_password(self, value):
-        password = AccountPassword.selectOneBy(account=self)
+        # Making a modification, so we explicitly use the auth store master.
+        store = IMasterStore(AccountPassword)
+        password = store.find(
+            AccountPassword, accountID=self.id).one()
 
         if value is not None and password is None:
             # There is currently no AccountPassword record and we need one.
-            AccountPassword(account=self, password=value)
+            AccountPassword(accountID=self.id, password=value)
         elif value is None and password is not None:
             # There is an AccountPassword record that needs removing.
-            AccountPassword.delete(password.id)
+            store.remove(password)
         elif value is not None:
             # There is an AccountPassword record that needs updating.
             password.password = value
@@ -156,13 +162,14 @@ class Account(SQLBase):
         assert self.preferredemail is not None, (
             "Can't create a Person for an account which has no email.")
         store = Store.of(self)
-        assert store.find(Person, account=self).one() is None, (
+        assert IMasterStore(Person).find(
+            Person, accountID=self.id).one() is None, (
             "Can't create a Person for an account which already has one.")
         name = generate_nick(self.preferredemail.email)
         person = PersonSet()._newPerson(
             name, self.displayname, hide_email_addresses=True,
             rationale=rationale, account=self)
-        self.preferredemail.person = person
+        IMasterObject(self.preferredemail).personID = person.id
         return person
 
 
@@ -195,8 +202,7 @@ class AccountSet:
 
     def get(self, id):
         """See `IAccountSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(Account, Account.id == id).one()
+        return IStore(Account).get(Account, id)
 
     def createAccountAndEmail(self, email, rationale, displayname, password,
                               password_is_encrypted=False):
