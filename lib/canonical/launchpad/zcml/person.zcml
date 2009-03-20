@@ -119,11 +119,6 @@
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"
-    layer="canonical.launchpad.layers.AnswersLayer"
-    name="+questions"
-    />
-  <browser:defaultView
-    for="canonical.launchpad.interfaces.IPerson"
     layer="canonical.launchpad.layers.CodeLayer"
     name="+branches"
     />
@@ -231,10 +226,6 @@
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonView">
 
-    <browser:page
-      name="+ask-a-question-button"
-      template="../templates/null.pt"
-      />
     <browser:page
       name="+participation"
       template="../templates/person-participation.pt"
@@ -1041,117 +1032,6 @@
         />
   </browser:pages>
 
-</facet>
-
-<facet facet="answers">
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonLatestQuestionsView"
-    name="+portlet-latestquestions"
-    permission="zope.Public"
-    template="../templates/questiontarget-portlet-latestquestions.pt"
-    />
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonSearchQuestionsView"
-    name="+questions"
-    permission="zope.Public"
-    />
-  <browser:renamed-page
-    for="canonical.launchpad.interfaces.IPerson"
-    name="+tickets"
-    new_name="+questions"
-    rootsite="answers"
-    />
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchAnsweredQuestionsView"
-    name="+answeredquestions"
-    permission="zope.Public"
-    />
-  <browser:renamed-page
-    for="canonical.launchpad.interfaces.IPerson"
-    name="+answeredtickets"
-    new_name="+answeredquestions"
-    rootsite="answers"
-    />
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchAssignedQuestionsView"
-    name="+assignedquestions"
-    permission="zope.Public"
-    />
-  <browser:renamed-page
-    for="canonical.launchpad.interfaces.IPerson"
-    name="+assignedtickets"
-    new_name="+assignedquestions"
-    rootsite="answers"
-    />
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchCommentedQuestionsView"
-    name="+commentedquestions"
-    permission="zope.Public"
-    />
-  <browser:renamed-page
-    for="canonical.launchpad.interfaces.IPerson"
-    name="+commentedtickets"
-    new_name="+commentedquestions"
-    rootsite="answers"
-    />
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchCreatedQuestionsView"
-    name="+createdquestions"
-    permission="zope.Public"
-    />
-  <browser:renamed-page
-    for="canonical.launchpad.interfaces.IPerson"
-    name="+createdtickets"
-    new_name="+createdquestions"
-    rootsite="answers"
-    />
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchNeedAttentionQuestionsView"
-    name="+needattentionquestions"
-    permission="zope.Public"
-    />
-  <browser:renamed-page
-    for="canonical.launchpad.interfaces.IPerson"
-    name="+needattentiontickets"
-    new_name="+needattentionquestions"
-    rootsite="answers"
-    />
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchSubscribedQuestionsView"
-    name="+subscribedquestions"
-    permission="zope.Public"
-    />
-  <browser:renamed-page
-    for="canonical.launchpad.interfaces.IPerson"
-    name="+subscribedtickets"
-    new_name="+subscribedquestions"
-    rootsite="answers"
-    />
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonAnswerContactForView"
-    name="+answer-contact-for"
-    permission="zope.Public"
-    template="../templates/person-answer-contact-for.pt"
-    />
-  <browser:menus
-    module="canonical.launchpad.browser"
-    classes="PersonAnswersMenu"
-    />
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.RestrictedMembershipsPersonView"
-    name="+restricted-membership"
-    permission="zope.Public"
-    />
 </facet>
 
 <adapter

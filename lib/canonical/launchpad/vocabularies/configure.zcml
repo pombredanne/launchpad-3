@@ -73,12 +73,6 @@
     />
 
   <utility
-    name="FAQ"
-    component="canonical.launchpad.vocabularies.FAQVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    />
-
-  <utility
     name="FeaturedProject"
     component="canonical.launchpad.vocabularies.FeaturedProjectVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"

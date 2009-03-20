@@ -26,7 +26,6 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
-from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.searchservice import (
     GoogleResponseError, ISearchService)
 from canonical.launchpad.interfaces.specification import ISpecificationSet
@@ -39,6 +38,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lazr.batchnavigator.z3batching import batch
 from canonical.launchpad.webapp.vhosts import allvhosts
+
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
