@@ -351,7 +351,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_email(self, email):
         """Traverse to this person's emails on the webservice layer."""
         email = getUtility(IEmailAddressSet).getByEmail(email)
-        if email is None or email.personID != self.context.id:
+        if email is None or email.person != self.context:
             return None
         return email
 
@@ -1443,7 +1443,7 @@ class PersonClaimView(LaunchpadFormView):
                      "generated based on the email address it's "
                      "associated with."
                      % self.context.name)
-        elif email.personID != self.context.id:
+        elif email.person != self.context:
             if email.person.is_valid_person:
                 error = structured(
                          "This email address is associated with yet another "
@@ -1685,8 +1685,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         super(PersonAccountAdministerView, self).__init__(context, request)
         # Only the IPerson can be traversed to, so it provides the IAccount.
         self.person = self.context
-        from canonical.launchpad.interfaces import IMasterObject
-        self.context = IMasterObject(self.context.account)
+        self.context = self.context.account
 
     @property
     def is_viewing_person(self):
@@ -4167,7 +4166,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         token = getUtility(ILoginTokenSet).new(
                     self.context, getUtility(ILaunchBag).login, email,
                     LoginTokenType.VALIDATEEMAIL)
-        token.sendEmailValidationRequest()
+        token.sendEmailValidationRequest(self.request.getApplicationURL())
         self.request.response.addInfoNotification(
             "An e-mail message was sent to '%s' with "
             "instructions on how to confirm that "
@@ -4260,7 +4259,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         token = logintokenset.new(
                     self.context, getUtility(ILaunchBag).login, newemail,
                     LoginTokenType.VALIDATEEMAIL)
-        token.sendEmailValidationRequest()
+        token.sendEmailValidationRequest(self.request.getApplicationURL())
 
         self.request.response.addInfoNotification(
                 "A confirmation message has been sent to '%s'. "

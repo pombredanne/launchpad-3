@@ -77,7 +77,7 @@
     <div tal:condition="view/has_development_focus_branch"
          style="margin: 1em 0"
          tal:define="config modules/canonical.config/config;
-                     dev_focus context/development_focus/branch">
+                     dev_focus context/development_focus/series_branch">
       You can
       <tal:browseable condition="dev_focus/code_is_browseable">
         <a tal:attributes="href dev_focus/codebrowse_url"

@@ -16,7 +16,6 @@ from optparse import OptionParser
 
 from canonical.config import config
 from canonical.database.postgresql import ConnectionString
-from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import logger, logger_options
 import replication.helpers
 
@@ -25,9 +24,7 @@ __all__ = []
 
 
 def main():
-    parser = OptionParser(
-        "Usage: %prog [options] "
-        "[start [nickname connection_string] | stop [nickname]]")
+    parser = OptionParser("Usage: %prog [options] [start|stop]")
     parser.add_option(
         '-l', '--lag', default=None, dest="lag", metavar='PGINTERVAL',
         help="Lag events by PGINTERVAL, such as '10 seconds' or '2 minutes'")
@@ -37,110 +34,60 @@ def main():
     if len(args) == 0:
         parser.error("No command given.")
 
+    if len(args) != 1:
+        parser.error("Only one command allowed (got %s)." % repr(args))
+
     command = args[0]
-
     if command not in ['start', 'stop']:
-        parser.error("Unknown command %s." % command)
-
-    if len(args) == 1:
-        explicit = None
-
-    elif command == 'start':
-        if len(args) == 2:
-            parser.error(
-                "nickname and connection_string required for %s command"
-                % command)
-        elif len(args) == 3:
-            explicit = replication.helpers.Node(
-                None, args[1], args[2], None)
-        else:
-            parser.error("Too many arguments.")
-
-    elif command == 'stop':
-        if len(args) in (2, 3):
-            explicit = replication.helpers.Node(
-                None, args[1], None, None)
-        else:
-            parser.error("Too many arguments.")
-
-    else:
         parser.error("Unknown command %s." % command)
 
     log = logger(options)
 
-    if explicit is not None:
-        nodes = [explicit]
-    else:
-        nodes = replication.helpers.get_all_cluster_nodes(connect('slony'))
+    assert config.database.main_master != config.database.main_slave, (
+        "Master and slave identical - LPCONFIG not a replicated setup.")
 
-    if command == 'start':
-        return start(log, nodes, options.lag)
-    else:
-        return stop(log, nodes)
-
-
-def get_pidfile(nickname):
-    return os.path.join(
-        config.canonical.pid_dir, 'lpslon_%s_%s.pid' % (
-        nickname, config.instance_name))
-
-
-def get_logfile(nickname):
-    return os.path.join(
-        config.root, 'database', 'replication',
-        'lpslon_%s_%s.log' % (nickname, config.instance_name))
-
-
-def start(log, nodes, lag=None):
-    for node in nodes:
-        pidfile = get_pidfile(node.nickname)
-        logfile = get_logfile(node.nickname)
-
-        log.info("Starting %s slon daemon." % node.nickname)
-        log.debug("Logging to %s" % logfile)
-        log.debug("PID file %s" % pidfile)
-        # Hard code suitable command line arguments for development.
-        slon_args = "-d 2 -s 10000 -t 30000"
-        if lag is not None:
-            slon_args = "%s -l '%s'" % (slon_args, lag)
-        cmd = [
-            "/sbin/start-stop-daemon",
-            "--start",
-            "--background",
-            "--pidfile", pidfile,
-            "--oknodo",
-            "--exec", "/usr/bin/slon",
-            "--startas", "/bin/sh",
-            "--", "-c",
-            "slon -p %s %s %s '%s' > %s" % (
-                pidfile, slon_args, replication.helpers.CLUSTERNAME,
-                node.connection_string, logfile)]
-        log.debug("Running %s" % repr(cmd))
-        return_code = subprocess.call(cmd)
-        if return_code != 0:
-            log.fatal("Failed. Return code %s" % return_code)
-            return return_code
-
-    return 0
-
-
-def stop(log, nodes):
-    for node in nodes:
-        pidfile = get_pidfile(node.nickname)
-        logfile = get_logfile(node.nickname)
-
-        if not os.path.exists(pidfile):
-            log.info(
-                "%s slon daemon not running. Doing nothing."
-                % node.nickname)
-            continue
-        log.info("Stopping %s slon daemon." % node.nickname)
-        log.debug("PID file %s" % pidfile)
-        cmd = [
-            "/sbin/start-stop-daemon",
-            "--stop",
-            "--pidfile", pidfile,
-            "--oknodo"]
+    for instance in ['main_master', 'main_slave']:
+        pidfile = os.path.join(
+            config.canonical.pid_dir, 'lpslon_%s_%s.pid' % (
+                instance, config.instance_name))
+        logfile = os.path.join(
+            config.root, 'database', 'replication',
+            'lpslon_%s_%s.log' % (instance, config.instance_name))
+        connection_string = ConnectionString(
+            getattr(config.database, instance))
+        connection_string.user = 'slony'
+        if command == 'start':
+            log.info("Starting %s slon daemon." % instance)
+            log.debug("Logging to %s" % logfile)
+            log.debug("PID file %s" % pidfile)
+            # Hard code suitable command line arguments for development.
+            slon_args = "-d 2 -s 10000 -t 30000"
+            if options.lag is not None:
+                slon_args = "%s -l '%s'" % (slon_args, options.lag)
+            cmd = [
+                "/sbin/start-stop-daemon",
+                "--start",
+                "--background",
+                "--pidfile", pidfile,
+                "--oknodo",
+                "--exec", "/usr/bin/slon",
+                "--startas", "/bin/sh",
+                "--", "-c",
+                "slon -p %s %s %s '%s' > %s" % (
+                    pidfile, slon_args, replication.helpers.CLUSTERNAME,
+                    connection_string, logfile)]
+        else:
+            if not os.path.exists(pidfile):
+                log.info(
+                    "%s slon daemon not running. Doing nothing." % instance)
+                continue
+            log.info("Stopping %s slon daemon." % instance)
+            log.debug("PID file %s" % pidfile)
+            cmd = [
+                "/sbin/start-stop-daemon",
+                "--stop",
+                "--pidfile", pidfile,
+                "--oknodo"]
         log.debug("Running %s" % repr(cmd))
         return_code = subprocess.call(cmd)
         if return_code != 0:

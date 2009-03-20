@@ -19,7 +19,7 @@ from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.launchpad import (
     IOpenIDApplication, NotFoundError)
-from canonical.launchpad.interfaces.authtoken import IAuthTokenSet
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDAuthorizationSet, IOpenIDRPConfigSet, IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -72,11 +72,11 @@ class OpenIDApplicationNavigation(Navigation):
 
     @stepto('token')
     def token(self):
-        """Traverse to auth tokens."""
+        """Traverse to login tokens."""
         # We need to traverse the 'token' namespace in order to allow people
         # to create new accounts and reset their passwords. This can't clash
         # with a person's name because it's a blacklisted name.
-        return getUtility(IAuthTokenSet)
+        return getUtility(ILoginTokenSet)
 
     def traverse(self, name):
         """Traverse to the `IOpenIDPersistentIdentity`.

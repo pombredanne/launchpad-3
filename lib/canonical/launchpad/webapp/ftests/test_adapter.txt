@@ -311,7 +311,7 @@ connection.  This can be adjusted by choosing a different database
 config section.  By default we connect as "launchpad"
 
     >>> print store.execute("select current_user").get_one()[0]
-    launchpad_main
+    launchpad
 
     >>> from canonical.config import config, dbconfig
     >>> config.statistician.dbuser
@@ -347,7 +347,7 @@ So you need to explicitly set the user back:
     >>> dbconfig.setConfigSection('launchpad')
     >>> reset_store()
     >>> print store.execute("select current_user").get_one()[0]
-    launchpad_main
+    launchpad
     >>> store.execute("""
     ...     INSERT INTO SourcePackageName(name) VALUES ('fnord4')
     ...     """, noresult=True)

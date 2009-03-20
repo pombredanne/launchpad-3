@@ -7,6 +7,7 @@ import unittest
 from zope.error.interfaces import IErrorReportingUtility
 from zope.component import getMultiAdapter, getUtility
 
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.systemhomes import ShipItApplication
@@ -16,10 +17,10 @@ from canonical.launchpad.layers import (
     setFirstLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces import (
-    ICountrySet, IPersonSet, IShipitAccount, ShipItArchitecture,
-    ShipItDistroSeries, ShipItFlavour, ShippingRequestPriority,
-    ShippingRequestStatus, ShippingRequestType)
-from canonical.launchpad.testing import TestCaseWithFactory
+    ICountrySet, IPersonSet, ShipItArchitecture, ShipItDistroSeries,
+    ShipItFlavour, ShippingRequestPriority, ShippingRequestStatus,
+    ShippingRequestType)
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -37,7 +38,7 @@ class TestShippingRequestSet(unittest.TestCase):
                 total_approved, request.getTotalApprovedCDs())
 
 
-class TestFraudDetection(TestCaseWithFactory):
+class TestFraudDetection(unittest.TestCase):
     """Ensure repeated requests of a given user are marked as PENDING[SPECIAL]
     and requests using an address already used by two other users are marked
     as DUPLICATEDADDRESS.
@@ -53,10 +54,6 @@ class TestFraudDetection(TestCaseWithFactory):
     flavours_that_can_be_requested = [
         ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.SERVER]
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.requester = self.factory.makeAccount('Test account')
-
     def _get_standard_option(self, flavour):
         return StandardShipItRequest.selectBy(flavour=flavour)[0]
 
@@ -66,17 +63,17 @@ class TestFraudDetection(TestCaseWithFactory):
         shippingrun = ShippingRequestSet()._create_shipping_run([request.id])
         flush_database_updates()
 
-    def _create_request_and_ship_it(self, flavour):
-        request = self._make_new_request_through_web(flavour)
+    def _create_request_and_ship_it(self, flavour, user_email=None,
+                                    form=None):
+        request = self._make_new_request_through_web(
+            flavour, user_email=user_email, form=form)
         self._ship_request(request)
         return request
 
     def _make_new_request_through_web(
-            self, flavour, create_new_user=False, form=None,
-            distroseries=None):
-        requester = self.requester
-        if create_new_user:
-            requester = self.factory.makeAccount('Test account')
+            self, flavour, user_email=None, form=None, distroseries=None):
+        if user_email is None:
+            user_email = 'guilherme.salgado@canonical.com'
         if form is None:
             standardoption = self._get_standard_option(flavour)
             form = {
@@ -94,7 +91,7 @@ class TestFraudDetection(TestCaseWithFactory):
         # The request object on the ShipIt layers has that attribute.
         request.icing_url = '/+icing-%s' % flavour.name
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
-        login_person(requester)
+        login(user_email)
         page = 'myrequest'
         if flavour == ShipItFlavour.SERVER:
             page = 'myrequest-server'
@@ -151,7 +148,7 @@ class TestFraudDetection(TestCaseWithFactory):
         form['ordertype'] = str(option.id)
         # The first request with a given address is approved.
         request = self._make_new_request_through_web(
-            flavour, create_new_user=True, form=form)
+            flavour, user_email='test@canonical.com', form=form)
         self.failUnless(request.isApproved(), flavour)
 
         # We can do some changes to the address here, because even if
@@ -167,7 +164,7 @@ class TestFraudDetection(TestCaseWithFactory):
         # account because they no longer have access to the email they used
         # when creating the previous account.
         request2 = self._make_new_request_through_web(
-            flavour, create_new_user=True, form=form,
+            flavour, user_email='foo.bar@canonical.com', form=form,
             distroseries=ShipItDistroSeries.DAPPER)
         self.failIfEqual(request.distroseries, request2.distroseries)
         self.assertEqual(
@@ -177,7 +174,7 @@ class TestFraudDetection(TestCaseWithFactory):
         # Now when a second request for CDs of the same release are made using
         # the same address, it gets marked with the DUPLICATEDADDRESS status.
         request3 = self._make_new_request_through_web(
-            flavour, create_new_user=True, form=form)
+            flavour, user_email='tim@canonical.com', form=form)
         self.assertEqual(request.distroseries, request3.distroseries)
         self.assertEqual(
             request3.normalized_address, request.normalized_address)
@@ -186,7 +183,7 @@ class TestFraudDetection(TestCaseWithFactory):
         # The same happens for any subsequent requests for that release with
         # the same address.
         request4 = self._make_new_request_through_web(
-            flavour, create_new_user=True, form=form)
+            flavour, user_email='carlos@canonical.com', form=form)
         self.assertEqual(request.distroseries, request3.distroseries)
         self.failUnless(request4.isDuplicatedAddress(), flavour)
 
@@ -222,21 +219,9 @@ class TestShippingRun(unittest.TestCase):
         self.failUnlessEqual(run.requests_count, len(approved_request_ids))
 
 
-class TestPeopleTrustedOnShipIt(TestCaseWithFactory):
+class TestPeopleTrustedOnShipIt(unittest.TestCase):
     """Tests for the 'is_trusted_on_shipit' property of IPerson."""
     layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        login(ANONYMOUS)
-        self.error_utility = getUtility(IErrorReportingUtility)
-        self.salgado = getUtility(IPersonSet).getByName('salgado')
-        self.sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-        # Log a bogus error just to make sure we have something to compare
-        # further errors against.
-        bogus_error = Exception('Bogus error')
-        self.error_utility.raising(
-            (bogus_error.__class__, bogus_error, None))
 
     def test_person_with_karma_when_ubuntumembers_do_not_exist(self):
         """Return True and do not record an OOPS when the 'ubuntumembers' team
@@ -245,10 +230,11 @@ class TestPeopleTrustedOnShipIt(TestCaseWithFactory):
         Since the person has karma, there's no need to check for membership in
         the ubuntumembers team, so we don't care whether it exists or not.
         """
-        report = self.error_utility.getLastOopsReport()
-        self.failUnless(
-            IShipitAccount(self.sabdfl.account).is_trusted_on_shipit)
-        report2 = self.error_utility.getLastOopsReport()
+        login(ANONYMOUS)
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnless(sabdfl.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
         self.failUnlessEqual(report.id, report2.id)
 
     def test_person_without_karma_when_ubuntumembers_do_not_exist(self):
@@ -259,37 +245,44 @@ class TestPeopleTrustedOnShipIt(TestCaseWithFactory):
         don't want to fail the request -- instead we just move on as if the
         user was not trusted on shipit.
         """
-        self.failUnlessEqual(self.salgado.karma, 0)
-        report = self.error_utility.getLastOopsReport()
-        self.failIf(IShipitAccount(self.salgado.account).is_trusted_on_shipit)
-        report2 = self.error_utility.getLastOopsReport()
+        login(ANONYMOUS)
+        salgado = getUtility(IPersonSet).getByName('salgado')
+        self.failUnlessEqual(salgado.karma, 0)
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failIf(salgado.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
         self.failIfEqual(report.id, report2.id)
         self.failUnless(
             report2.value.startswith("No team named 'ubuntumembers'"))
 
     def test_person_without_karma_and_not_in_ubuntumembers(self):
         """Return False and do not log an OOPS as the team exists."""
-        ubuntumembers = self.factory.makeTeam(
-            self.sabdfl, name='ubuntumembers')
-        self.failIf(self.salgado.inTeam(ubuntumembers))
-        self.failUnlessEqual(self.salgado.karma, 0)
-        report = self.error_utility.getLastOopsReport()
-        self.failIf(IShipitAccount(self.salgado.account).is_trusted_on_shipit)
-        report2 = self.error_utility.getLastOopsReport()
+        login(ANONYMOUS)
+        salgado = getUtility(IPersonSet).getByName('salgado')
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        ubuntumembers = LaunchpadObjectFactory().makeTeam(
+            sabdfl, name='ubuntumembers')
+        self.failIf(salgado.inTeam(ubuntumembers))
+        self.failUnlessEqual(salgado.karma, 0)
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failIf(salgado.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
         self.failUnlessEqual(report.id, report2.id)
 
     def test_person_without_karma_and_in_ubuntumembers(self):
         """Return True and do not log an OOPS as the team exists."""
-        ubuntumembers = self.factory.makeTeam(
-            self.sabdfl, name='ubuntumembers')
-        login_person(self.sabdfl)
-        ubuntumembers.addMember(self.salgado, self.sabdfl)
-        self.failUnless(self.salgado.inTeam(ubuntumembers))
-        self.failUnlessEqual(self.salgado.karma, 0)
-        report = self.error_utility.getLastOopsReport()
-        self.failUnless(
-            IShipitAccount(self.salgado.account).is_trusted_on_shipit)
-        report2 = self.error_utility.getLastOopsReport()
+        login(ANONYMOUS)
+        salgado = getUtility(IPersonSet).getByName('salgado')
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        ubuntumembers = LaunchpadObjectFactory().makeTeam(
+            sabdfl, name='ubuntumembers')
+        login_person(sabdfl)
+        ubuntumembers.addMember(salgado, sabdfl)
+        self.failUnless(salgado.inTeam(ubuntumembers))
+        self.failUnlessEqual(salgado.karma, 0)
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnless(salgado.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
         self.failUnlessEqual(report.id, report2.id)
 
 
@@ -315,7 +308,7 @@ class TestShippingRequest(unittest.TestCase):
         name = 'Guilherme Salgado'
         phone = '+551635015218'
         request = self.requestset.new(
-            sample_person.account, name, brazil, city, addressline, phone)
+            sample_person, name, brazil, city, addressline, phone)
         return request
 
     def test_type_tracking_for_unapproved_requests(self):
@@ -371,17 +364,25 @@ class TestShippingRequest(unittest.TestCase):
         # If the user becomes inactive (which can be done by having his
         # account closed by an admin or by the user himself), though, the
         # recipient_email will be just a piece of text explaining that.
-        import transaction
-        from canonical.launchpad.interfaces import IMasterObject
-        email = IMasterObject(request.recipient.preferredemail)
+        email = request.recipient.preferredemail
         email.status = EmailAddressStatus.VALIDATED
         email.destroySelf()
-        transaction.commit()
         # Need to clean the cache because preferredemail is a cached property.
         request.recipient._preferredemail_cached = None
         self.failIf(request.recipient.preferredemail is not None)
         self.assertEqual(
             u'inactive account -- no email address', request.recipient_email)
+
+    def test_recipient_email_for_shipit_admins(self):
+        # Requests made using the admin interface will have the shipit admins
+        # team as the recipient and thus its recipient_email property will
+        # return config.shipit.admins_email_address no matter what the email
+        # address for that team is.
+        requests = self.requestset.search(recipient_text='shipit-admins')
+        self.failIfEqual(requests.count(), 0)
+        for request in requests:
+            self.assertEqual(
+                request.recipient_email, config.shipit.admins_email_address)
 
     def test_requests_that_can_be_approved_denied_or_changed(self):
         # Requests pending approval can be approved and denied but not

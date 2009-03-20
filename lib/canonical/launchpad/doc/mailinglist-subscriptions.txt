@@ -103,7 +103,7 @@ Once Anne validates her new address, she can post from it.
 
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative.status = EmailAddressStatus.VALIDATED
-    >>> transaction.commit()
+    >>> syncUpdate(alternative)
     >>> sorted(email.email for email in list_one.getSenderAddresses())
     [u'anne.person@example.com', u'anne.x.person@example.net',
      u'aperson@example.org',
@@ -112,7 +112,7 @@ Once Anne validates her new address, she can post from it.
 
     # Reverse the validation so that it doesn't affect subsequent tests.
     >>> alternative.status = EmailAddressStatus.NEW
-    >>> transaction.commit()
+    >>> syncUpdate(alternative)
 
 
 == MailingListSubscription objects ==
@@ -198,7 +198,7 @@ to post to the mailing list.
 Once Cris validates her new address, she can post from it.
 
     >>> alternative.status = EmailAddressStatus.VALIDATED
-    >>> transaction.commit()
+    >>> syncUpdate(alternative)
     >>> sorted(email.email for email in list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
@@ -208,7 +208,7 @@ Once Cris validates her new address, she can post from it.
 
     # Reverse the validation so that it doesn't affect subsequent tests.
     >>> alternative.status = EmailAddressStatus.NEW
-    >>> transaction.commit()
+    >>> syncUpdate(alternative)
 
 People can subscribe to both a superteam's mailing list and a subteam's
 mailing list.
@@ -306,7 +306,6 @@ preferred address.
     >>> sorted(email.email for email in list_four.getSubscribedAddresses())
     [u'elle.person@example.com']
     >>> elle.setPreferredEmail(elle_alternative)
-    >>> transaction.commit()
     >>> sorted(email.email for email in list_four.getSubscribedAddresses())
     [u'eperson@example.org']
 
@@ -494,7 +493,7 @@ she is subscribed to List Six with.
     >>> list_six.unsubscribe(jack)
     >>> for address in address_set.getByPerson(kara):
     ...     list_six.changeAddress(kara, address)
-    ...     transaction.commit()
+    ...     flush_database_updates()
     ...     print address.email, sorted(
     ...         email.email for email in list_six.getSubscribedAddresses())
     kara.person@example.com [u'kara.person@example.com']
@@ -504,12 +503,12 @@ Kara can also change her email address to None, which uses and tracks any
 changes to her preferred email address.
 
     >>> list_six.changeAddress(kara, None)
-    >>> transaction.commit()
+    >>> flush_database_updates()
     >>> sorted(email.email for email in list_six.getSubscribedAddresses())
     [u'kara.person@example.com']
     >>> for address in address_set.getByPerson(kara):
     ...     kara.setPreferredEmail(address)
-    ...     transaction.commit()
+    ...     flush_database_updates()
     ...     print address.email, sorted(
     ...         email.email for email in list_six.getSubscribedAddresses())
     kara.person@example.com [u'kara.person@example.com']
@@ -590,7 +589,7 @@ When a user deletes an email address, all of their mailing list
 subscriptions that use that address are automatically deleted as well.
 
     >>> list_six.changeAddress(kara, kara_alternative)
-    >>> transaction.commit()
+    >>> flush_database_updates()
     >>> print sorted(email.email
     ...              for email in list_six.getSubscribedAddresses())
     [u'kperson@example.org']
@@ -599,11 +598,9 @@ subscriptions that use that address are automatically deleted as well.
     # test, but we can't delete a person's preferred email, so we first need
     # to change her preferred email.
     >>> kara.setPreferredEmail(kara.validatedemails[0])
-    >>> transaction.commit()
     >>> kara.preferredemail == kara_alternative
     False
     >>> kara_alternative.destroySelf()
-    >>> transaction.commit()
     >>> print sorted(email.email
     ...              for email in list_six.getSubscribedAddresses())
     []

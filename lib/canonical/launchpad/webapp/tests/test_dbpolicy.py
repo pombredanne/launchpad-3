@@ -17,7 +17,7 @@ from canonical.launchpad.webapp.adapter import StoreSelector
 from canonical.launchpad.webapp.dbpolicy import (
     SlaveDatabasePolicy, MasterDatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
-    ALL_STORES, DEFAULT_FLAVOR, IDatabasePolicy, MASTER_FLAVOR, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR, IDatabasePolicy, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -29,19 +29,15 @@ class BaseDatabasePolicyTestCase(unittest.TestCase):
     layer = DatabaseFunctionalLayer
 
     def tearDown(self):
-        for store in ALL_STORES:
-            StoreSelector.setDefaultFlavor(store, DEFAULT_FLAVOR)
+        StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
 
     def test_correctly_implements_IDatabasePolicy(self):
         self.failUnless(verifyObject(IDatabasePolicy, self.policy))
 
     def test_afterCall_should_reset_default_flavor(self):
-        for store in ALL_STORES:
-            default_flavor = StoreSelector.getDefaultFlavor(store)
-            StoreSelector.setDefaultFlavor(store, MASTER_FLAVOR)
-            self.policy.afterCall()
-            self.assertEquals(
-                    default_flavor, StoreSelector.getDefaultFlavor(store))
+        StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+        self.policy.afterCall()
+        self.assertEquals(DEFAULT_FLAVOR, StoreSelector.getDefaultFlavor())
 
 
 class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
@@ -66,9 +62,7 @@ class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
     def test_beforeTraverse_should_set_slave_flavor(self):
         self.policy.beforeTraversal()
-        for store in ALL_STORES:
-            self.assertEquals(
-                    SLAVE_FLAVOR, StoreSelector.getDefaultFlavor(store))
+        self.assertEquals(SLAVE_FLAVOR, StoreSelector.getDefaultFlavor())
 
 
 class MasterDatabasePolicyTestCase(
@@ -108,9 +102,7 @@ class MasterDatabasePolicyTestCase(
 
     def test_beforeTraverse_should_set_master_flavor(self):
         self.policy.beforeTraversal()
-        for store in ALL_STORES:
-            self.assertEquals(
-                    MASTER_FLAVOR, StoreSelector.getDefaultFlavor(store))
+        self.assertEquals(MASTER_FLAVOR, StoreSelector.getDefaultFlavor())
 
 
 def test_suite():

@@ -23,23 +23,16 @@ from StringIO import StringIO
 import os.path
 
 import pytz
-from storm.store import Store
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
-from canonical.database.sqlbase import flush_database_updates
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.components.packagelocation import PackageLocation
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.processor import ProcessorFamilySet
-from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.archive import (
@@ -104,8 +97,6 @@ from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
-from canonical.launchpad.webapp.adapter import StoreSelector
-from canonical.launchpad.webapp.interfaces import ALL_STORES, MASTER_FLAVOR
 
 SPACE = ' '
 
@@ -132,29 +123,6 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-def default_master_store(func):
-    """Decorator to temporarily set the default Store to the master.
-    
-    In some cases, such as in the middle of a page test story,
-    we might be calling factory methods with the default Store set
-    to the slave which breaks stuff. For instance, if we set an account's
-    password that needs to happen on the master store and this is forced.
-    However, if we then read it back the default Store has to be used.
-    """
-    def with_default_master_store(*args, **kw):
-        current_flavors = {}
-        for store in ALL_STORES:
-            current_flavors[store] = StoreSelector.getDefaultFlavor(store)
-        try:
-            for store in ALL_STORES:
-                StoreSelector.setDefaultFlavor(store, MASTER_FLAVOR)
-            return func(*args, **kw)
-        finally:
-            for store in ALL_STORES:
-                StoreSelector.setDefaultFlavor(store, current_flavors[store])
-    return with_default_master_store
-
-
 # We use this for default paramters where None has a specific meaning.  For
 # example, makeBranch(product=None) means "make a junk branch".
 # None, because None means "junk branch".
@@ -163,8 +131,6 @@ _DEFAULT = object()
 
 class ObjectFactory:
     """Factory methods for creating basic Python objects."""
-
-    __metaclass__ = AutoDecorate(default_master_store)
 
     def __init__(self):
         # Initialise the unique identifier.
@@ -240,40 +206,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             email, person=None, account=account,
             email_status=EmailAddressStatus.PREFERRED)
         if commit:
+            import transaction
             transaction.commit()
         return account
 
-    def makePerson(self, *args, **kwargs):
-        """As makePersonNoCommit, except with an implicit transaction commit.
-
-        makePersonNoCommit makes changes to two seperate database connections,
-        and the returned Person can have odd behavior until a commit is
-        made. For example, person.preferredemail will be None as this
-        is looking in the main Store for email address details, not the
-        email address master Store (the auth Store).
-        """
-        person = self.makePersonNoCommit(*args, **kwargs)
-        transaction.commit()
-        self._stuff_preferredemail_cache(person)
-        return person
-
-    def _stuff_preferredemail_cache(self, person):
-        """Stuff the preferredemail cache.
-        
-        cachedproperty does not get reset across transactions,
-        so person.preferredemail can contain a bogus value even after
-        a commit, despite all changes now being available in the main
-        store.
-        """
-        person = removeSecurityProxy(person) # Need to poke person's privates
-        person._preferredemail_cached = Store.of(person).find(
-            EmailAddress, personID=person.id,
-            status=EmailAddressStatus.PREFERRED).one()
-
-    def makePersonNoCommit(
-        self, email=None, name=None, password=None,
-        email_address_status=None, hide_email_addresses=False,
-        displayname=None, time_zone=None, latitude=None, longitude=None):
+    def makePerson(self, email=None, name=None, password=None,
+                   email_address_status=None, hide_email_addresses=False,
+                   displayname=None, time_zone=None, latitude=None,
+                   longitude=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -307,28 +247,25 @@ class LaunchpadObjectFactory(ObjectFactory):
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname,
             hide_email_addresses=hide_email_addresses)
-        person = removeSecurityProxy(person)
-        email = removeSecurityProxy(email)
-
-        assert person.password is not None, (
-            'Password not set. Wrong default auth Store?')
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
-            person.setLocation(latitude, longitude, time_zone, person)
+            # Remove the security proxy because setLocation() is protected
+            # with launchpad.EditLocation.
+            removeSecurityProxy(person).setLocation(
+                latitude, longitude, time_zone, person)
 
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.PREFERRED:
             person.validateAndEnsurePreferredEmail(email)
-            account = IMasterStore(Account).get(
-                Account, person.accountID)
-            account.status = AccountStatus.ACTIVE
-
-        email.status = email_address_status
-        
-        # Ensure updated ValidPersonCache
-        flush_database_updates()
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+        # Make the account ACTIVE if we have a preferred email address now.
+        if (person.preferredemail is not None and
+            person.preferredemail.status == EmailAddressStatus.PREFERRED):
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+        removeSecurityProxy(email).status = email_address_status
+        syncUpdate(email)
         return person
 
     def makePersonByName(self, first_name, set_preferred_email=True,
@@ -375,11 +312,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             # over subscriptions in the doctests.
             person.mailing_list_auto_subscribe_policy = \
                 MailingListAutoSubscribePolicy.NEVER
-        account = IMasterStore(Account).get(Account, person.accountID)
-        getUtility(IEmailAddressSet).new(
-            alternative_address, person, EmailAddressStatus.VALIDATED, account)
-        transaction.commit()
-        self._stuff_preferredemail_cache(person)
+        getUtility(IEmailAddressSet).new(alternative_address, person,
+                                         EmailAddressStatus.VALIDATED,
+                                         person.account)
         return person
 
     def makeEmail(self, address, person, account=None, email_status=None):
@@ -433,8 +368,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
-        transaction.commit()
-        self._stuff_preferredemail_cache(team)
         return team
 
     def makePoll(self, team, name, title, proposition):
@@ -466,23 +399,12 @@ class LaunchpadObjectFactory(ObjectFactory):
         return Milestone(product=product, distribution=distribution,
                          name=name)
 
-    def makeProduct(self, *args, **kwargs):
-        """As makeProductNoCommit with an implicit transaction commit.
-        
-        This ensures that generated owners and registrants are fully
-        flushed and available from all Stores.
-        """
-        product = self.makeProductNoCommit(*args, **kwargs)
-        transaction.commit()
-        return product
-
-    def makeProductNoCommit(
-        self, name=None, project=None, displayname=None,
-        licenses=None, owner=None, registrant=None,
-        title=None, summary=None, official_malone=None):
+    def makeProduct(self, name=None, project=None, displayname=None,
+                    licenses=None, owner=None, registrant=None,
+                    title=None, summary=None, official_malone=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
-            owner = self.makePersonNoCommit()
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
@@ -653,10 +575,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         naked_branch = removeSecurityProxy(branch)
         naked_branch.startMirroring()
         naked_branch.mirrorComplete('rev1')
-        # Likewise, we might not have permission to set the branch of the
+        # Likewise, we might not have permission to set the user_branch of the
         # development focus series.
         naked_series = removeSecurityProxy(product.development_focus)
-        naked_series.branch = branch
+        naked_series.user_branch = branch
         return branch
 
     def makeBranchMergeQueue(self, name=None):
@@ -810,9 +732,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             to this URL.
         """
         if product is None:
-            product = self.makeProductNoCommit()
+            product = self.makeProduct()
         if owner is None:
-            owner = self.makePersonNoCommit()
+            owner = self.makePerson()
         if title is None:
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
@@ -1102,10 +1024,6 @@ class LaunchpadObjectFactory(ObjectFactory):
                               merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
-            # Until we commit, sender.preferredemail returns None
-            # because the email address changes pending in the auth Store
-            # are not available via the main Store.
-            transaction.commit()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
@@ -1133,11 +1051,14 @@ class LaunchpadObjectFactory(ObjectFactory):
         MessageChunk(message=message, sequence=1, content=content)
         return message
 
-    def makeSeries(self, branch=None, name=None, product=None):
+    def makeSeries(self, user_branch=None, import_branch=None,
+                   name=None, product=None):
         """Create a new, arbitrary ProductSeries.
 
-        :param branch: If supplied, the branch to set as
-            ProductSeries.branch.
+        :param user_branch: If supplied, the branch to set as
+            ProductSeries.user_branch.
+        :param import_branch: If supplied, the branch to set as
+            ProductSeries.import_branch.
         :param product: If supplied, the name of the series.
         :param product: If supplied, the series is created for this product.
             Otherwise, a new product is created.
@@ -1150,9 +1071,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
         series = naked_product.newSeries(
-            product.owner, name, self.getUniqueString(), branch)
-        if branch is not None:
-            series.branch = branch
+            product.owner, name, self.getUniqueString(), user_branch)
+        if import_branch is not None:
+            series.import_branch = import_branch
         syncUpdate(series)
         return series
 
