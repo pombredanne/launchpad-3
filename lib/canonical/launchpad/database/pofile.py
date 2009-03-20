@@ -604,9 +604,11 @@ class POFile(SQLBase, POFileMixIn):
         # We get all POTMsgSet.ids with translations, and later
         # exclude them using a NOT IN subselect.
         translated_clauses, clause_tables = self._getTranslatedMessagesQuery()
+        translated_clauses.append(
+            'POTMsgSet.id=TranslationTemplateItem.potmsgset')
         translated_query = (
-            "(SELECT TranslationTemplateItem.potmsgset"
-            "   FROM TranslationTemplateItem, TranslationMessage"
+            "(SELECT POTMsgSet.id"
+            "   FROM TranslationTemplateItem, TranslationMessage, POTMsgSet"
             "   WHERE " + " AND ".join(translated_clauses) + ")")
         clauses = [
             'TranslationTemplateItem.potemplate = %s' % sqlvalues(

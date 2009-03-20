@@ -733,8 +733,8 @@ class POTemplate(SQLBase, RosettaStats):
             msgid_plural = None
         else:
             msgid_plural = self.getOrCreatePOMsgID(plural_text)
-        potmsgset = self._getPOTMsgSetBy(msgid_singular, msgid_plural, context,
-                                         shared=True)
+        potmsgset = self._getPOTMsgSetBy(msgid_singular, msgid_plural,
+                                         context, shared=True)
         if potmsgset is None:
             potmsgset = self.createMessageSetFromText(
                 singular_text, plural_text, context)
