@@ -680,8 +680,7 @@ def get_bug_edit_notification_texts(bug_delta):
         #     should be removed as part of the final cleanup work on
         #     moving to the BugChange API.
         for bugtask_delta in bugtask_deltas:
-            change_info = u"** Changed in: %s\n" % (
-                bugtask_delta.bugtask.bugtargetname)
+            change_info = u''
 
             for fieldname, displayattrname in [
                 ("product", "displayname"), ("sourcepackagename", "name"),
@@ -709,7 +708,10 @@ def get_bug_edit_notification_texts(bug_delta):
                     'newval' : newval_display})
                 change_info += changerow
 
-            changes.append(change_info.rstrip())
+            if len(change_info) > 0:
+                change_info = u"** Changed in: %s\n%s" % (
+                    bugtask_delta.bugtask.bugtargetname, change_info)
+                changes.append(change_info.rstrip())
 
     if bug_delta.added_bugtasks is not None:
         # Use zope_isinstance, to ensure that this Just Works with

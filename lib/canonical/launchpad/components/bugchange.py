@@ -23,14 +23,22 @@ from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
 
 
+class NoBugChangeFoundError(Exception):
+    """Raised when a BugChange class can't be found for an object."""
+
+
 def get_bug_change_class(obj, field_name):
     """Return a suitable IBugChange to describe obj and field_name."""
+
     if IBugTask.providedBy(obj):
-        return BUGTASK_CHANGE_LOOKUP.get(field_name, BugChangeBase)
-    elif IBug.providedBy(obj):
-        return BUG_CHANGE_LOOKUP.get(field_name, BugChangeBase)
+        lookup = BUGTASK_CHANGE_LOOKUP
     else:
-        return BugChangeBase
+        lookup = BUG_CHANGE_LOOKUP
+
+    try:
+        return lookup[field_name]
+    except KeyError:
+        raise NoBugChangeFoundError(field_name)
 
 
 class BugChangeBase:
@@ -340,7 +348,7 @@ class BugTaskAttributeChange(AttributeChange):
                 'newval' : self.display_new_value,
             })
 
-        return {'text': text}
+        return {'text': text.rstrip()}
 
 
 BUG_CHANGE_LOOKUP = {
@@ -355,5 +363,5 @@ BUG_CHANGE_LOOKUP = {
 
 BUGTASK_CHANGE_LOOKUP = {
     'importance': BugTaskAttributeChange,
-    'status:': BugTaskAttributeChange,
+    'status': BugTaskAttributeChange,
     }
