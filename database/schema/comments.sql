@@ -602,12 +602,11 @@ COMMENT ON COLUMN ProductLicense.license IS 'An integer referencing a value in t
 -- ProductRelease
 
 COMMENT ON TABLE ProductRelease IS 'A Product Release. This is table stores information about a specific ''upstream'' software release, like Apache 2.0.49 or Evolution 1.5.4.';
+COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the version string for this release, such as ''1.2.4'' or ''2.0.38'' or ''7.4.3''.';
+--COMMENT ON COLUMN ProductRelease.codename IS 'This is the GSV Name of this release, like ''that, and a pair of testicles'' or ''All your base-0 are belong to us''. Many upstream projects are assigning fun names to their releases - these go in this field.';
+COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
+COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
 COMMENT ON COLUMN ProductRelease.milestone IS 'The milestone for this product release. This is scheduled to become a NOT NULL column, so every product release will be linked to a unique milestone.';
-COMMENT ON COLUMN ProductRelease.datecreated IS 'The timestamp when this product release was created.';
-COMMENT ON COLUMN ProductRelease.datereleased IS 'The date when this version of the product was released.';
-COMMENT ON COLUMN ProductRelease.release_notes IS 'Description of changes in this product release.';
-COMMENT ON COLUMN ProductRelease.changelog IS 'Detailed description of changes in this product release.';
-COMMENT ON COLUMN ProductRelease.owner IS 'The person who created this product release.';
 
 -- ProductReleaseFile
 
@@ -679,8 +678,12 @@ COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
 completed an import test or sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last successfully completed a production sync of this upstream repository.';
 COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch''s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
-COMMENT ON COLUMN ProductSeries.branch IS 'The branch for this product
-series.';
+COMMENT ON COLUMN ProductSeries.import_branch IS 'The VCS imports branch for
+this product series.  If user_branch is not set, then this is considered the
+product series branch.';
+COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
+series, as set by the user.  If this is not set, then import_branch is
+considered to be the product series branch';
 COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'At what
 level the import of translations from a branch in codehosting will happen:
 None, POT files only, POT and PO files. See also the corresponding Enum.';
@@ -1473,17 +1476,6 @@ COMMENT ON COLUMN LibraryFileAlias.expires IS 'The expiry date of this file. If 
 COMMENT ON COLUMN LibraryFileAlias.last_accessed IS 'Roughly when this file was last retrieved from the Librarian. Initially set to this item''s creation date.';
 COMMENT ON COLUMN LibraryFileAlias.date_created IS 'The timestamp when this alias was created.';
 COMMENT ON COLUMN LibraryFileAlias.restricted IS 'Is this file available only from the restricted librarian?';
-COMMENT ON COLUMN LibraryFileAlias.hits IS 'The number of times this file has been downloaded.';
-
-COMMENT ON TABLE LibraryFileDownloadCount IS 'The number of daily downloads for a given LibraryFileAlias.';
-COMMENT ON COLUMN LibraryFileDownloadCount.libraryfilealias IS 'The LibraryFileAlias.';
-COMMENT ON COLUMN LibraryFileDownloadCount.day IS 'The day of the downloads.';
-COMMENT ON COLUMN LibraryFileDownloadCount.count IS 'The number of downloads.';
-COMMENT ON COLUMN LibraryFileDownloadCount.country IS 'The country from where the download requests came from.';
-
-COMMENT ON TABLE ParsedApacheLog IS 'A parsed apache log file for librarian.';
-COMMENT ON COLUMN ParsedApacheLog.first_line IS 'The first line of this log file, smashed to ASCII. This uniquely identifies the log file, even if its filename is changed by log rotation or archival.';
-COMMENT ON COLUMN ParsedApacheLog.bytes_read IS 'The number of bytes from this log file that have been parsed.';
 
 -- SourcePackageReleaseFile
 
@@ -1516,13 +1508,12 @@ COMMENT ON COLUMN AuthToken.date_consumed IS 'The date and time when this token 
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
 COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
-COMMENT ON COLUMN Milestone.codename IS 'A fun or easier to remember name for the milestone/release.';
 COMMENT ON COLUMN Milestone.distribution IS 'The distribution to which this milestone belongs, if it is a distro milestone.';
 COMMENT ON COLUMN Milestone.distroseries IS 'The distroseries for which this is a milestone. A milestone on a distroseries is ALWAYS also a milestone for the same distribution. This is because milestones started out on products/distributions but are moving to being on series/distroseries.';
 COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this is a milestone. A milestone on a productseries is ALWAYS also a milestone for the same product. This is because milestones started out on products/distributions but are moving to being on series/distroseries.';
 COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This allows for optional sorting by date.';
-COMMENT ON COLUMN Milestone.active IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
-COMMENT ON COLUMN Milestone.summary IS 'This can be used to summarize the changes included in past milestones and to document the status of current milestones.';
+COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
+COMMENT ON COLUMN Milestone.description IS 'A description of the milestone. This can be used to summarize the changes included in past milestones and to document the status of current milestones.';
 
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
@@ -2025,9 +2016,6 @@ COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified an
 COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
-
--- OpenIdNonce
-COMMENT ON TABLE OpenIdNonce IS 'Nonces for our OpenID consumer.';
 
 -- OpenIdRPConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';

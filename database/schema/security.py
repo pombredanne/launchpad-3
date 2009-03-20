@@ -9,16 +9,12 @@ import _pythonpath
 from itertools import chain
 import os
 import sets
-import sys
-
-import psycopg2
 
 from ConfigParser import SafeConfigParser
 from optparse import OptionParser
 from fti import quote_identifier
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import logger_options, logger, db_options
-import replication.helpers
 
 
 class DbObject(object):
@@ -138,7 +134,6 @@ CONFIG_DEFAULTS = {
     'groups': ''
     }
 
-
 def main(options):
     # Load the config file
     config = SafeConfigParser(CONFIG_DEFAULTS)
@@ -146,30 +141,9 @@ def main(options):
     config.read([configfile_name])
 
     con = connect(options.dbuser)
+
     cur = CursorWrapper(con.cursor())
-
-    if options.cluster:
-        nodes = replication.helpers.get_nodes(con, 1)
-        if nodes:
-            # If we have a replicated environment, reset permissions on all
-            # Nodes.
-            con.close()
-            for node in nodes:
-                log.info("Resetting permissions on %s (%s)" % (
-                    node.nickname, node.connection_string))
-                reset_permissions(
-                    psycopg2.connect(node.connection_string), config, options)
-        else:
-            log.error("--cluster requested, but not a Slony-I cluster.")
-            return 1
-    else:
-        log.info("Resetting permissions on single database")
-        reset_permissions(con, config, options)
-
-
-def reset_permissions(con, config, options):
     schema = DbSchema(con)
-    cur = CursorWrapper(con.cursor())
 
     # Add our two automatically maintained groups
     for group in ['read', 'admin']:
@@ -326,10 +300,10 @@ def reset_permissions(con, config, options):
                     'GRANT SELECT ON TABLE %s TO %s'
                     % (obj.fullname, who_ro))
                 if schema.has_key(obj.seqname):
-                    if 'INSERT' in perm:
-                        seqperm = 'USAGE'
-                    elif 'SELECT' in perm:
-                        seqperm = 'SELECT'
+                    if 'INSERT' in perm or 'UPDATE' in perm:
+                        seqperm = 'SELECT, INSERT, UPDATE'
+                    else:
+                        seqperm = perm
                     cur.execute(
                         'GRANT %s ON %s TO %s'
                         % (seqperm, obj.seqname, who))
@@ -375,16 +349,12 @@ def reset_permissions(con, config, options):
 
     con.commit()
 
-
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option(
-        "-o", "--owner", dest="owner", default="postgres",
-        help="Owner of PostgreSQL objects")
-    parser.add_option(
-        "-c", "--cluster", dest="cluster", default=False,
-        action="store_true",
-        help="Rebuild permissions on all nodes in the Slony-I cluster.")
+            "-o", "--owner", dest="owner", default="postgres",
+            help="Owner of PostgreSQL objects"
+            )
     db_options(parser)
     logger_options(parser)
 
@@ -392,4 +362,4 @@ if __name__ == '__main__':
 
     log = logger(options)
 
-    sys.exit(main(options))
+    main(options)

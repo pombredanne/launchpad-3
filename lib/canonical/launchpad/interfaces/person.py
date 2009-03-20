@@ -731,6 +731,13 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
+    is_trusted_on_shipit = Bool(
+        title=_('Is this a trusted person on shipit?'),
+        description=_("A person is considered trusted on shipit if she's a "
+                      "member of the 'ubuntumembers' team or she has more "
+                      "than MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT karma "
+                      "entries."))
+
     archive = exported(
         Reference(title=_("Personal Package Archive"),
                   description=_("The Archive owned by this person, his PPA."),
@@ -983,6 +990,31 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
         To be used when membership changes are enacted. Only meant to be
         used between TeamMembership and Person objects.
+        """
+
+    def lastShippedRequest():
+        """Return this person's last shipped request, or None."""
+
+    def pastShipItRequests():
+        """Return the requests made by this person that can't be changed
+        anymore.
+
+        Any request that is cancelled, denied or sent for shipping can't be
+        changed.
+        """
+
+    def shippedShipItRequestsOfCurrentSeries():
+        """Return all requests made by this person that were sent to the
+        shipping company already.
+
+        This only includes requests for CDs of
+        ShipItConstants.current_distroseries.
+        """
+
+    def currentShipItRequest():
+        """Return this person's unshipped ShipIt request, if there's one.
+
+        Return None otherwise.
         """
 
     def searchTasks(search_params, *args):

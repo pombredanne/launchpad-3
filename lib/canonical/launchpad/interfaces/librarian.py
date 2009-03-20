@@ -7,20 +7,17 @@ __metaclass__ = type
 
 __all__ = [
     'ILibraryFileAlias',
-    'ILibraryFileAliasSet',
     'ILibraryFileContent',
-    'ILibraryFileDownloadCount',
-    'IParsedApacheLog',
+    'ILibraryFileAliasSet',
     'NEVER_EXPIRES',
     ]
 
 from datetime import datetime
 from pytz import utc
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Date, Datetime, Int, TextLine
+from zope.interface import Interface, Attribute
+from zope.schema import Datetime, Int, TextLine, Bool
 
-from canonical.lazr.fields import Reference
 from canonical.launchpad import _
 
 # Set the expires attribute to this constant to flag a file that
@@ -139,32 +136,3 @@ class ILibraryFileAliasSet(Interface):
         """Return all LibraryFileAlias whose content's sha1 match the given
         sha1.
         """
-
-
-class ILibraryFileDownloadCount(Interface):
-    """Download count of a given file in a given day."""
-
-    libraryfilealias = Reference(
-        title=_('The file'), schema=ILibraryFileAlias, required=True,
-        readonly=True)
-    day = Date(
-        title=_('The day of the downloads'), required=True, readonly=True)
-    count = Int(
-        title=_('The number of downloads'), required=True, readonly=False)
-    country = Choice(
-        title=_('Country'), required=False, vocabulary='CountryName')
-
-
-class IParsedApacheLog(Interface):
-    """An apache log file parsed to extract download counts of files.
-
-    This is used so that we don't parse log files more than once.
-    """
-
-    first_line = TextLine(
-        title=_("The log file's first line"), required=True,
-        readonly=True)
-    bytes_read = Int(
-        title=_('Number of bytes read'), required=True, readonly=False)
-    date_last_parsed = Datetime(
-        title=_('Date last parsed'), required=False, readonly=False)

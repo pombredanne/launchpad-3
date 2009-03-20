@@ -264,7 +264,7 @@ The bzr-link formatter uses the bzr identity.
     alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
 
     >>> login_person(fooix.owner, LaunchpadTestRequest())
-    >>> fooix.development_focus.branch = branch
+    >>> fooix.development_focus.user_branch = branch
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
     <a href=".../~eric/fooix/bar"
        title="The branch title"><img src="/@@/branch"
@@ -318,8 +318,7 @@ without adequate permissions, a link is not generated.
 
 But if we log in as the subscriber, a link is presented.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> login(removeSecurityProxy(subscription.person.preferredemail).email)
+    >>> login(subscription.person.preferredemail.email)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
     u'<a href="...">Subscription of My Person to My Branch</a>'
 
@@ -332,7 +331,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> source = factory.makeProductBranch(
     ...     product=fooix, owner=eric, name="fix")
     >>> target = factory.makeProductBranch(product=fooix)
-    >>> fooix.development_focus.branch = target
+    >>> fooix.development_focus.user_branch = target
     >>> proposal = source.addLandingTarget(eric, target)
     >>> test_tales("proposal/fmt:link", proposal=proposal)
     u'<a href="...">[Merge] lp://dev/~eric/fooix/fix into lp://dev/fooix</a>'

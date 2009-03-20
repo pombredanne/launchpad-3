@@ -66,9 +66,9 @@ We'll also target the blueprint to a milestone. First we'll create a milestone:
 
     >>> browser.open('http://launchpad.dev/firefox/1.0')
     >>> browser.getLink('Add milestone').click()
-    >>> browser.getControl('Name').value = '1.0.9'
+    >>> browser.getControl('Name').value = '1.0.0'
     >>> browser.getControl('Date Targeted').value = '2050-05-05'
-    >>> browser.getControl('Summary').value = 'First ever milestone!'
+    >>> browser.getControl('Description').value = 'First ever milestone!'
     >>> browser.getControl('Register milestone').click()
 
 Now we'll target our chosen blueprint to the new milestone:
@@ -81,12 +81,12 @@ Now we'll target our chosen blueprint to the new milestone:
     Support Native SVG Objects
     Target to a milestone...
     >>> milestones = browser.getControl('Milestone')
-    >>> milestones.displayValue = ['Mozilla Firefox: 1.0.9']
+    >>> milestones.displayValue = ['Mozilla Firefox: 1.0.0']
     >>> browser.getControl('Change').click()
     >>> main = find_main_content(browser.contents)  
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Support Native SVG Objects...
-    Milestone target:...1.0.9...
+    Milestone target:...1.0.0...
  
 Now the blueprint listing for the 1.0 series includes an entry for our chosen
 blueprint. It also lists the milestone to which the blueprint is targeted:
@@ -97,13 +97,13 @@ blueprint. It also lists the milestone to which the blueprint is targeted:
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for 1.0...
     Priority...Blueprint...Design  ...Delivery...Assignee...Milestone...
-    High    ...svg-support  ...Approved...Beta    ...Carlos  ...1.0.9    ...
+    High    ...svg-support  ...Approved...Beta    ...Carlos  ...1.0.0    ...
 
 It's possible to navigate to the milestone directly:
 
-    >>> user_browser.getLink('1.0.9').click()
+    >>> user_browser.getLink('1.0.0').click()
     >>> print user_browser.title
-    Milestone 1.0.9 for Mozilla Firefox...
+    Milestone 1.0.0 for Mozilla Firefox...
 
 
 === Viewing blueprints targeted to a distribution ===
@@ -161,7 +161,7 @@ We'll also target the blueprint to a milestone. First we'll create a milestone:
     >>> browser.getLink('Add milestone').click()
     >>> browser.getControl('Name').value = 'drift-1'
     >>> browser.getControl('Date Targeted').value = '2050-05-05'
-    >>> browser.getControl('Summary').value = 'First drift of groundhogs!'
+    >>> browser.getControl('Description').value = 'First drift of groundhogs!'
     >>> browser.getControl('Register milestone').click()
     
 Now we'll target our chosen blueprint to the new milestone:

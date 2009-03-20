@@ -173,7 +173,7 @@ def reconnect_stores(database_config_section='launchpad'):
     r = main_store.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
     assert r.get_one()[0] > 0, 'Storm is not talking to the database'
 
-    session_store = getUtility(IZStorm).get('session', 'launchpad-session:')
+    session_store = getUtility(IZStorm).get('session')
     assert session_store is not None, 'Failed to reconnect'
 
 

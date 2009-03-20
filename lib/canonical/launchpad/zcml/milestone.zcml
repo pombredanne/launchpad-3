@@ -6,19 +6,14 @@
 
     <!-- Milestone -->
     <class class="canonical.launchpad.database.Milestone">
-        <allow attributes="id name product distribution productseries
-                           distroseries dateexpected active summary
-                           target series_target displayname title
-                           specifications product_release" />
-        <require
-            permission="launchpad.Edit"
-            attributes="createProductRelease destroySelf" />
-        <allow interface="canonical.launchpad.interfaces.bugtarget.IHasBugs" />
+        <allow interface="canonical.launchpad.interfaces.IMilestone" />
         <allow interface="canonical.launchpad.webapp.interfaces.IAuthorization" />
         <require
             permission="launchpad.Edit"
-            set_attributes="name dateexpected summary active
-                            product_release productseries distroseries" />
+            set_attributes="name dateexpected description visible" />
+        <require
+            permission="launchpad.Admin"
+            set_attributes="productseries distroseries" />
         <!-- IStructuralSubscriptionTarget -->
         <allow attributes="bug_subscriptions getSubscriptions
                            getSubscription getBugNotificationsRecipients
@@ -46,7 +41,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.milestone"
-        classes="MilestoneContextMenu MilestoneOverviewNavigationMenu" />
+        classes="MilestoneContextMenu" />
 
     <browser:pages
       for="canonical.launchpad.interfaces.IMilestone"
@@ -71,23 +66,13 @@
         />
 
     <browser:page
-        name="+delete"
+        name="+admin"
         for="canonical.launchpad.interfaces.IMilestone"
-        class="canonical.launchpad.browser.milestone.MilestoneDeleteView"
+        class="canonical.launchpad.browser.milestone.MilestoneAdminEditView"
         facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/milestone-delete.pt"
+        permission="launchpad.Admin"
+        template="../templates/milestone-edit.pt"
         />
-
-    <browser:page
-        name="+addrelease"
-        for="canonical.launchpad.interfaces.IMilestone"
-        class="canonical.launchpad.browser.ProductReleaseAddView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/productrelease-add.pt"
-        >
-    </browser:page>
 
     <!-- IMilestoneSet -->
     <securedutility

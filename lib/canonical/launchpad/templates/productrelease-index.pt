@@ -13,8 +13,8 @@
 <body>
 
 <div metal:fill-slot="main"
-     tal:define="context_menu context/menu:context;
-                 has_edit context/required:launchpad.Edit">
+  tal:define="context_menu context/menu:context;
+              has_edit context/required:launchpad.Edit">
     <h1>
       <tal:title content="context/title">Foo Release</tal:title>
 
@@ -68,18 +68,18 @@
         this release highlights.
     </p>
 
-    <div id="release_notes"
-         tal:content="structure context/release_notes/fmt:text-to-html">
-        $ProductRelease.release_notes go here.
+    <div tal:content="structure context/description/fmt:text-to-html">
+        $ProductRelease.description goes here. This is longer, like the
+        project release notes.
     </div>
 
-    <p tal:condition="not: context/release_notes">
-      <em>This release does not have release notes.
-        <tal:add-release-notes condition="has_edit">
-          You may want to edit it and add release notes, including new
-          features and other highlights.
-        </tal:add-release-notes></em>
-    </p>
+    <tal:has_edit condition="has_edit">
+      <p tal:condition="not: context/description">
+        <em>This release does not have a description. You may want to edit it
+        and give it a description, including new features and other
+        highlights.</em>
+      </p>
+    </tal:has_edit>
 
     <form method="POST"
           tal:attributes="action request/URL">
@@ -131,16 +131,6 @@
         </div>
       </div>
     </form>
-
-    <h2>Changelog:</h2>
-    <div id="changelog"
-         tal:content="structure context/changelog/fmt:text-to-html">
-        $ProductRelease.changelog go here.
-    </div>
-
-    <p tal:condition="not: context/changelog">
-      <em>This release does not have a changelog.</em>
-    </p>
 
     <p style="clear: both"
       tal:define="link context_menu/download"

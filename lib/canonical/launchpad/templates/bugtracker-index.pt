@@ -15,13 +15,6 @@
         <tal:tracker replace="context/title">Gnome Bugzilla</tal:tracker>
         overview
       </h1>
-
-      <p tal:condition="not: context/active" id="inactive-message">
-        <strong>
-          Bug watch updates for <tal:bugtracker content="context/title" />
-          are disabled.
-        </strong>
-      </p>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">

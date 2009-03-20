@@ -1143,7 +1143,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         # If there is a development focus branch for the product, then default
         # the reviewer to be the review team for that branch.
         reviewer = None
-        dev_focus_branch = self.context.product.development_focus.branch
+        dev_focus_branch = self.context.product.development_focus.user_branch
         if dev_focus_branch is not None:
             reviewer = dev_focus_branch.code_reviewer
         return {'reviewer': reviewer}

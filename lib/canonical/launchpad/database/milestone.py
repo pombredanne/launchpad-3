@@ -1,6 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
-"""Milestone model classes."""
 
 __metaclass__ = type
 __all__ = [
@@ -12,8 +11,6 @@ __all__ = [
     ]
 
 import datetime
-
-from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
@@ -25,11 +22,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.sorting import expand_numbers
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
-from canonical.launchpad.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
 from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from canonical.launchpad.interfaces.milestone import (
     IHasMilestones, IMilestone, IMilestoneSet, IProjectMilestone)
@@ -86,7 +80,7 @@ class HasMilestonesMixin:
         store = Store.of(self)
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
-                                Milestone.active == True))
+                                Milestone.visible == True))
         return sorted(result, key=milestone_sort_key, reverse=True)
 
 
@@ -106,32 +100,15 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', default=None)
     name = StringCol(notNull=True)
-    # XXX: EdwinGrubbs 2009-02-06 bug=326384:
-    # The Milestone.dateexpected should be changed into a date column,
-    # since the class defines the field as a DateCol, so that a list of
-    # milestones can't have some dateexpected attributes that are
-    # datetimes and others that are dates, which can't be compared.
     dateexpected = DateCol(notNull=False, default=None)
-    active = BoolCol(notNull=True, default=True)
-    summary = StringCol(notNull=False, default=None)
-    code_name = StringCol(dbName='codename', notNull=False, default=None)
+    visible = BoolCol(notNull=True, default=True)
+    description = StringCol(notNull=False, default=None)
 
     # joins
     specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
         orderBy=['-priority', 'definition_status',
                  'implementation_status', 'title'],
         prejoins=['assignee'])
-
-    @property
-    def product_release(self):
-        store = Store.of(self)
-        result = store.find(ProductRelease,
-                            ProductRelease.milestone == self.id)
-        releases = list(result)
-        if len(releases) == 0:
-            return None
-        else:
-            return releases[0]
 
     @property
     def target(self):
@@ -168,34 +145,6 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     def official_bug_tags(self):
         """See `IHasBugs`."""
         return self.target.official_bug_tags
-
-    def createProductRelease(self, owner, datereleased,
-                             changelog=None, release_notes=None):
-        """See `IMilestone`."""
-        if self.product_release is not None:
-            raise AssertionError(
-                'A milestone can only have one Productrelease.')
-        return ProductRelease(
-            owner=owner,
-            changelog=changelog,
-            release_notes=release_notes,
-            datereleased=datereleased,
-            milestone=self)
-
-    def destroySelf(self):
-        """See `IMilestone`."""
-        params = BugTaskSearchParams(milestone=self, user=None)
-        bugtasks = getUtility(IBugTaskSet).search(params)
-        assert bugtasks.count() == 0, (
-            "You cannot delete a milestone which has bugtasks targeted "
-            "to it.")
-        assert self.specifications.count() == 0, (
-            "You cannot delete a milestone which has specifications targeted "
-            "to it.")
-        assert self.product_release is None, (
-            "You cannot delete a milestone which has a product release "
-            "associated with it.")
-        SQLBase.destroySelf(self)
 
 
 class MilestoneSet:
@@ -239,15 +188,15 @@ class ProjectMilestone(HasBugsBase):
     The current database schema has no formal concept of milestones related to
     projects. A milestone named `milestone` is considererd to belong to
     a project if the project contains at least one product with a milestone
-    of the same name. A project milestone is considered to be active if at
-    least one product milestone with the same name is active.  The
+    of the same name. A project milestone is considered to be visible if at
+    least one product milestone with the same name is visible.  The
     `dateexpected` attribute of a project milestone is set to the minimum of
     the `dateexpected` values of the product milestones.
     """
 
     implements(IProjectMilestone)
 
-    def __init__(self, target, name, dateexpected, active):
+    def __init__(self, target, name, dateexpected, visible):
         self.name = name
         self.id = None
         self.product = None
@@ -255,10 +204,10 @@ class ProjectMilestone(HasBugsBase):
         self.productseries = None
         self.distroseries = None
         self.dateexpected = dateexpected
-        self.active = active
+        self.visible = visible
         self.target = target
         self.series_target = None
-        self.summary = None
+        self.description = None
 
     @property
     def specifications(self):
