@@ -155,12 +155,20 @@ class TestExpandURL(TestCaseWithFactory):
             '%s/%s' % (series.product.name, series.name),
             faults.NoLinkedBranch(series))
 
-    def test_no_such_series(self):
-        # Return a NoSuchProductSeries fault there is no series of the given
-        # name associated with the product.
+    def test_no_such_product_series(self):
+        # Return a NoSuchProductSeries fault if there is no series of the
+        # given name associated with the product.
         self.assertFault(
             '%s/%s' % (self.product.name, "doesntexist"),
             faults.NoSuchProductSeries("doesntexist", self.product))
+
+    def test_no_such_distro_series(self):
+        # Return a NoSuchDistroSeries fault if there is no series of the given
+        # name on that distribution.
+        distro = self.factory.makeDistribution()
+        self.assertFault(
+            '%s/%s' % (distro.name, "doesntexist"),
+            faults.NoSuchDistroSeries("doesntexist"))
 
     # TODO: test no such source package
 

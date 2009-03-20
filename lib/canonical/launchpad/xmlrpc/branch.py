@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces.branchlookup import (
     NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
+from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, NoSuchProduct)
@@ -240,6 +241,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             raise faults.NoSuchPersonWithName(e.name)
         except NoSuchProduct, e:
             raise faults.NoSuchProduct(e.name)
+        except NoSuchDistroSeries, e:
+            raise faults.NoSuchDistroSeries(e.name)
         except NoLinkedBranch, e:
             raise faults.NoLinkedBranch(e.component)
         except CannotHaveLinkedBranch, e:

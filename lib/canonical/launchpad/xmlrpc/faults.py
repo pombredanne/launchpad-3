@@ -444,3 +444,14 @@ class InvalidBranchUniqueName(LaunchpadFault):
     def __init__(self, path):
         self.path = path
         LaunchpadFault.__init__(self, path=path)
+
+
+class NoSuchDistroSeries(LaunchpadFault):
+    """Raised when the user tries to get a distroseries that doesn't exist."""
+
+    error_code = 340
+    msg_template = "No such distribution series %(distroseries_name)s."
+
+    def __init__(self, distroseries_name):
+        self.distroseries_name = distroseries_name
+        LaunchpadFault.__init__(self, distroseries_name=distroseries_name)
