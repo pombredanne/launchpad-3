@@ -81,29 +81,43 @@ class BaseDatabasePolicy:
 
 
 class MasterDatabasePolicy(BaseDatabasePolicy):
-    """`IDatabasePolicy` that always select the MASTER_FLAVOR.
+    """`IDatabasePolicy` that selects the MASTER_FLAVOR by default.
+
+    Slave databases can still be accessed if requested explicitly.
 
     This policy is used for XMLRPC and WebService requests which don't
     support session cookies. It is also used when no policy has been
     installed.
     """
     def getStore(self, name, flavor):
-        return super(MasterDatabasePolicy, self).getStore(name, MASTER_FLAVOR)
+        if flavor == DEFAULT_FLAVOR:
+            flavor = MASTER_FLAVOR
+        return super(MasterDatabasePolicy, self).getStore(name, flavor)
 
 
 class SlaveDatabasePolicy(BaseDatabasePolicy):
-    """`IDatabasePolicy` that always selects the SLAVE_FLAVOR.
+    """`IDatabasePolicy` that selects the SLAVE_FLAVOR by default.
+
+    Access to a master can still be made if requested explicitly.
+    """
+    def getStore(self, name, flavor):
+        """See `IDatabasePolicy`."""
+        if flavor == DEFAULT_FLAVOR:
+            flavor = SLAVE_FLAVOR
+        return super(SlaveDatabasePolicy, self).getStore(name, flavor)
+
+
+class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` that only allows access to SLAVE_FLAVOR stores.
 
     This policy is used for Feeds requests and other always-read only request.
     """
     def getStore(self, name, flavor):
-        """See `IDatabasePolicy`.
-
-        :raises DisallowedStore: on a request to access a master Store.
-        """
+        """See `IDatabasePolicy`."""
         if flavor == MASTER_FLAVOR:
-            raise DisallowedStore(name, flavor)
-        return super(SlaveDatabasePolicy, self).getStore(name, SLAVE_FLAVOR)
+            raise DisallowedStore(flavor)
+        return super(
+            SlaveOnlyDatabasePolicy, self).getStore(name, SLAVE_FLAVOR)
 
 
 class LaunchpadDatabasePolicy(BaseDatabasePolicy):
@@ -220,7 +234,7 @@ class SSODatabasePolicy(BaseDatabasePolicy):
     """`IDatabasePolicy` for the single signon servie.
 
     Only the auth Master and the main Slave are allowed. Requests for
-    other Stores raise exceptions.
+    other Stores raise DisallowedStore exceptions.
     """
     config_section = 'sso'
 

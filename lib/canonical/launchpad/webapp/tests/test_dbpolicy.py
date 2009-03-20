@@ -15,8 +15,8 @@ from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.layers import (
     FeedsLayer, setFirstLayer, WebServiceLayer)
 from canonical.launchpad.webapp.dbpolicy import (
-    BaseDatabasePolicy, LaunchpadDatabasePolicy,
-    MasterDatabasePolicy, SlaveDatabasePolicy, SSODatabasePolicy)
+    BaseDatabasePolicy, LaunchpadDatabasePolicy, MasterDatabasePolicy,
+    SlaveDatabasePolicy, SlaveOnlyDatabasePolicy, SSODatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
     ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
@@ -72,6 +72,27 @@ class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
         self.policy = SlaveDatabasePolicy()
         BaseDatabasePolicyTestCase.setUp(self)
 
+    def test_defaults(self):
+        for store in ALL_STORES:
+            self.failUnless(verifyObject(
+                ISlaveStore,
+                getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR)))
+
+    def test_master_allowed(self):
+        for store in ALL_STORES:
+            self.failUnless(verifyObject(
+                IMasterStore,
+                getUtility(IStoreSelector).get(store, MASTER_FLAVOR)))
+
+
+
+class SlaveOnlyDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
+    """Tests for the `SlaveDatabasePolicy`."""
+
+    def setUp(self):
+        self.policy = SlaveOnlyDatabasePolicy()
+        BaseDatabasePolicyTestCase.setUp(self)
+
     def test_FeedsLayer_uses_SlaveDatabasePolicy(self):
         """FeedsRequest should use the SlaveDatabasePolicy since they
         are read-only in nature. Also we don't want to send session cookies 
@@ -82,18 +103,12 @@ class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
         setFirstLayer(request, FeedsLayer)
         policy = IDatabasePolicy(request)
         self.failUnless(
-            isinstance(policy, SlaveDatabasePolicy),
-            "Expected SlaveDatabasePolicy, not %s." % policy)
+            isinstance(policy, SlaveOnlyDatabasePolicy),
+            "Expected SlaveOnlyDatabasePolicy, not %s." % policy)
 
-    def test_defaults(self):
+    def test_master_allowed(self):
         for store in ALL_STORES:
-            self.failUnless(verifyObject(
-                ISlaveStore,
-                getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR)))
-
-    def test_master_disallowed(self):
-        for store in ALL_STORES:
-            self.assertRaises(
+            self.failUnlessRaises(
                 DisallowedStore,
                 getUtility(IStoreSelector).get, store, MASTER_FLAVOR)
 
@@ -140,7 +155,7 @@ class MasterDatabasePolicyTestCase(
         # We get the master store even if the slave was requested.
         for store in ALL_STORES:
             self.failUnless(verifyObject(
-                IMasterStore,
+                ISlaveStore,
                 getUtility(IStoreSelector).get(store, SLAVE_FLAVOR)))
 
 
@@ -188,13 +203,26 @@ class SSODatabasePolicyTestCase(BaseDatabasePolicyTestCase):
             IMasterStore,
             getUtility(IStoreSelector).get(AUTH_STORE, DEFAULT_FLAVOR)))
 
+    def test_disallowed(self):
+        for store in ALL_STORES:
+            if store == AUTH_STORE:
+                disallowed_flavor = SLAVE_FLAVOR
+            else:
+                disallowed_flavor = MASTER_FLAVOR
+            self.failUnlessRaises(
+                DisallowedStore,
+                getUtility(IStoreSelector).get, store, disallowed_flavor)
+
     def test_dbusers(self):
         store_selector = getUtility(IStoreSelector)
-        main_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
-        self.failUnlessEqual(self.getDBUser(main_store), 'sso_main')
-
-        auth_store = store_selector.get(AUTH_STORE, DEFAULT_FLAVOR)
-        self.failUnlessEqual(self.getDBUser(auth_store), 'sso_auth')
+        for store in ALL_STORES:
+            if store == AUTH_STORE:
+                user = 'sso_auth'
+            else:
+                user = 'sso_main'
+            self.failUnlessEqual(
+                user,
+                self.getDBUser(store_selector.get(store, DEFAULT_FLAVOR)))
 
 
 def test_suite():
