@@ -120,8 +120,8 @@
   <browser:page
     for="canonical.launchpad.interfaces.ILaunchpadRoot"
     permission="zope.Public"
-    class="canonical.launchpad.browser.vocabulary.VocabularyJSONView"
-    name="+vocabulary"
+    class="canonical.launchpad.browser.vocabulary.HugeVocabularyJSONView"
+    name="+huge-vocabulary"
     />
 
 <facet facet="overview">
