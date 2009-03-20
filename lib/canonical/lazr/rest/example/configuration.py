@@ -7,9 +7,13 @@ __all__ = [
     'CookbookWebServiceConfiguration',
 ]
 
+from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+from canonical.lazr.interfaces.rest import (
+    IServiceRootResource, IWebServiceConfiguration)
+from canonical.lazr.testing.webservice import (
+    WebServiceTestPublication, WebServiceTestRequest)
 
 class CookbookWebServiceConfiguration:
     """A configuration object for the cookbook web service."""
@@ -21,3 +25,10 @@ class CookbookWebServiceConfiguration:
     use_https = False
     code_revision = "test.revision"
     show_tracebacks = True
+
+    def createRequest(self, body_instream, environ):
+        """See `IWebServiceConfiguration`."""
+        request = WebServiceTestRequest(body_instream, environ)
+        request.setPublication(WebServiceTestPublication(
+                getUtility(IServiceRootResource)))
+        return request

@@ -137,6 +137,10 @@ class WebServicePublicationMixin:
         elif IHTTPResource.providedBy(ob):
             # A resource knows how to take care of itself.
             return ob
+        elif request.response.getStatus() != 599:
+            # The request was handled by the traversal code itself. Do
+            # nothing.
+            return ob
         else:
             # This object should not be published on the web service.
             raise NotFound(ob, '')

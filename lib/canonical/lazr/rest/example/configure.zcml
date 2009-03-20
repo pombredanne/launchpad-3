@@ -54,6 +54,8 @@
     factory="canonical.lazr.rest.example.root.CookbookServiceRootResource" />
 
   <adapter factory="canonical.lazr.rest.example.traversal.TraverseWithGet" />
+  <adapter
+    factory="canonical.lazr.rest.example.traversal.CookbookSetTraverse" />
 
   <adapter
       for="canonical.lazr.rest.example.root.CookbookWebServiceObject

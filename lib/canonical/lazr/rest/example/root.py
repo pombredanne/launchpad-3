@@ -128,9 +128,7 @@ class FeaturedCookbookLink(CookbookTopLevelObject):
     def __parent__(self):
         return getUtility(ICookbookSet)
 
-    @property
-    def __name__(self):
-        return COOKBOOKS[0].name
+    __name__ = "featured"
 
     link_name = "featured_cookbook"
 
@@ -145,6 +143,7 @@ class CookbookSet(CookbookTopLevelObject):
         if cookbooks is None:
             cookbooks = COOKBOOKS
         self.cookbooks = list(cookbooks)
+        self.featured = self.cookbooks[0]
 
     def getCookbooks(self):
         return self.cookbooks
@@ -272,7 +271,7 @@ class CookbookServiceRootAbsoluteURL:
     implements(IAbsoluteURL)
     adapts(CookbookServiceRootResource, IDefaultBrowserLayer)
 
-    HOSTNAME = "http://api.cookbooks.dev/"
+    HOSTNAME = "http://cookbooks.dev/"
 
     def __init__(self, context, request):
         """Initialize with respect to a context and request."""

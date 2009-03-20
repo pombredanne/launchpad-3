@@ -14,8 +14,9 @@ __all__ = ['AlreadyNouvelle',
            'IRecipeSet',
            'NameAlreadyTaken']
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Bool, Date, Int, TextLine, Text
+
 
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
@@ -123,6 +124,8 @@ class ICookbookSet(IHasGet):
                               ['name', 'cuisine', 'copyright_date'])
     def create(name, cuisine, copyright_date):
         """Create a new cookbook."""
+
+    featured = Attribute("The currently featured cookbook.")
 
 
 class IDishSet(IHasGet):

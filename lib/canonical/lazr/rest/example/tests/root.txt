@@ -14,10 +14,10 @@ links to the top-level web service objects.
    u'featured_cookbook_link', u'recipes_collection_link',
    u'resource_type_link']
   >>> top_level_links['cookbooks_collection_link']
-  u'http://api.cookbooks.dev/1.0/cookbooks'
+  u'http://cookbooks.dev/1.0/cookbooks'
 
   >>> top_level_links['resource_type_link']
-  u'http://api.cookbooks.dev/1.0#service-root'
+  u'http://cookbooks.dev/1.0#service-root'
 
 The client can explore the entire web service by following these links
 to other resources, and following the links served in those resources'

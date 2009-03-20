@@ -465,7 +465,70 @@ Both PUT and PATCH requests work this way.
 
 === Changing object relationships ===
 
-TBA.
+In addition to changing an object's data fields, you can change its
+relationships to other objects. Here we change which dish a recipe is
+a recipe for.
+
+  >>> recipe_url = '/recipes/3'
+  >>> recipe = webservice.get(recipe_url).jsonBody()
+  >>> print recipe['dish_link']
+  http://.../dishes/Roast%20chicken
+
+  >>> def modify_dish(url, recipe, new_dish_url):
+  ...     recipe['dish_link'] = new_dish_url
+  ...     return webservice.put(
+  ...         url, 'application/json', simplejson.dumps(recipe))
+
+  >>> new_dish = webservice.get(quote('/dishes/Baked beans')).jsonBody()
+  >>> new_dish_url = new_dish['self_link']
+  >>> recipe['dish_link'] = new_dish_url
+  >>> print modify_dish(recipe_url, recipe, new_dish_url)
+  HTTP/1.1 209 Content Returned
+  ...
+
+  >>> recipe = webservice.get(recipe_url).jsonBody()
+  >>> print recipe['dish_link']
+  http://.../dishes/Baked%20beans
+
+Identification of the dish is done by specifying a URL; a random
+string won't work.
+
+  >>> print modify_dish(recipe_url, recipe, 'A random string')
+  HTTP/1.1 400 Bad Request
+  ...
+  dish_link: "A random string" is not a valid URI.
+
+But not just any URL will do. It has to identify an object in the web
+service.
+
+  >>> print modify_dish(recipe_url, recipe, 'http://www.canonical.com')
+  HTTP/1.1 400 Bad Request
+  ...
+  dish_link: No such object "http://www.canonical.com".
+
+  >>> print modify_dish(
+  ...     recipe_url, recipe, 'http://www.canonical.com/dishes/Baked%20beans')
+  HTTP/1.1 400 Bad Request
+  ...
+  dish_link: No such object "http://www.canonical.com/dishes/Baked%20beans".
+
+This URL would be valid, but it uses the wrong protocol (HTTPS instead
+of HTTP).
+
+  >>> https_link = recipe['dish_link'].replace('http:', 'https:')
+  >>> print modify_dish(recipe_url, recipe, https_link)
+  HTTP/1.1 400 Bad Request
+  ...
+  dish_link: No such object "https://.../Baked%20beans".
+
+Even a URL that identifies an object in the web service won't work, if
+the object isn't the right kind of object. A recipe must be for a
+dish, not a cookbook:
+
+  >>> print modify_dish(recipe_url, recipe, recipe['cookbook_link'])
+  HTTP/1.1 400 Bad Request
+  ...
+  dish_link: Your value points to the wrong kind of object
 
 
 === Date formats ===
