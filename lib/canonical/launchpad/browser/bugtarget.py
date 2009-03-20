@@ -21,6 +21,7 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from email import message_from_string
+from operator import itemgetter
 import tempfile
 import urllib
 
@@ -1264,6 +1265,29 @@ class BugTargetBugTagsView(LaunchpadView):
         return [
             {'tag': tag, 'count': count, 'url': self._getSearchURL(tag)}
             for tag, count in bug_tag_counts]
+
+    @property
+    def official_tags(self):
+        """Get the official tags to diplay."""
+        official_tags = set(self.context.official_bug_tags)
+        tags = [tag for tag in self.getUsedBugTagsWithURLs()
+                if tag['tag'] in official_tags]
+        used_tags = set(tag['tag'] for tag in tags)
+        tags.sort(key=itemgetter('count'))
+        for tag in sorted(official_tags - used_tags):
+            tags.append(
+                {'tag': tag, 'count': 0, 'url': self._getSearchURL(tag)})
+        return tags
+
+    @property
+    def other_tags(self):
+        """Get the unofficial tags to diplay."""
+        official_tags = set(self.context.official_bug_tags)
+        tags = [tag for tag in self.getUsedBugTagsWithURLs()
+                if tag['tag'] not in official_tags]
+        used_tags = set(tag['tag'] for tag in tags)
+        tags.sort(key=itemgetter('count'))
+        return tags[:10]
 
     @property
     def show_manage_tags_link(self):
