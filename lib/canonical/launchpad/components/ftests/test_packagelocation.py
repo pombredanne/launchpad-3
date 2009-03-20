@@ -105,6 +105,14 @@ class TestPackageLocation(TestCaseWithFactory):
             person_name='kiko',
             archive_name="ppa")
 
+    def test_build_package_location_when_partner_missing(self):
+        """`PackageLocationError` is raised when PARTNER does not exist."""
+        self.assertRaises(
+            PackageLocationError,
+            self.getPackageLocation,
+            distribution_name='debian',
+            purpose=ArchivePurpose.PARTNER)
+
     def testSetupLocationPPANotMatchingDistribution(self):
         """`PackageLocationError` is raised when PPA does not match the
         distribution."""
