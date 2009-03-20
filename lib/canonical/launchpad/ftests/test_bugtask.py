@@ -303,6 +303,7 @@ class BugTaskSetTest(unittest.TestCase):
         bugs to their bugtasks. It does that in a single query, to avoid
         hitting the DB again when getting the bugs' tasks.
         """
+        login('no-priv@canonical.com')
         factory = LaunchpadObjectFactory()
         bug1 = factory.makeBug()
         factory.makeBugTask(bug1)

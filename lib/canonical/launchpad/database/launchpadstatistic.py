@@ -24,7 +24,7 @@ from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.pomsgid import POMsgID
-from canonical.launchpad.database.question import Question
+from lp.answers.model.question import Question
 
 from canonical.launchpad.interfaces import (
     ILaunchpadStatistic, ILaunchpadStatisticSet, IPersonSet, QuestionStatus
