@@ -1084,11 +1084,12 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 
 .official-tags-layout-table .middle-column {
   text-align: center;
-  padding: 5px;
+  padding: 20px;
 }
 
 .official-tags-layout-table .middle-column input[type='submit'] {
   width: 75px;
+  margin: 5px;
 }
 
 .official-tags-layout-table .input-field-layout-table td {
