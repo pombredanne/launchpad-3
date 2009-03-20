@@ -37,7 +37,7 @@ class Cookbook(CookbookWebServiceObject):
         self.cuisine = cuisine
         self.recipes = []
         self.copyright_date = copyright_date
-        self.confirmed=confirmed
+        self.confirmed = confirmed
 
     @property
     def __name__(self):
