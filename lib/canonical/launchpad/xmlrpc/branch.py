@@ -220,7 +220,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             raise faults.InvalidBranchIdentifier(path)
         branch_set = getUtility(IBranchLookup)
         try:
-            branch, suffix, series = branch_set.getByLPPath(strip_path)
+            branch, suffix = branch_set.getByLPPath(strip_path)
         except NoSuchBranch:
             # If the branch isn't found, but it looks like a valid name, then
             # resolve it anyway, treating the path like a branch's unique

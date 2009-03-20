@@ -386,7 +386,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # given the unique name of an existing product branch.
         branch = self.factory.makeProductBranch()
         self.assertEqual(
-            (branch, None, None),
+            (branch, None),
             self.branch_lookup.getByLPPath(branch.unique_name))
 
     def test_resolve_product_branch_unique_name_with_trailing(self):
@@ -395,8 +395,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         path = '%s/foo/bar/baz' % (branch.unique_name,)
         self.assertEqual(
-            (branch, 'foo/bar/baz', None),
-            self.branch_lookup.getByLPPath(path))
+            (branch, 'foo/bar/baz'), self.branch_lookup.getByLPPath(path))
 
     def test_error_fallthrough_personal_branch(self):
         # getByLPPath raises `NoSuchPerson` if the first component doesn't
@@ -413,7 +412,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # given the unique name of an existing junk branch.
         branch = self.factory.makePersonalBranch()
         self.assertEqual(
-            (branch, None, None),
+            (branch, None),
             self.branch_lookup.getByLPPath(branch.unique_name))
 
     def test_resolve_personal_branch_unique_name_with_trailing(self):
@@ -422,7 +421,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch()
         path = '%s/foo/bar/baz' % (branch.unique_name,)
         self.assertEqual(
-            (branch, 'foo/bar/baz', None),
+            (branch, 'foo/bar/baz'),
             self.branch_lookup.getByLPPath(path))
 
     def test_no_product_series_branch(self):
@@ -472,7 +471,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         removeSecurityProxy(product).development_focus.user_branch = branch
         path = '%s/foo/bar/baz' % (product.name,)
         self.assertEqual(
-            (branch, 'foo/bar/baz', product.development_focus),
+            (branch, 'foo/bar/baz'),
             self.branch_lookup.getByLPPath(path))
 
 

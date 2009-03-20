@@ -361,11 +361,7 @@ class BranchLookup:
 
     def getByLPPath(self, path):
         """See `IBranchLookup`."""
-        # XXX: It's kind of shitty that this returns series -- it's just a
-        # trick to let us raise convincing errors if the branch is private.
-        # There's got to be a better way -- perhaps a property on branch that
-        # points to the relevant object?
-        branch = suffix = series = None
+        branch = suffix = None
         try:
             branch, suffix = self._getByPath(path)
             if not check_permission('launchpad.View', branch):
@@ -377,7 +373,7 @@ class BranchLookup:
             # 'path' is a shorthand notation for a branch.
             result = getUtility(ILinkedBranchTraverser).traverse(path)
             branch = self._getLinkedBranch(result)
-        return branch, suffix, series
+        return branch, suffix
 
     def _getLinkedBranch(self, provided):
         """Get the linked branch for 'provided'.

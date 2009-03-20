@@ -594,7 +594,7 @@ class LaunchpadRootNavigation(Navigation):
             branch_data = getUtility(IBranchLookup).getByLPPath(path)
         except (CannotHaveLinkedBranch, NoLinkedBranch):
             raise NotFoundError
-        branch, trailing, series = branch_data
+        branch, trailing = branch_data
         if branch is None:
             raise NotFoundError
         url = canonical_url(branch)
