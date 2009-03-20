@@ -1587,8 +1587,7 @@ which bug task to edit:
     1
     >>> print bug_notification.message.text_contents
     ** Changed in: firefox
-    ...
-        Status: New => Confirmed
+           Status: New => Confirmed...
 
 === The user is a package bug supervisor ===
 
@@ -1623,8 +1622,8 @@ which bug task to edit:
     1
     >>> print bug_notification.message.text_contents
     ** Changed in: mozilla-firefox (Ubuntu)
-        Assignee: (unassigned) => No Privileges Person
-    ...
+           Status: New => Confirmed
+         Assignee: (unassigned) => No Privileges Person (no-priv)
 
 === The user is a bug supervisor of a distribution ===
 
@@ -1649,8 +1648,8 @@ XXX: TBD after InitialBugContacts is implemented.
     1
     >>> print bug_notification.message.text_contents
     ** Changed in: mozilla-firefox (Ubuntu)
-        Assignee: No Privileges Person (no-priv) => Sample Person (name12)
-    ...
+           Status: Confirmed => New
+         Assignee: No Privileges Person (no-priv) => Sample Person (name12)
 
 
 === No matching bug task ===
