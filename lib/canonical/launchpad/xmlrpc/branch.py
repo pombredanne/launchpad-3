@@ -227,7 +227,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             # name. This lets people push new branches up to Launchpad using
             # lp: URL syntax.
             return self._getUniqueNameResultDict(strip_path)
-        # XXX: all of this is repetitive and dirty. Alternatives are directly
+        # TODO: all of this is repetitive and dirty. Alternatives are directly
         # raising faults (blech) or some automated way of reraising as faults,
         # or just moving this code out.
         except InvalidBranchIdentifier, e:

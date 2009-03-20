@@ -162,6 +162,10 @@ class TestExpandURL(TestCaseWithFactory):
             '%s/%s' % (self.product.name, "doesntexist"),
             faults.NoSuchSeries("doesntexist", self.product))
 
+    # TODO: test no such source package
+
+    # TODO: test source package with no linked branch
+
     def test_branch(self):
         # The unique name of a branch resolves to the unique name of the
         # branch.

@@ -460,19 +460,10 @@ class TestGetByLPPath(TestCaseWithFactory):
             (sourcepackage, PackagePublishingPocket.RELEASE),
             exception.component)
 
-    # XXX: test for pocket-linked branch paths
+    # XXX: JonathanLange 2009-03-30 spec=package-branches bug=345739: Test for
+    # pocket-linked branch paths.
 
-    # This test fails right now.
-    def xfail_test_resolves_product_to_dev_focus_branch_trailing_path(self):
-        # getByLPPath resolves 'product' to the development focus branch for
-        # the product and the series that is the development focus.
-        product = self.factory.makeProduct()
-        branch = self.factory.makeProductBranch(product=product)
-        removeSecurityProxy(product).development_focus.user_branch = branch
-        path = '%s/foo/bar/baz' % (product.name,)
-        self.assertEqual(
-            (branch, 'foo/bar/baz'),
-            self.branch_lookup.getByLPPath(path))
+    # TODO: test for partial path lookup, e.g. lp:~foo/bar
 
 
 def test_suite():

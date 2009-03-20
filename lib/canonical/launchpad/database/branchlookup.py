@@ -77,7 +77,10 @@ class RootTraversable:
             raise InvalidProductName(name)
         pillar = getUtility(IPillarNameSet).getByName(name)
         if pillar is None:
-            # XXX: no necessarily no such *product*.
+            # Actually, the pillar is such *anything*. The user might be
+            # trying to refer to a project, a distribution or a product. We
+            # raise a NoSuchProduct error since that's what we used to raise
+            # when we only supported product & junk branches.
             raise NoSuchProduct(name)
         return pillar
 
@@ -127,9 +130,12 @@ class DistributionTraversable(_BaseTraversable):
         """See `ITraversable`."""
         series = self.context.getSeries(name)
         if series is None:
-            # XXX: NoSuchProductSeries is the wrong exception.
+            # TODO: NoSuchProductSeries is the wrong exception.
             # NoSuchDistroSeries would be better.
             raise NoSuchProductSeries(name, self.context)
+        # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
+        # could also try to find a package and then return a reference to its
+        # development focus.
         return series
 
 
@@ -146,7 +152,7 @@ class DistroSeriesTraversable(_BaseTraversable):
         """See `ITraversable`."""
         sourcepackage = self.context.getSourcePackage(name)
         if sourcepackage is None:
-            # XXX: Not handled by resolve_lp_path.
+            # TODO: Not handled by resolve_lp_path.
             raise NoSuchSourcePackageName(name)
         return sourcepackage, PackagePublishingPocket.RELEASE
 
@@ -181,7 +187,6 @@ def source_package_linked_branch(package, pocket):
     return HasLinkedBranch(package.getBranch(pocket))
 
 
-# XXX: These probably should be somewhere else.
 sm = getSiteManager()
 sm.registerAdapter(ProductTraversable)
 sm.registerAdapter(DistributionTraversable)
@@ -270,7 +275,7 @@ class BranchLookup:
         branches, ~user/+junk/branch.
         """
         # XXX: JonathanLange 2008-11-27 spec=package-branches: Doesn't handle
-        # +dev alias, nor official source package branches.
+        # +dev alias.
         try:
             namespace_name, branch_name = unique_name.rsplit('/', 1)
         except ValueError:
