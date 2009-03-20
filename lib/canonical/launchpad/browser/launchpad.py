@@ -613,9 +613,9 @@ class LaunchpadRootNavigation(Navigation):
         return self.redirectSubTree(
             urlappend(new_url, '/'.join(self.request.stepstogo)))
 
-    # XXX cprov 20090319: path segments starting with '+' should never
-    # correspond to a valid traversal, they confuse the hierarchical
-    # navigation.
+    # XXX cprov 2009-03-19 bug=345877: path segments starting with '+'
+    # should never correspond to a valid traversal, they confuse the
+    # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,

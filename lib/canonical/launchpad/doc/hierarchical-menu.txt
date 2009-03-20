@@ -21,7 +21,7 @@ First, we need a hierarchy of objects to build upon:
     >>> class ICooker(Interface):
     ...     """A cooker."""
 
-    >>> import os
+    >>> from canonical.launchpad.webapp.url import urlappend
     >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
     >>> class BaseContent:
@@ -30,7 +30,7 @@ First, we need a hierarchy of objects to build upon:
     ...     def __init__(self, name, parent, path_prefix=None):
     ...         self.name = name
     ...         if path_prefix is not None:
-    ...             self.path = os.path.join(path_prefix, name)
+    ...             self.path = urlappend(path_prefix, name)
     ...         else:
     ...             self.path = name
     ...         self.inside = parent
