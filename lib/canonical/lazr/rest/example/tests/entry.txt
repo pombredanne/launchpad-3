@@ -164,6 +164,17 @@ them has been marked private. The private one cannot be retrieved.
   HTTP/1.1 401 Unauthorized
   ...
 
+If a resource itself is visible to the client, but it contains
+information that's not visible, the information will be
+redacted. Here, a cookbook resource are visible to our client, but its
+value for the 'confirmed' field is not visible.
+
+  >>> cookbook = webservice.get(greens_url).jsonBody()
+  >>> print cookbook['name']
+  Everyday Greens
+  >>> print cookbook['confirmed']
+  tag:launchpad.net:2008:redacted
+
 
 == Named operations ==
 

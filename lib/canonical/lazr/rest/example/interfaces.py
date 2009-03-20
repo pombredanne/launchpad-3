@@ -79,6 +79,9 @@ class ICookbook(IHasGet):
     export_as_webservice_entry()
     name = exported(TextLine(title=u"Name", required=True))
     copyright_date = exported(Date(title=u"Copyright Date", readonly=True))
+    confirmed = exported(Bool(
+            title=u"Whether this information has been confirmed",
+            default=False))
     cuisine = exported(WhitespaceStrippingTextLine(
             title=u"Cuisine", required=False, default=None))
     recipes = exported(CollectionField(title=u"Recipes in this cookbook",

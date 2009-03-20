@@ -8,13 +8,18 @@
       <allow interface='canonical.lazr.rest.example.interfaces.ICookbookSet' />
   </class>
 
-  <class class="canonical.lazr.rest.example.root.Cookbook">
-      <require interface='canonical.lazr.rest.example.interfaces.ICookbook'
-       set_schema='canonical.lazr.rest.example.interfaces.ICookbook'
-       permission="zope.Public" />
-  </class>
+  <permission id="lazr.restful.example.ViewPrivate"
+   title="Viewing private information" />
 
-  <permission id="lazr.View" title="Viewing something" />
+  <class class="canonical.lazr.rest.example.root.Cookbook">
+    <require attributes="name copyright_date cuisine recipes find_recipes
+                         make_more_interesting get"
+             set_attributes="name copyright_date cuisine"
+             permission="zope.Public" />
+    <require attributes="confirmed"
+             set_attributes="confirmed"
+             permission="lazr.restful.example.ViewPrivate" />
+  </class>
 
   <class class="canonical.lazr.rest.example.root.Dish">
       <require interface='canonical.lazr.rest.example.interfaces.IDish'
@@ -29,8 +34,8 @@
   <class class="canonical.lazr.rest.example.root.Recipe">
       <require interface='canonical.lazr.rest.example.interfaces.IRecipe'
        set_schema='canonical.lazr.rest.example.interfaces.IRecipe'
-       permission="lazr.View" />
-       <require attributes="__name__" permission="lazr.View" />
+       permission="lazr.restful.example.ViewPrivate" />
+       <require attributes="__name__" permission="lazr.restful.example.ViewPrivate" />
   </class>
 
   <class class="canonical.lazr.rest.example.root.RecipeSet">

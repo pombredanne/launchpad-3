@@ -122,6 +122,7 @@ The elements of a collection can be looked up by unique identifier:
   >>> url = quote("/cookbooks/The Joy of Cooking")
   >>> cookbook = webservice.get(url).jsonBody()
   >>> pprint_entry(cookbook)
+  confirmed: u'tag:launchpad.net:2008:redacted'
   copyright_date: u'1995-01-01'
   cuisine: u'General'
   name: u'The Joy of Cooking'

@@ -32,11 +32,12 @@ class CookbookWebServiceObject:
 class Cookbook(CookbookWebServiceObject):
     """An object representing a cookbook"""
     implements(ICookbook)
-    def __init__(self, name, cuisine, copyright_date):
+    def __init__(self, name, cuisine, copyright_date, confirmed=False):
         self.name = name
         self.cuisine = cuisine
         self.recipes = []
         self.copyright_date = copyright_date
+        self.confirmed=confirmed
 
     @property
     def __name__(self):
