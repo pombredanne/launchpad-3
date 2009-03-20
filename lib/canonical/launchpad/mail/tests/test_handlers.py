@@ -20,7 +20,8 @@ from canonical.config import config
 from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType,
-    CodeReviewNotificationLevel, CodeReviewVote, IBranchSet)
+    CodeReviewNotificationLevel, CodeReviewVote)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.database import MessageSet
@@ -345,7 +346,7 @@ class TestCodeHandler(TestCaseWithFactory):
         source_branch_url = 'http://example.com/suffix'
         md = self.factory.makeMergeDirective(
             source_branch_url=source_branch_url, target_branch=target_branch)
-        branches = getUtility(IBranchSet)
+        branches = getUtility(IBranchLookup)
         self.assertIs(None, branches.getByUrl(source_branch_url))
         submitter = self.factory.makePerson()
         self.switchDbUser(config.processmail.dbuser)
@@ -370,7 +371,6 @@ class TestCodeHandler(TestCaseWithFactory):
         source_branch_url = 'http://example.com/suffix'
         md = self.factory.makeMergeDirective(
             source_branch_url=source_branch_url, target_branch=target_branch)
-        branches = getUtility(IBranchSet)
         submitter = self.factory.makePerson()
         duplicate_branch = self.factory.makeProductBranch(
             product=target_branch.product, name='suffix', owner=submitter)

@@ -154,7 +154,6 @@ from canonical.launchpad.interfaces.message import (
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
-from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
@@ -174,7 +173,7 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
-from canonical.launchpad.browser.questiontarget import SearchQuestionsView
+from lp.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
 
@@ -199,6 +198,8 @@ from lazr.uri import URI, InvalidURIError
 from canonical.launchpad import _
 
 from canonical.lazr.utils import smartquote
+
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):

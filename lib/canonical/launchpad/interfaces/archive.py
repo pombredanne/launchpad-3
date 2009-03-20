@@ -1041,61 +1041,47 @@ ALLOW_RELEASE_BUILDS = (
 
 # MONKEY PATCH TIME!
 # Fix circular dependency issues.
+from canonical.launchpad.components.apihelpers import (
+    patch_entry_return_type, patch_collection_return_type,
+    patch_plain_parameter_type, patch_choice_parameter_type,
+    patch_reference_property)
+
 from canonical.launchpad.interfaces.distribution import IDistribution
-IArchive['distribution'].schema = IDistribution
+patch_reference_property(IArchive, 'distribution', IDistribution)
 
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermission)
-IArchive['getPermissionsForPerson'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'return_type'].value_type.schema = IArchivePermission
-IArchive['getUploadersForPackage'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'return_type'].value_type.schema = IArchivePermission
-IArchive['getUploadersForComponent'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'return_type'].value_type.schema = IArchivePermission
-IArchive['getQueueAdminsForComponent'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'return_type'].value_type.schema = IArchivePermission
-IArchive['getComponentsForQueueAdmin'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'return_type'].value_type.schema = IArchivePermission
-IArchive['newPackageUploader'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'return_type'].schema = IArchivePermission
-IArchive['newComponentUploader'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'return_type'].schema = IArchivePermission
-IArchive['newQueueAdmin'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'return_type'].schema = IArchivePermission
-IArchive['syncSources'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'params']['from_archive'].schema = IArchive
-IArchive['syncSource'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'params']['from_archive'].schema = IArchive
+patch_collection_return_type(
+    IArchive, 'getPermissionsForPerson', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getUploadersForPackage', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getUploadersForComponent', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getQueueAdminsForComponent', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getComponentsForQueueAdmin', IArchivePermission)
+patch_entry_return_type(IArchive, 'newPackageUploader', IArchivePermission)
+patch_entry_return_type(IArchive, 'newComponentUploader', IArchivePermission)
+patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
+patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
+patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
 
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.publishing import (
     ISourcePackagePublishingHistory, PackagePublishingPocket,
     PackagePublishingStatus)
-IArchive['getPublishedSources'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'params']['distroseries'].schema = IDistroSeries
-IArchive['getPublishedSources'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'return_type'].value_type.schema = ISourcePackagePublishingHistory
-IArchive['getPublishedSources'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'params']['status'].vocabulary = PackagePublishingStatus
-IArchive['getPublishedSources'].queryTaggedValue(
-    'lazr.webservice.exported')[
-        'params']['pocket'].vocabulary = PackagePublishingPocket
+patch_plain_parameter_type(
+    IArchive, 'getPublishedSources', 'distroseries', IDistroSeries)
+patch_collection_return_type(
+    IArchive, 'getPublishedSources', ISourcePackagePublishingHistory)
+patch_choice_parameter_type(
+    IArchive, 'getPublishedSources', 'status', PackagePublishingStatus)
+patch_choice_parameter_type(
+    IArchive, 'getPublishedSources', 'pocket', PackagePublishingPocket)
 
 # This is patched here to avoid even more circular imports in
 # interfaces/person.py.
 from canonical.launchpad.interfaces.person import IPersonPublic
-IPersonPublic['archive'].schema = IArchive
+patch_reference_property(IPersonPublic, 'archive', IArchive)
 

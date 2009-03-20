@@ -15,8 +15,8 @@ from canonical.codehosting.scanner.bzrsync import (
 from canonical.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase, run_as_db_user)
 from canonical.config import config
-from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, IBranchSet)
+from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.testing import TestCaseWithFactory
@@ -41,9 +41,9 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         branch_id = db_branch.id
         self.createProposal(db_branch, db_trunk)
         # Reget the objects due to transaction boundary.
-        branchset = getUtility(IBranchSet)
-        db_trunk = branchset[trunk_id]
-        db_branch = branchset[branch_id]
+        branch_lookup = getUtility(IBranchLookup)
+        db_trunk = branch_lookup.get(trunk_id)
+        db_branch = branch_lookup.get(branch_id)
         proposal = list(db_branch.landing_targets)[0]
         return proposal, db_trunk, db_branch, branch_tree
 
