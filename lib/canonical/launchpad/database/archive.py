@@ -194,9 +194,26 @@ class Archive(SQLBase):
     @property
     def displayname(self):
         """See `IArchive`."""
-        return getUtility(IArchiveSet).getArchiveDisplayname(
-            self.purpose, self.owner, self.name, self.distribution,
-            self.private)
+        if self.is_ppa:
+            if self.name == default_name_by_purpose.get(ArchivePurpose.PPA):
+                displayname = 'PPA for %s' % self.owner.displayname
+            else:
+                displayname = 'PPA named %s for %s' % (
+                    self.name, self.owner.displayname)
+            if self.private:
+                displayname = "Private %s" % displayname
+            return displayname
+
+        if self.is_copy:
+            if self.private:
+                displayname = "Private copy archive %s for %s" % (
+                    self.name, self.owner.displayname)
+            else:
+                displayname = "Copy archive %s for %s" % (
+                    self.name, self.owner.displayname)
+            return displayname
+
+        return '%s for %s' % (self.purpose.title, self.distribution.title)
 
     @property
     def series_with_sources(self):
@@ -1196,29 +1213,6 @@ class ArchiveSet:
                 "'%s' purpose has no default name." % purpose.name)
 
         return default_name_by_purpose[purpose]
-
-    def getArchiveDisplayname(self, purpose, owner, name, distribution,
-                              private=False):
-        """See `IArchiveSet`."""
-        if purpose is ArchivePurpose.PPA:
-            if name == default_name_by_purpose.get(ArchivePurpose.PPA):
-                displayname = 'PPA for %s' % owner.displayname
-            else:
-                displayname = 'PPA named %s for %s' % (name, owner.displayname)
-            if private:
-                displayname = "Private %s" % displayname
-            return displayname
-
-        if purpose is ArchivePurpose.COPY:
-            if private:
-                displayname = "Private copy archive %s for %s" % (
-                    name, owner.displayname)
-            else:
-                displayname = "Copy archive %s for %s" % (
-                    name, owner.displayname)
-            return displayname
-
-        return '%s for %s' % (purpose.title, distribution.title)
 
 
     def getByDistroPurpose(self, distribution, purpose, name=None):

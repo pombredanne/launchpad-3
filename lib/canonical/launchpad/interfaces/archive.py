@@ -875,32 +875,6 @@ class IArchiveSet(Interface):
         Only public and published sources are considered.
         """
 
-    def getArchiveDisplayname(purpose, owner, name, distribution,
-                              private=False):
-        """Return a mechanic Archive displayname.
-
-        It varies according the Archive attributes:
-
-         * Public default PPAs: 'PPA for %(owner.displayname)s';
-         * Private default PPAs: 'Private PPA for %(owner.displayname)s'
-         * Public named PPAs: 'PPA named %(name)s for %(owner.displayname)s';
-         * Private named PPAs: 'Private PPA named %(name)s for
-                                %(owner.displayname)s'
-         * Public COPY: 'Copy archive %(name)s for %(owner.displayname)s';
-         * Private COPY: 'Private copy archive %(name)s for
-                          %(owner.displayname)s'
-         * Primary: 'Primary for %(distribution.title)s'
-         * Partner: 'Partner for %(distribution.title)s'
-
-        :param purpose: an `ArchivePurpose`;
-        :param owner: an `IPerson`;
-        :param name: a string containing the name fo the archive;
-        :param distribution: an `IDistribution`;
-        :param private: optional boolean, whether or not the archive is
-            private. Defaults to False.
-
-        :return: a text containing the mechanic PPA title.
-        """
 
     def new(purpose, owner, name=None, distribution=None, description=None):
         """Create a new archive.
