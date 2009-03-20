@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0102
 
 __metaclass__ = type
 
@@ -14,8 +15,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage)
-from canonical.launchpad.database.translationtemplateitem import (
-    TranslationTemplateItem)
 from canonical.launchpad.interfaces import (
     ILanguageSet, POTMsgSetInIncompatibleTemplatesError,
     TranslationFileFormat)
@@ -276,7 +275,8 @@ class TestTranslationSharedPOTMsgSets(unittest.TestCase):
 
         # A suggestion on another PO file is still shown in both templates.
         another_suggestion = self.factory.makeSharedTranslationMessage(
-            pofile=sr_stable_pofile, potmsgset=self.potmsgset, suggestion=True)
+            pofile=sr_stable_pofile, potmsgset=self.potmsgset,
+            suggestion=True)
         self.assertEquals(
             list(self.potmsgset.getLocalTranslationMessages(
                 self.devel_potemplate, serbian)),
