@@ -257,6 +257,7 @@ class TestExpandURL(TestCaseWithFactory):
 
     def test_too_short(self):
         # Return a nice fault if the unique name is too short.
+        # TODO: This test is failing, make it passing.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         path = '~%s/%s' % (owner.name, product.name)

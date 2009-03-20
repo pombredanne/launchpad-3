@@ -372,7 +372,7 @@ associated with it.
     >>> branchset_api.resolve_lp_path('firefox')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 170: 'Series trunk on firefox has no branch associated with it'>
+    Fault: <Fault 170: 'Mozilla Firefox has no branch associated with it.'>
 
 
 Launchpad also returns a fault if the project doesn't exist.
