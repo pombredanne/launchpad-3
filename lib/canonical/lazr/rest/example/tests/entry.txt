@@ -33,7 +33,7 @@ convert it into Unicode.
   u'Fran\xe7ais'
 
 
-== Content negotiation ==
+=== Content negotiation ===
 
 By varying the 'Accept' header, the client can request either a JSON
 or XHTML representation of an entry, or a WADL description of the
@@ -92,7 +92,7 @@ will take precedence over any value set for the Accept header.
   'application/xhtml+xml'
 
 
-== XHTML representations ==
+=== XHTML representations ===
 
 Every entry has an XHTML representation. The default representation is
 a simple definition list.
@@ -149,6 +149,20 @@ we just defined.
   <dl ...>
   ...
   </dl>
+
+
+=== Visibility ===
+
+There are two recipes in "James Beard's American Cookery", but one of
+them has been marked private. The private one cannot be retrieved.
+
+  >>> print webservice.get('/recipes/3')
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print webservice.get('/recipes/5')
+  HTTP/1.1 401 Unauthorized
+  ...
 
 
 == Named operations ==

@@ -150,4 +150,4 @@ root. The cookbook web service has a 'featured cookbook' which may
 change over time.
 
   >>> print top_level_links['featured_cookbook_link']
-  http://.../cookbooks/Mastering%20the%20Art%20of%20French%20Cooking
+  http://.../cookbooks/featured

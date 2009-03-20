@@ -14,6 +14,8 @@
        permission="zope.Public" />
   </class>
 
+  <permission id="lazr.View" title="Viewing something" />
+
   <class class="canonical.lazr.rest.example.root.Dish">
       <require interface='canonical.lazr.rest.example.interfaces.IDish'
        set_schema='canonical.lazr.rest.example.interfaces.IDish'
@@ -27,14 +29,13 @@
   <class class="canonical.lazr.rest.example.root.Recipe">
       <require interface='canonical.lazr.rest.example.interfaces.IRecipe'
        set_schema='canonical.lazr.rest.example.interfaces.IRecipe'
-       permission = "zope.Public" />
+       permission="lazr.View" />
+       <require attributes="__name__" permission="lazr.View" />
   </class>
 
   <class class="canonical.lazr.rest.example.root.RecipeSet">
       <allow interface='canonical.lazr.rest.example.interfaces.IRecipeSet' />
   </class>
-
-  <permission id="lazr.View" title="Viewing something" />
 
   <utility
       factory="canonical.lazr.rest.example.configuration.CookbookWebServiceConfiguration"
