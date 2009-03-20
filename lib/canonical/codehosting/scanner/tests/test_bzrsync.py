@@ -23,8 +23,8 @@ from canonical.config import config
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.interfaces import IRevisionSet
-from canonical.launchpad.interfaces.branch import IBranchSet
 from canonical.launchpad.interfaces.branchjob import IRosettaUploadJobSource
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -500,7 +500,7 @@ class TestBzrSync(BzrSyncTestCase):
         # BzrSync to fill the database. That would cause a circular
         # dependency, as the test setup would depend on
         # retrieveDatabaseAncestry.
-        branch = getUtility(IBranchSet).getByUniqueName(
+        branch = getUtility(IBranchLookup).getByUniqueName(
             '~name12/+junk/junk.contrib')
         sampledata = list(
             BranchRevision.selectBy(branch=branch).orderBy('sequence'))

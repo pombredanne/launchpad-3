@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Testing infrastructure for the Launchpad application.
 
@@ -558,8 +558,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                    **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
-        Any parameters for IBranchSet.new can be specified to override the
-        default ones.
+        Any parameters for `IBranchNamespace.createBranch` can be specified to
+        override the default ones.
         """
         if branch_type is None:
             branch_type = BranchType.HOSTED

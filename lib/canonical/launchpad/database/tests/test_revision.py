@@ -20,8 +20,9 @@ from canonical.launchpad.database.karma import Karma
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
-    IBranchSet, IMasterObject, IRevisionSet)
+    IMasterObject, IRevisionSet)
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 from canonical.testing import DatabaseFunctionalLayer
@@ -486,7 +487,7 @@ class TestTipRevisionsForBranches(TestCase):
         for branch in branches:
             factory.makeRevisionsForBranch(branch)
         # Retrieve the updated branches (due to transaction boundaries).
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         self.branches = [branch_set.get(id) for id in branch_ids]
         self.revision_set = getUtility(IRevisionSet)
 
@@ -513,7 +514,7 @@ class TestTipRevisionsForBranches(TestCase):
             self.revision_set.getTipRevisionsForBranches(
                 self.branches[:1]))
         # XXX jamesh 2008-06-02: ensure that branch[0] is loaded
-        self.branches[0].last_scanned_id
+        last_scanned_id = self.branches[0].last_scanned_id
         self._breakTransaction()
         self.assertEqual(1, len(revisions))
         revision = revisions[0]

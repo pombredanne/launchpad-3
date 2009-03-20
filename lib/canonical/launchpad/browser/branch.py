@@ -58,7 +58,6 @@ from canonical.launchpad.interfaces import (
     IBranch,
     IBranchMergeProposal,
     IBranchNavigationMenu,
-    IBranchSet,
     IBranchSubscription,
     IBugBranch,
     IBugSet,
