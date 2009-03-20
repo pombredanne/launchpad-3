@@ -522,7 +522,7 @@ The bug's activity log was updated too with the status change.
     ...     print "%s %s %s %s" % (
     ...         activity.person.displayname,
     ...         activity.whatchanged, activity.oldvalue, activity.newvalue)
-    Launchpad Janitor  None: status  Incomplete  Invalid
+    Launchpad Janitor  Ubuntu Hoary: status  Incomplete  Invalid
 
 
 == enable_bug_expiration ==
