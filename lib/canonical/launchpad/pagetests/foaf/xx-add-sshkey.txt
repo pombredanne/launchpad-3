@@ -77,7 +77,6 @@ menu:
     Profile
     Related Software: .../~salgado/+related-software
     Karma: .../~salgado/+karma
-    Personal Package Archive: .../~salgado/+activate-ppa
     Personal
     E-mail Settings: .../~salgado/+editemails
     OpenPGP Keys: .../~salgado/+editpgpkeys
