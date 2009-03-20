@@ -22,32 +22,37 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
-class BaseDatabasePolicyTestCase(unittest.TestCase):
-    """Base tests for DatabasePolicy implementation."""
+class ImplicitDatabasePolicyTestCase(unittest.TestCase):
+    """Tests for when there is no policy installed."""
     layer = DatabaseFunctionalLayer
 
+    def test_defaults(self):
+        main_store = getUtility(IStoreSelector).get(
+            MAIN_STORE, DEFAULT_FLAVOR)
+
+        self.failUnless(verifyObject(IMasterStore, main_store))
+
+        auth_store = geteUtility(IStoreSelector).get(
+            AUTH_STORE, DEFAULT_FLAVOR)
+        self.failUnless(verifyObject(IMasterStore, auth_store))
+
+
+class BaseDatabasePolicyTestCase(ImplicitDatabasePolicyTestCase):
+    """Base tests for DatabasePolicy implementation."""
+
+    def setUp(self):
+        self.policy = BaseDatabasePolicy()
+        getUtility(IStoreSelector).push(self.policy)
+
     def tearDown(self):
-        for store in ALL_STORES:
-            StoreSelector.setDefaultFlavor(store, DEFAULT_FLAVOR)
+        getUtility(IStoreSelector).pop()
 
     def test_correctly_implements_IDatabasePolicy(self):
         self.failUnless(verifyObject(IDatabasePolicy, self.policy))
 
-    def test_afterCall_should_reset_default_flavor(self):
-        for store in ALL_STORES:
-            default_flavor = StoreSelector.getDefaultFlavor(store)
-            StoreSelector.setDefaultFlavor(store, MASTER_FLAVOR)
-            self.policy.afterCall()
-            self.assertEquals(
-                    default_flavor, StoreSelector.getDefaultFlavor(store))
 
-
-class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
+class SlaveDatabasePolicyTestCase(unittest.TestCase):
     """Tests for the `SlaveDatabasePolicy`."""
-
-    def setUp(self):
-        self.policy = SlaveDatabasePolicy(
-            LaunchpadTestRequest(SERVER_URL='http://launchpad.dev'))
 
     def test_FeedsLayer_uses_SlaveDatabasePolicy(self):
         """FeedsRequest should use the SlaveDatabasePolicy since they
@@ -57,7 +62,7 @@ class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
         request = LaunchpadTestRequest(
             SERVER_URL='http://feeds.launchpad.dev')
         setFirstLayer(request, FeedsLayer)
-        policy = getAdapter(request, IDatabasePolicy)
+        policy = IDatabasePolicy(request)
         self.failUnless(
             isinstance(policy, SlaveDatabasePolicy),
             "Expected SlaveDatabasePolicy, not %s." % policy)
