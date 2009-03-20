@@ -70,5 +70,13 @@ class HugeVocabularyJSONView:
                 entry['description'] = term.value.summary
             result.append(entry)
 
+        if config.devmode:
+            if len(result) < batch_size and len(result) != 0:
+                result.append(dict(
+                    value='bad-value-for-testing-errors-on-dev-system',
+                    title='Bad Value for Testing on Dev System',
+                    description='Intential bad value.',
+                    image='/@@/bug-critical'))
+
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(dict(total_size=total_size, entries=result))
