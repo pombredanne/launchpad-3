@@ -16,6 +16,7 @@ We publish a subset of their attributes.
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
     description: u'packages to help my friends.'
+    displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
@@ -23,7 +24,6 @@ We publish a subset of their attributes.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: None
-    title: u'PPA for Celso Providelo'
 
 While the Archive signing key is being generated its
 'signing_key_fingerprint' attribute is None.
@@ -78,6 +78,7 @@ The archive has the following attributes:
     ...     ubuntutest['main_archive_link']).jsonBody()
     >>> pprint_entry(main_archive)
     description: None
+    displayname: u'Primary Archive for Ubuntu Test'
     distribution_link: u'http://.../ubuntutest'
     name: u'primary'
     owner_link: u'http://.../~ubuntu-team'
@@ -85,7 +86,6 @@ The archive has the following attributes:
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../ubuntutest/+archive/primary'
     signing_key_fingerprint: None
-    title: u'Primary Archive for Ubuntu Test'
 
 A distribution can also provide a list of all its archives:
 
@@ -618,6 +618,7 @@ the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/ppa").jsonBody())
     description: u'tag:launchpad.net:2008:redacted'
+    displayname: u'Private PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
@@ -625,10 +626,10 @@ the IArchive context, in this case only Celso has it.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
-    title: u'Private PPA for Celso Providelo'
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/ppa").jsonBody())
     description: u'packages to help my friends.'
+    displayname: u'Private PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
@@ -636,7 +637,6 @@ the IArchive context, in this case only Celso has it.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
-    title: u'Private PPA for Celso Providelo'
 
 
 == Modifying privacy ==

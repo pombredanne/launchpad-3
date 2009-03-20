@@ -2,6 +2,10 @@
     xmlns="http://namespaces.zope.org/zope"
     i18n_domain="lazr">
 
+    <class class="canonical.lazr.rest.RedirectResource">
+        <allow interface='canonical.lazr.interfaces.IHTTPResource' />
+    </class>
+
     <class class="canonical.lazr.rest.CollectionResource">
         <allow interface='canonical.lazr.interfaces.ICollectionResource' />
     </class>

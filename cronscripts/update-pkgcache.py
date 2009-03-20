@@ -59,7 +59,8 @@ class PackageCacheUpdater(LaunchpadCronScript):
     def updateDistroSeriesCache(self, distroseries, archive):
         """Update package caches for the given location."""
         self.logger.info('%s %s %s starting' % (
-            distroseries.distribution.name, distroseries.name, archive.title))
+            distroseries.distribution.name, distroseries.name,
+            archive.displayname))
 
         distroseries.removeOldCacheItems(archive=archive, log=self.logger)
 
