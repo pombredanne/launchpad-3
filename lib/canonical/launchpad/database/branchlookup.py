@@ -23,7 +23,7 @@ from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
     IBranchLookup, InvalidBranchIdentifier, NoBranchForSeries,
-    NoDefaultBranch)
+    NoBranchForSourcePackage, NoDefaultBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -256,7 +256,11 @@ class BranchLookup:
         if IProductSeries.providedBy(obj):
             return obj.series_branch, obj
         if ISourcePackage.providedBy(obj):
-            return obj.getBranch(PackagePublishingPocket.RELEASE), None
+            branch = obj.getBranch(PackagePublishingPocket.RELEASE)
+            if branch is None:
+                raise NoBranchForSourcePackage(
+                    obj, PackagePublishingPocket.RELEASE)
+            return branch, None
         if IProject.providedBy(obj):
             raise NoDefaultBranch(obj, 'project group')
         if IDistribution.providedBy(obj):
