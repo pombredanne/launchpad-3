@@ -118,7 +118,7 @@ class BugWatchEditView(LaunchpadFormView):
             ' bug watch has been deleted.',
             url=bugwatch.url, bugtracker=bugwatch.bugtracker.name,
             remote_bug=bugwatch.remotebug))
-        bugwatch.destroySelf()
+        bugwatch.bug.removeWatch(bugwatch, self.user)
 
     @property
     def next_url(self):

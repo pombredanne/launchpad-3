@@ -408,6 +408,9 @@ class IBug(ICanBeMentored):
         tracker, owned by the person given as the owner.
         """
 
+    def removeWatch(bug_watch, owner):
+        """Remove a bug watch from the bug."""
+
     @call_with(owner=REQUEST_USER)
     @operation_parameters(target=copy_field(IBugTask['target']))
     @export_factory_operation(IBugTask, [])

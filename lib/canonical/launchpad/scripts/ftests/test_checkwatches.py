@@ -61,7 +61,7 @@ class TestCheckwatches(unittest.TestCase):
             bug_with_question, sample_person,
             product=getUtility(IProductSet).getByName('firefox'))
         self.bugwatch_with_question = bug_with_question.addWatch(
-            bugtracker, '1', sample_person)
+            bugtracker, '1', getUtility(ILaunchpadCelebrities).janitor)
         self.bugtask_with_question.bugwatch = self.bugwatch_with_question
         commit()
 

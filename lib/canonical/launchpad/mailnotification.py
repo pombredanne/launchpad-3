@@ -627,20 +627,6 @@ def get_bug_edit_notification_texts(bug_delta):
                 old_value=field_delta['old'], new_value=field_delta['new'])
             changes.append(change_info)
 
-    if bug_delta.bugwatch is not None:
-        old_bug_watch = bug_delta.bugwatch.get('old')
-        if old_bug_watch:
-            change_info = u"** Bug watch removed: %s #%s\n" % (
-                old_bug_watch.bugtracker.title, old_bug_watch.remotebug)
-            change_info += u"   %s" % old_bug_watch.url
-            changes.append(change_info)
-        new_bug_watch = bug_delta.bugwatch['new']
-        if new_bug_watch:
-            change_info = u"** Bug watch added: %s #%s\n" % (
-                new_bug_watch.bugtracker.title, new_bug_watch.remotebug)
-            change_info += u"   %s" % new_bug_watch.url
-            changes.append(change_info)
-
     if bug_delta.cve is not None:
         new_cve = bug_delta.cve.get('new', None)
         old_cve = bug_delta.cve.get('old', None)
@@ -924,44 +910,6 @@ def notify_bug_comment_added(bugmessage, event):
     """
     bug = bugmessage.bug
     bug.addCommentNotification(bugmessage.message)
-
-
-@block_implicit_flushes
-def notify_bug_watch_added(watch, event):
-    """Notify CC'd list that a new watch has been added for this bug.
-
-    watch must be an IBugWatch. event must be an
-    IObjectCreatedEvent.
-    """
-    bug_delta = BugDelta(
-        bug=watch.bug,
-        bugurl=canonical_url(watch.bug),
-        user=IPerson(event.user),
-        bugwatch={'new' : watch})
-
-    add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
-def notify_bug_watch_modified(modified_bug_watch, event):
-    """Notify CC'd bug subscribers that a bug watch was edited.
-
-    modified_bug_watch must be an IBugWatch. event must be an
-    IObjectModifiedEvent.
-    """
-    old = event.object_before_modification
-    new = event.object
-    if ((old.bugtracker != new.bugtracker) or
-        (old.remotebug != new.remotebug)):
-        # there is a difference worth notifying about here
-        # so let's keep going
-        bug_delta = BugDelta(
-            bug=new.bug,
-            bugurl=canonical_url(new.bug),
-            user=IPerson(event.user),
-            bugwatch={'old' : old, 'new' : new})
-
-        add_bug_change_notifications(bug_delta)
 
 
 @block_implicit_flushes
