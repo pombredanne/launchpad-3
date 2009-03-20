@@ -78,6 +78,7 @@ web service:
     HTTP/1.1 404 Not Found
     ...
 
+
 == API Requests to other hosts ==
 
 JavaScript working with the API must deal with the browser's Same Origin
