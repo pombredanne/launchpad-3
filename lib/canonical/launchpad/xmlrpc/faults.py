@@ -437,7 +437,7 @@ class InvalidBranchUniqueName(LaunchpadFault):
 
     error_code = 330
     msg_template = (
-        "%(path)s is too short to be a branch name. Try "
+        "~%(path)s is too short to be a branch name. Try "
         "'~<owner>/+junk/<branch>', '~<owner>/<product>/<branch> or "
         "'~<owner>/<distribution>/<series>/<sourcepackage>/<branch>'.")
 

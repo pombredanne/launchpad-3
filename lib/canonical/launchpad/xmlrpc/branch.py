@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, InvalidBranchIdentifier,
     NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace)
+    get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, NoSuchProduct)
@@ -244,6 +244,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             raise faults.NoLinkedBranch(e.component)
         except CannotHaveLinkedBranch, e:
             raise faults.CannotHaveLinkedBranch(e.component)
+        except InvalidNamespace, e:
+            raise faults.InvalidBranchUniqueName(e.name)
         return self._getResultDict(branch, suffix)
 
     def resolve_lp_path(self, path):
