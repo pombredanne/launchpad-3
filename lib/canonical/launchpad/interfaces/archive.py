@@ -27,6 +27,7 @@ __all__ = [
     'ALLOW_RELEASE_BUILDS',
     'PocketNotFound',
     'SourceNotFound',
+    'default_name_by_purpose',
     ]
 
 from zope.interface import Interface, Attribute
@@ -173,8 +174,8 @@ class IArchivePublic(IHasOwner):
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
 
-    title = exported(
-        Text(title=_("Archive Title."), required=False))
+    displayname = exported(
+        Text(title=_("Archive displayname."), required=False))
 
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
@@ -875,6 +876,7 @@ class IArchiveSet(Interface):
         Only public and published sources are considered.
         """
 
+
     def new(purpose, owner, name=None, distribution=None, description=None):
         """Create a new archive.
 
@@ -1026,6 +1028,13 @@ class ArchivePurpose(DBEnumeratedType):
 
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
+
+
+default_name_by_purpose = {
+    ArchivePurpose.PRIMARY: 'primary',
+    ArchivePurpose.PPA: 'ppa',
+    ArchivePurpose.PARTNER: 'partner',
+    }
 
 
 MAIN_ARCHIVE_PURPOSES = (

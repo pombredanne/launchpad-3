@@ -80,6 +80,36 @@ We also have an icon for bugs.
     >>> print test_tales("bug/image:icon", bug=bug)
     <img ... src="/@@/bug" />
 
+Icons for each type (purpose) of archive we support. Starting with
+personal package archives (PPAs).
+
+    >>> print test_tales("ppa/image:icon", ppa=sabdfl.archive)
+    <img ... src="/@@/package-source" />
+
+Then distribution main archives (primary and partner).
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...      IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> [primary, partner] = ubuntu.all_distro_archives
+
+    >>> print test_tales("archive/image:icon", archive=primary)
+    <img ... src="/@@/distribution" />
+
+    >>> print test_tales("archive/image:icon", archive=partner)
+    <img ... src="/@@/distribution" />
+
+And finally Copy archives.
+
+    >>> from canonical.launchpad.interfaces.archive import (
+    ...     ArchivePurpose, IArchiveSet)
+    >>> copy = getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.COPY,
+    ...     distribution=ubuntu, name='rebuild')
+
+    >>> print test_tales("archive/image:icon", archive=copy)
+    <img ... src="/@@/distribution" />
+
 
 == The fmt: namespace to get strings ==
 
