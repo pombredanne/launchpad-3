@@ -15,7 +15,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, ILinkedBranchTraverser,
-    NoLinkedBranch)
+    ISourcePackagePocketFactory, NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
@@ -510,13 +510,12 @@ class TestSourcePackagePocket(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def makeSourcePackagePocket(self, sourcepackage=None, pocket=None):
-        from canonical.launchpad.database.branchlookup import (
-            SourcePackagePocket)
         if sourcepackage is None:
             sourcepackage = self.factory.makeSourcePackage()
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
-        return SourcePackagePocket(sourcepackage, pocket)
+        return getUtility(ISourcePackagePocketFactory).new(
+            sourcepackage, pocket)
 
     def test_suite_release_pocket(self):
         # The suite of a RELEASE source package pocket is the name of the

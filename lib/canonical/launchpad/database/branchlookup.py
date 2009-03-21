@@ -12,7 +12,7 @@ __all__ = [
 
 from zope.component import (
     adapter, adapts, getSiteManager, getUtility, queryMultiAdapter)
-from zope.interface import implementer, implements
+from zope.interface import classProvides, implementer, implements
 
 from storm.expr import Join
 from sqlobject import SQLObjectNotFound
@@ -27,7 +27,8 @@ from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, ICanHasLinkedBranch,
-    ILinkedBranchTraversable, ILinkedBranchTraverser, NoLinkedBranch)
+    ILinkedBranchTraversable, ILinkedBranchTraverser, ISourcePackagePocket,
+    ISourcePackagePocketFactory, NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -225,9 +226,16 @@ class SourcePackagePocket:
     the equivalent for source packages.
     """
 
+    implements(ISourcePackagePocket)
+    classProvides(ISourcePackagePocketFactory)
+
     def __init__(self, package, pocket):
         self.package = package
         self.pocket = pocket
+
+    @classmethod
+    def new(cls, package, pocket):
+        return cls(package, pocket)
 
     @property
     def displayname(self):

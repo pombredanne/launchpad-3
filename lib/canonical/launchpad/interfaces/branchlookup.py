@@ -11,6 +11,8 @@ __all__ = [
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
     'InvalidBranchIdentifier',
+    'ISourcePackagePocket',
+    'ISourcePackagePocketFactory',
     'NoLinkedBranch',
     ]
 
@@ -149,3 +151,27 @@ class IBranchLookup(Interface):
         :return: a tuple of `IBranch`, extra_path. 'extra_path' is used to
             make things like 'bzr cat lp:~foo/bar/baz/README' work.
         """
+
+
+class ISourcePackagePocketFactory(Interface):
+    """Utility for constructing source package pocket wrappers."""
+
+    def new(package, pocket):
+        """Construct a new `ISourcePackagePocket`.
+
+        :param package: An `ISourcePackagePocket`.
+        :param pocket: A `DBItem` of `PackagePublishingPocket`.
+        """
+
+
+class ISourcePackagePocket(Interface):
+    """A wrapper around a source package and a pocket.
+
+    Used to provide a single object that can be used in exceptions about a
+    sourcepackage and a pocket not having an official linked branch.
+    """
+
+    displayname = Attribute("The display name")
+    path = Attribute("The path of the source package pocket.")
+    suite = Attribute(
+        "The name of the suite. The distro series name and the pocket name.")
