@@ -32,7 +32,7 @@
         <tbody>
           <tr tal:repeat="subscription view/pending_subscriptions"
               class="pending-archive-subscription-row">
-            <td tal:content="subscription/archive/title">Private PPA for Celso
+            <td tal:content="subscription/archive/displayname">Private PPA for Celso
             </td>
             <td tal:content="subscription/description">Allow Team X access.
             </td>
@@ -82,7 +82,7 @@
             <tal:subscription_and_token
                 define="subscription subscription_with_token/subscription;
                         token subscription_with_token/token">
-            <td tal:content="subscription/archive/title">Private PPA for Celso
+            <td tal:content="subscription/archive/displayname">Private PPA for Celso
             </td>
             <td tal:content="subscription/description">Allow Team X access.
             </td>

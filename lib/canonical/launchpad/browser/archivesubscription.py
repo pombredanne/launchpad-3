@@ -247,7 +247,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
                 "# %(title)s\n"
                 "deb %(archive_url)s %(series_name)s main\n"
                 "deb-src %(archive_url)s %(series_name)s main\n" % {
-                    'title': archive.title,
+                    'title': archive.displayname,
                     'archive_url': token.archive_url,
                     'series_name': series_name})
 
@@ -312,5 +312,5 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
             self.request.response.addNotification(structured(
                 "Your subscription to '%s' has been activated. "
                 "Please update your custom sources.list as "
-                "described below." % archive.title))
+                "described below." % archive.displayname))
             redirectToSelf()

@@ -76,7 +76,7 @@ class DeathRowProcessor(LaunchpadScript):
         death_row = getDeathRow(
             archive, self.logger, self.options.pool_root)
         self.logger.debug(
-            "Unpublishing death row for %s." % archive.title)
+            "Unpublishing death row for %s." % archive.displayname)
         try:
             death_row.reap(self.options.dry_run)
         except:
