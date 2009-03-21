@@ -963,8 +963,6 @@ Results are not restricted in any way by the context, but the results
 are restricted based on who is asking (as far as private branches is
 concerned).
 
-    >>> from canonical.launchpad.interfaces import IBranchSet
-
     # Just use None as the context.
     >>> branch_vocabulary = vocabulary_registry.get(None, "Branch")
     >>> def print_vocab_branches(vocab, search):
@@ -997,7 +995,8 @@ A search with the full branch unique name should also find the branch.
 The tokens used by terms retrieved from BranchVocabulary use the
 branch unique name as an ID:
 
-    >>> branch = getUtility(IBranchSet).get(15)
+    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+    >>> branch = getUtility(IBranchLookup).get(15)
     >>> print branch.unique_name
     ~name12/gnome-terminal/main
     >>> term = branch_vocabulary.toTerm(branch)

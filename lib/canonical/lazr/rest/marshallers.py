@@ -89,7 +89,6 @@ class URLDereferencingMixin:
         path_parts = [urllib.unquote(part) for part in path.split('/')]
         path_parts.pop(0)
         path_parts.reverse()
-
         request = config.createRequest(StringIO(), {'PATH_INFO' : path})
         request.setTraversalStack(path_parts)
         root = request.publication.getApplication(self.request)

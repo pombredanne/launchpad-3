@@ -915,7 +915,7 @@ the distribution.  This list does not, therefore, include PPAs.
 name.  If the component is unknown, None is returned.
 
     >>> partner_archive = ubuntutest.getArchiveByComponent('partner')
-    >>> print partner_archive.title
+    >>> print partner_archive.displayname
     Partner Archive for Ubuntu Test
 
     >>> other_archive = ubuntutest.getArchiveByComponent('dodgycomponent')
@@ -927,13 +927,13 @@ the PRIMARY archive. This relationship is established so we can import
 their packages in the correct archive.
 
     >>> main_archive = ubuntutest.getArchiveByComponent('main')
-    >>> print main_archive.title
+    >>> print main_archive.displayname
     Primary Archive for Ubuntu Test
 
     >>> non_free_archive = ubuntutest.getArchiveByComponent('non-free')
-    >>> print non_free_archive.title
+    >>> print non_free_archive.displayname
     Primary Archive for Ubuntu Test
 
     >>> contrib_archive = ubuntutest.getArchiveByComponent('contrib')
-    >>> print contrib_archive.title
+    >>> print contrib_archive.displayname
     Primary Archive for Ubuntu Test
