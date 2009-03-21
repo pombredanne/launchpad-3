@@ -161,6 +161,7 @@ class ISourcePackagePocketFactory(Interface):
 
         :param package: An `ISourcePackagePocket`.
         :param pocket: A `DBItem` of `PackagePublishingPocket`.
+        :return: `ISourcePackagePocket`.
         """
 
 

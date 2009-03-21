@@ -340,6 +340,15 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
             getUtility(ISourcePackagePocketFactory).new(
                 package, PackagePublishingPocket.RELEASE))
 
+    def xfail_test_traverse_source_package_pocket(self):
+        # `traverse` resolves 'distro/series-pocket/package' to the official
+        # branch for 'pocket' on that package.
+        package = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.BACKPORTS
+        sourcepackagepocket = getUtility(ISourcePackagePocketFactory).new(
+            package, pocket)
+        self.assertTraverses(sourcepackagepocket.path, sourcepackagepocket)
+
     def test_no_such_distribution(self):
         # `traverse` raises `NoSuchProduct` error if the distribution doesn't
         # exist. That's because it can't tell the difference between the name
@@ -503,9 +512,6 @@ class TestGetByLPPath(TestCaseWithFactory):
         path = '~%s/%s' % (owner.name, product.name)
         self.assertRaises(
             InvalidNamespace, self.branch_lookup.getByLPPath, path)
-
-    # XXX: JonathanLange 2009-03-30 spec=package-branches bug=345739: Test for
-    # pocket-linked branch paths.
 
 
 class TestSourcePackagePocket(TestCaseWithFactory):

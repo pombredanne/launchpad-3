@@ -10,7 +10,6 @@ __all__ = []
 from zope.component import (
     adapter, adapts, getSiteManager, getUtility, queryMultiAdapter)
 from zope.interface import classProvides, implementer, implements
-from zope.security.proxy import removeSecurityProxy
 
 from storm.expr import Join
 from sqlobject import SQLObjectNotFound
@@ -45,6 +44,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
+from lazr.enum import DBItem
 from lazr.uri import InvalidURIError, URI
 
 
@@ -127,33 +127,42 @@ class DistributionTraversable(_BaseTraversable):
     adapts(IDistribution)
     implements(ILinkedBranchTraversable)
 
+    def _parseName(self, suite):
+        """Parse 'suite' into a series name and a pocket."""
+        return suite, PackagePublishingPocket.RELEASE
+
     def traverse(self, name, further_path):
         """See `ITraversable`."""
-        series = self.context.getSeries(name)
+        series_name, pocket = self._parseName(name)
+        series = self.context.getSeries(series_name)
         if series is None:
             raise NoSuchDistroSeries(name)
         # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
         # could also try to find a package and then return a reference to its
         # development focus.
-        return series
+        return series, pocket
 
 
-class DistroSeriesTraversable(_BaseTraversable):
+class DistroSeriesTraversable:
     """Linked branch traversable for distribution series.
 
     From here, you can traverse to a source package.
     """
 
-    adapts(IDistroSeries)
+    adapts(IDistroSeries, DBItem)
     implements(ILinkedBranchTraversable)
+
+    def __init__(self, distroseries, pocket):
+        self.distroseries = distroseries
+        self.pocket = pocket
 
     def traverse(self, name, further_path):
         """See `ITraversable`."""
-        sourcepackage = self.context.getSourcePackage(name)
+        sourcepackage = self.distroseries.getSourcePackage(name)
         if sourcepackage is None:
             raise NoSuchSourcePackageName(name)
         return getUtility(ISourcePackagePocketFactory).new(
-            sourcepackage, PackagePublishingPocket.RELEASE)
+            sourcepackage, self.pocket)
 
 
 class HasLinkedBranch:
@@ -207,7 +216,7 @@ class LinkedBranchTraverser:
         while segments:
             name = segments.pop(0)
             context = traversable.traverse(name, segments)
-            traversable = ILinkedBranchTraversable(context, None)
+            traversable = adapt(context, ILinkedBranchTraversable)
             if traversable is None:
                 break
         return context
