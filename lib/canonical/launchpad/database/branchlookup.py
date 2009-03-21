@@ -5,7 +5,10 @@
 __metaclass__ = type
 # This module doesn't export anything. If you want to lookup branches by name,
 # then get the IBranchLookup utility.
-__all__ = []
+__all__ = [
+    # XXX: temporary -- use a utility
+    'SourcePackagePocket',
+    ]
 
 from zope.component import (
     adapter, adapts, getSiteManager, getUtility, queryMultiAdapter)
@@ -210,6 +213,40 @@ class LinkedBranchTraverser:
             if traversable is None:
                 break
         return context
+
+
+class SourcePackagePocket:
+    """A source package and a pocket.
+
+    This exists to provide a consistent interface for the error condition of
+    users looking up official branches for the pocket of a source package
+    where no such linked branch exists. All of the other "no linked branch"
+    cases have a single object for which there is no linked branch -- this is
+    the equivalent for source packages.
+    """
+
+    def __init__(self, package, pocket):
+        self.package = package
+        self.pocket = pocket
+
+    @property
+    def displayname(self):
+        return self.path
+
+    @property
+    def path(self):
+        return '%s/%s/%s' % (
+            self.package.distribution.name,
+            self.suite,
+            self.package.name)
+
+    @property
+    def suite(self):
+        distroseries = self.package.distroseries.name
+        if self.pocket == PackagePublishingPocket.RELEASE:
+            return distroseries
+        else:
+            return '%s-%s' % (distroseries, self.pocket.name.lower())
 
 
 class BranchLookup:
