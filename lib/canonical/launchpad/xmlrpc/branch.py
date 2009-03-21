@@ -230,9 +230,10 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             # name. This lets people push new branches up to Launchpad using
             # lp: URL syntax.
             return self._getUniqueNameResultDict(strip_path)
-        # TODO: all of this is repetitive and dirty. Alternatives are directly
-        # raising faults (blech) or some automated way of reraising as faults,
-        # or just moving this code out.
+        # XXX: JonathanLange 2009-03-21: All of this is repetitive and thus
+        # error prone. Alternatives are directly raising faults from the model
+        # code(blech) or some automated way of reraising as faults or using a
+        # narrower range of faults (e.g. only one "NoSuch" fault).
         except InvalidBranchIdentifier, e:
             raise faults.InvalidBranchIdentifier(e.path)
         except InvalidProductName, e:
