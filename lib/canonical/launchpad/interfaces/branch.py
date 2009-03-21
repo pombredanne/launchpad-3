@@ -1328,6 +1328,7 @@ class IBranchCloud(Interface):
 def bazaar_identity(branch, associated_series, is_dev_focus):
     """Return the shortest lp: style branch identity."""
     lp_prefix = config.codehosting.bzr_lp_prefix
+
     # XXX: TimPenhey 2008-05-06 bug=227602: Since at this stage the launchpad
     # name resolution is not authenticated, we can't resolve series branches
     # that end up pointing to private branches, so don't show short names for
@@ -1336,8 +1337,9 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
         return lp_prefix + branch.unique_name
 
     use_series = None
-    # XXX: JonathanLange 2009-03-19 spec=package-branches: This should not
-    # dispatch on Branch.product is None
+    # XXX: JonathanLange 2009-03-21 spec=package-branches: This should
+    # probably delegate to IBranch.target. I would do it now if I could figure
+    # what all the optimization code is for.
     if branch.product is not None:
         if is_dev_focus:
             return lp_prefix + branch.product.name
