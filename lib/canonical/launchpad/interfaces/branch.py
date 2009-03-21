@@ -1361,6 +1361,8 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
         linked_branches = sourcepackage.linked_branches
         for pocket, linked_branch in linked_branches:
             if linked_branch == branch:
+                # XXX: extract 'get path to pocket of package' into a method
+                # on ISourcePackage.
                 package_pocket = getUtility(ISourcePackagePocketFactory).new(
                     sourcepackage, pocket)
                 return lp_prefix + package_pocket.path
