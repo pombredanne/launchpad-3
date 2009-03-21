@@ -146,15 +146,15 @@ The tags are sorted by popularity.
     Other Tags
     ----------
     unofficial-tag-05   2
-    unofficial-tag-12   1
-    unofficial-tag-11   1
-    unofficial-tag-10   1
-    unofficial-tag-09   1
-    unofficial-tag-08   1
-    unofficial-tag-07   1
-    unofficial-tag-06   1
-    unofficial-tag-04   1
+    unofficial-tag-01   1
+    unofficial-tag-02   1
     unofficial-tag-03   1
+    unofficial-tag-04   1
+    unofficial-tag-06   1
+    unofficial-tag-07   1
+    unofficial-tag-08   1
+    unofficial-tag-09   1
+    unofficial-tag-10   1
     <BLANKLINE>
 
 If no official tags are defined, the title of the unofficial ones is changed.
