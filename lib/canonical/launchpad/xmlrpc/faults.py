@@ -257,21 +257,7 @@ class NoLinkedBranch(LaunchpadFault):
         '%(object_name)s has no branch associated with it.')
 
     def __init__(self, component):
-        # XXX: JonathanLange 2009-03-21 spec=package-branches bug=345739: This
-        # should include the pocket in the error message and not have any
-        # special logic wrt package branches.
-        component = self._getComponent(component)
         LaunchpadFault.__init__(self, object_name=component.displayname)
-
-    def _getComponent(self, component):
-        try:
-            package = component[0]
-        except (TypeError, ForbiddenAttribute):
-            return component
-        if ISourcePackage.providedBy(package):
-            return package
-        else:
-            return component
 
 
 class NoSuchProductSeries(LaunchpadFault):
