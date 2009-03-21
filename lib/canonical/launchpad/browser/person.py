@@ -154,7 +154,6 @@ from canonical.launchpad.interfaces.message import (
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
-from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
@@ -174,7 +173,7 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
-from canonical.launchpad.browser.questiontarget import SearchQuestionsView
+from lp.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
 
@@ -199,6 +198,8 @@ from lazr.uri import URI, InvalidURIError
 from canonical.launchpad import _
 
 from canonical.lazr.utils import smartquote
+
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
@@ -833,33 +834,22 @@ class CommonMenuLinks:
         target = '+related-software'
         text = 'List assigned packages'
         summary = 'Packages assigned to %s' % self.context.browsername
-        return Link(target, text, summary, icon='packages')
+        return Link(target, text, summary, icon='package-source')
 
     def related_projects(self):
         target = '+related-software#projects'
         text = 'List related projects'
         summary = 'Projects %s is involved with' % self.context.browsername
-        return Link(target, text, summary, icon='packages')
+        return Link(target, text, summary, icon='product')
 
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
         target = "+activate-ppa"
-        text = 'Activate Personal Package Archive'
+        text = 'Create a new PPA'
         summary = ('Acknowledge terms of service for Launchpad Personal '
-                   'Package Archive.')
+                   'Package Archive and create a new PPA.')
         enabled = not bool(self.context.archive)
-        return Link(target, text, summary, icon='edit', enabled=enabled)
-
-    def show_ppa(self):
-        target = '+archive'
-        text = 'Personal Package Archive'
-        summary = 'Browse Personal Package Archive packages.'
-        archive = self.context.archive
-        enable_link = (archive is not None and
-                       check_permission('launchpad.View', archive))
-        if enable_link:
-            target = canonical_url(self.context.archive)
-        return Link(target, text, summary, icon='info', enabled=enable_link)
+        return Link(target, text, summary, icon='add', enabled=enabled)
 
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
@@ -871,7 +861,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
-             'administer', 'related_projects', 'activate_ppa', 'show_ppa']
+             'administer', 'related_projects', 'activate_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -984,43 +974,13 @@ class IPersonEditMenu(Interface):
 class IPersonRelatedSoftwareMenu(Interface):
     """A marker interface for the 'Related Software' navigation menu."""
 
-class PersonPPANavigationMenuMixin:
-    """A mixin that provides the PPA navigation menu link."""
 
-    def show_ppa(self):
-        """Show the link to a Personal Package Archive.
-
-        The person's archive link changes depending on the status of the
-        archive and the privileges of the viewer.
-        """
-        archive = self.context.archive
-        has_archive = archive is not None
-        user_can_edit_archive = check_permission('launchpad.Edit',
-                                                 self.context)
-
-        text = 'Personal Package Archive'
-        summary = 'Browse Personal Package Archive packages.'
-        if has_archive:
-            target = canonical_url(archive)
-            enable_link = check_permission('launchpad.View', archive)
-        elif user_can_edit_archive:
-            summary = 'Activate Personal Package Archive'
-            target = '+activate-ppa'
-            enable_link = True
-        else:
-            target = '+archive'
-            enable_link = False
-
-        return Link(target, text, summary, icon='info', enabled=enable_link)
-
-
-class PersonOverviewNavigationMenu(
-    NavigationMenu, PersonPPANavigationMenuMixin):
+class PersonOverviewNavigationMenu(NavigationMenu):
     """The top-level menu of actions a Person may take."""
 
     usedfor = IPerson
     facet = 'overview'
-    links = ('profile', 'related_software', 'karma', 'show_ppa')
+    links = ('profile', 'related_software', 'karma')
 
     def __init__(self, context):
         context = IPerson(context)
@@ -1119,7 +1079,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editlanguages', 'map', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
              'reassign', 'common_packages', 'related_projects',
-             'activate_ppa', 'show_ppa']
+             'activate_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1145,7 +1105,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def members(self):
         target = '+members'
         text = 'Show all members'
-        return Link(target, text, icon='people')
+        return Link(target, text, icon='team')
 
     @enabled_with_permission('launchpad.Edit')
     def received_invitations(self):
@@ -1186,7 +1146,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def mugshots(self):
         target = '+mugshots'
         text = 'Show member photos'
-        return Link(target, text, icon='people')
+        return Link(target, text, icon='team')
 
     def polls(self):
         target = '+polls'
@@ -1206,7 +1166,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = (
             'The address Launchpad uses to contact %s' %
             self.context.browsername)
-        return Link(target, text, summary, icon='mail')
+        return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
@@ -1248,13 +1208,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewNavigationMenu(
-    NavigationMenu, PersonPPANavigationMenuMixin):
+class TeamOverviewNavigationMenu(NavigationMenu):
     """A top-level menu for navigation within a Team."""
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['profile', 'polls', 'members', 'show_ppa']
+    links = ['profile', 'polls', 'members']
 
     def profile(self):
         target = ''
@@ -4700,7 +4659,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
         """The number of project owned or driven by this person."""
         return self._related_projects().count()
 
-    @property
+    @cachedproperty
+    def has_more_related_projects(self):
+        """Does this person have more than five related projects?"""
+        return self.related_projects_count > 5
+
+    @cachedproperty
     def too_many_related_projects_found(self):
         """Does the user have more related projects than can be displayed?"""
         return self.related_projects_count > self.max_results_to_display

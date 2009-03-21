@@ -45,9 +45,12 @@ But the basic attributes are still available.
 Because the base class is abstract, you can't pass it to
 Bug.addChange().
 
-    >>> example_product = factory.makeProduct(owner=example_person)
+    >>> example_product = factory.makeProduct(
+    ...     owner=example_person, name="heart-of-gold")
     >>> example_bug = factory.makeBug(
-    ...     product=example_product, owner=example_person)
+    ...     product=example_product, owner=example_person,
+    ...     title="Reality is on the blink again",
+    ...     description="I'm tired of thinking up funny strings for tests")
     >>> example_bug.addChange(base_instance)
     Traceback (most recent call last):
       ...
@@ -55,8 +58,6 @@ Bug.addChange().
 
 We'll create a test class that actually implements the methods we need.
 
-    >>> from canonical.launchpad.interfaces.bugactivity import (
-    ...     IBugActivitySet)
     >>> from canonical.launchpad.mailnotification import (
     ...     BugNotificationRecipients)
 
@@ -76,7 +77,7 @@ We'll create a test class that actually implements the methods we need.
     ...         'text': 'Some message text',
     ...         }
     ...
-    ...     recipients = [
+    ...     recipient_persons = [
     ...         example_person_2,
     ...         ]
     ...
@@ -85,7 +86,7 @@ We'll create a test class that actually implements the methods we need.
     ...
     ...     def getBugNotificationRecipients(self):
     ...         recipients = BugNotificationRecipients()
-    ...         for recipient in self.recipients:
+    ...         for recipient in self.recipient_persons:
     ...             recipients.addDirectSubscriber(recipient)
     ...         return recipients
     ...
@@ -173,3 +174,368 @@ notification you'll get an error.
     Traceback (most recent call last):
       ...
     AssertionError: notification_data must include a `text` value.
+
+
+== BugChange subclasses ==
+
+=== Getting the right bug change class ===
+
+Given that we know what's changing and the name of the field that is
+being changed, we can find a suitable IBugChange implementation to
+help us describe the change.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     get_bug_change_class)
+
+If get_bug_change_class() is asked for a BugChange for an object or
+field that it doesn't know about, it will raise a NoBugChangeFoundError.
+
+    >>> get_bug_change_class(object(), 'fooix')
+    Traceback (most recent call last):
+      ...
+    NoBugChangeFoundError: Unable to find a suitable BugChange for field
+    'fooix' on object <object object at ...>
+
+For fields it knows about, it will return a more suitable class.
+
+    >>> get_bug_change_class(example_bug, 'title')
+    <class '...BugTitleChange'>
+
+get_bug_change_class will also work for BugTasks.
+
+    >>> get_bug_change_class(example_bug.bugtasks[0], 'importance')
+    <class '...BugTaskAttributeChange'>
+
+See component/ftests/test_bugchange.py for some sanity checks.
+
+
+=== AttributeChange ===
+
+The AttributeChange class offers basic functionality for dealing with
+bug attribute changes.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     AttributeChange)
+
+    >>> simple_change = AttributeChange(
+    ...     when=nowish, person=example_person, what_changed='title',
+    ...     old_value=example_bug.title, new_value='Spam')
+
+In its getBugActivity() method AttributeChange merely returns the
+field name, old value and new value as passed to its __init__()
+method.
+
+    >>> activity_data = simple_change.getBugActivity()
+    >>> print pretty(activity_data)
+    {'newvalue': 'Spam',
+     'oldvalue': u'Reality is on the blink again',
+     'whatchanged': 'title'}
+
+
+=== BugDescriptionChange ===
+
+This describes a change to the description of a
+bug. getBugNotification() returns a formatted description of the
+change.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugDescriptionChange)
+
+    >>> bug_desc_change = BugDescriptionChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='description', old_value=example_bug.description,
+    ...     new_value='Well, maybe not')
+    >>> print bug_desc_change.getBugNotification()['text']
+    ** Description changed:
+    <BLANKLINE>
+    - I'm tired of thinking up funny strings for tests
+    + Well, maybe not
+
+
+=== BugTitleChange ===
+
+This, surprisingly, describes a title change for a bug. Again,
+getBugNotification() returns a specially formatted description of
+what's changed.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTitleChange)
+
+    >>> bug_title_change = BugTitleChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='title', old_value=example_bug.title,
+    ...     new_value='Spam')
+    >>> print bug_title_change.getBugNotification()['text']
+    ** Summary changed:
+    <BLANKLINE>
+    - Reality is on the blink again
+    + Spam
+
+BugTitleChange mutates the `what_changed` field and will return
+'summary' rather than 'title'. This is to maintain naming consistency
+within the UI.
+
+    >>> print bug_title_change.getBugActivity()['whatchanged']
+    summary
+
+
+=== BugVisibilityChange ===
+
+BugVisibilityChange is used to represent a change in a Bug's `private`
+attribute.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugVisibilityChange)
+
+    >>> bug_visibility_change = BugVisibilityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='private', old_value=example_bug.private,
+    ...     new_value=True)
+
+IBug.private is a boolean but to make it more readable we express it in
+activity and notification records as a string, where True = 'Private'
+and False = 'Public'. We also refer to it as "visibility" rather than
+privacy.
+
+    >>> print pretty(bug_visibility_change.getBugActivity())
+    {'newvalue': 'private',
+     'oldvalue': 'public',
+     'whatchanged': 'visibility'}
+
+We also use the 'Private', 'Public' and 'Visibility' terms in the
+notification text.
+
+    >>> print bug_visibility_change.getBugNotification()['text']
+    ** Visibility changed to: Private
+
+If we reverse the changes we'll see the opposite values in the
+notification and activity entries.
+
+    >>> bug_visibility_change = BugVisibilityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='private', old_value=True, new_value=False)
+    >>> print pretty(bug_visibility_change.getBugActivity())
+    {'newvalue': 'public',
+     'oldvalue': 'private',
+     'whatchanged': 'visibility'}
+
+    >>> print bug_visibility_change.getBugNotification()['text']
+    ** Visibility changed to: Public
+
+
+== BugTagsChange ==
+
+BugTagsChange is used to represent a change in a Bug's tag list.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTagsChange)
+
+    >>> tags_change = BugTagsChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='tags',
+    ...     old_value=[u'first-tag', u'second-tag', u'third-tag'],
+    ...     new_value=[u'second-tag', u'third-tag', u'zillionth-tag'])
+
+This change is expressed in the activity entry in the same way as any
+other attribute change. The list of tags is converted to a
+space-separated string for display.
+
+    >>> print pretty(tags_change.getBugActivity())
+    {'newvalue': u'second-tag third-tag zillionth-tag',
+     'oldvalue': u'first-tag second-tag third-tag',
+     'whatchanged': 'tags'}
+
+Addtions and removals are expressed separately in the notification.
+
+    >>> print tags_change.getBugNotification()['text']
+    ** Tags added: zillionth-tag
+    ** Tags removed: first-tag
+
+
+=== BugSecurityChange ===
+
+BugSecurityChange is used to represent a change in a Bug's
+`security_related` attribute.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugSecurityChange)
+
+    >>> bug_security_change = BugSecurityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=False, new_value=True)
+
+IBug.security_related is a boolean but to make it more readable we
+express it in activity and notification records as a short phrase.
+
+Marking a bug as security related causes one set of terms/phrases to
+be used.
+
+    >>> print pretty(bug_security_change.getBugActivity())
+    {'newvalue': 'yes',
+     'oldvalue': 'no',
+     'whatchanged': 'security vulnerability'}
+
+    >>> print bug_security_change.getBugNotification()['text']
+    ** This bug has been flagged as a security vulnerability
+
+Going the other way the phrases are similar.
+
+    >>> bug_security_change = BugSecurityChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=True, new_value=False)
+
+    >>> print pretty(bug_security_change.getBugActivity())
+    {'newvalue': 'no',
+     'oldvalue': 'yes',
+     'whatchanged': 'security vulnerability'}
+
+    >>> print bug_security_change.getBugNotification()['text']
+    ** This bug is no longer flagged as a security vulnerability
+
+
+=== CveLinkedToBug / CveUnlinkedFromBug ===
+
+These describe the linking or unlinking of a CVE to a bug.
+
+    >>> from canonical.launchpad.interfaces.cve import ICveSet
+    >>> cve = getUtility(ICveSet)['1999-8979']
+
+getBugNotification() returns a formatted description of the change
+when a CVE is linked to a bug.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     CveLinkedToBug, CveUnlinkedFromBug)
+
+    >>> bug_cve_linked = CveLinkedToBug(
+    ...     when=nowish, person=example_person, cve=cve)
+
+    >>> print pretty(bug_cve_linked.getBugActivity())
+    {'newvalue': u'1999-8979',
+     'whatchanged': 'cve linked'}
+
+    >>> print bug_cve_linked.getBugNotification()['text']
+    ** CVE added: http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979
+
+And when a CVE is unlinked from a bug.
+
+    >>> bug_cve_unlinked = CveUnlinkedFromBug(
+    ...     when=nowish, person=example_person, cve=cve)
+
+    >>> print pretty(bug_cve_unlinked.getBugActivity())
+    {'oldvalue': u'1999-8979',
+     'whatchanged': 'cve unlinked'}
+
+    >>> print bug_cve_unlinked.getBugNotification()['text']
+    ** CVE removed: http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979
+
+
+== BugAttachmentChange ==
+
+BugAttachmentChange is used to handle the addition and removal of
+attachments from a bug.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugAttachmentChange)
+
+You can add an attachment...
+
+    >>> attachment = factory.makeBugAttachment(
+    ...     description='sample-attachment')
+    >>> attachment_change = BugAttachmentChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=None, new_value=attachment)
+
+    >>> print pretty(attachment_change.getBugActivity())
+    {'newvalue': u'sample-attachment http://...',
+     'oldvalue': None,
+     'whatchanged': 'attachment added'}
+
+    >>> print attachment_change.getBugNotification()['text']
+    ** Attachment added: "sample-attachment"
+       http...
+
+Or remove one.
+
+    >>> attachment_change = BugAttachmentChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='security_related',
+    ...     old_value=attachment, new_value=None)
+
+    >>> print pretty(attachment_change.getBugActivity())
+    {'newvalue': None,
+     'oldvalue': u'sample-attachment http://...',
+     'whatchanged': 'attachment removed'}
+
+    >>> print attachment_change.getBugNotification()['text']
+    ** Attachment removed: "sample-attachment"
+       http...
+
+
+== BugTaskAttributeChange ==
+
+BugTaskAttributeChange is a generic BugChange that can be used to
+represent a change in the attributes of one of a Bug's BugTasks.
+
+    >>> from canonical.launchpad.interfaces.bugtask import (
+    ...     BugTaskStatus, BugTaskImportance)
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTaskAttributeChange)
+
+BugTaskAttributeChange takes an instance of BugTask. It uses this to
+work out how to describe to the user which BugTask's attributes have
+changed.
+
+    >>> example_bug_task = example_bug.bugtasks[0]
+    >>> task_attribute_change = BugTaskAttributeChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='status',
+    ...     old_value=BugTaskStatus.NEW,
+    ...     new_value=BugTaskStatus.FIXRELEASED,
+    ...     bug_task=example_bug_task)
+
+Several types of attribute change can be handled by
+BugTaskAttributeChange.
+
+
+=== Status changes ===
+
+Status changes use a BugTaskStatus's `title` attribute to describe to
+the user what has changed.
+
+    >>> status_change = BugTaskAttributeChange(
+    ...     bug_task=example_bug_task, when=nowish, person=example_person,
+    ...     what_changed='status', old_value=BugTaskStatus.NEW,
+    ...     new_value=BugTaskStatus.FIXRELEASED)
+    >>> print pretty(status_change.getBugActivity())
+    {'newvalue': 'Fix Released',
+     'oldvalue': 'New',
+     'whatchanged': u'heart-of-gold: status'}
+
+    >>> notification_text = status_change.getBugNotification()['text']
+    >>> print notification_text #doctest: -NORMALIZE_WHITESPACE
+    ** Changed in: heart-of-gold
+           Status: New => Fix Released
+
+
+=== Importance changes ===
+
+Importance changes use a BugTaskImportance's `title` attribute to describe to
+the user what has changed.
+
+    >>> importance_change = BugTaskAttributeChange(
+    ...     bug_task=example_bug_task, when=nowish, person=example_person,
+    ...     what_changed='importance',
+    ...     old_value=BugTaskImportance.UNDECIDED,
+    ...     new_value=BugTaskImportance.CRITICAL)
+    >>> print pretty(importance_change.getBugActivity())
+    {'newvalue': 'Critical',
+     'oldvalue': 'Undecided',
+     'whatchanged': u'heart-of-gold: importance'}
+
+    >>> notification_text = importance_change.getBugNotification()['text']
+    >>> print notification_text #doctest: -NORMALIZE_WHITESPACE
+    ** Changed in: heart-of-gold
+       Importance: Undecided => Critical

@@ -49,10 +49,10 @@ class ArchiveDependency(SQLBase):
     def title(self):
         """See `IArchiveDependency`."""
         if self.dependency.is_ppa:
-            return self.dependency.title
+            return self.dependency.displayname
 
         pocket_title = "%s - %s" % (
-            self.dependency.title, self.pocket.name)
+            self.dependency.displayname, self.pocket.name)
 
         if self.component is None:
             return pocket_title

@@ -69,6 +69,7 @@ We also have image:icon for KarmaCategory:
     <img ... title="Answer Tracker" src="/@@/question" />
     <img ... title="Bazaar Branches" src="/@@/branch" />
     <img ... title="Bug Management" src="/@@/bug" />
+    <img ... title="Soyuz" src="/@@/package-source" />
     <img ... title="Specification Tracking" src="/@@/blueprint" />
     <img ... title="Translations in Rosetta" src="/@@/translation" />
 
@@ -78,6 +79,36 @@ We also have an icon for bugs.
     >>> bug = getUtility(IBugSet).get(1)
     >>> print test_tales("bug/image:icon", bug=bug)
     <img ... src="/@@/bug" />
+
+Icons for each type (purpose) of archive we support. Starting with
+personal package archives (PPAs).
+
+    >>> print test_tales("ppa/image:icon", ppa=sabdfl.archive)
+    <img ... src="/@@/package-source" />
+
+Then distribution main archives (primary and partner).
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...      IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> [primary, partner] = ubuntu.all_distro_archives
+
+    >>> print test_tales("archive/image:icon", archive=primary)
+    <img ... src="/@@/distribution" />
+
+    >>> print test_tales("archive/image:icon", archive=partner)
+    <img ... src="/@@/distribution" />
+
+And finally Copy archives.
+
+    >>> from canonical.launchpad.interfaces.archive import (
+    ...     ArchivePurpose, IArchiveSet)
+    >>> copy = getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.COPY,
+    ...     distribution=ubuntu, name='rebuild')
+
+    >>> print test_tales("archive/image:icon", archive=copy)
+    <img ... src="/@@/distribution" />
 
 
 == The fmt: namespace to get strings ==
@@ -145,6 +176,13 @@ to simulate a browser request -- that's why we login() here.
     # Undo the custom setup we did above.
     >>> login(ANONYMOUS)
 
+Persons and teams can also specify an alternate rootsite to fmt:url.
+
+    >>> print test_tales("person/fmt:url:bugs", person=sabdfl)
+    http://bugs.launchpad.dev/~sabdfl
+
+    >>> print test_tales("person/fmt:url:feeds", person=sabdfl)
+    http://feeds.launchpad.dev/~sabdfl
 
 == The fmt: namespace to get links ==
 
@@ -171,14 +209,17 @@ For a person or team, fmt:link gives us a link to that person's page,
 containing the person name and an icon.
 
     >>> test_tales("person/fmt:link", person=sabdfl)
-    u'<a ...><img ... src="/@@/person" />&nbsp;Mark Shuttleworth</a>'
+    u'<a href="http://.../~sabdfl" style="padding-left: 18px;
+      background: url(/@@/person) center left no-repeat;">Mark Shuttleworth</a>'
 
     >>> test_tales("person/fmt:link", person=matsubara)
-    u'<a ...><img ... src="/@@/person-inactive" />&nbsp;Diogo Matsubara</a>'
+    u'<a href="http://launchpad.dev/~matsubara" style="padding-left: 18px;
+      background: url(/@@/person-inactive) center left no-repeat;">Diogo Matsubara</a>'
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> test_tales("person/fmt:link", person=ubuntu_team)
-    u'<a ...><img ... src="/@@/team" />&nbsp;Ubuntu Team</a>'
+    u'<a href="http://launchpad.dev/~ubuntu-team" style="padding-left: 18px;
+      background: url(/@@/team) center left no-repeat;">Ubuntu Team</a>'
 
 The person's displayname is escaped to prevent markup from being
 interpreted by the browser. For example, a script added to Sample
@@ -189,7 +230,7 @@ Person's displayname will be escaped; averting a XSS vulnerability.
     >>> sample_person.displayname = (
     ...     "Sample Person<br/><script>alert('XSS')</script>")
     >>> test_tales("person/fmt:link", person=sample_person)
-    u'<a ...><img ... />&nbsp;Sample
+    u'<a href=".../~name12"...>Sample
       Person&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
 The fmt:link formatter takes an additional view_name component to extend
@@ -197,15 +238,16 @@ the link:
 
     >>> login(ANONYMOUS, LaunchpadTestRequest())
     >>> test_tales("person/fmt:link/+edit", person=matsubara)
-    u'<a href=".../~matsubara/+edit">...'
+    u'<a href=".../~matsubara/+edit"...>...'
 
-If you are on feeds.launchpad.net, you need to specify the rootsite, so
+If you are on bugs.launchpad.net, you need to specify the rootsite, so
 that the links and images are pointing at the right hostname.
 
     >>> test_tales("person/fmt:link:mainsite/+edit", person=matsubara)
-    u'<a href="http://launchpad.dev/~matsubara/+edit"><img...src="http://launchpad.dev/@@/person-inactive"...'
+    u'<a href="http://launchpad.dev/~matsubara/+edit"...>...'
     >>> test_tales("person/fmt:link:bugs/+edit", person=matsubara)
-    u'<a href="http://bugs.launchpad.dev/~matsubara/+edit"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
+    u'<a href="http://bugs.launchpad.dev/~matsubara/+edit"...
+      url(http://bugs.launchpad.dev/@@/person-inactive)...>Diogo Matsubara</a>'
 
 The fmt:local-time formatter will return the local time for that person.
 If the person has no time_zone specified, we use UTC.
@@ -219,6 +261,15 @@ If the person has no time_zone specified, we use UTC.
     None
     >>> test_tales("person/fmt:local-time", person=sabdfl)
     '... UTC'
+
+The fmt:icon_url formatter will return the URL for the person's or
+team's icon.
+
+    >>> test_tales("person/fmt:icon_url", person=sabdfl)
+    '/@@/person'
+
+    >>> test_tales("team/fmt:icon_url", team=ubuntu_team)
+    '/@@/team'
 
 
 === Branches ===
@@ -1113,7 +1164,7 @@ Foo Bar is an administrator so he can see all.
     >>> login('foo.bar@canonical.com')
     >>> myteam = getUtility(IPersonSet).getByName('myteam')
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<a ...><img ... src="/@@/team" />&nbsp;My Team</a>'
+    u'<a ...url(/@@/team)...>My Team</a>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'My Team'
@@ -1125,7 +1176,7 @@ Owner is a member of myteam so he can see all.
 
     >>> login('owner@canonical.com')
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<a ...><img ... src="/@@/team" />&nbsp;My Team</a>'
+    u'<a ...url(/@@/team)...>My Team</a>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'My Team'
@@ -1138,7 +1189,7 @@ information about myteam is hidden.
 
     >>> login('no-priv@canonical.com')
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<img ... src="/@@/team" />&nbsp;&lt;hidden&gt;'
+    u'<span ...url(/@@/team)...>&lt;hidden&gt;</span>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'<hidden>'
@@ -1150,7 +1201,7 @@ The anonymous user is not allowed to see private team details.
 
     >>> login(ANONYMOUS)
     >>> test_tales("team/fmt:link", team=myteam)
-    u'<img ... src="/@@/team" />&nbsp;&lt;hidden&gt;'
+    u'<span ...url(/@@/team)...>&lt;hidden&gt;</span>'
 
     >>> test_tales("team/fmt:displayname", team=myteam)
     u'<hidden>'

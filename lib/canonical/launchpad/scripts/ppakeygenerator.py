@@ -25,7 +25,8 @@ class PPAKeyGenerator(LaunchpadCronScript):
 
     def generateKey(self, archive):
         """Generate a signing key for the given archive."""
-        self.logger.info("Generating signing key for %s" % archive.title)
+        self.logger.info(
+            "Generating signing key for %s" % archive.displayname)
         archive_signing_key = IArchiveSigningKey(archive)
         archive_signing_key.generateSigningKey()
         self.logger.info("Key %s" % archive.signing_key.fingerprint)
@@ -45,7 +46,7 @@ class PPAKeyGenerator(LaunchpadCronScript):
             if owner.archive.signing_key is not None:
                 raise LaunchpadScriptFailure(
                     "%s already has a signing_key (%s)"
-                    % (owner.archive.title,
+                    % (owner.archive.displayname,
                        owner.archive.signing_key.fingerprint))
             archives = [owner.archive]
         else:

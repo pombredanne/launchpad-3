@@ -71,7 +71,7 @@ class HugeVocabularyJSONView:
             result.append(entry)
 
         if config.devmode:
-            if len(result) < batch_size and len(result) != 0:
+            if len(result) < 5 and len(result) != 0:
                 result.append(dict(
                     value='bad-value-for-testing-errors-on-dev-system',
                     title='Bad Value for Testing on Dev System',

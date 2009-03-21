@@ -1025,6 +1025,10 @@ class BuildSet:
         from canonical.launchpad.database.sourcepackagerelease import (
             SourcePackageRelease)
 
+        # Prefetching is not needed if the original result set is empty.
+        if len(results) == 0:
+            return
+
         build_ids = [build.id for build in results]
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (

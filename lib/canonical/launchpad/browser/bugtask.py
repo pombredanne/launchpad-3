@@ -585,7 +585,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         # will be prevented from calling methods on the main bug after
         # they unsubscribe from it!
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(self.user)
-        self.context.bug.unsubscribe(self.user)
+        self.context.bug.unsubscribe(self.user, self.user)
 
         self.request.response.addNotification(
             structured(
@@ -609,7 +609,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         # We'll also unsubscribe the other user from dupes of this bug,
         # otherwise they'll keep getting this bug's mail.
-        self.context.bug.unsubscribe(user)
+        self.context.bug.unsubscribe(user, self.user)
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(user)
         self.request.response.addNotification(
             structured(
@@ -696,15 +696,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             # context.
             if IUpstreamBugTask.providedBy(fake_task):
                 # Create a real upstream task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    product=fake_task.product)
+                real_task = fake_task.bug.addTask(
+                    getUtility(ILaunchBag).user, fake_task.product)
             elif IDistroBugTask.providedBy(fake_task):
                 # Create a real distro bug task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    distribution=fake_task.distribution,
-                    sourcepackagename=fake_task.sourcepackagename)
+                real_task = fake_task.bug.addTask(
+                    getUtility(ILaunchBag).user, fake_task.target)
             elif IDistroSeriesBugTask.providedBy(fake_task):
                 self._nominateBug(fake_task.distroseries)
                 return

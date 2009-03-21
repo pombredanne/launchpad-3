@@ -208,8 +208,16 @@ class TestPublication:
 
     def handleException(self, object, request, exc_info, retry_allowed=1):
         """Prints the exception."""
-        traceback.print_exception(*exc_info)
-        exc_info = None
+        # Reproduce the behavior of ZopePublication by looking up a view
+        # for this exception.
+        exception = exc_info[1]
+        view = queryMultiAdapter((exception, request), name='index.html')
+        if view is not None:
+            exc_info = None
+            request.response.reset()
+            request.response.setResult(view())
+        else:
+            traceback.print_exception(*exc_info)
 
     def endRequest(self, request, ob):
         """Ends the interaction."""
@@ -228,7 +236,7 @@ class CookbookWebServiceTestPublication(WebServiceTestPublication):
 class WebServiceCaller:
     """A class for making calls to lazr.restful web services."""
 
-    def __init__(self, handle_errors=False, http_caller=None,
+    def __init__(self, handle_errors=True, http_caller=None,
                  *args, **kwargs):
         """Create a WebServiceCaller.
         :param handle_errors: Should errors raise exception or be handled by
@@ -430,10 +438,16 @@ class CookbookWebServiceCaller(WebServiceCaller):
 
     base_url = "https://cookbooks.dev/"
 
-    def __init__(self, handle_errors=False):
+    def __init__(self, handle_errors=True):
         super(CookbookWebServiceCaller, self).__init__(
             handle_errors, CookbookWebServiceHTTPCaller())
 
 
+class CookbookWebServiceAjaxCaller(CookbookWebServiceCaller):
+    """A caller that simulates an Ajax client like a web browser."""
 
-
+    def apiVersion(self):
+        """Introduce the Ajax path override to the URI prefix."""
+        config = getUtility(IWebServiceConfiguration)
+        return (config.path_override
+                + '/' + config.service_version_uri_prefix)

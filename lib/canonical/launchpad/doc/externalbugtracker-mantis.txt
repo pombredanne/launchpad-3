@@ -57,9 +57,11 @@ Tracker:
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
 
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, '1550', sample_person)
+    ...     example_bug_tracker, '1550',
+    ...     getUtility(ILaunchpadCelebrities).janitor)
 
 
 We use a specially hacked Mantis instance that doesn't do network

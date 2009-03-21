@@ -1,0 +1,77 @@
+= Introduction =
+
+Some standard behavior is defined by the web service itself, not by
+the individual resources.
+
+    >>> from canonical.lazr.testing.webservice import (
+    ...     CookbookWebServiceCaller)
+    >>> webservice = CookbookWebServiceCaller()
+
+
+== Nonexistent resources ==
+
+An attempt to access a nonexistent resource yields a 404 error.
+
+    >>> print webservice.get("/no-such-resource")
+    HTTP/1.1 404 Not Found
+    ...
+
+An attempt to access an existing resource without versioning the URL
+yields a 404 error.
+
+    >>> print webservice.get("/cookbooks", api_version="/")
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get("/", api_version="/")
+    HTTP/1.1 404 Not Found
+    ...
+
+
+== Nonexistent methods ==
+
+An attempt to use an unsupported or nonexistent HTTP method on a
+resource yields a 405 error.
+
+    >>> print webservice("/", method="COPY")
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+
+    >>> print webservice.delete("/cookbooks")
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET POST
+    ...
+
+    >>> print webservice.delete("/recipes/2")
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET PUT PATCH
+    ...
+
+    >>> from urllib import quote
+    >>> print webservice.delete(quote("/cookbooks/The Joy of Cooking"))
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET POST PUT PATCH
+    ...
+
+
+== Inappropriate media types ==
+
+An attempt to PATCH a document with unsupported media type to a
+resource yields a 415 error.
+
+    >>> print webservice.patch("/recipes/1", 'text/plain', "Foo")
+    HTTP/1.1 415 Unsupported Media Type
+    ...
+
+The only supported media types are ones that begin with 'application/json'.
+
+    >>> print webservice.patch("/recipes/1", 'application/json', "{}")
+    HTTP/1.1 209 Content Returned
+    ...
+
+    >>> print webservice.patch(
+    ...     "/recipes/1", 'application/json; charset=UTF-8', "{}")
+    HTTP/1.1 209 Content Returned
+    ...
+

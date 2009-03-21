@@ -29,7 +29,10 @@
       is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
   "
 >
-  <head>
+  <head tal:define="yui string:${icingroot}/yui/3.0.0pr2/build;
+                lazr_js string:${icingroot}/lazr/build;
+                lp_js string:${icingroot}/build"
+  >
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <tal:atomfeeds condition="view/feed_links | nothing">
       <tal:loop repeat="link view/feed_links">
@@ -104,10 +107,7 @@
         string:${icingroot}/lazr/build/activator/assets/skins/sam/activator-skin.css"
         />
 
-    <tal:devmode define="yui string:${icingroot}/yui/3.0.0pr2/build;
-                         lazr_js string:${icingroot}/lazr/build;
-                         lp_js string:${icingroot}/build"
-                    condition="devmode">
+    <tal:devmode condition="devmode">
       <script type="text/javascript"
               tal:attributes="src string:${yui}/yui/yui.js"></script>
       <script type="text/javascript"
@@ -142,6 +142,16 @@
               tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${yui}/cookie/cookie.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget-position.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget-stack.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/widget/widget-stdmod.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${yui}/overlay/overlay.js"></script>
 
       <script type="text/javascript"
               tal:attributes="src string:${icingroot}/MochiKit.js"></script>
@@ -157,6 +167,8 @@
               tal:attributes="src string:${lazr_js}/activator/activator.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/picker/picker.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/formoverlay/formoverlay.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/lp/lp.js"></script>
       <script type="text/javascript"
