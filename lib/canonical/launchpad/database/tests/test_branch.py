@@ -33,16 +33,18 @@ from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
-    login, login_person, logout, syncUpdate)
+    ANONYMOUS, login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType, CannotDeleteBranch,
-    CodeReviewNotificationLevel, CreateBugParams, IBugSet,
-    ILaunchpadCelebrities, IPersonSet, IProductSet, ISpecificationSet,
-    InvalidBranchMergeProposal, SpecificationDefinitionStatus)
+    CodeReviewNotificationLevel, CreateBugParams, IBugSet, IPersonSet,
+    IProductSet, ISpecificationSet, InvalidBranchMergeProposal,
+    SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING)
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchnamespace import IBranchNamespaceSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
@@ -347,6 +349,28 @@ class TestBzrIdentity(TestCaseWithFactory):
         series = self.factory.makeProductSeries(product=product)
         series.user_branch = branch
         self.assertBzrIdentity(branch, product.name)
+
+    def test_junk_branch_always_unique_name(self):
+        # For junk branches, the bzr identity is always based on the unique
+        # name of the branch, even if it's linked to a product, product series
+        # or whatever.
+        branch = self.factory.makePersonalBranch()
+        product = self.factory.makeProduct()
+        removeSecurityProxy(product).development_focus.user_branch = branch
+        self.assertBzrIdentity(branch, branch.unique_name)
+
+    def disabled_test_linked_to_package_release(self):
+        # If a branch is linked to the release pocket of a package, then the
+        # bzr identity is the path to that package.
+        branch = self.factory.makePackageBranch()
+        registrant = getUtility(
+            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        login_person(registrant)
+        branch.sourcepackage.setBranch(
+            PackagePublishingPocket.RELEASE, branch, registrant)
+        logout()
+        login(ANONYMOUS)
+        self.assertBzrIdentity(branch, branch.sourcepackage.path)
 
 
 class TestBranchDeletion(TestCaseWithFactory):
