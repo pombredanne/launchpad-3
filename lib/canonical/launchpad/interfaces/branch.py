@@ -82,7 +82,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchlookup import (
+    IBranchLookup, ISourcePackagePocketFactory)
 from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
@@ -1345,23 +1346,33 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
     if branch.private:
         return lp_prefix + branch.unique_name
 
-    # If there are no associated series, then use the unique name.
-    associated_series = list(associated_series)
-    if [] == associated_series:
-        return lp_prefix + branch.unique_name
-
     use_series = None
     # XXX: JonathanLange 2009-03-19 spec=package-branches: This should not
     # dispatch on Branch.product is None
     if branch.product is not None:
         if is_dev_focus:
             return lp_prefix + branch.product.name
+
+        # If there are no associated series, then use the unique name.
+        associated_series = list(associated_series)
+        if [] == associated_series:
+            return lp_prefix + branch.unique_name
+
         use_series = sorted(
             associated_series, key=attrgetter('datecreated'))[-1]
         return "%(prefix)s%(product)s/%(series)s" % {
             'prefix': lp_prefix,
             'product': use_series.product.name,
             'series': use_series.name}
+
+    if branch.sourcepackage is not None:
+        sourcepackage = branch.sourcepackage
+        linked_branches = sourcepackage.linked_branches
+        for pocket, linked_branch in linked_branches:
+            if linked_branch == branch:
+                package_pocket = getUtility(ISourcePackagePocketFactory).new(
+                    sourcepackage, pocket)
+                return lp_prefix + package_pocket.path
 
     return lp_prefix + branch.unique_name
 

@@ -359,7 +359,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         removeSecurityProxy(product).development_focus.user_branch = branch
         self.assertBzrIdentity(branch, branch.unique_name)
 
-    def disabled_test_linked_to_package_release(self):
+    def test_linked_to_package_release(self):
         # If a branch is linked to the release pocket of a package, then the
         # bzr identity is the path to that package.
         branch = self.factory.makePackageBranch()
