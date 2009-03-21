@@ -1358,15 +1358,12 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
             return lp_prefix + branch.product.name
         use_series = sorted(
             associated_series, key=attrgetter('datecreated'))[-1]
-
-    # If there is no series, use the prefix with the unique name.
-    if use_series is None:
-        return lp_prefix + branch.unique_name
-    else:
         return "%(prefix)s%(product)s/%(series)s" % {
             'prefix': lp_prefix,
             'product': use_series.product.name,
             'series': use_series.name}
+
+    return lp_prefix + branch.unique_name
 
 
 def user_has_special_branch_access(user):
