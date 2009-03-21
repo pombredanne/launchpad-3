@@ -994,10 +994,12 @@ be automatically reverted in a GET request.
     >>> from canonical.launchpad.interfaces import IMasterStore
     >>> login('foo.bar@canonical.com')
     >>> txn = transaction.begin()
-    >>> foo_bar = IMasterStore(Person).find(
-    ...     Person,
-    ...     Person.id == EmailAddress.personID,
-    ...     EmailAddress.email == 'foo.bar@canonical.com').one()
+    >>> def get_foo_bar_person():
+    ...     return IMasterStore(Person).find(
+    ...         Person,
+    ...         Person.id == EmailAddress.personID,
+    ...         EmailAddress.email == 'foo.bar@canonical.com').one()
+    >>> foo_bar = get_foo_bar_person()
     >>> print foo_bar.city
     None
     >>> foo_bar.city = 'Montreal'
@@ -1012,16 +1014,14 @@ be automatically reverted in a GET request.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
     >>> txn = transaction.begin()
-    >>> foo_bar = IMasterStore(Person).find(
-    ...     Person,
-    ...     Person.id == EmailAddress.personID,
-    ...     EmailAddress.email == 'foo.bar@canonical.com').one()
+    >>> foo_bar = get_foo_bar_person()
     >>> print foo_bar.city
     None
 
 But not if the request uses POST, the changes will be preserved.
 
-    >>> foo_bar.city = 'Montreal'
+    >>> txn = transaction.begin()
+    >>> get_foo_bar_person().city = 'Darwin'
     >>> syncUpdate(foo_bar)
 
     >>> request, publication = get_request_and_publication(method='POST')
@@ -1033,9 +1033,8 @@ But not if the request uses POST, the changes will be preserved.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
     >>> txn = transaction.begin()
-    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
-    >>> print foo_bar.city
-    Montreal
+    >>> print get_foo_bar_person().city
+    Darwin
 
 
 === GET requests on api.launchpad.net ===
@@ -1049,9 +1048,6 @@ the OAuthNonce table.
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 
-    >>> from canonical.launchpad.webapp.adapter import StoreSelector
-    >>> from canonical.launchpad.webapp.interfaces import DEFAULT_FLAVOR
-    >>> StoreSelector.setGlobalDefaultFlavor(DEFAULT_FLAVOR)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
@@ -1234,7 +1230,6 @@ principal's access_level and scope will match what was specified in the
 token.
 
     >>> from canonical.launchpad.interfaces.product import IProductSet
-    >>> StoreSelector.setGlobalDefaultFlavor(DEFAULT_FLAVOR)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
