@@ -38,6 +38,7 @@ from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
     MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.lazr.utils import safe_hasattr
 
 
 __all__ = [
@@ -430,7 +431,7 @@ class StoreSelector:
     @staticmethod
     def push(db_policy):
         """See `IStoreSelector`."""
-        if not hasattr(_local, 'db_policies'):
+        if not safe_hasattr(_local, 'db_policies'):
             _local.db_policies = []
         _local.db_policies.append(db_policy)
 

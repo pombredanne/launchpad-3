@@ -858,10 +858,7 @@ class IStoreSelector(Interface):
     because they are less loaded.
     """
     def push(dbpolicy):
-        """Install an IDatabasePolicy a the default for this thread.
-
-        :returns: policy
-        """
+        """Install an `IDatabasePolicy` as the default for this thread."""
 
     def pop():
         """Uninstall the most recently pushed IDatabasePolicy from this thread.

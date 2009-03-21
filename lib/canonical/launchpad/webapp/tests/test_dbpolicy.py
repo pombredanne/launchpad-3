@@ -8,12 +8,12 @@ __all__ = []
 import unittest
 
 from zope.component import getAdapter, getUtility
-from zope.interface.verify import verifyObject
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.layers import (
     FeedsLayer, setFirstLayer, WebServiceLayer)
+from canonical.launchpad.testing import TestCase
 from canonical.launchpad.webapp.dbpolicy import (
     BaseDatabasePolicy, LaunchpadDatabasePolicy, MasterDatabasePolicy,
     SlaveDatabasePolicy, SlaveOnlyDatabasePolicy, SSODatabasePolicy)
@@ -25,15 +25,15 @@ from canonical.launchpad.webapp.tests import DummyConfigurationTestCase
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
-class ImplicitDatabasePolicyTestCase(unittest.TestCase):
+class ImplicitDatabasePolicyTestCase(TestCase):
     """Tests for when there is no policy installed."""
     layer = DatabaseFunctionalLayer
 
     def test_defaults(self):
         for store in ALL_STORES:
-            self.failUnless(verifyObject(
-                IMasterStore,
-                getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR)))
+            self.assertCorrectlyProvides(
+                getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR),
+                IMasterStore)
 
     def test_dbusers(self):
         store_selector = getUtility(IStoreSelector)
@@ -62,7 +62,7 @@ class BaseDatabasePolicyTestCase(ImplicitDatabasePolicyTestCase):
         getUtility(IStoreSelector).pop()
 
     def test_correctly_implements_IDatabasePolicy(self):
-        self.failUnless(verifyObject(IDatabasePolicy, self.policy))
+        self.assertCorrectlyProvides(self.policy, IDatabasePolicy)
 
 
 class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
@@ -74,16 +74,15 @@ class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
     def test_defaults(self):
         for store in ALL_STORES:
-            self.failUnless(verifyObject(
-                ISlaveStore,
-                getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR)))
+            self.assertCorrectlyProvides(
+                getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR),
+                ISlaveStore)
 
     def test_master_allowed(self):
         for store in ALL_STORES:
-            self.failUnless(verifyObject(
-                IMasterStore,
-                getUtility(IStoreSelector).get(store, MASTER_FLAVOR)))
-
+            self.assertCorrectlyProvides(
+                getUtility(IStoreSelector).get(store, MASTER_FLAVOR),
+                IMasterStore)
 
 
 class SlaveOnlyDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
@@ -102,9 +101,7 @@ class SlaveOnlyDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
             SERVER_URL='http://feeds.launchpad.dev')
         setFirstLayer(request, FeedsLayer)
         policy = IDatabasePolicy(request)
-        self.failUnless(
-            isinstance(policy, SlaveOnlyDatabasePolicy),
-            "Expected SlaveOnlyDatabasePolicy, not %s." % policy)
+        self.assertIsInstance(policy, SlaveOnlyDatabasePolicy)
 
     def test_master_allowed(self):
         for store in ALL_STORES:
@@ -139,7 +136,7 @@ class MasterDatabasePolicyTestCase(
         it's likely that clients won't support cookies and thus mixing read
         and write requests will result in incoherent views of the data.
 
-        XXX 20099320 Stuart Bishop bug=297052: This doesn't scale of course
+        XXX 20090320 Stuart Bishop bug=297052: This doesn't scale of course
             and will meltdown when the API becomes popular.
         """
         server_url = ('http://api.launchpad.dev/'
@@ -154,9 +151,9 @@ class MasterDatabasePolicyTestCase(
     def test_slave_allowed(self):
         # We get the master store even if the slave was requested.
         for store in ALL_STORES:
-            self.failUnless(verifyObject(
-                ISlaveStore,
-                getUtility(IStoreSelector).get(store, SLAVE_FLAVOR)))
+            self.assertCorrectlyProvides(
+                getUtility(IStoreSelector).get(store, SLAVE_FLAVOR),
+                ISlaveStore)
 
 
 class LaunchpadDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
@@ -170,20 +167,20 @@ class LaunchpadDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
         # We just test that beforeTraversal does something here.
         # The more advanced load balancing tests are done as a page test
         # in standalone/xx-dbpolicy.txt
-        self.failUnless(
-            getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-            is getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR))
-        self.failUnless(
-            getUtility(IStoreSelector).get(AUTH_STORE, DEFAULT_FLAVOR)
-            is getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR))
+        self.assertIs(
+            getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR),
+            getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR))
+        self.assertIs(
+            getUtility(IStoreSelector).get(AUTH_STORE, DEFAULT_FLAVOR),
+            getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR))
         self.policy.beforeTraversal()
         try:
-            self.failUnless(
-                getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-                is getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR))
-            self.failUnless(
-                getUtility(IStoreSelector).get(AUTH_STORE, DEFAULT_FLAVOR)
-                is getUtility(IStoreSelector).get(AUTH_STORE, SLAVE_FLAVOR))
+            self.assertIs(
+                getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR),
+                getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR))
+            self.assertIs(
+                getUtility(IStoreSelector).get(AUTH_STORE, DEFAULT_FLAVOR),
+                getUtility(IStoreSelector).get(AUTH_STORE, SLAVE_FLAVOR))
         finally:
             self.policy.afterCall()
 
@@ -195,13 +192,12 @@ class SSODatabasePolicyTestCase(BaseDatabasePolicyTestCase):
         BaseDatabasePolicyTestCase.setUp(self)
 
     def test_defaults(self):
-        self.failUnless(verifyObject(
-            ISlaveStore,
-            getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)))
-
-        self.failUnless(verifyObject(
-            IMasterStore,
-            getUtility(IStoreSelector).get(AUTH_STORE, DEFAULT_FLAVOR)))
+        self.assertCorrectlyProvides(
+            getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR),
+            ISlaveStore)
+        self.assertCorrectlyProvides(
+            getUtility(IStoreSelector).get(AUTH_STORE, DEFAULT_FLAVOR),
+            IMasterStore)
 
     def test_disallowed(self):
         for store in ALL_STORES:
