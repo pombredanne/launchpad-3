@@ -20,7 +20,7 @@ from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces import ILaunchpadStatisticSet
-from canonical.launchpad.interfaces.branch import IBranchSet
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -77,7 +77,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     @property
     def branch_count(self):
         """The total branch count in all of Launchpad."""
-        return getUtility(IBranchSet).count()
+        return getUtility(IAllBranches).count()
 
     @property
     def bug_count(self):
