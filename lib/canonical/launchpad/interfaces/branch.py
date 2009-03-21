@@ -1345,6 +1345,7 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
     if branch.private:
         return lp_prefix + branch.unique_name
 
+    # If there are no associated series, then use the unique name.
     associated_series = list(associated_series)
     if [] == associated_series:
         return lp_prefix + branch.unique_name
