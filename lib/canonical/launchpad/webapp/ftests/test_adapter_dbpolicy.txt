@@ -54,4 +54,4 @@ access to some Stores entirely:
     Traceback (most recent call last):
     ...
     DisallowedStore: ('main', 'master')
-    >>> selector.pop()
+    >>> policy = selector.pop()
