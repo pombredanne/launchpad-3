@@ -10,6 +10,7 @@ __all__ = []
 from zope.component import (
     adapter, adapts, getSiteManager, getUtility, queryMultiAdapter)
 from zope.interface import classProvides, implementer, implements
+from zope.security.proxy import removeSecurityProxy
 
 from storm.expr import Join
 from sqlobject import SQLObjectNotFound
@@ -37,7 +38,6 @@ from canonical.launchpad.interfaces.product import (
 from canonical.launchpad.interfaces.productseries import (
     IProductSeries, NoSuchProductSeries)
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.validators.name import valid_name
@@ -45,7 +45,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
-from lazr.enum import DBItem
 from lazr.uri import InvalidURIError, URI
 
 
@@ -153,7 +152,8 @@ class DistroSeriesTraversable(_BaseTraversable):
         sourcepackage = self.context.getSourcePackage(name)
         if sourcepackage is None:
             raise NoSuchSourcePackageName(name)
-        return sourcepackage, PackagePublishingPocket.RELEASE
+        return getUtility(ISourcePackagePocketFactory).new(
+            sourcepackage, PackagePublishingPocket.RELEASE)
 
 
 class HasLinkedBranch:
@@ -179,11 +179,11 @@ def product_linked_branch(product):
     return HasLinkedBranch(product.development_focus.series_branch)
 
 
-@adapter(ISourcePackage, DBItem)
+@adapter(ISourcePackagePocket)
 @implementer(ICanHasLinkedBranch)
-def source_package_linked_branch(package, pocket):
+def source_package_linked_branch(sourcepackagepocket):
     """The official branch for a pocket on a package is its linked branch."""
-    return HasLinkedBranch(package.getBranch(pocket))
+    return HasLinkedBranch(sourcepackagepocket.branch)
 
 
 sm = getSiteManager()
@@ -226,28 +226,51 @@ class SourcePackagePocket:
     implements(ISourcePackagePocket)
     classProvides(ISourcePackagePocketFactory)
 
-    def __init__(self, package, pocket):
-        self.package = package
+    def __init__(self, sourcepackage, pocket):
+        self.sourcepackage = sourcepackage
         self.pocket = pocket
 
     @classmethod
     def new(cls, package, pocket):
+        """See `ISourcePackagePocketFactory`."""
         return cls(package, pocket)
+
+    def __eq__(self, other):
+        """See `ISourcePackagePocket`."""
+        try:
+            other = ISourcePackagePocket(other)
+        except TypeError:
+            return NotImplemented
+        return (
+            self.sourcepackage == other.sourcepackage
+            and self.pocket == other.pocket)
+
+    def __ne__(self, other):
+        """See `ISourcePackagePocket`."""
+        return not (self == other)
 
     @property
     def displayname(self):
+        """See `ISourcePackagePocket`."""
         return self.path
 
     @property
+    def branch(self):
+        """See `ISourcePackagePocket`."""
+        return self.sourcepackage.getBranch(self.pocket)
+
+    @property
     def path(self):
+        """See `ISourcePackagePocket`."""
         return '%s/%s/%s' % (
-            self.package.distribution.name,
+            self.sourcepackage.distribution.name,
             self.suite,
-            self.package.name)
+            self.sourcepackage.name)
 
     @property
     def suite(self):
-        distroseries = self.package.distroseries.name
+        """See `ISourcePackagePocket`."""
+        distroseries = self.sourcepackage.distroseries.name
         if self.pocket == PackagePublishingPocket.RELEASE:
             return distroseries
         else:

@@ -12,6 +12,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, ILinkedBranchTraverser,
@@ -19,6 +20,7 @@ from canonical.launchpad.interfaces.branchlookup import (
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, NoSuchProduct)
@@ -334,7 +336,9 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         # for the release pocket of that package in that series.
         package = self.factory.makeSourcePackage()
         self.assertTraverses(
-            package.path, (package, PackagePublishingPocket.RELEASE))
+            package.path,
+            getUtility(ISourcePackagePocketFactory).new(
+                package, PackagePublishingPocket.RELEASE))
 
     def test_no_such_distribution(self):
         # `traverse` raises `NoSuchProduct` error if the distribution doesn't
@@ -469,9 +473,9 @@ class TestGetByLPPath(TestCaseWithFactory):
         exception = self.assertRaises(
             NoLinkedBranch,
             self.branch_lookup.getByLPPath, sourcepackage.path)
-        self.assertEqual(
-            (sourcepackage, PackagePublishingPocket.RELEASE),
-            exception.component)
+        sourcepackagepocket =  getUtility(ISourcePackagePocketFactory).new(
+            sourcepackage, PackagePublishingPocket.RELEASE)
+        self.assertEqual(sourcepackagepocket, exception.component)
 
     def test_distribution_linked_branch(self):
         # Distributions cannot have linked branches, so `getByLPPath` raises a
@@ -536,6 +540,24 @@ class TestSourcePackagePocket(TestCaseWithFactory):
             '%s-%s' % (package.distroseries.name, pocket.name.lower()),
             package_pocket.suite)
 
+    def test_branch(self):
+        # The 'branch' attribute is the linked branch for the pocket on that
+        # packet.
+        package = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=package)
+        registrant = self.factory.makePerson()
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        login_person(ubuntu_branches.teamowner)
+        try:
+            package.setBranch(
+                PackagePublishingPocket.SECURITY, branch, registrant)
+        finally:
+            logout()
+            login(ANONYMOUS)
+        package_pocket = self.makeSourcePackagePocket(
+            sourcepackage=package, pocket=PackagePublishingPocket.SECURITY)
+        self.assertEqual(branch, package_pocket.branch)
+
     def test_path_release_pocket(self):
         # The path of a RELEASE source package pocket is the path of the
         # source package.
@@ -564,6 +586,13 @@ class TestSourcePackagePocket(TestCaseWithFactory):
         # error messages.
         package_pocket = self.makeSourcePackagePocket()
         self.assertEqual(package_pocket.path, package_pocket.displayname)
+
+    def test_equality(self):
+        package = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.SECURITY
+        package_pocket1 = self.makeSourcePackagePocket(package, pocket)
+        package_pocket2 = self.makeSourcePackagePocket(package, pocket)
+        self.assertEqual(package_pocket1, package_pocket2)
 
 
 def test_suite():
