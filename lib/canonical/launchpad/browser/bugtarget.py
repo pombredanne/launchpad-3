@@ -1285,8 +1285,7 @@ class BugTargetBugTagsView(LaunchpadView):
         official_tags = set(self.context.official_bug_tags)
         tags = [tag for tag in self.getUsedBugTagsWithURLs()
                 if tag['tag'] not in official_tags]
-        used_tags = set(tag['tag'] for tag in tags)
-        tags.sort(key=itemgetter('count'))
+        tags.sort(key=itemgetter('count'), reverse=True)
         return tags[:10]
 
     @property

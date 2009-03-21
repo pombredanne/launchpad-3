@@ -52,3 +52,132 @@ administrators but not for ordinary users.
     ...
     Unauthorized...
 
+== Official Tags in Tags Portlet ==
+
+The tags portlet displays a mix of official and unofficial tags.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from zope.component import getUtility
+    >>> import transaction
+    >>> login('foo.bar@canonical.com')
+    >>> firesocks = factory.makeProduct(name='firesocks')
+    >>> firesocks_bugs_url = canonical_url(firesocks, rootsite='bugs')
+    >>> firesocks.official_bug_tags = [
+    ...     u'official-tag-%02d' % idx for idx in range(1, 13)]
+    >>> fs_bug = factory.makeBug(product=firesocks)
+    >>> fs_bug.tags = [
+    ...     u'unofficial-tag-%02d' % idx for idx in range(1, 13)]
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> def print_tags_portlet(tags_portlet):
+    ...     for section in tags_portlet.findAll(
+    ...             'div', attrs={'class': 'section'}):
+    ...         header = section.find('h2').contents[0]
+    ...         print header
+    ...         print '-' * len(header)
+    ...         for tr in section.findAll('tr'):
+    ...             tag = tr.find('td', attrs={'width': '100%'}).find('a').contents[0]
+    ...             count = tr.findAll('td')[1].contents[0]
+    ...             print '%s   %s' % (tag, count)
+    ...         print
+
+All official tags are displayed, as well as 10 unofficial tags.
+
+    >>> browser.open(firesocks_bugs_url)
+    >>> print_tags_portlet(find_tag_by_id(browser.contents, 'portlet-tags'))
+    Official Tags
+    -------------
+    official-tag-01   0
+    official-tag-02   0
+    official-tag-03   0
+    official-tag-04   0
+    official-tag-05   0
+    official-tag-06   0
+    official-tag-07   0
+    official-tag-08   0
+    official-tag-09   0
+    official-tag-10   0
+    official-tag-11   0
+    official-tag-12   0
+    <BLANKLINE>
+    Other Tags
+    ----------
+    unofficial-tag-01   1
+    unofficial-tag-02   1
+    unofficial-tag-03   1
+    unofficial-tag-04   1
+    unofficial-tag-05   1
+    unofficial-tag-06   1
+    unofficial-tag-07   1
+    unofficial-tag-08   1
+    unofficial-tag-09   1
+    unofficial-tag-10   1
+    <BLANKLINE>
+
+The tags are sorted by popularity.
+
+    >>> login('foo.bar@canonical.com')
+    >>> firesocks = getUtility(IProductSet).getByName('firesocks')
+    >>> fs_bug_2 = factory.makeBug(product=firesocks)
+    >>> fs_bug_2.tags = ['official-tag-05', 'unofficial-tag-05']
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> browser.open(firesocks_bugs_url)
+    >>> print_tags_portlet(find_tag_by_id(browser.contents, 'portlet-tags'))
+    Official Tags
+    -------------
+    official-tag-05   1
+    official-tag-01   0
+    official-tag-02   0
+    official-tag-03   0
+    official-tag-04   0
+    official-tag-06   0
+    official-tag-07   0
+    official-tag-08   0
+    official-tag-09   0
+    official-tag-10   0
+    official-tag-11   0
+    official-tag-12   0
+    <BLANKLINE>
+    Other Tags
+    ----------
+    unofficial-tag-05   2
+    unofficial-tag-12   1
+    unofficial-tag-11   1
+    unofficial-tag-10   1
+    unofficial-tag-09   1
+    unofficial-tag-08   1
+    unofficial-tag-07   1
+    unofficial-tag-06   1
+    unofficial-tag-04   1
+    unofficial-tag-03   1
+    <BLANKLINE>
+
+If not official tags are defined, the title of the unofficial ones is changed.
+
+    >>> login('foo.bar@canonical.com')
+    >>> firesocks = getUtility(IProductSet).getByName('firesocks')
+    >>> firesocks.official_bug_tags = []
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> browser.open(firesocks_bugs_url)
+    >>> print_tags_portlet(find_tag_by_id(browser.contents, 'portlet-tags'))
+    Tags
+    ----
+    unofficial-tag-05   2
+    official-tag-05   1
+    unofficial-tag-01   1
+    unofficial-tag-02   1
+    unofficial-tag-03   1
+    unofficial-tag-04   1
+    unofficial-tag-06   1
+    unofficial-tag-07   1
+    unofficial-tag-08   1
+    unofficial-tag-09   1
+    <BLANKLINE>
+
