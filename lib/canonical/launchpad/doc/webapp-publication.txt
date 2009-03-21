@@ -1047,12 +1047,20 @@ the OAuthNonce table.
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+    >>> from storm.locals import Store
+    >>> from canonical.launchpad.webapp.adapter import get_store_name
+
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from zope.component import getUtility
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
     >>> access_token = token.createAccessToken()
+    >>> policy = getUtility(IStoreSelector).pop()
     >>> transaction.commit()
     >>> form = dict(
     ...     oauth_consumer_key='foobar123451432',
@@ -1230,6 +1238,7 @@ principal's access_level and scope will match what was specified in the
 token.
 
     >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
@@ -1244,6 +1253,7 @@ token.
     ...     oauth_signature="&".join([consumer.secret, access_token.secret]),
     ...     oauth_timestamp=time.time(),
     ...     oauth_nonce='4572616e48616d6d65724c61686176')
+    >>> policy = getUtility(IStoreSelector).pop()
     >>> test_request, publication = get_request_and_publication(
     ...     'api.launchpad.dev', 'GET',
     ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
