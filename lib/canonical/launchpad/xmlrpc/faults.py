@@ -1,4 +1,4 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 
 """Launchpad XMLRPC faults."""
 
