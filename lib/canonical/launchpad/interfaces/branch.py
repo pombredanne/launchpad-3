@@ -43,6 +43,7 @@ __all__ = [
 
 from cgi import escape
 from datetime import timedelta
+from operator import attrgetter
 import re
 
 # Ensure correct plugins are loaded. Do not delete this line.
@@ -1325,14 +1326,7 @@ class IBranchCloud(Interface):
 
 def bazaar_identity(branch, associated_series, is_dev_focus):
     """Return the shortest lp: style branch identity."""
-    use_series = None
     lp_prefix = config.codehosting.bzr_lp_prefix
-    # XXX: TimPenhey 2008-05-06 bug=227602
-    # Since at this stage the launchpad name resolution is not
-    # authenticated, we can't resolve series branches that end
-    # up pointing to private branches, so don't show short names
-    # for the branch if it is private.
-
     # It is possible for +junk branches to be related to a product
     # series.  However we do not show the shorter name for these
     # branches as it would be giving extra authority to them.  When
@@ -1344,16 +1338,26 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
     # series should be self limiting.  We are not looking to enforce
     # extra strictness in this case, but instead let it manage itself.
 
+    # XXX: TimPenhey 2008-05-06 bug=227602: Since at this stage the launchpad
+    # name resolution is not authenticated, we can't resolve series branches
+    # that end up pointing to private branches, so don't show short names for
+    # the branch if it is private.
+    if branch.private:
+        return lp_prefix + branch.unique_name
+
+    associated_series = list(associated_series)
+    if [] == associated_series:
+        return lp_prefix + branch.unique_name
+
+    use_series = None
     # XXX: JonathanLange 2009-03-19 spec=package-branches: This should not
     # dispatch on Branch.product is None
-    if not branch.private and branch.product is not None:
+    if branch.product is not None:
         if is_dev_focus:
             return lp_prefix + branch.product.name
+        use_series = sorted(
+            associated_series, key=attrgetter('datecreated'))[-1]
 
-        for series in associated_series:
-            if (use_series is None or
-                series.datecreated > use_series.datecreated):
-                use_series = series
     # If there is no series, use the prefix with the unique name.
     if use_series is None:
         return lp_prefix + branch.unique_name
