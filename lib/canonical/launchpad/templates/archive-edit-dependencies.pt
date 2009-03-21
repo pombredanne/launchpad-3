@@ -13,7 +13,9 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Edit dependencies for the <tal:title replace="context/title" /></h1>
+  <h1 tal:content="CONTEXTS/fmt:pagetitle">
+    Edit dependencies for Blah PPA
+  </h1>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 

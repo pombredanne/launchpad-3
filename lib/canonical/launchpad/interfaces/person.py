@@ -74,8 +74,6 @@ from canonical.launchpad.interfaces.location import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.interfaces.questioncollection import (
-    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.teammembership import (
@@ -89,6 +87,8 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.authorization import check_permission
 
+from lp.answers.interfaces.questioncollection import (
+    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 
 PRIVATE_TEAM_PREFIX = 'private-'
 

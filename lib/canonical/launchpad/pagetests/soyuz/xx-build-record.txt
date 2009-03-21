@@ -246,7 +246,17 @@ of this procedure.
     The status of i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     is Failed to build.
     Retrying this build will destroy its history and logs.
+    By default, this build will be retried only after other pending builds;
+    please contact a build daemon administrator if you need special
+    treatment.
     Are you sure ?
+    or Cancel
+
+There is also the option to cancel the retry operation by clicking a
+link to take you back to the build page.
+
+    >>> print admin_browser.getLink("Cancel").url
+    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
 
 We'll also set up a second browser pointing at this page, for later.
 XXX: waiting for bug #68655's cloneBrowser function.
@@ -258,6 +268,12 @@ XXX: waiting for bug #68655's cloneBrowser function.
 Performing "Retry Build" with the first browser
 
     >>> admin_browser.getControl("Retry Build").click()
+
+After submitting, the page is redirected back to the build page.
+
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
+
     >>> get_feedback_messages(admin_browser.contents)
     [u'Build record active']
 
@@ -396,8 +412,8 @@ method here, as don't know the password.
     >>> cprov_browser.getLink("Retry build").click()
     >>> cprov_browser.getControl("Retry Build").click()
     >>> print extract_text(find_main_content(cprov_browser.contents))
-    Retry i386 build of libstdc++ b8p in ubuntu hoary RELEASE
     Build record active
+    ...
 
 Allow Re-score:
 
@@ -510,8 +526,8 @@ PPA owner can 'retry' a build.
     >>> no_priv_browser.getLink('Retry build').click()
     >>> no_priv_browser.getControl("Retry Build").click()
     >>> print extract_text(find_main_content(no_priv_browser.contents))
-    Retry i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     Build record active
+    ...
 
 PPA owner may not re-score the build record. They could heavily mess
 with the PPA build ordering by having the ability to assign *any*

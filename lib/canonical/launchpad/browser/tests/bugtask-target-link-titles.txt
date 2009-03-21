@@ -48,6 +48,7 @@ information is displayed for the source package.
     >>> unpublished_distro = factory.makeDistribution(
     ...     name='unpublished-distro', displayname='Unpublished Distro')
 
+    >>> login('foo.bar@canonical.com')
     >>> view = set_up_view(unpublished_distro)
     >>> print view.getTargetLinkTitle(unpublished_distro)
     None

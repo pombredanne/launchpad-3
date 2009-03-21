@@ -516,11 +516,11 @@ suite. To simulate this we will create a publication in Celso's PPA.
     ...     pub_source=ppa_source,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
-    >>> print ppa_source.displayname, ppa_source.archive.title
+    >>> print ppa_source.displayname, ppa_source.archive.displayname
     foo 666 in breezy-autotest PPA for Celso Providelo
 
     >>> for bin in ppa_binaries:
-    ...     print bin.displayname, bin.archive.title
+    ...     print bin.displayname, bin.archive.displayname
     foo-bin 666 in breezy-autotest i386 PPA for Celso Providelo
     foo-bin 666 in breezy-autotest hppa PPA for Celso Providelo
 
