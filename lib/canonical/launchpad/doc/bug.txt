@@ -789,7 +789,8 @@ Editing the external bug watch.
     >>> bugwatch.remotebug = '5678'
 
     >>> bugwatch_changed = ObjectModifiedEvent(
-    ...     bugwatch, bugwatch_before_modification, ["remotebug"])
+    ...     bugwatch, bugwatch_before_modification, ["remotebug"],
+    ...     bugwatch.bug.owner)
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 

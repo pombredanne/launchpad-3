@@ -315,7 +315,7 @@ So, uploading to a PPA only requires us to specify the target archive.
     >>> ppa_pub = packager.uploadSourceVersion(
     ...     '1.0-5', archive=foobar.archive)
 
-    >>> print ppa_pub.archive.title
+    >>> print ppa_pub.archive.displayname
     PPA for Foo Bar
 
     >>> print ppa_pub.displayname, ppa_pub.status.name

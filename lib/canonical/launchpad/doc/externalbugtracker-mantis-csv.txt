@@ -53,12 +53,14 @@ Tracker:
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
     >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, '3224', sample_person)
+    ...     example_bug_tracker, '3224',
+    ...     getUtility(ILaunchpadCelebrities).janitor)
 
 We use a specially hacked Mantis instance that doesn't do network
 calls to verify here. We set its batch_query_threshold to 0 so as to
