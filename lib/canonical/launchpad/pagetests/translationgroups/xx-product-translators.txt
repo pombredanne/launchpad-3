@@ -7,7 +7,7 @@ The translation work for a product can be assigned to a translation group.
     >>> content = find_main_content(admin_browser.contents)
     >>> content.findAll('h1')
     [<h1>Select a new translation group</h1>]
-    >>> hint = content.h1.findNextSibling('p')
+    >>> hint = find_tag_by_id(admin_browser.contents, 'form_extra_info')
     >>> print hint
     <p...
     Select the translation group that will be managing...

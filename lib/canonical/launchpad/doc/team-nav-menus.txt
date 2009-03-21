@@ -37,7 +37,3 @@ The default navigation menu is registered for the 'overview' facet.
     link profile
         url: .../~name18
         ...
-    link show_ppa
-        url: .../~name18/+archive
-        enabled: False
-        ...

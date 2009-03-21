@@ -48,7 +48,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
-from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
@@ -61,10 +61,7 @@ from canonical.launchpad.interfaces.codeimportresult import (
 from canonical.launchpad.interfaces.codeimport import (
     CodeImportReviewStatus, RevisionControlSystems)
 from canonical.launchpad.interfaces.country import ICountrySet
-from canonical.launchpad.interfaces.distribution import (
-    IDistribution, IDistributionSet)
-from canonical.launchpad.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -83,7 +80,7 @@ from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.product import (
-    IProduct, IProductSet, License)
+    IProductSet, License)
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.project import IProjectSet
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
@@ -98,6 +95,8 @@ from canonical.launchpad.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.translationgroup import (
     ITranslationGroupSet)
+from canonical.launchpad.database.distributionsourcepackage import (
+    DistributionSourcePackage)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
 
@@ -774,37 +773,19 @@ class LaunchpadObjectFactory(ObjectFactory):
             return existing_bugtask
         owner = self.makePerson()
 
-        if IProduct.providedBy(target):
-            target_params = {'product': target}
-        elif IProductSeries.providedBy(target):
+        if IProductSeries.providedBy(target):
             # We can't have a series task without a distribution task.
             self.makeBugTask(bug, target.product)
-            target_params = {'productseries': target}
-        elif IDistribution.providedBy(target):
-            target_params = {'distribution': target}
-        elif IDistributionSourcePackage.providedBy(target):
-            target_params = {
-                'distribution': target.distribution,
-                'sourcepackagename': target.sourcepackagename,
-                }
-        elif IDistroSeries.providedBy(target):
+        if IDistroSeries.providedBy(target):
             # We can't have a series task without a distribution task.
             self.makeBugTask(bug, target.distribution)
-            target_params = {'distroseries': target}
-        elif ISourcePackage.providedBy(target):
+        if ISourcePackage.providedBy(target):
             distribution_package = target.distribution.getSourcePackage(
                 target.sourcepackagename)
             # We can't have a series task without a distribution task.
             self.makeBugTask(bug, distribution_package)
-            target_params = {
-                'distroseries': target.distroseries,
-                'sourcepackagename': target.sourcepackagename,
-                }
-        else:
-            raise AssertionError('Unknown IBugTarget: %r' % target)
 
-        return getUtility(IBugTaskSet).createTask(
-            bug=bug, owner=owner, **target_params)
+        return bug.addTask(owner, target)
 
     def makeBugTracker(self, base_url=None, bugtrackertype=None):
         """Make a new bug tracker."""
@@ -837,7 +818,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             bug, owner, bugtracker, str(remote_bug))
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
-                          comment=None, filename=None, content_type=None):
+                          comment=None, filename=None, content_type=None,
+                          description=None):
         """Create and return a new bug attachment.
 
         :param bug: An `IBug` or a bug ID or name, or None, in which
@@ -851,6 +833,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param filename: A string, or None, in which case a unique
             string will be used.
         :param content_type: The MIME-type of this file.
+        :param description: The description of the attachment.
         :return: An `IBugAttachment`.
         """
         if bug is None:
@@ -861,12 +844,15 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if data is None:
             data = self.getUniqueString()
+        if description is None:
+            description = self.getUniqueString()
         if comment is None:
             comment = self.getUniqueString()
         if filename is None:
             filename = self.getUniqueString()
         return bug.addAttachment(
-            owner, data, comment, filename, content_type=content_type)
+            owner, data, comment, filename, content_type=content_type,
+            description=description)
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
             attachment_contents=None, force_transfer_encoding=False,
@@ -1337,6 +1323,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
+
+    def makeDistributionSourcePackage(self, sourcepackagename=None,
+                                      distribution=None):
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        if distribution is None:
+            distribution = self.makeDistribution()
+
+        return DistributionSourcePackage(distribution, sourcepackagename)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
                          attachments=None):

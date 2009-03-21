@@ -341,10 +341,12 @@ DebBugs implements all of these.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestDebBugs, TestDebianBug)
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug = getUtility(IBugSet).get(4)
-    >>> bug_watch = bug.addWatch(debbugs, '1234', no_priv)
+    >>> bug_watch = bug.addWatch(
+    ...     debbugs, '1234', getUtility(ILaunchpadCelebrities).janitor)
     >>> external_debbugs = TestDebBugs(
     ...     'http://example.com/', {'1234': TestDebianBug(
     ...         package='evolution', id=1234)})
@@ -579,7 +581,6 @@ bug numbers to be imported. It will link the bugs to the debbugs bug
 tracker.
 
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
     >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
     []
