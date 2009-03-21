@@ -46,7 +46,7 @@ class BaseDatabasePolicy:
 
     # The section name to retrieve database connection details from.
     # None means the default.
-    config_section = dbconfig.getSectionName()
+    config_section = None
 
     # The default flavor to use.
     default_flavor = MASTER_FLAVOR
@@ -59,9 +59,11 @@ class BaseDatabasePolicy:
         if flavor == DEFAULT_FLAVOR:
             flavor = self.default_flavor
 
+        config_section = self.config_section or dbconfig.getSectionName()
+
         store = getUtility(IZStorm).get(
-            '%s-%s-%s' % (self.config_section, name, flavor),
-            'launchpad:%s-%s-%s' % (self.config_section, name, flavor))
+            '%s-%s-%s' % (config_section, name, flavor),
+            'launchpad:%s-%s-%s' % (config_section, name, flavor))
 
         # Attach our marker interfaces so our adapters don't lie.
         if flavor == MASTER_FLAVOR:
