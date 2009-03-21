@@ -42,10 +42,6 @@ __all__ = [
 
 import xmlrpclib
 
-from zope.security.interfaces import ForbiddenAttribute
-
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
-
 
 def check_fault(fault, *fault_classes):
     """Check if 'fault's faultCode matches any of 'fault_classes'.
