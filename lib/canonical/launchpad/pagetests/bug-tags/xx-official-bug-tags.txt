@@ -52,3 +52,30 @@ administrators but not for ordinary users.
     ...
     Unauthorized...
 
+
+== Official Tags on Bug Pages ==
+
+Official tags are displayed using a different style from unofficial ones.
+They are grouped together at the beginning of the list.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> import transaction
+    >>> login('foo.bar@canonical.com')
+    >>> gfoobar = factory.makeProduct(name='gfoobar')
+    >>> gfoobar.official_bug_tags = [u'alpha', u'charlie']
+    >>> gfoobar_bug = factory.makeBug(product=gfoobar)
+    >>> gfoobar_bug.tags = [u'alpha', u'bravo', u'charlie', u'delta']
+    >>> gfoobar_bug_url = canonical_url(gfoobar_bug)
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> browser.open(gfoobar_bug_url)
+    >>> tags_div = find_tag_by_id(browser.contents, 'bug-tags')
+    >>> for tag_anchor in tags_div.findAll('a'):
+    ...     print tag_anchor['class'], tag_anchor.contents[0]
+    official-tag alpha
+    official-tag charlie
+    unofficial-tag bravo
+    unofficial-tag delta
+
