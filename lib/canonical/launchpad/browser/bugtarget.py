@@ -22,6 +22,7 @@ import cgi
 from cStringIO import StringIO
 from email import message_from_string
 from operator import itemgetter
+from simplejson import dumps
 import tempfile
 import urllib
 
@@ -59,6 +60,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
 from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
+from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.webapp.menu import structured
 
@@ -1308,6 +1310,22 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
     @property
+    def tags_js_data(self):
+        """Return the JSON representation of the bug tags."""
+        used_tags = dict(self.context.getUsedBugTagsWithOpenCounts(self.user))
+        official_tags = list(self.context.official_bug_tags)
+        return """<script type="text/javascript">
+                      var used_bug_tags = %s;
+                      var official_bug_tags = %s;
+                      var valid_name_pattern = %s;
+                  </script>
+               """ % (
+               dumps(used_tags),
+               dumps(official_tags),
+               dumps(valid_name_pattern.pattern))
+
+    @property
     def cancel_url(self):
         """The URL the user is sent to when clicking the "cancel" link."""
         return canonical_url(self.context)
+
