@@ -1328,17 +1328,6 @@ class IBranchCloud(Interface):
 def bazaar_identity(branch, associated_series, is_dev_focus):
     """Return the shortest lp: style branch identity."""
     lp_prefix = config.codehosting.bzr_lp_prefix
-    # It is possible for +junk branches to be related to a product
-    # series.  However we do not show the shorter name for these
-    # branches as it would be giving extra authority to them.  When
-    # the owner of these branches realises that they want other people
-    # to be able to commit to them, the branches will need to have a
-    # team owner.  When this happens, they will no longer be able to
-    # stay as junk branches, and will need to be associated with a
-    # product.  In this way +junk branches associated with product
-    # series should be self limiting.  We are not looking to enforce
-    # extra strictness in this case, but instead let it manage itself.
-
     # XXX: TimPenhey 2008-05-06 bug=227602: Since at this stage the launchpad
     # name resolution is not authenticated, we can't resolve series branches
     # that end up pointing to private branches, so don't show short names for
