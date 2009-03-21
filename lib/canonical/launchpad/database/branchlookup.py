@@ -5,10 +5,7 @@
 __metaclass__ = type
 # This module doesn't export anything. If you want to lookup branches by name,
 # then get the IBranchLookup utility.
-__all__ = [
-    # XXX: temporary -- use a utility
-    'SourcePackagePocket',
-    ]
+__all__ = []
 
 from zope.component import (
     adapter, adapts, getSiteManager, getUtility, queryMultiAdapter)
