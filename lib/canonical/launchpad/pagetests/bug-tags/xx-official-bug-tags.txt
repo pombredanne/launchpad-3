@@ -157,7 +157,7 @@ The tags are sorted by popularity.
     unofficial-tag-03   1
     <BLANKLINE>
 
-If not official tags are defined, the title of the unofficial ones is changed.
+If no official tags are defined, the title of the unofficial ones is changed.
 
     >>> login('foo.bar@canonical.com')
     >>> firesocks = getUtility(IProductSet).getByName('firesocks')
