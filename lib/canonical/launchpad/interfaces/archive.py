@@ -27,6 +27,7 @@ __all__ = [
     'ALLOW_RELEASE_BUILDS',
     'PocketNotFound',
     'SourceNotFound',
+    'default_name_by_purpose',
     ]
 
 from zope.interface import Interface, Attribute
@@ -1027,6 +1028,13 @@ class ArchivePurpose(DBEnumeratedType):
 
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
+
+
+default_name_by_purpose = {
+    ArchivePurpose.PRIMARY: 'primary',
+    ArchivePurpose.PPA: 'ppa',
+    ArchivePurpose.PARTNER: 'partner',
+    }
 
 
 MAIN_ARCHIVE_PURPOSES = (
