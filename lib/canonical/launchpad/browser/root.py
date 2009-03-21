@@ -76,8 +76,8 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     @property
     def branch_count(self):
-        """The total branch count in all of Launchpad."""
-        return getUtility(IAllBranches).count()
+        """The total branch count of public branches in all of Launchpad."""
+        return getUtility(IAllBranches).visibleByUser(None).count()
 
     @property
     def bug_count(self):

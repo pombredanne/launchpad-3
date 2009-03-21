@@ -45,7 +45,8 @@ class BazaarApplicationView(LaunchpadView):
 
     @property
     def branch_count(self):
-        return getUtility(IAllBranches).count()
+        """Return the number of public branches."""
+        return getUtility(IAllBranches).visibleByUser(None).count()
 
     @property
     def product_count(self):
