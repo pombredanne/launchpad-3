@@ -91,10 +91,7 @@ class MasterDatabasePolicy(BaseDatabasePolicy):
     support session cookies. It is also used when no policy has been
     installed.
     """
-    def getStore(self, name, flavor):
-        if flavor == DEFAULT_FLAVOR:
-            flavor = MASTER_FLAVOR
-        return super(MasterDatabasePolicy, self).getStore(name, flavor)
+    default_flavor = MASTER_FLAVOR
 
 
 class SlaveDatabasePolicy(BaseDatabasePolicy):
@@ -102,11 +99,7 @@ class SlaveDatabasePolicy(BaseDatabasePolicy):
 
     Access to a master can still be made if requested explicitly.
     """
-    def getStore(self, name, flavor):
-        """See `IDatabasePolicy`."""
-        if flavor == DEFAULT_FLAVOR:
-            flavor = SLAVE_FLAVOR
-        return super(SlaveDatabasePolicy, self).getStore(name, flavor)
+    default_flavor = SLAVE_FLAVOR
 
 
 class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
@@ -114,12 +107,13 @@ class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
 
     This policy is used for Feeds requests and other always-read only request.
     """
+    default_flavor = SLAVE_FLAVOR
     def getStore(self, name, flavor):
         """See `IDatabasePolicy`."""
         if flavor == MASTER_FLAVOR:
             raise DisallowedStore(flavor)
-        return super(
-            SlaveOnlyDatabasePolicy, self).getStore(name, SLAVE_FLAVOR)
+        return super(SlaveOnlyDatabasePolicy, self).getStore(
+            name, SLAVE_FLAVOR)
 
 
 class LaunchpadDatabasePolicy(BaseDatabasePolicy):
@@ -216,6 +210,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                     last_write < now - timedelta(minutes=1)):
                     # set value
                     session_data['last_write'] = now
+        self.default_flavor = MASTER_FLAVOR
         super(LaunchpadDatabasePolicy, self).afterCall()
 
     def getReplicationLag(self):

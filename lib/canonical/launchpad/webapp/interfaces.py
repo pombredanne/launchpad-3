@@ -861,7 +861,10 @@ class IStoreSelector(Interface):
         """Install an `IDatabasePolicy` as the default for this thread."""
 
     def pop():
-        """Uninstall the most recently pushed IDatabasePolicy from this thread.
+        """Uninstall the most recently pushed `IDatabasePolicy` from
+        this thread.
+
+        Returns the `IDatabasePolicy` removed.
         """
 
     def get(name, flavor):

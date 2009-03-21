@@ -163,8 +163,10 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
-        self.thread_locals.db_policy = IDatabasePolicy(request)
-        self.thread_locals.db_policy.beforeTraversal()
+        db_policy = IDatabasePolicy(request)
+        getUtility(IStoreSelector).push(db_policy)
+        db_policy.beforeTraversal()
+        self.thread_locals.db_policy = db_policy
 
         getUtility(IOpenLaunchBag).clear()
 
@@ -376,6 +378,7 @@ class LaunchpadBrowserPublication(
         if self.thread_locals.db_policy is not None:
             self.thread_locals.db_policy.afterCall()
             self.thread_locals.db_policy = None
+            getUtility(IStoreSelector).pop()
 
         # Abort the transaction on a read-only request.
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.

@@ -438,7 +438,7 @@ class StoreSelector:
     @staticmethod
     def pop():
         """See `IStoreSelector`."""
-        _local.db_policies.pop()
+        return _local.db_policies.pop()
 
     @staticmethod
     def get(name, flavor):
