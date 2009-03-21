@@ -628,3 +628,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         getUtility(ISeriesSourcePackageBranchSet).new(
             self.distroseries, pocket, self.sourcepackagename, branch,
             registrant)
+
+
+    @property
+    def linked_branches(self):
+        """See `ISourcePackage`."""
+        store = Store.of(self.sourcepackagename)
+        return store.find(
+            (SeriesSourcePackageBranch.pocket, Branch),
+            SeriesSourcePackageBranch.distroseries == self.distroseries.id,
+            (SeriesSourcePackageBranch.sourcepackagename
+             == self.sourcepackagename.id),
+            SeriesSourcePackageBranch.branch == Branch.id).order_by(
+                SeriesSourcePackageBranch.pocket)

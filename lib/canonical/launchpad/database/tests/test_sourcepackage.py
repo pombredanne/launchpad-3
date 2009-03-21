@@ -70,6 +70,16 @@ class TestSourcePackage(TestCaseWithFactory):
         sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
 
+    def test_linked_branches(self):
+        # ISourcePackage.linked_branches is a mapping of pockets to branches.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        registrant = self.factory.makePerson()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        sourcepackage.setBranch(pocket, branch, registrant)
+        self.assertEqual(
+            [(pocket, branch)], list(sourcepackage.linked_branches))
+
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
     """Tests for source package branch linking security."""
