@@ -340,7 +340,7 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
             getUtility(ISourcePackagePocketFactory).new(
                 package, PackagePublishingPocket.RELEASE))
 
-    def xfail_test_traverse_source_package_pocket(self):
+    def test_traverse_source_package_pocket(self):
         # `traverse` resolves 'distro/series-pocket/package' to the official
         # branch for 'pocket' on that package.
         package = self.factory.makeSourcePackage()

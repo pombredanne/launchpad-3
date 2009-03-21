@@ -129,7 +129,17 @@ class DistributionTraversable(_BaseTraversable):
 
     def _parseName(self, suite):
         """Parse 'suite' into a series name and a pocket."""
-        return suite, PackagePublishingPocket.RELEASE
+        tokens = suite.rsplit('-', 1)
+        if len(tokens) == 1:
+            return suite, PackagePublishingPocket.RELEASE
+        series, pocket = tokens
+        try:
+            pocket = PackagePublishingPocket.items[pocket.upper()]
+        except KeyError:
+            # No such pocket. Probably trying to get a hyphenated series name.
+            return suite, PackagePublishingPocket.RELEASE
+        else:
+            return series, pocket
 
     def traverse(self, name, further_path):
         """See `ITraversable`."""
