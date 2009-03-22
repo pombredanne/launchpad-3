@@ -5,7 +5,7 @@
     i18n_domain="launchpad">
 
   <securedutility
-      class="canonical.launchpad.database.branch.BranchSet"
+      class="canonical.launchpad.database.branchscanner.BranchScanner"
       provides="canonical.launchpad.interfaces.branchscanner.IBranchScanner" >
     <allow interface="canonical.launchpad.interfaces.branchscanner.IBranchScanner" />
   </securedutility>

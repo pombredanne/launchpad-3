@@ -51,7 +51,6 @@ from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
-from canonical.launchpad.interfaces.branchscanner import IBranchScanner
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.validators.person import validate_public_person
@@ -833,7 +832,7 @@ class DeleteCodeImport(DeletionOperation):
 class BranchSet:
     """The set of all branches."""
 
-    implements(IBranchSet, IBranchScanner)
+    implements(IBranchSet)
 
     def __iter__(self):
         """See `IBranchSet`."""
@@ -852,21 +851,6 @@ class BranchSet:
             'NOT Branch.private AND Branch.id = BugBranch.branch',
             clauseTables=['BugBranch'],
             distinct=True).count()
-
-    def getBranchesToScan(self):
-        """See `IBranchSet`"""
-        # Return branches where the scanned and mirrored IDs don't match.
-        # Branches with a NULL last_mirrored_id have never been
-        # successfully mirrored so there is no point scanning them.
-        # Branches with a NULL last_scanned_id have not been scanned yet,
-        # so are included.
-
-        return Branch.select('''
-            Branch.branch_type <> %s AND
-            Branch.last_mirrored_id IS NOT NULL AND
-            (Branch.last_scanned_id IS NULL OR
-             Branch.last_scanned_id <> Branch.last_mirrored_id)
-            ''' % quote(BranchType.REMOTE))
 
     def getRecentlyChangedBranches(
         self, branch_count=None,
