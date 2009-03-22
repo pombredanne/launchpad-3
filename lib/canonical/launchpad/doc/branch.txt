@@ -630,11 +630,13 @@ record the last revision IDs in the branch that they saw.
 If the last mirrored and last scanned revision IDs differ for a
 branch, then they will be included in the scan list:
 
+    >>> from canonical.launchpad.interfaces.branchscanner import IBranchScanner
+    >>> scanner = getUtility(IBranchScanner)
     >>> branch = branch_lookup.get(1)
     >>> branch.last_mirrored_id = 'rev-2'
     >>> branch.last_scanned_id = 'rev-1'
     >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
+    >>> branch in scanner.getBranchesToScan()
     True
 
 When the branch is scanned, the scanned ID will be updated, and the
@@ -642,7 +644,7 @@ branch will no longer appear in the list:
 
     >>> branch.last_scanned_id = 'rev-2'
     >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
+    >>> branch in scanner.getBranchesToScan()
     False
 
 If a branch has not been scanned yet, it will have a null scanned ID,
@@ -650,7 +652,7 @@ so is included in the branch pull list:
 
     >>> branch.last_scanned_id = None
     >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
+    >>> branch in scanner.getBranchesToScan()
     True
 
 Remote branches are not scanned.
@@ -658,7 +660,7 @@ Remote branches are not scanned.
     >>> old_type = branch.branch_type
     >>> branch.branch_type = BranchType.REMOTE
     >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
+    >>> branch in scanner.getBranchesToScan()
     False
     >>> branch.branch_type = old_type
     >>> syncUpdate(branch)
@@ -670,12 +672,12 @@ scanned ID is.
     >>> branch.last_mirrored_id = None
     >>> branch.last_scanned_id = None
     >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
+    >>> branch in scanner.getBranchesToScan()
     False
 
     >>> branch.last_scanned_id = 'rev-1'
     >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
+    >>> branch in scanner.getBranchesToScan()
     False
 
 
