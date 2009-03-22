@@ -205,7 +205,4 @@ class TestDistroSeriesSet(TestCaseWithFactory):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestDistroSeriesCurrentSourceReleases))
-    suite.addTest(unittest.makeSuite(TestDistroSeriesSet))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
