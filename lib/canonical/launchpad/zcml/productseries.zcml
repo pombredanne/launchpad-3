@@ -107,12 +107,6 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
-    <adapter
-      for="canonical.launchpad.interfaces.IProductSeries"
-      provides="canonical.launchpad.interfaces.IQuestionTarget"
-      factory="canonical.launchpad.components.answertracker.series_to_questiontarget"
-      />
-
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
         facet="overview"
