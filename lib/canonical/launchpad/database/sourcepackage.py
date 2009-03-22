@@ -629,7 +629,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             self.distroseries, pocket, self.sourcepackagename, branch,
             registrant)
 
-
     @property
     def linked_branches(self):
         """See `ISourcePackage`."""
@@ -641,3 +640,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
              == self.sourcepackagename.id),
             SeriesSourcePackageBranch.branch == Branch.id).order_by(
                 SeriesSourcePackageBranch.pocket)
+
+    def getPocketPath(self, pocket):
+        """See `ISourcePackage`."""
+        if pocket == PackagePublishingPocket.RELEASE:
+            return self.path
+        else:
+            return '%s/%s-%s/%s' % (
+                self.distribution.name,
+                self.distroseries.name,
+                pocket.name.lower(),
+                self.name)

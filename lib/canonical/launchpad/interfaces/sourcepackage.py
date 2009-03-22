@@ -151,6 +151,13 @@ class ISourcePackage(IBugTarget):
         and record that it was done by the owner.
         """
 
+    def getPocketPath(pocket):
+        """Get the path to the given pocket of this package.
+
+        :param pocket: A `DBItem` of `PackagePublishingPocket`.
+        :return: A string.
+        """
+
     # 'pocket' should actually be a PackagePublishingPocket, but we say
     # DBEnumeratedType to avoid circular imports. Correct interface specific
     # in _schema_circular_imports.
