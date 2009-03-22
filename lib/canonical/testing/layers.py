@@ -607,6 +607,10 @@ class DatabaseLayer(BaseLayer):
         if DatabaseLayer._reset_between_tests:
             LaunchpadTestSetup().tearDown()
 
+        # Should this raise a LayerInvariantError instead?
+        import canonical.launchpad.webapp.adapter
+        canonical.launchpad.webapp.adapter._local.db_policies = []
+
     use_mockdb = False
     mockdb_mode = None
 
