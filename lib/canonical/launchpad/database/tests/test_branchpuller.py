@@ -14,8 +14,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.branch import (
-    BranchType, IBranchSet, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT)
+from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.interfaces.branchpuller import IBranchPuller
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -28,7 +28,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.branch_set = getUtility(IBranchSet)
+        self.branch_puller = getUtility(IBranchPuller)
         # The absolute minimum value for any time field set to 'now'.
         self._now_minimum = self.getNow()
 
@@ -86,10 +86,10 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch.requestMirror()
         self.assertEqual(
             set([branch]),
-            set(self.branch_set.getPullQueue(branch.branch_type)))
+            set(self.branch_puller.getPullQueue(branch.branch_type)))
         branch.startMirroring()
         self.assertEqual(
-            set(), set(self.branch_set.getPullQueue(branch.branch_type)))
+            set(), set(self.branch_puller.getPullQueue(branch.branch_type)))
 
     def test_mirrorCompleteRemovesFromPullQueue(self):
         """Completing the mirror removes the branch from the pull queue."""
@@ -98,7 +98,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertEqual(
-            [], list(self.branch_set.getPullQueue(branch.branch_type)))
+            [], list(self.branch_puller.getPullQueue(branch.branch_type)))
 
     def test_mirroringResetsMirrorRequest(self):
         """Mirroring branches resets their mirror request times."""
@@ -131,7 +131,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         # Even though the mirror is complete, the branch is still in the pull
         # queue. This is not normal behaviour.
         self.assertIn(
-            branch, self.branch_set.getPullQueue(branch.branch_type))
+            branch, self.branch_puller.getPullQueue(branch.branch_type))
         # But on the next mirror, everything is OK, since startMirroring does
         # the right thing.
         branch.startMirroring()
@@ -152,7 +152,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
     def test_pullQueueEmpty(self):
         """Branches with no next_mirror_time are not in the pull queue."""
         self.assertEqual(
-            [], list(self.branch_set.getPullQueue(self.branch_type)))
+            [], list(self.branch_puller.getPullQueue(self.branch_type)))
 
     def test_pastNextMirrorTimeInQueue(self):
         """Branches with next_mirror_time in the past are mirrored."""
@@ -161,10 +161,8 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch.requestMirror()
         branch_id = branch.id
         transaction.commit()
-        self.assertEqual(
-            [branch_id],
-            [branch.id
-             for branch in self.branch_set.getPullQueue(branch.branch_type)])
+        queue = self.branch_puller.getPullQueue(branch.branch_type)
+        self.assertEqual([branch_id], [branch.id for branch in queue])
 
     def test_futureNextMirrorTimeInQueue(self):
         """Branches with next_mirror_time in the future are not mirrored."""
@@ -175,7 +173,7 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch.syncUpdate()
         transaction.commit()
         self.assertEqual(
-            [], list(self.branch_set.getPullQueue(branch.branch_type)))
+            [], list(self.branch_puller.getPullQueue(branch.branch_type)))
 
     def test_pullQueueOrder(self):
         """Pull queue has the oldest mirror request times first."""
@@ -187,12 +185,18 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
             branches.append(branch)
         self.assertEqual(
             list(reversed(branches)),
-            list(self.branch_set.getPullQueue(self.branch_type)))
+            list(self.branch_puller.getPullQueue(self.branch_type)))
 
 
 class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
 
     branch_type = BranchType.MIRRORED
+
+    def setUp(self):
+        TestMirroringForHostedBranches.setUp(self)
+        branch_puller = getUtility(IBranchPuller)
+        self.increment = branch_puller.MIRROR_TIME_INCREMENT
+        self.max_failures = branch_puller.MAXIMUM_MIRROR_FAILURES
 
     def test_mirrorFailureResetsMirrorRequest(self):
         """If a branch fails to mirror then mirror again later."""
@@ -201,7 +205,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         branch.startMirroring()
         branch.mirrorFailed('No particular reason')
         self.assertEqual(1, branch.mirror_failures)
-        self.assertInFuture(branch.next_mirror_time, MIRROR_TIME_INCREMENT)
+        self.assertInFuture(branch.next_mirror_time, self.increment)
 
     def test_mirrorFailureBacksOffExponentially(self):
         """If a branch repeatedly fails to mirror then back off exponentially.
@@ -215,18 +219,18 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         self.assertEqual(num_failures, branch.mirror_failures)
         self.assertInFuture(
             branch.next_mirror_time,
-            (MIRROR_TIME_INCREMENT * 2 ** (num_failures - 1)))
+            (self.increment * 2 ** (num_failures - 1)))
 
     def test_repeatedMirrorFailuresDisablesMirroring(self):
         """If a branch's mirror failures exceed the maximum, disable
         mirroring.
         """
         branch = self.makeAnyBranch()
-        for i in range(MAXIMUM_MIRROR_FAILURES):
+        for i in range(self.max_failures):
             branch.requestMirror()
             branch.startMirroring()
             branch.mirrorFailed('No particular reason')
-        self.assertEqual(MAXIMUM_MIRROR_FAILURES, branch.mirror_failures)
+        self.assertEqual(self.max_failures, branch.mirror_failures)
         self.assertEqual(None, branch.next_mirror_time)
 
     def test_mirroringResetsMirrorRequest(self):
@@ -238,8 +242,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         transaction.commit()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
-        self.assertInFuture(
-            branch.next_mirror_time, MIRROR_TIME_INCREMENT)
+        self.assertInFuture(branch.next_mirror_time, self.increment)
         self.assertEqual(0, branch.mirror_failures)
 
     def test_mirroringResetsMirrorRequestBackwardsCompatibility(self):
@@ -263,13 +266,12 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         # Even though the mirror is complete, the branch is still in the pull
         # queue. This is not normal behaviour.
         self.assertIn(
-            branch, self.branch_set.getPullQueue(branch.branch_type))
+            branch, self.branch_puller.getPullQueue(branch.branch_type))
         # But on the next mirror, everything is OK, since startMirroring does
         # the right thing.
         branch.startMirroring()
         branch.mirrorComplete('rev1')
-        self.assertInFuture(
-            branch.next_mirror_time, MIRROR_TIME_INCREMENT)
+        self.assertInFuture(branch.next_mirror_time, self.increment)
 
 
 class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
