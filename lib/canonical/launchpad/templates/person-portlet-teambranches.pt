@@ -10,7 +10,6 @@
 
   <ul>
     <li tal:repeat="team view/teams_with_branches">
-      <img src="/@@/team" />
       <a tal:replace="structure team/fmt:link">team name</a>
     </li>
   </ul>
