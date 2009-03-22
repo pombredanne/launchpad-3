@@ -643,11 +643,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def getPocketPath(self, pocket):
         """See `ISourcePackage`."""
-        if pocket == PackagePublishingPocket.RELEASE:
-            return self.path
-        else:
-            return '%s/%s-%s/%s' % (
-                self.distribution.name,
-                self.distroseries.name,
-                pocket.name.lower(),
-                self.name)
+        return '%s/%s/%s' % (
+            self.distribution.name,
+            self.distroseries.getSuite(pocket),
+            self.name)

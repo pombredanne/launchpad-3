@@ -268,11 +268,7 @@ class SourcePackagePocket:
     @property
     def suite(self):
         """See `ISourcePackagePocket`."""
-        distroseries = self.sourcepackage.distroseries.name
-        if self.pocket == PackagePublishingPocket.RELEASE:
-            return distroseries
-        else:
-            return '%s-%s' % (distroseries, self.pocket.name.lower())
+        return self.sourcepackage.distroseries.getSuite(self.pocket)
 
 
 class BranchLookup:
