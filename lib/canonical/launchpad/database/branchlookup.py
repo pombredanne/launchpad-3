@@ -263,10 +263,7 @@ class SourcePackagePocket:
     @property
     def path(self):
         """See `ISourcePackagePocket`."""
-        return '%s/%s/%s' % (
-            self.sourcepackage.distribution.name,
-            self.suite,
-            self.sourcepackage.name)
+        return self.sourcepackage.getPocketPath(self.pocket)
 
     @property
     def suite(self):
