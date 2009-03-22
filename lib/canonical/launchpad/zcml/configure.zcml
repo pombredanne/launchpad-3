@@ -26,6 +26,7 @@
     <include file="branchnamespace.zcml" />
     <include file="branchref.zcml" />
     <include file="branchrevision.zcml" />
+    <include file="branchscanner.zcml" />
     <include file="branchsubscription.zcml" />
     <include file="branchtarget.zcml" />
     <include file="bugactivity.zcml" />

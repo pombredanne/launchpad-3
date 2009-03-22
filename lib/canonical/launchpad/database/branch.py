@@ -51,6 +51,7 @@ from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
+from canonical.launchpad.interfaces.branchscanner import IBranchScanner
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.validators.person import validate_public_person
@@ -832,7 +833,7 @@ class DeleteCodeImport(DeletionOperation):
 class BranchSet:
     """The set of all branches."""
 
-    implements(IBranchSet)
+    implements(IBranchSet, IBranchScanner)
 
     def __iter__(self):
         """See `IBranchSet`."""
