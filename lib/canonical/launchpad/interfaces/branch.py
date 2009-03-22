@@ -82,8 +82,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces.branchlookup import (
-    IBranchLookup, ISourcePackagePocketFactory)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
@@ -1361,11 +1360,7 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
         linked_branches = sourcepackage.linked_branches
         for pocket, linked_branch in linked_branches:
             if linked_branch == branch:
-                # XXX: extract 'get path to pocket of package' into a method
-                # on ISourcePackage.
-                package_pocket = getUtility(ISourcePackagePocketFactory).new(
-                    sourcepackage, pocket)
-                return lp_prefix + package_pocket.path
+                return lp_prefix + sourcepackage.getPocketPath(pocket)
 
     return lp_prefix + branch.unique_name
 
