@@ -137,16 +137,18 @@ class BugTaskDelta:
     def __init__(self, bugtask, product=None,
                  sourcepackagename=None, status=None, importance=None,
                  assignee=None, milestone=None, statusexplanation=None,
-                 bugwatch=None):
+                 bugwatch=None, target=None):
         self.bugtask = bugtask
+
+        self.assignee = assignee
+        self.bugwatch = bugwatch
+        self.importance = importance
+        self.milestone = milestone
         self.product = product
         self.sourcepackagename = sourcepackagename
         self.status = status
-        self.importance = importance
-        self.assignee = assignee
-        self.target = milestone
         self.statusexplanation = statusexplanation
-        self.bugwatch = bugwatch
+        self.target = target
 
 
 class BugTaskMixin:

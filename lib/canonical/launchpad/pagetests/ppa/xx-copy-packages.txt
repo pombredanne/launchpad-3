@@ -55,8 +55,6 @@ PPA in order to be able to copy packages.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
-    Profile /
-    ...
     Copy packages from PPA for Celso Providelo
     To be able to copy packages you have to participate in at least one
     PPA. Activate your own PPA or join a team with an active PPA.
@@ -556,7 +554,7 @@ broken package.
 James uses the 'delete-packages' interface in his PPA to delete the
 'pmount' source in hoary.
 
-    >>> jblack_browser.getLink('Personal Package Archive').click()
+    >>> jblack_browser.getLink('default PPA').click()
     >>> jblack_browser.getLink('Delete packages').click()
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -567,7 +565,7 @@ James uses the 'delete-packages' interface in his PPA to delete the
 James return to his PPA overview page and checks that the package is
 really deleted.
 
-    >>> jblack_browser.getLink('Personal Package Archive').click()
+    >>> jblack_browser.getLink('default PPA').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
     >>> jblack_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(jblack_browser.contents)
@@ -672,7 +670,7 @@ together.
 
     >>> jblack_browser.getControl("Create").click()
 
-    >>> jblack_browser.getLink('Personal Package Archive').click()
+    >>> jblack_browser.getLink('Create a new PPA').click()
     >>> jblack_browser.getControl(name="field.accepted").value = True
     >>> jblack_browser.getControl(name="field.description").value = (
     ...    'Come friends ...')
@@ -810,7 +808,7 @@ tests.
 
     >>> jblack_browser.getControl("Create").click()
 
-    >>> jblack_browser.getLink('Personal Package Archive').click()
+    >>> jblack_browser.getLink('Create a new PPA').click()
     >>> jblack_browser.getControl(name="field.accepted").value = True
     >>> jblack_browser.getControl(name="field.description").value = (
     ...    'Come friends ...')

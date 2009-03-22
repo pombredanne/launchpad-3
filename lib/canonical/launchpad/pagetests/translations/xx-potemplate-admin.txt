@@ -1,7 +1,7 @@
 The POTemplate admin page lets us to edit any aspect of that object, that's
 why we need to be a Rosetta Expert or a Launchpad admin to use it.
 
-Check to be sure that an unpriviledged user cannot reach this page
+An unprivileged user cannot reach the POTemplate administration page.
 
   >>> user_browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
@@ -10,8 +10,7 @@ Check to be sure that an unpriviledged user cannot reach this page
   ...
   Unauthorized:...
 
-Check to be sure that a Rosetta expert (Jordi) can reach the POTemplate admin
-page.
+Jordi, a Rosetta expert, can.
 
   >>> browser = setupBrowser(auth='Basic jordi@ubuntu.com:test')
   >>> browser.open(
@@ -60,7 +59,7 @@ a Rosetta Expert to administer it.
   >>> browser.getControl(name='field.path').value
   'po/evolution-2.2.pot'
 
-Check to be sure that an admin can reach the POTemplate admin page.
+An administrator can also access the POTemplate administration page.
 
   >>> admin_browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
@@ -155,3 +154,54 @@ And now let's get back to renaming.
   >>> admin_browser.getControl('Change').click()
   >>> print admin_browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-renamed
+
+
+== Distribution templates ==
+
+Distributions get slightly wider permissions to manage their templates
+autonomously.
+
+    >>> from canonical.launchpad.database import Distribution, POTemplateSet
+    >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
+    >>> hoary = ubuntu['hoary']
+    >>> templateset = POTemplateSet()
+
+    >>> login(ANONYMOUS)
+    >>> package = factory.makeSourcePackageName()
+    >>> templatesubset = templateset.getSubset(
+    ...     distroseries=hoary, sourcepackagename=package)
+    >>> template_owner = factory.makePerson()
+    >>> template = templatesubset.new('foo', 'foo', 'foo.pot', template_owner)
+
+    >>> distro_owner = factory.makePerson('do@example.com', password='test')
+    >>> ubuntu.owner = distro_owner
+
+    >>> group_owner = factory.makePerson('go@example.com', password='test')
+    >>> translation_group = factory.makeTranslationGroup(group_owner)
+    >>> ubuntu.translationgroup = translation_group
+    >>> logout()
+
+    >>> template_admin_url = str(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/%s/+pots/%s/+admin' % (package.name, template.name))
+
+A distribution's owner can manage the distribution's templates.
+
+    >>> distro_owner_browser = setupBrowser(auth='Basic do@example.com:test')
+    >>> distro_owner_browser.open(template_admin_url)
+    >>> distro_owner_browser.getControl(name='field.path').value = 'bar.pot'
+    >>> distro_owner_browser.getControl('Change').click()
+
+    >>> print template.path
+    bar.pot
+
+If the distribution has a translation group assigned, the group's owners
+can manage the distribution's translation templates as well.
+
+    >>> group_owner_browser = setupBrowser(auth='Basic go@example.com:test')
+    >>> group_owner_browser.open(template_admin_url)
+    >>> group_owner_browser.getControl(name='field.path').value = 'splat.pot'
+    >>> group_owner_browser.getControl('Change').click()
+
+    >>> print template.path
+    splat.pot

@@ -20,7 +20,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.database.branch import (
-    BranchSet, ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
+    ClearDependentBranch, ClearSeriesBranch, DeleteCodeImport,
     DeletionCallable, DeletionOperation)
 from canonical.launchpad.database.branchjob import BranchDiffJob
 from canonical.launchpad.database.branchmergeproposal import (
@@ -33,25 +33,19 @@ from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
-    ANONYMOUS, login, login_person, logout, syncUpdate)
+    login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType, CannotDeleteBranch,
-    CodeReviewNotificationLevel, CreateBugParams, IBranchSet, IBugSet,
+    CodeReviewNotificationLevel, CreateBugParams, IBugSet,
     ILaunchpadCelebrities, IPersonSet, IProductSet, ISpecificationSet,
     InvalidBranchMergeProposal, SpecificationDefinitionStatus)
 from canonical.launchpad.interfaces.branch import (
-    BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING, NoSuchBranch)
-from canonical.launchpad.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespaceSet, InvalidNamespace)
-from canonical.launchpad.interfaces.person import NoSuchPerson
-from canonical.launchpad.interfaces.product import NoSuchProduct
+    BranchLifecycleStatus, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchnamespace import IBranchNamespaceSet
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from lazr.uri import URI
-from canonical.launchpad.xmlrpc.faults import (
-    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
-    NoSuchSeries)
 
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
@@ -294,156 +288,6 @@ class TestBranch(TestCaseWithFactory):
             branch.sourcepackage)
 
 
-class TestGetByUniqueName(TestCaseWithFactory):
-    """Tests for `IBranchSet.getByUniqueName`."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.branch_set = getUtility(IBranchSet)
-
-    def test_not_found(self):
-        unused_name = self.factory.getUniqueString()
-        found = self.branch_set.getByUniqueName(unused_name)
-        self.assertIs(None, found)
-
-    def test_junk(self):
-        branch = self.factory.makePersonalBranch()
-        found_branch = self.branch_set.getByUniqueName(branch.unique_name)
-        self.assertEqual(branch, found_branch)
-
-    def test_product(self):
-        branch = self.factory.makeProductBranch()
-        found_branch = self.branch_set.getByUniqueName(branch.unique_name)
-        self.assertEqual(branch, found_branch)
-
-    def test_source_package(self):
-        branch = self.factory.makePackageBranch()
-        found_branch = self.branch_set.getByUniqueName(branch.unique_name)
-        self.assertEqual(branch, found_branch)
-
-
-class TestGetByPath(TestCaseWithFactory):
-    """Test `IBranchSet._getByPath`."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self._unsafe_branch_set = removeSecurityProxy(getUtility(IBranchSet))
-
-    def getByPath(self, path):
-        return self._unsafe_branch_set._getByPath(path)
-
-    def makeRelativePath(self):
-        arbitrary_num_segments = 7
-        return '/'.join([
-            self.factory.getUniqueString()
-            for i in range(arbitrary_num_segments)])
-
-    def test_finds_exact_personal_branch(self):
-        branch = self.factory.makePersonalBranch()
-        found_branch, suffix = self.getByPath(branch.unique_name)
-        self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
-
-    def test_finds_suffixed_personal_branch(self):
-        branch = self.factory.makePersonalBranch()
-        suffix = self.makeRelativePath()
-        found_branch, found_suffix = self.getByPath(
-            branch.unique_name + '/' + suffix)
-        self.assertEqual(branch, found_branch)
-        self.assertEqual(suffix, found_suffix)
-
-    def test_missing_personal_branch(self):
-        owner = self.factory.makePerson()
-        namespace = get_branch_namespace(owner)
-        branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
-
-    def test_missing_suffixed_personal_branch(self):
-        owner = self.factory.makePerson()
-        namespace = get_branch_namespace(owner)
-        branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        suffix = self.makeRelativePath()
-        self.assertRaises(
-            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
-
-    def test_finds_exact_product_branch(self):
-        branch = self.factory.makeProductBranch()
-        found_branch, suffix = self.getByPath(branch.unique_name)
-        self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
-
-    def test_finds_suffixed_product_branch(self):
-        branch = self.factory.makeProductBranch()
-        suffix = self.makeRelativePath()
-        found_branch, found_suffix = self.getByPath(
-            branch.unique_name + '/' + suffix)
-        self.assertEqual(branch, found_branch)
-        self.assertEqual(suffix, found_suffix)
-
-    def test_missing_product_branch(self):
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        namespace = get_branch_namespace(owner, product=product)
-        branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
-
-    def test_missing_suffixed_product_branch(self):
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        namespace = get_branch_namespace(owner, product=product)
-        suffix = self.makeRelativePath()
-        branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        self.assertRaises(
-            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
-
-    def test_finds_exact_package_branch(self):
-        branch = self.factory.makePackageBranch()
-        found_branch, suffix = self.getByPath(branch.unique_name)
-        self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
-
-    def test_missing_package_branch(self):
-        owner = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        namespace = get_branch_namespace(
-            owner, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
-        branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
-
-    def test_missing_suffixed_package_branch(self):
-        owner = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        namespace = get_branch_namespace(
-            owner, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
-        suffix = self.makeRelativePath()
-        branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        self.assertRaises(
-            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
-
-    def test_no_preceding_tilde(self):
-        self.assertRaises(
-            InvalidNamespace, self.getByPath, self.makeRelativePath())
-
-    def test_too_short(self):
-        person = self.factory.makePerson()
-        self.assertRaises(
-            InvalidNamespace, self.getByPath, '~%s' % person.name)
-
-    def test_no_such_product(self):
-        person = self.factory.makePerson()
-        branch_name = '~%s/%s/%s' % (
-            person.name, self.factory.getUniqueString(), 'branch-name')
-        self.assertRaises(NoSuchProduct, self.getByPath, branch_name)
-
-
 class TestBranchDeletion(TestCaseWithFactory):
     """Test the different cases that makes a branch deletable or not."""
 
@@ -469,7 +313,7 @@ class TestBranchDeletion(TestCaseWithFactory):
                          "A newly created branch should be able to be "
                          "deleted.")
         branch_id = self.branch.id
-        branch_set = BranchSet()
+        branch_set = getUtility(IBranchLookup)
         self.branch.destroySelf()
         self.assert_(branch_set.get(branch_id) is None,
                      "The branch has not been deleted.")
@@ -541,7 +385,8 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.branch.destroySelf()
         # Commit again to trigger the deferred indices.
         transaction.commit()
-        self.assertEqual(BranchSet().getByUniqueName(unique_name), None,
+        branch_lookup = getUtility(IBranchLookup)
+        self.assertEqual(branch_lookup.getByUniqueName(unique_name), None,
                          "Branch was not deleted.")
 
     def test_landingTargetDisablesDeletion(self):
@@ -593,7 +438,6 @@ class TestBranchDeletionConsequences(TestCase):
         self.factory = LaunchpadObjectFactory()
         # Has to be a product branch because of merge proposals.
         self.branch = self.factory.makeProductBranch()
-        self.branch_set = getUtility(IBranchSet)
         # The owner of the branch is subscribed to the branch when it is
         # created.  The tests here assume no initial connections, so
         # unsubscribe the branch owner here.
@@ -1189,172 +1033,6 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
         # This is just "assertNotRaises"
         branch.createBranchRevisionFromIDs(
             [(rev.revision_id, revision_number)])
-
-
-class TestGetByUrl(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def makeProductBranch(self):
-        """Create a branch with aa/b/c as its unique name."""
-        # XXX: JonathanLange 2009-01-13 spec=package-branches: This test is
-        # bad because it assumes that the interesting branches for testing are
-        # product branches.
-        owner = self.factory.makePerson(name='aa')
-        product = self.factory.makeProduct('b')
-        return self.factory.makeProductBranch(
-            owner=owner, product=product, name='c')
-
-    def test_getByUrl_with_http(self):
-        """getByUrl recognizes LP branches for http URLs."""
-        branch = self.makeProductBranch()
-        branch_set = getUtility(IBranchSet)
-        branch2 = branch_set.getByUrl('http://bazaar.launchpad.dev/~aa/b/c')
-        self.assertEqual(branch, branch2)
-
-    def test_getByUrl_with_ssh(self):
-        """getByUrl recognizes LP branches for bzr+ssh URLs."""
-        branch = self.makeProductBranch()
-        branch_set = getUtility(IBranchSet)
-        branch2 = branch_set.getByUrl(
-            'bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
-        self.assertEqual(branch, branch2)
-
-    def test_getByUrl_with_sftp(self):
-        """getByUrl recognizes LP branches for sftp URLs."""
-        branch = self.makeProductBranch()
-        branch_set = getUtility(IBranchSet)
-        branch2 = branch_set.getByUrl('sftp://bazaar.launchpad.dev/~aa/b/c')
-        self.assertEqual(branch, branch2)
-
-    def test_getByUrl_with_ftp(self):
-        """getByUrl does not recognize LP branches for ftp URLs.
-
-        This is because Launchpad doesn't currently support ftp.
-        """
-        branch = self.makeProductBranch()
-        branch_set = getUtility(IBranchSet)
-        branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
-        self.assertIs(None, branch2)
-
-    def test_getByURL_with_lp_prefix(self):
-        """lp: URLs for the configured prefix are supported."""
-        branch_set = getUtility(IBranchSet)
-        url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
-        self.assertRaises(NoSuchPerson, branch_set.getByUrl, url)
-        owner = self.factory.makePerson(name='aa')
-        product = self.factory.makeProduct('b')
-        branch2 = branch_set.getByUrl(url)
-        self.assertIs(None, branch2)
-        branch = self.factory.makeProductBranch(
-            owner=owner, product=product, name='c')
-        branch2 = branch_set.getByUrl(url)
-        self.assertEqual(branch, branch2)
-
-    def test_getByURL_for_production(self):
-        """test_getByURL works with production values."""
-        branch_set = getUtility(IBranchSet)
-        branch = self.makeProductBranch()
-        self.pushConfig('codehosting', lp_url_hosts='edge,production,,')
-        branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
-        self.assertIs(None, branch2)
-        branch2 = branch_set.getByUrl('lp://asdf/~aa/b/c')
-        self.assertIs(None, branch2)
-        branch2 = branch_set.getByUrl('lp:~aa/b/c')
-        self.assertEqual(branch, branch2)
-        branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
-        self.assertEqual(branch, branch2)
-        branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
-        self.assertEqual(branch, branch2)
-
-    def test_URIToUniqueName(self):
-        """Ensure URIToUniqueName works.
-
-        Only codehosting-based using http, sftp or bzr+ssh URLs will
-        be handled. If any other URL gets passed the returned will be
-        None.
-        """
-        branch_set = getUtility(IBranchSet)
-        uri = URI(config.codehosting.supermirror_root)
-        uri.path = '/~foo/bar/baz'
-        # Test valid schemes
-        uri.scheme = 'http'
-        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
-        uri.scheme = 'sftp'
-        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
-        uri.scheme = 'bzr+ssh'
-        self.assertEqual('~foo/bar/baz', branch_set.URIToUniqueName(uri))
-        # Test invalid scheme
-        uri.scheme = 'ftp'
-        self.assertIs(None, branch_set.URIToUniqueName(uri))
-        # Test valid scheme, invalid domain
-        uri.scheme = 'sftp'
-        uri.host = 'example.com'
-        self.assertIs(None, branch_set.URIToUniqueName(uri))
-
-
-class TestGetByLPPath(TestCaseWithFactory):
-    """Ensure URLs are correctly expanded."""
-
-    layer = DatabaseFunctionalLayer
-
-    # XXX: JonathanLange 2009-01-13 spec=package-branches: All of these tests
-    # should be adjusted to assume less about the structure of branch names.
-    # In particular, they should not call factory.makeBranch unless they have
-    # to, instead calling the helper aliases.
-
-    def test_getByLPPath_with_three_parts(self):
-        """Test the behaviour with three-part names."""
-        branch_set = getUtility(IBranchSet)
-        self.assertRaises(
-            InvalidBranchIdentifier, branch_set.getByLPPath, 'a/b/c')
-        self.assertRaises(
-            NoSuchPerson, branch_set.getByLPPath, '~aa/bb/c')
-        owner = self.factory.makePerson(name='aa')
-        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, '~aa/bb/c')
-        product = self.factory.makeProduct('bb')
-        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/bb/c')
-        branch = self.factory.makeProductBranch(
-            owner=owner, product=product, name='c')
-        self.assertEqual(
-            (branch, None, None), branch_set.getByLPPath('~aa/bb/c'))
-
-    def test_getByLPPath_with_junk_branch(self):
-        """Test the behaviour with junk branches."""
-        owner = self.factory.makePerson(name='aa')
-        branch_set = getUtility(IBranchSet)
-        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/+junk/c')
-        branch = self.factory.makePersonalBranch(owner=owner, name='c')
-        self.assertEqual(
-            (branch, None, None), branch_set.getByLPPath('~aa/+junk/c'))
-
-    def test_getByLPPath_with_two_parts(self):
-        """Test the behaviour with two-part names."""
-        branch_set = getUtility(IBranchSet)
-        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb/dd')
-        product = self.factory.makeProduct('bb')
-        self.assertRaises(NoSuchSeries, branch_set.getByLPPath, 'bb/dd')
-        series = self.factory.makeSeries(name='dd', product=product)
-        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb/dd')
-        series.branch = self.factory.makeAnyBranch()
-        self.assertEqual(
-            (series.branch, None, series),
-            branch_set.getByLPPath('bb/dd'))
-
-    def test_getByLPPath_with_one_part(self):
-        """Test the behaviour with one names."""
-        branch_set = getUtility(IBranchSet)
-        self.assertRaises(
-            InvalidProductIdentifier, branch_set.getByLPPath, 'b')
-        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb')
-        # We are not testing the security proxy here, so remove it.
-        product = removeSecurityProxy(self.factory.makeProduct('bb'))
-        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb')
-        branch = self.factory.makeAnyBranch()
-        product.development_focus.branch = branch
-        self.assertEqual(
-            (branch, None, product.development_focus),
-            branch_set.getByLPPath('bb'))
 
 
 class TestCodebrowseURL(TestCaseWithFactory):

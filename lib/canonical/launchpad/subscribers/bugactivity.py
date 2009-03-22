@@ -9,7 +9,11 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from lazr.enum import BaseItem
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.components.bugchange import (
+    CveLinkedToBug, CveUnlinkedFromBug)
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad.components.bugchange import (
+    BugWatchAdded, BugWatchRemoved)
 from canonical.launchpad.interfaces import (
     IBug, IBugActivitySet, IMilestone, IPerson, IProductRelease,
     ISourcePackageRelease)
@@ -20,16 +24,13 @@ vocabulary_registry = getVocabularyRegistry()
 BUG_INTERESTING_FIELDS = [
     'duplicateof',
     'name',
-    'tags',
     ]
 
 
 BUGTASK_INTERESTING_FIELDS = [
     'assignee',
     'bugwatch',
-    'importance',
     'milestone',
-    'status',
     'target',
     ]
 
@@ -124,6 +125,26 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
             oldvalue=oldvalue,
             newvalue=newvalue,
             message="")
+
+
+@block_implicit_flushes
+def record_cve_linked_to_bug(bug_cve, event):
+    """Record when a CVE is linked to a bug."""
+    bug_cve.bug.addChange(
+        CveLinkedToBug(
+            when=None,
+            person=IPerson(event.user),
+            cve=bug_cve.cve))
+
+
+@block_implicit_flushes
+def record_cve_unlinked_from_bug(bug_cve, event):
+    """Record when a CVE is unlinked from a bug."""
+    bug_cve.bug.addChange(
+        CveUnlinkedFromBug(
+            when=None,
+            person=IPerson(event.user),
+            cve=bug_cve.cve))
 
 
 @block_implicit_flushes
@@ -228,3 +249,20 @@ def record_bugsubscription_edited(bugsubscription_edited,
                     bugsubscription_edited.person.browsername),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
+
+
+@block_implicit_flushes
+def notify_bug_watch_modified(modified_bug_watch, event):
+    """Notify CC'd bug subscribers that a bug watch was edited.
+
+    modified_bug_watch must be an IBugWatch. event must be an
+    IObjectModifiedEvent.
+    """
+    old_watch = event.object_before_modification
+    new_watch = event.object
+    bug = new_watch.bug
+    if old_watch.url == new_watch.url:
+        # Nothing interesting was modified, don't record any changes.
+        return
+    bug.addChange(BugWatchRemoved(UTC_NOW, IPerson(event.user), old_watch))
+    bug.addChange(BugWatchAdded(UTC_NOW, IPerson(event.user), new_watch))

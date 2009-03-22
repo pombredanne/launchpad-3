@@ -22,7 +22,8 @@ from canonical.launchpad.browser.branch import (
 from canonical.launchpad.browser.branchlisting import PersonOwnedBranchesView
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus, BranchType, IBranchSet, IPersonSet, IProductSet)
+    BranchLifecycleStatus, BranchType, IPersonSet, IProductSet)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.testing import (
     login, login_person, logout, ANONYMOUS, TestCaseWithFactory)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -119,7 +120,7 @@ class TestBranchView(unittest.TestCase):
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
-        branch = getUtility(IBranchSet).get(28)
+        branch = getUtility(IBranchLookup).get(28)
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertEqual(
             truncate_text(branch.mirror_status_message,
@@ -128,7 +129,7 @@ class TestBranchView(unittest.TestCase):
 
     def testMirrorStatusMessage(self):
         """mirror_status_message on the view is the same as on the branch."""
-        branch = getUtility(IBranchSet).get(5)
+        branch = getUtility(IBranchLookup).get(5)
         branch.mirrorFailed("This is a short error message.")
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertTrue(

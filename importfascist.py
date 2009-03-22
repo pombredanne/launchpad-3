@@ -61,6 +61,7 @@ def database_import_allowed_into(module_path):
         - The importer is from within canonical.launchpad.database.
         - The importer is a 'test' module.
         - The importer is in the set of permitted_database_imports.
+        - The importer is within a model module or package.
 
     Note that being in the set of warned_database_imports does not make
     the import allowed.
@@ -68,6 +69,7 @@ def database_import_allowed_into(module_path):
     """
     if (module_path == '__import__ hook' or
         module_path.startswith('canonical.launchpad.database') or
+        '.model' in module_path or
         is_test_module(module_path)):
         return True
     return module_path in permitted_database_imports
