@@ -308,6 +308,26 @@ Except, that is, when the FAQ doesn't exist:
     <p>faq 999</p>
 
 
+== Branch references ==
+
+Branch references are linkified:
+
+    >>> text = (
+    ...     'lp:~foo/bar/baz\n'
+    ...     'lp:~foo/+junk/baz\n'
+    ...     'lp:~foo/ubuntu/jaunty/evolution/baz\n'
+    ...     'lp:foo/bar\n'
+    ...     'lp:foo\n'
+    ...     'lp:foo/bar/baz\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/+branch/~foo/bar/baz">lp:~foo/bar/baz</a><br />
+    <a href="/+branch/~foo/+junk/baz">lp:~foo/+junk/baz</a><br />
+    <a href="/+branch/~foo/ubuntu/jaunty/evolution/baz">lp:~foo/ubuntu/jaunty/evolution/baz</a><br />
+    <a href="/+branch/foo/bar">lp:foo/bar</a><br />
+    <a href="/+branch/foo">lp:foo</a><br />
+    <a href="/+branch/foo/bar/baz">lp:foo/bar/baz</a></p>
+
+
 == OOPS references ==
 
 fmt:text-to-html is also smart enough to convert OOPS references into

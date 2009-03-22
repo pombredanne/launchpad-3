@@ -2169,6 +2169,11 @@ class FormattersAPI:
             root_url = config.launchpad.oops_root_url
             url = root_url + match.group('oopscode')
             return '<a href="%s">%s</a>' % (url, text)
+        elif match.group('lpbranchurl') is not None:
+            lp_url = match.group('lpbranchurl')
+            path = match.group('branch')
+            url = '/+branch/%s' % path
+            return '<a href="%s">%s</a>' % (url, lp_url)
         else:
             raise AssertionError("Unknown pattern matched.")
 
@@ -2286,6 +2291,10 @@ class FormattersAPI:
       (?P<oops>
         \boops\s*-?\s*
         (?P<oopscode> \d* [a-z]+ \d+)
+      ) |
+      (?P<lpbranchurl>
+        \blp:
+        (?P<branch>[%(unreserved)s][%(unreserved)s/]*)
       )
     ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
                              re.IGNORECASE | re.VERBOSE)
@@ -2305,7 +2314,6 @@ class FormattersAPI:
         #    only if the first is between 60 and 80 characters and the
         #    second does not begin with white space.
         # 3. Use <br /> to split logical lines within a paragraph.
-
         output = []
         first_para = True
         for para in split_paragraphs(self._stringtoformat):
