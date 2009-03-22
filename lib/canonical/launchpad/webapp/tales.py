@@ -2293,7 +2293,7 @@ class FormattersAPI:
         (?P<oopscode> \d* [a-z]+ \d+)
       ) |
       (?P<lpbranchurl>
-        \blp:
+        \blp:(?:///|/)?
         (?P<branch>[%(unreserved)s][%(unreserved)s/]*)
       )
     ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="},
