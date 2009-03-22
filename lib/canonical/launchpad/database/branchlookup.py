@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distroseries import (
-    IDistroSeries, NoSuchDistroSeries)
+    IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
@@ -127,30 +127,12 @@ class DistributionTraversable(_BaseTraversable):
     adapts(IDistribution)
     implements(ILinkedBranchTraversable)
 
-    def _parseName(self, suite):
-        """Parse 'suite' into a series name and a pocket."""
-        tokens = suite.rsplit('-', 1)
-        if len(tokens) == 1:
-            return suite, PackagePublishingPocket.RELEASE
-        series, pocket = tokens
-        try:
-            pocket = PackagePublishingPocket.items[pocket.upper()]
-        except KeyError:
-            # No such pocket. Probably trying to get a hyphenated series name.
-            return suite, PackagePublishingPocket.RELEASE
-        else:
-            return series, pocket
-
     def traverse(self, name, further_path):
         """See `ITraversable`."""
-        series_name, pocket = self._parseName(name)
-        series = self.context.getSeries(series_name)
-        if series is None:
-            raise NoSuchDistroSeries(name)
         # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
         # could also try to find a package and then return a reference to its
         # development focus.
-        return series, pocket
+        return getUtility(IDistroSeriesSet).fromSuite(self.context, name)
 
 
 class DistroSeriesTraversable:
