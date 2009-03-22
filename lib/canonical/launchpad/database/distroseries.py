@@ -1659,6 +1659,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=['-priority', 'name'])
         return shortlist(result, 300)
 
+    def getSuite(self, pocket):
+        """See `IDistroSeries`."""
+        if pocket == PackagePublishingPocket.RELEASE:
+            return self.name
+        else:
+            return '%s-%s' % (self.name, pocket.name.lower())
+
 
 class DistroSeriesSet:
     implements(IDistroSeriesSet)
