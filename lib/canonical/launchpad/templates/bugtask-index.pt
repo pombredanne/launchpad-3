@@ -363,11 +363,16 @@ function update_bug_duplicate(data) {
 
         <div id="bug-description" tal:content="structure description" />
 
-          <div id="bug-tags" tal:define="tags context/bug/tags" tal:condition="tags"
+          <div id="bug-tags" tal:condition="context/bug/tags"
                style="width: 45%: text-align: left; float: right;">
             Tags:
-            <a tal:repeat="tag tags"
+            <a tal:repeat="tag view/official_tags"
                tal:content="tag"
+               class="official-tag"
+               tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+            <a tal:repeat="tag view/unofficial_tags"
+               tal:content="tag"
+               class="unofficial-tag"
                tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
           </div>
 
