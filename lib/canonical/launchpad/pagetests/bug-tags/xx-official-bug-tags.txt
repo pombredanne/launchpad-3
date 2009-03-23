@@ -206,3 +206,30 @@ If no official tags are defined, the title of the unofficial ones is changed.
     unofficial-tag-09   1
     <BLANKLINE>
 
+
+== Entering Official Tags ==
+
+=== Available Official Tags in Javascript ===
+
+The list of available official tags is present on the page as a Javascript
+variable. This list is used to initialise the tag entry widget. The list
+comprises of the official tags of all targets for which the bug has a task.
+
+    >>> login('foo.bar@canonical.com')
+    >>> product1 = factory.makeProduct()
+    >>> product2 = factory.makeProduct()
+    >>> product1.official_bug_tags = [u'eenie', u'meenie']
+    >>> product2.official_bug_tags = [u'miney', u'moe']
+    >>> bug = factory.makeBug(product=product1)
+    >>> bug.addTask(target=product2, owner=factory.makePerson())
+    <BugTask at ...>
+    >>> bug_url = canonical_url(bug)
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> browser.open(bug_url)
+    >>> js = find_tag_by_id(browser.contents, 'available-official-tags-js')
+    >>> print js
+    <script...>var available_official_tags =
+    ["eenie", "meenie", "miney", "moe"];</script>
+
