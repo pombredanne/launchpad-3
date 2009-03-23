@@ -15,7 +15,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import run_with_login, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing import DatabaseFunctionalLayer
@@ -76,12 +76,11 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         default_branch = self.factory.makePackageBranch(
             sourcepackage=development_package)
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        login_person(ubuntu_branches.teamowner)
-        development_package.setBranch(
+        run_with_login(
+            ubuntu_branches.teamowner,
+            development_package.setBranch,
             PackagePublishingPocket.RELEASE, default_branch,
             ubuntu_branches.teamowner)
-        logout()
-        login(ANONYMOUS)
         self.assertEqual(default_branch, target.default_stacked_on_branch)
 
 
