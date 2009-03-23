@@ -165,6 +165,14 @@ class CookbookSet(CookbookTopLevelObject):
             recipes.extend(cookbook.find_recipes(search))
         return recipes
 
+    def find_for_cuisine(self, cuisine):
+        """See `ICookbookSet`"""
+        cookbooks = []
+        for cookbook in self.cookbooks:
+            if cookbook.cuisine == cuisine:
+                cookbooks.append(cookbook)
+        return cookbooks
+
     def create(self, name, description, cuisine, copyright_date):
         for cookbook in self.cookbooks:
             if cookbook.name == name:
