@@ -277,6 +277,11 @@ class ProductNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return '~%s/%s' % (self.owner.name, self.product.name)
 
+    @property
+    def target(self):
+        """See `IBranchNamespace`."""
+        return IBranchTarget(self.product)
+
     def _getRelatedPolicies(self):
         """Return the privacy policies relating to the owner."""
         policies = self.product.getBranchVisibilityTeamPolicies()
@@ -352,6 +357,11 @@ class PackageNamespace(_BaseNamespace):
     def name(self):
         """See `IBranchNamespace`."""
         return '~%s/%s' % (self.owner.name, self.sourcepackage.path)
+
+    @property
+    def target(self):
+        """See `IBranchNamespace`."""
+        return IBranchTarget(self.sourcepackage)
 
     def areNewBranchesPrivate(self):
         """See `IBranchNamespace`."""

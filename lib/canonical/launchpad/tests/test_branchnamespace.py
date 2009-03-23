@@ -256,6 +256,14 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
         namespace = ProductNamespace(person, product)
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
 
+    def test_target(self):
+        # The target for a product namespace is the branch target of the
+        # product.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        namespace = ProductNamespace(person, product)
+        self.assertEqual(IBranchTarget(product), namespace.target)
+
 
 class TestProductNamespacePrivacy(TestCaseWithFactory):
     """Tests for the privacy aspects of `ProductNamespace`."""
@@ -354,6 +362,14 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
         namespace = PackageNamespace(
             person, SourcePackage(sourcepackagename, distroseries))
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
+
+    def test_target(self):
+        # The target for a package namespace is the branch target of the
+        # sourcepackage.
+        person = self.factory.makePerson()
+        package = self.factory.makeSourcePackage()
+        namespace = PackageNamespace(person, package)
+        self.assertEqual(IBranchTarget(package), namespace.target)
 
 
 class TestPackageNamespacePrivacy(TestCaseWithFactory):
