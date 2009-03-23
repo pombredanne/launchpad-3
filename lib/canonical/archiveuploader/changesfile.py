@@ -13,7 +13,6 @@ __all__ = [
     ]
 
 import os
-import re
 
 from canonical.archiveuploader.dscfile import DSCFile, SignableTagFile
 from canonical.archiveuploader.nascentuploadfile import (
@@ -253,7 +252,7 @@ class ChangesFile(SignableTagFile):
 
     @property
     def binary_package_files(self):
-        """Return a list of BaseBinaryUploadFile initialized in this context."""
+        """Get a list of BaseBinaryUploadFile initialized in this context."""
         return self._getFilesByType(BaseBinaryUploadFile)
 
     @property
