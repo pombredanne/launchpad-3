@@ -46,7 +46,8 @@
     <tr tal:repeat="nomination context/getNominations">
       <td colspan="6" style="padding-left: 3em">Nominated for
         <span tal:replace="nomination/target/title">Trunk</span> by
-        <a tal:replace="structure nomination/owner/fmt:link:bugs">
+        <a tal:attributes="href nomination/owner/fmt:url:bugs"
+           tal:content="nomination/owner/fmt:displayname">
           Edwin Grubbs
         </a>
       </td>

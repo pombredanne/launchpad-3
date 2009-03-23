@@ -279,12 +279,12 @@ class HasSpecificationsView(LaunchpadView):
         detect which set of specifications you want to see. The options are:
 
          - all specs (self.context.specifications())
-         - created by this person (self.context.created_specs)
-         - assigned to this person (self.context.assigned_specs)
-         - for review by this person (self.context.feedback_specs)
-         - specs this person must approve (self.context.approver_specs)
-         - drafted by this person (self.context.drafted_specs)
-         - subscribed by this person (self.context.subscriber_specs)
+         - created by this person
+         - assigned to this person
+         - for review by this person
+         - specs this person must approve
+         - drafted by this person
+         - subscribed by this person
 
         """
         categories = {}

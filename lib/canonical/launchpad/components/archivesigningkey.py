@@ -63,7 +63,7 @@ class ArchiveSigningKey:
         assert self.archive.signing_key is None, (
             "Cannot override signing_keys.")
 
-        key_displayname = "Launchpad %s" % self.archive.title
+        key_displayname = "Launchpad %s" % self.archive.displayname
         secret_key = getUtility(IGPGHandler).generateKey(key_displayname)
         self._setupSigningKey(secret_key)
 
@@ -101,7 +101,7 @@ class ArchiveSigningKey:
     def signRepository(self, suite):
         """See `IArchiveSigningKey`."""
         assert self.archive.signing_key is not None, (
-            "No signing key available for %s" % self.archive.title)
+            "No signing key available for %s" % self.archive.displayname)
 
         suite_path = os.path.join(self._archive_root_path, 'dists', suite)
         release_file_path = os.path.join(suite_path, 'Release')

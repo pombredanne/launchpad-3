@@ -21,6 +21,8 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from email import message_from_string
+from operator import itemgetter
+from simplejson import dumps
 import tempfile
 import urllib
 
@@ -58,6 +60,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
 from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
+from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.webapp.menu import structured
 
@@ -1266,6 +1269,28 @@ class BugTargetBugTagsView(LaunchpadView):
             for tag, count in bug_tag_counts]
 
     @property
+    def official_tags(self):
+        """Get the official tags to diplay."""
+        official_tags = set(self.context.official_bug_tags)
+        tags = [tag for tag in self.getUsedBugTagsWithURLs()
+                if tag['tag'] in official_tags]
+        used_tags = set(tag['tag'] for tag in tags)
+        tags.sort(key=itemgetter('count'))
+        for tag in sorted(official_tags - used_tags):
+            tags.append(
+                {'tag': tag, 'count': 0, 'url': self._getSearchURL(tag)})
+        return tags
+
+    @property
+    def other_tags(self):
+        """Get the unofficial tags to diplay."""
+        official_tags = set(self.context.official_bug_tags)
+        tags = [tag for tag in self.getUsedBugTagsWithURLs()
+                if tag['tag'] not in official_tags]
+        tags.sort(key=itemgetter('count'), reverse=True)
+        return tags[:10]
+
+    @property
     def show_manage_tags_link(self):
         """Should a link to a "manage official tags" page be shown?"""
         return (IOfficialBugTagTargetRestricted.providedBy(self.context) and
@@ -1285,6 +1310,22 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
     @property
+    def tags_js_data(self):
+        """Return the JSON representation of the bug tags."""
+        used_tags = dict(self.context.getUsedBugTagsWithOpenCounts(self.user))
+        official_tags = list(self.context.official_bug_tags)
+        return """<script type="text/javascript">
+                      var used_bug_tags = %s;
+                      var official_bug_tags = %s;
+                      var valid_name_pattern = %s;
+                  </script>
+               """ % (
+               dumps(used_tags),
+               dumps(official_tags),
+               dumps(valid_name_pattern.pattern))
+
+    @property
     def cancel_url(self):
         """The URL the user is sent to when clicking the "cancel" link."""
         return canonical_url(self.context)
+

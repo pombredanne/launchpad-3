@@ -26,7 +26,7 @@ from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, IAddBugTaskForm,
-    IAddBugTaskWithProductCreationForm, IBug, IBugTaskSet, IBugTrackerSet,
+    IAddBugTaskWithProductCreationForm, IBug, IBugTrackerSet,
     IBugWatchSet, IDistributionSourcePackage, ILaunchBag,
     ILaunchpadCelebrities, IProductSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL, valid_remote_bug_url, valid_upstreamtask,
@@ -245,12 +245,15 @@ class BugTaskCreationStep(AlsoAffectsStep):
                     self.next_step = DistroBugTrackerCreationStep
                 return
 
-        product = data.get('product')
-        distribution = data.get('distribution')
-        sourcepackagename = data.get('sourcepackagename')
-        self.task_added = getUtility(IBugTaskSet).createTask(
-            self.context.bug, getUtility(ILaunchBag).user, product=product,
-            distribution=distribution, sourcepackagename=sourcepackagename)
+        if data.get('product') is not None:
+            task_target = data['product']
+        else:
+            task_target = data['distribution']
+            if data.get('sourcepackagename') is not None:
+                task_target = task_target.getSourcePackage(
+                    data['sourcepackagename'])
+        self.task_added = self.context.bug.addTask(
+            getUtility(ILaunchBag).user, task_target)
         task_added = self.task_added
 
         if extracted_bug is not None:
@@ -281,7 +284,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
             if bug_watch is None:
                 bug_watch = task_added.bug.addWatch(
                     extracted_bugtracker, extracted_bug, self.user)
-                notify(ObjectCreatedEvent(bug_watch))
             if not target.official_malone:
                 task_added.bugwatch = bug_watch
 

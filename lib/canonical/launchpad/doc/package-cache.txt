@@ -328,7 +328,7 @@ We have to issue 'updateArchiveCache' to include the owner 'name' and
 Now Celso's PPA can be found via searches and the package counters got
 reset, reflecting that nothing is cached in the database yet.
 
-  >>> print ubuntu.searchPPAs(text='cprov')[0].title
+  >>> print ubuntu.searchPPAs(text='cprov')[0].displayname
   PPA for Celso Providelo
 
   >>> print cprov.archive.sources_cached
@@ -379,15 +379,15 @@ same queries work, pointing to Celso's PPA.
   >>> print cprov.archive.binaries_cached
   2
 
-  >>> print ubuntu.searchPPAs(text='cprov')[0].title
+  >>> print ubuntu.searchPPAs(text='cprov')[0].displayname
   PPA for Celso Providelo
-  >>> print ubuntu.searchPPAs(text='pmount')[0].title
+  >>> print ubuntu.searchPPAs(text='pmount')[0].displayname
   PPA for Celso Providelo
-  >>> print ubuntu.searchPPAs(text='firefox')[0].title
+  >>> print ubuntu.searchPPAs(text='firefox')[0].displayname
   PPA for Celso Providelo
-  >>> print ubuntu.searchPPAs(text='warty')[0].title
+  >>> print ubuntu.searchPPAs(text='warty')[0].displayname
   PPA for Celso Providelo
-  >>> print ubuntu.searchPPAs(text='shortdesc')[0].title
+  >>> print ubuntu.searchPPAs(text='shortdesc')[0].displayname
   PPA for Celso Providelo
 
 The method which populates the archive caches also cleans the texts up

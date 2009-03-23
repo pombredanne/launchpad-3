@@ -119,25 +119,25 @@ class ViewLabel:
 
 # Functions and strings used as the titles of pages.
 
-archive_admin = ContextTitle('Administer %s')
+archive_admin = ContextDisplayName('Administer %s')
 
 archive_activate = 'Activate Personal Package Archive'
 
-archive_builds = ContextTitle('Builds for %s')
+archive_builds = ContextDisplayName('Builds for %s')
 
-archive_copy_packages = ContextTitle('Copy packages from %s')
+archive_copy_packages = ContextDisplayName('Copy packages from %s')
 
-archive_delete_packages = ContextTitle('Delete packages from %s')
+archive_delete_packages = ContextDisplayName('Delete packages from %s')
 
-archive_edit = ContextTitle('Edit %s')
+archive_edit = ContextDisplayName('Edit %s')
 
-archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
+archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
-archive_index = ContextTitle('%s')
+archive_index = ContextDisplayName('%s')
 
 archive_subscriber_edit = ContextTitle('Edit %s')
 
-archive_subscribers = ContextTitle('Manage subscriptions for %s')
+archive_subscribers = ContextDisplayName('Manage subscriptions for %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
