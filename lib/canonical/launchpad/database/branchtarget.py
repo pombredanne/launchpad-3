@@ -108,6 +108,11 @@ class ProductBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return self.product.name
 
+    @property
+    def default_stacked_on_branch(self):
+        """See `IBranchTarget`."""
+        return self.product.default_stacked_on_branch
+
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
         from canonical.launchpad.database.branchnamespace import (
