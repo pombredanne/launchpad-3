@@ -16,6 +16,7 @@ __all__ = [
     'CveLinkedToBug',
     'CveUnlinkedFromBug',
     'UnsubscribedFromBug',
+    'SeriesNominated',
     'get_bug_change_class',
     ]
 
@@ -149,6 +150,24 @@ class BugTaskAdded(BugChangeBase):
     def getBugNotificationRecipients(self):
         """See `IBugChange`."""
         # Send the notification to the default recipients.
+
+
+class SeriesNominated(BugChangeBase):
+    """A series got nominated for fixing in."""
+
+    def __init__(self, when, person, series):
+        super(SeriesNominated, self).__init__(when, person)
+        self.series = series
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='nominated for series',
+            newvalue=self.series.bugtargetname)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return None
 
 
 class BugWatchAdded(BugChangeBase):
