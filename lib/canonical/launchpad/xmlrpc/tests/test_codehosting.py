@@ -950,7 +950,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
+        self.assertControlDirectory(branch.unique_name, '.bzr', translation)
 
     def test_translatePath_control_directory_no_stacked_set(self):
         # When there's no default stacked-on branch set for the project, we
@@ -973,7 +973,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
+        self.assertControlDirectory(branch.unique_name, '.bzr', translation)
 
     def test_translatePath_control_directory_other_owner(self):
         requester = self.factory.makePerson()
@@ -982,7 +982,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr' % (owner.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
+        self.assertControlDirectory(branch.unique_name, '.bzr', translation)
 
 
 class TestIterateSplit(TestCase):

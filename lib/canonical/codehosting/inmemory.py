@@ -564,7 +564,7 @@ class FakeBranchFilesystem:
         return (
             CONTROL_TRANSPORT,
             {'default_stack_on': escape('/' + default_branch.unique_name)},
-            '/'.join([bazaar, trailing_path]))
+            '/'.join([bazaar, trailing_path]).rstrip('/'))
 
     def _serializeBranch(self, requester_id, branch, trailing_path):
         if not self._canRead(requester_id, branch):
