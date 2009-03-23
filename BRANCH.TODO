@@ -2,3 +2,13 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+GOALS:
+* Create new person visibility of PRIVATE
+* PRIVATE teams can:
+   * Subscribe to bugs,
+   * Be a Bug Supervisor,
+   * Own branches,
+   * Own PPAs
+   * Be a member of a public team
+   * Have public teams as members
