@@ -66,7 +66,6 @@ class TestBugChanges(unittest.TestCase):
         """Assert that things were recorded as expected."""
         if bug is None:
             bug = self.bug
-
         new_activities = [
             activity for activity in bug.activity
             if activity not in self.old_activities]
@@ -582,6 +581,94 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_notification=attachment_removed_notification,
             expected_activity=attachment_removed_activity)
+
+    def test_bugtask_added(self):
+        # Adding a bug task adds entries in both BugActivity and
+        # BugNotification.
+        target = self.factory.makeProduct()
+        added_task = self.bug.addTask(self.user, target)
+        notify(ObjectCreatedEvent(added_task, user=self.user))
+
+        task_added_activity = {
+            'person': self.user,
+            'whatchanged': 'bug task added',
+            'newvalue': target.bugtargetname,
+            }
+
+        task_added_notification = {
+            'person': self.user,
+            'text': (
+                '** Also affects: %s\n'
+                '   Importance: %s\n'
+                '       Status: %s' % (
+                    target.bugtargetname, added_task.importance.title,
+                    added_task.status.title))
+            }
+
+        self.assertRecordedChange(
+            expected_notification=task_added_notification,
+            expected_activity=task_added_activity)
+
+    def test_bugtask_added_assignee(self):
+        # Adding a bug task adds entries in both BugActivity and
+        # BugNotification.
+        target = self.factory.makeProduct()
+        added_task = self.bug.addTask(self.user, target)
+        added_task.transitionToAssignee(self.factory.makePerson())
+        notify(ObjectCreatedEvent(added_task, user=self.user))
+
+        task_added_activity = {
+            'person': self.user,
+            'whatchanged': 'bug task added',
+            'newvalue': target.bugtargetname,
+            }
+
+        task_added_notification = {
+            'person': self.user,
+            'text': (
+                '** Also affects: %s\n'
+                '   Importance: %s\n'
+                '     Assignee: %s (%s)\n'
+                '       Status: %s' % (
+                    target.bugtargetname, added_task.importance.title,
+                    added_task.assignee.displayname, added_task.assignee.name,
+                    added_task.status.title))
+            }
+
+        self.assertRecordedChange(
+            expected_notification=task_added_notification,
+            expected_activity=task_added_activity)
+
+    def test_bugtask_added_bugwatch(self):
+        # Adding a bug task adds entries in both BugActivity and
+        # BugNotification.
+        target = self.factory.makeProduct()
+        bug_watch = self.factory.makeBugWatch(bug=self.bug)
+        self.saveOldChanges()
+        added_task = self.bug.addTask(self.user, target)
+        added_task.bugwatch = bug_watch
+        notify(ObjectCreatedEvent(added_task, user=self.user))
+
+        task_added_activity = {
+            'person': self.user,
+            'whatchanged': 'bug task added',
+            'newvalue': target.bugtargetname,
+            }
+
+        task_added_notification = {
+            'person': self.user,
+            'text': (
+                '** Also affects: %s via\n'
+                '   %s\n'
+                '   Importance: %s\n'
+                '       Status: %s' % (
+                    target.bugtargetname, bug_watch.url,
+                    added_task.importance.title, added_task.status.title))
+            }
+
+        self.assertRecordedChange(
+            expected_notification=task_added_notification,
+            expected_activity=task_added_activity)
 
     def test_change_bugtask_importance(self):
         # When a bugtask's importance is changed, BugActivity and
