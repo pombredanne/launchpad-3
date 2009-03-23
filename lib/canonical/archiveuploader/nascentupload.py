@@ -127,7 +127,7 @@ class NascentUpload:
             self.reject(
                 "Unable to find distroseries: %s" % self.changes.suite_name)
 
-        # Make sure the changes file name is well formed.
+        # Make sure the changes file name is well-formed.
         self.run_and_reject_on_error(self.changes.checkFileName)
 
         # We need to process changesfile addresses at this point because
