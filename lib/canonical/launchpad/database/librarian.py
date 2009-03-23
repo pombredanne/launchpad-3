@@ -104,19 +104,20 @@ class LibraryFileAlias(SQLBase):
 
     _datafile = None
 
-    def open(self):
-        self._datafile = self.client.getFileByAlias(self.id)
+    def open(self, timeout=5):
+        """See ILibraryFileAlias."""
+        self._datafile = self.client.getFileByAlias(self.id, timeout)
         if self._datafile is None:
             raise DownloadFailed(
                     "Unable to retrieve LibraryFileAlias %d" % self.id
                     )
 
-    def read(self, chunksize=None):
-        """See ILibraryFileAlias.read"""
+    def read(self, chunksize=None, timeout=5):
+        """See ILibraryFileAlias."""
         if not self._datafile:
             if chunksize is not None:
                 raise RuntimeError("Can't combine autoopen with chunksize")
-            self.open()
+            self.open(timeout=timeout)
             autoopen = True
         else:
             autoopen = False
