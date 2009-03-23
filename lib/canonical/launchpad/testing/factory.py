@@ -583,6 +583,23 @@ class LaunchpadObjectFactory(ObjectFactory):
         naked_series.user_branch = branch
         return branch
 
+    def enableDefaultStackingForPackage(self, package, branch):
+        """Give 'package' a default stacked-on branch.
+
+        :param package: The package to give a default stacked-on branch to.
+        :param branch: The branch that should be the default stacked-on
+            branch.
+        """
+        from canonical.launchpad.testing import run_with_login
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.development_version.setBranch,
+            PackagePublishingPocket.RELEASE,
+            branch,
+            ubuntu_branches.teamowner)
+        return branch
+
     def makeBranchMergeQueue(self, name=None):
         """Create a new multi branch merge queue."""
         if name is None:

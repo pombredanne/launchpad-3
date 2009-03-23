@@ -988,15 +988,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertControlDirectory(branch.unique_name, '.bzr', translation)
 
-    def _setPackageDevFocus(self, package, branch):
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        testing_run_with_login(
-            ubuntu_branches.teamowner,
-            package.development_version.setBranch,
-            PackagePublishingPocket.RELEASE,
-            branch,
-            ubuntu_branches.teamowner)
-
     def test_translatePath_control_directory_package_no_focus(self):
         # If the package has no default stacked-on branch, then don't show the
         # control directory.
@@ -1012,7 +1003,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         package = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=package)
-        self._setPackageDevFocus(package, branch)
+        self.factory.enableDefaultStackingForPackage(package, branch)
         self.assertIsNot(
             None, IBranchTarget(package).default_stacked_on_branch)
         path = '/~%s/%s/.bzr/' % (requester.name, package.path)
