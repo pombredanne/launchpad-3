@@ -101,7 +101,11 @@ class ChangesFile(SignableTagFile):
             self.processSignature()
 
     def checkFileName(self):
-        """Make sure the changes file name is well-formed."""
+        """Make sure the changes file name is well-formed.
+        
+        Please note: for well-formed changes file names the `filename_archtag`
+        property will be set appropriately.
+        """
         match_changes = re_changes_file_name.match(self.filename)
         if match_changes is None:
             yield UploadError(
