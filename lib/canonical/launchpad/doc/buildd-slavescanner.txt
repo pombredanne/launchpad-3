@@ -956,6 +956,7 @@ builder.  It is True for private archives and False otherwise.
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main
     Suite: hoary
+    Ogre-component: main
     Archive Purpose: PRIMARY
     Archive Private: False
 
@@ -983,6 +984,7 @@ API/UI method to request the dispatch in advance.
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main
     Suite: hoary
+    Ogre-component: main
     Archive Purpose: PRIMARY
     Archive Private: False
 
@@ -1036,6 +1038,7 @@ hoary/i386. It's not passed to the builder.
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
     Suite: hoary
+    Ogre-component: main
     Archive Purpose: PARTNER
     Archive Private: False
 
@@ -1088,6 +1091,7 @@ sources_list.
          main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu-partner hoary partner
     Suite: hoary
+    Ogre-component: partner
     Archive Purpose: PARTNER
     Archive Private: False
 
@@ -1127,6 +1131,7 @@ dispatching.
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
      deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     Suite: hoary
+    Ogre-component: main
     Archive Purpose: PPA
     Archive Private: False
 
@@ -1159,8 +1164,16 @@ access the restricted librarian as it cannot provide access via
 credentials, unlike the archive itself.
 
 Finally, the archive purpose is overridden to PRIMARY instead of PPA
-for any archives that have require_virtualized as False.  This is so
-that the mangling tools will run over the built packages.
+for any archives that have require_virtualized as False.
+
+In this circumstance, it also used the component override from the PRIMARY
+archive and not the one from the PPA, which on the absence of ancestry
+defaults to 'universe'.
+
+    >>> print candidate.build.current_component.name
+    main
+
+This is so that the mangling tools will run over the built packages.
 
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
@@ -1177,8 +1190,36 @@ that the mangling tools will run over the built packages.
      deb http://ftpmaster.internal/ubuntu hoary-updates
          main restricted universe multiverse
     Suite: hoary
+    Ogre-component: universe
     Archive Purpose: PRIMARY
     Archive Private: True
+
+We will create a ancestry in the primary archive target to the 'main'
+component and this time the dispatching will follow that component.
+
+    >>> sourcename = candidate.build.sourcepackagerelease.name
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> login('foo.bar@canonical.com')
+
+    >>> ancestry = test_publisher.getPubSource(
+    ...     sourcename=sourcename, version='0.1', distroseries=hoary)
+
+    >>> print ancestry.displayname
+    mozilla-firefox 0.1 in hoary
+
+    >>> print ancestry.component.name
+    main
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+    >>> login(ANONYMOUS)
+
+    >>> a_builder.dispatchBuildCandidate(candidate)
+    ensurepresent called, ...
+    ...
+    Ogre-component: main
+    ...
 
     >>> candidate.destroySelf()
 
@@ -1264,6 +1305,7 @@ published in hoary/i386, which is not the case.
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
      deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     Suite: hoary
+    Ogre-component: main
     Archive Purpose: PPA
     Archive Private: False
 
@@ -1293,6 +1335,7 @@ We will create the required publication in Mark's PPA and try again.
      deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
      deb http://ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
     Suite: hoary
+    Ogre-component: main
     Archive Purpose: PPA
     Archive Private: False
 
@@ -1359,6 +1402,7 @@ A build in the updates pocket:
      deb http://ftpmaster.internal/ubuntu hoary-security main
      deb http://ftpmaster.internal/ubuntu hoary-updates main
     Suite: hoary-updates
+    Ogre-component: main
     Archive Purpose: PRIMARY
     Archive Private: False
 
@@ -1381,6 +1425,7 @@ A build in the proposed pocket:
      deb http://ftpmaster.internal/ubuntu hoary-security main
      deb http://ftpmaster.internal/ubuntu hoary-updates main
     Suite: hoary-proposed
+    Ogre-component: main
     Archive Purpose: PRIMARY
     Archive Private: False
 
@@ -1403,6 +1448,7 @@ A build in the backports pocket:
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
     Suite: hoary-backports
+    Ogre-component: main
     Archive Purpose: PRIMARY
     Archive Private: False
 
