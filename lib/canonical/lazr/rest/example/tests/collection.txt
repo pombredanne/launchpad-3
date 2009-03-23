@@ -202,7 +202,7 @@ the name of the value, just as they would when changing the value with
 a PUT or PATCH request.
 
     >>> general_cookbooks = webservice.get(
-    ...     "/cookbooks?ws.op=find_for_cuisine&find_cuisine=General")
+    ...     "/cookbooks?ws.op=find_for_cuisine&cuisine=General")
     >>> general_cookbooks.jsonBody()['total_size']
     3
 
