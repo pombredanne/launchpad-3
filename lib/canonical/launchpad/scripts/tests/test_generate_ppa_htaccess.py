@@ -80,7 +80,7 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
             "",
             "AuthType           Basic",
             "AuthName           \"Token Required\"",
-            "AuthUserFile       .htpasswd",
+            "AuthUserFile       %s./htpasswd" % pub_config.htaccessroot,
             "Require            valid-user",
             ]
 
