@@ -458,7 +458,7 @@ class BranchPullQueueTest(TestCaseWithFactory):
 
     def test_getBranchPullInfo_private_branch(self):
         # We don't want to stack mirrored branches onto private branches:
-        # mirrored branches are public by their nature. This, if the default
+        # mirrored branches are public by their nature. Thus, if the default
         # stacked-on branch for the project is private and the branch is
         # MIRRORED then we don't include the default stacked-on branch's
         # details in the tuple.
