@@ -8,7 +8,7 @@ __all__ = ['BugAlsoAffectsProductMetaView', 'BugAlsoAffectsDistroMetaView',
 import cgi
 from textwrap import dedent
 
-from zope.app.form.browser import DropdownWidget, TextWidget
+from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import MissingInputError, WidgetsError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
@@ -18,21 +18,23 @@ from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from lazr.enum import EnumeratedType, Item
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, IAddBugTaskForm,
-    IAddBugTaskWithProductCreationForm, IBug, IBugTaskSet, IBugTrackerSet,
+    IAddBugTaskWithProductCreationForm, IBug, IBugTrackerSet,
     IBugWatchSet, IDistributionSourcePackage, ILaunchBag,
     ILaunchpadCelebrities, IProductSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL, valid_remote_bug_url, valid_upstreamtask,
     validate_new_distrotask)
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import (
-    custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
+    custom_widget, action, canonical_url, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 
 from canonical.widgets.bugtask import (
@@ -41,140 +43,21 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
 
 
-class BugAlsoAffectsProductMetaView(LaunchpadView):
-    """Meta view for adding an affected product to an existing bug.
-
-    This view implements a wizard-like workflow in which you specify the first
-    step and then each step is responsible for specifying the next one or None
-    if, for some reason, we need to stay at the current step.
-
-    Any views used as steps here must inherit from AlsoAffectsStep. The
-    views are also responsible for injecting into the request anything they
-    may want to be available to the next view.
-    """
-
+class BugAlsoAffectsProductMetaView(MultiStepView):
     @property
-    def first_step_view(self):
+    def step_one(self):
         return ChooseProductStep
 
-    def initialize(self):
-        view = self.first_step_view(self.context, self.request)
-        # In fact we should be calling injectStepNameInRequest after
-        # initialize() in both cases, otherwise the form will be processed
-        # when it's first rendered, thus showing warning/error messages before
-        # the user submits it. For the first step, though, this won't happen
-        # because the request won't contain the action name, but it also won't
-        # contain the visited_steps key and thus the HTML won't contain the
-        # hidden widget unless I inject before calling initialize().
-        view.injectStepNameInRequest()
-        view.initialize()
-        while view.next_view is not None:
-            view = view.next_view(self.context, self.request)
-            view.initialize()
-            view.injectStepNameInRequest()
-        self.view = view
 
-    def render(self):
-        return self.view.render()
-
-
-class BugAlsoAffectsDistroMetaView(BugAlsoAffectsProductMetaView):
-
+class BugAlsoAffectsDistroMetaView(MultiStepView):
     @property
-    def first_step_view(self):
+    def step_one(self):
         return DistroBugTaskCreationStep
 
 
-class AlsoAffectsStep(LaunchpadFormView):
-    """Base view for all steps of the bug-also-affects workflow.
-
-    Subclasses must override step_name, _field_names and define a
-    main_action() method which processes the form data.
-    """
-
+class AlsoAffectsStep(StepView):
     __launchpad_facetname__ = 'bugs'
     schema = IAddBugTaskForm
-    custom_widget('visited_steps', TextWidget, visible=False)
-
-    _field_names = []
-    next_view = None
-    step_name = ""
-    main_action_label = u'Continue'
-
-    @property
-    def field_names(self):
-        return self._field_names + ['visited_steps']
-
-    def validateStep(self, data):
-        """Validation specific to a given step.
-
-        To be overridden in subclasses, if necessary.
-        """
-        pass
-
-    @action(u'Continue', name='continue')
-    def continue_action(self, action, data):
-        """Check if the form should be processed or if it's the first time
-        we're showing it and call self.main_action() if necessary.
-        """
-        if not self.shouldProcess(data):
-            return
-
-        return self.main_action(data)
-
-    def validate(self, data):
-        """Call self.validateStep() if the form should be processed.
-
-        Subclasses /must not/ override this method. They should override
-        validateStep() if they have any custom validation they need to
-        perform.
-        """
-        if not self.shouldProcess(data):
-            return
-
-        self.validateStep(data)
-
-    def injectStepNameInRequest(self):
-        """Inject this step's name into the request if necessary."""
-        visited_steps = self.request.form.get('field.visited_steps')
-        if not visited_steps:
-            self.request.form['field.visited_steps'] = self.step_name
-        elif self.step_name not in visited_steps:
-            self.request.form['field.visited_steps'] = (
-                "%s, %s" % (visited_steps, self.step_name))
-        else:
-            # Already visited this step, so there's no need to inject our
-            # step_name in the request again.
-            pass
-
-    def shouldProcess(self, data):
-        """Should this data be processed by the view's action methods?
-
-        It should be processed only if the user has already visited this page
-        and submitted the form.
-
-        Since we use identical action names in all views we can't rely on
-        that to find out whether or not to process them, so we use an extra
-        hidden input to store the views the user has visited already.
-        """
-        return self.step_name in data['visited_steps']
-
-    def render(self):
-        # This is a hack to make it possible to change the label of our main
-        # action in subclasses.
-        actions = []
-        for action in self.actions:
-            # Only change the label of our 'continue' action.
-            if action.__name__ == 'field.actions.continue':
-                action.label = self.main_action_label
-            actions.append(action)
-        self.actions = actions
-        return super(AlsoAffectsStep, self).render()
-
-    @property
-    def cancel_url(self):
-        """Return the URL for the current context, i.e. bug."""
-        return canonical_url(self.context)
 
 
 class ChooseProductStep(AlsoAffectsStep):
@@ -237,7 +120,7 @@ class ChooseProductStep(AlsoAffectsStep):
                 # so we can go straight to the page asking for the remote
                 # bug URL.
                 self.request.form['field.product'] = upstream.name
-                self.next_view = ProductBugTaskCreationStep
+                self.next_step = ProductBugTaskCreationStep
             return
 
         distroseries = bugtask.distribution.currentseries
@@ -286,11 +169,11 @@ class ChooseProductStep(AlsoAffectsStep):
                 search_url))
 
     def main_action(self, data):
-        """Inject the selected product into the form and set the next_view to
-        be used by our meta view.
-        """
+        """Perform the 'Continue' action."""
+        # Inject the selected product into the form and set the next_step to
+        # be used by our multistep controller.
         self.request.form['field.product'] = data['product'].name
-        self.next_view = ProductBugTaskCreationStep
+        self.next_step = ProductBugTaskCreationStep
 
 
 class BugTaskCreationStep(AlsoAffectsStep):
@@ -356,18 +239,21 @@ class BugTaskCreationStep(AlsoAffectsStep):
                 # Delegate to another view which will ask the user if (s)he
                 # wants to create the bugtracker now.
                 if list(self.target_field_names) == ['product']:
-                    self.next_view = UpstreamBugTrackerCreationStep
+                    self.next_step = UpstreamBugTrackerCreationStep
                 else:
                     assert 'distribution' in self.target_field_names
-                    self.next_view = DistroBugTrackerCreationStep
+                    self.next_step = DistroBugTrackerCreationStep
                 return
 
-        product = data.get('product')
-        distribution = data.get('distribution')
-        sourcepackagename = data.get('sourcepackagename')
-        self.task_added = getUtility(IBugTaskSet).createTask(
-            self.context.bug, getUtility(ILaunchBag).user, product=product,
-            distribution=distribution, sourcepackagename=sourcepackagename)
+        if data.get('product') is not None:
+            task_target = data['product']
+        else:
+            task_target = data['distribution']
+            if data.get('sourcepackagename') is not None:
+                task_target = task_target.getSourcePackage(
+                    data['sourcepackagename'])
+        self.task_added = self.context.bug.addTask(
+            getUtility(ILaunchBag).user, task_target)
         task_added = self.task_added
 
         if extracted_bug is not None:
@@ -398,7 +284,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
             if bug_watch is None:
                 bug_watch = task_added.bug.addWatch(
                     extracted_bugtracker, extracted_bug, self.user)
-                notify(SQLObjectCreatedEvent(bug_watch))
             if not target.official_malone:
                 task_added.bugwatch = bug_watch
 
@@ -417,7 +302,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
             task_added.transitionToImportance(
                 BugTaskImportance.UNKNOWN, bug_importer)
 
-        notify(SQLObjectCreatedEvent(task_added))
+        notify(ObjectCreatedEvent(task_added))
         self.next_url = canonical_url(task_added)
 
 
@@ -747,23 +632,23 @@ class BugTrackerCreationStep(AlsoAffectsStep):
     custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
     step_name = "bugtracker_creation"
     main_action_label = u'Register Bug Tracker and Add to Bug Report'
-    _next_view = None
+    _next_step = None
 
     def main_action(self, data):
-        assert self._next_view is not None, (
-            "_next_view must be specified in subclasses.")
+        assert self._next_step is not None, (
+            "_next_step must be specified in subclasses.")
         bug_url = data.get('bug_url').strip()
         try:
             getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url)
         except NoBugTrackerFound, error:
             getUtility(IBugTrackerSet).ensureBugTracker(
                 error.base_url, self.user, error.bugtracker_type)
-        self.next_view = self._next_view
+        self.next_step = self._next_step
 
 
 class DistroBugTrackerCreationStep(BugTrackerCreationStep):
 
-    _next_view = DistroBugTaskCreationStep
+    _next_step = DistroBugTaskCreationStep
     _field_names = ['distribution', 'sourcepackagename', 'bug_url']
     custom_widget('distribution', DropdownWidget, visible=False)
     custom_widget('sourcepackagename', DropdownWidget, visible=False)
@@ -775,7 +660,7 @@ class DistroBugTrackerCreationStep(BugTrackerCreationStep):
 class UpstreamBugTrackerCreationStep(BugTrackerCreationStep):
 
     schema = IAddBugTaskWithUpstreamLinkForm
-    _next_view = ProductBugTaskCreationStep
+    _next_step = ProductBugTaskCreationStep
     _field_names = ['product', 'bug_url', 'link_upstream_how']
     custom_widget('product', DropdownWidget, visible=False)
     custom_widget('link_upstream_how',

@@ -45,9 +45,16 @@
       factory="canonical.launchpad.components.archivesigningkey.ArchiveSigningKey"
       />
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.archive.IArchive"
+    factory="canonical.launchpad.browser.archive.ArchiveBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:menus
     module="canonical.launchpad.browser"
-    classes="ArchiveContextMenu"
+    classes="ArchiveContextMenu ArchiveNavigationMenu"
     />
 
   <browser:defaultView
@@ -173,6 +180,17 @@
       template="../templates/archive-edit-dependencies.pt"
       facet="overview"
       name="+edit-dependencies"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.Admin"
+    class="canonical.launchpad.browser.archivesubscription.ArchiveSubscribersView">
+    <browser:page
+      name="+subscriptions"
+      facet="overview"
+      template="../templates/archive-subscribers.pt"
       />
   </browser:pages>
 

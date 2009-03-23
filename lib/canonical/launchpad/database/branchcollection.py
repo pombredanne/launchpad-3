@@ -25,9 +25,10 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.branch import (
-    IBranchSet, user_has_special_branch_access)
+    user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchcollection import (
     IBranchCollection, InvalidFilter)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -49,21 +50,16 @@ class GenericBranchCollection:
             restrict the branches in the collection. If unspecified, then
             there will be no restrictions on the result set. That is, all
             branches in the store will be in the collection.
-        :param tables: The Storm tables to query on. If an expression in
-            branch_filter_expressions refers to a table, then that table
-            *must* be in this list. `GenericBranchCollection` will use the
-            `Branch` table, the `Person` table aliased as `Owner` and the
-            `Product` table if unspecified.
+        :param tables: A dict of Storm tables to the Join expression.  If an
+            expression in branch_filter_expressions refers to a table, then
+            that table *must* be in this list.
         """
         self._store = store
         if branch_filter_expressions is None:
             branch_filter_expressions = []
         self._branch_filter_expressions = branch_filter_expressions
         if tables is None:
-            # Join in Product and the Person table as 'Owner' so that we can
-            # sort the results by product name and owner name.
-            tables = [Branch, LeftJoin(Product, Branch.product == Product.id),
-                      Join(Owner, Branch.owner == Owner.id)]
+            tables = {}
         self._tables = tables
         if exclude_from_search is None:
             exclude_from_search = []
@@ -71,7 +67,7 @@ class GenericBranchCollection:
 
     def count(self):
         """See `IBranchCollection`."""
-        return self.getBranches().count()
+        return self.getBranches(False, False).count()
 
     @property
     def store(self):
@@ -85,13 +81,17 @@ class GenericBranchCollection:
         else:
             return self._store
 
-    def _filterBy(self, expressions, tables=None, exclude_from_search=None):
+    def _filterBy(self, expressions, table=None, join=None,
+                  exclude_from_search=None):
         """Return a subset of this collection, filtered by 'expressions'."""
         # NOTE: JonathanLange 2009-02-17: We might be able to avoid the need
         # for explicit 'tables' by harnessing Storm's table inference system.
         # See http://paste.ubuntu.com/118711/ for one way to do that.
-        if tables is None:
-            tables = []
+        tables = self._tables.copy()
+        if table is not None:
+            if join is None:
+                raise InvalidFilter("Cannot specify a table without a join.")
+            tables[table] = join
         if exclude_from_search is None:
             exclude_from_search = []
         if expressions is None:
@@ -99,7 +99,7 @@ class GenericBranchCollection:
         return self.__class__(
             self.store,
             self._branch_filter_expressions + expressions,
-            self._tables + tables,
+            tables,
             self._exclude_from_search + exclude_from_search)
 
     def _getBranchIdQuery(self):
@@ -107,14 +107,26 @@ class GenericBranchCollection:
         # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
         # decorated set, so we get at the underlying set so we can get at the
         # private and juicy _get_select.
-        select = self.getBranches().result_set._get_select()
+        select = self.getBranches(False, False).result_set._get_select()
         select.columns = (Branch.id,)
         return select
 
-    def getBranches(self):
+    def _getBranchExpressions(self):
+        """Return the where expressions for this collection."""
+        return self._branch_filter_expressions
+
+    def getBranches(self, join_owner=True, join_product=True):
         """See `IBranchCollection`."""
-        results = self.store.using(*(self._tables)).find(
-            Branch, *(self._branch_filter_expressions))
+        tables = [Branch] + self._tables.values()
+        if join_owner and Owner not in self._tables:
+            tables.append(Join(Owner, Branch.owner == Owner.id))
+        if join_product and Product not in self._tables:
+            tables.append(LeftJoin(Product, Branch.product == Product.id))
+        expressions = self._getBranchExpressions()
+        results = self.store.using(*tables).find(Branch, *expressions)
+        # XXX TimPenhey 2008-03-16 bug 343313
+        # Remove the default ordering on the Branch table.
+        results = results.order_by()
         def identity(x):
             return x
         # Decorate the result set to work around bug 217644.
@@ -137,7 +149,10 @@ class GenericBranchCollection:
 
     def inProject(self, project):
         """See `IBranchCollection`."""
-        return self._filterBy([Product.project == project.id])
+        return self._filterBy(
+            [Product.project == project.id],
+            table=Product,
+            join=Join(Product, Branch.product == Product.id))
 
     def inSourcePackage(self, source_package):
         """See `IBranchCollection`."""
@@ -167,7 +182,7 @@ class GenericBranchCollection:
     def _getExactMatch(self, search_term):
         """Return the exact branch that 'search_term' matches, or None."""
         search_term = search_term.rstrip('/')
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         branch = branch_set.getByUniqueName(search_term)
         if branch is None:
             branch = branch_set.getByUrl(search_term)
@@ -181,7 +196,7 @@ class GenericBranchCollection:
         # unique name and sort based on relevance.
         branch = self._getExactMatch(search_term)
         if branch is not None:
-            if branch in self.getBranches():
+            if branch in self.getBranches(False, False):
                 return CountableIterator(1, [branch])
             else:
                 return CountableIterator(0, [])
@@ -225,8 +240,9 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self._filterBy(
             [BranchSubscription.person == person],
-            [Join(BranchSubscription,
-                  BranchSubscription.branch == Branch.id)])
+            table=BranchSubscription,
+            join=Join(BranchSubscription,
+                      BranchSubscription.branch == Branch.id))
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
@@ -256,13 +272,17 @@ class VisibleBranchCollection(GenericBranchCollection):
         self._user = user
         self._user_visibility_expression = self._getVisibilityExpression()
 
-    def _filterBy(self, expressions, tables=None, exclude_from_search=None):
+    def _filterBy(self, expressions, table=None, join=None,
+                  exclude_from_search=None):
         """Return a subset of this collection, filtered by 'expressions'."""
         # NOTE: JonathanLange 2009-02-17: We might be able to avoid the need
         # for explicit 'tables' by harnessing Storm's table inference system.
         # See http://paste.ubuntu.com/118711/ for one way to do that.
-        if tables is None:
-            tables = []
+        tables = self._tables.copy()
+        if table is not None:
+            if join is None:
+                raise InvalidFilter("Cannot specify a table without a join.")
+            tables[table] = join
         if exclude_from_search is None:
             exclude_from_search = []
         if expressions is None:
@@ -271,7 +291,7 @@ class VisibleBranchCollection(GenericBranchCollection):
             self._user,
             self.store,
             self._branch_filter_expressions + expressions,
-            self._tables + tables,
+            tables,
             self._exclude_from_search + exclude_from_search)
 
     def _getVisibilityExpression(self):
@@ -304,15 +324,10 @@ class VisibleBranchCollection(GenericBranchCollection):
                            Branch.private == True)))
         return visible_branches
 
-    def getBranches(self):
-        """See `IBranchCollection`."""
-        expressions = self._branch_filter_expressions + [
+    def _getBranchExpressions(self):
+        """Return the where expressions for this collection."""
+        return self._branch_filter_expressions + [
             Branch.id.is_in(self._user_visibility_expression)]
-        results = self.store.using(*(self._tables)).find(Branch, *expressions)
-        def identity(x):
-            return x
-        # Decorate the result set to work around bug 217644.
-        return DecoratedResultSet(results, identity)
 
     def getMergeProposals(self, statuses=None):
         """See `IBranchCollection`."""

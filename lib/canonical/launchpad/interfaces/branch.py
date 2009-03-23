@@ -72,7 +72,8 @@ from lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported)
+    export_as_webservice_entry, export_write_operation, exported,
+    operation_parameters, operation_returns_entry)
 
 from canonical.config import config
 
@@ -80,6 +81,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
@@ -539,7 +541,7 @@ class BranchURIField(URIField):
                 "URLs for branches cannot point to the root of a site.")
             raise LaunchpadValidationError(message)
 
-        branch = getUtility(IBranchSet).getByUrl(str(uri))
+        branch = getUtility(IBranchLookup).getByUrl(str(uri))
         if branch is not None:
             message = _(
                 'The bzr branch <a href="${url}">${branch}</a> is '
@@ -1008,6 +1010,21 @@ class IBranch(IHasOwner, IHasBranchTarget):
         """
 
     # subscription-related methods
+    @operation_parameters(
+        person=Reference(
+            title=_("The person to subscribe."),
+            schema=IPerson),
+        notification_level=Choice(
+            title=_("The level of notification to subscribe to."),
+            vocabulary='BranchSubscriptionNotificationLevel'),
+        max_diff_lines=Choice(
+            title=_("The max number of lines for diff email."),
+            vocabulary='BranchSubscriptionDiffSize'),
+        code_review_level=Choice(
+            title=_("The level of code review notification emails."),
+            vocabulary='CodeReviewNotificationLevel'))
+    @operation_returns_entry(Interface) # Really IBranchSubscription
+    @export_write_operation()
     def subscribe(person, notification_level, max_diff_lines,
                   code_review_level):
         """Subscribe this person to the branch.
@@ -1131,15 +1148,6 @@ class IBranch(IHasOwner, IHasBranchTarget):
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
-    def __getitem__(branch_id):
-        """Return the branch with the given id.
-
-        Raise NotFoundError if there is no such branch.
-        """
-
-    def __iter__():
-        """Return an iterator that will go through all branches."""
-
     def count():
         """Return the number of branches in the database.
 
@@ -1150,68 +1158,6 @@ class IBranchSet(Interface):
         """Return the number of branches that have bugs associated.
 
         Only counts public branches.
-        """
-
-    def get(branch_id, default=None):
-        """Return the branch with the given id.
-
-        Return the default value if there is no such branch.
-        """
-
-    def new(branch_type, name, registrant, owner, product=None, url=None,
-            title=None,
-            lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
-            summary=None, whiteboard=None, date_created=None,
-            distroseries=None, sourcepackagename=None):
-        """Create a new branch.
-
-        Raises BranchCreationForbidden if the creator is not allowed
-        to create a branch for the specified product.
-
-        If product, distroseries and sourcepackagename are None (indicating a
-        +junk branch) then the owner must not be a team, except for the
-        special case of the ~vcs-imports celebrity.
-        """
-
-    def getByUniqueName(unique_name):
-        """Find a branch by its ~owner/product/name unique name.
-
-        Return None if no match was found.
-        """
-
-    def URIToUniqueName(uri):
-        """Return the unique name for the URL, if the URL is on codehosting.
-
-        This does not ensure that the unique name is valid.  It recognizes the
-        codehosting URLs of remote branches and mirrors, but not their
-        remote URLs.
-
-        :param uri: An instance of lazr.uri.URI
-        :return: The unique name if possible, None if the URI is not a valid
-            codehosting URI.
-        """
-
-    def getByUrl(url, default=None):
-        """Find a branch by URL.
-
-        Either from the external specified in Branch.url, or from the URL on
-        http://bazaar.launchpad.net/.
-
-        Return the default value if no match was found.
-        """
-
-    def getByLPPath(path):
-        """Find the branch associated with an lp: path.
-
-        Recognized formats:
-        "~owner/product/name" (same as unique name)
-        "product/series" (branch associated with a product series)
-        "product" (development focus of product)
-
-        :return: a tuple of `IBranch`, extra_path, series.  Series is the
-            series, if any, used to perform the lookup.
-        :raises: `BranchNotFound`, `NoBranchForSeries`, and other subclasses
-            of `LaunchpadFault`.
         """
 
     def getBranchesToScan():
@@ -1397,6 +1343,9 @@ def bazaar_identity(branch, associated_series, is_dev_focus):
     # product.  In this way +junk branches associated with product
     # series should be self limiting.  We are not looking to enforce
     # extra strictness in this case, but instead let it manage itself.
+
+    # XXX: JonathanLange 2009-03-19 spec=package-branches: This should not
+    # dispatch on Branch.product is None
     if not branch.private and branch.product is not None:
         if is_dev_focus:
             return lp_prefix + branch.product.name

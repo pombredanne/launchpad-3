@@ -216,6 +216,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.IArchive"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ArchiveImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.ISpecification"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationImageDisplayAPI"
@@ -581,6 +588,13 @@
         provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
         factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
         />
+
+    <adapter
+        factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result" />
+    <!-- It also works for the legacy SQLObject interface. -->
+    <adapter
+        factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result"
+        for="storm.zope.interfaces.ISQLObjectResultSet" />
 
     <!--These pages are used for testing BrowserNotificationMessages
         They are protected with admin privileges rather than being installed

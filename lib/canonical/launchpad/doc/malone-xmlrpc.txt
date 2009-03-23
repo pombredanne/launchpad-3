@@ -43,18 +43,18 @@ Support for attachments will be added in the near future.
 == Examples ==
 
 First, let's define a simple event listener to show that the
-ISQLObjectCreatedEvent is being published when a bug is reported through
+IObjectCreatedEvent is being published when a bug is reported through
 the XML-RPC interface.
 
-    >>> from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+    >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from canonical.launchpad.interfaces import IBug
 
     >>> def on_created_event(obj, event):
-    ...     print "SQLObjectCreatedEvent: %r" % obj
+    ...     print "ObjectCreatedEvent: %r" % obj
 
     >>> on_created_listener = TestEventListener(
-    ...     IBug, ISQLObjectCreatedEvent, on_created_event)
+    ...     IBug, IObjectCreatedEvent, on_created_event)
 
 Reporting a product bug.
 
@@ -67,7 +67,7 @@ return value.)
     >>> params = dict(
     ...     product='firefox', summary='the summary', comment='the comment')
     >>> bug_url = filebug_api.filebug(params)
-    SQLObjectCreatedEvent: <Bug ...>
+    ObjectCreatedEvent: <Bug ...>
     >>> print bug_url
     http://bugs.launchpad.dev/bugs/...
 
@@ -94,7 +94,7 @@ Reporting a distro bug.
     >>> params = dict(
     ...     distro='ubuntu', summary='another bug', comment='another comment')
     >>> bug_url = filebug_api.filebug(params)
-    SQLObjectCreatedEvent: <Bug ...>
+    ObjectCreatedEvent: <Bug ...>
     >>> print bug_url
     http://bugs.launchpad.dev/bugs/...
 
@@ -121,7 +121,7 @@ Reporting a package bug.
     ...     comment='email is nice', security_related=True,
     ...     subscribers=["no-priv@canonical.com"])
     >>> bug_url = filebug_api.filebug(params)
-    SQLObjectCreatedEvent: <Bug ...>
+    ObjectCreatedEvent: <Bug ...>
     >>> print bug_url
     http://bugs.launchpad.dev/bugs/...
 

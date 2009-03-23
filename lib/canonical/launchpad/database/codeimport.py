@@ -20,6 +20,8 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+
 from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -27,11 +29,12 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.database.productseries import ProductSeries
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    BranchType, CodeImportJobState, CodeImportReviewStatus, IBranchSet,
+    BranchType, CodeImportJobState, CodeImportReviewStatus,
     ICodeImport, ICodeImportEventSet, ICodeImportSet, ILaunchpadCelebrities,
     NotFoundError)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
 from canonical.launchpad.mailout.codeimport import code_import_updated
 from canonical.launchpad.validators.person import validate_public_person
@@ -193,11 +196,10 @@ class CodeImportSet:
             review_status = CodeImportReviewStatus.NEW
         # Create the branch for the CodeImport.
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        branch_set = getUtility(IBranchSet)
-        import_branch = branch_set.new(
+        namespace = get_branch_namespace(vcs_imports, product)
+        import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
-            registrant=vcs_imports, owner=vcs_imports,
-            product=product, url=None)
+            registrant=vcs_imports)
 
         code_import = CodeImport(
             registrant=registrant, owner=registrant, branch=import_branch,
@@ -206,7 +208,7 @@ class CodeImportSet:
             review_status=review_status)
 
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
-        notify(SQLObjectCreatedEvent(code_import))
+        notify(ObjectCreatedEvent(code_import))
 
         # If created in the reviewed state, create a job.
         if review_status == CodeImportReviewStatus.REVIEWED:

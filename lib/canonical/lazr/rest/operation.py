@@ -4,7 +4,7 @@
 
 import simplejson
 
-from zope.component import getMultiAdapter, getUtility, queryAdapter
+from zope.component import getMultiAdapter, queryAdapter
 from zope.event import notify
 from zope.interface import Attribute, implements, providedBy
 from zope.interface.interfaces import IInterface
@@ -13,9 +13,8 @@ from zope.schema.interfaces import (
     IField, RequiredMissing, ValidationError, WrongType)
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.snapshot import Snapshot
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.lazr.interfaces import (
     ICollection, IFieldMarshaller, IResourceGETOperation,
@@ -59,11 +58,10 @@ class ResourceOperation(BatchingResourceMixin):
         response = self.call(**values)
 
         if self.send_modification_event:
-            event = SQLObjectModifiedEvent(
+            event = ObjectModifiedEvent(
                 object=self.context,
                 object_before_modification=snapshot,
-                edited_fields=None,
-                user=getUtility(ILaunchBag).user)
+                edited_fields=None)
             notify(event)
         return self.encodeResult(response)
 

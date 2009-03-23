@@ -41,6 +41,7 @@ from datetime import datetime, timedelta
 import cgi
 import pytz
 import re
+from simplejson import dumps
 import urllib
 from operator import attrgetter
 
@@ -63,6 +64,9 @@ from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
+
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -111,8 +115,6 @@ from canonical.launchpad.searchbuilder import all, any, NULL
 
 from canonical.launchpad import helpers
 
-from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
-
 from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
@@ -123,7 +125,6 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
@@ -585,7 +586,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         # will be prevented from calling methods on the main bug after
         # they unsubscribe from it!
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(self.user)
-        self.context.bug.unsubscribe(self.user)
+        self.context.bug.unsubscribe(self.user, self.user)
 
         self.request.response.addNotification(
             structured(
@@ -609,7 +610,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         # We'll also unsubscribe the other user from dupes of this bug,
         # otherwise they'll keep getting this bug's mail.
-        self.context.bug.unsubscribe(user)
+        self.context.bug.unsubscribe(user, self.user)
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(user)
         self.request.response.addNotification(
             structured(
@@ -696,15 +697,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             # context.
             if IUpstreamBugTask.providedBy(fake_task):
                 # Create a real upstream task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    product=fake_task.product)
+                real_task = fake_task.bug.addTask(
+                    getUtility(ILaunchBag).user, fake_task.product)
             elif IDistroBugTask.providedBy(fake_task):
                 # Create a real distro bug task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    distribution=fake_task.distribution,
-                    sourcepackagename=fake_task.sourcepackagename)
+                real_task = fake_task.bug.addTask(
+                    getUtility(ILaunchBag).user, fake_task.target)
             elif IDistroSeriesBugTask.providedBy(fake_task):
                 self._nominateBug(fake_task.distroseries)
                 return
@@ -849,6 +847,34 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
                 "days if no further activity occurs.")
 
         return message % days_to_expiration
+
+    @property
+    def official_tags(self):
+        """The list of official tags for this bug."""
+        target_official_tags = self.context.target.official_bug_tags
+        return [tag for tag in self.context.bug.tags
+                if tag in target_official_tags]
+
+    @property
+    def unofficial_tags(self):
+        """The list of unofficial tags for this bug."""
+        target_official_tags = self.context.target.official_bug_tags
+        return [tag for tag in self.context.bug.tags
+                if tag not in target_official_tags]
+
+    @property
+    def available_official_tags_js(self):
+        """Return the list of available official tags for the bug as JSON.
+
+        The list comprises of the official tags for all targets for which the
+        bug has a task. It is returned as Javascript snippet, to be ambedded in
+        the bug page.
+        """
+        available_tags = set()
+        for task in self.context.bug.bugtasks:
+            available_tags.update(task.target.official_bug_tags)
+        return 'var available_official_tags = %s;' % dumps(list(sorted(
+            available_tags)))
 
 
 class BugTaskPortletView:
@@ -1321,7 +1347,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                 bugtask.statusexplanation = ""
 
             notify(
-                SQLObjectModifiedEvent(
+                ObjectModifiedEvent(
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))

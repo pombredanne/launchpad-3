@@ -30,10 +30,11 @@ also sends the email to the list of recipients.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    ...     CodeReviewNotificationLevel, IBranchSet)
+    ...     CodeReviewNotificationLevel)
+    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
     >>> from canonical.launchpad.mailout.branch import BranchMailer
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/firefox/main')
     >>> subscription = branch.subscribe(
     ...     branch.owner,
@@ -405,7 +406,7 @@ that is used rather than the email addresses of the seven members.
     ...     print u'To: %s\nFrom: %s\nSubject: %s\n%s' % (
     ...         email['To'], email['From'], email['Subject'], body)
 
-It is the form infrastructure that fires off the SQLObjectModifedEvent,
+It is the form infrastructure that fires off the ObjectModifedEvent,
 so we'll fake that bit here.  The page tests will check the emails
 sent.
 
@@ -419,8 +420,8 @@ Resubscribe our test user.
     <BranchSubscription ...
 
     >>> from zope.event import notify
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> login('test@canonical.com')
     >>> before_modification = Snapshot(branch, providing=IBranch)
@@ -430,7 +431,7 @@ Resubscribe our test user.
 Even though the branch notification emails don't use the field
 names just now, we'll pass them through anyway
 
-    >>> notify(SQLObjectModifiedEvent(branch,
+    >>> notify(ObjectModifiedEvent(branch,
     ...                               before_modification,
     ...                               ['whiteboard']))
 
@@ -466,7 +467,8 @@ an email to be sent out are:
 So, if all the UI fields are changed, you should get an email that looks
 something like this:
 
-    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
+    >>> branch = getUtility(IBranchLookup).getByUniqueName(
+    ...     '~name12/firefox/main')
 
     >>> before_modification = Snapshot(branch, providing=IBranch)
 
@@ -481,7 +483,7 @@ something like this:
     >>> from canonical.launchpad.interfaces import BranchLifecycleStatus
     >>> branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
     >>> updated_fields = ['name','title','summary','url','whiteboard','lifecycle_status']
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
     >>> notifications = pop_notifications()
@@ -525,7 +527,7 @@ must also handle the unicode.
     >>> branch.title = u'New \ua000 title '
     >>> branch.summary = u'A new \ua000 summary'
     >>> updated_fields = ['title','summary']
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
     >>> notifications = pop_notifications()
@@ -562,7 +564,7 @@ by pushing the branch to launchpad.
 
     >>> branch.name = 'foo'
     >>> updated_fields = ['name']
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
     >>> notifications = pop_notifications()
@@ -592,7 +594,7 @@ We don't want to show None in the email, so we show (not set) instead.
 
     >>> branch.title = 'A new title'
     >>> updated_fields = ['title']
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
     >>> notifications = pop_notifications()
@@ -618,7 +620,7 @@ We don't want to show None in the email, so we show (not set) instead.
 If another user modified some branch attributes, then an email is sent
 to the branch owner.
 
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/gnome-terminal/main')
 
 There are no subscribers to this branch.
@@ -635,7 +637,7 @@ Login as an admin user so we can alter the branch.
     >>> branch.whiteboard = (
     ...     'Please refrain from bad language in a public arena.')
     >>> updated_fields = ['summary', 'whiteboard']
-    >>> notify(SQLObjectModifiedEvent(
+    >>> notify(ObjectModifiedEvent(
     ...     branch, before_modification, updated_fields))
 
     >>> notifications = pop_notifications()

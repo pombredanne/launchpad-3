@@ -12,6 +12,7 @@ from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 
+from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad import helpers
@@ -180,9 +181,8 @@ class POTMsgSet(SQLBase):
         A message is used if it's either imported or current, and unused
         otherwise.
         """
-        # XXX Danilo 2009-02-02 (bug #322308) For testing performance
-        # effect, return no external suggestions.
-        return []
+        if not config.rosetta.global_suggestions_enabled:
+            return []
 
         # Return empty list (no suggestions) for translation credit strings
         # because they are automatically translated.

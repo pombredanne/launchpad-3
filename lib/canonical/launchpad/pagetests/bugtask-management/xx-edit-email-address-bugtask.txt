@@ -3,7 +3,7 @@
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import IPersonSet, IProductSet
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> def widget_visibility(user, url):
@@ -59,8 +59,10 @@ The product owner cannot see the Status or Importance widgets:
     >>> gnome_terminal = getUtility(IProductSet).getByName("gnome-terminal")
     >>> logout()
 
+    >>> login(ANONYMOUS)
     >>> gnome_terminal.owner.name
     u'name12'
+    >>> logout()
 
     >>> print_widget_visibility(
     ...     user=gnome_terminal.owner,
@@ -124,8 +126,10 @@ The owner can see the Status and Importance widgets.
     >>> alsa_utils = getUtility(IProductSet).getByName("alsa-utils")
     >>> logout()
 
+    >>> login(ANONYMOUS)
     >>> alsa_utils.owner.name
     u'sabdfl'
+    >>> logout()
 
     >>> print_widget_visibility(
     ...     user=alsa_utils.owner,
