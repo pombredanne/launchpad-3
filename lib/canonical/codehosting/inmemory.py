@@ -12,9 +12,14 @@ from xmlrpclib import Fault
 
 from bzrlib.urlutils import escape, unescape
 
+from zope.component import adapter, getSiteManager
+from zope.interface import implementer
+
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchnamespace import BranchNamespaceSet
+from canonical.launchpad.database.branchtarget import ProductBranchTarget
 from canonical.launchpad.interfaces.branch import BranchType, IBranch
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
@@ -205,6 +210,15 @@ class FakeProduct(FakeDatabaseObject):
             return b
         else:
             return None
+
+
+@adapter(FakeProduct)
+@implementer(IBranchTarget)
+def fake_product_to_branch_target(fake_product):
+    return ProductBranchTarget(fake_product)
+
+sm = getSiteManager()
+sm.registerAdapter(fake_product_to_branch_target)
 
 
 class FakeProductSeries(FakeDatabaseObject):
