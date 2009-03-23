@@ -1099,9 +1099,16 @@ And what follows is the content of the attachment.
 The attempt to upload a package with a malformed changes file name will
 result in a rejection email.
 
-  >>> bar_src = NascentUpload(
-  ...     datadir('suite/bar_1.0-1/a-b_0.4.12-2~ppa2.changes'),
-  ...     sync_policy, mock_logger_quiet)
+We first create a misnamed copy of the changes file.
+
+  >>> import os, shutil
+  >>> originalp = datadir('suite/bar_1.0-1/bar_1.0-1_source.changes')
+  >>> copyp = datadir('suite/bar_1.0-1/z-z_0.4.12-2~ppa2.changes')
+  >>> shutil.copyfile(originalp, copyp)
+
+And then try to upload using the changes file with the malformed name.
+
+  >>> bar_src = NascentUpload(copyp, sync_policy, mock_logger_quiet)
   >>> bar_src.process()
   Traceback (most recent call last):
   ...
@@ -1115,7 +1122,7 @@ result in a rejection email.
   DEBUG: Sent a mail:
   ...
   DEBUG: Rejected:
-  DEBUG: a-b_0.4.12-2~ppa2.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
+  DEBUG: z-z_0.4.12-2~ppa2.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
   ...
   DEBUG: If you don't understand why your files were rejected, or if the
   DEBUG: override file requires editing, please go to:
@@ -1133,3 +1140,6 @@ result in a rejection email.
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
 
+Remove the misnamed changes file copy used for testing.
+
+  >>> os.unlink(copyp)
