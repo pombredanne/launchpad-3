@@ -78,7 +78,9 @@ class ICookbook(IHasGet):
     """A cookbook, annotated for export to the web service."""
     export_as_webservice_entry()
     name = exported(TextLine(title=u"Name", required=True))
-    copyright_date = exported(Date(title=u"Copyright Date", readonly=True))
+    copyright_date = exported(
+        Date(title=u"Copyright Date", readonly=True,
+             description=u"The copyright date for this work."))
     confirmed = exported(Bool(
             title=u"Whether this information has been confirmed",
             default=False))

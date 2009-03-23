@@ -18,7 +18,7 @@ from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 from canonical.lazr.rest import ServiceRootResource
 from canonical.lazr.interfaces.rest import (
-    IServiceRootResource, IWebServiceConfiguration)
+    IServiceRootResource, ITopLevelEntryLink, IWebServiceConfiguration)
 from canonical.lazr.rest.example.interfaces import (
     AlreadyNouvelle, ICookbook, ICookbookSet, IDish, IDishSet, IRecipe,
     IRecipeSet, IHasGet, NameAlreadyTaken)
@@ -124,6 +124,7 @@ class CookbookTopLevelObject(CookbookWebServiceObject):
 
 class FeaturedCookbookLink(CookbookTopLevelObject):
     """A link to the currently featured cookbook."""
+    implements(ITopLevelEntryLink)
 
     @property
     def __parent__(self):
@@ -132,6 +133,7 @@ class FeaturedCookbookLink(CookbookTopLevelObject):
     __name__ = "featured"
 
     link_name = "featured_cookbook"
+    entry_type = ICookbook
 
 
 class CookbookSet(CookbookTopLevelObject):
