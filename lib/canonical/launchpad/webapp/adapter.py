@@ -433,21 +433,31 @@ class StoreSelector:
         """See `IStoreSelector`."""
         if not safe_hasattr(_local, 'db_policies'):
             _local.db_policies = []
+        db_policy.install()
         _local.db_policies.append(db_policy)
 
     @staticmethod
     def pop():
         """See `IStoreSelector`."""
-        return _local.db_policies.pop()
+        db_policy = _local.db_policies.pop()
+        db_policy.uninstall()
+        return db_policy
+
+
+    @staticmethod
+    def current():
+        """See `IStoreSelector`."""
+        try:
+            return _local.db_policies[-1]
+        except (AttributeError, IndexError):
+            return None
 
     @staticmethod
     def get(name, flavor):
         """See `IStoreSelector`."""
-        try:
-            db_policy = _local.db_policies[-1]
-        except (AttributeError, IndexError):
+        db_policy = StoreSelector.current()
+        if db_policy is None:
             db_policy = MasterDatabasePolicy(None)
-
         return db_policy.getStore(name, flavor)
 
 

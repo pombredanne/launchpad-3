@@ -101,7 +101,6 @@ class LaunchpadBrowserPublication(
     def __init__(self, db):
         self.db = db
         self.thread_locals = threading.local()
-        self.thread_locals.db_policy = None
 
     def annotateTransaction(self, txn, request, ob):
         """See `zope.app.publication.zopepublication.ZopePublication`.
@@ -163,10 +162,7 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
-        db_policy = IDatabasePolicy(request)
-        getUtility(IStoreSelector).push(db_policy)
-        db_policy.beforeTraversal()
-        self.thread_locals.db_policy = db_policy
+        getUtility(IStoreSelector).push(IDatabasePolicy(request))
 
         getUtility(IOpenLaunchBag).clear()
 
@@ -375,11 +371,6 @@ class LaunchpadBrowserPublication(
         txn = transaction.get()
         self.annotateTransaction(txn, request, ob)
 
-        if self.thread_locals.db_policy is not None:
-            self.thread_locals.db_policy.afterCall()
-            self.thread_locals.db_policy = None
-            getUtility(IStoreSelector).pop()
-
         # Abort the transaction on a read-only request.
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
@@ -394,6 +385,8 @@ class LaunchpadBrowserPublication(
         # by zope.app.publication.browser.BrowserPublication
         if request.method == 'HEAD':
             request.response.setResult('')
+
+        getUtility(IStoreSelector).pop()
 
     def finishReadOnlyRequest(self, txn):
         """Hook called at the end of a read-only request.
@@ -425,6 +418,9 @@ class LaunchpadBrowserPublication(
         raise NotImplementedError
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
+        # Uninstall the database policy.
+        db_policy = getUtility(IStoreSelector).pop()
+
         orig_env = request._orig_env
         ticks = tickcount.tickcount()
         if (hasattr(request, '_publicationticks_start') and
@@ -446,7 +442,7 @@ class LaunchpadBrowserPublication(
             # The exception wasn't raised in the middle of the traversal nor
             # the publication, so there's nothing we need to do here.
             pass
-    
+
         def should_retry(exc_info):
             if not retry_allowed:
                 return False
@@ -456,12 +452,9 @@ class LaunchpadBrowserPublication(
             # returning the 404 error page. We do this in case the
             # LookupError is caused by replication lag. Our database
             # policy forces the use of the master database for retries.
-            if (isinstance(exc_info[1], LookupError) and isinstance(
-                self.thread_locals.db_policy, LaunchpadDatabasePolicy)):
-                store_selector = getUtility(IStoreSelector)
-                default_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
-                master_store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
-                if default_store is master_store:
+            if (isinstance(exc_info[1], LookupError)
+                and isinstance(db_policy, LaunchpadDatabasePolicy)):
+                if db_policy.default_flavor == MASTER_FLAVOR:
                     return False
                 else:
                     return True

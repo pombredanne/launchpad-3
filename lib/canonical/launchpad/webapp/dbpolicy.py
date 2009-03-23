@@ -52,7 +52,7 @@ class BaseDatabasePolicy:
     default_flavor = MASTER_FLAVOR
 
     def __init__(self, request=None):
-        self.request = request
+        pass
 
     def getStore(self, name, flavor):
         """See `IDatabasePolicy`."""
@@ -73,11 +73,11 @@ class BaseDatabasePolicy:
 
         return store
 
-    def beforeTraversal(self):
+    def install(self, request=None):
         """See `IDatabasePolicy`."""
         pass
 
-    def afterCall(self):
+    def uninstall(self):
         """See `IDatabasePolicy`."""
         pass
 
@@ -121,18 +121,14 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
     Selects the DEFAULT_FLAVOR based on the request.
     """
-
     def __init__(self, request):
-        """Calculate the default flavor based on the request."""
-        super(LaunchpadDatabasePolicy, self).__init__(request)
+        self.request = request
 
+    def install(self):
+        """See `IDatabasePolicy`."""
         # Detect if this is a read only request or not.
-        self.read_only = request.method in ['GET', 'HEAD']
+        self.read_only = self.request.method in ['GET', 'HEAD']
 
-    def beforeTraversal(self):
-        """Now that authentication has completed, calculate the default
-        flavor to used based on the request.
-        """
         default_flavor = None
 
         # If this is a Retry attempt, force use of the master database.
@@ -175,10 +171,13 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
         self.default_flavor = default_flavor
 
-    def afterCall(self):
-        """Cleanup.
+    def uninstall(self):
+        """See `IDatabasePolicy`.
 
-        This method is invoked by LaunchpadBrowserPublication.endRequest.
+        If the request just handled was not read_only, we need to store
+        this fact and the timestamp in the session. Subsequent requests
+        can then keep using the master until they are sure any changes
+        made have been propagated.
         """
         if not self.read_only:
             # We need to further distinguish whether it's safe to write to
@@ -210,8 +209,6 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                     last_write < now - timedelta(minutes=1)):
                     # set value
                     session_data['last_write'] = now
-        self.default_flavor = MASTER_FLAVOR
-        super(LaunchpadDatabasePolicy, self).afterCall()
 
     def getReplicationLag(self):
         """Return the replication lag.

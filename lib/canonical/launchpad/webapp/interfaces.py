@@ -818,17 +818,17 @@ class IDatabasePolicy(Interface):
     """
     def getStore(name, flavor):
         """Retrieve a Store.
-        
+
         :param name: one of ALL_STORES.
 
         :param flavor: MASTER_FLAVOR, SLAVE_FLAVOR, or DEFAULT_FLAVOR.
         """
 
-    def beforeTraversal():
-        """Hook called during publication."""
+    def install():
+        """Hook called when policy is pushed onto the `IStoreSelector`."""
 
-    def afterCall():
-        """Hook called during publication."""
+    def uninstall():
+        """Hook called when policy is popped from the `IStoreSelector`."""
 
 
 class MasterUnavailable(Exception):
@@ -866,6 +866,9 @@ class IStoreSelector(Interface):
 
         Returns the `IDatabasePolicy` removed.
         """
+
+    def current():
+        """Return the currently installed `IDatabasePolicy`."""
 
     def get(name, flavor):
         """Retrieve a Storm Store.
