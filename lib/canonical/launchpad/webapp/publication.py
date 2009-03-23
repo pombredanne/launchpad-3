@@ -386,7 +386,14 @@ class LaunchpadBrowserPublication(
         if request.method == 'HEAD':
             request.response.setResult('')
 
-        getUtility(IStoreSelector).pop()
+        try:
+            getUtility(IStoreSelector).pop()
+        except IndexError:
+            # We have to cope with no database policy being installed
+            # to allow doc/webapp-publication.txt tests to pass. These
+            # tests rely on calling the afterCall hook without first
+            # calling beforeTraversal or doing proper cleanup.
+            pass
 
     def finishReadOnlyRequest(self, txn):
         """Hook called at the end of a read-only request.
