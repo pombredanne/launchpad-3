@@ -12,9 +12,9 @@
    title="Viewing private information" />
 
   <class class="canonical.lazr.rest.example.root.Cookbook">
-    <require attributes="name copyright_date cuisine recipes find_recipes
-                         make_more_interesting get"
-             set_attributes="name copyright_date cuisine"
+    <require attributes="name copyright_date cuisine description recipes
+                         find_recipes make_more_interesting get"
+             set_attributes="name copyright_date cuisine description"
              permission="zope.Public" />
     <require attributes="confirmed"
              set_attributes="confirmed"
