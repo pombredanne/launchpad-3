@@ -93,6 +93,11 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertEqual([self.original], list(target.components))
 
+    def test_default_stacked_on_branch(self):
+        # Junk branches are not stacked by default, ever.
+        target = IBranchTarget(self.original)
+        self.assertIs(None, target.default_stacked_on_branch)
+
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 

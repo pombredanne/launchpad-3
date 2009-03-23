@@ -66,6 +66,7 @@ class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
 
     name = '+junk'
+    default_stacked_on_branch = None
 
     def __init__(self, person):
         self.person = person
