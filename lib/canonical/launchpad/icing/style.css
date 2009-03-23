@@ -1213,6 +1213,10 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
   border-bottom: 1px solid #ddd
 }
 .boardCommentBody {padding: 0.5em 12px 0;}
+.boardBugActivityBody {
+  background-color: #eee;
+  padding: 0.5em 12px 0.5em;
+}
 .boardCommentContent { line-height: 1.5em;}
 .boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
 dl.faq dt {font-weight: bold;}
