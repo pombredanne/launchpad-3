@@ -92,8 +92,9 @@ class PackageBranchTarget(_BaseBranchTarget):
     @property
     def default_stacked_on_branch(self):
         """See `IBranchTarget`."""
-        return self.sourcepackage.development_version.getBranch(
-            PackagePublishingPocket.RELEASE)
+        return check_default_stacked_on(
+            self.sourcepackage.development_version.getBranch(
+                PackagePublishingPocket.RELEASE))
 
 
 class PersonBranchTarget(_BaseBranchTarget):
