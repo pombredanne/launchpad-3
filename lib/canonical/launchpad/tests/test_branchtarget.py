@@ -11,7 +11,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branchtarget import (
     PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
