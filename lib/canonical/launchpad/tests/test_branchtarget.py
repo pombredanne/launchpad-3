@@ -10,7 +10,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branchtarget import (
+    check_default_stacked_on,
     PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
+from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
@@ -170,6 +172,45 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         branch.mirrorComplete('rev1')
         target = IBranchTarget(self.original)
         self.assertEqual(branch, target.default_stacked_on_branch)
+
+
+class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
+    """Only certain branches are allowed to be default stacked-on branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_none(self):
+        # `check_default_stacked_on` returns None if passed None.
+        self.assertIs(None, check_default_stacked_on(None))
+
+    def test_unmirrored(self):
+        # `check_default_stacked_on` returns None if passed an unmirrored
+        # banch. This is because we don't want to stack things on unmirrored
+        # branches.
+        branch = self.factory.makeAnyBranch()
+        self.assertIs(None, check_default_stacked_on(branch))
+
+    def test_remote(self):
+        # `check_default_stacked_on` returns None if passed a remote branch.
+        # We have no Bazaar data for remote branches, so stacking on one is
+        # futile.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.REMOTE)
+        self.assertIs(None, check_default_stacked_on(branch))
+
+    def test_invisible(self):
+        # `check_default_stacked_on` returns None for branches invisible to
+        # the current user.
+        branch = self.factory.makeAnyBranch(private=True)
+        self.assertIs(None, check_default_stacked_on(branch))
+
+    def test_been_mirrored(self):
+        # `check_default_stacked_on` returns None if passed a remote branch.
+        # We have no Bazaar data for remote branches, so stacking on one is
+        # futile.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        self.assertEqual(branch, check_default_stacked_on(branch))
 
 
 class TestPrimaryContext(TestCaseWithFactory):
