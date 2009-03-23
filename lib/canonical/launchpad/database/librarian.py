@@ -12,9 +12,10 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    ILibraryFileContent, ILibraryFileAlias, ILibraryFileAliasSet)
+    ILibraryFileAlias, ILibraryFileAliasSet, ILibraryFileContent)
 from canonical.librarian.interfaces import (
-    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient)
+    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT)
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -93,7 +94,7 @@ class LibraryFileAlias(SQLBase):
 
     _datafile = None
 
-    def open(self, timeout=5):
+    def open(self, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """See ILibraryFileAlias."""
         self._datafile = self.client.getFileByAlias(self.id, timeout)
         if self._datafile is None:
@@ -101,7 +102,7 @@ class LibraryFileAlias(SQLBase):
                     "Unable to retrieve LibraryFileAlias %d" % self.id
                     )
 
-    def read(self, chunksize=None, timeout=5):
+    def read(self, chunksize=None, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """See ILibraryFileAlias."""
         if not self._datafile:
             if chunksize is not None:

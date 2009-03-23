@@ -22,6 +22,11 @@ class LibrarianServerError(Exception):
     """An error indicating that the Librarian server is not responding."""
 
 
+# the default time in seconds FileUploadClient.getByFileAlias() will
+# retry to open a connection to the Librarain server before raising
+# LibrarianServerError.
+LIBRARIAN_SERVER_DEFAULT_TIMEOUT = 5
+
 class IFileUploadClient(Interface):
     def addFile(name, size, file, contentType, expires=None):
         """Add a file to the librarian.
@@ -64,7 +69,7 @@ class IFileDownloadClient(Interface):
     def getURLForAlias(aliasID):
         """Returns the URL to the given file"""
 
-    def getFileByAlias(aliasID, timeout=5):
+    def getFileByAlias(aliasID, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """Returns a file-like object to read the file contents from.
 
         :param aliasID: The alias ID identifying the file.

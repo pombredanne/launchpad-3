@@ -19,6 +19,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, TextLine, Bool
 
 from canonical.launchpad import _
+from canonical.librarian.interfaces import LIBRARIAN_SERVER_DEFAULT_TIMEOUT
 
 # Set the expires attribute to this constant to flag a file that
 # should never be removed from the Librarian.
@@ -74,7 +75,7 @@ class ILibraryFileAlias(Interface):
         https URL. Otherwise return the http URL.
         """
 
-    def open(timeout=5):
+    def open(timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """Open this file for reading.
 
         :param timeout: The number of seconds the method retries to open
@@ -84,7 +85,7 @@ class ILibraryFileAlias(Interface):
         :return: None
         """
 
-    def read(chunksize=None, timeout=5):
+    def read(chunksize=None, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """Read up to `chunksize` bytes from the file.
 
         :param chunksize: The maximum number of bytes to be read.
