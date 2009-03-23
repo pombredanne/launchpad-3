@@ -98,6 +98,12 @@ class TranslationBranchApprover(object):
 
     @staticmethod
     def makeDomain(path):
+        """Generate the translation domain name from the path of the template
+        file.
+
+        :returns: The translation domain name or an empty string if it could
+            not be determined.
+        """
         dname, fname = os.path.split(path)
         # Handle generic names and xpi cases
         if fname not in TranslationBranchApprover.GENERIC_TEMPLATE_NAMES:
@@ -107,7 +113,7 @@ class TranslationBranchApprover(object):
         if dname2 not in TranslationBranchApprover.GENERIC_TEMPLATE_DIRS:
             return dname2
         rest, domain = os.path.split(dname1)
-        return domain # May be empty if dname1 was empty
+        return domain
 
     @staticmethod
     def makeName(domain):

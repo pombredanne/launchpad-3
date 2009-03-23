@@ -406,10 +406,10 @@ class RosettaUploadJob(BranchJobDerived):
     def __init__(self, branch_job):
         super(RosettaUploadJob, self).__init__(branch_job)
 
-        self.pot_file_names = []
-        self.pot_changed_files = []
-        self.po_file_names = []
-        self.po_changed_files = []
+        self.template_file_names = []
+        self.template_files_changed = []
+        self.translation_file_names = []
+        self.translation_files_changed = []
 
     @staticmethod
     def getMetadata(from_revision_id):
@@ -440,26 +440,42 @@ class RosettaUploadJob(BranchJobDerived):
         else:
             return None
 
-    def _iter_lists(self, productseries=None):
-        """Produce the file lists and the uploader person
-        as needed for the given productseries or all if productseries is
-        None.
+    def _iter_all_lists(self):
+        """Iterate through all the file lists.
+
+        File names and files are stored in different lists according to their
+        type (template or translation). But some operations need to be
+        performed on both lists. This generator yields a pair of lists, one
+        containing all file names for the given type, the other containing
+        all file names *and* content of the changed files.
         """
-        if productseries == None:
-            yield (self.pot_file_names, self.pot_changed_files)
-            yield (self.po_file_names, self.po_changed_files)
-        else:
-            if productseries.translations_autoimport_mode in (
-                TranslationsBranchImportMode.IMPORT_TEMPLATES,):
-                yield (self.pot_file_names,
-                       self.pot_changed_files,
-                       self._uploader_person_pot(productseries))
+        yield (self.template_file_names, self.template_files_changed)
+        yield (self.translation_file_names, self.translation_files_changed)
+
+    def _iter_lists_and_uploaders(self, productseries=None):
+        """Iterate through all files for a productseries.
+
+        File names and files are stored in different lists according to their
+        type (template or translation). Which of these are needed depends on
+        the configuration of the product series these uploads are for. This
+        generator checks the configuration of the series and produces the
+        a lists of lists and a person object. The first list contains all
+        file names or the given type, the second contains all file names
+        *and* content of the changed files. The person is who is to be
+        credited as the importer of these files and will vary depending on
+        the file type.
+        """
+        if productseries.translations_autoimport_mode in (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,):
+            yield (self.template_file_names,
+                   self.template_files_changed,
+                   self._uploader_person_pot(productseries))
             # Handling for other modes will go here.
 
     @property
     def file_names(self):
-        """A contatenation of all filenames."""
-        return self.pot_file_names + self.po_file_names
+        """A contatenation of all lists of filenames."""
+        return self.template_file_names + self.translation_file_names
 
     def _init_translation_file_lists(self):
         """Initialize the member variables that hold the information about
@@ -491,15 +507,15 @@ class RosettaUploadJob(BranchJobDerived):
                     if file_type != 'file':
                         continue
                     if importer.isTemplateName(file_name):
-                        append_to = self.pot_file_names
+                        append_to = self.template_file_names
                     elif importer.isTranslationName(file_name):
-                        append_to = self.po_file_names
+                        append_to = self.translation_file_names
                     else:
                         continue
                     append_to.append(file_path)
             from_tree.lock_read()
             try:
-                for file_names, changed_files in self._iter_lists():
+                for file_names, changed_files in self._iter_all_lists():
                     for changed_file in to_tree.iter_changes(
                             from_tree, specific_files=file_names):
                         file_id, (from_path, to_path) = changed_file[:2]
@@ -543,7 +559,7 @@ class RosettaUploadJob(BranchJobDerived):
         for series in productseries:
             approver = TranslationBranchApprover(self.file_names,
                                                  productseries=series)
-            for iter_info in self._iter_lists(series):
+            for iter_info in self._iter_lists_and_uploaders(series):
                 file_names, changed_files, uploader = iter_info
                 for upload_file_name, upload_file_content in changed_files:
                     if len(upload_file_content) == 0:
