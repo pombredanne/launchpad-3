@@ -146,19 +146,8 @@ class ProductBranchTarget(_BaseBranchTarget):
     @property
     def default_stacked_on_branch(self):
         """See `IBranchTarget`."""
-        default_branch = self.product.development_focus.series_branch
-        if default_branch is None:
-            return None
-        try:
-            last_mirrored = default_branch.last_mirrored
-        except Unauthorized:
-            # If we cannot see the default stacked-on branch, then return
-            # None.
-            return None
-        if last_mirrored is None:
-            return None
-        else:
-            return default_branch
+        return check_default_stacked_on(
+            self.product.development_focus.series_branch)
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""
