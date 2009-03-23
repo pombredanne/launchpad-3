@@ -443,7 +443,7 @@ of the revision_history attribute but without building the list.
     2 5
     1 4
 
-There are two methods for getting only the the latest items of the revision
+There are two methods for getting only the latest items of the revision
 history.
 
 Branch.latest_revisions give a specific count of BranchRevisions at the end of

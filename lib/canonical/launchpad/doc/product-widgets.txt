@@ -65,7 +65,7 @@ bug tracker to track its bugs.
     ( ) In Launchpad
     ( ) In a registered bug tracker:
     ( ) By emailing an upstream bug contact:
-    (*) In the the Mozilla Project bug tracker (GnomeGBug GTracker)
+    (*) In the Mozilla Project bug tracker (GnomeGBug GTracker)
 
 And if Firefox wouldn't have a project at all, "No bug tracker" is once
 again showed.

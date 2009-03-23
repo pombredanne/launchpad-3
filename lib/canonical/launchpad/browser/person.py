@@ -2344,7 +2344,7 @@ class PersonLanguagesView(LaunchpadView):
     def submitLanguages(self):
         '''Process a POST request to the language preference form.
 
-        This list of languages submitted is compared to the the list of
+        This list of languages submitted is compared to the list of
         languages the user has, and the latter is matched to the former.
         '''
 

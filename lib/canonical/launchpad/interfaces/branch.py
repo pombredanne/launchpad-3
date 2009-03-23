@@ -915,7 +915,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
             pertinant to the landing such as testing notes.
         :param date_created: Used to specify the date_created value of the
             merge request.
-        :param needs_review: Used to specify the the proposal is ready for
+        :param needs_review: Used to specify the proposal is ready for
             review right now.
         :param initial_comment: An optional initial comment can be added
             when adding the new target.

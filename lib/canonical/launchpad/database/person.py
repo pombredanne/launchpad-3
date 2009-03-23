@@ -241,7 +241,7 @@ class Person(
         """Update any related Account.displayname.
 
         We can't do this in a DB trigger as soon the Account table will
-        in a seperate database to the Person table.
+        in a separate database to the Person table.
         """
         if self.account is not None and self.account.displayname != value:
             self.account.displayname = value
@@ -262,7 +262,7 @@ class Person(
     # XXX StuartBishop 2008-05-13 bug=237280: The password,
     # account_status and account_status_comment properties should go. Note
     # that they override # the current strict controls on Account, allowing
-    # access via Person to use the less strinct controls on that interface.
+    # access via Person to use the less strict controls on that interface.
     # Part of the process of removing these methods from Person will be
     # losening the permissions on Account or fixing the callsites.
     def _get_password(self):
