@@ -1,12 +1,17 @@
 == Navigating a PPA ==
 
-The main PPA page is accessible by using the Personal Package Archive
-link on the PPA owner page.
+The PPA owned by a user are accessible from on the user page.
 
     >>> anon_browser.open('http://launchpad.dev/~cprov')
-    >>> anon_browser.getLink('Personal Package Archive').click()
+    >>> print_tag_with_id(anon_browser.contents, 'ppas')
+    Personal package archives
+     PPA for Celso Providelo
+
+    >>> anon_browser.getLink('PPA for Celso Providelo').click()
+
     >>> anon_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa'
+
     >>> anon_browser.title
     'PPA for Celso Providelo'
 
@@ -14,7 +19,7 @@ While navigating around the PPA the "structural location" remains the
 "PPA owner":
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Celso Providelo
+    Hierarchy: Launchpad > Celso Providelo > default PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov
@@ -30,14 +35,14 @@ the 'View build records' link.
     >>> anon_browser.getLink('View build records').click()
     >>> anon_browser.title
     'Builds for PPA for Celso Providelo'
+
     >>> anon_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa/+builds'
 
-The user could return to the 'PPA' overview by using the 'View PPA'
-link:
+The user could return to the 'PPA' overview by using the breadcrumb link.
 
-    >>> anon_browser.getLink('Personal Package Archive').url
-    'http://launchpad.dev/~cprov/+archive/ppa'
+    >>> print anon_browser.getLink('default PPA').url
+    http://launchpad.dev/%7Ecprov/+archive/ppa
 
 The user can navigate to an individual build details:
 
@@ -48,7 +53,7 @@ The user can navigate to an individual build details:
     'i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Celso Providelo
+    Hierarchy: Launchpad > Celso Providelo > default PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov

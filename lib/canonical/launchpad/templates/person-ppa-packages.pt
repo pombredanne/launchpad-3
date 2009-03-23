@@ -66,7 +66,7 @@
       iceweasel
     </td>
     <td>
-      <a tal:attributes="href ppa/fmt:url" tal:content="ppa/title" /> -
+      <a tal:attributes="href ppa/fmt:url" tal:content="ppa/displayname" /> -
       <a class="distroseries" tal:attributes="href distroseries/fmt:url"
          tal:content="distroseries/fullseriesname" />
     </td>

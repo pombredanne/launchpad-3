@@ -48,7 +48,7 @@ has a number of useful properties that can be checked:
     >>> print main_permission.date_created
     2006-10-16...
 
-    >>> print main_permission.archive.title
+    >>> print main_permission.archive.displayname
     Primary Archive for Ubuntu Linux
 
     >>> main_permission.permission

@@ -75,7 +75,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             file = open(htaccess_filename, "w")
             file.write(HTACCESS_TEMPLATE)
             file.close()
-            self.logger.debug("Created .htaccess for %s" % ppa.title)
+            self.logger.debug("Created .htaccess for %s" % ppa.displayname)
 
     def generateHtpasswd(self, ppa, tokens):
         """Generate a htpasswd file for `ppa`s `tokens`.
@@ -119,7 +119,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             not filecmp.cmp(htpasswd_filename, temp_htpasswd_file)):
             # Atomically replace the old file or create a new file.
             os.rename(temp_htpasswd_file, htpasswd_filename)
-            self.logger.debug("Replaced htpasswd for %s" % ppa.title)
+            self.logger.debug("Replaced htpasswd for %s" % ppa.displayname)
             return True
 
         return False

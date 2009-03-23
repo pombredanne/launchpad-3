@@ -10,9 +10,11 @@
 >
   <body>
     <metal:block fill-slot="head_epilogue">
-      <script type='text/javascript' tal:content="string:var icingroot='${icingroot}';" />
+      <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
+      <script type='text/javascript' id='available-official-tags-js'
+              tal:content="view/available_official_tags_js" />
       <js tal:replace="structure string:<script type='text/javascript'>
-YUI({base: '/+icing/' + icingroot + '/yui/current/build/'}).use(
+YUI({base: yui_base + '/'}).use(
     'io-base', 'node', 'lazr.formoverlay', 'lazr.anim', function(Y) {
 
 /*
@@ -143,7 +145,7 @@ function update_bug_duplicate(data) {
 
                 if (new_dup_url !== null) {
                     dupe_span.set('innerHTML', [
-                        'Duplicate of <a href=\'' + new_dup_url + '\'>',
+                        'Duplicate of <a href=\'/bugs/' + new_dup_id + '\'>',
                         'bug #' + new_dup_id +'</a> ',
                         '<a class=\'menu-link-mark-dupe\' ',
                         'href=\'' + update_dupe_url + '\'>',
@@ -158,7 +160,7 @@ function update_bug_duplicate(data) {
                 }
                 Y.lazr.anim.green_flash({node: dupe_span}).run();
                 // ensure the new link is hooked up correctly:
-                dupe_span.get('a.menu-link-mark-dupe').on(
+                dupe_span.query('a.menu-link-mark-dupe').on(
                     'click', function(e){
                         e.preventDefault();
                         duplicate_form_overlay.show();
@@ -363,11 +365,16 @@ function update_bug_duplicate(data) {
 
         <div id="bug-description" tal:content="structure description" />
 
-          <div id="bug-tags" tal:define="tags context/bug/tags" tal:condition="tags"
+          <div id="bug-tags" tal:condition="context/bug/tags"
                style="width: 45%: text-align: left; float: right;">
             Tags:
-            <a tal:repeat="tag tags"
+            <a tal:repeat="tag view/official_tags"
                tal:content="tag"
+               class="official-tag"
+               tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+            <a tal:repeat="tag view/unofficial_tags"
+               tal:content="tag"
+               class="unofficial-tag"
                tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
           </div>
 

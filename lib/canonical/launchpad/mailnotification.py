@@ -631,13 +631,34 @@ def get_bug_edit_notification_texts(bug_delta):
         # security-proxied objects.
         if not zope_isinstance(bugtask_deltas, (list, tuple)):
             bugtask_deltas = [bugtask_deltas]
+
         for bugtask_delta in bugtask_deltas:
-            change_info = u"** Changed in: %s\n" % (
-                bugtask_delta.bugtask.bugtargetname)
+            for field_name in ['importance', 'status']:
+                field_delta = getattr(bugtask_delta, field_name)
+                if field_delta is not None:
+                    bug_change_class = get_bug_change_class(
+                        bugtask_delta.bugtask, field_name)
+                    change = bug_change_class(
+                        bug_task=bugtask_delta.bugtask,
+                        when=None, person=bug_delta.user,
+                        what_changed=field_name,
+                        old_value=field_delta['old'],
+                        new_value=field_delta['new'])
+                    changes.append(change)
+
+        # XXX 2009-03-20 gmb [bug=344125]
+        #     There are two loops over bugtask_deltas here because we
+        #     have two completely unrelated ways of handling certain
+        #     fields as we transition over to the BugChange API. Trying
+        #     to do both in one loop is fraught with pain and
+        #     suffering. The second, eventually-to-be-redundant, loop
+        #     should be removed as part of the final cleanup work on
+        #     moving to the BugChange API.
+        for bugtask_delta in bugtask_deltas:
+            change_info = u''
 
             for fieldname, displayattrname in [
                 ("product", "displayname"), ("sourcepackagename", "name"),
-                ("status", "title"), ("importance", "title"),
                 ("milestone", "name"), ("bugwatch", "title")]:
                 change = getattr(bugtask_delta, fieldname)
                 if change:
@@ -662,33 +683,10 @@ def get_bug_edit_notification_texts(bug_delta):
                     'newval' : newval_display})
                 change_info += changerow
 
-            changes.append(change_info.rstrip())
-
-    if bug_delta.added_bugtasks is not None:
-        # Use zope_isinstance, to ensure that this Just Works with
-        # security-proxied objects.
-        if zope_isinstance(bug_delta.added_bugtasks, (list, tuple)):
-            added_bugtasks = bug_delta.added_bugtasks
-        else:
-            added_bugtasks = [bug_delta.added_bugtasks]
-
-        for added_bugtask in added_bugtasks:
-            if added_bugtask.bugwatch:
-                change_info = u"** Also affects: %s via\n" % (
-                    added_bugtask.bugtargetname)
-                change_info += u"   %s\n" % added_bugtask.bugwatch.url
-            else:
-                change_info = u"** Also affects: %s\n" % (
-                    added_bugtask.bugtargetname)
-            change_info += u"%13s: %s\n" % (u"Importance",
-                added_bugtask.importance.title)
-            if added_bugtask.assignee:
-                assignee = added_bugtask.assignee
-                change_info += u"%13s: %s\n" % (u"Assignee",
-                    assignee.unique_displayname)
-            change_info += u"%13s: %s" % (
-                u"Status", added_bugtask.status.title)
-            changes.append(change_info)
+            if len(change_info) > 0:
+                change_info = u"** Changed in: %s\n%s" % (
+                    bugtask_delta.bugtask.bugtargetname, change_info)
+                changes.append(change_info.rstrip())
 
     return changes
 
@@ -837,25 +835,6 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
         else:
             bug_delta.bug.addChangeNotification(
                 change, person=bug_delta.user, recipients=recipients)
-
-
-@block_implicit_flushes
-def notify_bugtask_added(bugtask, event):
-    """Notify CC'd list that this bug has been marked as needing fixing
-    somewhere else.
-
-    bugtask must be in IBugTask. event must be an
-    IObjectModifiedEvent.
-    """
-    bugtask = event.object
-
-    bug_delta = BugDelta(
-        bug=bugtask.bug,
-        bugurl=canonical_url(bugtask.bug),
-        user=IPerson(event.user),
-        added_bugtasks=bugtask)
-
-    add_bug_change_notifications(bug_delta)
 
 
 @block_implicit_flushes
