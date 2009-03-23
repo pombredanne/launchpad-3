@@ -16,7 +16,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
     BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
@@ -25,8 +24,13 @@ from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchBag, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
+from canonical.launchpad.testing import (
+    run_with_login as testing_run_with_login)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES,
@@ -980,6 +984,38 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product, branch = self._makeProductWithDevFocus()
         owner = self.factory.makePerson()
         path = escape(u'/~%s/%s/.bzr' % (owner.name, product.name))
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertControlDirectory(branch.unique_name, '.bzr', translation)
+
+    def _setPackageDevFocus(self, package, branch):
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        testing_run_with_login(
+            ubuntu_branches.teamowner,
+            package.development_version.setBranch,
+            PackagePublishingPocket.RELEASE,
+            branch,
+            ubuntu_branches.teamowner)
+
+    def test_translatePath_control_directory_package_no_focus(self):
+        # If the package has no default stacked-on branch, then don't show the
+        # control directory.
+        requester = self.factory.makePerson()
+        package = self.factory.makeSourcePackage()
+        self.assertIs(None, IBranchTarget(package).default_stacked_on_branch)
+        path = '/~%s/%s/.bzr/' % (requester.name, package.path)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_control_directory_package(self):
+        # If the package has a default stacked-on branch, then show the
+        # control directory.
+        requester = self.factory.makePerson()
+        package = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=package)
+        self._setPackageDevFocus(package, branch)
+        self.assertIsNot(
+            None, IBranchTarget(package).default_stacked_on_branch)
+        path = '/~%s/%s/.bzr/' % (requester.name, package.path)
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertControlDirectory(branch.unique_name, '.bzr', translation)
