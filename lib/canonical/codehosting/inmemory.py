@@ -406,7 +406,6 @@ class FakeObjectFactory(ObjectFactory):
         """
         if branch is None:
             branch = self.makeBranch(product=product)
-        branch._mirrored = True
         product.development_focus.user_branch = branch
         branch.last_mirrored = 'rev1'
         return branch
@@ -420,6 +419,7 @@ class FakeObjectFactory(ObjectFactory):
         """
         package.development_version.setBranch(
             PackagePublishingPocket.RELEASE, branch, branch.owner)
+        branch.last_mirrored = 'rev1'
         return branch
 
 

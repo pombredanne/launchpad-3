@@ -591,6 +591,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch.
         """
         from canonical.launchpad.testing import run_with_login
+        # 'branch' might be private, so we remove the security proxy to get at
+        # the methods.
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.startMirroring()
+        naked_branch.mirrorComplete('rev1')
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
             ubuntu_branches.teamowner,
