@@ -138,6 +138,9 @@ _replicate:
 	../schema/upgrade.py
 	../schema/fti.py
 	../schema/security.py --cluster -U slony
+	# Migrate tables to the authdb replication set, creating the set
+	# and subscribing nodes to it as necessary.
+	./populate_auth_replication_set.py -U slony
 	# Restart slon daemons with default lag setting.
 	./slon_ctl.py stop
 	./slon_ctl.py --lag="${LAG}" start
