@@ -34,6 +34,8 @@ class _BaseBranchTarget:
 class PackageBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
 
+    default_stacked_on_branch = None
+
     def __init__(self, sourcepackage):
         self.sourcepackage = sourcepackage
 

@@ -64,6 +64,12 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
              self.original],
             list(target.components))
 
+    def test_default_stacked_on_branch(self):
+        # XXX: JonathanLange 2009-03-23 spec=package-branches bug=347057: We
+        # don't support default stacking for package branch yet.
+        target = IBranchTarget(self.original)
+        self.assertIs(None, target.default_stacked_on_branch)
+
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
