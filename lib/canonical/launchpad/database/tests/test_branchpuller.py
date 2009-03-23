@@ -65,14 +65,17 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         # different values. This is closer to what happens in production.
         branch = self.makeAnyBranch()
         branch.startMirroring()
-        transaction.commit()
+        self.assertEqual(
+            [], list(self.branch_puller.getPullQueue(branch.branch_type)))
         branch.requestMirror()
-        removeSecurityProxy(branch).sync()
-        self.assertNotEqual(
-            branch.last_mirror_attempt, branch.next_mirror_time)
+        self.assertEqual(
+            [branch],
+            list(self.branch_puller.getPullQueue(branch.branch_type)))
         next_mirror_time = branch.next_mirror_time
         branch.mirrorComplete('rev1')
-        self.assertEqual(next_mirror_time, branch.next_mirror_time)
+        self.assertEqual(
+            [branch],
+            list(self.branch_puller.getPullQueue(branch.branch_type)))
 
     def test_startMirroringRemovesFromPullQueue(self):
         # Starting a mirror removes the branch from the pull queue.
