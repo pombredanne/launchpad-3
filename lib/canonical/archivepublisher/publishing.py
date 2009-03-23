@@ -113,7 +113,7 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
     """
     if archive.purpose != ArchivePurpose.PPA:
         log.debug("Finding configuration for %s %s."
-                  % (archive.distribution.name, archive.title))
+                  % (archive.distribution.name, archive.displayname))
     else:
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)

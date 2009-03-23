@@ -149,6 +149,83 @@ So we try again with an expiry date in the future:
     Launchpad Developers
     Andrew Bennetts
 
+== ArchiveSubscriptionEditView ==
+
+The ArchiveSubscriptionEditView presents the expiry and description ready
+for editing, together with Update and Cancel actions:
+
+    >>> login('celso.providelo@canonical.com')
+    >>> from canonical.launchpad.interfaces.archivesubscriber import (
+    ...     IArchiveSubscriberSet)
+    >>> spiv_subscription = getUtility(IArchiveSubscriberSet).getByArchive(
+    ...     cprov.archive).one()
+    >>> view = create_initialized_view(spiv_subscription, name="+edit")
+    >>> view.field_names
+    ['date_expires', 'description']
+    >>> for action in view.actions:
+    ...     print action.label
+    Update
+    Cancel subscription
+
+The ArchiveSubscriptionEditView has a next_url helper property.
+
+    >>> print view.next_url
+    http://launchpad.dev/~cprov/+archive/ppa/+subscriptions
+
+The ArchiveSubscriptionEditView can be used to update the description field:
+
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+edit", method="POST",
+    ...     form={
+    ...         'field.description': "Updated description",
+    ...         'field.date_expires': '',
+    ...         'field.actions.update': 'Update'
+    ...     })
+    >>> print spiv_subscription.description
+    Updated description
+
+Like the create view, the update view will not accept a date in the past:
+
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+edit", method="POST",
+    ...     form={
+    ...         'field.description': "Updated description",
+    ...         'field.date_expires': '1984-01-01',
+    ...         'field.actions.update': 'Update'
+    ...     })
+    >>> for error in view.errors:
+    ...     print error
+    The expiry date must be in the future.
+
+But a date in the future is fine:
+
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+edit", method="POST",
+    ...     form={
+    ...         'field.description': "spiv's my friend",
+    ...         'field.date_expires': str(future_date),
+    ...         'field.actions.update': 'Update'
+    ...     })
+    >>> view.errors
+    []
+
+The ArchiveSubscriptionEditView can be used to cancel a subscription:
+
+    >>> current_status = spiv_subscription.status
+    >>> print current_status.name
+    CURRENT
+    >>> view = create_initialized_view(
+    ...     spiv_subscription, name="+edit", method="POST",
+    ...     form={'field.actions.cancel': 'Cancel subscription'})
+    >>> print spiv_subscription.status.name
+    CANCELLED
+    >>> print spiv_subscription.cancelled_by.name
+    cprov
+
+Just uncancel the subscription before continuing on.
+    >>> spiv_subscription.status = current_status
+    >>> spiv_subscription.cancelled_by = None
+    >>> spiv_subscription.date_cancelled = None
 
 == PersonArchiveSubscriptions View ==
 
@@ -178,7 +255,7 @@ subscriptions for the person, with a corresponding token for each:
     ...     for subscription_and_token in view.subscriptions_with_tokens:
     ...         subscription = subscription_and_token['subscription']
     ...         token = subscription_and_token['token']
-    ...         print subscription.archive.title
+    ...         print subscription.archive.displayname
     ...         print subscription.description
     ...         token_text = "None"
     ...         if token:
@@ -233,11 +310,11 @@ The user will also see a notification of the subscription activation:
     Your subscription to 'Private PPA for Mark Shuttleworth' has been
     activated. Please update your custom sources.list as described below.
 
-The PersonArchiveSubscriptionsView also provides an 
+The PersonArchiveSubscriptionsView also provides an
 active_subscriptions_with_tokens property:
 
     >>> for subs_with_token in view.active_subscriptions_with_tokens:
-    ...     print subs_with_token['subscription'].archive.title
+    ...     print subs_with_token['subscription'].archive.displayname
     ...     if subs_with_token['token'] is not None:
     ...         print "Token"
     Private PPA for Mark Shuttleworth              Token

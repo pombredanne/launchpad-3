@@ -1,0 +1,68 @@
+= Logging into shipit =
+
+ShipIt uses the Launchpad Login Service as its OpenID provider.  When a user
+tries to log into shipit, they will be taken to the Login Service, where they
+will be asked to authenticate using their Launchpad account.
+
+    # Change the rooturl of our openid vhost.  This is necessary so that the
+    # python OpenID library can access the OpenID provider (made available by
+    # the AppServerLayer) using HTTP requests instead of going directly
+    # through zope3's publication machinery.
+    >>> from canonical.launchpad.webapp.vhosts import allvhosts
+    >>> orig_value = allvhosts.configs['openid'].rooturl
+    >>> allvhosts.configs['openid'].rooturl = (
+    ...     'http://openid.launchpad.dev:8085/')
+
+    >>> browser.open('http://shipit.ubuntu.dev')
+    >>> browser.getLink('Log In').click()
+
+    >>> print browser.title
+    OpenID transaction in progress
+
+    # In a real browser, this form would have been auto-submitted using
+    # javascript, but here we have to do that manually.
+    >>> browser.getControl('Continue').click()
+    >>> print browser.title
+    Launchpad Login Service
+
+After authenticating, the user is sent back to shipit for finishing the
+request.
+
+    >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl('Continue').click()
+
+    >>> print browser.title
+    Your ShipIt Request
+    >>> print extract_text(find_tags_by_class(browser.contents, 'login')[0])
+    Logged in as Mark Shuttleworth...
+
+If the user did not authorize the OpenID provider to send his details to
+Shipit, an error message would be shown, explaining that the login was not
+successful.
+
+    >>> browser.open('http://shipit.ubuntu.dev')
+    >>> browser.getControl('Log Out').click()
+    >>> browser.getLink('Log In').click()
+
+    >>> print browser.title
+    OpenID transaction in progress
+
+    # In a real browser, this form would have been auto-submitted using
+    # javascript, but here we have to do that manually.
+    >>> browser.getControl('Continue').click()
+    >>> print browser.title
+    Authenticate to http://shipit.ubuntu.dev
+
+    >>> browser.getControl('Not Now').click()
+    >>> print browser.title
+    ShipIt - Unsuccessful login
+
+    >>> print extract_text(find_tags_by_class(browser.contents, 'error')[0])
+    User cancelled
+    >>> print find_tags_by_class(browser.contents, 'login')
+    []
+
+Undo the config change we did.
+
+    >>> allvhosts.configs['openid'].rooturl = orig_value

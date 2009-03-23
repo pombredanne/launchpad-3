@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
         BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
         IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
-        IBugTaskSet, IMessageSet, IDistroBugTask,
+        IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
         BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
@@ -346,7 +346,7 @@ class UnsubscribeEmailCommand(EmailCommand):
                 get_error_message('unsubscribe-too-many-arguments.txt'))
 
         if bug.isSubscribed(person):
-            bug.unsubscribe(person)
+            bug.unsubscribe(person, getUtility(ILaunchBag).user)
         if bug.isSubscribedToDupes(person):
             bug.unsubscribeFromDupes(person)
 
@@ -597,9 +597,7 @@ class AffectsEmailCommand(EmailCommand):
         if general_task is None:
             # A series task has to have a corresponding
             # distribution/product task.
-            general_task = getUtility(IBugTaskSet).createTask(
-                bug, user, distribution=distribution,
-                product=product, sourcepackagename=sourcepackagename)
+            general_task = bug.addTask(user, general_target)
         if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
             nomination = bug.getNominationFor(series)
@@ -623,29 +621,16 @@ class AffectsEmailCommand(EmailCommand):
 
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
-        # XXX kiko 2005-09-05 bug=1690:
-        # We could fix this by making createTask be a method on
-        # IBugTarget, but I'm not going to do this now.
-        bugtaskset = getUtility(IBugTaskSet)
         user = getUtility(ILaunchBag).user
-        if IProduct.providedBy(bug_target):
-            return bugtaskset.createTask(bug, user, product=bug_target)
-        elif IProductSeries.providedBy(bug_target):
-            return self._targetBug(user, bug, bug_target)
-        elif IDistribution.providedBy(bug_target):
-            return bugtaskset.createTask(bug, user, distribution=bug_target)
-        elif IDistroSeries.providedBy(bug_target):
+        if (IProductSeries.providedBy(bug_target) or
+            IDistroSeries.providedBy(bug_target)):
             return self._targetBug(user, bug, bug_target)
         elif ISourcePackage.providedBy(bug_target):
             return self._targetBug(
                 user, bug, bug_target.distroseries,
                 bug_target.sourcepackagename)
-        elif IDistributionSourcePackage.providedBy(bug_target):
-            return bugtaskset.createTask(
-                bug, user, distribution=bug_target.distribution,
-                sourcepackagename=bug_target.sourcepackagename)
         else:
-            assert False, "Not a valid bug target: %r" % bug_target
+            return bug.addTask(user, bug_target)
 
 
 class AssigneeEmailCommand(EditEmailCommand):

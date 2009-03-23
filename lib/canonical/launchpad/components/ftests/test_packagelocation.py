@@ -41,7 +41,7 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
-        self.assertEqual(location.archive.title,
+        self.assertEqual(location.archive.displayname,
                          'Copy archive now-comes-the-mystery for Mysteryman')
 
     def testSetupLocationForPRIMARY(self):
@@ -50,7 +50,7 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
-        self.assertEqual(location.archive.title,
+        self.assertEqual(location.archive.displayname,
                          'Primary Archive for Ubuntu Linux')
 
     def testSetupLocationForPPA(self):
@@ -61,7 +61,7 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
-        self.assertEqual(location.archive.title,
+        self.assertEqual(location.archive.displayname,
                          'PPA for Celso Providelo')
 
     def testSetupLocationForPARTNER(self):
@@ -70,7 +70,7 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
-        self.assertEqual(location.archive.title,
+        self.assertEqual(location.archive.displayname,
                          'Partner Archive for Ubuntu Linux')
 
     def testSetupLocationUnknownDistribution(self):
@@ -104,6 +104,14 @@ class TestPackageLocation(TestCaseWithFactory):
             purpose=ArchivePurpose.PPA,
             person_name='kiko',
             archive_name="ppa")
+
+    def test_build_package_location_when_partner_missing(self):
+        """`PackageLocationError` is raised when PARTNER does not exist."""
+        self.assertRaises(
+            PackageLocationError,
+            self.getPackageLocation,
+            distribution_name='debian',
+            purpose=ArchivePurpose.PARTNER)
 
     def testSetupLocationPPANotMatchingDistribution(self):
         """`PackageLocationError` is raised when PPA does not match the

@@ -56,11 +56,15 @@ def can_close_bugs(target):
     ISourcePackagePublishingHistory and IPackageUpload are the
     currently supported targets.
 
-    Source publications or package uploads targeted to pocket
-    PROPOSED or any other archive purpose than PRIMARY will
+    Source publications or package uploads targeted to pockets
+    PROPOSED/BACKPORTS or any other archive purpose than PRIMARY will
     not automatically close bugs.
     """
-    if (target.pocket == PackagePublishingPocket.PROPOSED or
+    banned_pockets = (
+        PackagePublishingPocket.PROPOSED,
+        PackagePublishingPocket.BACKPORTS)
+
+    if (target.pocket in banned_pockets or
        target.archive.purpose != ArchivePurpose.PRIMARY):
         return False
 

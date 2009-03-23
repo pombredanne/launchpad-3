@@ -11,15 +11,15 @@ details about the team.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
-    Recently approved
+    Recently approved:
     Warty Gnome Team (warty-gnome)
     Daniel Silverstone (kinnison)
     Celso Providelo (cprov)
-    Steve Alexander (stevea)
+    Steve Alexander (stevea)...
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
-    Recently applied
+    Recently applied:
     Sample Person (name12)
     Andrew Bennetts (spiv)
 
@@ -31,21 +31,23 @@ details about the team.
     Moderated Team:
         All subscriptions for this team are subject to approval by one
         of the team's administrators.
-    Membership: 10 active members
-                 2 proposed members
-                 1 invited members
-                 1 inactive members
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'membership-summary'))
+    10 active members
+    1 invited members
+    2 proposed members
+    1 inactive members
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
-    Email: Log in for email information.
+    Log in for email information.
     Languages: English
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subteam-of'))
     Subteam of
-    &#8220;Ubuntu Team&#8221; is a member of these teams: GuadaMen
+    &#8220;Ubuntu Team&#8221; is a member of these teams: GuadaMen...
 
 In the above case there's no user logged in, so it doesn't actually show
 what's the user's involvement with the team. If the user logs in, he'll see
@@ -62,7 +64,7 @@ that, though.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
     Your involvement
-    You are a member of the team which owns this team.
+    You are a member of the team that owns this team.
     You are not currently an active member.
 
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
@@ -76,7 +78,7 @@ He can also see the contact email address and a link to contact the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
-    Email: support@ubuntu.com
+    support@ubuntu.com
     (Contact this team)
     Languages: English
 
@@ -88,7 +90,7 @@ address:
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'contact-details'))
     Contact details
-    Email: No contact address
+    No contact address
       (Contact this team)
       (Launchpad notifications are sent to all team members)
     Languages: English
@@ -136,7 +138,7 @@ will actually go to the team's owner.
     >>> content = find_tag_by_id(user_browser.contents, 'contact-details')
     >>> print extract_text(content)
     Contact details
-    Email: support@ubuntu.com
+    support@ubuntu.com
     (Contact this team)
     Languages: English
 
