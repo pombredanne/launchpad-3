@@ -137,6 +137,14 @@ class ICookbookSet(IHasGet):
     def find_recipes(search):
         """Search for recipes across cookbooks."""
 
+    @operation_parameters(
+        find_cuisine=Choice(vocabulary=Cuisine,
+                           title=u"Cuisine to search for in recipe name."))
+    @operation_returns_collection_of(ICookbook)
+    @export_read_operation()
+    def find_for_cuisine(find_cuisine):
+        """Search for cookbooks of a given cuisine."""
+
     @export_factory_operation(
         ICookbook, ['name', 'description', 'cuisine', 'copyright_date'])
     def create(name, description, cuisine, copyright_date):

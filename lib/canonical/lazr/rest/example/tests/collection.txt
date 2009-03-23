@@ -196,6 +196,16 @@ handling is in the validate() method of the 'search' field.
     ...
     search: Required input is missing.
 
+If a named operation takes an argument that's a value for a vocabulary
+(such as Cuisine in the example web service), the client can specify
+the name of the value, just as they would when changing the value with
+a PUT or PATCH request.
+
+    >>> general_cookbooks = webservice.get(
+    ...     "/cookbooks?ws.op=find_for_cuisine&find_cuisine=General")
+    >>> general_cookbooks.jsonBody()['total_size']
+    3
+
 
 === POST operations ===
 
