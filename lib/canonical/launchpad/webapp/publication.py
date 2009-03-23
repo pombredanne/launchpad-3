@@ -419,7 +419,11 @@ class LaunchpadBrowserPublication(
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
         # Uninstall the database policy.
-        db_policy = getUtility(IStoreSelector).pop()
+        store_selector = getUtility(IStoreSelector)
+        if store_selector.current() is not None:
+            db_policy = store_selector.pop()
+        else:
+            db_policy = None
 
         orig_env = request._orig_env
         ticks = tickcount.tickcount()
