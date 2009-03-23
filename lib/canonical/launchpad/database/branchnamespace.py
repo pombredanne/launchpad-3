@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Implementations of `IBranchNamespace`."""
 
@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
 from canonical.launchpad.interfaces.distribution import (
@@ -248,6 +249,11 @@ class PersonalNamespace(_BaseNamespace):
     def checkCreationPolicy(self, user):
         """See `_BaseNamespace`."""
         return True
+
+    @property
+    def target(self):
+        """See `IBranchNamespace`."""
+        return IBranchTarget(self.owner)
 
 
 class ProductNamespace(_BaseNamespace):

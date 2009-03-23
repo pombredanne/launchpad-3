@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Tests for `IBranchNamespace` implementations."""
 
@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, IBranchCreationPolicy, IBranchNamespace,
     IBranchNamespaceSet, lookup_branch_namespace, InvalidNamespace)
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
 from canonical.launchpad.interfaces.distribution import NoSuchDistribution
@@ -209,6 +210,13 @@ class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
         person = self.factory.makePerson()
         namespace = PersonalNamespace(person)
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
+
+    def test_target(self):
+        # The target of a personal namespace is the branch target of the owner
+        # of that namespace.
+        person = self.factory.makePerson()
+        namespace = PersonalNamespace(person)
+        self.assertEqual(IBranchTarget(person), namespace.target)
 
 
 class TestPersonalNamespacePrivacy(TestCaseWithFactory):
