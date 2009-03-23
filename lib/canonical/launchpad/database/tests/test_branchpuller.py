@@ -14,9 +14,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.interfaces.branch import BranchType, BranchTypeError
 from canonical.launchpad.interfaces.branchpuller import IBranchPuller
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -85,49 +85,11 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         self.assertEqual(
             set(), set(self.branch_puller.getPullQueue(branch.branch_type)))
 
-    def test_mirrorCompleteRemovesFromPullQueue(self):
-        """Completing the mirror removes the branch from the pull queue."""
-        branch = self.makeAnyBranch()
-        branch.requestMirror()
-        branch.startMirroring()
-        branch.mirrorComplete('rev1')
-        self.assertEqual(
-            [], list(self.branch_puller.getPullQueue(branch.branch_type)))
-
     def test_mirroringResetsMirrorRequest(self):
         """Mirroring branches resets their mirror request times."""
         branch = self.makeAnyBranch()
         branch.requestMirror()
         transaction.commit()
-        branch.startMirroring()
-        branch.mirrorComplete('rev1')
-        self.assertEqual(None, branch.next_mirror_time)
-
-    def test_mirroringResetsMirrorRequestBackwardsCompatibility(self):
-        # Mirroring branches resets their mirror request times. Before
-        # 2008-09-10, startMirroring would leave next_mirror_time untouched,
-        # and mirrorComplete reset the next_mirror_time based on the old
-        # value. This test confirms that branches which were in the middle of
-        # mirroring during the upgrade will have their next_mirror_time set
-        # properly eventually. This test can be removed after the 2.1.9
-        # release.
-        branch = self.makeAnyBranch()
-        # Set next_mirror_time to NOW, putting the branch in the pull queue.
-        branch.requestMirror()
-        next_mirror_time = branch.next_mirror_time
-        # In the new code, startMirroring sets next_mirror_time to None...
-        branch.startMirroring()
-        # ... so we make it behave like the old code by restoring the previous
-        # value. This simulates a branch that was in the middle of mirroring
-        # during the 2.1.9 upgrade.
-        removeSecurityProxy(branch).next_mirror_time = next_mirror_time
-        branch.mirrorComplete('rev1')
-        # Even though the mirror is complete, the branch is still in the pull
-        # queue. This is not normal behaviour.
-        self.assertIn(
-            branch, self.branch_puller.getPullQueue(branch.branch_type))
-        # But on the next mirror, everything is OK, since startMirroring does
-        # the right thing.
         branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertEqual(None, branch.next_mirror_time)
@@ -145,6 +107,8 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
 
     def test_pullQueueEmpty(self):
         """Branches with no next_mirror_time are not in the pull queue."""
+        branch = self.makeAnyBranch()
+        self.assertIs(None, branch.next_mirror_time)
         self.assertEqual(
             [], list(self.branch_puller.getPullQueue(self.branch_type)))
 
@@ -153,10 +117,8 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         transaction.begin()
         branch = self.makeAnyBranch()
         branch.requestMirror()
-        branch_id = branch.id
-        transaction.commit()
         queue = self.branch_puller.getPullQueue(branch.branch_type)
-        self.assertEqual([branch_id], [branch.id for branch in queue])
+        self.assertEqual([branch], list(queue))
 
     def test_futureNextMirrorTimeInQueue(self):
         """Branches with next_mirror_time in the future are not mirrored."""
@@ -239,38 +201,22 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         self.assertInFuture(branch.next_mirror_time, self.increment)
         self.assertEqual(0, branch.mirror_failures)
 
-    def test_mirroringResetsMirrorRequestBackwardsCompatibility(self):
-        # Mirroring branches resets their mirror request times. Before
-        # 2008-09-10, startMirroring would leave next_mirror_time untouched,
-        # and mirrorComplete reset the next_mirror_time based on the old
-        # value. This test confirms that branches which were in the middle of
-        # mirroring during the upgrade will have their next_mirror_time set
-        # properly eventually.
-        branch = self.makeAnyBranch()
-        # Set next_mirror_time to NOW, putting the branch in the pull queue.
-        branch.requestMirror()
-        next_mirror_time = branch.next_mirror_time
-        # In the new code, startMirroring sets next_mirror_time to None...
-        branch.startMirroring()
-        # ... so we make it behave like the old code by restoring the previous
-        # value. This simulates a branch that was in the middle of mirroring
-        # during the 2.1.9 upgrade.
-        removeSecurityProxy(branch).next_mirror_time = next_mirror_time
-        branch.mirrorComplete('rev1')
-        # Even though the mirror is complete, the branch is still in the pull
-        # queue. This is not normal behaviour.
-        self.assertIn(
-            branch, self.branch_puller.getPullQueue(branch.branch_type))
-        # But on the next mirror, everything is OK, since startMirroring does
-        # the right thing.
-        branch.startMirroring()
-        branch.mirrorComplete('rev1')
-        self.assertInFuture(branch.next_mirror_time, self.increment)
-
 
 class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
 
     branch_type = BranchType.IMPORTED
+
+
+class TestRemoteBranches(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_raises_branch_type_error(self):
+        # getPullQueue raises `BranchTypeError` if passed BranchType.REMOTE.
+        # It's impossible to mirror remote branches, so we shouldn't even try.
+        puller = getUtility(IBranchPuller)
+        self.assertRaises(
+            BranchTypeError, puller.getPullQueue, BranchType.REMOTE)
 
 
 def test_suite():

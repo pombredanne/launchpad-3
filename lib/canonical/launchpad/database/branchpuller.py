@@ -16,6 +16,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.person import Owner
 from canonical.launchpad.database.product import Product
+from canonical.launchpad.interfaces.branch import BranchType, BranchTypeError
 from canonical.launchpad.interfaces.branchpuller import IBranchPuller
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -30,6 +31,8 @@ class BranchPuller:
 
     def getPullQueue(self, branch_type):
         """See `IBranchPuller`."""
+        if branch_type == BranchType.REMOTE:
+            raise BranchTypeError("No pull queue for REMOTE branches.")
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         # Prejoin on owner and product to preserve existing behaviour.
         # XXX: JonathanLange 2009-03-22 spec=package-branches: This prejoin is
