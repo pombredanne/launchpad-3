@@ -28,7 +28,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    BugNominationStatus, IBugNomination, IBugTaskSet, IBugNominationSet,
+    BugNominationStatus, IBugNomination, IBugNominationSet,
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.validators.person import validate_public_person
 
@@ -65,30 +65,24 @@ class BugNomination(SQLBase):
         self.status = BugNominationStatus.APPROVED
         self.decider = approver
         self.date_decided = datetime.now(pytz.timezone('UTC'))
-
-        bugtaskset = getUtility(IBugTaskSet)
+        targets = []
         if self.distroseries:
             # Figure out which packages are affected in this distro for
             # this bug.
-            targets = []
             distribution = self.distroseries.distribution
             distroseries = self.distroseries
             for task in self.bug.bugtasks:
                 if not task.distribution == distribution:
                     continue
-                if task.sourcepackagename:
-                    bugtaskset.createTask(
-                        bug=self.bug, owner=approver,
-                        distroseries=distroseries,
-                        sourcepackagename=task.sourcepackagename)
+                if task.sourcepackagename is not None:
+                    targets.append(distroseries.getSourcePackage(
+                        task.sourcepackagename))
                 else:
-                    bugtaskset.createTask(
-                        bug=self.bug, owner=approver,
-                        distroseries=distroseries)
+                    targets.append(distroseries)
         else:
-            bugtaskset.createTask(
-                bug=self.bug, owner=approver,
-                productseries=self.productseries)
+            targets.append(self.productseries)
+        for target in targets:
+            self.bug.addTask(approver, target)
 
     def decline(self, decliner):
         """See IBugNomination."""

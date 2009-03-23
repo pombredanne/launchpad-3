@@ -333,7 +333,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 library_file = self.policy.distro.getFileByName(
                     filename, source=True, binary=False, archive=archive)
                 self.logger.debug(
-                    "%s found in %s" % (filename, archive.title))
+                    "%s found in %s" % (filename, archive.displayname))
                 return library_file, archive
             except NotFoundError:
                 pass
@@ -369,7 +369,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                         "has different contents. See more information about "
                         "this error in "
                         "https://help.launchpad.net/Packaging/UploadErrors." %
-                        (sub_dsc_file.filename, file_archive.title))
+                        (sub_dsc_file.filename, file_archive.displayname))
                     files_missing = True
                     continue
 

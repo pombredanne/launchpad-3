@@ -26,12 +26,20 @@ from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.archivesubscriber import (
     IArchiveSubscriberUI, IArchiveSubscriberSet)
 from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView)
+    action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
 from canonical.widgets import DateWidget
 
+
+def archive_subscription_ui_adapter(archive_subscription):
+    """Adapt an archive subscriber to the UI interface.
+
+    Since we are only modifying the type of fields that already exist
+    on IArchiveSubscriber, we simply return the archive_subscriber record.
+    """
+    return archive_subscription
 
 
 class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
@@ -119,6 +127,60 @@ class ArchiveSubscribersView(ArchiveViewBase, LaunchpadFormView):
         self.next_url = str(self.request.URL)
 
 
+class ArchiveSubscriptionEditView(LaunchpadEditFormView):
+    """A view for editing and canceling an archive subscriber."""
+
+    schema = IArchiveSubscriberUI
+    field_names = ['date_expires', 'description']
+    custom_widget('description', TextWidget, displayWidth=40)
+    custom_widget('date_expires', CustomWidgetFactory(DateWidget))
+
+    def validate_update_subscription(self, action, data):
+        """Ensure that the date of expiry is not in the past."""
+        form.getWidgetsData(self.widgets, 'field', data)
+        date_expires = data.get('date_expires')
+
+        if date_expires:
+            if date_expires < datetime.date.today():
+                self.setFieldError('date_expires',
+                    "The expiry date must be in the future.")
+
+    @action(
+        u'Update', name='update', validator="validate_update_subscription")
+    def update_subscription(self, action, data):
+        """Update the context subscription with the new data."""
+        # As we present a date selection to the user for expiry, we
+        # need to convert the value into a datetime with UTC:
+        date_expires = data['date_expires']
+
+        if date_expires:
+            data['date_expires'] = datetime.datetime(
+                date_expires.year,
+                date_expires.month,
+                date_expires.day,
+                tzinfo=pytz.timezone('UTC'))
+
+        self.updateContextFromData(data)
+
+        notification = "The subscription for %s has been updated." % (
+            self.context.subscriber.displayname)
+        self.request.response.addNotification(structured(notification))
+
+    @action(u'Cancel subscription', name='cancel')
+    def cancel_subscription(self, action, data):
+        """Cancel the context subscription."""
+        self.context.cancel(self.user)
+
+        notification = "The subscription for %s has been canceled." % (
+            self.context.subscriber.displayname)
+        self.request.response.addNotification(structured(notification))
+
+    @property
+    def next_url(self):
+        """Calculate and return the url to which we want to redirect."""
+        return canonical_url(self.context.archive) + "/+subscriptions"
+
+
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for managing a persons archive subscriptions."""
 
@@ -185,7 +247,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
                 "# %(title)s\n"
                 "deb %(archive_url)s %(series_name)s main\n"
                 "deb-src %(archive_url)s %(series_name)s main\n" % {
-                    'title': archive.title,
+                    'title': archive.displayname,
                     'archive_url': token.archive_url,
                     'series_name': series_name})
 
@@ -250,7 +312,5 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
             self.request.response.addNotification(structured(
                 "Your subscription to '%s' has been activated. "
                 "Please update your custom sources.list as "
-                "described below." % archive.title))
+                "described below." % archive.displayname))
             redirectToSelf()
-
-

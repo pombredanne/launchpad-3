@@ -14,7 +14,7 @@ from canonical.archiveuploader.tests import (
     datadir, getPolicy, mock_logger_quiet)
 from canonical.launchpad.database import (
     ComponentSelection, LibraryFileAlias)
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import import_public_test_keys, login, logout
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.testing.systemdocs import (
@@ -23,10 +23,15 @@ from canonical.testing import LaunchpadZopelessLayer
 
 
 def getUploadForSource(upload_path):
-    """Return a NascentUpload object for bar 1.0-1 source."""
+    """Return a NascentUpload object for a source."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
     return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
 
+def getPPAUploadForSource(upload_path, ppa):
+    """Return a NascentUpload object for a PPA source."""
+    policy = getPolicy(name='insecure', distro='ubuntu', distroseries='hoary')
+    policy.archive = ppa
+    return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
 
 def getUploadForBinary(upload_path):
     """Return a NascentUpload object for binaries of bar 1:1.0-9 source."""
@@ -41,9 +46,11 @@ def testGlobalsSetup(test):
 
     We can use the getUpload* without unnecessary imports.
     """
+    import_public_test_keys()
     setGlobs(test)
     test.globs['getUploadForSource'] = getUploadForSource
     test.globs['getUploadForBinary'] = getUploadForBinary
+    test.globs['getPPAUploadForSource'] = getPPAUploadForSource
 
 
 def prepareHoaryForUploads(test):

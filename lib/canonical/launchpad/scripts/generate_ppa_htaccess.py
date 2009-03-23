@@ -68,12 +68,14 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # interface, so we need to remove the security wrapper.
         pub_config = removeSecurityProxy(ppa.getPubConfig())
         htaccess_filename = os.path.join(pub_config.htaccessroot, ".htaccess")
-        if not os.path.isfile(htaccess_filename):
+        if not os.path.exists(htaccess_filename):
             # It's not there, so create it.
+            if not os.path.exists(pub_config.htaccessroot):
+                os.makedirs(pub_config.htaccessroot)
             file = open(htaccess_filename, "w")
             file.write(HTACCESS_TEMPLATE)
             file.close()
-            self.logger.debug("Created .htaccess for %s" % ppa.title)
+            self.logger.debug("Created .htaccess for %s" % ppa.displayname)
 
     def generateHtpasswd(self, ppa, tokens):
         """Generate a htpasswd file for `ppa`s `tokens`.
@@ -117,7 +119,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             not filecmp.cmp(htpasswd_filename, temp_htpasswd_file)):
             # Atomically replace the old file or create a new file.
             os.rename(temp_htpasswd_file, htpasswd_filename)
-            self.logger.debug("Replaced htpasswd for %s" % ppa.title)
+            self.logger.debug("Replaced htpasswd for %s" % ppa.displayname)
             return True
 
         return False
