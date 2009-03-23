@@ -15,8 +15,8 @@ __all__ = [
     'BugWatchRemoved',
     'CveLinkedToBug',
     'CveUnlinkedFromBug',
-    'UnsubscribedFromBug',
     'SeriesNominated',
+    'UnsubscribedFromBug',
     'get_bug_change_class',
     ]
 
@@ -153,7 +153,7 @@ class BugTaskAdded(BugChangeBase):
 
 
 class SeriesNominated(BugChangeBase):
-    """A series got nominated for fixing in."""
+    """A user nominated the bug to be fixed in a series."""
 
     def __init__(self, when, person, series):
         super(SeriesNominated, self).__init__(when, person)
