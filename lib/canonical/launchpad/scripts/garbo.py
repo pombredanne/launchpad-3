@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = []
 
 import transaction
+from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import SQL
 
@@ -15,12 +16,19 @@ from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+
+
+ONE_DAY_IN_SECONDS = 24*60*60
 
 
 class HourlyDatabaseGarbageCollector(LaunchpadCronScript):
     def main(self):
         self.logger.info("Pruning OAuthNonce")
         OAuthNoncePruner().run()
+        self.logger.info("Pruning OpenIDNonce")
+        OpenIDNoncePruner().run()
 
 
 class DailyDatabaseGarbageCollector(LaunchpadCronScript):
@@ -53,8 +61,6 @@ class OAuthNoncePruner(TunableLoop):
     """
     maximum_chunk_size = 6*60*60 # 6 hours in seconds.
 
-    ONE_DAY_IN_SECONDS = 24*60*60
-
     def __init__(self):
         self.store = IMasterStore(OAuthNonce)
         self.oldest_age = self.store.execute("""
@@ -65,17 +71,45 @@ class OAuthNoncePruner(TunableLoop):
             """).get_one()[0]
 
     def isDone(self):
-        return self.oldest_age <= self.ONE_DAY_IN_SECONDS
+        return self.oldest_age <= ONE_DAY_IN_SECONDS
 
     def __call__(self, chunk_size):
-        self.oldest_age = max(
-            self.ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
+        self.oldest_age = max(ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
 
         self.store.find(
             OAuthNonce,
             OAuthNonce.request_timestamp < SQL(
                 "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%d seconds'"
                 % self.oldest_age)).remove()
+        transaction.commit()
+
+
+class OpenIDNoncePruner(TunableLoop):
+    """An ITunableLoop to prune old OpenIDNonce records.
+
+    We remove all OpenIDNonce records older than 1 day.
+    """
+    maximum_chunk_size = 6*60*60 # 6 hours in seconds.
+
+    def __init__(self):
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.oldest_age = self.store.execute("""
+            SELECT COALESCE(
+                EXTRACT(EPOCH FROM CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+                - MIN(timestamp), 0)
+            FROM OpenIDNonce
+            """).get_one()[0]
+
+    def isDone(self):
+        return self.oldest_age <= ONE_DAY_IN_SECONDS
+
+    def __call__(self, chunk_size):
+        self.oldest_age = max(ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
+        self.store.execute("""
+            DELETE FROM OpenIDNonce
+            WHERE timestamp < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - interval '%d seconds'
+            """ % self.oldest_age)
         transaction.commit()
 
 
