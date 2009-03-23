@@ -14,6 +14,7 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
@@ -33,8 +34,6 @@ class _BaseBranchTarget:
 
 class PackageBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
-
-    default_stacked_on_branch = None
 
     def __init__(self, sourcepackage):
         self.sourcepackage = sourcepackage
@@ -63,6 +62,12 @@ class PackageBranchTarget(_BaseBranchTarget):
         from canonical.launchpad.database.branchnamespace import (
             PackageNamespace)
         return PackageNamespace(owner, self.sourcepackage)
+
+    @property
+    def default_stacked_on_branch(self):
+        """See `IBranchTarget`."""
+        return self.sourcepackage.development_version.getBranch(
+            PackagePublishingPocket.RELEASE)
 
 
 class PersonBranchTarget(_BaseBranchTarget):

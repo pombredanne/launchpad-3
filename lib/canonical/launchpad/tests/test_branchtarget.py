@@ -6,11 +6,15 @@ __metaclass__ = type
 
 import unittest
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branchtarget import (
     PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
@@ -65,10 +69,20 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             list(target.components))
 
     def test_default_stacked_on_branch(self):
-        # XXX: JonathanLange 2009-03-23 spec=package-branches bug=347057: We
-        # don't support default stacking for package branch yet.
+        # The default stacked-on branch for a source package is the branch
+        # linked to the release pocket of the current series of that package.
         target = IBranchTarget(self.original)
-        self.assertIs(None, target.default_stacked_on_branch)
+        development_package = self.original.development_version
+        default_branch = self.factory.makePackageBranch(
+            sourcepackage=development_package)
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        login_person(ubuntu_branches.teamowner)
+        development_package.setBranch(
+            PackagePublishingPocket.RELEASE, default_branch,
+            ubuntu_branches.teamowner)
+        logout()
+        login(ANONYMOUS)
+        self.assertEqual(default_branch, target.default_stacked_on_branch)
 
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
