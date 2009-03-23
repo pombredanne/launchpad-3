@@ -32,12 +32,6 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         # The absolute minimum value for any time field set to 'now'.
         self._now_minimum = self.getNow()
 
-    def assertBetween(self, lower_bound, variable, upper_bound):
-        """Assert that 'variable' is strictly between two boundaries."""
-        self.assertTrue(
-            lower_bound < variable < upper_bound,
-            "%r < %r < %r" % (lower_bound, variable, upper_bound))
-
     def assertInFuture(self, time, delta):
         """Assert that 'time' is set (roughly) to 'now' + 'delta'.
 

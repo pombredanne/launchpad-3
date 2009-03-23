@@ -248,6 +248,12 @@ class TestCase(unittest.TestCase):
             raise AssertionError(
                 "'%s' was not raised" % exception_name)
 
+    def assertBetween(self, lower_bound, variable, upper_bound):
+        """Assert that 'variable' is strictly between two boundaries."""
+        self.assertTrue(
+            lower_bound < variable < upper_bound,
+            "%r < %r < %r" % (lower_bound, variable, upper_bound))
+
     def pushConfig(self, section, **kwargs):
         """Push some key-value pairs into a section of the config.
 
