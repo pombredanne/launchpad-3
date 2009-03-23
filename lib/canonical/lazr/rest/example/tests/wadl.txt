@@ -535,7 +535,7 @@ The <method> tag for a named operation will contain one or more
     >>> create_response = create.find(wadl_tag('response'))
     >>> create_representation = single_list_value(create_request)
     >>> [param.attrib['name'] for param in create_representation]
-    ['ws.op', 'copyright_date', 'cuisine', 'name']
+    ['ws.op', 'copyright_date', 'cuisine', 'name', 'description']
 
 The 'ws.op' parameter is present for every named operation, and has a
 fixed value: the name of the operation.
@@ -784,6 +784,24 @@ PATCH representation.
     True
     >>> 'copyright_date' in diff_rep_names
     False
+
+Most <param> tags don't tell the client much beyond where to find a
+certain parameter, but some of our parameters take values from a
+proscribed vocabulary. These parameters correspond to Choice fields
+who take their vocabulary from an EnumeratedValue. For these
+parameters, the server provides the client with information about the
+possible values.
+
+    >>> cuisine_param = single_list_value(
+    ...     [param for param in full_params
+    ...      if param.attrib['name'] == 'cuisine'])
+    >>> cuisine_options = cuisine_param.getchildren()
+    >>> cuisine_options[0].tag
+    '...doc'
+    >>> cuisine_options[1].tag
+    '...option'
+    >>> sorted(status.attrib['value'] for status in cuisine_options[1:])
+    ['American', ... 'General', 'Vegetarian']
 
 
 === The entry resource type itself ===

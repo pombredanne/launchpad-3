@@ -154,7 +154,7 @@
                     mozilla-firefox - 1.0 in warty
                   </tal:source_title> in
                   <a tal:attributes="href pub/archive/fmt:url"
-                     tal:content="pub/archive/title"
+                     tal:content="pub/archive/displayname"
                     >PPA for Celso Providelo </a>
                   <tal:datepublished replace="pub/age/fmt:approximateduration">
                     3 minutes</tal:datepublished> ago

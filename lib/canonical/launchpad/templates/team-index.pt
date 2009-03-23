@@ -195,6 +195,8 @@
     </div>
   </div>
 
+  <div tal:replace="structure context/@@+portlet-ppas"/>
+
   <div id="mailing-lists" class="portlet">
     <h2>Mailing list</h2>
 

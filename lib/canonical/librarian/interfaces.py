@@ -18,6 +18,10 @@ class DownloadFailed(LibrarianFailure):
     pass
 
 
+class LibrarianServerError(Exception):
+    """An error indicating that the Librarian server is not responding."""
+
+
 class IFileUploadClient(Interface):
     def addFile(name, size, file, contentType, expires=None):
         """Add a file to the librarian.
@@ -60,10 +64,18 @@ class IFileDownloadClient(Interface):
     def getURLForAlias(aliasID):
         """Returns the URL to the given file"""
 
-    def getFileByAlias(aliasID):
+    def getFileByAlias(aliasID, timeout=5):
         """Returns a file-like object to read the file contents from.
 
+        :param aliasID: The alias ID identifying the file.
+        :param timeout: The number of seconds the method retries to open
+            a connection to the Librarian server. If the connection
+            cannot be established in the given time, a
+            LibrarianServerError is raised.
+        :return: A file-like object to read the file contents from.
         :raises DownloadFailed: If the alias is not found.
+        :raises LibrarianServerError: If the librarain server is
+            unreachable or returns an 5xx HTTPError.
         """
 
 

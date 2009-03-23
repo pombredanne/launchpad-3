@@ -247,7 +247,6 @@ available for deletion.
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
-    ...
     Delete packages from PPA for Celso Providelo
     This PPA does not contain any source packages published.
 
@@ -262,8 +261,6 @@ previous state to check if the bug 185922 is really fixed.
     >>> re_post_browser.getControl("Request Deletion").click()
 
     >>> print extract_text(find_main_content(re_post_browser.contents))
-    Profile /
-    ...
     Delete packages from PPA for Celso Providelo
     This PPA does not contain any source packages published.
     There is 1 error.
@@ -299,8 +296,6 @@ message is presented.
     'Delete packages from PPA for No Privileges Person'
 
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Profile /
-    ...
     Delete packages from PPA for No Privileges Person
     This PPA does not contain any source packages published.
 

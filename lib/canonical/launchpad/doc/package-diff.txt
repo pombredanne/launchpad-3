@@ -688,7 +688,7 @@ explain how this mechanism works.
 
 The chosen diff is for a source uploaded to a public PPA.
 
-    >>> print diff.to_source.upload_archive.title
+    >>> print diff.to_source.upload_archive.displayname
     PPA for Foo Bar
 
     >>> print diff.to_source.upload_archive.private
