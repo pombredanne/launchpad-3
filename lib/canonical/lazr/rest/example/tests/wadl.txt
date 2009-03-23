@@ -502,11 +502,12 @@ custom operations.
     >>> methods = resource_type.findall(wadl_tag('method'))
     >>> sorted((method.attrib['name'], method.attrib['id'])
     ...        for method in methods)
-    [('GET', 'cookbooks-find_recipes'),
+    [('GET', 'cookbooks-find_for_cuisine'),
+     ('GET', 'cookbooks-find_recipes'),
      ('GET', 'cookbooks-get'),
      ('POST', 'cookbooks-create')]
 
-    >>> (create, find_recipes, get) = sorted(
+    >>> (create, find_for_cuisine, find_recipes, get) = sorted(
     ...     methods, key=lambda i: i.attrib['id'])
 
 The standard GET operation is a way of getting either a page of the
@@ -602,6 +603,23 @@ If no data type is provided, the WADL standard says to default to
 
     >>> 'type' in cuisine.attrib
     False
+
+If a parameter represents a choice among several options, it might be
+described with a list of valid values. The "cuisine" parameter is a
+choice among several preset values, and the WADL describes those
+values.
+
+    >>> values = cuisine[1:]
+    >>> sorted([value.attrib['value'] for value in values])
+    ['American', ... 'Vegetarian']
+
+Here's the same field for a named operation.
+
+    >>> doc, request, response = list(find_for_cuisine)
+    >>> ws_op, cuisine = list(request)
+    >>> values = cuisine[1:]
+    >>> sorted([value.attrib['value'] for value in values])
+    ['American', ... 'Vegetarian']
 
 
 == An entry resource type ==
@@ -914,8 +932,6 @@ required, and fixed to a particular value.
     'true'
     >>> ws_op.attrib['fixed']
     'make_more_interesting'
-
-[XXX: add demonstration that the parameters might be chosen from a list.]
 
 
 == Hosted binary files ==
