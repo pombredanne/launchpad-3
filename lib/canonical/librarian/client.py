@@ -29,7 +29,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
-    LIBRARIAN_SERVER_TIMEOUT, LibrarianServerError, UploadFailed)
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
 
 
 class FileUploadClient:
@@ -325,7 +325,8 @@ class FileDownloadClient:
         base = self._internal_download_url
         return urljoin(base, path)
 
-    def getFileByAlias(self, aliasID, timeout=LIBRARIAN_SERVER_TIMEOUT):
+    def getFileByAlias(
+        self, aliasID, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """See `IFileDownloadClient`."""
         url = self._getURLForDownload(aliasID)
         if url is None:
