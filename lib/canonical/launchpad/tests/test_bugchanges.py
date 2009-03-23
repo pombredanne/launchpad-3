@@ -951,6 +951,76 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=expected_notification)
 
+    def test_product_series_nominated(self):
+        # Nominating a bug to be fixed in a product series adds an item
+        # to the activity log only.
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=product)
+        self.bug.addTask(self.user, product)
+        self.saveOldChanges()
+
+        nomination = self.bug.addNomination(self.user, series)
+        self.assertFalse(nomination.isApproved())
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'nominated for series',
+            'newvalue': series.bugtargetname,
+            }
+
+        self.assertRecordedChange(expected_activity=expected_activity)
+
+    def test_distro_series_nominated(self):
+        # Nominating a bug to be fixed in a product series adds an item
+        # to the activity log only.
+        distribution = self.factory.makeDistribution()
+        series = self.factory.makeDistroRelease(distribution=distribution)
+        self.bug.addTask(self.user, distribution)
+        self.saveOldChanges()
+
+        nomination = self.bug.addNomination(self.user, series)
+        self.assertFalse(nomination.isApproved())
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'nominated for series',
+            'newvalue': series.bugtargetname,
+            }
+
+        self.assertRecordedChange(expected_activity=expected_activity)
+
+    def test_series_nominated_and_approved(self):
+        # When adding a nomination that is approved automatically, it's
+        # like adding a new bug task for the series directly.
+        product = self.factory.makeProduct(owner=self.user)
+        product.driver = self.user
+        series = self.factory.makeProductSeries(product=product)
+        self.bug.addTask(self.user, product)
+        self.saveOldChanges()
+
+        nomination = self.bug.addNomination(self.user, series)
+        self.assertTrue(nomination.isApproved())
+
+        expected_activity = {
+            'person': self.user,
+            'newvalue': series.bugtargetname,
+            'whatchanged': 'bug task added',
+            'newvalue': series.bugtargetname,
+            }
+
+        task_added_notification = {
+            'person': self.user,
+            'text': (
+                '** Also affects: %s\n'
+                '   Importance: Undecided\n'
+                '       Status: New' % (
+                    series.bugtargetname)),
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=task_added_notification)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
