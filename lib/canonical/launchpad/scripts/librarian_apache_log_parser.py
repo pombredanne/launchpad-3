@@ -8,6 +8,7 @@ from zope.component import getUtility
 from contrib import apachelog
 
 from canonical.launchpad.database.librarian import ParsedApacheLog
+from canonical.launchpad.interfaces.geoip import IGeoIP
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -52,8 +53,8 @@ def get_files_to_parse(root, file_names):
 def parse_file(fd, start_position):
     """Parse the given file starting on the given position.
 
-    Return a dictionary mapping days and file_ids (from the librarian) to
-    number of downloads.
+    Return a dictionary mapping days to countries to file_ids (from the
+    librarian) to number of downloads.
     """
     # Seek file to given position, read all lines.
     fd.seek(start_position)
@@ -68,6 +69,7 @@ def parse_file(fd, start_position):
         lines = [last_line]
         parsed_bytes = fd.tell()
 
+    geoip = getUtility(IGeoIP)
     downloads = {}
     for line in lines:
         host, date, status, request = get_host_date_status_and_request(line)
@@ -80,14 +82,24 @@ def parse_file(fd, start_position):
             # We're only interested in counting downloads.
             continue
 
+        # Get the dict containing these day's downloads.
         day = get_day(date)
         if day not in downloads:
             downloads[day] = {}
         daily_downloads = downloads[day]
 
-        if file_id not in daily_downloads:
-            daily_downloads[file_id] = 0
-        daily_downloads[file_id] += 1
+        country_code = None
+        geoip_record = geoip.getRecordByAddress(host)
+        if geoip_record is not None:
+            country_code = geoip_record['country_code']
+        # Get the dict containing these country's downloads for this day.
+        if country_code not in daily_downloads:
+            daily_downloads[country_code] = {}
+        country_daily_downloads = daily_downloads[country_code]
+
+        if file_id not in country_daily_downloads:
+            country_daily_downloads[file_id] = 0
+        country_daily_downloads[file_id] += 1
 
     return downloads, parsed_bytes
 

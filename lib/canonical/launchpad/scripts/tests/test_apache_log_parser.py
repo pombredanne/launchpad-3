@@ -11,7 +11,7 @@ from canonical.launchpad.scripts.librarian_apache_log_parser import (
     get_host_date_status_and_request, get_day, get_files_to_parse,
     get_method_and_file_id, parse_file)
 from canonical.launchpad.testing import TestCase
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer, ZopelessLayer
 
 
 here = os.path.dirname(__file__)
@@ -24,7 +24,7 @@ class TestLineParsing(TestCase):
         fd = open(
             os.path.join(here, 'apache-log-files', 'librarian-oneline.log'))
         host, date, status, request = get_host_date_status_and_request(
-            fd.read())
+            fd.readline())
         self.assertEqual(host, '201.158.154.121')
         self.assertEqual(date, '[13/Jun/2008:18:38:57 +0100]')
         self.assertEqual(status, '200')
@@ -49,6 +49,7 @@ class TestRequestParsing(TestCase):
 class TestLogFileParsing(TestCase):
     """Test the parsing of log files."""
 
+    layer = ZopelessLayer
     sample_line = (
         '69.233.136.42 - - [13/Jun/2008:14:55:22 +0100] "%(method)s '
         '/15018215/ul_logo_64x64.png HTTP/1.1" %(status)s 2261 '
@@ -67,20 +68,23 @@ class TestLogFileParsing(TestCase):
         # The parse_file() function returns a tuple containing a dict (mapping
         # days and library file IDs to number of downloads) and the total
         # number of bytes that have been parsed from this file.  In our sample
-        # log, the file with ID 8196569 has been downloaded twice and the
-        # files with ID 12060796 and 9096290 have been downloaded once.  The
-        # file with ID 15018215 has also been downloaded once (last line of
-        # the sample log), but parse_file() always skips the last line as it
-        # may be truncated, so it doesn't show up in the dict returned.
+        # log, the file with ID 8196569 has been downloaded twice (once from
+        # Argentina and once from Australia) and the files with ID 12060796
+        # and 9096290 have been downloaded once.  The file with ID 15018215
+        # has also been downloaded once (last line of the sample log), but
+        # parse_file() always skips the last line as it may be truncated, so
+        # it doesn't show up in the dict returned.
         fd = open(os.path.join(
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
         downloads, parsed_bytes = parse_file(fd, start_position=0)
         date = datetime(2008, 6, 13)
         self.assertEqual(downloads.keys(), [date])
         daily_downloads = downloads[date]
-        self.assertEqual(
-            sorted(daily_downloads.items()),
-            [('12060796', 1), ('8196569', 2), ('9096290', 1)])
+        self.assertContentEqual(
+            daily_downloads.items(),
+            [('AR', {'8196569': 1}),
+             ('AU', {'9096290': 1, '12060796': 1}),
+             ('JP', {'8196569': 1})])
 
         # The last line is skipped, so we'll record that the file has been
         # parsed until the beginning of the last line.
@@ -98,7 +102,8 @@ class TestLogFileParsing(TestCase):
         self.assertEqual(parsed_bytes, fd.tell())
 
         daily_downloads = downloads[datetime(2008, 6, 13)]
-        self.assertEqual(sorted(daily_downloads.items()), [('15018215', 1)])
+        self.assertContentEqual(
+            daily_downloads.items(), [('US', {'15018215': 1})])
 
     def _assertResponseWithGivenStatusIsIgnored(self, status):
         """Assert that responses with the given status are ignored."""
