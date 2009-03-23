@@ -55,7 +55,7 @@
           </a>
         </td>
         <td>
-          <tal:registrant content="structure proposal/registrant/fmt:link" />
+          <tal:registrant replace="structure proposal/registrant/fmt:link" />
           <tal:date replace="proposal/date_review_requested/fmt:displaydate"/>
         </td>
         <td>

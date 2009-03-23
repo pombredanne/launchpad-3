@@ -102,25 +102,6 @@
           </tal:inactive>
         </tal:private_membership>
       </div>
-
-      <table class="slimpadding" style="margin-top: 1em"
-             tal:define="archive_url view/archive_url"
-             tal:condition="archive_url">
-        <tr>
-          <td><a id="mailing-list-archive" tal:attributes="href archive_url"
-               >Mailing list archive</a>
-          </td>
-        </tr>
-        <tal:can_see_subscribers condition="context/required:launchpad.Edit">
-          <tr>
-            <td><a id="mailing-list-subscribers"
-                   tal:attributes="href context/fmt:url/+mailing-list-subscribers"
-                   >Mailing list subscribers</a>
-            </td>
-          </tr>
-        </tal:can_see_subscribers>
-      </table>
-
     </tal:is_team>
 
   </div>

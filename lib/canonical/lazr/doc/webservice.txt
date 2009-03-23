@@ -104,7 +104,7 @@ interface.
     ...     adapts, adapter, getSiteManager, getMultiAdapter)
     >>> from zope.interface import implements, implementer, Interface
     >>> from zope.publisher.interfaces import IPublishTraverse, NotFound
-    >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+    >>> from zope.publisher.interfaces.browser import IBrowserRequest
     >>> from zope.security.checker import CheckerPublic
     >>> from zope.traversing.browser.interfaces import IAbsoluteURL
     >>> from canonical.lazr.security import protect_schema
@@ -131,14 +131,14 @@ interface.
     ...
     ...     __call__ = __str__
     >>> sm.registerAdapter(
-    ...     BaseAbsoluteURL, [ITestDataObject, IDefaultBrowserLayer],
+    ...     BaseAbsoluteURL, [ITestDataObject, IBrowserRequest],
     ...     IAbsoluteURL)
 
     >>> from urllib import unquote
     >>> class Traversable:
     ...     """A default IPublishTraverse that uses the get() method."""
     ...     implements(IPublishTraverse)
-    ...     adapts(ITestDataObject, IDefaultBrowserLayer)
+    ...     adapts(ITestDataObject, IBrowserRequest)
     ...
     ...     def __init__(self, context, request):
     ...         self.context = context
@@ -181,7 +181,7 @@ interface.
     ...     The URL is based on the URL of the ICommentTarget on which
     ...     this is a comment.
     ...     """
-    ...     adapts(IComment, IDefaultBrowserLayer)
+    ...     adapts(IComment, IBrowserRequest)
     ...
     ...     def __str__(self):
     ...         base = getMultiAdapter((self.context.target, request),
@@ -208,7 +208,7 @@ interface.
 
     >>> class CookbookTraversal:
     ...     implements(IPublishTraverse)
-    ...     adapts(ICookbook, IDefaultBrowserLayer)
+    ...     adapts(ICookbook, IBrowserRequest)
     ...
     ...     traversing = None
     ...
@@ -272,7 +272,7 @@ interface.
     ...     The URL is based on the URL of the cookbook to which
     ...     this recipe belongs.
     ...     """
-    ...     adapts(IRecipe, IDefaultBrowserLayer)
+    ...     adapts(IRecipe, IBrowserRequest)
     ...
     ...     def __str__(self):
     ...         base = getMultiAdapter((self.context.cookbook, request),
@@ -282,7 +282,7 @@ interface.
     >>> sm.registerAdapter(RecipeAbsoluteURL)
 
     >>> class RecipeTraversal:
-    ...     adapts(IRecipe, IDefaultBrowserLayer)
+    ...     adapts(IRecipe, IBrowserRequest)
     ...     implements(IPublishTraverse)
     ...
     ...     saw_comments = False
@@ -406,7 +406,7 @@ Here's a simple AuthorSet with predefined authors.
     >>> protect_schema(AuthorSet, IAuthorSet)
     >>> sm.registerUtility(AuthorSet(), IAuthorSet)
     >>> sm.registerAdapter(
-    ...     Traversable, [IAuthorSet, IDefaultBrowserLayer])
+    ...     Traversable, [IAuthorSet, IBrowserRequest])
 
 Here's a vocabulary of authors, for a field that presents a Choice
 among authors.
@@ -493,6 +493,10 @@ A IWebServiceConfiguration utility is also expected to be defined which
 defines common configuration option for the webservice.
 
     >>> from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+    >>> from canonical.lazr.testing.webservice import (
+    ...     WebServiceTestPublication, WebServiceTestRequest)
+    >>> from cStringIO import StringIO
+
     >>> class SimpleWebServiceConfiguration:
     ...     implements(IWebServiceConfiguration)
     ...     view_permission = 'zope.View'
@@ -500,6 +504,13 @@ defines common configuration option for the webservice.
     ...     use_https = False
     ...     service_version_uri_prefix = 'beta'
     ...     code_revision = 'test'
+    ...     show_tracebacks = True
+    ...
+    ...     root = None # Will be set later
+    ...     def createRequest(self, body_instream, environ):
+    ...         request = WebServiceTestRequest(body_instream, environ)
+    ...         request.setPublication(WebServiceTestPublication(self.root))
+    ...         return request
     >>> webservice_configuration = SimpleWebServiceConfiguration()
     >>> sm.registerUtility(webservice_configuration)
 
@@ -595,10 +606,11 @@ define an adapter to IFieldMarshaller.
     >>> from canonical.lazr.rest.marshallers import (
     ...     ObjectLookupFieldMarshaller)
     >>> from canonical.lazr.interfaces import (
-    ...     IFieldMarshaller, WebServiceLayer)
+    ...     IFieldMarshaller, IWebServiceClientRequest)
     >>> sm.registerAdapter(
     ...     ObjectLookupFieldMarshaller,
-    ...     [IChoice, WebServiceLayer, AuthorVocabulary], IFieldMarshaller)
+    ...     [IChoice, IWebServiceClientRequest, AuthorVocabulary], 
+    ...     IFieldMarshaller)
 
 
 == Implementing the resources ==
@@ -924,20 +936,16 @@ implementation of IAbsoluteURL and IPublishTraverse for their
 service root resource.
 
     >>> sm.registerAdapter(
-    ...     BaseAbsoluteURL, [MyServiceRootResource, IDefaultBrowserLayer])
+    ...     BaseAbsoluteURL, [MyServiceRootResource, IBrowserRequest])
     >>> sm.registerAdapter(
-    ...     Traversable, [IServiceRootResource, IDefaultBrowserLayer])
+    ...     Traversable, [IServiceRootResource, IBrowserRequest])
 
 If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
 'http://api.launchpad.net/beta/'.
 
-    >>> from canonical.lazr.testing.webservice import (
-    ...     WebServiceTestPublication, WebServiceTestRequest)
-    >>> from cStringIO import StringIO
-
     >>> app = MyServiceRootResource()
-    >>> webservice_publication = WebServiceTestPublication(app)
+    >>> webservice_configuration.root = app
     >>> def create_web_service_request(
     ...     path_info, method='GET', body=None, environ=None,
     ...     http_host='api.launchpad.dev'):
@@ -954,9 +962,8 @@ will act as though you had performed a GET on the URL
     ...     else:
     ...         test_environ['CONTENT_LENGTH'] = len(body)
     ...         body_instream = StringIO(body)
-    ...     request = WebServiceTestRequest(
-    ...         body_instream=body_instream, environ=test_environ)
-    ...     request.setPublication(webservice_publication)
+    ...     request = webservice_configuration.createRequest(
+    ...         body_instream, test_environ)
     ...     request.processInputs()
     ...     # This sets the request as the current interaction.
     ...     request.publication.beforeTraversal(request)

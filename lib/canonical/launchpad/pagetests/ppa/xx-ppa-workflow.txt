@@ -11,11 +11,9 @@ A person's Personal Package Archive is accessible from the navigation
 menu.
 
    >>> anon_browser.open("http://launchpad.dev/~cprov")
-   >>> print_navigation_links(anon_browser.contents)
-   Profile
-   Related Software: ...
-   Karma: ...
-   Personal Package Archive: http://launchpad.dev/~cprov/+archive/ppa
+   >>> print_tag_with_id(anon_browser.contents, 'ppas')
+   Personal package archives
+   PPA for Celso Providelo
 
 Since cprov's Personal Package Archive is already activated in
 sampledata, the 'Personal Package Archive' menu item takes you to his
@@ -24,9 +22,11 @@ archive.
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open("http://launchpad.dev/~cprov")
-    >>> cprov_browser.getLink("Personal Package Archive").click()
+    >>> cprov_browser.getLink("PPA for Celso Providelo").click()
+
     >>> cprov_browser.title
     'PPA for Celso Providelo'
+
     >>> cprov_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa'
 
@@ -53,21 +53,19 @@ URL results in NotFound error:
     ...
     NotFound: Object: <Person at ...>, name: u'+archive'
 
-Sample Person hasn't activated his PPA yet, but he has a 'Personal
-Package Archive' link in the navigation menu on his home page.  The
-navigation menu link takes him to the 'Activate Personal Package
-Archive' page.
+Sample Person hasn't activated his PPA yet, so he can quickly activate
+one via the link in his PPA section.
 
     >>> sample_browser.open("http://launchpad.dev/~name12")
-    >>> print_navigation_links(sample_browser.contents)
-    Profile
-    Related Software: ...
-    Karma: ...
-    Personal Package Archive: http://launchpad.dev/~name12/+activate-ppa
+    >>> print_tag_with_id(sample_browser.contents, 'ppas')
+    Personal package archives
+    Create a new PPA
 
-    >>> sample_browser.getLink("Personal Package Archive").click()
+    >>> sample_browser.getLink("Create a new PPA").click()
+
     >>> sample_browser.title
     'Activate Personal Package Archive'
+
     >>> sample_browser.url
     'http://launchpad.dev/~name12/+activate-ppa'
 
@@ -170,10 +168,8 @@ Similarly to the user PPAs activation, team PPAs can be activated by
 anyone with 'launchpad.Edit' permission in the team in question:
 
     >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
-    >>> cprov_browser.getLink("Activate Personal Package Archive")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
+    >>> print_tag_with_id(cprov_browser.contents, 'ppas')
+    Personal package archives
 
 Even if we try the URL directly:
 
@@ -186,7 +182,11 @@ Even if we try the URL directly:
 Let's proceed with the required permissions:
 
     >>> sample_browser.open("http://launchpad.dev/~landscape-developers")
-    >>> sample_browser.getLink("Activate Personal Package Archive").click()
+    >>> print_tag_with_id(sample_browser.contents, 'ppas')
+    Personal package archives
+    Create a new PPA
+
+    >>> sample_browser.getLink('Create a new PPA').click()
     >>> sample_browser.title
     'Activate Personal Package Archive'
 
@@ -245,12 +245,11 @@ We also allow LP-admins to create Personal Package Archives in the
 name of other users or teams:
 
     >>> admin_browser.open("http://launchpad.dev/~carlos")
-    >>> admin_browser.getLink(url="+archive")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
+    >>> print_tag_with_id(admin_browser.contents, 'ppas')
+    Personal package archives
+    Create a new PPA
 
-    >>> admin_browser.getLink("Personal Package Archive").click()
+    >>> admin_browser.getLink("Create a new PPA").click()
     >>> admin_browser.getControl(name="field.accepted").value = True
     >>> admin_browser.getControl(name="field.description").value = (
     ...    'Go for it, you lazy !')
@@ -395,16 +394,17 @@ Cancelled changes in the administration form redirects the user to the
 PPA overview page and discards the changes.
 
     >>> admin_browser.getControl("Cancel").click()
-    >>> admin_browser.title
-    'Private PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+    >>> print admin_browser.title
+    Private PPA for Carlos Perelló Marín
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.whiteboard").value = (
     ...    'It should be discarded.')
     >>> admin_browser.getControl("Cancel").click()
 
-    >>> admin_browser.title
-    'Private PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+    >>> print admin_browser.title
+    Private PPA for Carlos Perelló Marín
+
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
     PPA whiteboard:

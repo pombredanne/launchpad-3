@@ -73,12 +73,16 @@ time goes on.
 
     >>> login(ANONYMOUS)
     >>> eric = factory.makePerson(name='eric')
+    >>> marley = factory.makePerson(name='marley')
     >>> fooix = factory.makeProduct(name='fooix')
     >>> branch = factory.makeProductBranch(
     ...     branch_type=BranchType.HOSTED, owner=eric, product=fooix,
     ...     name='trunk', title='The Fooix Trunk')
+    >>> feature_branch = factory.makeAnyBranch(
+    ...     owner=eric, product=fooix, name='feature-branch')
     >>> merge_proposal = factory.makeBranchMergeProposal(
-    ...     target_branch=branch, registrant=eric)
+    ...     target_branch=branch, source_branch=feature_branch,
+    ...     registrant=eric)
     >>> branch_url = '/' + branch.unique_name
     >>> logout()
 
@@ -126,17 +130,17 @@ should have a branch at the endpoint of landing_candidates.
     ...     fooix_trunk['landing_candidates_collection_link']).jsonBody()
     >>> for candidate in landing_candidates['entries']:
     ...     print candidate['source_branch_link']
-    http://.../~person-name23/fooix/branch25
+    http://.../~eric/fooix/feature-branch
 
 
 The source_branch of the landing candidate should have this same merge proposal
 in its landing_targets.
 
     >>> feature_branch_link = \
-    ...     '/~person-name23/fooix/branch25'
+    ...     '/~eric/fooix/feature-branch'
     >>> feature_branch = webservice.get(feature_branch_link).jsonBody()
     >>> print feature_branch['unique_name']
-    ~person-name23/fooix/branch25
+    ~eric/fooix/feature-branch
 
     >>> landing_targets = webservice.get(
     ...     feature_branch['landing_targets_collection_link']).jsonBody()
@@ -147,30 +151,33 @@ in its landing_targets.
 
 == Branch subscriptions ==
 
-It's possible to see all the subscribers to a given branch.
+A user can subscribe to a branch through the API.
+
+    >>> marley = webservice.get('/~marley').jsonBody()
+    >>> subscription = webservice.named_post(
+    ...     fooix_trunk['self_link'], 'subscribe', person=marley['self_link'],
+    ...     notification_level=u'Branch attribute notifications only',
+    ...     max_diff_lines=u'Don\'t send diffs',
+    ...     code_review_level=u'No email')
+
+    >>> pprint_entry(subscription.jsonBody())
+    branch_link: u'http://.../~eric/fooix/trunk'
+    max_diff_lines: u"Don't send diffs"
+    notification_level: u'Branch attribute notifications only'
+    person_link: u'http://.../~marley'
+    resource_type_link: u'http://.../#branch_subscription'
+    review_level: u'No email'
+    self_link: u'http://.../~eric/fooix/trunk/+subscription/marley'
+
 
     >>> subscribers = webservice.get(
     ...     fooix_trunk['subscribers_collection_link']).jsonBody()
     >>> print len(subscribers['entries'])
-    1
+    2
     >>> for subscriber in subscribers['entries']:
     ...     print subscriber['display_name']
     Eric
-
-It's all possible to access the actual subscriptions for the branch.
-
-    >>> subscriptions = webservice.get(
-    ...     fooix_trunk['subscriptions_collection_link']).jsonBody()
-    >>> print len(subscriptions['entries'])
-    1
-    >>> pprint_entry(subscriptions['entries'][0])
-    branch_link: u'http://.../~eric/fooix/trunk'
-    max_diff_lines: u"Don't send diffs"
-    notification_level: u'No email'
-    person_link: u'http://.../~eric'
-    resource_type_link: u'http://.../#branch_subscription'
-    review_level: u'Email about all changes'
-    self_link: u'http://.../~eric/fooix/trunk/+subscription/eric'
+    Marley
 
 
 == Project branches ==
@@ -183,4 +190,4 @@ The branches of a project are also available.
     >>> for branch in branches['entries']:
     ...     print branch['unique_name']
     ~eric/fooix/trunk
-    ~person-name23/fooix/branch25
+    ~eric/fooix/feature-branch

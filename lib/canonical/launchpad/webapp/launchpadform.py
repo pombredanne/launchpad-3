@@ -241,14 +241,17 @@ class LaunchpadFormView(LaunchpadView):
         """Validate the named form widgets.
 
         :param names: Names of widgets to validate. If None, all widgets
-        will be validated.
+            will be validated.
         """
-        # Filter out names we don't want to validate.
-        widgets = []
-        for input, widget in self.widgets.__iter_input_and_widget__():
-            if names is None or widget.context.__name__ in names:
-                widgets.append((input, widget))
-        widgets = form.Widgets(widgets, len(self.prefix) + 1)
+        if names is None:
+            # Validate all widgets.
+            widgets = self.widgets
+        else:
+            widgets = []
+            for input, widget in self.widgets.__iter_input_and_widget__():
+                if widget.context.__name__ in names:
+                    widgets.append((input, widget))
+            widgets = form.Widgets(widgets, len(self.prefix) + 1)
         for error in form.getWidgetsData(widgets, self.prefix, data):
             self.errors.append(error)
         for error in form.checkInvariants(self.form_fields, data):

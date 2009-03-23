@@ -812,8 +812,6 @@ class IBugTaskDelta(Interface):
 
     Likewise, if sourcepackagename is not None, product must be None.
     """
-    targetname = Attribute("Where this change exists.")
-    bugtargetname = Attribute("Near-unique ID of where the change exists.")
     bugtask = Attribute("The modified IBugTask.")
     product = Attribute(
         """The change made to the IProduct of this task.
@@ -856,6 +854,7 @@ class IBugTaskDelta(Interface):
         """)
     statusexplanation = Attribute("The new value of the status notes.")
     bugwatch = Attribute("The bugwatch which governs this task.")
+    milestone = Attribute("The milestone for which this task is scheduled.")
 
 
 # XXX Brad Bollenbach 2006-08-03 bugs=55089:

@@ -12,13 +12,15 @@ __all__ = [
 from operator import attrgetter
 from warnings import warn
 from sqlobject.sqlbuilder import SQLConstant
-from zope.interface import implements
+from zope.interface import classProvides, implements
+from zope.component import getUtility
 
 from storm.expr import And
 from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
+from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
@@ -31,17 +33,23 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
-from canonical.launchpad.database.question import (
+from lp.answers.model.question import (
     QuestionTargetMixin, QuestionTargetSearch)
+from canonical.launchpad.database.seriessourcepackagebranch import (
+    SeriesSourcePackageBranch)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    BuildStatus, ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
+    BuildStatus, IHasBuildRecords, IHasTranslationTemplates,
     IQuestionTarget, PackagingType, PackagePublishingPocket,
     PackagePublishingStatus, QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.seriessourcepackagebranch import (
+    ISeriesSourcePackageBranchSet)
+from canonical.launchpad.interfaces.sourcepackage import (
+    ISourcePackage, ISourcePackageFactory)
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -146,9 +154,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
         IQuestionTarget)
 
+    classProvides(ISourcePackageFactory)
+
     def __init__(self, sourcepackagename, distroseries):
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
+
+    @classmethod
+    def new(cls, sourcepackagename, distroseries):
+        """See `ISourcePackageFactory`."""
+        return cls(sourcepackagename, distroseries)
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, self.path)
@@ -426,6 +441,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
 
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.distroseries.official_bug_tags
+
     def getUsedBugTags(self):
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
@@ -591,3 +611,20 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             ''' % sqlvalues(self.distroseries, self.sourcepackagename),
             clauseTables = ['DistroSeries', 'Distribution'])
         return shortlist(result.orderBy(['-priority', 'name']), 300)
+
+    def getBranch(self, pocket):
+        """See `ISourcePackage`."""
+        store = Store.of(self.sourcepackagename)
+        return store.find(
+            Branch,
+            SeriesSourcePackageBranch.distroseries == self.distroseries.id,
+            (SeriesSourcePackageBranch.sourcepackagename
+             == self.sourcepackagename.id),
+            SeriesSourcePackageBranch.pocket == pocket,
+            SeriesSourcePackageBranch.branch == Branch.id).one()
+
+    def setBranch(self, pocket, branch, registrant):
+        """See `ISourcePackage`."""
+        getUtility(ISeriesSourcePackageBranchSet).new(
+            self.distroseries, pocket, self.sourcepackagename, branch,
+            registrant)

@@ -20,6 +20,7 @@
     <include file="branch.zcml" />
     <include file="branchcollection.zcml" />
     <include file="branchjob.zcml" />
+    <include file="branchlookup.zcml" />
     <include file="branchmergeproposal.zcml" />
     <include file="branchmergequeue.zcml" />
     <include file="branchnamespace.zcml" />
@@ -33,11 +34,9 @@
     <include file="bugcomment.zcml" />
     <include file="bugcve.zcml" />
     <include file="buglinktarget.zcml" />
-    <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
     <include file="bugnomination.zcml" />
     <include file="bugnotification.zcml" />
-    <include file="bugpackageinfestation.zcml" />
     <include file="bugsubscription.zcml" />
     <include file="bugsupervisor.zcml" />
     <include file="bugtask.zcml" />
@@ -82,8 +81,6 @@
     <include file="driver.zcml" />
     <include file="emailaddress.zcml" />
     <include file="entitlement.zcml" />
-    <include file="faq.zcml" />
-    <include file="faqcollection.zcml" />
     <include file="feeds.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
@@ -158,11 +155,6 @@
     <include file="translationexport.zcml" />
     <include file="translationimport.zcml" />
     <include file="translationmessage.zcml" />
-    <include file="question.zcml" />
-    <include file="question-events.zcml" />
-    <include file="questionreopening.zcml" />
-    <include file="questionsubscription.zcml" />
-    <include file="questiontarget.zcml" />
     <include file="translationcommonformat.zcml" />
     <include file="translationgroup.zcml" />
     <include file="translationimportqueue.zcml" />

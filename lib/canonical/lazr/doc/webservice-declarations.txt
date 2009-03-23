@@ -1408,27 +1408,27 @@ are also available for IBookSetOnSteroids and IBookOnSteroids.
     >>> from zope.component import getGlobalSiteManager
     >>> adapter_registry = getGlobalSiteManager().adapters
 
-    >>> from canonical.lazr.interfaces.rest import WebServiceLayer
+    >>> from canonical.lazr.interfaces.rest import IWebServiceClientRequest
     >>> adapter_registry.lookup(
-    ...     (IBookSetOnSteroids, WebServiceLayer), IResourceGETOperation,
-    ...     'searchBooks')
+    ...     (IBookSetOnSteroids, IWebServiceClientRequest), 
+    ...     IResourceGETOperation, 'searchBooks')
     <class '...GET_IBookSetOnSteroids_searchBooks'>
     >>> adapter_registry.lookup(
-    ...     (IBookSetOnSteroids, WebServiceLayer), IResourcePOSTOperation,
-    ...     'create_book')
+    ...     (IBookSetOnSteroids, IWebServiceClientRequest), 
+    ...     IResourcePOSTOperation, 'create_book')
     <class '...POST_IBookSetOnSteroids_create_book'>
     >>> adapter_registry.lookup(
-    ...     (IBookOnSteroids, WebServiceLayer), IResourcePOSTOperation,
-    ...     'checkout')
+    ...     (IBookOnSteroids, IWebServiceClientRequest), 
+    ...     IResourcePOSTOperation, 'checkout')
     <class '...POST_IBookOnSteroids_checkout'>
 
-There is also a 'index.html' view on the WebServiceLayer registered for the
-InvalidEmail exception.
+There is also a 'index.html' view on the IWebServiceClientRequest 
+registered for the InvalidEmail exception.
 
     >>> from zope.interface import implementedBy
     >>> adapter_registry.lookup(
-    ...     (implementedBy(InvalidEmail), WebServiceLayer), Interface,
-    ...         'index.html')
+    ...     (implementedBy(InvalidEmail), IWebServiceClientRequest), 
+    ...     Interface, 'index.html')
     <class '...WebServiceExceptionView'>
 
 (Clean-up.)

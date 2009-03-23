@@ -17,6 +17,7 @@ __all__ = [
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'RedirectResource',
     'render_field_to_html',
     'ResourceJSONEncoder',
     'RESTUtilityBase',
@@ -40,7 +41,7 @@ from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope import component
 from zope.component import (
-    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter, 
+    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
     getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
@@ -72,8 +73,8 @@ from canonical.lazr.interfaces.rest import (
     IEntryFieldResource, IEntryResource, IFieldHTMLRenderer,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME,
-    IWebServiceConfiguration, WebServiceLayer)
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue,
+    IWebServiceClientRequest, IWebServiceConfiguration, LAZR_WEBSERVICE_NAME)
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -135,6 +136,20 @@ class JSONItem:
     def toDataForJSON(self):
         """See `ISJONPublishable`"""
         return str(self.context.title)
+
+
+class RedirectResource:
+    """A resource that redirects to another URL."""
+    implements(IHTTPResource)
+
+    def __init__(self, url, request):
+        self.url = url
+        self.request = request
+
+    def __call__(self):
+        url = self.url
+        self.request.response.setStatus(301)
+        self.request.response.setHeader("Location", url)
 
 
 class HTTPResource:
@@ -695,7 +710,7 @@ class FieldUnmarshallerMixin:
         return name, renderer(value)
 
 
-@component.adapter(Interface, IField, WebServiceLayer)
+@component.adapter(Interface, IField, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def render_field_to_html(object, field, request):
     """Turn a field's current value into an XHTML snippet.

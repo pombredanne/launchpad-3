@@ -30,8 +30,8 @@ though we do not yet have a subscription:
     >>> new_token = cprov.archive.newAuthToken(name12)
     Traceback (most recent call last):
     ...
-    Unauthorized: You do not have a subscription for Private PPA for
-    Celso Providelo.
+    Unauthorized: You do not have a subscription for
+    Private PPA for Celso Providelo.
 
 Create a subscription for name12 to cprov's archive:
 
@@ -69,7 +69,7 @@ We can also specify our own token for testing purposes:
 
 The new token is returned and reflects the data:
 
-    >>> print new_token.archive.title
+    >>> print new_token.archive.displayname
     Private PPA for Celso Providelo
 
     >>> print new_token.person.name
@@ -124,6 +124,16 @@ And retrieve the token by id and by token data:
     >>> print token_set.getByToken(u"testtoken").person.name
     name12
 
+It's also possible to retrieve a set of all the tokens for an archive.
+
+    >>> tokens = token_set.getByArchive(cprov.archive)
+    >>> print tokens.count()
+    1
+
+    >>> for token in tokens:
+    ...     print token.person.name
+    name12
+
 Tokens can also be retreived by archive and person:
 
     >>> print token_set.getActiveTokenForArchiveAndPerson(
@@ -153,11 +163,18 @@ Deactivating sets the date_deactivated value.
 
 We can do this as an admin too:
 
+    >>> new_token = cprov.archive.newAuthToken(name12)
     >>> login("admin@canonical.com")
     >>> new_token.deactivate()
 
+Deactivating a token stops it being returned from getByArchive().  The
+previous count of 1 is now reduced to 0.
+
+    >>> token_set.getByArchive(cprov.archive).count()
+    0
+
 The IArchiveAuthTokenSet.getActiveTokenForArchiveAndPerson() method will
-not return tokens that have been deactivated:
+also not return tokens that have been deactivated:
 
     >>> print token_set.getActiveTokenForArchiveAndPerson(
     ...     new_token.archive, new_token.person)

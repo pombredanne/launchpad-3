@@ -158,7 +158,7 @@ We will use Celso's PPA for testing these mechanisms.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> print cprov.archive.title
+    >>> print cprov.archive.displayname
     PPA for Celso Providelo
 
 Non-primary archives by default use primary Release, Security and Updates

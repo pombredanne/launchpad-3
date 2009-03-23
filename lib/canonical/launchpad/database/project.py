@@ -37,7 +37,7 @@ from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.faq import FAQ, FAQSearch
+from lp.answers.model.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -51,7 +51,7 @@ from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
-from canonical.launchpad.database.question import QuestionTargetSearch
+from lp.answers.model.question import QuestionTargetSearch
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
@@ -269,6 +269,14 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
         search_params.setProject(self)
+
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        official_bug_tags = set()
+        for product in self.products:
+            official_bug_tags.update(product.official_bug_tags)
+        return sorted(official_bug_tags)
 
     def getUsedBugTags(self):
         """See `IHasBugs`."""
