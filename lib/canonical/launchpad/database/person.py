@@ -264,7 +264,7 @@ class Person(
     # that they override # the current strict controls on Account, allowing
     # access via Person to use the less strict controls on that interface.
     # Part of the process of removing these methods from Person will be
-    # losening the permissions on Account or fixing the callsites.
+    # loosening the permissions on Account or fixing the callsites.
     def _get_password(self):
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
