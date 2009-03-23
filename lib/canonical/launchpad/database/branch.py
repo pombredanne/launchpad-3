@@ -731,8 +731,9 @@ class Branch(SQLBase):
             raise BranchTypeError(self.unique_name)
         self.mirror_failures += 1
         self.mirror_status_message = reason
-        max_failures = getUtility(IBranchPuller).MAXIMUM_MIRROR_FAILURES
-        increment = getUtility(IBranchPuller).MIRROR_TIME_INCREMENT
+        branch_puller = getUtility(IBranchPuller)
+        max_failures = branch_puller.MAXIMUM_MIRROR_FAILURES
+        increment = branch_puller.MIRROR_TIME_INCREMENT
         if (self.branch_type == BranchType.MIRRORED
             and self.mirror_failures < max_failures):
             self.next_mirror_time = (
