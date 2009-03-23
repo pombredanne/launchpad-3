@@ -148,6 +148,10 @@ The tags are sorted by popularity.
     >>> firesocks = getUtility(IProductSet).getByName('firesocks')
     >>> fs_bug_2 = factory.makeBug(product=firesocks)
     >>> fs_bug_2.tags = ['official-tag-05', 'unofficial-tag-05']
+    >>> fs_bug_3 = factory.makeBug(product=firesocks)
+    >>> fs_bug_3.tags = ['official-tag-07']
+    >>> fs_bug_4 = factory.makeBug(product=firesocks)
+    >>> fs_bug_4.tags = ['official-tag-07']
     >>> transaction.commit()
     >>> logout()
 
@@ -155,13 +159,13 @@ The tags are sorted by popularity.
     >>> print_tags_portlet(find_tag_by_id(browser.contents, 'portlet-tags'))
     Official Tags
     -------------
+    official-tag-07   2
     official-tag-05   1
     official-tag-01   0
     official-tag-02   0
     official-tag-03   0
     official-tag-04   0
     official-tag-06   0
-    official-tag-07   0
     official-tag-08   0
     official-tag-09   0
     official-tag-10   0
@@ -194,6 +198,7 @@ If no official tags are defined, the title of the unofficial ones is changed.
     >>> print_tags_portlet(find_tag_by_id(browser.contents, 'portlet-tags'))
     Tags
     ----
+    official-tag-07   2
     unofficial-tag-05   2
     official-tag-05   1
     unofficial-tag-01   1
@@ -203,7 +208,6 @@ If no official tags are defined, the title of the unofficial ones is changed.
     unofficial-tag-06   1
     unofficial-tag-07   1
     unofficial-tag-08   1
-    unofficial-tag-09   1
     <BLANKLINE>
 
 
