@@ -39,7 +39,7 @@ class DailyDatabaseGarbageCollector(LaunchpadCronScript):
 
 class TunableLoop:
     implements(ITunableLoop)
-    
+
     goal_seconds = 4
     minimum_chunk_size = 1
     maximum_chunk_size = None # Override
