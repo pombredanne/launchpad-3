@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -115,7 +116,13 @@ class ProductBranchTarget(_BaseBranchTarget):
         default_branch = self.product.development_focus.series_branch
         if default_branch is None:
             return None
-        elif default_branch.last_mirrored is None:
+        try:
+            last_mirrored = default_branch.last_mirrored
+        except Unauthorized:
+            # If we cannot see the default stacked-on branch, then return
+            # None.
+            return None
+        if last_mirrored is None:
             return None
         else:
             return default_branch

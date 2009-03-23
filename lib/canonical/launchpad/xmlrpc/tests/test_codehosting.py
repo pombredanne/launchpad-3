@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
     BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
@@ -742,7 +743,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(private=private)
         self.factory.enableDefaultStackingForProduct(product, branch)
-        self.assertEqual(product.default_stacked_on_branch, branch)
+        target = IBranchTarget(removeSecurityProxy(product))
+        self.assertEqual(target.default_stacked_on_branch, branch)
         return product, branch
 
     def test_translatePath_cannot_translate(self):

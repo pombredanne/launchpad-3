@@ -201,30 +201,21 @@ class FakeProduct(FakeDatabaseObject):
         self.name = name
         self.development_focus = FakeProductSeries()
 
-    @property
-    def default_stacked_on_branch(self):
-        b = self.development_focus.user_branch
-        if b is None:
-            return None
-        elif b._mirrored:
-            return b
-        else:
-            return None
-
 
 @adapter(FakeProduct)
 @implementer(IBranchTarget)
 def fake_product_to_branch_target(fake_product):
     return ProductBranchTarget(fake_product)
 
-sm = getSiteManager()
-sm.registerAdapter(fake_product_to_branch_target)
-
 
 class FakeProductSeries(FakeDatabaseObject):
     """Fake product series."""
 
     user_branch = None
+
+    @property
+    def series_branch(self):
+        return self.user_branch
 
 
 class FakeScriptActivity(FakeDatabaseObject):
@@ -367,7 +358,9 @@ class FakeObjectFactory(ObjectFactory):
             branch = self.makeBranch(product=product)
         branch._mirrored = True
         product.development_focus.user_branch = branch
+        branch.last_mirrored = 'rev1'
         return branch
+
 
 class FakeBranchPuller:
 
@@ -563,7 +556,7 @@ class FakeBranchFilesystem:
         product = self._product_set.getByName(product_name)
         if product is None:
             return
-        default_branch = product.default_stacked_on_branch
+        default_branch = IBranchTarget(product).default_stacked_on_branch
         if default_branch is None:
             return
         if not self._canRead(requester, default_branch):
@@ -633,6 +626,8 @@ class InMemoryFrontend:
             self._branch_set, self._person_set, self._product_set,
             self._distribution_set, self._distroseries_set,
             self._sourcepackagename_set, self._factory)
+        sm = getSiteManager()
+        sm.registerAdapter(fake_product_to_branch_target)
 
     def getFilesystemEndpoint(self):
         """See `LaunchpadDatabaseFrontend`.
