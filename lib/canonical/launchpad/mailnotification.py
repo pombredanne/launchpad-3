@@ -24,11 +24,9 @@ from zope.component import getAdapter, getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.components.bugchange import (
-    get_bug_change_class)
+from canonical.launchpad.components.bugchange import get_bug_change_class
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
     INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
@@ -627,27 +625,41 @@ def get_bug_edit_notification_texts(bug_delta):
                 old_value=field_delta['old'], new_value=field_delta['new'])
             changes.append(change_info)
 
-    if bug_delta.cve is not None:
-        new_cve = bug_delta.cve.get('new', None)
-        old_cve = bug_delta.cve.get('old', None)
-        if old_cve:
-            changes.append(u"** CVE removed: %s" % old_cve.url)
-        if new_cve:
-            changes.append(u"** CVE added: %s" % new_cve.url)
-
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
         # Use zope_isinstance, to ensure that this Just Works with
         # security-proxied objects.
         if not zope_isinstance(bugtask_deltas, (list, tuple)):
             bugtask_deltas = [bugtask_deltas]
-        for bugtask_delta in bugtask_deltas:
-            change_info = u"** Changed in: %s\n" % (
-                bugtask_delta.bugtask.bugtargetname)
 
-            for fieldname, displayattrname in (
+        for bugtask_delta in bugtask_deltas:
+            for field_name in ['importance', 'status']:
+                field_delta = getattr(bugtask_delta, field_name)
+                if field_delta is not None:
+                    bug_change_class = get_bug_change_class(
+                        bugtask_delta.bugtask, field_name)
+                    change = bug_change_class(
+                        bug_task=bugtask_delta.bugtask,
+                        when=None, person=bug_delta.user,
+                        what_changed=field_name,
+                        old_value=field_delta['old'],
+                        new_value=field_delta['new'])
+                    changes.append(change)
+
+        # XXX 2009-03-20 gmb [bug=344125]
+        #     There are two loops over bugtask_deltas here because we
+        #     have two completely unrelated ways of handling certain
+        #     fields as we transition over to the BugChange API. Trying
+        #     to do both in one loop is fraught with pain and
+        #     suffering. The second, eventually-to-be-redundant, loop
+        #     should be removed as part of the final cleanup work on
+        #     moving to the BugChange API.
+        for bugtask_delta in bugtask_deltas:
+            change_info = u''
+
+            for fieldname, displayattrname in [
                 ("product", "displayname"), ("sourcepackagename", "name"),
-                ("importance", "title"), ("bugwatch", "title")):
+                ("milestone", "name"), ("bugwatch", "title")]:
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
@@ -671,15 +683,10 @@ def get_bug_edit_notification_texts(bug_delta):
                     'newval' : newval_display})
                 change_info += changerow
 
-            for fieldname, displayattrname in (
-                ("status", "title"), ("target", "name")):
-                change = getattr(bugtask_delta, fieldname)
-                if change:
-                    oldval_display, newval_display = _get_task_change_values(
-                        change, displayattrname)
-                    change_info += _get_task_change_row(
-                        fieldname, oldval_display, newval_display)
-            changes.append(change_info.rstrip())
+            if len(change_info) > 0:
+                change_info = u"** Changed in: %s\n%s" % (
+                    bugtask_delta.bugtask.bugtargetname, change_info)
+                changes.append(change_info.rstrip())
 
     return changes
 
@@ -865,35 +872,6 @@ def notify_bug_comment_added(bugmessage, event):
     """
     bug = bugmessage.bug
     bug.addCommentNotification(bugmessage.message)
-
-
-@block_implicit_flushes
-def notify_bug_cve_added(bugcve, event):
-    """Notify CC'd list that a new cve ref has been added to this bug.
-
-    bugcve must be an IBugCve. event must be an IObjectCreatedEvent.
-    """
-    bug_delta = BugDelta(
-        bug=bugcve.bug,
-        bugurl=canonical_url(bugcve.bug),
-        user=IPerson(event.user),
-        cve={'new': bugcve.cve})
-
-    add_bug_change_notifications(bug_delta)
-
-@block_implicit_flushes
-def notify_bug_cve_deleted(bugcve, event):
-    """Notify CC'd list that a cve ref has been removed from this bug.
-
-    bugcve must be an IBugCve. event must be an IObjectDeletedEvent.
-    """
-    bug_delta = BugDelta(
-        bug=bugcve.bug,
-        bugurl=canonical_url(bugcve.bug),
-        user=IPerson(event.user),
-        cve={'old': bugcve.cve})
-
-    add_bug_change_notifications(bug_delta)
 
 
 @block_implicit_flushes

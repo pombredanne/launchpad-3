@@ -12,9 +12,10 @@ from zope.component import adapts
 from zope.interface import implements
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+from zope.traversing.browser import absoluteURL
 
-from canonical.lazr.rest.example.interfaces import IHasGet
-
+from canonical.lazr.rest.example.interfaces import ICookbookSet, IHasGet
+from canonical.lazr.rest.resource import RedirectResource
 
 
 class TraverseWithGet:
@@ -32,3 +33,15 @@ class TraverseWithGet:
             raise NotFound(self, name)
         return value
 
+
+class CookbookSetTraverse(TraverseWithGet):
+    """An IPublishTraverse that implements a custom redirect."""
+    adapts(ICookbookSet, IDefaultBrowserLayer)
+
+    def publishTraverse(self, request, name):
+        if name == 'featured':
+            url = absoluteURL(self.context.featured, request)
+            return RedirectResource(url, request)
+        else:
+            return super(CookbookSetTraverse, self).publishTraverse(
+                request, name)
