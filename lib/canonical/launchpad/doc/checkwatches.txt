@@ -117,7 +117,8 @@ First, we create some bug watches to test with:
 
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, '1', sample_person)
+    ...     example_bug_tracker, '1',
+    ...     getUtility(ILaunchpadCelebrities).janitor)
 
     >>> login('no-priv@canonical.com')
 
@@ -224,7 +225,8 @@ transaction if something goes wrong.
     >>> login('test@canonical.com')
     >>> for bug_id in range(1, 10):
     ...     example_bugwatch = example_bug.addWatch(
-    ...         example_bug_tracker, str(bug_id), sample_person)
+    ...         example_bug_tracker, str(bug_id),
+    ...         getUtility(ILaunchpadCelebrities).janitor)
 
 Since we know how many bugwatches example_bug has we will be able to see
 when checkwatches only updates a subset of them.

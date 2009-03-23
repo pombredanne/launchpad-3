@@ -67,8 +67,10 @@ are simple little functions.
     u'new bug title'
 
 
-== Bug gets assigned to a source package ==
+== Source package assignment edited ==
 
+    >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageNameSet, IDistributionSet)
     >>> mozilla_firefox = getUtility(ISourcePackageNameSet)['mozilla-firefox']
@@ -76,20 +78,6 @@ are simple little functions.
     >>> source_package_assignment = getUtility(IBugTaskSet).createTask(
     ...     bug=bug, sourcepackagename=mozilla_firefox,
     ...     distribution=ubuntu,owner=user)
-    >>> source_package_assignment_added = ObjectCreatedEvent(
-    ...     source_package_assignment)
-    >>> notify(source_package_assignment_added)
-    >>> latest_activity = bug.activity[-1]
-    >>> latest_activity.whatchanged
-    u'bug'
-    >>> latest_activity.message
-    u'assigned to mozilla-firefox (Ubuntu)'
-
-
-== Source package assignment edited ==
-
-    >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> edit_fields = [
     ...     "distribution", "sourcepackagename", "milestone", "status",
     ...     "importance", "assignee", "bugwatch"]
@@ -110,21 +98,10 @@ are simple little functions.
     True
 
 
-== Bug gets assigned to an upstream product ==
+== Upstream product assignment edited ==
 
     >>> product_assignment = getUtility(IBugTaskSet).createTask(
     ...   bug=bug, product=getUtility(IProductSet)['thunderbird'], owner=user)
-    >>> product_assignment_added = ObjectCreatedEvent(product_assignment)
-    >>> notify(product_assignment_added)
-    >>> latest_activity = bug.activity[-1]
-    >>> latest_activity.whatchanged
-    u'bug'
-    >>> latest_activity.message
-    u'assigned to thunderbird'
-
-
-== Upstream product assignment edited ==
-
     >>> edit_fields = [
     ...     "product", "milestone", "status", "assignee", "bugwatch",
     ...     "importance"]
@@ -198,31 +175,6 @@ are simple little functions.
     True
 
 
-== Add an attachment to the bug ==
-
-First we have to create the file itself, and upload it to the Librarian:
-
-    >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
-    >>> filecontent = 'Some useful information.'
-    >>> filealias = getUtility(ILibraryFileAliasSet).create(
-    ...     name='foo.txt', size=len(filecontent),
-    ...     file=StringIO(filecontent), contentType='text/plain')
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugAttachmentSet, IMessageSet)
-    >>> message = getUtility(IMessageSet).fromText(
-    ...     subject="title", content="added an attachment")
-    >>> attachment = getUtility(IBugAttachmentSet).create(
-    ...     bug=bug, title="title", message=message, filealias=filealias)
-    >>> notify(ObjectCreatedEvent(attachment))
-    >>> latest_activity = bug.activity[-1]
-    >>> latest_activity.whatchanged
-    u'bug'
-    >>> latest_activity.message
-    u"added attachment 'foo.txt' (title)"
-
-
 == Target a bug task to a milestone ==
 
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -252,47 +204,3 @@ First we have to create the file itself, and upload it to the Librarian:
     >>> print latest_activity.newvalue
     1.0
 
-
-== Bug privacy changed ==
-
-    >>> owner = factory.makePerson(displayname='Arthur Dent')
-    >>> login(owner.preferredemail.email)
-
-    >>> bug = factory.makeBug(owner=owner)
-    >>> bug_snap = Snapshot(bug, providing=IBug)
-    >>> bug.setPrivate(True, owner)
-    True
-
-    >>> notify(ObjectModifiedEvent(
-    ...     bug, bug_snap, ['private'], user=owner))
-    >>> latest_activity = bug.activity[-1]
-    >>> print latest_activity.whatchanged
-    privacy
-
-    >>> print latest_activity.oldvalue, '==>', latest_activity.newvalue
-    public ==> private
-
-    >>> print latest_activity.person.displayname
-    Arthur Dent
-
-
-== Bug security changed ==
-
-    >>> owner = factory.makePerson(displayname='Slartibartfast')
-    >>> login(owner.preferredemail.email)
-
-    >>> bug = factory.makeBug(owner=owner)
-    >>> bug_snap = Snapshot(bug, providing=IBug)
-    >>> bug.security_related = True
-
-    >>> notify(ObjectModifiedEvent(
-    ...     bug, bug_snap, ['security_related'], user=owner))
-    >>> latest_activity = bug.activity[-1]
-    >>> print latest_activity.whatchanged
-    security
-
-    >>> print latest_activity.oldvalue, '==>', latest_activity.newvalue
-    not security vulnerability ==> security vulnerability
-
-    >>> print latest_activity.person.displayname
-    Slartibartfast

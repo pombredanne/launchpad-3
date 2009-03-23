@@ -35,7 +35,9 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.components.bugchange import UnsubscribedFromBug
+from canonical.launchpad.components.bugchange import (
+    BranchLinkedToBug, BranchUnlinkedFromBug, BugWatchAdded, BugWatchRemoved,
+    UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -767,7 +769,14 @@ class Bug(SQLBase):
                 bug=self, bugtracker=bugtracker,
                 remotebug=remotebug, owner=owner)
             Store.of(bug_watch).flush()
+        self.addChange(BugWatchAdded(UTC_NOW, owner, bug_watch))
+        notify(ObjectCreatedEvent(bug_watch, user=owner))
         return bug_watch
+
+    def removeWatch(self, bug_watch, user):
+        """See `IBug`."""
+        self.addChange(BugWatchRemoved(UTC_NOW, user, bug_watch))
+        bug_watch.destroySelf()
 
     def addAttachment(self, owner, data, comment, filename, is_patch=False,
                       content_type=None, description=None):
@@ -824,9 +833,18 @@ class Bug(SQLBase):
             registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
+        self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch))
         notify(ObjectCreatedEvent(bug_branch))
 
         return bug_branch
+
+    def removeBranch(self, branch, user):
+        """See `IBug`."""
+        bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
+        if bug_branch is not None:
+            self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch))
+            notify(ObjectDeletedEvent(bug_branch, user=user))
+            bug_branch.destroySelf()
 
     def linkCVE(self, cve, user):
         """See `IBug`."""
@@ -842,7 +860,7 @@ class Bug(SQLBase):
         self.linkCVE(cve, user)
         return None
 
-    def unlinkCVE(self, cve, user=None):
+    def unlinkCVE(self, cve, user):
         """See `IBug`."""
         for cve_link in self.cve_links:
             if cve_link.cve.id == cve.id:

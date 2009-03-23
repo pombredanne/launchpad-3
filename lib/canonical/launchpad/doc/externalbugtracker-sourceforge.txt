@@ -141,6 +141,7 @@ SourceForge instance which has several bugs that we wish to watch:
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1722250, so we add a watch against the remote bug.
 
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
@@ -149,7 +150,8 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, '1722250', sample_person)
+    ...     example_bug_tracker, '1722250',
+    ...     getUtility(ILaunchpadCelebrities).janitor)
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: None
