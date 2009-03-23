@@ -70,6 +70,15 @@ class TestSourcePackage(TestCaseWithFactory):
         sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
 
+    def test_development_version(self):
+        # ISourcePackage.development_version gets the development version of
+        # the source package.
+        sourcepackage = self.factory.makeSourcePackage()
+        dev = self.factory.makeSourcePackage(
+            sourcepackage.sourcepackagename,
+            sourcepackage.distribution.currentseries)
+        self.assertEqual(dev, sourcepackage.development_version)
+
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
     """Tests for source package branch linking security."""

@@ -116,6 +116,9 @@ class ISourcePackage(IBugTarget):
         "pocket. The result is a dictionary, with the pocket dbschema "
         "as a key, and a list of source package releases as the value.")
 
+    development_version = Attribute(
+        "This package on the distro's current series.")
+
     def __getitem__(version):
         """Return the source package release with the given version in this
         distro series, or None."""
