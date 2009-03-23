@@ -847,6 +847,20 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         return message % days_to_expiration
 
+    @property
+    def official_tags(self):
+        """The list of official tags for this bug."""
+        target_official_tags = self.context.target.official_bug_tags
+        return [tag for tag in self.context.bug.tags
+                if tag in target_official_tags]
+
+    @property
+    def unofficial_tags(self):
+        """The list of unofficial tags for this bug."""
+        target_official_tags = self.context.target.official_bug_tags
+        return [tag for tag in self.context.bug.tags
+                if tag not in target_official_tags]
+
 
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
