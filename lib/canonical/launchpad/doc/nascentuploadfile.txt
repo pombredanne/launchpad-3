@@ -39,6 +39,12 @@ considered) for the upload in question.
   ...     datadir('ed_0.2-20_i386.changes'),
   ...     modified_insecure_policy, mock_logger_quiet)
 
+Make sure we are not getting any exceptions due to a malformed changes
+file name.
+
+  >>> list(ed_mixed_changes.checkFileName())
+  []
+
 At this point the changesfile content is already parsed:
 
   >>> ed_mixed_changes.source
@@ -89,6 +95,14 @@ a error generator
   >>> len(list(errors))
   0
 
+Make sure malformed changes file names are caught.
+
+  >>> wrong_file_name = ChangesFile(
+  ...     datadir('p-m_0.4.12-2~ppa2.changes'),
+  ...     modified_insecure_policy, mock_logger_quiet)
+  >>> [err] = list(wrong_file_name.checkFileName())
+  >>> str(err)
+  'p-m_0.4.12-2~ppa2.changes -> inappropriate changesfile name, ...'
 
 === CustomUploadFile identification ===
 

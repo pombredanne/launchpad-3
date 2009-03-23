@@ -96,18 +96,21 @@ class ChangesFile(SignableTagFile):
                 "Format out of acceptable range for changes file. Range "
                 "1.5 - 2.0, format %g" % format)
 
-        match_changes = re_changes_file_name.match(self.filename)
-        if match_changes is None:
-            raise UploadError(
-                '%s -> inappropriate changesfile name, '
-                'should follow "<pkg>_<version>_<arch>.changes" format'
-                % self.filename)
-        self.filename_archtag = match_changes.group(3)
-
         if policy.unsigned_changes_ok:
             self.logger.debug("Changes file can be unsigned.")
         else:
             self.processSignature()
+
+    def checkFileName(self):
+        """Make sure the changes file name is well formed."""
+        match_changes = re_changes_file_name.match(self.filename)
+        if match_changes is None:
+            yield UploadError(
+                '%s -> inappropriate changesfile name, '
+                'should follow "<pkg>_<version>_<arch>.changes" format'
+                % self.filename)
+        else:
+            self.filename_archtag = match_changes.group(3)
 
     def processAddresses(self):
         """Parse addresses and build person objects.
