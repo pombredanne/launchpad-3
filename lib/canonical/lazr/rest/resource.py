@@ -1153,7 +1153,6 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin,
                 value = marshaller.marshall_from_json_data(original_value)
             except (ValueError, ValidationError), e:
                 errors.append("%s: %s" % (repr_name, e))
-
                 continue
 
             if ICollectionField.providedBy(field):
