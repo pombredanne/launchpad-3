@@ -74,13 +74,26 @@ class ILibraryFileAlias(Interface):
         https URL. Otherwise return the http URL.
         """
 
-    def open():
-        """Open this file for reading."""
+    def open(timeout=5):
+        """Open this file for reading.
 
-    def read(chunksize=None):
+        :param timeout: The number of seconds the method retries to open
+            a connection to the Librarian server. If the connection
+            cannot be established in the given time, a
+            LibrarianServerError is raised.
+        :return: None
+        """
+
+    def read(chunksize=None, timeout=5):
         """Read up to `chunksize` bytes from the file.
 
-        `chunksize` defaults to the entire file.
+        :param chunksize: The maximum number of bytes to be read.
+            Defaults to the entire file.
+        :param timeout: The number of seconds the method retries to open
+            a connection to the Librarian server. If the connection
+            cannot be established in the given time, a
+            LibrarianServerError is raised.
+        :return: the data read from the Librarian file.
         """
 
     def close():
