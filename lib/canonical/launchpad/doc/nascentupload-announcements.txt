@@ -1095,3 +1095,41 @@ And what follows is the content of the attachment.
   =3D9dL/
   -----END PGP SIGNATURE-----
   <BLANKLINE>
+
+The attempt to upload a package with a malformed changes file name will
+result in a rejection email.
+
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/a-b_0.4.12-2~ppa2.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src.process()
+  Traceback (most recent call last):
+  ...
+  EarlyReturnUploadError: An error occurred that prevented further processing.
+
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Building recipients list.
+  ...
+  DEBUG: Sending rejection email.
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Rejected:
+  DEBUG: a-b_0.4.12-2~ppa2.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
+  ...
+  DEBUG: If you don't understand why your files were rejected, or if the
+  DEBUG: override file requires editing, please go to:
+  DEBUG: http://answers.launchpad.net/soyuz
+  DEBUG:
+  DEBUG: --
+  DEBUG: You are receiving this email because you are the uploader, maintainer or
+  DEBUG: signer of the above package.
+
+  >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
+  >>> notification['To']
+  'Daniel Silverstone <daniel.silverstone@canonical.com>'
+
