@@ -127,7 +127,7 @@ _replicate:
 	./slon_ctl.py start \
 		 node1_node "dbname=${_MASTER} user=slony"
 	# Initialize the cluster and create replication sets.
-	./initialize.py -vv
+	./initialize.py
 	# Create the soon-to-be-slave database, empty at this point.
 	createdb --encoding=UTF8 --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
 	# Start the slon daemon for the slave
