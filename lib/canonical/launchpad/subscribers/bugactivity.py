@@ -185,16 +185,6 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
 
 
 @block_implicit_flushes
-def record_product_task_added(product_task, object_created_event):
-    getUtility(IBugActivitySet).new(
-        bug=product_task.bug,
-        datechanged=UTC_NOW,
-        person=IPerson(object_created_event.user),
-        whatchanged='bug',
-        message='assigned to product ' + product_task.product.name)
-
-
-@block_implicit_flushes
 def record_product_task_edited(product_task_edited, sqlobject_modified_event):
     # If the event was triggered by a web service named operation, its
     # edited_fields will be empty. We'll need to check all fields to
