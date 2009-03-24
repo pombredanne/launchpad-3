@@ -770,7 +770,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     @property
     def activity_and_comments(self):
-        interesting_changes = ['summary']
+        interesting_changes = ['summary', 'visibility']
         activity_and_comments = [
             {'comment': comment, 'date': comment.datecreated}
             for comment in self.visible_comments_for_display]
