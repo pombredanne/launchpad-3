@@ -17,6 +17,72 @@
     <div tal:replace="structure context/@@+portlet-details" />
   </metal:rightportlets>
 
+  <metal:script fill-slot="head_epilogue">
+    <style type="text/css">
+    .dont_show_fields {
+        visibility: collapse;
+     }
+    .do_show_fields {
+        visibility: visible;
+     }
+    </style>
+    <script type="text/javascript">
+    YUI().use('node', function(Y) {
+        var fields = {'POT':
+                            ['field.name', 'field.translation_domain',
+                             'field.languagepack'],
+                      'PO':
+                            ['field.potemplate', 'field.potemplate_name',
+                             'field.language', 'field.variant']
+                     };
+
+        function getElemById(elem_id) {
+            // XXX 'elem_id' is a Zope form field, and triggers
+            // YUI bug #2423101.  We'll work around it.
+            return Y.get(Y.DOM.byId(elem_id));
+        }
+
+        function getEnclosingTR(fieldname) {
+            var field = getElemById(fieldname);
+            if( field == null )
+                return null;
+            return field.ancestor('tr');
+        }
+
+        function switchClassOnFields(the_fields, add_class, rem_class) {
+            for (var field_index = 0;
+                 field_index < the_fields.length;
+                 field_index++) {
+                var tr = getEnclosingTR(the_fields[field_index]);
+                if (tr != null) {
+                    tr.removeClass(rem_class);
+                    tr.addClass(add_class);
+                }
+            }
+        }
+
+        function handleFileTypeChange() {
+            var file_type = this.get('value');
+            switchActiveFields(file_type);
+        }
+
+        function switchActiveFields(file_type) {
+            switchClassOnFields(fields[file_type],
+                                'do_show_fields', 'dont_show_fields');
+            switchClassOnFields(fields[file_type == 'PO' ? 'POT' : 'PO'],
+                                'dont_show_fields', 'do_show_fields');
+        }
+
+        Y.on('domready', function(){
+            var file_type_field = getElemById('field.file_type');
+            var file_type = file_type_field.get('value');
+            switchActiveFields(file_type);
+            file_type_field.on('change', handleFileTypeChange);
+        });
+    });
+    </script>
+  </metal:script>
+
   <div metal:fill-slot="main">
     <div metal:use-macro="context/@@launchpad_form/form" />
   </div>

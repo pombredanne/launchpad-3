@@ -343,13 +343,13 @@ class TranslationFileType(EnumeratedType):
         """)
 
     POT = Item("""
-        Translation Template (POT)
+        Template
 
         A translation template file.
         """)
 
     PO = Item("""
-        Translation Data (PO)
+        Translations
 
         A translation data file.
         """)
@@ -381,7 +381,7 @@ class IEditTranslationImportQueueEntry(Interface):
 
     name = TextLine(
         title=_("Name"),
-        description=_("For POT only: "
+        description=_("For templates only: "
             "The name of this PO template, for example "
             "'evolution-2.2'. Each translation template has a "
             "unique name in its package."),
@@ -389,7 +389,7 @@ class IEditTranslationImportQueueEntry(Interface):
 
     translation_domain = TextLine(
         title=_("Translation domain"),
-        description=_("For POT only: "
+        description=_("For templates only: "
             "The translation domain for a translation template. "
             "Used with PO file format when generating MO files for inclusion "
             "in language pack or MO tarball exports."),
@@ -397,7 +397,7 @@ class IEditTranslationImportQueueEntry(Interface):
 
     languagepack = Bool(
         title=_("Include translations for this template in language packs?"),
-        description=_("For POT only: "
+        description=_("For templates only: "
             "Check this box if this template is part of a language pack so "
             "its translations should be exported that way."),
         required=True,
@@ -405,7 +405,7 @@ class IEditTranslationImportQueueEntry(Interface):
 
     potemplate = Choice(
         title=_("Template"),
-        description=_("For PO only: "
+        description=_("For translations only: "
             "The template that this translation is based on. "
             "The template has to be uploaded first."),
         required=False,
@@ -413,7 +413,7 @@ class IEditTranslationImportQueueEntry(Interface):
 
     potemplate_name = TextLine(
         title=_("Template name"),
-        description=_("For PO only: "
+        description=_("For translations only: "
                       "Enter the template name if it does not appear "
                       "in the list above."),
         required=False)
@@ -421,13 +421,13 @@ class IEditTranslationImportQueueEntry(Interface):
     language = Choice(
         title=_("Language"),
         required=True,
-        description=_("For PO only: "
+        description=_("For translations only: "
                       "The language this PO file translates to."),
         vocabulary="Language")
 
     variant = TextLine(
         title=_("Variant"),
-        description=_("For PO only: "
+        description=_("For translations only: "
             "Language variant, usually used to note the script used to"
             " write the translations (like 'Latn' for Latin)"),
         required=False)
