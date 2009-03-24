@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistroSeries."""
@@ -16,28 +16,31 @@ __all__ = [
 
 from zope.schema import Bool, Datetime, Choice, Object, TextLine
 from zope.interface import Interface, Attribute
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters, operation_returns_entry)
 
 
 # XXX: salgado, 2008-06-02: We should use a more generic name here as this
@@ -114,7 +117,8 @@ class IDistroSeriesEditRestricted(Interface):
 
 
 class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
-                          IBugTarget, ISpecificationGoal, IHasMilestones):
+                          IBugTarget, ISpecificationGoal, IHasMilestones,
+                          IHasBuildRecords):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
@@ -353,6 +357,11 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Update the binary and source package counts for this distro
         series."""
 
+    @operation_parameters(
+        name=TextLine(
+            title=_("The name of the source package"), required=True))
+    @operation_returns_entry(ISourcePackage)
+    @export_read_operation()
     def getSourcePackage(name):
         """Return a source package in this distro series by name.
 

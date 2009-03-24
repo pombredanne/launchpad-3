@@ -19,10 +19,11 @@ from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView, BranchView)
-from canonical.launchpad.browser.person import PersonBranchesView
+from canonical.launchpad.browser.branchlisting import PersonOwnedBranchesView
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus, BranchType, IBranchSet, IPersonSet, IProductSet)
+    BranchLifecycleStatus, BranchType, IPersonSet, IProductSet)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.testing import (
     login, login_person, logout, ANONYMOUS, TestCaseWithFactory)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -119,7 +120,7 @@ class TestBranchView(unittest.TestCase):
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
-        branch = getUtility(IBranchSet).get(28)
+        branch = getUtility(IBranchLookup).get(28)
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertEqual(
             truncate_text(branch.mirror_status_message,
@@ -128,7 +129,7 @@ class TestBranchView(unittest.TestCase):
 
     def testMirrorStatusMessage(self):
         """mirror_status_message on the view is the same as on the branch."""
-        branch = getUtility(IBranchSet).get(5)
+        branch = getUtility(IBranchLookup).get(5)
         branch.mirrorFailed("This is a short error message.")
         branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertTrue(
@@ -156,7 +157,7 @@ class TestBranchView(unittest.TestCase):
                 'url': 'http://example.com',
                 'title': 'Branch Title',
                 'summary': '',
-                'lifecycle_status': BranchLifecycleStatus.NEW,
+                'lifecycle_status': BranchLifecycleStatus.DEVELOPMENT,
                 'whiteboard': '',
                 'owner': arbitrary_person,
                 'author': arbitrary_person,
@@ -240,7 +241,7 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
 
 
 class TestBranchBzrIdentity(TestCaseWithFactory):
-    """Test the bzr_identity on the PersonBranchesView."""
+    """Test the bzr_identity on the PersonOwnedBranchesView."""
 
     layer = DatabaseFunctionalLayer
 
@@ -253,7 +254,7 @@ class TestBranchBzrIdentity(TestCaseWithFactory):
         # the development focus branch.
         login_person(product.owner)
         product.development_focus.user_branch = branch
-        view = PersonBranchesView(branch.owner, LaunchpadTestRequest())
+        view = PersonOwnedBranchesView(branch.owner, LaunchpadTestRequest())
         view.initialize()
         navigator = view.branches()
         [decorated_branch] = navigator.branches()

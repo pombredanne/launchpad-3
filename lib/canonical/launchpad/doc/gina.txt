@@ -44,7 +44,7 @@ Create a distribution release and an arch release for breezy:
     >>> hoary = ubuntu.getSeries("hoary")
 
     # Only the distro owner and admins can create a new series.
-    >>> login('support@ubuntu.com')
+    >>> login_person(ubuntu.owner.activemembers[0])
     >>> breezy = ubuntu.newSeries(
     ...     "breezy", "Breezy Badger", "My title",
     ...     "My summary", "My description", "5.10",

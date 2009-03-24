@@ -12,22 +12,17 @@ an informative message is displayed as per the OpenID spec.
     Content-Type: text/html;charset=utf-8
     ...
 
-    >>> print '\n' + anon_browser.contents
-    <BLANKLINE>
-    ...
-    <p>
-    This is the Launchpad login service utilizing
-    <a href="http://openid.net/">OpenID</a> technology.
-    This site allows you to use
-    <a href="https://launchpad.net/people/+me">your Launchpad account</a>
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'maincontent'))
+    This is the Launchpad login service utilizing OpenID technology.
+    This site allows you to use your Launchpad account
     to log into OpenID-enabled sites around the Internet including
-    those run by Canonical and Ubuntu.</p>
-    <p>
-    To learn more about using this service, please review the
-    <a href="https://help.launchpad.net/OpenID">instructions</a>.</p>
-    <p>
-    Note that this site is meant to be called from an OpenID-enabled
-    service and therefore has no user-facing functions.</p>
+    those run by Canonical and Ubuntu.
+    To learn more about using this service, please review the instructions.
+    If you want to change any of your account's details, you can do so by
+    logging in using the form beside.
+    What is your e-mail address?
+    Do you have a Launchpad password?
     ...
 
 
@@ -348,11 +343,10 @@ identifier, you get a nice error page.
     ...     '(?m)^openid.user_setup_url:(.*)$', sabdfl_browser.contents
     ...     )
     >>> sabdfl_browser.open(setup_url)
-    >>> print '\n' + sabdfl_browser.contents
-    <BLANKLINE>
-    ...
+    >>> print find_main_content(sabdfl_browser.contents)
+    <div id="maincontent">...
     that is not a valid Launchpad OpenID identity URL, such as
-    <strong>http://launchpad.dev/~sabdfl</strong>
+    <strong>http://launchpad.dev/~USER</strong>
     ...
     <form action="http://launchpad.dev/+openid-consumer?openid.mode=cancel...">
     <input type="submit" value="Continue" />

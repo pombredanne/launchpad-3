@@ -12,8 +12,6 @@ import pytz
 
 from zope.component import getMultiAdapter
 
-from canonical.launchpad.browser.product import ProductActiveReviewsView
-from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import time_counter, TestCaseWithFactory
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -140,81 +138,6 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         view.initialize()
         self.assertEqual(view.committer_count, 1)
 
-
-class TestProductActiveReviewGroups(TestCaseWithFactory):
-    """Tests for groupings used in for active reviews."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.bmp = self.factory.makeBranchMergeProposal()
-
-    def assertReviewGroupForUser(self, user, group):
-        # Assert that the group for the user is correct.
-        if user is None:
-            login(ANONYMOUS)
-        else:
-            login_person(user)
-        view = ProductActiveReviewsView(
-            self.bmp.target_branch.product, LaunchpadTestRequest())
-        self.assertEqual(
-            group, view._getReviewGroup(self.bmp, self.bmp.votes))
-
-    def test_not_logged_in(self):
-        # If there is no logged in user, then the group is other.
-        self.assertReviewGroupForUser(None, ProductActiveReviewsView.OTHER)
-
-    def test_source_branch_owner(self):
-        # If the logged in user is the owner of the source branch,
-        # then the review is MINE.
-        self.assertReviewGroupForUser(
-            self.bmp.source_branch.owner, ProductActiveReviewsView.MINE)
-
-    def test_proposal_registrant(self):
-        # If the logged in user it the registrant of the proposal, then it is
-        # MINE only if the registrant is a member of the team that owns the
-        # branch.
-        self.assertReviewGroupForUser(
-            self.bmp.registrant, ProductActiveReviewsView.OTHER)
-        team = self.factory.makeTeam(self.bmp.registrant)
-        login_person(self.bmp.source_branch.owner)
-        self.bmp.source_branch.owner = team
-        self.assertReviewGroupForUser(
-            self.bmp.registrant, ProductActiveReviewsView.MINE)
-
-    def test_target_branch_owner(self):
-        # For other people, even the target branch owner, it is other.
-        self.assertReviewGroupForUser(
-            self.bmp.target_branch.owner, ProductActiveReviewsView.OTHER)
-
-    def test_group_pending_review(self):
-        # If the logged in user has a pending review request, it is a TO_DO.
-        reviewer = self.factory.makePerson()
-        login_person(self.bmp.registrant)
-        self.bmp.nominateReviewer(reviewer, self.bmp.registrant)
-        self.assertReviewGroupForUser(
-            reviewer, ProductActiveReviewsView.TO_DO)
-
-    def test_group_pending_team_review(self):
-        # If the logged in user of a team that has a pending review request,
-        # it is a CAN_DO.
-        reviewer = self.factory.makePerson()
-        login_person(self.bmp.registrant)
-        team = self.factory.makeTeam(reviewer)
-        self.bmp.nominateReviewer(team, self.bmp.registrant)
-        self.assertReviewGroupForUser(
-            reviewer, ProductActiveReviewsView.CAN_DO)
-
-    def test_review_done(self):
-        # If the logged in user has a completed review, then the review is
-        # ARE_DOING.
-        reviewer = self.bmp.target_branch.owner
-        login_person(reviewer)
-        self.bmp.createComment(
-            reviewer, 'subject', vote=CodeReviewVote.APPROVE)
-        self.assertReviewGroupForUser(
-            reviewer, ProductActiveReviewsView.ARE_DOING)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

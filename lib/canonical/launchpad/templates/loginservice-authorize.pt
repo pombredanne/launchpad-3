@@ -11,7 +11,7 @@
 >
   <body>
     <metal:block fill-slot="auth">
-      <h2>Sign in as <span tal:replace="view/user/displayname" />?</h2>
+      <h2>Sign in as <span tal:replace="view/account/displayname" />?</h2>
 
       <form action="/+decide" method="post" accept-charset="UTF-8">
         <tal:widget replace="structure view/widgets/nonce/hidden" />

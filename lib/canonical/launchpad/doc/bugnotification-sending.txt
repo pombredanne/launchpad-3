@@ -1147,7 +1147,7 @@ gets over-long.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-    >>> bug_three.unsubscribe(sample_person)
+    >>> bug_three.unsubscribe(sample_person, sample_person)
     >>> bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
     >>> commit()
 
@@ -1626,95 +1626,3 @@ no notifications created by addChangeNotification().
     mozilla-firefox in ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
-
-mailnotification.add_bug_change_notification() is called by several event
-handlers. This method adds notifications only for recipients with a
-notification level greater or equal to METADATA.
-
-    >>> from canonical.launchpad.components.bug import BugDelta
-    >>> from canonical.launchpad.interfaces.bugtask import IUpstreamBugTask
-    >>> from canonical.launchpad.mailnotification import (
-    ...     add_bug_change_notifications)
-    >>> from canonical.launchpad.webapp import canonical_url
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> subscription_no_priv.bug_notification_level = (
-    ...     BugNotificationLevel.METADATA)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(
-    ...     config.malone.bugnotification_dbuser)
-    >>> bug_five = getUtility(IBugSet).get(5)
-    >>> bugtask_bug_5_firefox = bug_five.getBugTask(firefox)
-    >>> old_bugtask_bug_5_firefox = Snapshot(
-    ...     bugtask_bug_5_firefox, providing=IUpstreamBugTask)
-    >>> bug_delta = BugDelta(bug_five, bugurl=canonical_url(bug_five),
-    ...     user=getUtility(IPersonSet).getByEmail('test@canonical.com'),
-    ...     added_bugtasks=bug_five.bugtasks[-2])
-    >>> add_bug_change_notifications(bug_delta)
-    >>> bugnotification_interval = """
-    ...     [malone]
-    ...     bugnotification_interval: 0
-    ...     """
-    >>> config.push('bugnotification_interval', bugnotification_interval)
-    >>> pending_notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> bug_five_notifications = [
-    ...     notification for notification in pending_notifications
-    ...     if notification.bug == bug_five]
-    >>> len(bug_five_notifications)
-    1
-    >>> notification = bug_five_notifications[0]
-    >>> for recipient in notification.recipients:
-    ...     print recipient.person.displayname
-    ...     print recipient.reason_body
-    No Privileges Person
-    You received this bug notification because you are subscribed to
-    Mozilla Firefox.
-    Sample Person
-    You received this bug notification because you are a bug assignee.
-    Ubuntu Team
-    You received this bug notification because you are a member of
-    Ubuntu Team, which is the registrant for Ubuntu.
-
-If No Privileges Person sets his notification level to LIFECYCLE, he
-will not receive notifications sent by add_bug_change_notification().
-
-    >>> commit()
-
-    # XXX sinzui 2008-09-19 bug=272323:
-    # LaunchpadZopelessLayer.switchDbUser() restores the config using pop().
-    # Remove the test overlay to be clear about what config state is.
-    >>> config_data = config.pop('bugnotification_interval')
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> subscription_no_priv.bug_notification_level = (
-    ...     BugNotificationLevel.LIFECYCLE)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(
-    ...     config.malone.bugnotification_dbuser)
-    >>> config.push('bugnotification_interval', bugnotification_interval)
-    >>> bugtask_bug_5_firefox = bug_five.getBugTask(firefox)
-    >>> old_bugtask_bug_5_firefox = Snapshot(
-    ...     bugtask_bug_5_firefox, providing=IUpstreamBugTask)
-    >>> bug_delta = BugDelta(bug_five, bugurl=canonical_url(bug_five),
-    ...     user=getUtility(IPersonSet).getByEmail('test@canonical.com'),
-    ...     added_bugtasks=bug_five.bugtasks[-1])
-    >>> add_bug_change_notifications(bug_delta, old_bugtask_bug_5_firefox)
-    >>> pending_notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> bug_five_notifications = [
-    ...     notification for notification in pending_notifications
-    ...     if notification.bug == bug_five]
-    >>> len(bug_five_notifications)
-    2
-    >>> notification = bug_five_notifications[1]
-    >>> for recipient in notification.recipients:
-    ...     print recipient.person.displayname
-    ...     print recipient.reason_body
-    Sample Person
-    You received this bug notification because you are a bug assignee.
-    Ubuntu Team
-    You received this bug notification because you are a member of
-    Ubuntu Team, which is the registrant for Ubuntu.
-
-    >>> config_data = config.pop('bugnotification_interval')

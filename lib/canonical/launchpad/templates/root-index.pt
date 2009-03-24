@@ -42,7 +42,7 @@
         accept-charset="UTF-8"
         style="text-align: center"
       >
-        <img src="/@@/launchpad-logo-and-name.png" 
+        <img src="/@@/launchpad-logo-and-name.png"
              alt=""
              style="margin: 0 9em 1em 0"/>
         <br />
@@ -70,15 +70,15 @@
           <div style="margin:auto;">
             <ul>
               <li tal:repeat="project view/featured_projects_col_a">
-                <a tal:content="structure project/fmt:link" />
+                <a tal:replace="structure project/fmt:link" />
               </li>
             </ul>
             <ul>
               <li tal:repeat="project view/featured_projects_col_b">
-                <a tal:content="structure project/fmt:link" />
+                <a tal:replace="structure project/fmt:link" />
               </li>
             </ul>
-            <div tal:condition="context/required:launchpad.Admin" 
+            <div tal:condition="context/required:launchpad.Admin"
                  style="margin:auto; clear:both; text-align: center; padding-top: 1em;">
               <a href="+featuredprojects">&raquo; Manage featured project list</a>
             </div>
@@ -88,38 +88,35 @@
         <div class="three column middle">
           <h2>What&#8217;s new?</h2>
           <ul style="padding: 0; margin: auto;">
-            <li class="news">
-              <a href="http://news.launchpad.net/?p=448">
-                <strong>Upstreams: Ubuntu translations come full circle</strong><br />
-                Easily integrate the work done by distribution translators back into
-                your own translation effort.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/?p=450">
-                <strong>Translations style guides</strong><br />
-                Share your translation team's policies, best practices and guidelines
-                directly from translation pages.
-              </a>
-           </li>
-            <li class="news">
-              <a href="http://news.launchpad.net/cool-new-stuff/announcing-the-launchpad-plugin-api-spec">
-                <strong>New bug plugin API</strong><br />
-                Create your own plugin for direct communication between Launchpad
-                and your favourite bug tracker.
-              </a>
-           </li>
-           <li class="news">
-              <a href="http://news.launchpad.net/?p=106">
-                <strong>Help test Launchpad's API!</strong><br />
-                Join the beta of our web services API and Python library.
-              </a>
-           </li>
 
+            <li class="news">
+              <a href="http://blog.launchpad.net/?p=534">
+                <strong>Improved upstream bug links</strong><br />
+                New quick-links to find and report bugs in external trackers.
+              </a>
+           </li>
+            <li class="news">
+              <a href="http://blog.launchpad.net/coming-features/ajax-in-launchpad">
+                <strong>AJAX in Launchpad</strong><br />
+                Read more about how we're making Launchpad's interface more responsive using AJAX.
+              </a>
+           </li>
+           <li class="news">
+              <a href="http://blog.launchpad.net/?p=556">
+                <strong>Tuning Launchpad in Performance Week</strong><br />
+                Faster PPA overviews, snappier translations pages, speedier project cloud. Read all about it!
+              </a>
+           </li>
+           <li class="news">
+              <a href="http://blog.launchpad.net/?p=551">
+                <strong>Need Launchpad for a commercial project?</strong><br />
+                Find out more about Launchpad's privacy features for your commercial projects.
+              </a>
+           </li>
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2009-01-28.
-            <a href="http://news.launchpad.net">Read our blog!</a>
+            Updated 2009-02-26.
+            <a href="http://blog.launchpad.net">Read our blog!</a>
           </div>
         </div>
         <div class="three column right">

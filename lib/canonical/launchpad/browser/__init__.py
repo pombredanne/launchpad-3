@@ -8,6 +8,8 @@ located in this specific module, but are in turn imported from each of the
 files in this directory.
 """
 
+# XXX flacoste 2009/03/18 We should use specific imports instead of
+# importing from this module.
 from canonical.launchpad.browser.announcement import *
 from canonical.launchpad.browser.archive import *
 from canonical.launchpad.browser.bazaar import *
@@ -26,11 +28,9 @@ from canonical.launchpad.browser.bugalsoaffects import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugbranch import *
 from canonical.launchpad.browser.bugcomment import *
-from canonical.launchpad.browser.buginfestation import *
 from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugmessage import *
 from canonical.launchpad.browser.bugnomination import *
-from canonical.launchpad.browser.bugpackageinfestation import *
 from canonical.launchpad.browser.bugsubscription import *
 from canonical.launchpad.browser.bugsupervisor import *
 from canonical.launchpad.browser.bugtarget import *
@@ -57,9 +57,9 @@ from canonical.launchpad.browser.distroseries import *
 from canonical.launchpad.browser.distroseriesbinarypackage import *
 from canonical.launchpad.browser.distroserieslanguage import *
 from canonical.launchpad.browser.distroseriessourcepackagerelease import *
-from canonical.launchpad.browser.faq import *
-from canonical.launchpad.browser.faqcollection import *
-from canonical.launchpad.browser.faqtarget import *
+from lp.answers.browser.faq import *
+from lp.answers.browser.faqcollection import *
+from lp.answers.browser.faqtarget import *
 from canonical.launchpad.browser.featuredproject import *
 from canonical.launchpad.browser.feeds import *
 from canonical.launchpad.browser.hastranslationimports import *
@@ -89,8 +89,8 @@ from canonical.launchpad.browser.productseries import *
 from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.publishing import *
-from canonical.launchpad.browser.question import *
-from canonical.launchpad.browser.questiontarget import *
+from lp.answers.browser.question import *
+from lp.answers.browser.questiontarget import *
 from canonical.launchpad.browser.queue import *
 from canonical.launchpad.browser.root import *
 from canonical.launchpad.browser.shipit import *

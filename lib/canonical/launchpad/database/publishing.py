@@ -588,7 +588,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if logger is not None:
             logger.debug(
                 "Created %s [%d] in %s (%d)"
-                % (build.title, build.id, build.archive.title,
+                % (build.title, build.id, build.archive.displayname,
                    build_queue.lastscore))
 
         return build

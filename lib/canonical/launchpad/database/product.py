@@ -37,7 +37,8 @@ from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import (
+    BugTargetBase, OfficialBugTagTargetMixin)
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.launchpad.database.bugwatch import BugWatch
@@ -46,9 +47,10 @@ from canonical.launchpad.database.commercialsubscription import (
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
-from canonical.launchpad.database.faq import FAQ, FAQSearch
+from lp.answers.model.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.milestone import (
+    HasMilestonesMixin, Milestone)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
@@ -57,7 +59,7 @@ from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.productseries import ProductSeries
-from canonical.launchpad.database.question import (
+from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -73,7 +75,6 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
     NotFoundError)
@@ -83,9 +84,6 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
-from canonical.launchpad.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.interfaces.specification import (
@@ -95,6 +93,13 @@ from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
+
+
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+
 
 def get_license_status(license_approved, license_reviewed, licenses):
     """Decide the license status for an `IProduct`.
@@ -157,7 +162,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
-              HasAliasMixin, StructuralSubscriptionTargetMixin):
+              HasAliasMixin, StructuralSubscriptionTargetMixin,
+              HasMilestonesMixin, OfficialBugTagTargetMixin):
 
     """A Product."""
 
@@ -232,19 +238,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
 
-    @property
-    def upstream_bugtracker_links(self):
-        """Return the upstream bugtracker links for this project.
-
-        :return: A dict of the bug filing URL and the search URL as
-            returned by `BugTracker.getBugFilingAndSearchLinks()`. If
-            self.bugtracker is None, return None.
-        """
-        if not self.bugtracker:
-            return None
-        else:
-            return self.bugtracker.getBugFilingAndSearchLinks(
-                self.remote_product)
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.product == self)
 
     @property
     def official_anything(self):
@@ -301,17 +297,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     license_approved = BoolCol(dbName='license_approved',
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
-
-    @property
-    def default_stacked_on_branch(self):
-        """See `IProduct`."""
-        default_branch = self.development_focus.series_branch
-        if default_branch is None:
-            return None
-        elif default_branch.last_mirrored is None:
-            return None
-        else:
-            return default_branch
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
@@ -570,18 +555,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
-
-    @property
-    def all_milestones(self):
-        """See `IProduct`."""
-        return Milestone.selectBy(
-            product=self, orderBy=['-dateexpected', 'name'])
-
-    @property
-    def milestones(self):
-        """See `IProduct`."""
-        return Milestone.selectBy(
-            product=self, visible=True, orderBy=['-dateexpected', 'name'])
 
     @property
     def sourcepackages(self):
@@ -959,7 +932,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMergeProposals(self, status=None, visible_by_user=None):
         """See `IProduct`."""
-        if not status:
+        if status is None:
             status = (
                 BranchMergeProposalStatus.CODE_APPROVED,
                 BranchMergeProposalStatus.NEEDS_REVIEW,

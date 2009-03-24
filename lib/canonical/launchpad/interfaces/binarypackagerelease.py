@@ -19,7 +19,7 @@ from canonical.launchpad import _
 
 from canonical.launchpad.validators.version import valid_debian_version
 
-from canonical.lazr import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType, DBItem
 
 
 class IBinaryPackageRelease(Interface):

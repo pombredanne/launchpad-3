@@ -20,13 +20,12 @@ from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces import ILaunchpadStatisticSet
-from canonical.launchpad.interfaces.branch import IBranchSet
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
-from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.searchservice import (
     GoogleResponseError, ISearchService)
 from canonical.launchpad.interfaces.specification import ISpecificationSet
@@ -37,8 +36,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.launchpad.webapp.z3batching.batch import _Batch
+from lazr.batchnavigator.z3batching import batch
 from canonical.launchpad.webapp.vhosts import allvhosts
+
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
@@ -75,8 +76,8 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     @property
     def branch_count(self):
-        """The total branch count in all of Launchpad."""
-        return getUtility(IBranchSet).count()
+        """The total branch count of public branches in all of Launchpad."""
+        return getUtility(IAllBranches).visibleByUser(None).count()
 
     @property
     def bug_count(self):
@@ -471,7 +472,7 @@ class WindowedList:
             yield self[index]
 
 
-class WindowedListBatch(_Batch):
+class WindowedListBatch(batch._Batch):
     """A batch class that does not include None objects when iterating."""
 
     def __iter__(self):

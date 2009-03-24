@@ -95,7 +95,7 @@ Import the secret keys needed for this test:
     >>> gpghandler = getUtility(IGPGHandler)
 
     >>> login(ANONYMOUS)
-    >>> import_secret_test_key('test@canonical.com.sec')
+    >>> key = import_secret_test_key('test@canonical.com.sec')
     >>> logout()
 
 'cipher_body' is a message encrypted with the just-imported
@@ -253,7 +253,7 @@ If he refuses to sign the text, he gets an error message.
 If he signs a different text, he gets an error message.
 
     >>> login(ANONYMOUS)
-    >>> import_secret_test_key('sign.only@canonical.com.sec')
+    >>> key = import_secret_test_key('sign.only@canonical.com.sec')
     >>> bad = gpghandler.signContent(
     ...     'This is not the verification message!',
     ...     '447DBF38C4F9C4ED752246B77D88913717B05A8F', 'test')

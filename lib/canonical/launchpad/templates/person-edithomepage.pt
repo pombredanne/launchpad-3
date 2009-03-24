@@ -21,7 +21,7 @@
       Describe
         <tal:person condition="not: context/teamowner">yourself</tal:person>
         <tal:team condition="context/teamowner"
-                  replace="context/displayname" /> &mdash;
+                  replace="context/fmt:displayname" /> &mdash;
       current activities, interests and so on.
       Use plain text; URLs will be linkified.
     </p>

@@ -23,11 +23,11 @@
       />
   </class>
 
-  <adapter
-    provides="canonical.launchpad.interfaces.IFAQTarget"
-    for="canonical.launchpad.interfaces.ISourcePackage"
-    factory="canonical.launchpad.components.answertracker.sourcepackage_to_faqtarget"
-    />
+  <securedutility
+     component="canonical.launchpad.database.sourcepackage.SourcePackage"
+     provides="canonical.launchpad.interfaces.sourcepackage.ISourcePackageFactory">
+    <allow interface="canonical.launchpad.interfaces.sourcepackage.ISourcePackageFactory" />
+  </securedutility>
 
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
@@ -39,6 +39,12 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
     name="+index"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    layer="canonical.launchpad.layers.CodeLayer"
+    name="+branches"
     />
 
   <browser:defaultView
@@ -206,5 +212,14 @@
       template="../templates/sourcepackage-edit-packaging.pt"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.sourcepackage.ISourcePackage"
+    class="canonical.launchpad.browser.branchlisting.SourcePackageBranchesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+branches"
+    template="../templates/sourcepackage-branches.pt"
+    />
 
 </configure>

@@ -56,7 +56,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.opstats import OpStats
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -180,10 +180,16 @@ class LaunchpadBrowserPublication(
         self.maybeBlockOffsiteFormPost(request)
 
     def getPrincipal(self, request):
-        """Return the authenticated principal for this request."""
+        """Return the authenticated principal for this request.
+
+        If there is no authenticated principal or the principal represents a
+        personless account, return the unauthenticated principal.
+        """
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.authenticate(request)
-        if principal is None:
+        if principal is None or principal.person is None:
+            # This is either an unauthenticated user or a user who
+            # authenticated on our OpenID server using a personless account.
             principal = auth_utility.unauthenticatedPrincipal()
             assert principal is not None, "Missing unauthenticated principal."
         return principal

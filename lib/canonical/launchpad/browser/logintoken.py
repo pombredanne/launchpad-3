@@ -31,7 +31,7 @@ from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
-from canonical.launchpad.webapp.login import logInPerson
+from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
@@ -46,7 +46,7 @@ from canonical.launchpad.interfaces import (
     IGPGKeyValidationForm, ILoginToken, ILoginTokenSet, INewPersonForm,
     IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, LoginTokenType,
     PersonCreationRationale, ShipItConstants, UnexpectedFormData)
-from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 
 
 UTC = pytz.timezone('UTC')
@@ -73,6 +73,7 @@ class LoginTokenView(LaunchpadView):
     PAGES = {LoginTokenType.PASSWORDRECOVERY: '+resetpassword',
              LoginTokenType.ACCOUNTMERGE: '+accountmerge',
              LoginTokenType.NEWACCOUNT: '+newaccount',
+             LoginTokenType.NEWPERSONLESSACCOUNT: '+newaccount',
              LoginTokenType.NEWPROFILE: '+newaccount',
              LoginTokenType.VALIDATEEMAIL: '+validateemail',
              LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
@@ -122,11 +123,20 @@ class BaseLoginTokenView(OpenIDMixin):
         self.successfullyProcessed = True
         self.request.response.addInfoNotification(message)
 
-    def logInPersonByEmail(self, email):
-        """Login the person with the given email address."""
+    def logInPrincipalByEmail(self, email):
+        """Login the principal with the given email address."""
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        logInPerson(self.request, principal, email)
+        logInPrincipal(self.request, principal, email)
+
+    @property
+    def has_openid_request(self):
+        """Return True if there's an OpenID request in the user's session."""
+        try:
+            self.restoreRequestFromSession('token' + self.context.token)
+        except UnexpectedFormData:
+            return False
+        return True
 
     def maybeCompleteOpenIDRequest(self):
         """Respond to a pending OpenID request if one is found.
@@ -137,10 +147,7 @@ class BaseLoginTokenView(OpenIDMixin):
 
         If no OpenID request is found, None is returned.
         """
-        try:
-            self.restoreRequestFromSession('token' + self.context.token)
-        except UnexpectedFormData:
-            # There is no OpenIDRequest in the session
+        if not self.has_openid_request:
             return None
         self.next_url = None
         return self.renderOpenIDResponse(self.createPositiveResponse())
@@ -153,17 +160,17 @@ class BaseLoginTokenView(OpenIDMixin):
         self.next_url = canonical_url(self.context.requester)
         self.context.consume()
 
-    def accountWasSuspended(self, naked_person, reason):
+    def accountWasSuspended(self, account, reason):
         """Return True if the person's account was SUSPENDED, otherwise False.
 
         When the account was SUSPENDED, the Warning Notification with the
         reason is added to the request's response. The LoginToken is consumed.
 
-        :param naked_person: An unproxied Person.
+        :param account: The IAccount.
         :param reason: A sentence that explains why the SUSPENDED account
             cannot be used.
         """
-        if naked_person.account.status != AccountStatus.SUSPENDED:
+        if account.status != AccountStatus.SUSPENDED:
             return False
         suspended_account_mailto = (
             'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
@@ -218,7 +225,7 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
             password=data['password'],
             preferred_email=email)
         self.context.consume()
-        self.logInPersonByEmail(removeSecurityProxy(email).email)
+        self.logInPrincipalByEmail(removeSecurityProxy(email).email)
         self.request.response.addInfoNotification(_(
             "Profile claimed successfully"))
 
@@ -309,51 +316,51 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         the LoginToken (self.context) used is consumed, so nobody can use
         it again.
         """
-        emailset = getUtility(IEmailAddressSet)
-        emailaddress = emailset.getByEmail(self.context.email)
-        person = emailaddress.person
-
-        # XXX: Guilherme Salgado 2006-09-27 bug=62674:
-        # It should be possible to do the login before this and avoid
-        # this hack. In case the user doesn't want to be logged in
-        # automatically we can log him out after doing what we want.
-        # XXX: Steve Alexander 2005-03-18:
-        #      Local import, because I don't want this import copied
-        #      elsewhere! This code is to be removed when the
-        #      UpgradeToBusinessClass specification is implemented.
-        from zope.security.proxy import removeSecurityProxy
-        naked_person = removeSecurityProxy(person)
-        #      end of evil code.
-
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(
+            self.context.email)
+        account = emailaddress.account
         # Suspended accounts cannot reset their password.
         reason = ('Your password cannot be reset because your account '
-            'is suspended.')
-        if self.accountWasSuspended(naked_person, reason):
+                  'is suspended.')
+        if self.accountWasSuspended(account, reason):
             return
+
+        from zope.security.proxy import removeSecurityProxy
+        naked_account = removeSecurityProxy(account)
         # Reset password can be used to reactivate a deactivated account.
-        elif naked_person.account.status == AccountStatus.DEACTIVATED:
-            naked_person.reactivateAccount(
-                comment="User reactivated the account using reset password.",
+        if account.status == AccountStatus.DEACTIVATED:
+            naked_account.reactivate(
+                comment=
+                    "User reactivated the account using reset password.",
                 password=data['password'],
                 preferred_email=emailaddress)
             self.request.response.addInfoNotification(
                 _('Welcome back to Launchpad.'))
         else:
-            naked_person.password = data.get('password')
+            naked_account.password = data.get('password')
 
+        person = emailaddress.person
         # Make sure this person has a preferred email address.
-        if naked_person.preferredemail != emailaddress:
-            # Must remove the security proxy of the email address because the
-            # user is not logged in at this point and we may need to change
-            # its status.
-            naked_person.validateAndEnsurePreferredEmail(
+        if person is not None and person.preferredemail != emailaddress:
+            # Must remove the security proxy of the email address because
+            # the user is not logged in at this point and we may need to
+            # change its status.
+            removeSecurityProxy(person).validateAndEnsurePreferredEmail(
                 removeSecurityProxy(emailaddress))
+
+        if self.context.redirection_url is not None:
+            self.next_url = self.context.redirection_url
+        elif person is not None:
+            self.next_url = canonical_url(person)
+        else:
+            assert self.has_openid_request, (
+                'No redirection URL specified and this is not part of an '
+                'OpenID authentication.')
 
         self.context.consume()
 
-        self.logInPersonByEmail(self.context.email)
+        self.logInPrincipalByEmail(self.context.email)
 
-        self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
             _('Your password has been reset successfully.'))
 
@@ -700,7 +707,8 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     custom_widget('password', PasswordChangeWidget)
     label = 'Complete your registration'
     expected_token_types = (
-        LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
+        LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE,
+        LoginTokenType.NEWPERSONLESSACCOUNT)
 
     def initialize(self):
         if self.redirectIfInvalidOrConsumedToken():
@@ -713,11 +721,16 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     # Use a method to set self.next_url rather than a property because we
     # want to override self.next_url in a subclass of this.
     def setNextUrl(self):
+        if self.has_openid_request:
+            # For OpenID requests we don't use self.next_url, so don't even
+            # bother setting it.
+            return
+
         if self.context.redirection_url:
             self.next_url = self.context.redirection_url
-        elif self.user is not None:
+        elif self.account is not None:
             # User is logged in, redirect to his home page.
-            self.next_url = canonical_url(self.user)
+            self.next_url = canonical_url(IPerson(self.account))
         elif self.created_person is not None:
             # User is not logged in, redirect to the created person's home
             # page.
@@ -763,7 +776,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             # Suspended accounts cannot reactivate their profile.
             reason = ('This profile cannot be claimed because the account '
                 'is suspended.')
-            if self.accountWasSuspended(naked_person, reason):
+            if self.accountWasSuspended(person.account, reason):
                 return
             naked_person.displayname = data['displayname']
             naked_person.hide_email_addresses = data['hide_email_addresses']
@@ -774,15 +787,13 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             naked_person.creation_rationale = self._getCreationRationale()
             naked_person.creation_comment = None
         else:
-            person, email = self._createPersonAndEmail(
+            account, person, email = self._createAccountPersonAndEmail(
                 data['displayname'], data['hide_email_addresses'],
                 data['password'])
-            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
-            person.validateAndEnsurePreferredEmail(email)
 
-        self.created_person = person
         self.context.consume()
-        self.logInPersonByEmail(removeSecurityProxy(email).email)
+        self.logInPrincipalByEmail(removeSecurityProxy(email).email)
+        self.created_person = person
         self.request.response.addInfoNotification(_(
             "Registration completed successfully"))
         self.setNextUrl()
@@ -798,16 +809,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         then use that, otherwise uses
         PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
         """
-        try:
-            self.restoreRequestFromSession('token' + self.context.token)
-        except UnexpectedFormData:
-            # There is no OpenIDRequest in the session, so we'll try to infer
-            # the creation rationale from the token's redirection_url.
-            rationale = self.urls_and_rationales.get(
-                self.context.redirection_url)
-            if rationale is None:
-                rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
-        else:
+        if self.has_openid_request:
             rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
                 self.openid_request.trust_root)
             if rpconfig is not None:
@@ -815,11 +817,23 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             else:
                 rationale = (
                     PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
+        else:
+            # There is no OpenIDRequest in the session, so we'll try to infer
+            # the creation rationale from the token's redirection_url.
+            rationale = self.urls_and_rationales.get(
+                self.context.redirection_url)
+            if rationale is None:
+                rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
         return rationale
 
-    def _createPersonAndEmail(
+    def _createAccountPersonAndEmail(
             self, displayname, hide_email_addresses, password):
-        """Create and return a new Person and EmailAddress.
+        """Create and return a new Account, Person and EmailAddress.
+
+        This method will always create an Account (in the ACTIVE state) and
+        an EmailAddress as the account's preferred one.  However, if the
+        registration process was not started through OpenID, we'll create also
+        a Person.
 
         Use the given arguments and the email address stored in the
         LoginToken (our context).
@@ -828,14 +842,25 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         and EmailAddress.
         """
         rationale = self._getCreationRationale()
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-            self.context.email, rationale, displayname=displayname,
-            password=password, passwordEncrypted=True,
-            hide_email_addresses=hide_email_addresses)
+        if self.context.tokentype == LoginTokenType.NEWPERSONLESSACCOUNT:
+            person = None
+            account, email = getUtility(IAccountSet).createAccountAndEmail(
+                self.context.email, rationale, displayname,
+                password, password_is_encrypted=True)
+        else:
+            person, email = getUtility(IPersonSet).createPersonAndEmail(
+                self.context.email, rationale, displayname=displayname,
+                password=password, passwordEncrypted=True,
+                hide_email_addresses=hide_email_addresses)
+            notify(ObjectCreatedEvent(person))
+            account = person.account
+            person.validateAndEnsurePreferredEmail(email)
+            from zope.security.proxy import removeSecurityProxy
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
 
-        notify(ObjectCreatedEvent(person))
+        notify(ObjectCreatedEvent(account))
         notify(ObjectCreatedEvent(email))
-        return person, email
+        return account, person, email
 
 
 class MergePeopleView(BaseLoginTokenView, LaunchpadView):

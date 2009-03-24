@@ -23,10 +23,14 @@ from storm.expr import And, LeftJoin
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
+
 from zope.component import getUtility, queryAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.security.proxy import removeSecurityProxy
+
+from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -39,8 +43,6 @@ from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.teammembership import TeamParticipation
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -51,7 +53,6 @@ from canonical.launchpad.interfaces.mailinglist import (
     MailingListStatus, PURGE_STATES, PostedMessageStatus, UnsafeToPurge)
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 
 
@@ -285,7 +286,7 @@ class MailingList(SQLBase):
 
         old_mailinglist = Snapshot(self, providing=providedBy(self))
         self.date_activated = UTC_NOW
-        notify(SQLObjectModifiedEvent(
+        notify(ObjectModifiedEvent(
                 self,
                 object_before_modification=old_mailinglist,
                 edited_fields=['date_activated']))
@@ -530,7 +531,7 @@ class MailingList(SQLBase):
                                        posted_message=message.raw,
                                        posted_date=message.datecreated,
                                        mailing_list=self)
-        notify(SQLObjectCreatedEvent(held_message))
+        notify(ObjectCreatedEvent(held_message))
         return held_message
 
     def getReviewableMessages(self):

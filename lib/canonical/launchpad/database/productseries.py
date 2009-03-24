@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from sqlobject import (
-    IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from storm.expr import In, Or
 from warnings import warn
 from zope.component import getUtility
@@ -24,7 +24,8 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.milestone import (
+    HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
@@ -39,16 +40,16 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces import (
     IHasTranslationTemplates, IProductSeries, IProductSeriesSet,
-    IStructuralSubscriptionTarget, ImportStatus, NotFoundError, PackagingType,
-    RevisionControlSystems, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationGoalStatus,
-    SpecificationImplementationStatus, SpecificationSort)
+    IStructuralSubscriptionTarget, NotFoundError, PackagingType,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationGoalStatus, SpecificationImplementationStatus,
+    SpecificationSort)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
-class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                    HasTranslationImportsMixin,
+class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
+                    HasSpecificationsMixin, HasTranslationImportsMixin,
                     StructuralSubscriptionTargetMixin):
     """A series of product releases."""
     implements(
@@ -74,34 +75,18 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                default=None)
     user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
                              default=None)
-    importstatus = EnumCol(dbName='importstatus', notNull=False,
-        schema=ImportStatus, default=None)
-    rcstype = EnumCol(dbName='rcstype', enum=RevisionControlSystems,
-        notNull=False, default=None)
-    cvsroot = StringCol(default=None)
-    cvsmodule = StringCol(default=None)
-    cvsbranch = StringCol(default=None)
     # where are the tarballs released from this branch placed?
-    cvstarfileurl = StringCol(default=None)
-    svnrepository = StringCol(default=None)
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
-    # key dates on the road to import happiness
-    dateautotested = UtcDateTimeCol(default=None)
-    datestarted = UtcDateTimeCol(default=None)
-    datefinished = UtcDateTimeCol(default=None)
-    dateprocessapproved = UtcDateTimeCol(default=None)
-    datesyncapproved = UtcDateTimeCol(default=None)
-    # controlling the freshness of an import
-    syncinterval = IntervalCol(default=None)
-    datelastsynced = UtcDateTimeCol(default=None)
-    datepublishedsync = UtcDateTimeCol(
-        dbName='date_published_sync', default=None)
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
+
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.productseries == self)
 
     @property
     def release_files(self):
@@ -114,19 +99,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def displayname(self):
         return self.name
-
-    @property
-    def all_milestones(self):
-        """See IProductSeries."""
-        return Milestone.selectBy(
-            productseries=self, orderBy=['-dateexpected', 'name'])
-
-    @property
-    def milestones(self):
-        """See IProductSeries."""
-        return Milestone.selectBy(
-            productseries=self, visible=True,
-            orderBy=['-dateexpected', 'name'])
 
     @property
     def parent(self):
@@ -346,6 +318,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
 
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.product.official_bug_tags
+
     def getUsedBugTags(self):
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
@@ -520,21 +497,6 @@ class ProductSeriesSet:
         return """productseries.id IN
             (SELECT productseries.id FROM productseries, product, project
              WHERE %s) AND productseries.product = product.id""" % query
-
-    def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
-        """See IProductSeriesSet."""
-        result = ProductSeries.selectOneBy(
-            cvsroot=cvsroot, cvsmodule=cvsmodule, cvsbranch=cvsbranch)
-        if result is None:
-            return default
-        return result
-
-    def getBySVNDetails(self, svnrepository, default=None):
-        """See IProductSeriesSet."""
-        result = ProductSeries.selectOneBy(svnrepository=svnrepository)
-        if result is None:
-            return default
-        return result
 
     def getSeriesForBranches(self, branches):
         """See `IProductSeriesSet`."""

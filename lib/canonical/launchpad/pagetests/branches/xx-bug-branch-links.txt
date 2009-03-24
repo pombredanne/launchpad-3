@@ -124,7 +124,7 @@ links to a page restricted with the launchpad.AnyPerson permission.
     >>> browser.getControl('Continue').click()
 
     >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/scanned (New)
+    ~name12/gnome-terminal/scanned (Development)
 
     >>> browser.getLink('~name12/gnome-terminal/scanned').click()
     >>> printBugBranchLinks(browser)
@@ -160,7 +160,7 @@ This registers a branch and links it to the bug:
     Registered ~name12/thunderbird/branch
     ...
     >>> printBugBranchLinks(browser)
-    ~name12/thunderbird/branch (New)
+    ~name12/thunderbird/branch (Development)
 
 However, if the bug isn't on a project, we don't (can't!) register a branch.
 
@@ -191,7 +191,7 @@ Each bug-branch link has a whiteboard to give more details about the link.
     >>> browser.open(
     ...     'http://launchpad.dev/bugs/11')
     >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/scanned (New)
+    ~name12/gnome-terminal/scanned (Development)
 
 The whiteboard contents are available on the (bug|branch) page.
 
@@ -201,7 +201,7 @@ The whiteboard contents are available on the (bug|branch) page.
     ...     ' * Adjusting the lambda probe')
     >>> browser.getControl('Update').click()
     >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/scanned (New)
+    ~name12/gnome-terminal/scanned (Development)
       This is a fix for the problem and involved:
        * Fixing the doodad
        * Adjusting the lambda probe

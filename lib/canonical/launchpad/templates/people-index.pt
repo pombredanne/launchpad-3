@@ -45,6 +45,11 @@
                 </td>
               </tr>
               <tr>
+                <td class="formHelp">Search for people or teams by their
+                    name or email address.
+                </td>
+              </tr>
+              <tr>
                 <td tal:define="searchfor request/searchfor|nothing">
                   <label>
                     <input
@@ -106,7 +111,7 @@
         </div>
 
         <tal:block condition="not: bn">
-          <p id="application-summary"> 
+          <p id="application-summary">
             Launchpad may create <b>duplicate profiles</b> for you
             as it automatically reviews translation files, mailing lists and
             other forums. If you find you have more than one profile here,

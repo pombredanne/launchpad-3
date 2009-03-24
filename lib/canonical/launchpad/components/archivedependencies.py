@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, ALLOW_RELEASE_BUILDS)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 component_dependencies = {
@@ -220,7 +220,7 @@ def _get_default_primary_dependencies(build):
 
     :param build: the `IBuild` context;
 
-    :return: a list containing the the default dependencies to primary
+    :return: a list containing the default dependencies to primary
         archive.
     """
     if build.archive.purpose in ALLOW_RELEASE_BUILDS:

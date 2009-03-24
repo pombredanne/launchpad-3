@@ -82,7 +82,7 @@ to associate the label with the radio button input.
 If the enumerated type doesn't have any descriptions, then the extra
 rows are not rendered.
 
-    >>> from canonical.lazr import EnumeratedType, Item
+    >>> from lazr.enum import EnumeratedType, Item
     >>> class SomeFruit(EnumeratedType):
     ...     "A choice of fruit."
     ...     APPLE = Item('Apple')

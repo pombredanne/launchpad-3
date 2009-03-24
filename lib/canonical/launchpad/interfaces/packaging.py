@@ -13,11 +13,10 @@ __all__ = [
 
 from zope.schema import Choice, Datetime, Int
 from zope.interface import Interface, Attribute
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
-
-from canonical.lazr.enum import DBEnumeratedType, DBItem
 
 
 class PackagingType(DBEnumeratedType):

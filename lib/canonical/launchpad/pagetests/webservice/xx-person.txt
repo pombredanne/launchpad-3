@@ -15,6 +15,7 @@ for teams (as they're defined in the ITeam interface).
     deactivated_members_collection_link: u'http://.../~salgado/deactivated_members'
     display_name: u'Guilherme Salgado'
     expired_members_collection_link: u'http://.../~salgado/expired_members'
+    hardware_submissions_collection_link: u'http://.../~salgado/hardware_submissions'
     hide_email_addresses: False
     homepage_content: None
     invited_members_collection_link: u'http://.../~salgado/invited_members'
@@ -56,6 +57,7 @@ for teams (as they're defined in the ITeam interface).
     default_renewal_period: None
     display_name: u'Ubuntu Team'
     expired_members_collection_link: u'http://.../~ubuntu-team/expired_members'
+    hardware_submissions_collection_link: u'http://.../~ubuntu-team/hardware_submissions'
     hide_email_addresses: False
     homepage_content: None
     invited_members_collection_link: u'http://.../~ubuntu-team/invited_members'
@@ -546,3 +548,16 @@ participant, use the 'findPathToTeam' custom operation.
     # ...     print entry['self_link']
     # http://.../~admins
     # http://.../~mailing-list-experts
+
+
+== Restrictions ==
+
+A team can't be its own owner.
+
+  >>> import simplejson
+  >>> doc = {'team_owner_link' : webservice.getAbsoluteUrl("/~admins")}
+  >>> print webservice.patch(
+  ...    "/~admins", 'application/json', simplejson.dumps(doc))
+  HTTP/1.1 400 Bad Request
+  ...
+  team_owner_link: Constraint not satisfied.

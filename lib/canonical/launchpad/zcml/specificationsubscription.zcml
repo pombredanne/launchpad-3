@@ -34,12 +34,12 @@
 
   <subscriber
       for="canonical.launchpad.interfaces.ISpecificationSubscription
-	   canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+           lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="canonical.launchpad.mailnotification.notify_specification_subscription_created" />
 
   <subscriber
       for="canonical.launchpad.interfaces.ISpecificationSubscription
-	   canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+           lazr.lifecycle.interfaces.IObjectModifiedEvent"
       handler="canonical.launchpad.mailnotification.notify_specification_subscription_modified" />
 
 </configure>

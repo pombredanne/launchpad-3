@@ -16,11 +16,10 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 from zope.schema import Bool, Choice, Datetime, Int
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
-
-from canonical.lazr import DBEnumeratedType, DBItem
 
 class BugNotificationLevel(DBEnumeratedType):
     """Bug Notification Level.
@@ -188,6 +187,8 @@ class IStructuralSubscriptionTarget(Interface):
         :return: An `INotificationRecipientSet` instance containing
             the bug subscribers.
         """
+
+    target_type_display = Attribute("The type of the target, for display.")
 
 
 class IStructuralSubscriptionForm(Interface):

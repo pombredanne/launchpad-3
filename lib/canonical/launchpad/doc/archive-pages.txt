@@ -306,7 +306,7 @@ dependency. Each element has:
 
     >>> [dependency] = view.widgets.get('selected_dependencies').vocabulary
 
-    >>> print dependency.value.title
+    >>> print dependency.value.displayname
     PPA for Mark Shuttleworth
 
     >>> print dependency.token
@@ -567,7 +567,7 @@ to set PPA for Pirulito Team as dependency of his PPA.
 
     >>> dependencies = view.widgets.get('selected_dependencies').vocabulary
     >>> for dependency in dependencies:
-    ...     print dependency.value.title
+    ...     print dependency.value.displayname
     Private PPA for Pirulito Team
 
 Remove Celso's membership on the new team and made his PPA public
@@ -836,4 +836,3 @@ error. Nothing was copied to Ubuntu-team PPA.
 
     >>> ubuntu_team_ppa.getPublishedSources().count()
     0
-

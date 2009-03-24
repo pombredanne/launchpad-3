@@ -197,16 +197,16 @@ associated with the mozilla project that are inheriting the project's
 branch policy.
 
     >>> mozilla.setBranchVisibilityTeamPolicy(
-    ...     ubuntu_gnome_team, BranchVisibilityRule.PRIVATE)
+    ...     None, BranchVisibilityRule.FORBIDDEN)
     >>> mozilla.setBranchVisibilityTeamPolicy(
-    ...     None, BranchVisibilityRule.PRIVATE)
+    ...     ubuntu_gnome_team, BranchVisibilityRule.PRIVATE)
 
     >>> print_team_policies(mozilla)
-    *everyone*: Private
+    *everyone*: Forbidden
     Ubuntu Gnome Team: Private
 
     >>> print_team_policies(thunderbird)
-    *everyone*: Private
+    *everyone*: Forbidden
     Ubuntu Gnome Team: Private
 
 In order to avoid inheriting the policy of the project, there just needs
@@ -230,7 +230,7 @@ defined, then None is returned.
     >>> print mozilla.getBranchVisibilityRuleForTeam(ubuntu_gnome_team).title
     Private
     >>> print mozilla.getBranchVisibilityRuleForTeam(None).title
-    Private
+    Forbidden
     >>> print mozilla.getBranchVisibilityRuleForTeam(launchpad_team)
     None
 
@@ -238,12 +238,10 @@ defined, then None is returned.
 == Policy checks during branch creation ==
 
 The branch visibility policy is checked during branch creation through
-the IBranchSet utility.
+the relevant IBranchNamespace implementation.
 
     >>> from canonical.launchpad.ftests import login
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBranchSet
-    >>> branch_set = getUtility(IBranchSet)
     >>> evolution.setBranchVisibilityTeamPolicy(
     ...     None, BranchVisibilityRule.FORBIDDEN)
     >>> vcs_imports_team = person_set.getByName('vcs-imports')
@@ -295,11 +293,8 @@ created as a private branch, but since there are two teams that specify
 privacy, the branch is created so only Foo Bar can see it.  It is up to
 Foo Bar to subscribe the appropriate team at a later date.
 
-    >>> from canonical.launchpad.interfaces import BranchType
-    >>> branch = branch_set.new(
-    ...     branch_type=BranchType.HOSTED,
-    ...     name="testing-1", registrant=foo_bar, owner=foo_bar,
-    ...     product=evolution, url=None)
+    >>> branch = factory.makeProductBranch(
+    ...     name="testing-1", owner=foo_bar, product=evolution)
     >>> branch.private
     True
     >>> branch.subscribers.count()
@@ -316,10 +311,8 @@ and are subscribed to by the Ubuntu Gnome Team.
     >>> stevea.inTeam(vcs_imports_team)
     False
 
-    >>> branch = branch_set.new(
-    ...     branch_type=BranchType.HOSTED,
-    ...     name="testing-2", registrant=stevea, owner=stevea,
-    ...     product=evolution, url=None)
+    >>> branch = factory.makeProductBranch(
+    ...     name="testing-2", owner=stevea, product=evolution)
     >>> branch.private
     True
     >>> for name in sorted([subscriber.browsername for subscriber
@@ -338,10 +331,8 @@ teams that have private branches, David's branch will be public.
     >>> ddaa.inTeam(vcs_imports_team)
     True
 
-    >>> branch = branch_set.new(
-    ...     branch_type=BranchType.HOSTED,
-    ...     name="testing-3", registrant=ddaa, owner=ddaa,
-    ...     product=evolution, url=None)
+    >>> branch = factory.makeProductBranch(
+    ...     name="testing-3", owner=ddaa, product=evolution)
     >>> branch.private
     False
     >>> branch.subscribers.count()
@@ -359,10 +350,8 @@ visibility policy, which for this product is Forbidden.
     >>> no_priv.inTeam(vcs_imports_team)
     False
 
-    >>> branch = branch_set.new(
-    ...     branch_type=BranchType.HOSTED,
-    ...     name="testing-4", registrant=no_priv, owner=no_priv,
-    ...     product=evolution, url=None)
+    >>> branch = factory.makeProductBranch(
+    ...     name="testing-4", owner=no_priv, product=evolution)
     Traceback (most recent call last):
     ...
-    BranchCreationForbidden: You cannot create branches for the product ...
+    BranchCreationForbidden: You cannot create branches ...

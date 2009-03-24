@@ -54,7 +54,8 @@ from canonical.launchpad.database.distroseries_translations_copy import (
     copy_active_translations)
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
-from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.milestone import (
+    HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
@@ -76,7 +77,8 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.archive import (
     ALLOW_RELEASE_BUILDS, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from canonical.launchpad.interfaces.build import IBuildSet, IHasBuildRecords
+from canonical.launchpad.interfaces.build import IBuildSet
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageName)
 from canonical.launchpad.interfaces.distroseries import (
@@ -91,7 +93,8 @@ from canonical.launchpad.interfaces.publishing import (
     active_publishing_status, ICanPublishPackages, PackagePublishingPocket,
     PackagePublishingStatus)
 from canonical.launchpad.interfaces.queue import IHasQueueItems
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.sourcepackage import (
+    ISourcePackage, ISourcePackageFactory)
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 from canonical.launchpad.interfaces.specification import (
@@ -102,12 +105,12 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, IStoreSelector, MAIN_STORE, SLAVE_FLAVOR,
+    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasTranslationImportsMixin,
+                   HasTranslationImportsMixin, HasMilestonesMixin,
                    StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
@@ -195,19 +198,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         DistroArchSeries.distroseries = %s AND
         DistroArchSeries.supports_virtualized = True
         """ % sqlvalues(self), orderBy='architecturetag')
-
-    @property
-    def all_milestones(self):
-        """See IDistroSeries."""
-        return Milestone.selectBy(
-            distroseries=self, orderBy=['-dateexpected', 'name'])
-
-    @property
-    def milestones(self):
-        """See `IDistroSeries`."""
-        return Milestone.selectBy(
-            distroseries=self, visible=True,
-            orderBy=['-dateexpected', 'name'])
 
     @property
     def parent(self):
@@ -311,6 +301,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
+
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.distroseries == self)
 
     def canUploadToPocket(self, pocket):
         """See `IDistroSeries`."""
@@ -420,6 +414,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution series."""
         search_params.setDistroSeries(self)
+
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.distribution.official_bug_tags
 
     def getUsedBugTags(self):
         """See `IHasBugs`."""
@@ -612,7 +611,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 name = SourcePackageName.byName(name)
             except SQLObjectNotFound:
                 return None
-        return SourcePackage(sourcepackagename=name, distroseries=self)
+        return getUtility(ISourcePackageFactory).new(
+            sourcepackagename=name, distroseries=self)
 
     def getBinaryPackage(self, name):
         """See `IDistroSeries`."""

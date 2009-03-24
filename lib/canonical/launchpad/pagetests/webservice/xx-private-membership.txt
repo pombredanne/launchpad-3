@@ -71,7 +71,8 @@ changed by admins and commercial admins but not by regular users.
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> login(ANONYMOUS)
-    >>> commercial_admin = getUtility(IPersonSet).getByName('commercial-admins')
+    >>> commercial_admin = getUtility(IPersonSet).getByName(
+    ...     'commercial-admins').activemembers[0]
     >>> logout()
     >>> comm_webservice = webservice_for_person(
     ...     commercial_admin, permission=OAuthPermission.WRITE_PRIVATE)

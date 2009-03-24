@@ -222,7 +222,7 @@ class SubmissionParser(object):
         """Parse the <client> node in the <summary> section.
 
         :return: A dictionary with keys 'name', 'version', 'plugins'.
-                 Name and version describe the the client program that
+                 Name and version describe the client program that
                  produced the submission. Pugins is a list with one
                  entry per client plugin; each entry is dictionary with
                  the keys 'name' and 'version'.
@@ -428,36 +428,16 @@ class SubmissionParser(object):
             aliases.append(alias)
         return aliases
 
-    def _parseDmi(self, dmi_node):
-        """Parse the <dmi> node.
-        """
-        # We don't store any DMI data at present, but the HWDB client
-        # for Jaunty will soon be able to include DMI data.
-        # For now, we'll just log a warning for submissions containing
-        # DMI data in order to be able to process these submissions
-        # again later, once we can store the DMI data.
-        # See bug 327147.
-        self._logWarning('Submission contains unprocessed DMI data.')
-
-    def _parseLspci(self, lspci_node):
-        """Parse the <lspci> node.
-        """
-        # We don't store the content of the <lspci> node at present, but
-        # the HWDB client for Jaunty will soon be able to include this
-        # data. For now, we'll just log a warning for submissions containing
-        # lspci output in order to be able to process these submissions
-        # again later, once we can store the lspci output.
-        # See bug 327147.
-        self._logWarning('Submission contains unprocessed lspci data.')
+    _parse_hardware_section = {
+        'hal': _parseHAL,
+        'processors': _parseProcessors,
+        'aliases': _parseAliases}
 
     def _setHardwareSectionParsers(self):
         self._parse_hardware_section = {
             'hal': self._parseHAL,
             'processors': self._parseProcessors,
-            'aliases': self._parseAliases,
-            'dmi': self._parseDmi,
-            'lspci': self._parseLspci,
-            }
+            'aliases': self._parseAliases}
 
     def _parseHardware(self, hardware_node):
         """Parse the <hardware> part of a submission.
@@ -682,12 +662,24 @@ class SubmissionParser(object):
             questions.append(question)
         return questions
 
+    def _parseContext(self, context_node):
+        """Parse the <context> part of a submission.
+
+        We don't do anything real right now, but simply log a warning
+        that this submission contains a <context> section, so that
+        we can parse it again later, once we have the SQL tables needed
+        to store the data.
+        """
+        self._logWarning('Submission contains unprocessed <context> data.')
+
     def _setMainSectionParsers(self):
         self._parse_system = {
             'summary': self._parseSummary,
             'hardware': self._parseHardware,
             'software': self._parseSoftware,
-            'questions': self._parseQuestions}
+            'questions': self._parseQuestions,
+            'context': self._parseContext,
+            }
 
     def parseMainSections(self, submission_doc):
         # The RelaxNG validation ensures that submission_doc has exactly
@@ -1552,7 +1544,7 @@ class HALDevice:
 
         If the vendor name is 'ATA', and if the model name contains
         at least one ' ' character, the string before the first ' ' is
-        returned as the vendor name, and the the string after the first
+        returned as the vendor name, and the string after the first
         ' ' is returned as the model name.
 
         In all other cases, vendor and model name are returned unmodified.

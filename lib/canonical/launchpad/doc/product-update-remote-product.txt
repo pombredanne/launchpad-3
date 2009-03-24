@@ -13,7 +13,8 @@ automatically.
     <storm...>
 
     >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
+    >>> from canonical.launchpad.scripts.logger import (
+    ...     FakeLogger, QuietFakeLogger)
     >>> from canonical.launchpad.scripts.updateremoteproduct import (
     ...     RemoteProductUpdater)
     >>> class FakeTransaction:
@@ -43,13 +44,20 @@ For testing, _getExternalBugTracker() can be overridden to return an
 ExternalBugTracker that doesn't require network access.
 
     >>> class FakeExternalBugTracker:
+    ...
+    ...     def initializeRemoteBugDB(self, bug_ids):
+    ...         print "Initializing DB for bugs: %s." % bug_ids
+    ...
     ...     def getRemoteProduct(self, remote_bug):
     ...         return 'product-for-bug-%s' % remote_bug
 
 
     >>> class NoNetworkRemoteProductUpdater(RemoteProductUpdater):
+    ...
+    ...     external_bugtracker_to_return = FakeExternalBugTracker
+    ...
     ...     def _getExternalBugTracker(self, bug_tracker):
-    ...         return FakeExternalBugTracker()
+    ...         return self.external_bugtracker_to_return()
 
 
 == update() ==
@@ -133,6 +141,8 @@ given one are ignored.
     >>> rt_bugtask.bugwatch = rt_bugwatch
 
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
+    Initializing DB for bugs: [u'84'].
+
     >>> print rt_product.remote_product
     product-for-bug-84
 
@@ -177,10 +187,71 @@ after each product's remote_product has been updated.
     ...     rt_bugtask.bugwatch = rt_bugwatch
     >>> updater = NoNetworkRemoteProductUpdater(
     ...     FakeTransaction(log_calls=True), QuietFakeLogger())
+    >>> updater.print_method_calls = False
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
+    Initializing DB for bugs: [u'84'].
     COMMIT
+    Initializing DB for bugs: [u'84'].
     COMMIT
+    Initializing DB for bugs: [u'84'].
     COMMIT
+
+
+=== Error handling ===
+
+If the ExternalBugTracker raises any BugWatchUpdateErrors,
+updateByBugTrackerType() will simply log the error and then continue.
+This is a simplistic approach but it means that problems with one bug
+tracker don't break the run for all bug trackers.
+
+    >>> new_rt_product = factory.makeProduct(
+    ...     name='fooix', official_malone=False)
+    >>> new_rt_product.bugtracker = rt
+    >>> new_rt_bugtask = factory.makeBugTask(target=new_rt_product)
+    >>> new_rt_bugwatch = factory.makeBugWatch(
+    ...     '42', bugtracker=rt, bug=new_rt_bugtask.bug)
+    >>> new_rt_bugtask.bugwatch = new_rt_bugwatch
+
+    >>> from canonical.launchpad.components.externalbugtracker.base import (
+    ...     BugNotFound, BugWatchUpdateError)
+    >>> class BrokenOnInitExternalBugTracker(
+    ...         FakeExternalBugTracker):
+    ...     def initializeRemoteBugDB(self, bug_ids):
+    ...         raise BugWatchUpdateError("This here is an error")
+
+    >>> updater.logger = FakeLogger()
+    >>> updater.external_bugtracker_to_return = (
+    ...     BrokenOnInitExternalBugTracker)
+    >>> updater.updateByBugTrackerType(BugTrackerType.RT)
+    INFO  1 projects using RT needing updating.
+    DEBUG Trying to update fooix
+    ERROR Unable to set remote_product for 'fooix': This here is an error
+
+    >>> class BrokenOnGetRemoteProductExternalBugTracker(
+    ...         FakeExternalBugTracker):
+    ...     def getRemoteProduct(self, remote_bug):
+    ...         raise BugNotFound("Didn't find bug %s." % remote_bug)
+
+    >>> updater.external_bugtracker_to_return = (
+    ...     BrokenOnGetRemoteProductExternalBugTracker)
+    >>> updater.updateByBugTrackerType(BugTrackerType.RT)
+    INFO  1 projects using RT needing updating.
+    DEBUG Trying to update fooix
+    Initializing DB for bugs: [u'42'].
+    ERROR Unable to set remote_product for 'fooix': Didn't find bug 42.
+
+AssertionErrors are also handled.
+
+    >>> class RaisesAssertionErrorExternalBugTracker(FakeExternalBugTracker):
+    ...     def initializeRemoteBugDB(self, bug_ids):
+    ...         assert True == False, "True isn't False!"
+
+    >>> updater.external_bugtracker_to_return = (
+    ...     RaisesAssertionErrorExternalBugTracker)
+    >>> updater.updateByBugTrackerType(BugTrackerType.RT)
+    INFO  1 projects using RT needing updating.
+    DEBUG Trying to update fooix
+    ERROR Unable to set remote_product for 'fooix': True isn't False!
 
 
 == update-remote-product.py ==

@@ -6,7 +6,7 @@ DEV_CONFIG=replicated-development
 NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
 STAGING_CONFIG=staging # For swapping fresh db into place.
 STAGING_DUMP=launchpad.dump # Dumpfile to build new staging from.
-STAGING_TABLESPACE=launchpad_replication # 'pg_default' for default
+STAGING_TABLESPACE=pg_default # 'pg_default' for default
 
 _CONFIG=overridden-on-command-line
 _SLAVE_TABLESPACE=pg_default

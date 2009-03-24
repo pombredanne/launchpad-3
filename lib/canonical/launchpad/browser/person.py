@@ -10,22 +10,18 @@ __all__ = [
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
     'EmailToPersonView',
-    'PersonActiveReviewsView',
+    'PersonAccountAdministerView',
     'PersonAdministerView',
     'PersonAddView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
-    'PersonApprovedMergesView',
     'PersonAssignedBugTaskSearchListingView',
-    'PersonBranchesMenu',
-    'PersonBranchesView',
     'PersonBrandingView',
     'PersonBreadcrumbBuilder',
     'PersonBugsMenu',
     'PersonChangePasswordView',
     'PersonClaimView',
     'PersonCodeOfConductEditView',
-    'PersonCodeSummaryView',
     'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
     'PersonEditEmailsView',
@@ -44,12 +40,11 @@ __all__ = [
     'PersonNavigation',
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
-    'PersonOwnedBranchesView',
     'PersonRdfView',
     'PersonRdfContentsView',
-    'PersonRegisteredBranchesView',
-    'PersonRelatedBugsView',
+    'PersonRelatedBugTaskSearchListingView',
     'PersonRelatedSoftwareView',
+    'PersonReportedBugTaskSearchListingView',
     'PersonSearchQuestionsView',
     'PersonSetContextMenu',
     'PersonSetNavigation',
@@ -57,14 +52,12 @@ __all__ = [
     'PersonSpecsMenu',
     'PersonSpecWorkloadView',
     'PersonSpecWorkloadTableView',
-    'PersonSubscribedBranchesView',
-    'PersonTeamBranchesView',
+    'PersonSubscribedBugTaskSearchListingView',
     'PersonTranslationView',
     'PersonTranslationRelicensingView',
     'PersonView',
     'PersonVouchersView',
     'RedirectToEditLanguagesView',
-    'ReportedBugTaskSearchListingView',
     'RestrictedMembershipsPersonView',
     'SearchAnsweredQuestionsView',
     'SearchAssignedQuestionsView',
@@ -72,7 +65,6 @@ __all__ = [
     'SearchCreatedQuestionsView',
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
-    'SubscribedBugTaskSearchListingView',
     'TeamAddMyTeamsView',
     'TeamEditLocationView',
     'TeamJoinView',
@@ -87,6 +79,7 @@ __all__ = [
     'archive_to_person',
     ]
 
+import cgi
 import copy
 import itertools
 import pytz
@@ -131,15 +124,16 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.archive import traverse_named_ppa
+from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
+from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort, BranchPersonSearchContext,
-    BranchPersonSearchRestriction, BugTaskSearchParams, BugTaskStatus,
-    CannotUnsubscribe, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
-    EmailAddressStatus, GPGKeyNotFoundError, IBranchSet, ICountry,
-    IEmailAddress, IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
-    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet,
-    INewPerson, IOAuthConsumerSet, IOpenLaunchBag, IPasswordEncryptor,
+    AccountStatus, BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
+    GPGKeyNotFoundError, ICountry, IEmailAddress, IEmailAddressSet,
+    IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet,
+    ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
+    IOAuthConsumerSet, IOpenLaunchBag, IPasswordEncryptor,
     IPerson, IPersonChangePassword, IPersonClaim, IPersonSet,
     IPOFileTranslatorSet, IPollSet, IPollSubset, IRequestPreferredLanguages,
     ISSHKeySet, ISignedCodeOfConductSet, ITeam, ITeamMembership,
@@ -153,16 +147,15 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
-from canonical.launchpad.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.launchpad import (
-    INotificationRecipientSet, UnknownRecipientError)
+    ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
-from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
@@ -171,11 +164,7 @@ from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit,
     TranslationRelicensingAgreementOptions)
 
-from canonical.launchpad.browser.bugtask import (
-    BugListingBatchNavigator, BugTaskSearchListingView)
-from canonical.launchpad.browser.branchlisting import BranchListingView
-from canonical.launchpad.browser.branchmergeproposallisting import (
-    BranchMergeProposalListingView)
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
@@ -186,7 +175,7 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
-from canonical.launchpad.browser.questiontarget import SearchQuestionsView
+from lp.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
 
@@ -206,11 +195,13 @@ from canonical.launchpad.webapp.login import (
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from lazr.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
 
 from canonical.lazr.utils import smartquote
+
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
@@ -290,6 +281,17 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, pillar_name):
+        # If the pillar is a product, then return the PersonProduct.
+        pillar = getUtility(IPillarNameSet).getByName(pillar_name)
+        if IProduct.providedBy(pillar):
+            person_product = getUtility(IPersonProductFactory).create(
+                self.context, pillar)
+            # If accessed through an alias, redirect to the proper name.
+            if pillar.name != pillar_name:
+                return self.redirectSubTree(canonical_url(person_product))
+            getUtility(IOpenLaunchBag).add(pillar)
+            return person_product
+        # Otherwise look for a branch.
         try:
             branch = getUtility(IBranchNamespaceSet).traverse(
                 self._getSegments(pillar_name))
@@ -690,134 +692,6 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class PersonBranchCountMixin:
-    """A mixin class for person branch listings."""
-
-    @cachedproperty
-    def total_branch_count(self):
-        """Return the number of branches related to the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            self.context, visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def registered_branch_count(self):
-        """Return the number of branches registered by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.REGISTERED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def owned_branch_count(self):
-        """Return the number of branches owned by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.OWNED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def subscribed_branch_count(self):
-        """Return the number of branches subscribed to by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @property
-    def user_in_context_team(self):
-        if self.user is None:
-            return False
-        return self.user.inTeam(self.context)
-
-    @cachedproperty
-    def active_review_count(self):
-        """Return the number of active reviews for the user."""
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
-        return query.count()
-
-    @cachedproperty
-    def approved_merge_count(self):
-        """Return the number of active reviews for the user."""
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
-            self.user)
-        return query.count()
-
-    @cachedproperty
-    def requested_review_count(self):
-        """Return the number of active reviews for the user."""
-        utility = getUtility(IBranchMergeProposalGetter)
-        query = utility.getProposalsForReviewer(
-            self.context, [
-                BranchMergeProposalStatus.CODE_APPROVED,
-                BranchMergeProposalStatus.NEEDS_REVIEW],
-            self.user)
-        return query.count()
-
-
-class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
-
-    usedfor = IPerson
-    facet = 'branches'
-    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'approved_merges', 'requested_reviews']
-
-    def all_related(self):
-        return Link(canonical_url(self.context, rootsite='code'),
-                    'Related branches')
-
-    def owned(self):
-        return Link('+ownedbranches', 'owned')
-
-    def registered(self):
-        return Link('+registeredbranches', 'registered')
-
-    def subscribed(self):
-        return Link('+subscribedbranches', 'subscribed')
-
-    def active_reviews(self):
-        if self.active_review_count == 1:
-            text = 'active proposal'
-        else:
-            text = 'active proposals'
-        if self.user == self.context:
-            summary = 'Proposals I have submitted'
-        else:
-            summary = 'Proposals %s has submitted' % self.context.displayname
-        return Link('+activereviews', text, summary=summary)
-
-    def approved_merges(self):
-        if self.approved_merge_count == 1:
-            text = 'approved merge'
-        else:
-            text = 'approved merges'
-        return Link('+approvedmerges', text)
-
-    def addbranch(self):
-        if self.user is None:
-            enabled = False
-        else:
-            enabled = self.user.inTeam(self.context)
-        text = 'Register branch'
-        return Link('+addbranch', text, icon='add', enabled=enabled)
-
-    def requested_reviews(self):
-        if self.requested_review_count == 1:
-            text = 'requested review'
-        else:
-            text = 'requested reviews'
-        if self.user == self.context:
-            summary = 'Proposals I am reviewing'
-        else:
-            summary = 'Proposals %s is reviewing' % self.context.displayname
-        return Link('+requestedreviews', text, summary=summary)
-
-
 class PersonBugsMenu(ApplicationMenu):
 
     usedfor = IPerson
@@ -973,33 +847,22 @@ class CommonMenuLinks:
         target = '+related-software'
         text = 'List assigned packages'
         summary = 'Packages assigned to %s' % self.context.browsername
-        return Link(target, text, summary, icon='packages')
+        return Link(target, text, summary, icon='package-source')
 
     def related_projects(self):
         target = '+related-software#projects'
         text = 'List related projects'
         summary = 'Projects %s is involved with' % self.context.browsername
-        return Link(target, text, summary, icon='packages')
+        return Link(target, text, summary, icon='product')
 
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
         target = "+activate-ppa"
-        text = 'Activate Personal Package Archive'
+        text = 'Create a new PPA'
         summary = ('Acknowledge terms of service for Launchpad Personal '
-                   'Package Archive.')
+                   'Package Archive and create a new PPA.')
         enabled = not bool(self.context.archive)
-        return Link(target, text, summary, icon='edit', enabled=enabled)
-
-    def show_ppa(self):
-        target = '+archive'
-        text = 'Personal Package Archive'
-        summary = 'Browse Personal Package Archive packages.'
-        archive = self.context.archive
-        enable_link = (archive is not None and
-                       check_permission('launchpad.View', archive))
-        if enable_link:
-            target = canonical_url(self.context.archive)
-        return Link(target, text, summary, icon='info', enabled=enable_link)
+        return Link(target, text, summary, icon='add', enabled=enabled)
 
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
@@ -1011,7 +874,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
-             'administer', 'related_projects', 'activate_ppa', 'show_ppa']
+             'administer', 'related_projects', 'activate_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1124,43 +987,13 @@ class IPersonEditMenu(Interface):
 class IPersonRelatedSoftwareMenu(Interface):
     """A marker interface for the 'Related Software' navigation menu."""
 
-class PersonPPANavigationMenuMixin:
-    """A mixin that provides the PPA navigation menu link."""
 
-    def show_ppa(self):
-        """Show the link to a Personal Package Archive.
-
-        The person's archive link changes depending on the status of the
-        archive and the privileges of the viewer.
-        """
-        archive = self.context.archive
-        has_archive = archive is not None
-        user_can_edit_archive = check_permission('launchpad.Edit',
-                                                 self.context)
-
-        text = 'Personal Package Archive'
-        summary = 'Browse Personal Package Archive packages.'
-        if has_archive:
-            target = canonical_url(archive)
-            enable_link = check_permission('launchpad.View', archive)
-        elif user_can_edit_archive:
-            summary = 'Activate Personal Package Archive'
-            target = '+activate-ppa'
-            enable_link = True
-        else:
-            target = '+archive'
-            enable_link = False
-
-        return Link(target, text, summary, icon='info', enabled=enable_link)
-
-
-class PersonOverviewNavigationMenu(
-    NavigationMenu, PersonPPANavigationMenuMixin):
+class PersonOverviewNavigationMenu(NavigationMenu):
     """The top-level menu of actions a Person may take."""
 
     usedfor = IPerson
     facet = 'overview'
-    links = ('profile', 'related_software', 'karma', 'show_ppa')
+    links = ('profile', 'related_software', 'karma')
 
     def __init__(self, context):
         context = IPerson(context)
@@ -1259,7 +1092,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editlanguages', 'map', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
              'reassign', 'common_packages', 'related_projects',
-             'activate_ppa', 'show_ppa']
+             'activate_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1285,7 +1118,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def members(self):
         target = '+members'
         text = 'Show all members'
-        return Link(target, text, icon='people')
+        return Link(target, text, icon='team')
 
     @enabled_with_permission('launchpad.Edit')
     def received_invitations(self):
@@ -1302,7 +1135,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def map(self):
         target = '+map'
         text = 'Show map and time zones'
-        return Link(target, text)
+        return Link(target, text, icon='meeting')
 
     def add_my_teams(self):
         target = '+add-my-teams'
@@ -1325,8 +1158,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.View')
     def mugshots(self):
         target = '+mugshots'
-        text = 'Show group photo'
-        return Link(target, text, icon='people')
+        text = 'Show member photos'
+        return Link(target, text, icon='team')
 
     def polls(self):
         target = '+polls'
@@ -1346,7 +1179,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = (
             'The address Launchpad uses to contact %s' %
             self.context.browsername)
-        return Link(target, text, summary, icon='mail')
+        return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
@@ -1388,13 +1221,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewNavigationMenu(
-    NavigationMenu, PersonPPANavigationMenuMixin):
+class TeamOverviewNavigationMenu(NavigationMenu):
     """A top-level menu for navigation within a Team."""
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['profile', 'polls', 'members', 'show_ppa']
+    links = ['profile', 'polls', 'members']
 
     def profile(self):
         target = ''
@@ -1779,11 +1611,19 @@ class PersonAdministerView(LaunchpadEditFormView):
     schema = IPerson
     label = "Review person"
     field_names = [
-        'name', 'displayname', 'password',
-        'personal_standing',  'personal_standing_reason']
-    custom_widget('password', PasswordChangeWidget)
+        'name', 'displayname',
+        'personal_standing', 'personal_standing_reason']
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
+
+    @property
+    def is_viewing_person(self):
+        """Is the view showing an `IPerson`?
+
+        `PersonAdministerView` and `PersonAccountAdministerView` share a
+        template. It needs to know what the context is.
+        """
+        return True
 
     @property
     def next_url(self):
@@ -1798,6 +1638,69 @@ class PersonAdministerView(LaunchpadEditFormView):
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the IPerson."""
+        self.updateContextFromData(data)
+
+
+class PersonAccountAdministerView(LaunchpadEditFormView):
+    """Administer an `IAccount` belonging to an `IPerson`."""
+    schema = IAccount
+    label = "Review person's account"
+    field_names = [
+        'displayname', 'password', 'status', 'status_comment']
+    custom_widget(
+        'status_comment', TextAreaWidget, height=5, width=60)
+    custom_widget('password', PasswordChangeWidget)
+
+    def __init__(self, context, request):
+        """See `LaunchpadEditFormView`."""
+        super(PersonAccountAdministerView, self).__init__(context, request)
+        # Only the IPerson can be traversed to, so it provides the IAccount.
+        self.person = self.context
+        self.context = self.context.account
+
+    @property
+    def is_viewing_person(self):
+        """Is the view showing an `IPerson`?
+
+        `PersonAdministerView` and `PersonAccountAdministerView` share a
+        template. It needs to know what the context is.
+        """
+        return False
+
+    @property
+    def email_addresses(self):
+        """A list of the user's preferred and validated email addresses."""
+        emails = sorted(
+            email.email for email in self.person.validatedemails)
+        if self.person.preferredemail is not None:
+            emails.insert(0, self.person.preferredemail.email)
+        return emails
+
+    @property
+    def next_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.person)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadEditFormView`."""
+        return canonical_url(self.person)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Update the IAccount."""
+        if (data['status'] == AccountStatus.SUSPENDED
+            and self.context.status != AccountStatus.SUSPENDED):
+            # Setting the password to a clear value makes it impossible to
+            # login. The preferred email address is removed to ensure no
+            # email is sent to the user.
+            data['password'] = 'invalid'
+            self.person.setPreferredEmail(None)
+        if (data['status'] == AccountStatus.ACTIVE
+            and self.context.status != AccountStatus.ACTIVE):
+            self.request.response.addNoticeNotification(
+                u'The user is reactivated. He must use the '
+                u'"forgot password" to log in.')
         self.updateContextFromData(data)
 
 
@@ -1867,45 +1770,6 @@ class PersonSpecFeedbackView(HasSpecificationsView):
     def feedback_specs(self):
         filter = [SpecificationFilter.FEEDBACK]
         return self.context.specifications(filter=filter)
-
-
-class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
-    """All bugs reported by someone."""
-
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-
-    def search(self):
-        # Specify both owner and bug_reporter to try to prevent the same
-        # bug (but different tasks) being displayed.
-        return BugTaskSearchListingView.search(
-            self,
-            extra_params=dict(owner=self.context, bug_reporter=self.context))
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs reported by %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs Reported by %s: Advanced Search" % (
-            self.context.displayname)
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs reported by %s" % self.context.displayname
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+reportedbugs"
-
-    def shouldShowReporterWidget(self):
-        """Should the reporter widget be shown on the advanced search page?"""
-        return False
-
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
-        return False
 
 
 class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
@@ -2091,20 +1955,37 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         return self.getBugSubscriberPackageSearchURL()
 
 
-class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
+class RelevantMilestonesMixin:
+    """Mixin to narrow the milestone list to only relevant milestones."""
+
+    def getMilestoneWidgetValues(self):
+        """Return data used to render the milestone checkboxes."""
+        milestones = getUtility(IBugTaskSet).getAssignedMilestonesFromSearch(
+            self.searchUnbatched())
+        return [
+            dict(title=milestone.title, value=milestone.id, checked=False)
+            for milestone in milestones]
+
+
+class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                            BugTaskSearchListingView,
+                                            FeedsMixin):
     """All bugs related to someone."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
 
-    def search(self, extra_params=None):
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
         """Return the open bugs related to a person.
 
         :param extra_params: A dict that provides search params added to
             the search criteria taken from the request. Params in
             `extra_params` take precedence over request params.
         """
-        context = self.context
+        if context is None:
+            context = self.context
+
         params = self.buildSearchParams(extra_params=extra_params)
         subscriber_params = copy.copy(params)
         subscriber_params.subscriber = context
@@ -2124,12 +2005,9 @@ class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
         if commenter_params.bug_commenter is None:
             commenter_params.bug_commenter = context
 
-        tasks = self.context.searchTasks(
+        return context.searchTasks(
             assignee_params, subscriber_params, owner_params,
             commenter_params)
-        return BugListingBatchNavigator(
-            tasks, self.request, columns_to_show=self.columns_to_show,
-            size=config.malone.buglist_batch_size)
 
     def getSearchPageHeading(self):
         return "Bugs related to %s" % self.context.displayname
@@ -2142,19 +2020,30 @@ class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
         return "Search bugs related to %s" % self.context.displayname
 
     def getSimpleSearchURL(self):
-        return canonical_url(self.context) + "/+bugs"
+        return canonical_url(self.context, view_name="+bugs")
 
 
-class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
+class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                             BugTaskSearchListingView):
     """All bugs assigned to someone."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
 
-    def search(self):
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
         """Return the open bugs assigned to a person."""
-        return BugTaskSearchListingView.search(
-            self, extra_params={'assignee': self.context})
+        if context is None:
+            context = self.context
+
+        if extra_params is None:
+            extra_params = dict()
+        else:
+            extra_params = dict(extra_params)
+        extra_params['assignee'] = context
+
+        sup = super(PersonAssignedBugTaskSearchListingView, self)
+        return sup.searchUnbatched(searchtext, context, extra_params)
 
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
@@ -2183,19 +2072,30 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
 
     def getSimpleSearchURL(self):
         """Return a URL that can be usedas an href to the simple search."""
-        return canonical_url(self.context) + "/+assignedbugs"
+        return canonical_url(self.context, view_name="+assignedbugs")
 
 
-class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
+class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                              BugTaskSearchListingView):
     """All bugs commented on by a Person."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
 
-    def search(self):
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
         """Return the open bugs commented on by a person."""
-        return BugTaskSearchListingView.search(
-            self, extra_params={'bug_commenter': self.context})
+        if context is None:
+            context = self.context
+
+        if extra_params is None:
+            extra_params = dict()
+        else:
+            extra_params = dict(extra_params)
+        extra_params['bug_commenter'] = context
+
+        sup = super(PersonCommentedBugTaskSearchListingView, self)
+        return sup.searchUnbatched(searchtext, context, extra_params)
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -2212,7 +2112,98 @@ class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+commentedbugs"
+        return canonical_url(self.context, view_name="+commentedbugs")
+
+
+class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                             BugTaskSearchListingView):
+    """All bugs reported by someone."""
+
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
+
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
+        """Return the bugs reported by a person."""
+        if context is None:
+            context = self.context
+
+        if extra_params is None:
+            extra_params = dict()
+        else:
+            extra_params = dict(extra_params)
+        # Specify both owner and bug_reporter to try to prevent the same
+        # bug (but different tasks) being displayed.
+        extra_params['owner'] = context
+        extra_params['bug_reporter'] = context
+
+        sup = super(PersonReportedBugTaskSearchListingView, self)
+        return sup.searchUnbatched(searchtext, context, extra_params)
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs reported by %s" % self.context.displayname
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs Reported by %s: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs reported by %s" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
+        return canonical_url(self.context, view_name="+reportedbugs")
+
+    def shouldShowReporterWidget(self):
+        """Should the reporter widget be shown on the advanced search page?"""
+        return False
+
+    def shouldShowTagsCombinatorWidget(self):
+        """Should the tags combinator widget show on the search page?"""
+        return False
+
+
+class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
+                                               BugTaskSearchListingView):
+    """All bugs someone is subscribed to."""
+
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
+
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
+        """Return the bugs subscribed to by a person."""
+        if context is None:
+            context = self.context
+
+        if extra_params is None:
+            extra_params = dict()
+        else:
+            extra_params = dict(extra_params)
+        extra_params['subscriber'] = context
+
+        sup = super(PersonSubscribedBugTaskSearchListingView, self)
+        return sup.searchUnbatched(searchtext, context, extra_params)
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs %s is subscribed to" % self.context.displayname
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs %s is Cc'd to: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs %s is Cc'd to" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
+        return canonical_url(self.context, view_name="+subscribedbugs")
 
 
 class PersonVouchersView(LaunchpadFormView):
@@ -2327,34 +2318,6 @@ class PersonVouchersView(LaunchpadFormView):
             globalErrorUtility.raising(info, self.request)
 
 
-class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
-    """All bugs someone is subscribed to."""
-
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-
-    def search(self):
-        return BugTaskSearchListingView.search(
-            self, extra_params={'subscriber': self.context})
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s is subscribed to" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs %s is Cc'd to: Advanced Search" % (
-            self.context.displayname)
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s is Cc'd to" % self.context.displayname
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context) + "/+subscribedbugs"
-
-
 class PersonLanguagesView(LaunchpadView):
 
     def initialize(self):
@@ -2394,7 +2357,7 @@ class PersonLanguagesView(LaunchpadView):
     def submitLanguages(self):
         '''Process a POST request to the language preference form.
 
-        This list of languages submitted is compared to the the list of
+        This list of languages submitted is compared to the list of
         languages the user has, and the latter is matched to the former.
         '''
 
@@ -2409,22 +2372,25 @@ class PersonLanguagesView(LaunchpadView):
         if self.is_current_user:
             subject = "your"
         else:
-            subject = "%s's" % self.context.displayname
+            subject = "%s's" % cgi.escape(self.context.displayname)
 
         # Add languages to the user's preferences.
+        messages = []
         for language in set(new_languages) - set(old_languages):
             self.context.addLanguage(language)
-            self.request.response.addInfoNotification(
+            messages.append(
                 "Added %(language)s to %(subject)s preferred languages." %
                 {'language' : language.englishname, 'subject' : subject})
 
         # Remove languages from the user's preferences.
         for language in set(old_languages) - set(new_languages):
             self.context.removeLanguage(language)
-            self.request.response.addInfoNotification(
+            messages.append(
                 "Removed %(language)s from %(subject)s preferred languages." %
                 {'language' : language.englishname, 'subject' : subject})
-
+        if len(messages) > 0:
+            message = structured('<br />'.join(messages))
+            self.request.response.addInfoNotification(message)
         redirection_url = self.request.get('redirection_url')
         if redirection_url:
             self.request.response.redirect(redirection_url)
@@ -2588,19 +2554,19 @@ class PersonView(LaunchpadView, FeedsMixin):
         params = BugTaskSearchParams(
             user=self.user, assignee=self.context, omit_dupes=True,
             status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
-        return self.context.searchTasks(params)[:5]
+        return list(self.context.searchTasks(params)[:5])
 
     @cachedproperty
     def assigned_specs_in_progress(self):
         """Return up to 5 assigned specs that are being worked on."""
-        return self.context.assigned_specs_in_progress
+        return list(self.context.assigned_specs_in_progress)
 
     @property
     def has_assigned_bugs_or_specs_in_progress(self):
         """Does the user have any bugs or specs that are being worked on?"""
         bugtasks = self.assigned_bugs_in_progress
         specs = self.assigned_specs_in_progress
-        return bugtasks.count() > 0 or specs.count() > 0
+        return len(bugtasks) > 0 or len(specs) > 0
 
     @property
     def viewing_own_page(self):
@@ -2781,6 +2747,16 @@ class PersonView(LaunchpadView, FeedsMixin):
         else:
             return None
 
+    @cachedproperty
+    def languages(self):
+        """The user's preferred languages, or English is none are set."""
+        languages = list(self.context.languages)
+        if len(languages) > 0:
+            englishnames = [language.englishname for language in languages]
+            return ', '.join(sorted(englishnames))
+        else:
+            return getUtility(ILaunchpadCelebrities).english.englishname
+
 
 class EmailAddressVisibleState:
     """The state of a person's email addresses w.r.t. the logged in user.
@@ -2860,8 +2836,12 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     def initialize(self):
         super(PersonIndexView, self).initialize()
         # This view requires the gmap2 Javascript in order to render the map
-        # with the person's usual location.
-        self.request.needs_gmap2 = True
+        # with the person's usual location. The location is only availble if
+        # the location is set, visible, and the viewing user wants to see it.
+        launchpad_views = get_launchpad_views(self.request.cookies)
+        self._small_map = launchpad_views['small_maps']
+        if (self.has_visible_location and self._small_map):
+            self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
 
@@ -2905,19 +2885,36 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                   "mailing list."))
         self.request.response.redirect(canonical_url(self.context))
 
+    @property
     def map_portlet_html(self):
         """Generate the HTML which shows the map portlet."""
-        assert self.request.needs_gmap2, (
+        assert self.has_visible_location, (
+            "Can't generate the map for a person who hasn't set a "
+            "visible location.")
+        assert self.request.needs_gmap2 or not self._small_map, (
             "To use this method a view must flag that it needs gmap2.")
-        assert self.context.latitude is not None, (
-            "Can't generate the map for a person who hasn't set a location.")
 
         replacements = {'center_lat': self.context.latitude,
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                renderPersonMapSmall(%(center_lat)s, %(center_lng)s);
+                YUI().use('node', 'lp.mapping', function(Y) {
+                    function renderMap() {
+                        Y.lp.mapping.renderPersonMapSmall(
+                            %(center_lat)s, %(center_lng)s);
+                     }
+                     Y.on("domready", renderMap);
+                });
             </script>""" % replacements
+
+    @cachedproperty
+    def has_visible_location(self):
+        """Does the person have latitude and a visible location."""
+        if self.context.is_team:
+            return len(self.context.mapped_participants) > 0
+        else:
+            return (check_permission('launchpad.View', self.context.location)
+                and self.context.latitude is not None)
 
     @property
     def should_show_map_portlet(self):
@@ -4607,39 +4604,6 @@ class PersonAnswersMenu(ApplicationMenu):
         return Link('+subscribedquestions', text, summary, icon='question')
 
 
-class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
-    """View for branch listing for a person."""
-
-    no_sort_by = (BranchListingSort.DEFAULT,)
-    heading_template = 'Bazaar branches related to %(displayname)s'
-
-
-class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
-    """View for branch listing for a person's registered branches."""
-
-    heading_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
-
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.REGISTERED)
-
-
-class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
-    """View for branch listing for a person's owned branches."""
-
-    heading_template = 'Bazaar branches owned by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
-
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.OWNED)
-
-
 class SourcePackageReleaseWithStats:
     """An ISourcePackageRelease, with extra stats added."""
 
@@ -4708,7 +4672,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
         """The number of project owned or driven by this person."""
         return self._related_projects().count()
 
-    @property
+    @cachedproperty
+    def has_more_related_projects(self):
+        """Does this person have more than five related projects?"""
+        return self.related_projects_count > 5
+
+    @cachedproperty
     def too_many_related_projects_found(self):
         """Does the user have more related projects than can be displayed?"""
         return self.related_projects_count > self.max_results_to_display
@@ -4920,32 +4889,6 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
         self.batch = list(self.batchnav.currentBatch())
 
 
-class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
-    """View for branch listing for a person's subscribed branches."""
-
-    heading_template = 'Bazaar branches subscribed to by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT,)
-
-    @property
-    def branch_search_context(self):
-        """See `BranchListingView`."""
-        return BranchPersonSearchContext(
-            self.context, BranchPersonSearchRestriction.SUBSCRIBED)
-
-
-class PersonTeamBranchesView(LaunchpadView):
-    """View for team branches portlet."""
-
-    @cachedproperty
-    def teams_with_branches(self):
-        def team_has_branches(team):
-            branches = getUtility(IBranchSet).getBranchesForContext(
-                team, visible_by_user=self.user)
-            return branches.count() > 0
-        return [team for team in self.context.teams_participated_in
-                if team_has_branches(team) and team != self.context]
-
-
 class PersonOAuthTokensView(LaunchpadView):
     """Where users can see/revoke their non-expired access tokens."""
 
@@ -4988,83 +4931,6 @@ class PersonOAuthTokensView(LaunchpadView):
             self.request.response.addInfoNotification(
                 "Couldn't find authorization given to %s. Maybe it has been "
                 "revoked already?" % consumer.key)
-
-
-class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
-    """A view to render the code page summary for a person."""
-
-    __used_for__ = IPerson
-
-    @property
-    def show_summary(self):
-        """Right now we show the summary if the person has branches.
-
-        When we add support for reviews commented on, we'll want to add
-        support for showing the summary even if there are no branches.
-        """
-        return self.total_branch_count or self.requested_review_count
-
-
-class PersonBMPListingView(BranchMergeProposalListingView):
-    """Base class for the proposal listings that defines the user."""
-
-    def getUserFromContext(self):
-        """Get the relevant user from the context."""
-        return self.context
-
-
-class PersonActiveReviewsView(PersonBMPListingView):
-    """Branch merge proposals that the person has submitted."""
-
-    extra_columns = ['date_review_requested', 'vote_summary']
-    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
-
-    @property
-    def heading(self):
-        return "Active code reviews for %s" % self.context.displayname
-
-    @property
-    def no_proposal_message(self):
-        """Shown when there is no table to show."""
-        return "%s has no active code reviews." % self.context.displayname
-
-
-class PersonRequestedReviewsView(PersonBMPListingView):
-    """Branch merge proposals for the person that are needing review."""
-
-    extra_columns = ['date_review_requested', 'review',]
-    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED,
-                     BranchMergeProposalStatus.NEEDS_REVIEW]
-
-    @property
-    def heading(self):
-        return "Code reviews requested of %s" % self.context.displayname
-
-    @property
-    def no_proposal_message(self):
-        """Shown when there is no table to show."""
-        return "%s has no reviews pending." % self.context.displayname
-
-    def getVisibleProposalsForUser(self):
-        """Branch merge proposals that are visible by the logged in user."""
-        return getUtility(IBranchMergeProposalGetter).getProposalsForReviewer(
-            self.context, self._queue_status, self.user)
-
-
-class PersonApprovedMergesView(PersonBMPListingView):
-    """Branch merge proposals that have been approved for the person."""
-
-    extra_columns = ['date_reviewed']
-    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
-
-    @property
-    def heading(self):
-        return "Approved merges for %s" % self.context.displayname
-
-    @property
-    def no_proposal_message(self):
-        """Shown when there is no table to show."""
-        return "%s has no approved merges." % self.context.displayname
 
 
 class PersonLocationForm(Interface):

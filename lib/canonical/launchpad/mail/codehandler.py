@@ -16,7 +16,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
+from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalExists, IBranchMergeProposalGetter,
     ICreateMergeProposalJobSource, UserNotBranchReviewer)
@@ -37,7 +38,7 @@ from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 class BadBranchMergeProposalAddress(Exception):
@@ -70,11 +71,12 @@ class CodeReviewEmailCommandExecutionContext:
     creation.
     """
 
-    def __init__(self, merge_proposal, user):
+    def __init__(self, merge_proposal, user, notify_event_listeners=True):
         self.merge_proposal = merge_proposal
         self.user = user
         self.vote = None
         self.vote_tags = None
+        self.notify_event_listeners = notify_event_listeners
 
 
 class CodeReviewEmailCommand(EmailCommand):
@@ -192,7 +194,8 @@ class AddReviewerEmailCommand(CodeReviewEmailCommand):
             review_tags = None
 
         context.merge_proposal.nominateReviewer(
-            reviewer, context.user, review_tags)
+            reviewer, context.user, review_tags,
+            _notify_listeners=context.notify_event_listeners)
 
 
 class CodeEmailCommands(EmailCommandCollection):
@@ -230,8 +233,7 @@ class CodeHandler:
         deferred to jobs to create BranchMergeProposals.
         """
         if email_addr.startswith('merge@'):
-            job = getUtility(ICreateMergeProposalJobSource).create(file_alias)
-            return True
+            return self.createMergeProposalJob(mail, email_addr, file_alias)
         else:
             try:
                 return self.processComment(mail, email_addr, file_alias)
@@ -240,7 +242,44 @@ class CodeHandler:
                 simple_sendmail('merge@code.launchpad.net',
                     [mail.get('from')],
                     'Error Creating Merge Proposal', body)
-                return
+                return True
+
+    def createMergeProposalJob(self, mail, email_addr, file_alias):
+        """Check that the message is signed and create the job."""
+        try:
+            ensure_not_weakly_authenticated(
+                mail, email_addr, 'not-signed-md.txt',
+                'key-not-registered-md.txt')
+        except IncomingEmailError, error:
+            user = getUtility(ILaunchBag).user
+            send_process_error_notification(
+                str(user.preferredemail.email),
+                'Submit Request Failure',
+                error.message, mail, error.failing_command)
+            transaction.abort()
+        else:
+            getUtility(ICreateMergeProposalJobSource).create(file_alias)
+        return True
+
+    def processCommands(self, context, email_body_text):
+        """Process the commadns in the email_body_text against the context."""
+        commands = CodeEmailCommands.getCommands(email_body_text)
+
+        processing_errors = []
+
+        for command in commands:
+            try:
+                command.execute(context)
+            except EmailProcessingError, error:
+                processing_errors.append((error, command))
+
+        if len(processing_errors) > 0:
+            errors, commands = zip(*processing_errors)
+            raise IncomingEmailError(
+                '\n'.join(str(error) for error in errors),
+                list(commands))
+
+        return len(commands)
 
     def processComment(self, mail, email_addr, file_alias):
         """Process an email and create a CodeReviewComment.
@@ -257,24 +296,13 @@ class CodeHandler:
 
         user = getUtility(ILaunchBag).user
         context = CodeReviewEmailCommandExecutionContext(merge_proposal, user)
-        commands = CodeEmailCommands.getCommands(get_main_body(mail))
         try:
-            if len(commands) > 0:
+            email_body_text = get_main_body(mail)
+            processed_count = self.processCommands(context, email_body_text)
+
+            # Make sure that the email is in fact signed.
+            if processed_count > 0:
                 ensure_not_weakly_authenticated(mail, 'code review')
-
-            processing_errors = []
-
-            for command in commands:
-                try:
-                    command.execute(context)
-                except EmailProcessingError, error:
-                    processing_errors.append((error, command))
-
-            if len(processing_errors) > 0:
-                errors, commands = zip(*processing_errors)
-                raise IncomingEmailError(
-                    '\n'.join(str(error) for error in errors),
-                    list(commands))
 
             message = getUtility(IMessageSet).fromEmail(
                 mail.parsed_string,
@@ -331,7 +359,7 @@ class CodeHandler:
             performed.
         :return: source_branch, target_branch
         """
-        mp_target = getUtility(IBranchSet).getByUrl(md.target_branch)
+        mp_target = getUtility(IBranchLookup).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
         if md.bundle is None:
@@ -361,8 +389,8 @@ class CodeHandler:
         :param submitter: The person submitting the merge proposal.
         """
         if url is not None:
-            branches = getUtility(IBranchSet)
-            unique_name = branches.URIToUniqueName(URI(url))
+            branches = getUtility(IBranchLookup)
+            unique_name = branches.uriToUniqueName(URI(url))
             if unique_name is not None:
                 namespace_name, base = split_unique_name(unique_name)
                 return lookup_branch_namespace(namespace_name), base
@@ -391,7 +419,7 @@ class CodeHandler:
 
     def _getSourceNoBundle(self, md, target, submitter):
         """Get a source branch for a merge directive with no bundle."""
-        mp_source = getUtility(IBranchSet).getByUrl(md.source_branch)
+        mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.REMOTE, md.source_branch, target, submitter)
@@ -401,11 +429,12 @@ class CodeHandler:
         """Get a source branch for a merge directive with a bundle."""
         mp_source = None
         if md.source_branch is not None:
-            mp_source = getUtility(IBranchSet).getByUrl(md.source_branch)
+            mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.HOSTED, md.source_branch, target,
                 submitter)
+        transaction.commit()
         assert mp_source.branch_type == BranchType.HOSTED
         try:
             bzr_branch = Branch.open(mp_source.getPullURL())
@@ -414,10 +443,10 @@ class CodeHandler:
             transport = get_transport(
                 mp_source.getPullURL(),
                 possible_transports=[bzr_target.bzrdir.root_transport])
-            transport.clone('../..').ensure_base()
-            transport.clone('..').ensure_base()
             bzrdir = bzr_target.bzrdir.clone_on_transport(transport)
             bzr_branch = bzrdir.open_branch()
+        # Don't attempt to use public-facing urls.
+        md.target_branch = target.warehouse_url
         md.install_revisions(bzr_branch.repository)
         bzr_branch.pull(bzr_branch, stop_revision=md.revision_id)
         mp_source.requestMirror()
@@ -484,16 +513,29 @@ class CodeHandler:
             transaction.commit()
         else:
             review_diff = None
+
         try:
             bmp = source.addLandingTarget(submitter, target,
                                           needs_review=True,
                                           review_diff=review_diff)
 
+            context = CodeReviewEmailCommandExecutionContext(
+                bmp, submitter, notify_event_listeners=False)
+            processed_count = self.processCommands(context, comment_text)
+
+            # If there are no reviews requested yet, request the default
+            # reviewer of the target branch.
+            if bmp.votes.count() == 0:
+                bmp.nominateReviewer(
+                    target.code_reviewer, submitter, None,
+                    _notify_listeners=False)
+
             if comment_text.strip() == '':
                 comment = None
             else:
                 comment = bmp.createComment(
-                    submitter, message['Subject'], comment_text)
+                    submitter, message['Subject'], comment_text,
+                    _notify_listeners=False)
             return bmp, comment
 
         except BranchMergeProposalExists:
@@ -504,4 +546,11 @@ class CodeHandler:
             simple_sendmail('merge@code.launchpad.net',
                 [message.get('from')],
                 'Error Creating Merge Proposal', body)
+            transaction.abort()
+        except IncomingEmailError, error:
+            send_process_error_notification(
+                str(submitter.preferredemail.email),
+                'Submit Request Failure',
+                error.message, comment_text, error.failing_command)
+            transaction.abort()
 

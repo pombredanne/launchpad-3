@@ -537,11 +537,11 @@ suite. To simulate this we will create a publication in Celso's PPA.
     ...     pub_source=ppa_source,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
-    >>> print ppa_source.displayname, ppa_source.archive.title
+    >>> print ppa_source.displayname, ppa_source.archive.displayname
     foo 666 in breezy-autotest PPA for Celso Providelo
 
     >>> for bin in ppa_binaries:
-    ...     print bin.displayname, bin.archive.title
+    ...     print bin.displayname, bin.archive.displayname
     foo-bin 666 in breezy-autotest i386 PPA for Celso Providelo
     foo-bin 666 in breezy-autotest hppa PPA for Celso Providelo
 
@@ -1191,9 +1191,7 @@ internals. There are three essential methods to fetch distinct
 information to be cached in the decorated objects:
 
   * getBuildsBySource;
-  * getFilesBySource;
   * getBinariesBySource;
-  * getPackageDiffsBySource.
   * getChangesFileBySources
 
 They exclude the extra references ('prejoins') returned  from the
@@ -1218,34 +1216,6 @@ Binary publications by source.
     >>> compare_ids(
     ...     real_pub.getPublishedBinaries(),
     ...     binaries_by_source.get(real_pub, []))
-    Matches
-
-Files by source.
-
-    >>> files_by_source = decorated_set.getFilesBySource()
-    >>> unordered_files = files_by_source.get(real_pub, [])
-
-Note that at this point the `LibrarianFileAlias` are unordered, since
-they are coming from a UNION. We have to order them as done by the
-user-visible method (filename) before comparing.
-
-    >>> import operator
-    >>> ordered_files = sorted(
-    ...     unordered_files, key=operator.attrgetter('filename'))
-
-    >>> compare_ids(
-    ...     real_pub.getSourceAndBinaryLibraryFiles(), ordered_files)
-    Matches
-
-Package diffs by source.
-
-    >>> pub_with_diff = cprov_published_sources[-1]
-
-    >>> diffs_by_source = decorated_set.getPackageDiffsBySource()
-
-    >>> compare_ids(
-    ...     pub_with_diff.sourcepackagerelease.package_diffs,
-    ...     diffs_by_source.get(pub_with_diff, []))
     Matches
 
 getChangesFileBySources() returns a dictionary mapping each individual
@@ -1291,7 +1261,6 @@ publications.
 methods:
   * sourcepackagerelease;
   * getBuilds;
-  * getSourceAndBinaryLibraryFiles;
   * getPublishedBinaries.
 
     >>> compare_ids(real_pub.getBuilds(), decorated_pub.getBuilds())
@@ -1302,33 +1271,11 @@ methods:
     ...     decorated_pub.getPublishedBinaries())
     Matches
 
-    >>> compare_ids(
-    ...     real_pub.getSourceAndBinaryLibraryFiles(),
-    ...     decorated_pub.getSourceAndBinaryLibraryFiles())
-    Matches
-
 The 'sourcepackagerelease' attribute from a decorated
 `ArchiveSourcePublication` object is also another decorated object,
 this way we can cache information refered to:
 
- * package_diffs;
  * upload_changesfile.
-
-    >>> decorated_pub_with_diff = list(decorated_set)[-1]
-    >>> print decorated_pub_with_diff.sourcepackagerelease
-    <...ArchiveSourcePackageRelease ...>
-
-    >>> from canonical.launchpad.interfaces.sourcepackagerelease import (
-    ...     ISourcePackageRelease)
-    >>> verifyObject(
-    ...     ISourcePackageRelease,
-    ...     decorated_pub_with_diff.sourcepackagerelease)
-    True
-
-    >>> compare_ids(
-    ...     pub_with_diff.sourcepackagerelease.package_diffs,
-    ...     decorated_pub_with_diff.sourcepackagerelease.package_diffs)
-    Matches
 
 We select an arbitrary source publication from the Celso's PPA
 sampledata which has no corresponding 'changesfile'. Both, the real

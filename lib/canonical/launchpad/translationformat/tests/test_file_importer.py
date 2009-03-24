@@ -9,6 +9,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationImportQueue)
+from canonical.launchpad.interfaces.translationgroup import (
+    TranslationPermission)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory)
 from canonical.launchpad.translationformat.gettext_po_importer import (
@@ -42,7 +44,7 @@ TEST_TRANSLATION_FILE = r'''
 msgid ""
 msgstr ""
 "PO-Revision-Date: 2008-11-05 13:22+0000\n"
-"Last-Translator: Foo Bar <foo.bar@canonical.com>\n"
+"Last-Translator: Someone New <someone.new@canonical.com>\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 %s
 msgid "%s"
@@ -112,7 +114,8 @@ class FileImporterTestCase(unittest.TestCase):
             template_entry, GettextPOImporter(), None )
 
     def _createPOFileImporter(self,
-            pot_importer, po_content, is_published, existing_pofile = None):
+            pot_importer, po_content, is_published, existing_pofile=None,
+            person=None):
         """Create a PO entry from content, relating to a template_entry.
         Create an importer for the entry."""
         potemplate = pot_importer.translation_import_queue_entry.potemplate
@@ -121,11 +124,10 @@ class FileImporterTestCase(unittest.TestCase):
                 TEST_LANGUAGE, potemplate=potemplate)
         else:
             pofile = existing_pofile
+        person = person or self.importer_person
         translation_entry = self.translation_import_queue.addOrUpdateEntry(
-            pofile.path, po_content,
-            is_published, self.importer_person,
-            productseries=potemplate.productseries,
-            pofile=pofile)
+            pofile.path, po_content, is_published, person,
+            productseries=potemplate.productseries, pofile=pofile)
         transaction.commit()
         return POFileImporter(
             translation_entry, GettextPOImporter(), None )
@@ -137,7 +139,7 @@ class FileImporterTestCase(unittest.TestCase):
             TEST_TEMPLATE_EXPORTED, TEST_TRANSLATION_EXPORTED, False)
 
     def _createImporterForPublishedEntries(self):
-        """Set up entries that where exported from LP, i.e. that do not
+        """Set up entries that where not exported from LP, i.e. that do not
         contain the 'X-Launchpad-Export-Date:' header."""
         return self._createFileImporters(
             TEST_TEMPLATE_PUBLISHED, TEST_TRANSLATION_PUBLISHED, True)
@@ -163,7 +165,7 @@ class FileImporterTestCase(unittest.TestCase):
 
     def test_FileImporter_importMessage_NotImplemented(self):
         importer = self._createFileImporter()
-        self.failUnlessRaises( NotImplementedError,
+        self.failUnlessRaises(NotImplementedError,
             importer.importMessage, None)
 
     def test_FileImporter_format_exporter(self):
@@ -206,6 +208,53 @@ class FileImporterTestCase(unittest.TestCase):
         self.failUnlessEqual(potmsgset1.id, potmsgset2.id,
             "FileImporter.getOrCreatePOTMessageSet did not get an existing "
             "IPOTMsgSet object from the database.")
+
+    def test_FileImporter_storeTranslationsInDatabase_privileges(self):
+        """Test `storeTranslationsInDatabase` privileges."""
+
+        # On a published import, unprivileged person can still store
+        # translations if they were able to add an entry to the queue.
+        unprivileged_person = self.factory.makePerson()
+
+        # Steps:
+        #  * Get a POT importer and import a POT file.
+        #  * Get a POTMsgSet in the imported template.
+        #  * Create a published PO file importer with unprivileged
+        #    person as the importer.
+        #  * Make sure this person lacks editing permissions.
+        #  * Try storing translations and watch it succeed.
+        #
+        pot_importer = self._createPOTFileImporter(
+            TEST_TEMPLATE_EXPORTED, True)
+        pot_importer.importFile()
+        product = pot_importer.potemplate.productseries.product
+        product.translationpermission = TranslationPermission.CLOSED
+        product.translationgroup = self.factory.makeTranslationGroup(
+            self.importer_person)
+        transaction.commit()
+
+        # Get one POTMsgSet to do storeTranslationsInDatabase on.
+        message = pot_importer.translation_file.messages[0]
+        potmsgset = (
+            pot_importer.potemplate.getPOTMsgSetByMsgIDText(
+                message.msgid_singular, plural_text=message.msgid_plural,
+                context=message.context))
+
+        po_importer = self._createPOFileImporter(
+            pot_importer, TEST_TRANSLATION_EXPORTED, is_published=True,
+            person=unprivileged_person)
+
+        po_importer.translation_import_queue_entry.importer = (
+            po_importer.translation_import_queue_entry.importer)
+        is_editor = po_importer.pofile.canEditTranslations(
+            unprivileged_person)
+        self.assertFalse(is_editor,
+            "Unprivileged person is a translations editor.")
+
+        translation_message = po_importer.translation_file.messages[0]
+        db_message = po_importer.storeTranslationsInDatabase(
+            translation_message, potmsgset)
+        self.assertNotEqual(db_message, None)
 
     def test_FileImporter_init(self):
         (pot_importer, po_importer) = self._createImporterForExportedEntries()

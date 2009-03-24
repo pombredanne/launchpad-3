@@ -7,6 +7,7 @@ __all__ = []
 
 
 import os
+import shutil
 from subprocess import PIPE, Popen
 import sys
 import unittest
@@ -49,7 +50,11 @@ class TestBranchPuller(PullerBranchTestCase):
         self._puller_script = os.path.join(
             config.root, 'cronscripts', 'supermirror-pull.py')
         self.makeCleanDirectory(config.codehosting.hosted_branches_root)
+        self.addCleanup(
+            shutil.rmtree, config.codehosting.hosted_branches_root)
         self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
+        self.addCleanup(
+            shutil.rmtree, config.codehosting.mirrored_branches_root)
 
     def assertMirrored(self, db_branch, source_branch=None,
                        accessing_user=None):

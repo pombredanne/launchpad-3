@@ -36,11 +36,12 @@ from zope.schema import Choice, Int, Text
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
@@ -81,7 +82,7 @@ def notify(func):
     def decorator(view, *args, **kwargs):
         snapshot = BranchMergeProposalDelta.snapshot(view.context)
         result = func(view, *args, **kwargs)
-        zope_notify(SQLObjectModifiedEvent(view.context, snapshot, []))
+        zope_notify(ObjectModifiedEvent(view.context, snapshot, []))
         return result
     return decorator
 

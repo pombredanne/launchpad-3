@@ -119,21 +119,25 @@ class ViewLabel:
 
 # Functions and strings used as the titles of pages.
 
-archive_admin = ContextTitle('Administer %s')
+archive_admin = ContextDisplayName('Administer %s')
 
 archive_activate = 'Activate Personal Package Archive'
 
-archive_builds = ContextTitle('Builds for %s')
+archive_builds = ContextDisplayName('Builds for %s')
 
-archive_copy_packages = ContextTitle('Copy packages from %s')
+archive_copy_packages = ContextDisplayName('Copy packages from %s')
 
-archive_delete_packages = ContextTitle('Delete packages from %s')
+archive_delete_packages = ContextDisplayName('Delete packages from %s')
 
-archive_edit = ContextTitle('Edit %s')
+archive_edit = ContextDisplayName('Edit %s')
 
-archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
+archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
-archive_index = ContextTitle('%s')
+archive_index = ContextDisplayName('%s')
+
+archive_subscriber_edit = ContextTitle('Edit %s')
+
+archive_subscribers = ContextDisplayName('Manage subscriptions for %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -306,10 +310,6 @@ def bugwatch_comments(context, view):
     """Return the title for a page of imported comments for a bug watch."""
     return "Bug #%d - Comments imported from bug watch %s on %s" % (
         context.bug.id, context.remotebug, context.bugtracker.title)
-
-# bugpackageinfestations_index is a redirect
-
-# bugproductinfestations_index is a redirect
 
 def bugs_assigned(context, view):
     """Return the page title for the bugs assigned to the logged-in user."""
@@ -729,6 +729,8 @@ logintoken_newaccount = 'Create a new Launchpad account'
 
 logintoken_resetpassword = 'Forgotten your password?'
 
+loginservice_standalone_login = loginservice_login
+
 logintoken_validateemail = 'Confirm e-mail address'
 
 logintoken_validategpg = 'Confirm OpenPGP key'
@@ -833,7 +835,15 @@ object_translations = ContextDisplayName('Translation templates for %s')
 
 oops = 'Oops!'
 
-openid_index = 'Launchpad OpenID Server'
+openid_account_change_password = 'Change your password'
+
+def openid_account_edit(context, view):
+    return smartquote("%s's details") % view.account.displayname
+
+openid_default = 'OpenID Endpoint'
+
+def openid_index(context, view):
+    return 'Welcome %s' % view.account.displayname
 
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
@@ -845,6 +855,8 @@ openidrpconfig_edit = ContextDisplayName(
     'Edit Relying Party Configuration for %s')
 
 openidrpconfigset_index = 'OpenID Relying Party Configurations'
+
+official_bug_target_manage_tags = 'Manage Official Bug Tags'
 
 def package_bugs(context, view):
     """Return the page title bug in a package."""
@@ -867,6 +879,9 @@ people_newteam = 'Register a new team in Launchpad'
 people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
+
+person_archive_subscriptions = ContextDisplayName(
+    'Private archive subscriptions for %s')
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
@@ -1263,6 +1278,8 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
+
+sourcepackage_branches = ContextDisplayName('Branches in %s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 

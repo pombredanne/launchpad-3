@@ -14,9 +14,10 @@ from zope.interface import implements
 
 from sqlobject import (
     AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
-from storm.expr import In
+from storm.expr import And, In, SQL
+from storm.store import Store
 
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
@@ -24,7 +25,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct, IProject,
     IProjectSeries, IProjectSet, ISearchableByQuestionOwner,
-    IStructuralSubscriptionTarget, ImportStatus, NotFoundError,
+    IStructuralSubscriptionTarget,NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     SprintSpecificationStatus, TranslationPermission)
@@ -36,11 +37,12 @@ from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.faq import FAQ, FAQSearch
+from lp.answers.model.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.milestone import ProjectMilestone
+from canonical.launchpad.database.milestone import (
+    Milestone, ProjectMilestone, milestone_sort_key)
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.product import Product
@@ -49,7 +51,7 @@ from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
-from canonical.launchpad.database.question import QuestionTargetSearch
+from lp.answers.model.question import QuestionTargetSearch
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
@@ -268,6 +270,14 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Customize `search_params` for this milestone."""
         search_params.setProject(self)
 
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        official_bug_tags = set()
+        for product in self.products:
+            official_bug_tags.update(product.official_bug_tags)
+        return sorted(official_bug_tags)
+
     def getUsedBugTags(self):
         """See `IHasBugs`."""
         if not self.products:
@@ -356,28 +366,24 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         A project has a milestone named 'A', if at least one of its
         products has a milestone named 'A'.
         """
+        store = Store.of(self)
+
+        columns = (
+            Milestone.name,
+            SQL('MIN(Milestone.dateexpected)'),
+            SQL('BOOL_OR(Milestone.visible)'),
+            )
+        conditions = And(Milestone.product == Product.id,
+                         Product.project == self,
+                         Product.active == True)
+        result = store.find(columns, conditions)
+        result.group_by(Milestone.name)
         if only_visible:
-            having_clause = 'HAVING bool_or(Milestone.visible)=True'
-        else:
-            having_clause = ''
-        query = """
-            SELECT Milestone.name, min(Milestone.dateexpected),
-                bool_or(Milestone.visible)
-                FROM Milestone, Product
-                WHERE Product.project = %s
-                    AND Milestone.product = product.id
-                    AND Product.active
-                GROUP BY Milestone.name
-                %s
-                ORDER BY min(Milestone.dateexpected), Milestone.name
-            """ % (self.id, having_clause)
-        cur = cursor()
-        cur.execute(query)
-        result = cur.fetchall()
-        # bool_or returns an integer, but we want visible to be a boolean
-        return shortlist(
-            [ProjectMilestone(self, name, dateexpected, bool(visible))
+            result.having('BOOL_OR(Milestone.visible) = TRUE')
+        milestones = shortlist(
+            [ProjectMilestone(self, name, dateexpected, visible)
              for name, dateexpected, visible in result])
+        return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     @property
     def milestones(self):
@@ -472,21 +478,6 @@ class ProjectSet:
 
     def forReview(self):
         return Project.select("reviewed IS FALSE")
-
-    def forSyncReview(self):
-        query = """Product.project=Project.id AND
-                   Product.reviewed IS TRUE AND
-                   Product.active IS TRUE AND
-                   Product.id=ProductSeries.product AND
-                   ProductSeries.importstatus IS NOT NULL AND
-                   ProductSeries.importstatus <> %s
-                   """ % sqlvalues(ImportStatus.SYNCING)
-        clauseTables = ['Project', 'Product', 'ProductSeries']
-        results = []
-        for project in Project.select(query, clauseTables=clauseTables):
-            if project not in results:
-                results.append(project)
-        return results
 
     def search(self, text=None, soyuz=None,
                      rosetta=None, malone=None,

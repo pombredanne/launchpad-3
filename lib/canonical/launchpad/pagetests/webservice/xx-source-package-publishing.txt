@@ -37,6 +37,16 @@ Search by name and version using an exact match:
     >>> print_publications(pubs)
     iceweasel 1.0 in warty
 
+Search by date published:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     published_since_date='2007-01-01 00:00:00+00:00').jsonBody()
+    >>> print_publications(pubs)
+    iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
+    cdrkit 1.0 in breezy-autotest
+
 Search by publishing status:
 
     >>> pubs = webservice.named_get(
