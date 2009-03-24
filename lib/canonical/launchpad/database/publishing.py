@@ -56,7 +56,6 @@ from canonical.launchpad.scripts.changeoverride import ArchiveOverriderError
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
