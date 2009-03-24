@@ -1148,12 +1148,6 @@ class IBranch(IHasOwner, IHasBranchTarget):
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
-    def count():
-        """Return the number of branches in the database.
-
-        Only counts public branches.
-        """
-
     def countBranchesWithAssociatedBugs():
         """Return the number of branches that have bugs associated.
 
