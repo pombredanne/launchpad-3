@@ -1275,7 +1275,7 @@ class BugTargetBugTagsView(LaunchpadView):
         tags = [tag for tag in self.getUsedBugTagsWithURLs()
                 if tag['tag'] in official_tags]
         used_tags = set(tag['tag'] for tag in tags)
-        tags.sort(key=itemgetter('count'))
+        tags.sort(key=itemgetter('count'), reverse=True)
         for tag in sorted(official_tags - used_tags):
             tags.append(
                 {'tag': tag, 'count': 0, 'url': self._getSearchURL(tag)})

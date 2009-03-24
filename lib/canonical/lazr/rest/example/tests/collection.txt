@@ -126,6 +126,7 @@ The elements of a collection can be looked up by unique identifier:
     confirmed: u'tag:launchpad.net:2008:redacted'
     copyright_date: u'1995-01-01'
     cuisine: u'General'
+    description: u''
     name: u'The Joy of Cooking'
     recipes_collection_link: u'http://.../cookbooks/The%20Joy%20of%20Cooking/recipes'
     resource_type_link: u'http://...#cookbook'
@@ -194,6 +195,16 @@ handling is in the validate() method of the 'search' field.
     HTTP/1.1 400 Bad Request
     ...
     search: Required input is missing.
+
+If a named operation takes an argument that's a value for a vocabulary
+(such as Cuisine in the example web service), the client can specify
+the name of the value, just as they would when changing the value with
+a PUT or PATCH request.
+
+    >>> general_cookbooks = webservice.get(
+    ...     "/cookbooks?ws.op=find_for_cuisine&cuisine=General")
+    >>> general_cookbooks.jsonBody()['total_size']
+    3
 
 
 === POST operations ===
