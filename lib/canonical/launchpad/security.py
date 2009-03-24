@@ -2033,9 +2033,9 @@ class ConfigureTeamMailingList(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Check to see if the user can manage a mailing list.
 
-        A team's owner, the Launchpad administrators, and Launchpad mailing
-        list experts can all manage a team's mailing list through its
-        +mailinglist page.
+        A team's owner or administrator, the Launchpad administrators, and
+        Launchpad mailing list experts can all manage a team's mailing list
+        through its +mailinglist page.
 
         :param user: The user whose permission is being checked.
         :type user: `IPerson`
@@ -2046,9 +2046,10 @@ class ConfigureTeamMailingList(AuthorizationBase):
         # administrators can all view a team's +mailinglist page.
         celebrities = getUtility(ILaunchpadCelebrities)
         team = ITeam(self.obj)
-        return ((team is not None and user.inTeam(team.teamowner)) or
-                user.inTeam(celebrities.admin) or
-                user.inTeam(celebrities.mailing_list_experts))
+        return (
+            (team is not None and team in user.getAdministratedTeams()) or
+            user.inTeam(celebrities.admin) or
+            user.inTeam(celebrities.mailing_list_experts))
 
 
 class ViewEmailAddress(AuthorizationBase):
