@@ -3,40 +3,35 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="page-summary"
-  tal:condition="view/show_summary">
+  tal:condition="view/show_summary"
+  tal:define="menu context/menu:branches|nothing">
 
   <p>
     <strong class="count" tal:content="view/owned_branch_count">100</strong>
-    <tal:link
-        define="link context/menu:branches/owned"
-        replace="structure link/render"
-        />,
+    <tal:link condition="menu"
+        replace="structure menu/owned/render"
+        /><tal:no-link condition="not:menu">owned branches</tal:no-link>,
     <strong class="count" tal:content="view/registered_branch_count">100</strong>
-    <tal:link
-        define="link context/menu:branches/registered"
-        replace="structure link/render"
-        />,
+    <tal:link condition="menu"
+        replace="structure menu/registered/render"
+        /><tal:no-link condition="not:menu">registered branches</tal:no-link>,
     <strong class="count" tal:content="view/subscribed_branch_count">100</strong>
-    <tal:link
-        define="link context/menu:branches/subscribed"
-        replace="structure link/render"
-        />
+    <tal:link condition="menu"
+        replace="structure menu/subscribed/render"
+        /><tal:no-link condition="not:menu">subscribed branches</tal:no-link>
   </p>
   <p id="merge-counts">
     <strong class="count" tal:content="view/active_review_count">5</strong>
-    <tal:link
-        define="link context/menu:branches/active_reviews"
-        replace="structure link/render"
-        />,
+    <tal:link condition="menu"
+        replace="structure menu/active_reviews/render"
+        /><tal:no-link condition="not:menu">active proposals</tal:no-link>,
     <strong class="count" tal:content="view/approved_merge_count">5</strong>
-    <tal:link
-        define="link context/menu:branches/approved_merges"
-        replace="structure link/render"
-        />,
+    <tal:link condition="menu"
+        replace="structure menu/approved_merges/render"
+        /><tal:no-link condition="not:menu">approved merges</tal:no-link>,
     <strong class="count" tal:content="view/requested_review_count">5</strong>
-    <tal:link
-        define="link context/menu:branches/requested_reviews"
-        replace="structure link/render"
-        />
+    <tal:link condition="menu"
+        replace="structure menu/requested_reviews/render"
+        /><tal:no-link condition="not:menu">requested reviews</tal:no-link>
   </p>
 </div>

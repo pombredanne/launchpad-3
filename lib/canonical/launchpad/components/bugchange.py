@@ -8,12 +8,14 @@ __all__ = [
     'BranchUnlinkedFromBug',
     'BugDescriptionChange',
     'BugTagsChange',
+    'BugTaskAdded',
     'BugTitleChange',
     'BugVisibilityChange',
     'BugWatchAdded',
     'BugWatchRemoved',
     'CveLinkedToBug',
     'CveUnlinkedFromBug',
+    'SeriesNominated',
     'UnsubscribedFromBug',
     'get_bug_change_class',
     ]
@@ -95,6 +97,64 @@ class UnsubscribedFromBug(BugChangeBase):
         return dict(
             whatchanged='removed subscriber %s' % (
                 self.unsubscribed_user.displayname))
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return None
+
+
+class BugTaskAdded(BugChangeBase):
+    """A bug task got added to the bug."""
+
+    def __init__(self, when, person, bug_task):
+        super(BugTaskAdded, self).__init__(when, person)
+        self.bug_task = bug_task
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='bug task added',
+            newvalue=self.bug_task.bugtargetname)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        lines = []
+        if self.bug_task.bugwatch:
+            lines.append(u"** Also affects: %s via" % (
+                self.bug_task.bugtargetname))
+            lines.append(u"   %s" % self.bug_task.bugwatch.url)
+        else:
+            lines.append(u"** Also affects: %s" % (
+                self.bug_task.bugtargetname))
+        lines.append(u"%13s: %s" % (
+            u"Importance", self.bug_task.importance.title))
+        if self.bug_task.assignee:
+            assignee = self.bug_task.assignee
+            lines.append(u"%13s: %s" % (
+                u"Assignee", assignee.unique_displayname))
+        lines.append(u"%13s: %s" % (
+            u"Status", self.bug_task.status.title))
+        return {
+            'text': '\n'.join(lines)
+            }
+
+    def getBugNotificationRecipients(self):
+        """See `IBugChange`."""
+        # Send the notification to the default recipients.
+
+
+class SeriesNominated(BugChangeBase):
+    """A user nominated the bug to be fixed in a series."""
+
+    def __init__(self, when, person, series):
+        super(SeriesNominated, self).__init__(when, person)
+        self.series = series
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='nominated for series',
+            newvalue=self.series.bugtargetname)
 
     def getBugNotification(self):
         """See `IBugChange`."""

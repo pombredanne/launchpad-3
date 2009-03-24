@@ -1905,26 +1905,6 @@ to the specified team.
     >>> print ff_bug.bugtasks[-1].assignee.name
     warty-gnome
 
-We don't use the preffered email address to refer to the assignee in
-any email notifications. Instead, we always use the unique
-displayname - a combination of the user's display name and their unique
-Launchpad username.
-
-    >>> print wartygnome.unique_displayname
-    Warty Gnome Team (warty-gnome)
-    >>> from canonical.launchpad.mailnotification import (
-    ...     get_bug_edit_notification_texts)
-    >>> from canonical.launchpad.components.bug import BugDelta
-    >>> from canonical.launchpad.webapp.publisher import canonical_url
-    >>> bug_delta = BugDelta(
-    ...     bug=ff_bug,
-    ...     bugurl=canonical_url(ff_bug),
-    ...     user=getUtility(IPersonSet).getByEmail('test@canonical.com'),
-    ...     added_bugtasks=ff_bug.bugtasks[-1])
-    >>> print get_bug_edit_notification_texts(bug_delta)[0]
-    **...
-    ...Assignee: Warty Gnome Team (warty-gnome)...
-
 
 == Recovering from errors ==
 

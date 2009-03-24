@@ -251,7 +251,7 @@ class GetPublicRevisionsTestCase(TestCaseWithFactory):
             revision_date=revision_date)
 
     def _addRevisionsToBranch(self, branch, *revs):
-        # Add the revisions to the the branch.
+        # Add the revisions to the branch.
         for sequence, rev in enumerate(revs):
             branch.createBranchRevision(sequence, rev)
 
