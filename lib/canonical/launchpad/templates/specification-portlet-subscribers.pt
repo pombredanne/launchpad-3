@@ -15,7 +15,8 @@
         essentiality indicator needs to be clickable to edit, otherwise not.
         Hence all the duplication.
       </tal:comment>
-      <div tal:repeat="subscription subscriptions">
+      <div tal:repeat="subscription subscriptions"
+           class="subscriber">
         <a tal:condition="subscription/required:launchpad.Edit"
            tal:attributes="href subscription/fmt:url">
           <img
@@ -45,7 +46,9 @@
            <img tal:condition="not: subscription/essential"
              src="/@@/subscriber-inessential" />
         </tal:no_edit>
-        <a tal:replace="structure subscription/person/fmt:link" />
+        <a tal:attributes="href subscription/person/fmt:url"
+           tal:content="subscription/person/fmt:displayname"
+        />
       </div>
     </div>
   </div>

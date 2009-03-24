@@ -27,14 +27,24 @@ from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
 
 
+class NoBugChangeFoundError(Exception):
+    """Raised when a BugChange class can't be found for an object."""
+
+
 def get_bug_change_class(obj, field_name):
     """Return a suitable IBugChange to describe obj and field_name."""
+
     if IBugTask.providedBy(obj):
-        return BUGTASK_CHANGE_LOOKUP.get(field_name, BugChangeBase)
-    elif IBug.providedBy(obj):
-        return BUG_CHANGE_LOOKUP.get(field_name, BugChangeBase)
+        lookup = BUGTASK_CHANGE_LOOKUP
     else:
-        return BugChangeBase
+        lookup = BUG_CHANGE_LOOKUP
+
+    try:
+        return lookup[field_name]
+    except KeyError:
+        raise NoBugChangeFoundError(
+            "Unable to find a suitable BugChange for field '%s' on object "
+            "%s" % (field_name, obj))
 
 
 class BugChangeBase:
@@ -406,6 +416,57 @@ class CveUnlinkedFromBug(BugChangeBase):
         return None
 
 
+class BugTaskAttributeChange(AttributeChange):
+    """Used to represent a change in a BugTask's attributes."""
+
+    display_attribute_map = {
+        'status': 'title',
+        'importance': 'title',
+        }
+
+    def __init__(self, bug_task, when, person, what_changed, old_value,
+                 new_value, recipients=None):
+        super(BugTaskAttributeChange, self).__init__(
+            when, person, what_changed, old_value, new_value, recipients)
+
+        self.bug_task = bug_task
+        display_attribute = self.display_attribute_map[self.what_changed]
+        self.display_old_value = getattr(self.old_value, display_attribute)
+        self.display_new_value = getattr(self.new_value, display_attribute)
+
+    def getBugActivity(self):
+        """Return the bug activity data for this change as a dict.
+
+        The `whatchanged` value of the dict refers to the `BugTask`'s
+        target so as to make it clear in which task the change was made.
+        """
+        what_changed = '%s: %s' % (
+            self.bug_task.bugtargetname, self.what_changed)
+
+        return {
+            'whatchanged': what_changed,
+            'oldvalue': self.display_old_value,
+            'newvalue': self.display_new_value,
+            }
+
+    def getBugNotification(self):
+        """Return the bug notification text for this change.
+
+        The notification will refer to the `BugTask`'s target so as to
+        make it clear in which task the change was made.
+        """
+        text = (
+            u"** Changed in: %(bug_target_name)s\n"
+            "%(label)13s: %(oldval)s => %(newval)s\n" % {
+                'bug_target_name': self.bug_task.bugtargetname,
+                'label' : self.what_changed.capitalize(),
+                'oldval' : self.display_old_value,
+                'newval' : self.display_new_value,
+            })
+
+        return {'text': text.rstrip()}
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
@@ -417,4 +478,6 @@ BUG_CHANGE_LOOKUP = {
 
 
 BUGTASK_CHANGE_LOOKUP = {
+    'importance': BugTaskAttributeChange,
+    'status': BugTaskAttributeChange,
     }
