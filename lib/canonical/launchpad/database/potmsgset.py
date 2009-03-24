@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -762,6 +762,11 @@ class POTMsgSet(SQLBase):
             # make this one current (revert current to imported).
             if imported_message is None:
                 matching_message.is_current = True
+            else:
+                # If there was an imported message, keep the same
+                # divergence/shared state unless something was forced.
+                if not (force_diverged or force_shared):
+                    matching_message.potemplate = imported_message.potemplate
 
             # Note that the message is imported.
             matching_message.is_imported = is_imported
