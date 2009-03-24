@@ -954,33 +954,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Clear out emails generated during upload.
         ignore = pop_notifications()
 
-        # To use lzma compression, the binary upload must have a
-        # Pre-Depends header on dpkg (>= 1.14.12ubuntu3).
-
-        # Upload our lzma Deb that has no pre-depends:
-        upload_dir = self.queueUpload("bar_1.0-1_lzma-no-predep_binary")
-        self.processUpload(uploadprocessor, upload_dir)
-
-        # It will fail because it has no pre-depends:
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        self.assertTrue(
-            "Require Pre-Depends: dpkg" in raw_msg,
-            "Expected error about missing Pre-Depends.  Actually got:\n%s"
-                % raw_msg)
-
-        # Now try uploading one that does have a pre-depends, but it's
-        # a version that's too small:
-        upload_dir = self.queueUpload("bar_1.0-1_lzma-bad-predep_binary")
-        self.processUpload(uploadprocessor, upload_dir)
-
-        # It will fail because of the bad version:
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        self.assertTrue(
-            "Pre-Depends dpkg version should be" in raw_msg,
-            "Expected error about dpkg Pre-Depends version, actually got:\n%s"
-                % raw_msg)
-
-        # Finally lets upload a good one to make sure it does work.
+        # Upload a binary lzma-compressed package.
         upload_dir = self.queueUpload("bar_1.0-1_lzma_binary")
         self.processUpload(uploadprocessor, upload_dir)
 
