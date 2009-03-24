@@ -260,10 +260,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         """Return a set of branch ids that should show bug badges."""
         bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
             self._branches_for_current_batch, self.view.user)
-        result = set()
-        for bug_branch in bug_branches:
-            result.add(bug_branch.branch.id)
-        return result
+        return set(bug_branch.branch.id for bug_branch in bug_branches)
 
     @cachedproperty
     def branch_ids_with_spec_links(self):
@@ -271,10 +268,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         spec_branches = getUtility(
             ISpecificationBranchSet).getSpecificationBranchesForBranches(
             self._branches_for_current_batch, self.view.user)
-        result = set()
-        for spec_branch in spec_branches:
-            result.add(spec_branch.branch.id)
-        return result
+        return set(spec_branch.branch.id for spec_branch in spec_branches)
 
     @cachedproperty
     def branch_ids_with_merge_proposals(self):
@@ -285,10 +279,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         """
         mp_branches = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
             self.view.context, visible_by_user=self.view.user)
-        result = set()
-        for mp_branch in mp_branches:
-            result.add(mp_branch.source_branch.id)
-        return result
+        return set(mp_branch.source_branch.id for mp_branch in mp_branches)
 
     @cachedproperty
     def tip_revisions(self):
