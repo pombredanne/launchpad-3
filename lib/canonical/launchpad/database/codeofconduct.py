@@ -130,7 +130,7 @@ class CodeOfConductSet:
         # Recover the path for CoC from a component
         cocs_path = getUtility(ICodeOfConductConf).path
 
-        # iter through files and store the the CoC Object
+        # iter through files and store the CoC Object
         for filename in os.listdir(cocs_path):
             # Select the correct filenames
             if filename.endswith('.txt'):

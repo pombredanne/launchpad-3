@@ -122,7 +122,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
     def initial_values(self):
         """The initial values are used to populate the form fields.
 
-        In this case, the default value of the the comment should be the
+        In this case, the default value of the comment should be the
         quoted comment being replied to.
         """
         if self.reply_to:
