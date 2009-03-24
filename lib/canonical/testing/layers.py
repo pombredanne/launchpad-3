@@ -609,7 +609,12 @@ class DatabaseLayer(BaseLayer):
 
         # Should this raise a LayerInvariantError instead?
         import canonical.launchpad.webapp.adapter
-        canonical.launchpad.webapp.adapter._local.db_policies = []
+        db_policies = canonical.launchpad.webapp.adapter._local.db_policies
+        if db_policies:
+            BaseLayer.flagTestIsolationFailure(
+                "Database policies pushed but no tpopped: %s"
+                % repr(db_policies))
+            del db_policies[:]
 
     use_mockdb = False
     mockdb_mode = None

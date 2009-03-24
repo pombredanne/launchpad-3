@@ -445,7 +445,7 @@ class StoreSelector:
 
 
     @staticmethod
-    def current():
+    def get_current():
         """See `IStoreSelector`."""
         try:
             return _local.db_policies[-1]
@@ -455,7 +455,7 @@ class StoreSelector:
     @staticmethod
     def get(name, flavor):
         """See `IStoreSelector`."""
-        db_policy = StoreSelector.current()
+        db_policy = StoreSelector.get_current()
         if db_policy is None:
             db_policy = MasterDatabasePolicy(None)
         return db_policy.getStore(name, flavor)

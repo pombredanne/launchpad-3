@@ -867,7 +867,7 @@ class IStoreSelector(Interface):
         Returns the `IDatabasePolicy` removed.
         """
 
-    def current():
+    def get_current():
         """Return the currently installed `IDatabasePolicy`."""
 
     def get(name, flavor):
