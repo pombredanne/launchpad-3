@@ -276,7 +276,7 @@ def extract_link_from_tag(tag, base=None):
         return urljoin(base, href)
 
 
-def extract_text(content, extract_image_text=False, skip_tags=[]):
+def extract_text(content, extract_image_text=False, skip_tags=['script']):
     """Return the text stripped of all tags.
 
     All runs of tabs and spaces are replaced by a single space and runs of

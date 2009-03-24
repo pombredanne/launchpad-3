@@ -6,10 +6,14 @@ __metaclass__ = type
 
 __all__ = [
     'HugeVocabularyJSONView',
+    'IVocabularyJSONExtraFields',
+    'person_to_vocabularyjson',
+    'default_vocabularyjson_adapter',
     ]
 
 import simplejson
 
+from zope.interface import Attribute, implements, Interface
 from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.app.form.interfaces import MissingInputError
@@ -20,6 +24,42 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+
+MAX_DESCRIPTION_LENGTH = 80
+
+
+class IVocabularyJSONExtraFields(Interface):
+    """Additional fields that the vocabulary doesn't provide.
+
+    These fields are needed by the Picker Ajax widget."""
+    description = Attribute('Description')
+    image = Attribute('Image URL')
+    css = Attribute('CSS Class')
+
+
+class VocabularyJSONExtraFields:
+    implements(IVocabularyJSONExtraFields)
+
+    def __init__(self, description=None, image=None, css=None):
+        self.description = description
+        self.image = image
+        self.css = css
+
+def default_vocabularyjson_adapter(obj):
+    """Adapts Interface to IVocabularyJSONExtraFields."""
+    extra = VocabularyJSONExtraFields()
+    if hasattr(obj, 'summary'):
+        extra.description = obj.summary
+    display_api = ObjectImageDisplayAPI(obj)
+    extra.image = display_api.default_icon_resource(obj)
+    return extra
+
+def person_to_vocabularyjson(person):
+    """Adapts IPerson to IVocabularyJSONExtraFields."""
+    extra = default_vocabularyjson_adapter(person)
+    if person.preferredemail is not None:
+        extra.description = person.preferredemail.email
+    return extra
 
 
 class HugeVocabularyJSONView:
@@ -53,30 +93,18 @@ class HugeVocabularyJSONView:
         result = []
         for term in batch_navigator.currentBatch():
             entry = dict(value=term.token, title=term.title)
-            # Set image url.
-            if (IHasIcon.providedBy(term.value)
-                and term.value.icon is not None):
-                image_url = term.value.icon.getURL()
-            else:
-                display_api = ObjectImageDisplayAPI(term.value)
-                image_url = display_api.default_icon_resource(term.value)
-            if image_url is not None:
-                entry['image'] = image_url
-            # Set description.
-            if (IPerson.providedBy(term.value)
-                and term.value.preferredemail is not None):
-                entry['description'] = term.value.preferredemail.email
-            elif hasattr(term.value, 'summary'):
-                entry['description'] = term.value.summary
+            extra = IVocabularyJSONExtraFields(term.value)
+            if extra.description is not None:
+                if len(extra.description) > MAX_DESCRIPTION_LENGTH:
+                    entry['description'] = (
+                        extra.description[:MAX_DESCRIPTION_LENGTH-3] + '...')
+                else:
+                    entry['description'] = extra.description
+            if extra.image is not None:
+                entry['image'] = extra.image
+            if extra.css is not None:
+                entry['css'] = extra.css
             result.append(entry)
-
-        if config.devmode:
-            if len(result) < 5 and len(result) != 0:
-                result.append(dict(
-                    value='bad-value-for-testing-errors-on-dev-system',
-                    title='Bad Value for Testing on Dev System',
-                    description='Intential bad value.',
-                    image='/@@/bug-critical'))
 
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(dict(total_size=total_size, entries=result))

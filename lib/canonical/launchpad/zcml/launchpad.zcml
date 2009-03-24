@@ -124,6 +124,20 @@
     name="+huge-vocabulary"
     />
 
+  <adapter
+    provides="canonical.launchpad.browser.vocabulary.IVocabularyJSONExtraFields"
+    for="zope.interface.Interface"
+    factory="canonical.launchpad.browser.vocabulary.default_vocabularyjson_adapter"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.browser.vocabulary.IVocabularyJSONExtraFields"
+    for="canonical.launchpad.interfaces.person.IPerson"
+    factory="canonical.launchpad.browser.vocabulary.person_to_vocabularyjson"
+    permission="zope.Public"
+    />
+
 <facet facet="overview">
 
   <utility
