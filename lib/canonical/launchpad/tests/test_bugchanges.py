@@ -776,7 +776,7 @@ class TestBugChanges(unittest.TestCase):
             }
 
         expected_notification = {
-            'text': u"** Retargetted: %s => %s" % (
+            'text': u"** Project changed: %s => %s" % (
                 bug_task_before_modification.bugtargetdisplayname,
                 self.bug_task.bugtargetdisplayname),
             'person': self.user,
@@ -826,7 +826,7 @@ class TestBugChanges(unittest.TestCase):
             }
 
         expected_notification = {
-            'text': u"** Retargetted: %s => %s" % (
+            'text': u"** Package changed: %s => %s" % (
                 bug_task_before_modification.bugtargetdisplayname,
                 source_package_bug_task.bugtargetdisplayname),
             'person': self.user,

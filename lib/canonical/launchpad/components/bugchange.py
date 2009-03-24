@@ -29,6 +29,7 @@ from zope.interface import implements
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.product import IProduct
 
 
 class NoBugChangeFoundError(Exception):
@@ -509,7 +510,11 @@ class BugTaskTargetChange(AttributeChange):
 
     def getBugNotification(self):
         """See `IBugChange`."""
-        text = u"** Retargetted: %s => %s" % (
+        if IProduct.providedBy(self.old_value):
+            template = u"** Project changed: %s => %s"
+        else:
+            template = u"** Package changed: %s => %s"
+        text = template % (
             self.old_value.bugtargetdisplayname,
             self.new_value.bugtargetdisplayname)
         return {'text': text}
