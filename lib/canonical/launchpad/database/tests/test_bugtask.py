@@ -4,17 +4,14 @@ __metaclass__ = type
 
 import unittest
 
-from storm.store import Store
-
 from zope.interface import providedBy
 from zope.testing.doctestunit import DocTestSuite
 
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.database.bugtask import BugTaskDelta
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.bugtask import (
-    BugTaskImportance, BugTaskStatus, IBugTaskDelta)
+    BugTaskImportance, BugTaskStatus)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -44,59 +41,106 @@ class TestBugTaskDelta(unittest.TestCase):
             TypeError, product_bug_task.getDelta,
             distro_source_package_bug_task)
 
-    def test_get_delta(self):
-        # Exercise getDelta() with a full set of changes.
+    def check_delta(self, bug_task_before, bug_task_after, **expected_delta):
+        # Get a delta between one bug task and another, then compare
+        # the contents of the delta with expected_delta (a dict, or
+        # something that can be dictified). Anything not mentioned in
+        # expected_delta is assumed to be None in the delta.
+        delta = bug_task_after.getDelta(bug_task_before)
+        expected_delta.setdefault('bugtask', bug_task_after)
+        names = set(
+            name for interface in providedBy(delta) for name in interface)
+        for name in names:
+            self.assertEquals(
+                getattr(delta, name), expected_delta.get(name))
+
+    def test_get_bugwatch_delta(self):
+        # Exercise getDelta() with a change to bugwatch.
+        user = self.factory.makePerson()
+        bug_task = self.factory.makeBugTask()
+        bug_task_before_modification = Snapshot(
+            bug_task, providing=providedBy(bug_task))
+
+        bug_watch = self.factory.makeBugWatch(bug=bug_task.bug)
+        bug_task.bugwatch = bug_watch
+
+        self.check_delta(
+            bug_task_before_modification, bug_task,
+            bugwatch=dict(old=None, new=bug_watch))
+
+    def test_get_target_delta(self):
+        # Exercise getDelta() with a change to target.
         user = self.factory.makePerson()
         product = self.factory.makeProduct(owner=user)
         bug_task = self.factory.makeBugTask(target=product)
         bug_task_before_modification = Snapshot(
             bug_task, providing=providedBy(bug_task))
-        store = Store.of(bug_task)
-        store.flush()
 
-        # bugwatch
-        bug_watch = self.factory.makeBugWatch(bug=bug_task.bug, owner=user)
-        store.flush()
-        bug_task.bugwatch = bug_watch
-
-        # target
         new_product = self.factory.makeProduct(owner=user)
-        store.flush()
         bug_task.transitionToTarget(new_product)
 
-        # milestone
-        milestone = self.factory.makeMilestone(product=new_product)
-        store.flush()
+        self.check_delta(
+            bug_task_before_modification, bug_task,
+            target=dict(old=product, new=new_product))
+
+    def test_get_milestone_delta(self):
+        # Exercise getDelta() with a change to milestone.
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=user)
+        bug_task = self.factory.makeBugTask(target=product)
+        bug_task_before_modification = Snapshot(
+            bug_task, providing=providedBy(bug_task))
+
+        milestone = self.factory.makeMilestone(product=product)
         bug_task.milestone = milestone
 
-        # assignee
-        new_user = self.factory.makePerson()
-        store.flush()
-        bug_task.transitionToAssignee(new_user)
+        self.check_delta(
+            bug_task_before_modification, bug_task,
+            milestone=dict(old=None, new=milestone))
 
-        # status and importance
+    def test_get_assignee_delta(self):
+        # Exercise getDelta() with a change to assignee.
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=user)
+        bug_task = self.factory.makeBugTask(target=product)
+        bug_task_before_modification = Snapshot(
+            bug_task, providing=providedBy(bug_task))
+
+        bug_task.transitionToAssignee(user)
+
+        self.check_delta(
+            bug_task_before_modification, bug_task,
+            assignee=dict(old=None, new=user))
+
+    def test_get_status_delta(self):
+        # Exercise getDelta() with a change to status.
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=user)
+        bug_task = self.factory.makeBugTask(target=product)
+        bug_task_before_modification = Snapshot(
+            bug_task, providing=providedBy(bug_task))
+
         bug_task.transitionToStatus(BugTaskStatus.FIXRELEASED, user)
+
+        self.check_delta(
+            bug_task_before_modification, bug_task,
+            status=dict(old=bug_task_before_modification.status,
+                        new=bug_task.status))
+
+    def test_get_importance_delta(self):
+        # Exercise getDelta() with a change to importance.
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=user)
+        bug_task = self.factory.makeBugTask(target=product)
+        bug_task_before_modification = Snapshot(
+            bug_task, providing=providedBy(bug_task))
+
         bug_task.transitionToImportance(BugTaskImportance.HIGH, user)
-        store.flush()
 
-        delta = bug_task.getDelta(bug_task_before_modification)
-        expected_delta = {
-            'bugtask': bug_task,
-            'target': dict(old=product, new=new_product),
-            'assignee': dict(old=None, new=new_user),
-            'bugwatch': dict(old=None, new=bug_watch),
-            'milestone': dict(old=None, new=milestone),
-            'status':
-                dict(old=bug_task_before_modification.status,
-                     new=bug_task.status),
-            'importance':
-                dict(old=bug_task_before_modification.importance,
-                     new=bug_task.importance),
-            }
-
-        for name in IBugTaskDelta:
-            self.assertEquals(
-                getattr(delta, name), expected_delta.get(name))
+        self.check_delta(
+            bug_task_before_modification, bug_task,
+            importance=dict(old=bug_task_before_modification.importance,
+                            new=bug_task.importance))
 
 
 def test_suite():
