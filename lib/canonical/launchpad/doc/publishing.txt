@@ -63,6 +63,23 @@ This is mostly as a convenience to API users.
     >>> print spph.section_name
     base
 
+IBinaryPackagePublishingHistory also contains similar convenience shortcuts.
+
+    >>> random_binary_pub_id = 15
+    >>> bpph = BinaryPackagePublishingHistory.get(random_binary_pub_id)
+    >>> print bpph.binary_package_name
+    mozilla-firefox
+
+    >>> print bpph.binary_package_version
+    0.9
+
+    >>> print bpph.component_name
+    universe
+
+    >>> print bpph.section_name
+    editors
+
+
 
 == Stanza generation ==
 
