@@ -5,7 +5,7 @@
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
         lazr.lifecycle.interfaces.IObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bugtask_added" />
+   handler="canonical.launchpad.subscribers.bugactivity.notify_bugtask_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
