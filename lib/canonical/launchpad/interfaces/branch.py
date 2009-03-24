@@ -1154,9 +1154,6 @@ class IBranchSet(Interface):
         Only counts public branches.
         """
 
-    def getBranchesToScan():
-        """Return an iterator for the branches that need to be scanned."""
-
     def getRecentlyChangedBranches(
         branch_count=None,
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,

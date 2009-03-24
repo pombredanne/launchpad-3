@@ -848,21 +848,6 @@ class BranchSet:
             clauseTables=['BugBranch'],
             distinct=True).count()
 
-    def getBranchesToScan(self):
-        """See `IBranchSet`"""
-        # Return branches where the scanned and mirrored IDs don't match.
-        # Branches with a NULL last_mirrored_id have never been
-        # successfully mirrored so there is no point scanning them.
-        # Branches with a NULL last_scanned_id have not been scanned yet,
-        # so are included.
-
-        return Branch.select('''
-            Branch.branch_type <> %s AND
-            Branch.last_mirrored_id IS NOT NULL AND
-            (Branch.last_scanned_id IS NULL OR
-             Branch.last_scanned_id <> Branch.last_mirrored_id)
-            ''' % quote(BranchType.REMOTE))
-
     def getRecentlyChangedBranches(
         self, branch_count=None,
         lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
