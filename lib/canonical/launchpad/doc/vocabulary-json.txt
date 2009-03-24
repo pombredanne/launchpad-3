@@ -100,3 +100,21 @@ Size and offset parameters can be passed in to switch between batches.
         ],
         "total_size": 8
     }
+
+Long descriptions will be truncated.
+
+    >>> form = dict(name='Project', search_text='apache')
+    >>> view = create_vocabulary_view(form)
+    >>> print_json(view())
+    {
+        "entries": [
+            {
+                "description": "The Apache projects are characterized by a
+                                collaborative, consensus based dev...",
+                "image": "\/@@\/project",
+                "title": "Apache",
+                "value": "apache"
+            }
+        ],
+        "total_size": 1
+    }

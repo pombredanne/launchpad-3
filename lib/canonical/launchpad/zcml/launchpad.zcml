@@ -125,16 +125,16 @@
     />
 
   <adapter
-    provides="canonical.launchpad.browser.vocabulary.IVocabularyJSONExtraFields"
+    provides="canonical.launchpad.browser.vocabulary.IPickerEntry"
     for="zope.interface.Interface"
-    factory="canonical.launchpad.browser.vocabulary.default_vocabularyjson_adapter"
+    factory="canonical.launchpad.browser.vocabulary.default_pickerentry_adapter"
     permission="zope.Public"
     />
 
   <adapter
-    provides="canonical.launchpad.browser.vocabulary.IVocabularyJSONExtraFields"
+    provides="canonical.launchpad.browser.vocabulary.IPickerEntry"
     for="canonical.launchpad.interfaces.person.IPerson"
-    factory="canonical.launchpad.browser.vocabulary.person_to_vocabularyjson"
+    factory="canonical.launchpad.browser.vocabulary.person_to_pickerentry"
     permission="zope.Public"
     />
 

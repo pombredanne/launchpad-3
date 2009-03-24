@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'HugeVocabularyJSONView',
-    'IVocabularyJSONExtraFields',
+    'IPickerEntry',
     'person_to_vocabularyjson',
     'default_vocabularyjson_adapter',
     ]
@@ -28,7 +28,7 @@ from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 MAX_DESCRIPTION_LENGTH = 80
 
 
-class IVocabularyJSONExtraFields(Interface):
+class IPickerEntry(Interface):
     """Additional fields that the vocabulary doesn't provide.
 
     These fields are needed by the Picker Ajax widget."""
@@ -37,26 +37,27 @@ class IVocabularyJSONExtraFields(Interface):
     css = Attribute('CSS Class')
 
 
-class VocabularyJSONExtraFields:
-    implements(IVocabularyJSONExtraFields)
+class PickerEntry:
+    """See `IPickerEntry`."""
+    implements(IPickerEntry)
 
     def __init__(self, description=None, image=None, css=None):
         self.description = description
         self.image = image
         self.css = css
 
-def default_vocabularyjson_adapter(obj):
-    """Adapts Interface to IVocabularyJSONExtraFields."""
-    extra = VocabularyJSONExtraFields()
+def default_pickerentry_adapter(obj):
+    """Adapts Interface to IPickerEntry."""
+    extra = PickerEntry()
     if hasattr(obj, 'summary'):
         extra.description = obj.summary
     display_api = ObjectImageDisplayAPI(obj)
     extra.image = display_api.default_icon_resource(obj)
     return extra
 
-def person_to_vocabularyjson(person):
-    """Adapts IPerson to IVocabularyJSONExtraFields."""
-    extra = default_vocabularyjson_adapter(person)
+def person_to_pickerentry(person):
+    """Adapts IPerson to IPickerEntry."""
+    extra = default_pickerentry_adapter(person)
     if person.preferredemail is not None:
         extra.description = person.preferredemail.email
     return extra
@@ -93,17 +94,18 @@ class HugeVocabularyJSONView:
         result = []
         for term in batch_navigator.currentBatch():
             entry = dict(value=term.token, title=term.title)
-            extra = IVocabularyJSONExtraFields(term.value)
-            if extra.description is not None:
-                if len(extra.description) > MAX_DESCRIPTION_LENGTH:
+            picker_entry = IPickerEntry(term.value)
+            if picker_entry.description is not None:
+                if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:
                     entry['description'] = (
-                        extra.description[:MAX_DESCRIPTION_LENGTH-3] + '...')
+                        picker_entry.description[:MAX_DESCRIPTION_LENGTH-3]
+                        + '...')
                 else:
-                    entry['description'] = extra.description
-            if extra.image is not None:
-                entry['image'] = extra.image
-            if extra.css is not None:
-                entry['css'] = extra.css
+                    entry['description'] = picker_entry.description
+            if picker_entry.image is not None:
+                entry['image'] = picker_entry.image
+            if picker_entry.css is not None:
+                entry['css'] = picker_entry.css
             result.append(entry)
 
         self.request.response.setHeader('Content-type', 'application/json')
