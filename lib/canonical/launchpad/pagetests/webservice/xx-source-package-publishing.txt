@@ -17,9 +17,9 @@ We need to insert some dependent fake data before continuing.
     ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
 
     >>> def print_publications(pubs):
-    ...     for entry in sorted(
-    ...         pubs['entries'], key=lambda x:x['displayname']):
-    ...         print entry['displayname']
+    ...     for displayname in sorted(
+    ...         entry['displayname'] for entry in pubs['entries']):
+    ...         print displayname
 
     >>> print_publications(pubs)
     cdrkit 1.0 in breezy-autotest
@@ -43,9 +43,9 @@ Search by date published:
     ...     cprov_archive['self_link'], 'getPublishedSources',
     ...     published_since_date='2007-01-01 00:00:00+00:00').jsonBody()
     >>> print_publications(pubs)
+    cdrkit 1.0 in breezy-autotest
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
-    cdrkit 1.0 in breezy-autotest
 
 Search by publishing status:
 
