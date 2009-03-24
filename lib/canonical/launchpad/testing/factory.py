@@ -135,6 +135,7 @@ _DEFAULT = object()
 
 class GPGSigningContext:
     """A helper object to hold the fingerprint, password and mode."""
+
     def __init__(self, fingerprint, password='', mode=None):
         self.fingerprint = fingerprint
         self.password = password

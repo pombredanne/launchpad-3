@@ -26,8 +26,7 @@ from canonical.launchpad.testing import GPGSigningContext, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 class TestSignedMessage(TestCaseWithFactory):
-    # Test that the SignedMessage class correctly extracts the GPG signatures,
-    # and that the email messages authenticate properly.
+    """Test SignedMessage class correctly extracts the GPG signatures."""
 
     layer = DatabaseFunctionalLayer
 
