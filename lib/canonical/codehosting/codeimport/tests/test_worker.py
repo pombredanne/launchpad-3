@@ -653,7 +653,8 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
         wd = os.getcwd()
         os.chdir(self.repository_path)
         try:
-            run_git('commit', '-m', 'dsadas')
+            run_git(
+                'commit', '-m', 'dsadas', '--author', 'Joe Foo <joe@foo.com>')
         finally:
             os.chdir(wd)
 
