@@ -136,13 +136,22 @@ class GenericBranchCollection:
 
     def getMergeProposals(self, statuses=None):
         """See `IBranchCollection`."""
-        expression = BranchMergeProposal.source_branchID.is_in(
-            self._getBranchIdQuery())
+        expressions = [
+            BranchMergeProposal.source_branchID.is_in(
+                self._getBranchIdQuery()),
+            ]
+        expressions.extend(self._getExtraMergeProposalExpressions())
         if statuses is not None:
-            expression = And(
-                BranchMergeProposal.queue_status.is_in(statuses),
-                expression)
-        return self.store.find(BranchMergeProposal, expression)
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(statuses))
+        return self.store.find(BranchMergeProposal, expressions)
+
+    def _getExtraMergeProposalExpressions(self):
+        """Extra storm expressions needed for merge proposal queries.
+
+        Used primarily by the visibility check for target branches.
+        """
+        return []
 
     def getMergeProposalsForReviewer(self, reviewer, status=None):
         """See `IBranchCollection`."""
@@ -158,13 +167,17 @@ class GenericBranchCollection:
             CodeReviewVoteReference.reviewer == reviewer,
             BranchMergeProposal.source_branchID.is_in(
                 self._getBranchIdQuery())]
+        expressions.extend(self._getExtraMergeProposalExpressions())
         if status is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(status))
-        result = self.store.using(*tables).find(
+        proposals = self.store.using(*tables).find(
             BranchMergeProposal, expressions)
-        result.order_by(Desc(CodeReviewComment.vote))
-        return result
+        # Apply sorting here as we can't do it in the browser code.  We need
+        # to think carefully about the best places to do this, but not here
+        # nor now.
+        proposals.order_by(Desc(CodeReviewComment.vote))
+        return proposals
 
     def inProduct(self, product):
         """See `IBranchCollection`."""
@@ -353,44 +366,6 @@ class VisibleBranchCollection(GenericBranchCollection):
         return self._branch_filter_expressions + [
             Branch.id.is_in(self._user_visibility_expression)]
 
-    def getMergeProposals(self, statuses=None):
-        """See `IBranchCollection`."""
-        expressions = [
-            BranchMergeProposal.source_branchID.is_in(
-                self._getBranchIdQuery()),
-            BranchMergeProposal.target_branchID.is_in(
-                self._getVisibilityExpression()),
-            ]
-        if statuses is not None:
-            expressions.append(
-                BranchMergeProposal.queue_status.is_in(statuses))
-        return self.store.find(BranchMergeProposal, expressions)
-
-    def getProposalsForReviewer(self, reviewer, status=None):
-        """See `IBranchCollection`."""
-        tables = [
-            BranchMergeProposal,
-            Join(CodeReviewVoteReference,
-                 CodeReviewVoteReference.branch_merge_proposalID == \
-                 BranchMergeProposal.id),
-            LeftJoin(CodeReviewComment,
-                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
-
-        expressions = [
-            CodeReviewVoteReference.reviewer == reviewer,
-            BranchMergeProposal.source_branchID.is_in(
-                self._getBranchIdQuery()),
-            BranchMergeProposal.target_branchID.is_in(
-                self._getVisibilityExpression())]
-
-        if status is not None:
-            expressions.append(
-                BranchMergeProposal.queue_status.is_in(status))
-        result = self.store.using(*tables).find(
-            BranchMergeProposal, expressions)
-        result.order_by(Desc(CodeReviewComment.vote))
-        return result
-
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
         if person == self._user:
@@ -399,26 +374,11 @@ class VisibleBranchCollection(GenericBranchCollection):
             "Cannot filter for branches visible by user %r, already "
             "filtering for %r" % (person, self._user))
 
-    def getMergeProposalsForReviewer(self, reviewer, status=None):
-        """See `IBranchCollection`."""
-        tables = [
-            BranchMergeProposal,
-            Join(CodeReviewVoteReference,
-                 CodeReviewVoteReference.branch_merge_proposalID == \
-                 BranchMergeProposal.id),
-            LeftJoin(CodeReviewComment,
-                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
+    def _getExtraMergeProposalExpressions(self):
+        """Extra storm expressions needed for merge proposal queries.
 
-        expressions = [
-            CodeReviewVoteReference.reviewer == reviewer,
-            BranchMergeProposal.source_branchID.is_in(
-                self._getBranchIdQuery()),
+        Used primarily by the visibility check for target branches.
+        """
+        return [
             BranchMergeProposal.target_branchID.is_in(
                 self._getVisibilityExpression())]
-        if status is not None:
-            expressions.append(
-                BranchMergeProposal.queue_status.is_in(status))
-        result = self.store.using(*tables).find(
-            BranchMergeProposal, expressions)
-        result.order_by(Desc(CodeReviewComment.vote))
-        return result

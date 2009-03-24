@@ -100,27 +100,14 @@ Firstly lets set up a new person with no branches.
     >>> eric = factory.makePerson(
     ...     name="eric", password="test", email="eric@example.com",
     ...     displayname="Eric the Viking")
-    >>> logout()
-
-If there are no branches, it will say so nicely.
-
-    >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
-
-    >>> def open_page_and_print_tag(tag):
-    ...     eric_browser.open('http://code.launchpad.dev/~eric')
-    ...     print extract_text(find_tag_by_id(eric_browser.contents, tag))
-    >>> open_page_and_print_tag('no-branch-message')
-    There are no branches related to Eric the Viking in Launchpad today.
-
-Let's add a branch.
-
-    >>> login(ANONYMOUS)
     >>> b1 = factory.makeAnyBranch(owner=eric)
     >>> logout()
 
-The summary is now shown.
+The summary is shown.
 
-    >>> open_page_and_print_tag('page-summary')
+    >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
+    >>> eric_browser.open('http://code.launchpad.dev/~eric')
+    >>> print_tag_with_id(eric_browser.contents, 'page-summary')
     1 owned branch, 1 registered branch, 1 subscribed branch
     0 active proposals, 0 approved merges, 0 requested reviews
 
@@ -131,7 +118,8 @@ Now we'll create another branch, and unsubscribe the owner from it.
     >>> ignored = b2.unsubscribe(eric)
     >>> logout()
 
-    >>> open_page_and_print_tag('page-summary')
+    >>> eric_browser.open('http://code.launchpad.dev/~eric')
+    >>> print_tag_with_id(eric_browser.contents, 'page-summary')
     2 owned branches, 2 registered branches, 1 subscribed branch
     0 active proposals, 0 approved merges, 0 requested reviews
 

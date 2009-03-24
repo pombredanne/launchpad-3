@@ -13,6 +13,8 @@ __all__ = [
 from zope.component import queryAdapter
 from zope.traversing.interfaces import IPathAdapter
 
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.personproduct import IPersonProduct
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp import (
@@ -21,12 +23,18 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 class PersonProductNavigation(Navigation):
-    """No-op navigation object."""
+    """Navigation to branches for this person/product."""
     usedfor = IPersonProduct
 
-    def traverse(self, path_segment):
-        """Any traversal from here is not found."""
-        raise NotFoundError
+    def traverse(self, branch_name):
+        """Look for a branch in the person/product namespace."""
+        namespace = get_branch_namespace(
+            person=self.context.person, product=self.context.product)
+        branch = namespace.getByName(branch_name)
+        if branch is None:
+            raise NotFoundError
+        else:
+            return branch
 
 
 class PersonProductBreadcrumbBuilder(BreadcrumbBuilder):

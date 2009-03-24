@@ -178,14 +178,6 @@ helpful message supplied.
     >>> print message.renderContents()
     There are branches related to Launchpad Developers...
 
-If the user does not have any branches, then we say so.
-
-    >>> browser.open('http://code.launchpad.dev/~no-priv')
-    >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
-    >>> print extract_text(message)
-    There are no branches related to No Privileges Person in Launchpad today.
-
-
 Subscribed branch listings shouldn't show an option for sorting by "most
 interesting" and should default to sort by project name.
 

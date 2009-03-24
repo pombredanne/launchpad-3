@@ -280,17 +280,22 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, pillar_name):
+        # If the pillar is a product, then return the PersonProduct.
+        pillar = getUtility(IPillarNameSet).getByName(pillar_name)
+        if IProduct.providedBy(pillar):
+            person_product = getUtility(IPersonProductFactory).create(
+                self.context, pillar)
+            # If accessed through an alias, redirect to the proper name.
+            if pillar.name != pillar_name:
+                return self.redirectSubTree(canonical_url(person_product))
+            getUtility(IOpenLaunchBag).add(pillar)
+            return person_product
+        # Otherwise look for a branch.
         try:
             branch = getUtility(IBranchNamespaceSet).traverse(
                 self._getSegments(pillar_name))
         except (NotFoundError, InvalidNamespace):
-            pillar = getUtility(IPillarNameSet).getByName(pillar_name)
-            if IProduct.providedBy(pillar):
-                getUtility(IOpenLaunchBag).add(pillar)
-                return getUtility(IPersonProductFactory).create(
-                    self.context, pillar)
-            else:
-                return super(BranchTraversalMixin, self).traverse(pillar_name)
+            return super(BranchTraversalMixin, self).traverse(pillar_name)
 
         # Normally, populating the launch bag is done by the traversal
         # mechanism. However, here we short-circuit that mechanism by
