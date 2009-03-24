@@ -18,7 +18,7 @@ import bzrlib
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
-from canonical.launchpad.interfaces.branch import IBranchSet
+from canonical.launchpad.interfaces.branch import IBranchCloud, IBranchSet
 from canonical.launchpad.interfaces.codeimport import ICodeImportSet
 from canonical.launchpad.interfaces.launchpad import IBazaarApplication
 from canonical.launchpad.interfaces.product import IProduct, IProductSet
@@ -92,12 +92,11 @@ class ProductInfo:
     delegates(IProduct, 'product')
 
     def __init__(
-        self, product, num_branches, branch_size, elapsed, important):
+        self, product, num_branches, branch_size, elapsed):
         self.product = product
         self.num_branches = num_branches
         self.branch_size = branch_size
         self.elapsed_since_commit = elapsed
-        self.important = important
 
     @property
     def branch_class(self):
@@ -114,17 +113,8 @@ class ProductInfo:
         return "light"
 
     @property
-    def branch_highlight(self):
-        """Return 'highlight' or 'shade'."""
-        if self.important:
-            return 'highlight'
-        else:
-            return 'shade'
-
-    @property
     def html_class(self):
-        return "%s cloud-%s-%s" % (
-            self.branch_class, self.branch_highlight, self.time_darkness)
+        return "%s cloud-%s" % (self.branch_class, self.time_darkness)
 
     @property
     def html_title(self):
@@ -147,64 +137,48 @@ class ProductInfo:
 class BazaarProductView:
     """Browser class for products gettable with Bazaar."""
 
+    def _make_distribution_map(self, values, percentile_map):
+        """Given some values and a map of percentiles to other values, return
+        a function that will take a value in the same domain as 'values' and
+        map it to a value in the 'percentile_map' dict.
+
+        There *must* be a percentile_map entry for 1.0.
+        """
+        def constrained_minimum(xs, a):
+            """Return the smallest value of 'xs' strictly bigger than 'a'."""
+            return min(x for x in xs if x > a)
+
+        cutoffs = percentile_map.keys()
+        num_values = float(len(values))
+        value_to_cutoffs = {}
+        for index, value in enumerate(values):
+            cutoff = constrained_minimum(cutoffs, (index / num_values))
+            value_to_cutoffs[value] = percentile_map[cutoff]
+        if num_values > 0 and 1 in percentile_map:
+            value_to_cutoffs[values[-1]] = percentile_map[1]
+        return value_to_cutoffs
+
     def products(self, num_products=None):
-        # XXX: TimPenhey 2007-02-26
-        # sabdfl really wants a page that has all the products with code
-        # on it.  I feel that at some stage it will just look too cumbersome,
-        # and we'll want to optimise the view somehow, either by taking
-        # a random sample of the products with code, or some other method
-        # of reducing the full set of products.
-        # As far as query efficiency goes, constructing 1k products is
-        # sub-second, and the query to get the branch count and last commit
-        # time runs in approximately 50ms on a vacuumed branch table.
-        product_set = getUtility(IProductSet)
-        products = list(product_set.getProductsWithBranches(num_products))
-
-        # Any product that has a defined user branch for the development
-        # product series is shown in another colour.  Given the above
-        # query, all the products will be in the cache anyway.
-        user_branch_products = set(
-            product_set.getProductsWithUserDevelopmentBranches())
-
-        branch_set = getUtility(IBranchSet)
-        branch_summaries = branch_set.getActiveUserBranchSummaryForProducts(
-            products)
-        # Choose appropriate branch counts so we have an evenish distribution.
-        counts = sorted([
-            summary['branch_count'] for summary in branch_summaries.values()])
-        # Lowest half are small.
-        small_count = counts[len(counts)/2]
-
-        # Top 20% are big.
-        large_count = counts[-(len(counts)/5)]
-
-        items = []
+        product_info = sorted(
+            list(getUtility(IBranchCloud).getProductsWithInfo(num_products)),
+            key=lambda data: data[0].name)
         now = datetime.today()
-        for product in products:
-            summary = branch_summaries.get(product)
-            if not summary:
-                # If the only branches for the product were import branches or
-                # merged or abandoned branches, then there will not be a
-                # summary returned for that product, and we are not interested
-                # in showing them in our cloud.
+        counts = sorted(zip(*product_info)[1])
+        size_mapping = {
+            0.2: 'smallest',
+            0.4: 'small',
+            0.6: 'medium',
+            0.8: 'large',
+            1.0: 'largest',
+            }
+        num_branches_to_size = self._make_distribution_map(
+            counts, size_mapping)
+
+        for product, num_branches, last_revision_date in product_info:
+            # Projects with no branches are not interesting.
+            if num_branches == 0:
                 continue
-            last_commit = summary['last_commit']
-            if last_commit is None:
-                elapsed = None
-            else:
-                elapsed = now - last_commit
-
-            num_branches = summary['branch_count']
-            if num_branches <= small_count:
-                branch_size = 'small'
-            elif num_branches > large_count:
-                branch_size = 'large'
-            else:
-                branch_size = 'medium'
-
-            important = product in user_branch_products
-
-            items.append(ProductInfo(
-                product, num_branches, branch_size, elapsed, important))
-
-        return items
+            branch_size = num_branches_to_size[num_branches]
+            elapsed = now - last_revision_date
+            yield ProductInfo(
+                product, num_branches, branch_size, elapsed)

@@ -36,12 +36,12 @@ from zope.schema import Choice, Int, Text
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
@@ -59,7 +59,7 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    stepthrough, Navigation)
+    stepthrough, stepto, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
@@ -82,7 +82,7 @@ def notify(func):
     def decorator(view, *args, **kwargs):
         snapshot = BranchMergeProposalDelta.snapshot(view.context)
         result = func(view, *args, **kwargs)
-        zope_notify(SQLObjectModifiedEvent(view.context, snapshot, []))
+        zope_notify(ObjectModifiedEvent(view.context, snapshot, []))
         return result
     return decorator
 
@@ -115,13 +115,6 @@ class BranchMergeCandidateView(LaunchpadView):
             BranchMergeProposalStatus.SUPERSEDED : 'Superseded'
             }
         return friendly_texts[self.context.queue_status]
-
-    @property
-    def queue_location(self):
-        """The location of the queue view."""
-        # Will point to the target_branch queue, or the queue
-        # with multiple targets if specified.
-        return canonical_url(self.context.target_branch) + '/+merge-queue'
 
 
 class BranchMergeProposalContextMenu(ContextMenu):
@@ -295,6 +288,22 @@ class BranchMergeProposalNavigation(Navigation):
         except WrongBranchMergeProposal:
             return None
 
+    @stepto("+preview-diff")
+    def preview_diff(self):
+        """Step to the preview diff."""
+        return self.context.preview_diff
+
+    @stepthrough('+review')
+    def review(self, id):
+        """Step to the CodeReviewVoteReference."""
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+        try:
+            return self.context.getVoteReference(id)
+        except WrongBranchMergeProposal:
+            return None
 
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
@@ -302,13 +311,6 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
 
     label = "Proposal to merge branches"
     __used_for__ = IBranchMergeProposal
-
-    @property
-    def queue_location(self):
-        """The location of the queue view."""
-        # Will point to the target_branch queue, or the queue
-        # with multiple targets if specified.
-        return canonical_url(self.context.target_branch) + '/+merge-queue'
 
     @property
     def comment_location(self):

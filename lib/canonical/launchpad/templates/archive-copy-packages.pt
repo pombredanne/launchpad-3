@@ -11,9 +11,21 @@
   >
 <body>
 
+<metal:block fill-slot="head_epilogue">
+  <tal:devmode condition="devmode">
+    <tal:archive_js define="lp_js string:${icingroot}/build">
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/soyuz/base.js">
+      </script>
+    </tal:archive_js>
+  </tal:devmode>
+</metal:block>
+
 <div metal:fill-slot="main">
 
-  <h1>Copy packages from <tal:title replace="context/title" /></h1>
+  <h1 tal:content="CONTEXTS/fmt:pagetitle">
+    Copy packages from Blah PPA
+  </h1>
 
     <tal:cannot_copy condition="not: view/can_copy">
       <p>To be able to copy packages you have to participate in at least one
@@ -28,16 +40,31 @@
         <p>This PPA does not contain any source packages published.</p>
       </tal:inactive_ppa_header>
 
+      <tal:package_filter_form condition="view/has_sources">
+        <metal:package_filter_form
+          use-macro="context/@@+macros/package-filter-form" />
+      </tal:package_filter_form>
+
       <div metal:use-macro="context/@@launchpad_form/form">
 
       <div class="form" metal:fill-slot="widgets"
            tal:condition="view/has_sources">
 
         <metal:selectable-sources
-          use-macro="context/@@+macros/selectable-sources" />
+          use-macro="context/@@+macros/source-package-list" />
+
+        <tal:selectable_sources_end
+               define="widget nocall:view/widgets/selected_sources;
+                       field_name widget/context/__name__;
+                       error python:view.getFieldError(field_name);">
+          <input tal:attributes="name string:${widget/name}-empty-marker"
+                 type="hidden" value="1" />
+          <div class="error message" tal:condition="error"
+               tal:content="structure error">Error message</div>
+        </tal:selectable_sources_end>
 
         <table style="margin-top: 1em;"
-          tal:condition="view/available_sources_size">
+          tal:condition="view/has_sources_for_display">
 
           <tal:archive
             define="widget nocall:view/widgets/destination_archive|nothing"

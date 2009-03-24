@@ -6,7 +6,7 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.interfaces import (
     ...     IBugLinkTarget, IBugSet, ICveSet)
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
 
     >>> bugset = getUtility(IBugSet)
     >>> cve = getUtility(ICveSet)['2005-2730']
@@ -15,7 +15,7 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> collected_events = []
     >>> modified_listener = TestEventListener(
-    ...     IBugLinkTarget, SQLObjectModifiedEvent,
+    ...     IBugLinkTarget, ObjectModifiedEvent,
     ...     lambda object, event: collected_events.append(event))
 
     (Login because bug link management is only available to registered users.)
@@ -26,7 +26,7 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
 
 The +linkbug view is used to link bugs to IBugLinkTarget. It has a
 simple widget to enter the bug number or nickname of the bug to link
-to. After it links the bug, it sends a SQLObjectModifiedEvent.
+to. After it links the bug, it sends a ObjectModifiedEvent.
 
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
@@ -44,13 +44,13 @@ Bug #1 was added to the object:
     >>> print [bug.id for bug in cve.bugs]
     [1]
 
-A SQLObjectModifiedEvent was sent:
+A ObjectModifiedEvent was sent:
 
     >>> len(collected_events)
     1
     >>> event = collected_events[0]
     >>> event
-    <...SQLObjectModifiedEvent...>
+    <...ObjectModifiedEvent...>
     >>> event.object == cve
     True
     >>> event.edited_fields
@@ -89,13 +89,13 @@ The two bugs were removed and only bug #3 should still be present:
     >>> print [bug.id for bug in cve.bugs]
     [3]
 
-A SQLObjectModifiedEvent was sent:
+A ObjectModifiedEvent was sent:
 
     >>> len(collected_events)
     1
     >>> event = collected_events[0]
     >>> event
-    <...SQLObjectModifiedEvent...>
+    <...ObjectModifiedEvent...>
     >>> event.object == cve
     True
     >>> event.edited_fields

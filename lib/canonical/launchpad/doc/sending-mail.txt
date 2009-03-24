@@ -219,6 +219,38 @@ non-ASCII str object is passed, it will throw a UnicodeDecodeError.
     UnicodeDecodeError: 'ascii' codec can't decode byte 0xc4 in position 1:
     ordinal not in range(128)
 
+    >>> transaction.abort()
+
+Passing `bulk=False` to simple_sendmail disables the adding of the bulk
+precedence header to the email's headers.
+
+    >>> msgid = simple_sendmail(
+    ...     from_addr='feedback@launchpad.net',
+    ...     to_addrs='test@canonical.com',
+    ...     subject=u'Forgot password',
+    ...     body=u'Content',
+    ...     bulk=False)
+    >>> transaction.commit()
+
+The message is the same as the one from the simple_sendmail test except
+that the precedence header was not added.
+
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'test@canonical.com'
+    >>> msg['From']
+    'feedback@launchpad.net'
+    >>> msg['Subject']
+    'Forgot password'
+    >>> msg.get_payload(decode=True)
+    'Content'
+    >>> print msg['Precedence']
+    None
+
+
+sendmail
+========
 
 simple_sendmail creates a Message instance, and sends it via another
 function, sendmail. sendmail() can also be used directly if you want to

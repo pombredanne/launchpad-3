@@ -4,7 +4,6 @@ __all__ = ['DiskPoolEntry', 'DiskPool', 'poolify', 'unpoolify']
 
 import os
 import tempfile
-import random
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
 from canonical.cachedproperty import cachedproperty
@@ -186,15 +185,18 @@ class DiskPoolEntry:
             # There's something on disk. Check hash.
             if sha1 != self.file_hash:
                 raise PoolFileOverwriteError('%s != %s for %s' %
-                    (sha1, self.file_hash, self.pathFor(self.file_component)))
+                    (sha1, self.file_hash,
+                     self.pathFor(self.file_component)))
 
             if (component == self.file_component
                 or component in self.symlink_components):
                 # The file is already here
                 return FileAddActionEnum.NONE
             else:
-                # The file is present in a different component, make a symlink.
-                relative_symlink(self.pathFor(self.file_component), targetpath)
+                # The file is present in a different component,
+                # make a symlink.
+                relative_symlink(
+                    self.pathFor(self.file_component), targetpath)
                 self.symlink_components.add(component)
                 # Then fix to ensure the right component is linked.
                 self._sanitiseLinks()
@@ -244,7 +246,7 @@ class DiskPoolEntry:
         # It's not a symlink, this means we need to check whether we
         # have symlinks or not.
         if len(self.symlink_components) == 0:
-            self.debug("Removing only instance of %s/%s from %s" %
+            self.debug("Removing %s/%s from %s" %
                        (self.source, self.filename, component))
         else:
             # The target for removal is the real file, and there are symlinks

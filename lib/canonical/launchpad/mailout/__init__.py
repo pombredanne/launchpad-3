@@ -1,7 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-from canonical.lazr import BaseItem
 from zope.security.proxy import isinstance as zope_isinstance
+from lazr.enum import BaseItem
 
 def value_string(item):
     """Return a unicode string representing an SQLObject value."""

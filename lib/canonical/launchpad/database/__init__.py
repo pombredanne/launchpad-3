@@ -1,6 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
+# XXX flacoste 2009/03/18 We should use specific imports instead of
+# importing from this module.
 from canonical.launchpad.database.account import *
 from canonical.launchpad.database.codeimport import *
 from canonical.launchpad.database.codeimportevent import *
@@ -24,7 +26,7 @@ from canonical.launchpad.database.project import *
 from canonical.launchpad.database.projectbounty import *
 from canonical.launchpad.database.poll import *
 from canonical.launchpad.database.announcement import *
-from canonical.launchpad.database.answercontact import *
+from lp.answers.model.answercontact import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugbranch import *
 from canonical.launchpad.database.bugcve import *
@@ -42,13 +44,13 @@ from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
 from canonical.launchpad.database.bugtracker import *
 from canonical.launchpad.database.pofile import *
+from canonical.launchpad.database.pofiletranslator import *
 from canonical.launchpad.database.potemplate import *
 from canonical.launchpad.database.potmsgset import *
 from canonical.launchpad.database.pomsgid import *
 from canonical.launchpad.database.potranslation import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
-from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *
 from canonical.launchpad.database.sourcepackagename import *
 from canonical.launchpad.database.sourcepackagerelease import *
@@ -90,7 +92,7 @@ from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *
 from canonical.launchpad.database.buildqueue import *
 from canonical.launchpad.database.publishing import *
-from canonical.launchpad.database.faq import *
+from lp.answers.model.faq import *
 from canonical.launchpad.database.featuredproject import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
@@ -122,11 +124,11 @@ from canonical.launchpad.database.vpotexport import *
 from canonical.launchpad.database.karma import *
 from canonical.launchpad.database.teammembership import *
 from canonical.launchpad.database.temporaryblobstorage import *
-from canonical.launchpad.database.question import *
-from canonical.launchpad.database.questionbug import *
-from canonical.launchpad.database.questionmessage import *
-from canonical.launchpad.database.questionreopening import *
-from canonical.launchpad.database.questionsubscription import *
+from lp.answers.model.question import *
+from lp.coop.answersbugs.model import *
+from lp.answers.model.questionmessage import *
+from lp.answers.model.questionreopening import *
+from lp.answers.model.questionsubscription import *
 from canonical.launchpad.database.poexportrequest import *
 from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *

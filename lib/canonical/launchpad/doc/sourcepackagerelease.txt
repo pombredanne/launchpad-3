@@ -27,7 +27,7 @@ published_archives returns a set of all the archives that this
 SourcePackageRelease is published in.
 
     >>> for archive in spr.published_archives:
-    ...     print archive.title
+    ...     print archive.displayname
     Primary Archive for Ubuntu Linux
     Primary Archive for Ubuntu Test
 
@@ -261,7 +261,9 @@ Before the final upload, the queue should be empty.
    ...     target=spr_test.sourcepackage).count()
    0
 
-   >>> spr_test.attachTranslationFiles(file_alias, True)
+   >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+   >>> katie = getUtility(ILaunchpadCelebrities).katie
+   >>> spr_test.attachTranslationFiles(file_alias, True, katie)
 
 The commit is needed to see the new entries
 
@@ -271,9 +273,9 @@ And the queue should have a new entry.
 
    >>> for entry in translation_import_queue.getAllEntries(
    ...     target=spr_test.sourcepackage):
-   ...     print entry.path
-   something/en-US.xpi
-   po/es.po
+   ...     print entry.path, entry.importer.name
+   something/en-US.xpi  katie
+   po/es.po             katie
 
 Now, we need to do the final import. It's done as a two steps procedure.
 
@@ -354,7 +356,7 @@ Verify that empty packages have a size of zero.
     0.0
 
 
-== Acessing SourcePackageReleases ==
+== Accessing SourcePackageReleases ==
 
 SourcePackageReleases are accessible according to the archives where
 they are published.
@@ -393,7 +395,7 @@ the same permission on it.
 
     >>> published_archives = test_sourcepackagerelease.published_archives
     >>> for archive in published_archives:
-    ...     print archive.title
+    ...     print archive.displayname
     Private PPA for Celso Providelo
 
 'foo - 666' sourcepackagerelease is only published in Celso's Private
@@ -429,7 +431,7 @@ primary archive, which is public.
 
     >>> published_archives = test_sourcepackagerelease.published_archives
     >>> for archive in published_archives:
-    ...     print archive.title
+    ...     print archive.displayname
     Primary Archive for Ubuntu Linux
     Private PPA for Celso Providelo
 
@@ -450,3 +452,32 @@ And we can see it's publicly available now, as expected.
     >>> login('foo.bar@canonical.com')
     >>> check_permission('launchpad.View', test_sourcepackagerelease)
     True
+
+Another common scenario is that once the package is unembargoed from the
+private PPA, it gets deleted from that private PPA.  At this point the
+package is still public:
+
+    >>> unused = private_publication.requestDeletion(cprov)
+    >>> transaction.commit()
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.View', test_sourcepackagerelease)
+    True
+
+The next stage of the lifecycle is for the remaining publication to be
+superseded.  The package will still be public after that happens.
+
+    >>> login('foo.bar@canonical.com')
+    >>> unused = public_publication.supersede()
+    >>> transaction.commit()
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.View', test_sourcepackagerelease)
+    True
+
+published_archives shows the superseded/deleted publications still:
+
+    >>> published_archives = test_sourcepackagerelease.published_archives
+    >>> for archive in published_archives:
+    ...     print archive.displayname
+    Primary Archive for Ubuntu Linux
+    Private PPA for Celso Providelo
+

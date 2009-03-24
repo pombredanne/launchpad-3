@@ -25,7 +25,6 @@ __all__ = [
     'DistributionUsingMaloneVocabulary',
     'DistributionVocabulary',
     'DistroSeriesVocabulary',
-    'FAQVocabulary',
     'FeaturedProjectVocabulary',
     'FilteredDeltaLanguagePackVocabulary',
     'FilteredDistroArchSeriesVocabulary',
@@ -95,6 +94,7 @@ from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.bugtask import (
     IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
     IUpstreamBugTask)
@@ -106,8 +106,6 @@ from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
-from canonical.launchpad.interfaces.faq import IFAQ
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.mailinglist import (
@@ -188,7 +186,11 @@ class CountryNameVocabulary(SQLObjectVocabularyBase):
 
 
 class BranchVocabularyBase(SQLObjectVocabularyBase):
-    """A base class for Branch vocabularies."""
+    """A base class for Branch vocabularies.
+
+    Override `BranchVocabularyBase._getCollection` to provide the collection
+    of branches which make up the vocabulary.
+    """
 
     implements(IHugeVocabulary)
 
@@ -202,118 +204,30 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        branch = self._getExactMatch(token)
-        if branch is None:
-            # Attempt a search, and if there is one and only one result
-            # just use that instead.
-            search_result = self.search(token)
-            if search_result.limit(2).count() == 1:
-                [branch] = list(search_result)
-            else:
-                raise LookupError(token)
-        return self.toTerm(branch)
+        search_results = self.searchForTerms(token)
+        if search_results.count() == 1:
+            return iter(search_results).next()
+        raise LookupError(token)
 
-    def _getExactMatch(self, query):
-        """Return the branch if query is a valid unique_name."""
-        branch = BranchSet().getByUniqueName(query)
-        if branch is not None:
-            return branch
-        # Fall back to interpreting the token as a branch URL.
-        return BranchSet().getByUrl(query.rstrip('/'))
+    def _getCollection(self):
+        """Override this to return the collection to which the search is
+        restricted.
+        """
+        raise NotImplementedError(self._getCollection)
 
     def searchForTerms(self, query=None):
-        """See `SQLObjectVocabularyBase`."""
-        # First see if the query is a unique name for the branch.
-        if query is not None:
-            branch = self._getExactMatch(query)
-            if branch is not None:
-                return CountableIterator(1, [branch], self.toTerm)
-        return SQLObjectVocabularyBase.searchForTerms(self, query)
+        """See `IHugeVocabulary`."""
+        logged_in_user = getUtility(ILaunchBag).user
+        collection = self._getCollection().visibleByUser(logged_in_user)
+        if query is None:
+            branches = collection.getBranches()
+        else:
+            branches = collection.search(query)
+        return CountableIterator(branches.count(), branches, self.toTerm)
 
     def __len__(self):
         """See `IVocabulary`."""
-        return self.search('').count()
-
-    def _constructBranchAttributeQuery(self, quoted_query):
-        """Return a query that will identify branches that match.
-
-        Checks for matches by branch name or URL.
-
-        See `_constructGeneralQuery` for more details.
-        """
-        return """
-            SELECT id FROM Branch
-            WHERE
-               Branch.name LIKE '%%' || %s || '%%'
-            OR Branch.url LIKE '%%' || %s || '%%'
-            """ % (quoted_query, quoted_query)
-
-    def _constructRegistrantNameQuery(self, quoted_query):
-        """Return a query that will identify branches that match.
-
-        Checks for matches by the name of the branch owner (registrant).
-
-        See `_constructGeneralQuery` for more details.
-        """
-        return """
-            SELECT Branch.id FROM Branch, Person
-            WHERE
-                Branch.owner = Person.id
-            AND Person.name LIKE '%%' || %s || '%%'
-            """ % quoted_query
-
-    def _constructProductNameQuery(self, quoted_query):
-        """Return a query that will identify branches that match.
-
-        Checks for matches by the name of the product that the branch is for.
-
-        See `_constructGeneralQuery` for more details.
-        """
-        return """
-            SELECT Branch.id from Branch, Product
-            WHERE
-                Branch.product = Product.id
-            AND Product.name LIKE '%%' || %s || '%%'
-            """ % quoted_query
-
-    def _constructGeneralQuery(self, quoted_query,
-                      check_product=True, check_registrant=True):
-        """Return the naive branch where clause for the given query.
-
-        If the user has not specified any query, then there is nothing to
-        restrict the search on, so the result is an empty string.
-
-        When a non-empty string is passed in a sequence of queries are built
-        up depending on whether check_product or check_registrant are set to
-        true.  These queries are joined using the SQL union clause to restrict
-        the branches in the resulting select.
-        """
-        if len(quoted_query) == 0:
-            return ''
-        # Generate the query for the branch attributes, and optionally the
-        # product name and registrant name.
-        args = [self._constructBranchAttributeQuery(quoted_query)]
-        if check_product:
-            args.append(self._constructProductNameQuery(quoted_query))
-        if check_registrant:
-            args.append(self._constructRegistrantNameQuery(quoted_query))
-        id_query = '\n\nUNION\n\n'.join(args)
-        return 'Branch.id in (%s)' % id_query
-
-    def search(self, query):
-        """Returns branches where the name, owner or product match the query.
-
-        Only branches that the logged in user is able to see are actually
-        returned.
-        """
-        sql_query = BranchSet()._generateBranchClause(
-            self._constructNaiveQueryString(quote_like(query)),
-            visible_by_user=getUtility(ILaunchBag).user)
-        return Branch.select(sql_query, orderBy=self._orderBy)
-
-    def _constructNaiveQueryString(self, quoted_query):
-        """Return the naive branch where clause based on the query."""
-        raise NotImplementedError
+        return self.search().count()
 
 
 class BranchVocabulary(BranchVocabularyBase):
@@ -323,9 +237,9 @@ class BranchVocabulary(BranchVocabularyBase):
     name of the registrant of the branches is checked for the entered
     value.
     """
-    def _constructNaiveQueryString(self, quoted_query):
-        """See `BranchVocabularyBase`."""
-        return self._constructGeneralQuery(quoted_query)
+
+    def _getCollection(self):
+        return getUtility(IAllBranches)
 
 
 class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
@@ -347,32 +261,8 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
             # An unexpected type.
             raise AssertionError('Unexpected context type')
 
-    def _getExactMatch(self, query):
-        """Return the branch if query is a valid unique_name."""
-        branch = super(
-            BranchRestrictedOnProductVocabulary, self)._getExactMatch(query)
-        if branch is not None:
-            if branch.product == self.product:
-                return branch
-            else:
-                return None
-        else:
-            return None
-
-    def _constructNaiveQueryString(self, quoted_query):
-        """See `BranchVocabularyBase`."""
-
-        if self.product is None:
-            restrict_sql = 'Branch.product is NULL'
-        else:
-            restrict_sql = 'Branch.product = %s' % quote(self.product)
-
-        base_sql = self._constructGeneralQuery(
-            quoted_query, check_product=False)
-        if len(base_sql) > 0:
-            return '%s AND %s' % (base_sql, restrict_sql)
-        else:
-            return restrict_sql
+    def _getCollection(self):
+        return getUtility(IAllBranches).inProduct(self.product)
 
 
 class BugVocabulary(SQLObjectVocabularyBase):
@@ -397,62 +287,6 @@ class WebBugTrackerVocabulary(BugTrackerVocabulary):
     """All web-based bug tracker types."""
 
     _filter = BugTracker.q.bugtrackertype != BugTrackerType.EMAILADDRESS
-
-
-class FAQVocabulary:
-    """Vocabulary containing all the FAQs in an `IFAQTarget`."""
-
-    implements(IHugeVocabulary)
-
-    displayname = 'Select a FAQ'
-
-    def __init__(self, context):
-        """Create a new vocabulary for the context.
-
-        :param context: It should adaptable to `IFAQTarget`.
-        """
-        self.context = IFAQTarget(context)
-
-    def __len__(self):
-        """See `IIterableVocabulary`."""
-        return self.context.searchFAQs().count()
-
-    def __iter__(self):
-        """See `IIterableVocabulary`."""
-        for faq in self.context.searchFAQs():
-            yield self.toTerm(faq)
-
-    def __contains__(self, value):
-        """See `IVocabulary`."""
-        if not IFAQ.providedBy(value):
-            return False
-        return self.context.getFAQ(value.id) is not None
-
-    def getTerm(self, value):
-        """See `IVocabulary`."""
-        if value not in self:
-            raise LookupError(value)
-        return self.toTerm(value)
-
-    def getTermByToken(self, token):
-        """See `IVocabularyTokenized`."""
-        try:
-            faq_id = int(token)
-        except ValueError:
-            raise LookupError(token)
-        faq = self.context.getFAQ(token)
-        if faq is None:
-            raise LookupError(token)
-        return self.toTerm(faq)
-
-    def toTerm(self, faq):
-        """Return the term for a FAQ."""
-        return SimpleTerm(faq, faq.id, faq.title)
-
-    def searchForTerms(self, query=None):
-        """See `IHugeVocabulary`."""
-        results = self.context.findSimilarFAQs(query)
-        return CountableIterator(results.count(), results, self.toTerm)
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):

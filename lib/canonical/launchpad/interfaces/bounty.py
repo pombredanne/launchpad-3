@@ -17,13 +17,12 @@ from zope.interface import Attribute
 
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
 from zope.app.form.browser.interfaces import IAddFormCustomization
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, PublicPersonChoice
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
-
-from canonical.lazr.enum import DBEnumeratedType, DBItem
 
 
 class BountyDifficulty(DBEnumeratedType):
@@ -80,14 +79,16 @@ class BountyDifficulty(DBEnumeratedType):
         Very Difficult
 
         This project requires exceptional programming skill and knowledge of
-        very low level programming environments, such as assembly language.""")
+        very low level programming environments, such as assembly
+        language.""")
 
     EXTREME = DBItem(100, """
         Extreme
 
         In order to complete this work, detailed knowledge of an existing
         project is required, and in addition the work itself must be done in
-        a low-level language like assembler or C on multiple architectures.""")
+        a low-level language like assembler or C on multiple
+        architectures.""")
 
 
 class BountyStatus(DBEnumeratedType):
@@ -176,7 +177,8 @@ class IBounty(IHasOwner):
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this bounty.')
-    projects = Attribute('The project groups which this bounty is related to.')
+    projects = Attribute(
+        'The project groups which this bounty is related to.')
     products = Attribute('The projects to which this bounty is related.')
     distributions = Attribute(
         'The distributions to which this bounty is related.')

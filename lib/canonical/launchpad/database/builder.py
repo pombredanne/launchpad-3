@@ -67,8 +67,9 @@ class TimeoutTransport(xmlrpclib.Transport):
 class BuilderSlave(xmlrpclib.Server):
     """Add in a few useful methods for the XMLRPC slave."""
 
-    def __init__(self, urlbase):
+    def __init__(self, urlbase, vm_host):
         """Initialise a Server with specific parameter to our buildfarm."""
+        self.vm_host = vm_host
         self.urlbase = urlbase
         rpc_url = urlappend(urlbase, "rpc")
         xmlrpclib.Server.__init__(self, rpc_url,
@@ -81,6 +82,22 @@ class BuilderSlave(xmlrpclib.Server):
         fileurl = urlappend(self.urlbase, filelocation)
         return urllib2.urlopen(fileurl)
 
+    def resume(self):
+        """Resume a virtual builder.
+
+        It uses the configuration command-line (replacing 'vm_host') and
+        return its output.
+
+        :return: a (stdout, stderr, subprocess exitcode) triple
+        """
+        resume_command = config.builddmaster.vm_resume_command % {
+            'vm_host': self.vm_host}
+        resume_argv = resume_command.split()
+        resume_process = subprocess.Popen(
+            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = resume_process.communicate()
+
+        return (stdout, stderr, resume_process.returncode)
 
 class Builder(SQLBase):
 
@@ -194,26 +211,20 @@ class Builder(SQLBase):
 
     def resumeSlaveHost(self):
         """See IBuilder."""
-        logger = self._getSlaveScannerLogger()
         if not self.virtualized:
             raise CannotResumeHost('Builder is not virtualized.')
 
         if not self.vm_host:
             raise CannotResumeHost('Undefined vm_host.')
 
-        logger.debug("Resuming %s", self.url)
-        resume_command = config.builddmaster.vm_resume_command % {
-            'vm_host': self.vm_host}
-        resume_argv = resume_command.split()
+        logger = self._getSlaveScannerLogger()
+        logger.debug("Resuming %s (%s)" % (self.name, self.url))
 
-        logger.debug('Running: %s', resume_argv)
-        resume_process = subprocess.Popen(
-            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = resume_process.communicate()
-
-        if resume_process.returncode != 0:
+        stdout, stderr, returncode = self.slave.resume()
+        if returncode != 0:
             raise CannotResumeHost(
                 "Resuming failed:\nOUT:\n%s\nERR:\n%s\n" % (stdout, stderr))
+
         return stdout, stderr
 
     @cachedproperty
@@ -223,11 +234,11 @@ class Builder(SQLBase):
         # the slave object, which is usually an XMLRPC client, with a
         # stub object that removes the need to actually create a buildd
         # slave in various states - which can be hard to create.
-        return BuilderSlave(self.url)
+        return BuilderSlave(self.url, self.vm_host)
 
-    def setSlaveForTesting(self, new_slave):
+    def setSlaveForTesting(self, proxy):
         """See IBuilder."""
-        self.slave = new_slave
+        self.slave = proxy
 
     def _verifyBuildRequest(self, build_queue_item, logger):
         """Assert some pre-build checks.
@@ -256,10 +267,11 @@ class Builder(SQLBase):
         chroot = build_queue_item.archseries.getChroot()
         if chroot is None:
             raise CannotBuild(
-                "Missing CHROOT for %s/%s/%s",
-                build_queue_item.build.distroseries.distribution.name,
-                build_queue_item.build.distroseries.name,
-                build_queue_item.build.distroarchseries.architecturetag)
+                "Missing CHROOT for %s/%s/%s" % (
+                    build_queue_item.build.distroseries.distribution.name,
+                    build_queue_item.build.distroseries.name,
+                    build_queue_item.build.distroarchseries.architecturetag)
+                )
 
         # The main distribution has policies to prevent uploads to some
         # pockets (e.g. security) during different parts of the distribution

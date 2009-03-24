@@ -12,10 +12,9 @@ __all__ = [
     'PackageUploadCustomFormat',
     ]
 
-from zope.schema import Int, TextLine
-from zope.interface import Interface, Attribute
+from lazr.enum import DBEnumeratedType, DBItem
 
-from canonical.lazr import DBEnumeratedType, DBItem
+from zope.interface import Interface, Attribute
 
 
 class IPackages(Interface):

@@ -76,8 +76,8 @@ Once authorized, let's create 2 milestones!
     >>> test_browser.getControl('Name').value = 'milestone2'
     >>> test_browser.getControl('Register milestone').click()
     >>> print milestones_in_portlet(test_browser)
-    milestone1
     milestone2
+    milestone1
 
 Now let's try to create another one named milestone1.
 
@@ -123,8 +123,8 @@ Then we try to change milestone2's name to milestone3.
     >>> test_browser.getControl('Name').value = 'milestone3'
     >>> test_browser.getControl('Update').click()
     >>> print milestones_in_portlet(test_browser)
-    milestone1
     milestone3
+    milestone1
 
 Now we do the same for a product instead of a distro.
 
@@ -145,8 +145,8 @@ Once authorized, let's create 2 milestones!
     >>> test_browser.getControl('Name').value = 'milestone2'
     >>> test_browser.getControl('Register milestone').click()
     >>> print milestones_in_portlet(test_browser)
-    milestone1
     milestone2
+    milestone1
 
 Now let's try to create another one named milestone1.
 
@@ -184,8 +184,8 @@ Then we try to change milestone2's name to milestone3.
     >>> test_browser.getControl('Name').value = 'milestone3'
     >>> test_browser.getControl('Update').click()
     >>> print milestones_in_portlet(test_browser)
-    milestone1
     milestone3
+    milestone1
 
 Now let's mark milestone3 as inactive to ensure it hides the milestone
 

@@ -18,8 +18,11 @@ from zope.interface import Interface, implements
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden, BranchType, IBranch,
-    IBranchSet, IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
+    IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.interfaces.branch import NoSuchBranch
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -28,7 +31,7 @@ from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -83,8 +86,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         # slashes from the end of the URL.
         branch_url = branch_url.rstrip('/')
 
-        branch_set = getUtility(IBranchSet)
-        existing_branch = branch_set.getByUrl(branch_url)
+        branch_lookup = getUtility(IBranchLookup)
+        existing_branch = branch_lookup.getByUrl(branch_url)
         if existing_branch is not None:
             return faults.BranchAlreadyRegistered(branch_url)
 
@@ -108,10 +111,11 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 branch_type = BranchType.MIRRORED
             else:
                 branch_type = BranchType.HOSTED
-            branch = branch_set.new(
+            namespace = get_branch_namespace(owner, product)
+            branch = namespace.createBranch(
                 branch_type=branch_type,
-                name=branch_name, registrant=registrant, owner=owner,
-                product=product, url=branch_url, title=branch_title,
+                name=branch_name, registrant=registrant,
+                url=branch_url, title=branch_title,
                 summary=branch_description)
             if branch_type == BranchType.MIRRORED:
                 branch.requestMirror()
@@ -126,7 +130,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
     def link_branch_to_bug(self, branch_url, bug_id, whiteboard):
         """See IBranchSetAPI."""
-        branch = getUtility(IBranchSet).getByUrl(url=branch_url)
+        branch = getUtility(IBranchLookup).getByUrl(url=branch_url)
         if branch is None:
             return faults.NoSuchBranch(branch_url)
         try:
@@ -204,14 +208,18 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 str(URI(host=host, scheme=scheme, path=path)))
         return result
 
+    # XXX: JonathanLange 2009-03-19 spec=package-branches: Use the
+    # returns_fault decorator.
     def resolve_lp_path(self, path):
         """See `IPublicCodehostingAPI`."""
         strip_path = path.strip('/')
         if strip_path == '':
             return faults.InvalidBranchIdentifier(path)
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         try:
             branch, suffix, series = branch_set.getByLPPath(strip_path)
+            # XXX: JonathanLange 2009-03-19: Manually checking the permission
+            # kind of blows.
             if not check_permission('launchpad.View', branch):
                 if series is None:
                     raise NoSuchBranch(strip_path)
@@ -226,6 +234,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 if IProject.providedBy(pillar):
                     pillar_type = 'project group'
                 elif IDistribution.providedBy(pillar):
+                    # XXX: JonathanLange 2009-03-13 spec=package-branches: We
+                    # actually want to support matching against this!
                     pillar_type = 'distribution'
                 else:
                     raise AssertionError(

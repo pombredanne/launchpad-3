@@ -25,7 +25,7 @@ from bzrlib.errors import FileExists
 from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import TestNotApplicable, TestSkipped
 
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.testing import TwistedLayer
@@ -151,7 +151,8 @@ def make_bazaar_branch_and_tree(db_branch):
         "Can only create branches for HOSTED branches: %r"
         % db_branch)
     branch_dir = os.path.join(
-        config.codehosting.branches_root, branch_id_to_path(db_branch.id))
+        config.codehosting.hosted_branches_root,
+        branch_id_to_path(db_branch.id))
     return create_branch_with_one_revision(branch_dir)
 
 
@@ -163,12 +164,12 @@ def adapt_suite(adapter, base_suite):
     return suite
 
 
-def create_branch_with_one_revision(branch_dir):
+def create_branch_with_one_revision(branch_dir, format=None):
     """Create a dummy Bazaar branch at the given directory."""
     if not os.path.exists(branch_dir):
         os.makedirs(branch_dir)
     try:
-        tree = BzrDir.create_standalone_workingtree(branch_dir)
+        tree = BzrDir.create_standalone_workingtree(branch_dir, format)
     except FileExists:
         return
     f = open(os.path.join(branch_dir, 'hello'), 'w')

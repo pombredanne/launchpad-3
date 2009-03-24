@@ -1,9 +1,10 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, Object, Text, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
@@ -17,7 +18,6 @@ from canonical.launchpad.interfaces.sourcepackagename import (
 from canonical.launchpad.interfaces.translationfileformat import (
     TranslationFileFormat)
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 __metaclass__ = type
@@ -441,12 +441,15 @@ class IPOTemplate(IRosettaStats):
         Returns the newly created message set.
         """
 
-    def importFromQueue(entry_to_import, logger=None):
+    def importFromQueue(entry_to_import, logger=None, txn=None):
         """Import given queue entry.
 
         :param entry_to_import: `TranslationImportQueueEntry` specifying an
             approved import for this `POTemplate`
         :param logger: optional logger to report problems to.
+        :param txn: optional transaction manager for intermediate
+            commits.  Used to prevent long-running transactions that can
+            lead to deadlocks.
 
         :return: a tuple of the subject line and body for a notification email
             to be sent to the uploader.
@@ -490,7 +493,7 @@ class IPOTemplateSubset(Interface):
     def __getitem__(name):
         """Get a POTemplate by its name."""
 
-    def new(name, translation_domain, title, contents, owner):
+    def new(name, translation_domain, path, owner):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):

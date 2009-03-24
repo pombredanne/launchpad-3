@@ -38,12 +38,10 @@
                           translate your project into almost any
                           language. Translators use this simple web
                           interface to contribute translations in a
-                          wiki-style of collaboration.
+                          wiki-style of collaboration. (<a href="https://help.launchpad.net/Translations"
+                             >Read our guide</a>)
                         </p>
-                        <p>New to translating in Launchpad?
-                          <a href="https://help.launchpad.net/Translations"
-                             >Read our guide.</a>
-                        </p>
+
                         <div class="three column left">
 
                             <h2>Translatable operating systems</h2>

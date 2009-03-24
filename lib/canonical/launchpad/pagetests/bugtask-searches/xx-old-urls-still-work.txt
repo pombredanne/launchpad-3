@@ -32,7 +32,7 @@ to allow user agents (and users) to update bookmarks, etc.
     ...                 '='.join(term_before),
     ...                 '='.join(term_after))
 
-    >>> from canonical.launchpad.webapp.uri import URI
+    >>> from lazr.uri import URI
     >>> uri = URI(anon_browser.url)
 
     >>> print uri.path

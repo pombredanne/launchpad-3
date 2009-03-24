@@ -33,8 +33,18 @@
         </p>
       </tal:referred>
       <p tal:condition="not:view/referrer">
-        Check that you entered the address correctly.
+        Check that you entered the address correctly, or search for it:
       </p>
+      <form
+        xml:lang="en" lang="en" dir="ltr"
+        tal:attributes="action string:${rooturl}+search"
+        method="get"
+        accept-charset="UTF-8"
+        style="margin: 1em 0 1em 0"
+      >
+        <img src="/@@/search.png" /> <input id="text" type="text" name="field.text" size="50" />
+        <input type="submit" value="Search Launchpad" />
+      </form>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
       <ul class="menu">
         <li tal:condition="view/layer_help"

@@ -90,6 +90,9 @@ Create a subsequent source publication so a package diff can be provided.
     >>> another_test_source = test_publisher.getPubSource(
     ...     archive=no_priv.archive, sourcename='test-pkg',
     ...     version='1.1')
+    >>> another_dsc_file = (
+    ...     another_test_source.sourcepackagerelease.files[0].libraryfile)
+
     >>> package_diff  = test_source.sourcepackagerelease.requestDiffTo(
     ...     no_priv, another_test_source.sourcepackagerelease)
     >>> package_diff.diff_content = test_publisher.addMockFile(
@@ -109,9 +112,16 @@ Links to files accessible via +files/ proxy in the PPA page.
 
     >>> ppa_links = [
     ...     ('(changesfile)', source_upload.changesfile),
+    ...     ]
+
+    >>> ppa_1_0_links = [
     ...     ('test-pkg_1.0.dsc', dsc_file),
     ...     ('test-pkg_1.0.tar.gz', tar_gz),
     ...     ('test-bin_1.0_all.deb', deb_file),
+    ...     ]
+
+    >>> ppa_1_1_links = [
+    ...     ('test-pkg_1.1.dsc', another_dsc_file),
     ...     ('1.0 to 1.1', package_diff.diff_content),
     ...     ]
 
@@ -147,7 +157,6 @@ Create a function to check the expected links.
     ...             print '%s: NOT OK (%s)' % (
     ...                 libraryfile.filename, relative_path)
 
-
 Checking file links on PPA index page.
 
     >>> no_priv_browser = setupBrowser(
@@ -159,38 +168,35 @@ Checking file links on PPA index page.
 
     >>> check_urls(no_priv_browser, ppa_links)
     test-pkg_1.0_source.changes: OK
-    test-pkg_1.0.dsc:            OK
-    test-pkg_1.0.tar.gz:         OK
-    test-bin_1.0_all.deb:        OK
-    test-pkg_1.0_1.1.diff.gz:    OK
-
 
     >>> no_priv_browser.getLink('Copy packages').click()
     >>> check_urls(no_priv_browser, ppa_links)
     test-pkg_1.0_source.changes: OK
-    test-pkg_1.0.dsc:            OK
-    test-pkg_1.0.tar.gz:         OK
-    test-bin_1.0_all.deb:        OK
-    test-pkg_1.0_1.1.diff.gz:    OK
 
-
-    >>> no_priv_browser.getLink('Personal Package Archive').click()
+    >>> no_priv_browser.getLink('default PPA').click()
     >>> no_priv_browser.getLink('Delete packages').click()
     >>> check_urls(no_priv_browser, ppa_links)
     test-pkg_1.0_source.changes: OK
-    test-pkg_1.0.dsc:            OK
-    test-pkg_1.0.tar.gz:         OK
-    test-bin_1.0_all.deb:        OK
-    test-pkg_1.0_1.1.diff.gz:    OK
 
-    >>> no_priv_browser.getLink('Personal Package Archive').click()
+    >>> no_priv_browser.getLink('default PPA').click()
     >>> no_priv_browser.getLink('View build records').click()
     >>> no_priv_browser.getControl(name="build_state").value = ['built']
     >>> no_priv_browser.getControl("Update").click()
     >>> check_urls(no_priv_browser, builds_links)
     buildlog_ubuntu-breezy-autotest-i386.test-pkg_1.0_FULLYBUILT.txt.gz: OK
 
-    >>> no_priv_browser.getLink('Personal Package Archive').click()
+    >>> no_priv_browser.getLink('default PPA').click()
+
+Checking file links in the expandable-row area.
+
+    >>> expander_id = find_tags_by_class(
+    ...     no_priv_browser.contents, 'expander')[1]['id']
+    >>> no_priv_browser.getLink(id=expander_id).click()
+
+    >>> check_urls(no_priv_browser, ppa_1_0_links)
+    test-pkg_1.0.dsc: OK
+    test-pkg_1.0.tar.gz: OK
+    test-bin_1.0_all.deb: OK
 
 Checking file links on Build index page.
 
@@ -202,6 +208,18 @@ Checking file links on Build index page.
     test-pkg_1.0_all.changes:    OK
     buildlog_...txt.gz:          OK
     upload_..._log.txt:          OK
+
+Checking a package-diff file in the expandable-row area.
+
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive")
+
+    >>> expander_id = find_tags_by_class(
+    ...     no_priv_browser.contents, 'expander')[0]['id']
+    >>> no_priv_browser.getLink(id=expander_id).click()
+
+    >>> check_urls(no_priv_browser, ppa_1_1_links)
+    test-pkg_1.1.dsc:         OK
+    test-pkg_1.0_1.1.diff.gz: OK
 
 Retrieve file information for using the direct HTTP browsing API.
 
@@ -327,4 +345,40 @@ proxy redirects to the public http url.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/95/test-pkg_1.0.dsc
-    <BLANKLINE>
+    ...
+
+== Compatibility URL Redirection ==
+
+If a script or otherwise is trying to access +archive/+files, we make
+sure that '+files' isn't understood as the PPA name, but instead
+redirect to the files for the default named PPA.
+
+    >>> file_lp_url_without_ppa_name = file_lp_url.replace('/ppa', '')
+    >>> print file_lp_url_without_ppa_name
+    http://launchpad.dev/~no-priv/+archive/+files/test-pkg_1.0.dsc
+
+    >>> print http(r"""
+    ... GET %s HTTP/1.1
+    ... """ % file_lp_url_without_ppa_name.replace(
+    ...     'http://launchpad.dev', ''))
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://localhost/~no-priv/+archive/ppa/+files/test-pkg_1.0.dsc
+    ...
+
+The same redirection happens for +archive/+build/blah urls:
+
+    >>> buildlog_lp_url_without_ppa_name = buildlog_lp_url.replace(
+    ...     '/ppa', '')
+    >>> print buildlog_lp_url_without_ppa_name
+    http://.../~no-priv/+archive/+build/31/+files/...
+
+    >>> print http(r"""
+    ... GET %s HTTP/1.1
+    ... """ % buildlog_lp_url_without_ppa_name.replace(
+    ...     'http://launchpad.dev', ''))
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://.../~no-priv/+archive/ppa/+build/31/+files/...
+    ...
+

@@ -630,7 +630,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = self.replaceSampledata(
             data=self.sample_data,
             replace_text='',
-            from_text='<aliases>',
+            from_text='<aliases',
             to_text='</aliases>')
         result, submission_id = self.runValidator(sample_data)
         self.assertNotEqual(result, None,
@@ -2607,6 +2607,110 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Element comment has extra content: nonsense',
             'detection of invalid sub-tag <nonsense> of <comment>')
+
+    def testMissingContextNode(self):
+        """Validation of the <context> node."""
+        # The default sample data contains this node. It is not a
+        # required node, we can omit it without making the data
+        # invalid.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<context>',
+            to_text='</context>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Submission without a <context> node did not validate.')
+
+    def testContextNodeAttributes(self):
+        """Validation of the <context> node attributes."""
+        # This node must not have any attributes.
+        sample_data = self.sample_data.replace(
+            '<context>', '<context foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with attribute '
+            'not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of invalid attribute of <context>')
+
+    def testContextSubnodes(self):
+        """Validation of sub-nodes of <context>."""
+        # This node may only have the sub-node <info>.
+        sample_data = self.sample_data.replace(
+            '<context>', '<context><nonsense/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with a subnode '
+            'not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of invalid sub-node of <context>')
+
+    def testContextNodeCData(self):
+        """Validation of the <context> node containing CData."""
+        # this node must not have any CData content
+        sample_data = self.sample_data.replace(
+            '<context>', '<context>nonsense')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with CData '
+            'content not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of invalid sub-node of <context>')
+
+    def testInfoNodeAttributes(self):
+        """Validation of <info> attributes."""
+        # The attribute "command" is required.
+        sample_data = self.sample_data.replace(
+            '<info command="dmidecode">', '<info>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with CData '
+            'content not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of missing attribute "command" of <info> failed')
+        # Other attributes are not allowed.
+        sample_data = self.sample_data.replace(
+            '<info command="dmidecode">',
+            '<info command="dmidecode" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with CData '
+            'content not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of missing attribute "command" of <info> failed')
+
+    def testInfoNodeSubnodes(self):
+        """Validation of an <info> containing a sub-node."""
+        # Sub-nodes are not allowed for <info>
+        sample_data = self.sample_data.replace(
+            '<info command="dmidecode">',
+            '<info command="dmidecode"><nonsense/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with CData '
+            'content not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of an invalid sub.node of <info> failed')
 
 
 def test_suite():

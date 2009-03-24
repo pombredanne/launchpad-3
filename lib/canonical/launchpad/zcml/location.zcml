@@ -8,10 +8,10 @@
   <class class="canonical.launchpad.database.PersonLocation">
     <require
       permission="zope.Public"
-      attributes="visible" />
+      attributes="visible time_zone" />
     <require
       permission="launchpad.View"
-      attributes="latitude longitude time_zone last_modified_by
+      attributes="latitude longitude last_modified_by
                   date_last_modified person" />
   </class>
 

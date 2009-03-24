@@ -55,7 +55,7 @@ that product is required:
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': '',
-    ...     'field.visited_steps': 'choose_product'}
+    ...     'field.__visited_steps__': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.getFieldError('product')
@@ -66,7 +66,7 @@ If we supply a valid product, it will move on to the next step.
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'evolution',
-    ...     'field.visited_steps': 'choose_product'}
+    ...     'field.__visited_steps__': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
@@ -81,7 +81,7 @@ If the validation fails, an error will be displayed.
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'firefox',
-    ...     'field.visited_steps': 'choose_product'}
+    ...     'field.__visited_steps__': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
@@ -204,14 +204,14 @@ In order to show that all the events get fired off, let's create an
 event listener and register it:
 
     >>> from zope.interface import Interface
-    >>> from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+    >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
     >>> from canonical.launchpad.ftests.event import TestEventListener
 
     >>> def on_created_event(object, event):
-    ...     print "SQLObjectCreatedEvent: %r" % object
+    ...     print "ObjectCreatedEvent: %r" % object
 
     >>> on_created_listener = TestEventListener(
-    ...     Interface, ISQLObjectCreatedEvent, on_created_event)
+    ...     Interface, IObjectCreatedEvent, on_created_event)
 
 
 If an invalid product is specified, or a product that fails the
@@ -219,11 +219,14 @@ validation (for example, a bugtask for that product already exists),
 the user will be kept in the first step and asked to choose the product.
 
 Note that for the form of the second step to be processed we have to
-include its (and all previous) step_name in field.visited_steps.
+include its (and all previous) step_name in field.__visited_steps__.
 
     >>> form = {
-    ...     'field.actions.continue': '1', 'field.product': u'no-such-product',
-    ...     'field.visited_steps': 'choose_product specify_remote_bug_url'}
+    ...     'field.actions.continue': '1',
+    ...     'field.product': u'no-such-product',
+    ...     'field.__visited_steps__':
+    ...         'choose_product|specify_remote_bug_url',
+    ...     }
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
@@ -245,7 +248,7 @@ be created:
     >>> form['field.product'] = u'evolution'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    SQLObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask at ...>
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.bugtargetdisplayname
@@ -291,7 +294,7 @@ watch.
     >>> form['field.link_upstream_how'] = u'UNLINKED_UPSTREAM'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    SQLObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask at ...>
     >>> print add_task_view.notifications
     []
     >>> add_task_view.next_url is not None
@@ -349,11 +352,11 @@ we ask the user if he wants to register the bugtracker as well.
 Confirming the bugtracker creation will cause the new task to be added and
 linked to the new bug watch.
 
-    >>> form['field.visited_steps'] += " %s" % add_task_view.step_name
+    >>> form['field.__visited_steps__'] += "|%s" % add_task_view.step_name
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    SQLObjectCreatedEvent: <BugWatch at ...>
-    SQLObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugWatch at ...>
+    ObjectCreatedEvent: <BugTask at ...>
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.bugtargetdisplayname
@@ -371,11 +374,12 @@ and the bug watch will be added without any confirmation needed:
     >>> form['field.product'] = u'alsa-utils'
     >>> form['field.bug_url'] = (
     ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
-    >>> form['field.visited_steps'] = "choose_product specify_remote_bug_url"
+    >>> form['field.__visited_steps__'] = (
+    ...     "choose_product|specify_remote_bug_url")
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    SQLObjectCreatedEvent: <BugWatch at ...>
-    SQLObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugWatch at ...>
+    ObjectCreatedEvent: <BugTask at ...>
 
     >>> print add_task_view.notifications
     []
@@ -417,8 +421,8 @@ another bug links to the same bug.
     >>> bug_five_task = bug_five.bugtasks[0]
     >>> add_task_view = get_and_setup_view(
     ...     bug_five_task, '+choose-affected-product', form)
-    SQLObjectCreatedEvent: <BugWatch at ...>
-    SQLObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugWatch at ...>
+    ObjectCreatedEvent: <BugTask at ...>
 
     >>> add_task_view.request.response.getHeader('Location')
     'http://.../+bug/5'
@@ -438,7 +442,7 @@ confirmation page.
     >>> form['field.link_upstream_how'] = u'UNLINKED_UPSTREAM'
     >>> form['field.bug_url'] = u''
     >>> form['field.product'] = u'thunderbird'
-    >>> form['field.visited_steps'] = u'choose_product'
+    >>> form['field.__visited_steps__'] = u'choose_product'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.errors
@@ -467,7 +471,7 @@ package will be converted to the corresponding source package.
     ...     'field.sourcepackagename': u'mozilla-firefox-data'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+distrotask', form)
-    SQLObjectCreatedEvent: <BugTask at ...>
+    ObjectCreatedEvent: <BugTask at ...>
     >>> add_task_view.errors
     []
 
@@ -585,3 +589,76 @@ since doing so has produced OOPSes (bug 129406).
     ...     IDistroBugTask['sourcepackagename'])
     False
 
+
+
+== Getting the upstream bug filing URL for a product ==
+
+Products that don't use Launchpad for bug tracking can be linked to
+external bug trackers. In order to make it easier for users to file bugs
+on upstream bug trackers, it's possible to get the bug filing and search
+URLs for a Product's upstream bug tracker using its
+`upstream_bugtracker_links` property.
+
+We'll link a product to an upstream bug tracker to demonstrate this.
+
+    >>> logout()
+    >>> login('foo.bar@canonical.com')
+    >>> bugtracker = factory.makeBugTracker('http://example.com')
+    >>> product = factory.makeProduct(name='frobnitz')
+    >>> product.official_malone = False
+    >>> product.bugtracker = bugtracker
+    >>> product.remote_product = u'foo'
+
+    >>> def print_links(links_dict):
+    ...     if links_dict is None:
+    ...         print None
+    ...         return
+    ...
+    ...     for key in sorted(links_dict):
+    ...         print "%s: %s" % (key, links_dict[key])
+
+upstream_bugtracker_links is a dict of `bug_filing_url` and `bug_search_url`.
+The bug filing link includes the summary and description of the bug; the
+search link includes the summary only.
+
+    >>> form = {
+    ...     'field.actions.continue': '', 'field.product': 'frobnitz',
+    ...     'field.__visited_steps__': 'choose_product'}
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+choose-affected-product', form)
+
+    >>> print_links(add_task_view.upstream_bugtracker_links)
+    bug_filing_url:
+    ...?product=foo&short_desc=Reflow%20...&long_desc=Malone%20...
+    bug_search_url: ...query.cgi?product=foo&short_desc=Reflow%20problems...
+
+If the product's `bugtracker` isn't specified its
+`upstream_bugtracker_links` property will be None.
+
+    >>> product.bugtracker = None
+    >>> print_links(add_task_view.upstream_bugtracker_links)
+    None
+
+Similarly, if the product's `remote_product` attribute is None and its
+bug tracker is one which requires an upstream product, bug bug_filing_url
+and bug_search_url will be None.
+
+    >>> product.bugtracker = bugtracker
+    >>> product.remote_product = None
+    >>> print_links(add_task_view.upstream_bugtracker_links)
+    bug_filing_url: None
+    bug_search_url: None
+
+However, some remote bug trackers, notably Trac, only track one product
+at a time. They don't need a remote product in order to provide a bug
+filing URL, so the `upstream_bugtracker_links` for products linked to such
+bug trackers will always be a usable URL.
+
+    >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+    >>> trac_bugtracker = factory.makeBugTracker(
+    ...     'http://trac.example.com', BugTrackerType.TRAC)
+    >>> product.bugtracker = trac_bugtracker
+
+    >>> print_links(add_task_view.upstream_bugtracker_links)
+    bug_filing_url: http://trac.example.com/newticket
+    bug_search_url: http://trac.example.com/search?ticket=on&q=Reflow%20...

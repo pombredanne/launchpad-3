@@ -22,7 +22,7 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
-from canonical.launchpad.browser.questiontarget import (
+from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces import (
@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     PackagePublishingPocket)
 from canonical.launchpad.webapp import (
     ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
-    redirection, StandardLaunchpadFacets, stepto)
+    NavigationMenu, redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
@@ -75,7 +75,7 @@ class SourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
-    enable_only = ['overview', 'bugs', 'answers', 'translations']
+    enable_only = ['overview', 'bugs', 'branches', 'answers', 'translations']
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):
@@ -109,24 +109,24 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
         return Link('+gethelp', 'Help and support options', icon='info')
 
 
-class SourcePackageTranslationsMenu(ApplicationMenu):
+class SourcePackageTranslationsMenu(NavigationMenu):
 
     usedfor = ISourcePackage
     facet = 'translations'
-    links = ['help', 'imports', 'translationdownload']
+    links = ('overview', 'translationdownload', 'imports')
 
     def imports(self):
-        text = 'See import queue'
+        text = 'Import queue'
         return Link('+imports', text)
 
     @enabled_with_permission('launchpad.ExpensiveRequest')
     def translationdownload(self):
-        text = 'Download translations'
+        text = 'Download'
         enabled = bool(self.context.getCurrentTranslationTemplates())
         return Link('+export', text, icon='download', enabled=enabled)
 
-    def help(self):
-        return Link('+translate', 'How you can help', icon='info')
+    def overview(self):
+        return Link('', 'Overview', icon='info')
 
 
 class SourcePackageTranslationsExportView(BaseExportView):

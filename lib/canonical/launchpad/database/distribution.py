@@ -11,7 +11,7 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, ForeignKey, SQLRelatedJoin, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import SQL, Join
+from storm.locals import Desc, In, Join, SQL
 from storm.store import Store
 
 from canonical.archivepublisher.debversion import Version
@@ -23,6 +23,7 @@ from canonical.database.sqlbase import (
     quote, quote_like, SQLBase, sqlvalues, cursor)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
+from canonical.launchpad.components.storm_operators import FTQ, Match, RANK
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
@@ -30,8 +31,10 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtarget import (
+    BugTargetBase, OfficialBugTagTargetMixin)
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distributionmirror import DistributionMirror
@@ -41,18 +44,20 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
+from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseries import DistroSeries
-from canonical.launchpad.database.faq import FAQ, FAQSearch
+from canonical.launchpad.database.distroseriespackagecache import (
+    DistroSeriesPackageCache)
+from lp.answers.model.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.milestone import (
+    HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing, BinaryPackageFilePublishing,
-    SourcePackagePublishingHistory)
-from canonical.launchpad.database.question import (
-    QuestionTargetSearch, QuestionTargetMixin)
+    BinaryPackageFilePublishing, BinaryPackagePublishingHistory,
+    SourcePackageFilePublishing, SourcePackagePublishingHistory)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
@@ -71,13 +76,13 @@ from canonical.launchpad.interfaces.archivepermission import (
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.interfaces.build import IBuildSet, IHasBuildRecords
+from canonical.launchpad.interfaces.build import IBuildSet
+from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from canonical.launchpad.interfaces.distributionmirror import (
-    MirrorContent, MirrorStatus)
+    IDistributionMirror, MirrorContent, MirrorStatus)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
@@ -85,9 +90,6 @@ from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
-from canonical.launchpad.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName)
 from canonical.launchpad.interfaces.specification import (
@@ -100,20 +102,26 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
+
+from lp.answers.model.question import (
+    QuestionTargetSearch, QuestionTargetMixin)
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
-                   QuestionTargetMixin, StructuralSubscriptionTargetMixin):
+                   OfficialBugTagTargetMixin, QuestionTargetMixin,
+                   StructuralSubscriptionTargetMixin, HasMilestonesMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IQuestionTarget, IStructuralSubscriptionTarget)
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget, 
+        IStructuralSubscriptionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -228,25 +236,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return [archive.id for archive in self.all_distro_archives]
 
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return (Milestone.distribution == self)
+
     def getArchiveIDList(self, archive=None):
         """See `IDistribution`."""
         if archive is None:
             return self.all_distro_archive_ids
         else:
             return [archive.id]
-
-    @property
-    def all_milestones(self):
-        """See `IDistribution`."""
-        return Milestone.selectBy(
-            distribution=self, orderBy=['-dateexpected', 'name'])
-
-    @property
-    def milestones(self):
-        """See `IDistribution`."""
-        return Milestone.selectBy(
-            distribution=self, visible=True,
-            orderBy=['-dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):
@@ -390,7 +389,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if not self.full_functionality:
             return None
 
-        url = http_base_url or ftp_base_url
+        urls = {'http_base_url' : http_base_url,
+                'ftp_base_url' : ftp_base_url,
+                'rsync_base_url' : rsync_base_url}
+        for name, value in urls.items():
+            if value is not None:
+                urls[name] = IDistributionMirror[name].normalize(value)
+
+        url = urls['http_base_url'] or urls['ftp_base_url']
         assert url is not None, (
             "A mirror must provide either an HTTP or FTP URL (or both).")
         dummy, host, dummy, dummy, dummy, dummy = urlparse(url)
@@ -405,8 +411,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
             country=country, content=content, displayname=displayname,
-            description=description, http_base_url=http_base_url,
-            ftp_base_url=ftp_base_url, rsync_base_url=rsync_base_url,
+            description=description, http_base_url=urls['http_base_url'],
+            ftp_base_url=urls['ftp_base_url'],
+            rsync_base_url=urls['rsync_base_url'],
             official_candidate=official_candidate, enabled=enabled)
 
     def createBug(self, bug_params):
@@ -922,7 +929,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # name as well; this is because source package names are
         # notoriously bad for fti matching -- they can contain dots, or
         # be short like "at", both things which users do search for.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = Store.of(self)
         find_spec = (
             DistributionSourcePackageCache,
             SourcePackageName,
@@ -952,7 +959,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # Create a function that will decorate the results, converting
         # them from the find_spec above into DSPs:
-        def result_to_dsp((cache, source_package_name, rank)):
+        def result_to_dsp(result):
+            cache, source_package_name, rank = result
             return DistributionSourcePackage(
                 self,
                 source_package_name
@@ -961,6 +969,74 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Return the decorated result set so the consumer of these
         # results will only see DSPs
         return DecoratedResultSet(dsp_caches, result_to_dsp)
+
+    @property
+    def _binaryPackageSearchClause(self):
+        """Return a Storm match clause for binary package searches."""
+        # This matches all DistributionSourcePackageCache rows that have
+        # a source package that generated the BinaryPackageName that
+        # we're searching for.
+        return (
+            DistroSeries.distribution == self,
+            DistroSeries.status != DistroSeriesStatus.OBSOLETE,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            DistroArchSeries.distroseries == DistroSeries.id,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.build == Build.id,
+            Build.sourcepackagerelease == SourcePackageRelease.id,
+            SourcePackageRelease.sourcepackagename == SourcePackageName.id,
+            DistributionSourcePackageCache.sourcepackagename ==
+                SourcePackageName.id,
+            In(
+                DistroSeriesPackageCache.archiveID,
+                self.all_distro_archive_ids))
+
+    def searchBinaryPackages(self, package_name, exact_match=False):
+        """See `IDistribution`."""
+        store = Store.of(self)
+
+        find_spec = self._binaryPackageSearchClause
+        select_spec = (DistributionSourcePackageCache,)
+
+        if exact_match:
+            match_clause = (BinaryPackageName.name == package_name,)
+        else:
+            match_clause = (
+                BinaryPackageName.name.like("%%%s%%" % package_name.lower()),)
+
+        result_set = store.find(
+            *(select_spec + find_spec + match_clause)).config(distinct=True)
+
+        return result_set
+
+    def searchBinaryPackagesFTI(self, package_name):
+        """See `IDistribution`."""
+        search_vector_column = DistroSeriesPackageCache.fti
+        query_function = FTQ(package_name)
+        rank = RANK(search_vector_column, query_function)
+
+        extra_clauses = (
+            BinaryPackageRelease.binarypackagenameID ==
+                DistroSeriesPackageCache.binarypackagenameID,
+            Match(search_vector_column, query_function)
+            )
+        where_spec = (self._binaryPackageSearchClause + extra_clauses)
+
+        select_spec = (DistributionSourcePackageCache, rank)
+        store = Store.of(self)
+        results = store.find(select_spec, where_spec)
+        results.order_by(Desc(rank)).config(distinct=True)
+
+        def result_to_dspc(result):
+            cache, rank = result
+            return cache
+
+        # Return the decorated result set so the consumer of these
+        # results will only see DSPCs
+        return DecoratedResultSet(results, result_to_dspc)
 
     def guessPackageNames(self, pkgname):
         """See `IDistribution`"""
@@ -1204,16 +1280,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # of excluded packages. Otherwise return an empty list.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         if self == ubuntu:
+            #XXX gmb 2009-02-02: bug 324298
+            #    This needs to be managed in a nicer, non-hardcoded
+            #    fashion.
             excluded_packages = [
                 'apport',
                 'casper',
                 'displayconfig-gtk',
+                'flashplugin-nonfree',
                 'gnome-app-install',
+                'nvidia-graphics-drivers-177',
                 'software-properties',
+                'sun-java6',
                 'synaptic',
                 'ubiquity',
                 'ubuntu-meta',
                 'update-manager',
+                'update-notifier',
+                'usb-creator',
                 'usplash',
                 ]
         else:
@@ -1377,6 +1461,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             status=DistroSeriesStatus.EXPERIMENTAL,
             parent_series=parent_series,
             owner=owner)
+
+    @property
+    def has_published_binaries(self):
+        """See `IDistribution`."""
+        store = Store.of(self)
+        results = store.find(
+            BinaryPackagePublishingHistory,
+            DistroArchSeries.distroseries == DistroSeries.id,
+            DistroSeries.distribution == self,
+            BinaryPackagePublishingHistory.distroarchseries ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED).config(limit=1)
+
+        # XXX 2009-02-19 Julian
+        # Storm is not very useful for bool checking on the results,
+        # see: https://bugs.launchpad.net/soyuz/+bug/246200
+        return results.any() != None
 
 
 class DistributionSet:

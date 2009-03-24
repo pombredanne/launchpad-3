@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces.searchservice import (
     ISearchResult, ISearchResults, ISearchService, GoogleResponseError,
     GoogleWrongGSPVersion)
 from canonical.launchpad.webapp import urlparse
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 class PageMatch:

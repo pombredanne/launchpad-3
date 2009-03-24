@@ -55,6 +55,34 @@ But Foo Bar can:
     ...
 
 
+== Open ID link ==
+
+When a person visits his or her own page, they'll see their OpenID login URL.
+
+    >>> user_browser.open('http://launchpad.dev/~no-priv')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'openid-info'))
+    OpenID login: http://launchpad.dev/~no-priv ...
+
+The URL is followed by a helpful link.
+
+    >>> print user_browser.getLink('(What\xe2\x80\x99s\xc2\xa0this?)').url
+    https://help.launchpad.net/OpenID
+
+However, when the user visits someone else's page, they see no such URL.
+
+    >>> user_browser.open('http://launchpad.dev/~salgado')
+    >>> print find_tag_by_id(user_browser.contents, 'openid-info')
+    None
+
+And there is no helpful link.
+
+    >>> print user_browser.getLink(u"What&#8217;s\xa0this?").url
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+
 == Jabber IDs ==
 
 A person's jabber IDs are only show to authenticated users.
@@ -92,6 +120,24 @@ see the key ID with a link to the keyserver.
     >>> opengpg = details.find('th', text='OpenPGP keys:').parent.parent
     >>> print re.sub('\s+', ' ', str(opengpg))
     <tr>...<td> 12345678 </td>...
+
+
+== Languages ==
+
+The contact details portlet shows the languages that the user speaks.
+No Privileges Person can see the languages that sabdfl speaks.
+
+    >>> user_browser.open('http://launchpad.dev/~carlos')
+    >>> print extract_text(find_tag_by_id(user_browser.contents, 'languages'))
+    Languages: Catalan, English, Spanish
+
+When viewing his own page, No Privileges Person sees his languages and can
+edit them.
+
+    >>> user_browser.open('http://launchpad.dev/~no-priv')
+    >>> languages_row = find_tag_by_id(user_browser.contents, 'languages')
+    >>> print languages_row.td
+    <td> English <a href="http://launchpad.dev/~no-priv/+editlanguages"...
 
 
 == Summary Pagelets ==

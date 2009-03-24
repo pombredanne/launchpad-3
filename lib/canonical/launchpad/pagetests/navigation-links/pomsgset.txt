@@ -39,7 +39,7 @@ The Application tabs should point to ISourcePackage URLs.
 
     >>> print_location_apps(browser.contents)
     * Overview - http://launchpad.dev/ubuntu/hoary/+source/evolution
-    * Code - not linked
+    * Code - http://code.launchpad.dev/ubuntu/hoary/+source/evolution
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/evolution
     * Blueprints - not linked
     * Translations (selected) - http://translations.launchpad.dev/ubuntu/hoary/+source/evolution

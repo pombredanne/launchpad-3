@@ -12,19 +12,31 @@ from zope.publisher.interfaces.http import IHTTPCredentials
 
 from zope.app.testing import ztapi
 from zope.app.testing.placelesssetup import PlacelessSetup
-from zope.app.security.principalregistry import Principal
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.basicauthadapter import BasicAuthAdapter
 
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
-from canonical.launchpad.webapp.authentication import PlacelessAuthUtility
-from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+from canonical.launchpad.webapp.authentication import (
+    LaunchpadPrincipal, PlacelessAuthUtility)
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.interfaces import (
-    IPasswordEncryptor, IPersonSet, IPerson)
+    IAccount, IPasswordEncryptor, IPerson)
 
-Bruce = Principal('bruce', 'bruce', 'Bruce', 'bruce', 'bruce!')
+
+class DummyPerson(object):
+    implements(IPerson)
+    is_valid = True
+
+
+class DummyAccount(object):
+    implements(IAccount)
+    is_valid = True
+    person = DummyPerson()
+
+
+Bruce = LaunchpadPrincipal(42, 'bruce', 'Bruce', DummyAccount(), 'bruce!')
+
 
 class DummyPlacelessLoginSource(object):
     implements(IPlacelessLoginSource)
@@ -38,33 +50,27 @@ class DummyPlacelessLoginSource(object):
         return [Bruce]
 
 
-class DummyPerson(object):
-    implements(IPerson)
-    is_valid_person = True
+class DummyPasswordEncryptor(object):
+    implements(IPasswordEncryptor)
 
-
-class DummyPersonSet(object):
-    implements(IPersonSet)
-    def get(self, id):
-        return DummyPerson()
+    def validate(self, plaintext, encrypted):
+        return plaintext == encrypted
 
 
 class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
     def setUp(self):
         PlacelessSetup.setUp(self)
-        ztapi.provideUtility(IPasswordEncryptor, SSHADigestEncryptor())
+        ztapi.provideUtility(IPasswordEncryptor, DummyPasswordEncryptor())
         ztapi.provideUtility(IPlacelessLoginSource,
                              DummyPlacelessLoginSource())
         ztapi.provideUtility(IPlacelessAuthUtility, PlacelessAuthUtility())
         ztapi.provideAdapter(
             IHTTPCredentials, ILoginPassword, BasicAuthAdapter)
-        ztapi.provideUtility(IPersonSet, DummyPersonSet())
 
     def tearDown(self):
         ztapi.unprovideUtility(IPasswordEncryptor)
         ztapi.unprovideUtility(IPlacelessLoginSource)
         ztapi.unprovideUtility(IPlacelessAuthUtility)
-        ztapi.unprovideUtility(IPersonSet)
         PlacelessSetup.tearDown(self)
 
     def _make(self, login, pwd):

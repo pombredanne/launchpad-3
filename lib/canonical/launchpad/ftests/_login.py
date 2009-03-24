@@ -49,6 +49,8 @@ def login(email, participation=None):
         setupInteraction(authutil.unauthenticatedPrincipal())
         principal = authutil.getPrincipalByLogin(email, want_password=False)
         assert principal is not None, "Invalid login"
+        if principal.person is not None and principal.person.is_team:
+            raise AssertionError("Please do not try to login as a team")
     else:
         principal = authutil.unauthenticatedPrincipal()
 

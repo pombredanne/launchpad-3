@@ -9,6 +9,7 @@ __all__ = [
     'IIndexedMessage',
     'IMessage',
     'IMessageChunk',
+    'IMessageJob',
     'IMessageSet',
     'IUserToUserEmail',
     'IndexedMessage',
@@ -25,6 +26,7 @@ from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 
@@ -271,6 +273,22 @@ class IDirectEmailAuthorization(Interface):
         :param message: The email message that was sent.
         :type message: `email.Message.Message`
         """
+
+
+class IMessageJob(Interface):
+    """Interface for jobs triggered by messages."""
+
+    job = Object(schema=IJob, required=True)
+
+    message_bytes = Object(
+        title=_('Full MIME content of Email.'), required=True,
+        schema=ILibraryFileAlias)
+
+    def getMessage():
+        """Return an email.Message representing this job's message."""
+
+    def destroySelf():
+        """Remove this object (and its job) from the database."""
 
 
 class UnknownSender(NotFoundError):

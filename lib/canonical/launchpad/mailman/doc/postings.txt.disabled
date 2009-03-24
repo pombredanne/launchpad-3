@@ -73,10 +73,10 @@ gets discarded.
 
 == Unsubscribed Launchpad members ==
 
-Anne's perferred email address is still validated, and she post a message from
-that address.  However, because she has not yet joined the team or subscribed
-to its mailing list, her messages gets held for moderation by the team's
-administrator.
+Anne's preferred email address is still validated, and she posts a message
+from that address.  However, because she has not yet joined the team or
+subscribed to its mailing list, her messages gets held for moderation by the
+team's administrator.
 
     >>> print anne.preferredemail.email, anne.preferredemail.status.title
     anne.person@example.com Preferred Email Address
@@ -822,3 +822,69 @@ messages to the list.
     >>> vette_watcher.wait_for_discard('narwhale')
     >>> len(smtpd.getMessages())
     0
+
+
+== Large messages ==
+
+Only messages which are less than about 40k in size are allowed straight
+through on the mailing list.  A message bigger than that will be held for
+moderator approval.
+
+    >>> from canonical.config import config
+    >>> config.mailman.soft_max_size
+    40000
+
+    >>> from email.MIMENonMultipart import MIMENonMultipart
+    >>> big_message = MIMENonMultipart('application', 'octet-stream')
+    >>> big_message.set_payload('\n'.join(['x' * 50] * 1000))
+    >>> big_message['From'] = 'anne.person@example.com'
+    >>> big_message['To'] = 'itest-one@lists.launchpad.dev'
+    >>> big_message['Subject'] = 'A huge message'
+    >>> big_message['Message-ID'] = '<puma>'
+    >>> inject('itest-one', big_message.as_string())
+
+    >>> vette_watcher.wait_for_hold('itest-one', 'puma')
+    >>> print_message_summaries()
+    Number of messages: 1
+    bounces@canonical.com
+        ...
+        Itest One <noreply@launchpad.net>
+        New mailing list message requiring approval for Itest One
+
+Once this message is approved, it is posted through to the mailing list.
+
+    >>> browser.open(
+    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
+    >>> browser.getControl(name='field.%3Cpuma%3E').value = ['approve']
+    >>> browser.getControl('Moderate').click()
+    >>> smtpd_watcher.wait_for_mbox_delivery('puma')
+    >>> smtpd_watcher.wait_for_mbox_delivery('puma')
+
+    >>> print_message_summaries()
+    Number of messages: 2
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+        <puma>
+        anne.person@example.com
+        [Itest-one] A huge message
+    itest-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
+        <puma>
+        anne.person@example.com
+        [Itest-one] A huge message
+
+There is a hard limit of 1MB, over which the message is summarily logged and
+discarded.
+
+    >>> config.mailman.hard_max_size
+    1000000
+
+    >>> huge_message = MIMENonMultipart('application', 'octet-stream')
+    >>> huge_message.set_payload('\n'.join(['x' * 50] * 20000))
+    >>> huge_message['From'] = 'anne.person@example.com'
+    >>> huge_message['To'] = 'itest-one@lists.launchpad.dev'
+    >>> huge_message['Subject'] = 'A huge message'
+    >>> huge_message['Message-ID'] = '<quahog>'
+    >>> inject('itest-one', huge_message.as_string())
+
+    >>> vette_watcher.wait_for_discard('quahog')
+    >>> print_message_summaries()
+    Number of messages: 0

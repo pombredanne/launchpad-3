@@ -197,6 +197,7 @@ class SoyuzTestPublisher:
                        breaks=None, filecontent='bbbiiinnnaaarrryyy',
                        status=PackagePublishingStatus.PENDING,
                        pocket=PackagePublishingPocket.RELEASE,
+                       format=BinaryPackageFormat.DEB,
                        scheduleddeletiondate=None, dateremoved=None,
                        distroseries=None,
                        archive=None,
@@ -222,7 +223,7 @@ class SoyuzTestPublisher:
             binarypackagerelease = self.uploadBinaryForBuild(
                 build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
-                provides, pre_depends, enhances, breaks)
+                provides, pre_depends, enhances, breaks, format)
             pub_binaries = self.publishBinaryInArchive(
                 binarypackagerelease, archive, status, pocket,
                 scheduleddeletiondate, dateremoved)
@@ -236,7 +237,7 @@ class SoyuzTestPublisher:
         summary="summary", description="description", shlibdep=None,
         depends=None, recommends=None, suggests=None, conflicts=None,
         replaces=None, provides=None, pre_depends=None, enhances=None,
-        breaks=None):
+        breaks=None, format=BinaryPackageFormat.DEB):
         """Return the corresponding `BinaryPackageRelease`."""
         sourcepackagerelease = build.sourcepackagerelease
         distroarchseries = build.distroarchseries
@@ -266,16 +267,16 @@ class SoyuzTestPublisher:
             essential=False,
             installedsize=100,
             architecturespecific=architecturespecific,
-            binpackageformat=BinaryPackageFormat.DEB,
+            binpackageformat=format,
             priority=PackagePublishingPriority.STANDARD)
 
-        # Create the corresponding DEB file.
+        # Create the corresponding binary file.
         if architecturespecific:
             filearchtag = distroarchseries.architecturetag
         else:
             filearchtag = 'all'
-        filename = '%s_%s_%s.deb' % (binaryname, sourcepackagerelease.version,
-                                     filearchtag)
+        filename = '%s_%s_%s.%s' % (binaryname, sourcepackagerelease.version,
+                                    filearchtag, format.name.lower())
         alias = self.addMockFile(
             filename, filecontent=filecontent,
             restricted=build.archive.private)

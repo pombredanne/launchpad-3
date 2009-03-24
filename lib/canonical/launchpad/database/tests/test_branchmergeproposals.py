@@ -6,33 +6,44 @@ __metaclass__ = type
 
 from datetime import datetime
 from textwrap import dedent
-import transaction
 from unittest import TestCase, TestLoader
 
+from bzrlib import errors as bzr_errors
 from pytz import UTC
+from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
+import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+
 from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposalGetter, is_valid_transition)
-from canonical.launchpad.interfaces import WrongBranchMergeProposal
+    BranchMergeProposal, BranchMergeProposalGetter, BranchMergeProposalJob,
+    BranchMergeProposalJobType, CreateMergeProposalJob, is_valid_transition,
+    MergeProposalCreatedJob)
+from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    IBranchMergeProposalGetter)
+    BranchSubscriptionNotificationLevel, BranchType,
+    CodeReviewNotificationLevel,
+    IBranchMergeProposalGetter, IBranchMergeProposalJob,
+    ICreateMergeProposalJob, ICreateMergeProposalJobSource,
+    IMergeProposalCreatedJob, WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
-
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    capture_events, LaunchpadObjectFactory, login_person, TestCaseWithFactory,
+    time_counter)
+from canonical.launchpad.tests.mail_helpers import pop_notifications
+from canonical.launchpad.webapp.testing import verifyObject
 
 
 class TestBranchMergeProposalTransitions(TestCaseWithFactory):
@@ -518,6 +529,34 @@ class TestMergeProposalGetComment(TestCase):
                           self.merge_proposal2.getComment, self.comment.id)
 
 
+class TestMergeProposalGetVoteReference(TestCaseWithFactory):
+    """Tester for `BranchMergeProposal.getComment`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        # Testing behavior, not permissions here.
+        login('foo.bar@canonical.com')
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        self.merge_proposal2 = self.factory.makeBranchMergeProposal()
+        self.vote = self.merge_proposal.nominateReviewer(
+            reviewer=self.merge_proposal.registrant,
+            registrant=self.merge_proposal.registrant)
+
+    def test_getVoteReference(self):
+        """Tests that we can get a comment."""
+        self.assertEqual(
+            self.vote, self.merge_proposal.getVoteReference(
+                self.vote.id))
+
+    def test_getVoteReferenceWrongBranchMergeProposal(self):
+        """Tests that we can get a comment."""
+        self.assertRaises(WrongBranchMergeProposal,
+                          self.merge_proposal2.getVoteReference,
+                          self.vote.id)
+
+
 class TestMergeProposalNotification(TestCaseWithFactory):
     """Test that events are created when merge proposals are manipulated"""
 
@@ -669,6 +708,22 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
         utility = getUtility(IBranchMergeProposalGetter)
         retrieved = utility.get(merge_proposal.id)
         self.assertEqual(merge_proposal, retrieved)
+
+    def test_getVotesForProposals(self):
+        # Check the resulting format of the dict.  getVotesForProposals
+        # returns a dict mapping merge proposals to a list of votes for that
+        # proposal.
+        mp_no_reviews = self.factory.makeBranchMergeProposal()
+        mp_with_reviews = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        login_person(mp_with_reviews.registrant)
+        vote_reference = mp_with_reviews.nominateReviewer(
+            reviewer, mp_with_reviews.registrant)
+        self.assertEqual(
+            {mp_no_reviews: [],
+             mp_with_reviews: [vote_reference]},
+            getUtility(IBranchMergeProposalGetter).getVotesForProposals(
+                [mp_with_reviews, mp_no_reviews]))
 
 
 class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
@@ -836,6 +891,194 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             self._get_merge_proposals(
                 november, visible_by_user=self.factory.makePerson()))
 
+    def test_getProposalsForReviewer(self):
+        reviewer = self.factory.makePerson()
+        proposal = self.factory.makeBranchMergeProposal()
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposal2 = self.factory.makeBranchMergeProposal()
+        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
+            reviewer)
+        self.assertEqual([proposal], list(proposals))
+
+    def test_getProposalsForReviewer_filter_status(self):
+        reviewer = self.factory.makePerson()
+        proposal1 = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        proposal1.nominateReviewer(reviewer, reviewer)
+        proposal2 = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        proposal2.nominateReviewer(reviewer, reviewer)
+        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
+            reviewer, [BranchMergeProposalStatus.NEEDS_REVIEW])
+        self.assertEqual([proposal1], list(proposals))
+
+    def test_getProposalsForReviewer_anonymous(self):
+        # Don't include proposals for private branches for anonymous views.
+        reviewer = self.factory.makePerson()
+        target_branch = self.factory.makeAnyBranch(private=True)
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch)
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
+            reviewer)
+        self.assertEqual([], list(proposals))
+
+    def test_getProposalsForReviewer_anonymous_source_private(self):
+        # Don't include proposals for private branches for anonymous views.
+        reviewer = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        source_branch = self.factory.makeProductBranch(
+            product=product, private=True)
+        target_branch = self.factory.makeProductBranch(product=product)
+        proposal = self.factory.makeBranchMergeProposal(
+            source_branch=source_branch, target_branch=target_branch)
+        proposal.nominateReviewer(reviewer, reviewer)
+        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
+            reviewer)
+        self.assertEqual([], list(proposals))
+
+
+class TestBranchMergeProposalDeletion(TestCaseWithFactory):
+    """Deleting a branch merge proposal deletes relevant objects."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_deleteProposal_deletes_job(self):
+        """Deleting a branch merge proposal deletes all related jobs."""
+        proposal = self.factory.makeBranchMergeProposal()
+        job = MergeProposalCreatedJob.create(proposal)
+        job.context.sync()
+        job_id = job.context.id
+        login_person(proposal.registrant)
+        proposal.deleteProposal()
+        self.assertRaises(
+            SQLObjectNotFound, BranchMergeProposalJob.get, job_id)
+
+
+class TestBranchMergeProposalJob(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_providesInterface(self):
+        """BranchMergeProposalJob implements expected interfaces."""
+        bmp = self.factory.makeBranchMergeProposal()
+        job = BranchMergeProposalJob(
+            bmp, BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED, {})
+        job.sync()
+        verifyObject(IBranchMergeProposalJob, job)
+
+
+class TestMergeProposalCreatedJob(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_providesInterface(self):
+        """MergeProposalCreatedJob provides the expected interfaces."""
+        bmp = self.factory.makeBranchMergeProposal()
+        job = MergeProposalCreatedJob.create(bmp)
+        verifyObject(IMergeProposalCreatedJob, job)
+        verifyObject(IBranchMergeProposalJob, job)
+
+    def test_run_makes_diff(self):
+        """MergeProposalCreationJob.run creates a diff."""
+        self.useBzrBranches()
+        target, target_tree = self.create_branch_and_tree('target')
+        target_tree.bzrdir.root_transport.put_bytes('foo', 'foo\n')
+        target_tree.add('foo')
+        rev1 = target_tree.commit('added foo')
+        source, source_tree = self.create_branch_and_tree('source')
+        source_tree.pull(target_tree.branch, stop_revision=rev1)
+        source_tree.bzrdir.root_transport.put_bytes('foo', 'foo\nbar\n')
+        source_tree.commit('added bar')
+        target_tree.merge_from_branch(source_tree.branch)
+        target_tree.commit('merged from source')
+        source_tree.bzrdir.root_transport.put_bytes('foo', 'foo\nbar\nqux\n')
+        source_tree.commit('added qux')
+        bmp = BranchMergeProposal(
+            source_branch=source, target_branch=target,
+            registrant=source.owner)
+        job = MergeProposalCreatedJob.create(bmp)
+        diff = job.run()
+        self.assertIsNot(None, diff)
+        transaction.commit()
+        self.assertNotIn('+bar', diff.diff.text)
+        self.assertIn('+qux', diff.diff.text)
+        self.assertEqual(diff, bmp.review_diff)
+
+    def test_run_skips_diff_if_present(self):
+        """The review diff is only generated if not already assigned."""
+        # We want to make sure that we don't try to do anything with the
+        # bzr branch if there's already a diff.  So here, we create a
+        # database branch that has no bzr branch.
+        self.useBzrBranches()
+        bmp = self.factory.makeBranchMergeProposal()
+        job = MergeProposalCreatedJob.create(bmp)
+        self.assertRaises(bzr_errors.NotBranchError, job.run)
+        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
+        transaction.commit()
+        removeSecurityProxy(bmp).review_diff = review_diff
+        # If job.run were trying to use the bzr branch, it would error.
+        job.run()
+
+    def test_run_sends_email(self):
+        """MergeProposalCreationJob.run sends an email."""
+        review_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'foo')
+        transaction.commit()
+        bmp = self.factory.makeBranchMergeProposal(review_diff=review_diff)
+        job = MergeProposalCreatedJob.create(bmp)
+        self.assertEqual([], pop_notifications())
+        job.run()
+        self.assertEqual(2, len(pop_notifications()))
+
+    def test_iterReady_includes_ready_jobs(self):
+        """Ready jobs should be listed."""
+        # Suppress events to avoid creating a MergeProposalCreatedJob early.
+        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        job = MergeProposalCreatedJob.create(bmp)
+        job.job.sync()
+        job.context.sync()
+        self.assertEqual([job], list(MergeProposalCreatedJob.iterReady()))
+
+    def test_iterReady_excludes_unready_jobs(self):
+        """Unready jobs should not be listed."""
+        # Suppress events to avoid creating a MergeProposalCreatedJob early.
+        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
+        job = MergeProposalCreatedJob.create(bmp)
+        job.job.start()
+        job.job.complete()
+        self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
+
+    def test_iterReady_excludes_hosted_needing_mirror(self):
+        """Skip Jobs with a hosted source branch that needs mirroring."""
+        # Suppress events to avoid creating a MergeProposalCreatedJob early.
+        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
+        bmp.source_branch.requestMirror()
+        job = MergeProposalCreatedJob.create(bmp)
+        self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
+
+    def test_iterReady_includes_mirrored_needing_mirror(self):
+        """Skip Jobs with a hosted source branch that needs mirroring."""
+        source_branch = self.factory.makeProductBranch(
+            branch_type=BranchType.MIRRORED)
+        self.factory.makeRevisionsForBranch(source_branch, count=1)
+        # Suppress events to avoid creating a MergeProposalCreatedJob early.
+        bmp = capture_events(
+            self.factory.makeBranchMergeProposal,
+            source_branch=source_branch)[0]
+        bmp.source_branch.requestMirror()
+        job = MergeProposalCreatedJob.create(bmp)
+        self.assertEqual([job], list(MergeProposalCreatedJob.iterReady()))
+
+    def test_iterReady_excludes_branches_with_no_revisions(self):
+        """Skip Jobs with a source branch that has no revisions."""
+        # Suppress events to avoid creating a MergeProposalCreatedJob early.
+        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
+        bmp.source_branch.requestMirror()
+        self.assertEqual(0, bmp.source_branch.revision_count)
+        job = MergeProposalCreatedJob.create(bmp)
+        self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
+
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""
@@ -994,6 +1237,91 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual('general', vote_reference.review_type)
         self.assertEqual(comment, vote_reference.comment)
 
+    def test_claiming_team_review(self):
+        # A person in a team claims a team review of the same type.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login(merge_proposal.source_branch.owner.preferredemail.email)
+        reviewer = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal.nominateReviewer(
+            reviewer=team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='general')
+        [vote] = list(merge_proposal.votes)
+        self.assertEqual(team, vote.reviewer)
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE, review_type='general')
+        self.assertEqual(reviewer, vote.reviewer)
+        self.assertEqual('general', vote.review_type)
+        self.assertEqual(comment, vote.comment)
+
+    def test_claiming_tagless_team_review_with_tag(self):
+        # A person in a team claims a team review of the same type, or if
+        # there isn't a team review with that specified type, but there is a
+        # team review that doesn't have a review type set, then claim that
+        # one.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login(merge_proposal.source_branch.owner.preferredemail.email)
+        reviewer = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal.nominateReviewer(
+            reviewer=team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type=None)
+        [vote] = list(merge_proposal.votes)
+        self.assertEqual(team, vote.reviewer)
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE, review_type='general')
+        self.assertEqual(reviewer, vote.reviewer)
+        self.assertEqual('general', vote.review_type)
+        self.assertEqual(comment, vote.comment)
+        # Still only one vote.
+        self.assertEqual(1, len(list(merge_proposal.votes)))
+
+
+class TestCreateMergeProposalJob(TestCaseWithFactory):
+    """Tests for CreateMergeProposalJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def test_providesInterface(self):
+        """The class and instances correctly implement their interfaces."""
+        verifyObject(ICreateMergeProposalJobSource, CreateMergeProposalJob)
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
+        job = CreateMergeProposalJob.create(file_alias)
+        job.context.sync()
+        verifyObject(IMessageJob, job)
+        verifyObject(ICreateMergeProposalJob, job)
+
+    def test_run_creates_proposal(self):
+        """CreateMergeProposalJob.run should create a merge proposal."""
+        message, file_alias, source, target = (
+            self.factory.makeMergeDirectiveEmail())
+        job = CreateMergeProposalJob.create(file_alias)
+        transaction.commit()
+        proposal, comment = job.run()
+        self.assertEqual(proposal.source_branch, source)
+        self.assertEqual(proposal.target_branch, target)
+
+    def test_iterReady_includes_ready_jobs(self):
+        """Ready jobs should be listed."""
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
+        job = CreateMergeProposalJob.create(file_alias)
+        self.assertEqual([job], list(CreateMergeProposalJob.iterReady()))
+
+    def test_iterReady_excludes_unready_jobs(self):
+        """Unready jobs should not be listed."""
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
+        job = CreateMergeProposalJob.create(file_alias)
+        job.job.start()
+        job.job.complete()
+        self.assertEqual([], list(CreateMergeProposalJob.iterReady()))
+
 
 class TestUpdatePreviewDiff(TestCaseWithFactory):
     """Test the updateMergeDiff method of BranchMergeProposal."""
@@ -1029,8 +1357,8 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         # Test that both the PreviewDiff and the Diff get created.
         merge_proposal = self.factory.makeBranchMergeProposal()
         diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
-        self.assertEqual(diff_text, merge_proposal.preview_diff.diff.text)
-        self.assertEqual(diff_stat, merge_proposal.preview_diff.diff.diffstat)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)
 
     def test_update_diff(self):
         # Test that both the PreviewDiff and the Diff get updated.
@@ -1043,16 +1371,16 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         preview_diff_id = removeSecurityProxy(
             merge_proposal.preview_diff).id
         diff_id = removeSecurityProxy(
-            merge_proposal.preview_diff.diff).id
+            merge_proposal.preview_diff).diff_id
         diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
-        self.assertEqual(diff_text, merge_proposal.preview_diff.diff.text)
-        self.assertEqual(diff_stat, merge_proposal.preview_diff.diff.diffstat)
+        self.assertEqual(diff_text, merge_proposal.preview_diff.text)
+        self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)
         self.assertEqual(
             preview_diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).id)
         self.assertEqual(
             diff_id,
-            removeSecurityProxy(merge_proposal.preview_diff.diff).id)
+            removeSecurityProxy(merge_proposal.preview_diff).diff_id)
 
 
 def test_suite():

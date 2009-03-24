@@ -130,21 +130,21 @@ An upload to the RELEASE pocket will add items to the import queue:
 As we can see from the translation import queue content.
 
   >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
-  ...     print '%s/%s: %s' % (
+  ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
-  ...         entry.path)
-  dapper/pmount: po/es_ES.po
-  dapper/pmount: po/ca.po
-  dapper/pmount: po/de.po
-  dapper/pmount: po/cs.po
-  dapper/pmount: po/es.po
-  dapper/pmount: po/fr.po
-  dapper/pmount: po/hr.po
-  dapper/pmount: po/nb.po
-  dapper/pmount: po/pmount.pot
-  dapper/pmount: po/it_IT.po
+  ...         entry.importer.name, entry.path)
+  dapper/pmount by sabdfl: po/es_ES.po
+  dapper/pmount by sabdfl: po/ca.po
+  dapper/pmount by sabdfl: po/de.po
+  dapper/pmount by sabdfl: po/cs.po
+  dapper/pmount by sabdfl: po/es.po
+  dapper/pmount by sabdfl: po/fr.po
+  dapper/pmount by sabdfl: po/hr.po
+  dapper/pmount by sabdfl: po/nb.po
+  dapper/pmount by sabdfl: po/pmount.pot
+  dapper/pmount by sabdfl: po/it_IT.po
 
-  # Let's abort the transaction so we can check the same upload in a different
+  # Abort the transaction so we can check the same upload in a different
   # pocket.
   >>> transaction.abort()
 
@@ -180,19 +180,19 @@ But an upload to the UPDATE pocket will add items to the import queue:
 As we can see from the translation import queue content.
 
   >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
-  ...     print '%s/%s: %s' % (
+  ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
-  ...         entry.path)
-  dapper/pmount: po/es_ES.po
-  dapper/pmount: po/ca.po
-  dapper/pmount: po/de.po
-  dapper/pmount: po/cs.po
-  dapper/pmount: po/es.po
-  dapper/pmount: po/fr.po
-  dapper/pmount: po/hr.po
-  dapper/pmount: po/nb.po
-  dapper/pmount: po/pmount.pot
-  dapper/pmount: po/it_IT.po
+  ...         entry.importer.name, entry.path)
+  dapper/pmount by sabdfl: po/es_ES.po
+  dapper/pmount by sabdfl: po/ca.po
+  dapper/pmount by sabdfl: po/de.po
+  dapper/pmount by sabdfl: po/cs.po
+  dapper/pmount by sabdfl: po/es.po
+  dapper/pmount by sabdfl: po/fr.po
+  dapper/pmount by sabdfl: po/hr.po
+  dapper/pmount by sabdfl: po/nb.po
+  dapper/pmount by sabdfl: po/pmount.pot
+  dapper/pmount by sabdfl: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # pocket.
@@ -213,19 +213,19 @@ Uploads to restricted component are accepted too.
 As we can see from the translation import queue content.
 
   >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
-  ...     print '%s/%s: %s' % (
+  ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
-  ...         entry.path)
-  dapper/pmount: po/es_ES.po
-  dapper/pmount: po/ca.po
-  dapper/pmount: po/de.po
-  dapper/pmount: po/cs.po
-  dapper/pmount: po/es.po
-  dapper/pmount: po/fr.po
-  dapper/pmount: po/hr.po
-  dapper/pmount: po/nb.po
-  dapper/pmount: po/pmount.pot
-  dapper/pmount: po/it_IT.po
+  ...         entry.importer.name, entry.path)
+  dapper/pmount by sabdfl: po/es_ES.po
+  dapper/pmount by sabdfl: po/ca.po
+  dapper/pmount by sabdfl: po/de.po
+  dapper/pmount by sabdfl: po/cs.po
+  dapper/pmount by sabdfl: po/es.po
+  dapper/pmount by sabdfl: po/fr.po
+  dapper/pmount by sabdfl: po/hr.po
+  dapper/pmount by sabdfl: po/nb.po
+  dapper/pmount by sabdfl: po/pmount.pot
+  dapper/pmount by sabdfl: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # component.
@@ -278,4 +278,94 @@ Distribution archives (i.e. PPAs).
   0
 
 
+== Translations importer: publish_ROSETTA_TRANSLATIONS ==
 
+We create mock objects for SourcePackageRelease, PackageUpload and
+PackageUploadCustom: these will emulate everything we need to document
+different interpretations of "importer" in attachTranslationFiles.
+
+  >>> from zope.interface import implements
+  >>> from canonical.launchpad.database import PackageUploadCustom
+  >>> from canonical.launchpad.interfaces import (
+  ...     IComponentSet,
+  ...     ILaunchpadCelebrities,
+  ...     IPackageUpload,
+  ...     IPackageUploadCustom,
+  ...     IPerson,
+  ...     ISourcePackageRelease,
+  ...     PackagePublishingPocket,
+  ...     PackageUploadCustomFormat,
+  ... )
+  >>> class MockSourcePackageRelease:
+  ...       implements(ISourcePackageRelease)
+  ...       def __init__(self, component, creator):
+  ...           self.component = getUtility(IComponentSet)[component]
+  ...           self.creator = creator
+  ...           self.packageupload = 1
+  ...
+  ...       def attachTranslationFiles(self, file, imported, importer):
+  ...           if (importer is not None and
+  ...               not IPerson.providedBy(importer)):
+  ...               print "`importer` not a person!"
+  ...           print "Imported by: %s" % (getattr(importer, "name", "None"))
+
+  >>> class MockPackageUpload:
+  ...     implements(IPackageUpload)
+  ...     def __init__(self, pocket, auto_sync, sourcepackagerelease):
+  ...         self.id = 1
+  ...         self.pocket = pocket
+  ...         self.auto_sync = auto_sync
+  ...         self.sourcepackagerelease = sourcepackagerelease
+  ...
+  ...     def isPPA(self):
+  ...         return False
+  ...
+  ...     def isAutoSyncUpload(self, changed_by_email=None):
+  ...         return self.auto_sync
+
+  >>> class MockPackageUploadCustom(PackageUploadCustom):
+  ...     implements(IPackageUploadCustom)
+  ...     packageupload = None
+  ...
+  ...     def __init__(self):
+  ...         self.customformat = (
+  ...             PackageUploadCustomFormat.ROSETTA_TRANSLATIONS)
+
+For translations from auto-synced packages we consider the importer to be
+'katie' (archive@ubuntu.com).
+
+  >>> katie = getUtility(ILaunchpadCelebrities).katie
+  >>> release_pocket = PackagePublishingPocket.RELEASE
+
+  >>> katie_sourcepackagerelease = MockSourcePackageRelease('main', katie)
+  >>> sync_package_upload = MockPackageUpload(
+  ...     release_pocket, True, katie_sourcepackagerelease)
+  >>> sync_package_upload.isAutoSyncUpload()
+  True
+  >>> translations_upload = MockPackageUploadCustom()
+  >>> translations_upload.packageupload = sync_package_upload
+  >>> translations_upload.publish_ROSETTA_TRANSLATIONS()
+  Imported by: katie
+
+Non-auto-sync uploads by 'katie' still indicate 'katie' as the uploader.
+
+  >>> non_sync_package_upload = MockPackageUpload(
+  ...     release_pocket, False, katie_sourcepackagerelease)
+  >>> non_sync_package_upload.isAutoSyncUpload()
+  False
+  >>> translations_upload.packageupload = non_sync_package_upload
+  >>> translations_upload.publish_ROSETTA_TRANSLATIONS()
+  Imported by: katie
+
+Uploads by anyone else are treated as if importer is the packager.
+
+  >>> person_set = getUtility(IPersonSet)
+  >>> carlos = person_set.getByName('carlos')
+  >>> carlos_sourcepackagerelease = MockSourcePackageRelease('main', carlos)
+  >>> carlos_package_upload = MockPackageUpload(
+  ...     release_pocket, False, carlos_sourcepackagerelease)
+  >>> carlos_package_upload.isAutoSyncUpload()
+  False
+  >>> translations_upload.packageupload = carlos_package_upload
+  >>> translations_upload.publish_ROSETTA_TRANSLATIONS()
+  Imported by: carlos

@@ -9,7 +9,8 @@ from unittest import TestCase, TestLoader
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.interfaces import IBranchSet, IProductSet
+from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies.dbobjects import (
     BranchRestrictedOnProductVocabulary, BranchVocabulary)
@@ -59,25 +60,19 @@ class TestBranchVocabulary(BranchVocabTestCase):
         factory.makeProductBranch(
             owner=sprocket_person, product=widget, name='foo')
 
-    def test_emptySearch(self):
-        """An empty search should return an empty query string."""
-        query = self.vocab._constructNaiveQueryString('')
-        self.assertEqual(
-            '', query, "Expected empty query string and got %r" % query)
-
     def test_fizzbuzzBranches(self):
         """Return branches that match the string 'fizzbuzz'."""
-        results = self.vocab.search('fizzbuzz')
+        results = self.vocab.searchForTerms('fizzbuzz')
         expected = [
             u'~scotty/sprocket/fizzbuzz',
             u'~scotty/widget/fizzbuzz',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_widgetBranches(self):
         """Searches match the product name too."""
-        results = self.vocab.search('widget')
+        results = self.vocab.searchForTerms('widget')
         expected = [
             u'~scotty/widget/fizzbuzz',
             u'~scotty/widget/mountain',
@@ -85,28 +80,28 @@ class TestBranchVocabulary(BranchVocabTestCase):
             u'~spotty/widget/sprocket',
             u'~sprocket/widget/foo',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_spottyBranches(self):
         """Searches also match the registrant name."""
-        results = self.vocab.search('spotty')
+        results = self.vocab.searchForTerms('spotty')
         expected = [
             u'~spotty/widget/hill',
             u'~spotty/widget/sprocket',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_crossAttributeBranches(self):
         """The search checks name, product, and person."""
-        results = self.vocab.search('rocket')
+        results = self.vocab.searchForTerms('rocket')
         expected = [
             u'~scotty/sprocket/fizzbuzz',
             u'~spotty/widget/sprocket',
             u'~sprocket/widget/foo',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_singleQueryResult(self):
@@ -164,11 +159,11 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
 
         The result set should not show ~scotty/sprocket/main.
         """
-        results = self.vocab.search('main')
+        results = self.vocab.searchForTerms('main')
         expected = [
             u'~scotty/widget/main',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_ownersBranches(self):
@@ -176,13 +171,13 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
 
         The result set should not show ~scotty/sprocket/main.
         """
-        results = self.vocab.search('scotty')
+        results = self.vocab.searchForTerms('scotty')
 
         expected = [
             u'~scotty/widget/main',
             u'~scotty/widget/mountain',
             ]
-        branch_names = sorted([branch.unique_name for branch in results])
+        branch_names = sorted([branch.token for branch in results])
         self.assertEqual(expected, branch_names)
 
     def test_singleQueryResult(self):
@@ -213,7 +208,8 @@ class TestRestrictedBranchVocabularyOnBranch(
 
     def _getVocabRestriction(self):
         """Restrict using a branch on widget."""
-        return getUtility(IBranchSet).getByUniqueName('~spotty/widget/hill')
+        return getUtility(IBranchLookup).getByUniqueName(
+            '~spotty/widget/hill')
 
 
 def test_suite():

@@ -132,7 +132,6 @@ status is returned.
 >>> check("/firefox/1.0/1.0.0")
 >>> check("/firefox/1.0/1.0.0/+edit", auth=True)
 >>> check("/firefox/1.0/1.0.0/+adddownloadfile", auth=True)
->>> check("/firefox/1.0/1.0.0/+review", auth=True)
 >>> check("/firefox/1.0/1.0.0/+rdf")
 >>> check("/firefox/+rdf")
 >>> check("/firefox/1.0/+rdf")
@@ -465,7 +464,9 @@ sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check("/+code")
 
->>> check("/+builds/bob/")
+>>> check("/builders")
+>>> check("/builders/bob/")
+>>> check_redirect("/+builds", status=301)
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/pmount/")
 

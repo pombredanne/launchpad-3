@@ -88,7 +88,7 @@ class ExportResult:
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
-                from_addr=config.rosettaadmin.email,
+                from_addr=config.rosetta.admin_email,
                 to_addrs=[recipient],
                 subject='Translation download request: %s' % self.name,
                 body=body)
@@ -131,7 +131,7 @@ class ExportResult:
                 %s''') % (person.browsername, template_sentence)
 
         simple_sendmail(
-            from_addr=config.rosettaadmin.email,
+            from_addr=config.rosetta.admin_email,
             to_addrs=[config.launchpad.errors_address],
             subject='Translation download errors: %s' % self.name,
             body=admins_email_body)

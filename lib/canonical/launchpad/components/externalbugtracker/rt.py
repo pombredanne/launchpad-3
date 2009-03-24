@@ -213,3 +213,13 @@ class RequestTracker(ExternalBugTracker):
             return self._status_lookup.find(remote_status.lower())
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)
+
+    def getRemoteProduct(self, remote_bug):
+        """Return the remote product for a remote bug.
+
+        See `IExternalBugTracker`.
+        """
+        if remote_bug not in self.bugs:
+            raise BugNotFound(remote_bug)
+
+        return self.bugs[remote_bug].get('queue', None)

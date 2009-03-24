@@ -7,7 +7,7 @@ and authorize or not the consumer to act on his behalf.
     # Create a new request token.
     >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login('salgado@ubuntu.com')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
@@ -102,6 +102,7 @@ person set.
 
     # Need to get the token again as it's been changed in another
     # transaction.
+    >>> login(ANONYMOUS)
     >>> token = consumer.getRequestToken(token.key)
     >>> token.person.name
     u'no-priv'
@@ -114,6 +115,7 @@ If no oauth_callback is specified, we redirect the user to
 +authorized-token.
 
     # Create a new (unreviewed) token.
+    >>> logout()
     >>> login('salgado@ubuntu.com')
     >>> token = consumer.newRequestToken()
     >>> logout()
@@ -174,4 +176,3 @@ another window/tab so there's no need to worry.
     This request for accessing Launchpad on your behalf has been
     reviewed ... ago.
     See all applications authorized to access Launchpad on your behalf.
-

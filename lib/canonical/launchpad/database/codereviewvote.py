@@ -9,6 +9,7 @@ __all__ = [
 
 from sqlobject import ForeignKey, StringCol
 from zope.interface import implements
+from zope.schema import Int
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -22,6 +23,7 @@ class CodeReviewVoteReference(SQLBase):
     implements(ICodeReviewVoteReference)
 
     _table = 'CodeReviewVote'
+    id = Int()
     branch_merge_proposal = ForeignKey(
         dbName='branch_merge_proposal', foreignKey='BranchMergeProposal',
         notNull=True)

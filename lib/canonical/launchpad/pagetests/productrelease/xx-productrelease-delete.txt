@@ -1,8 +1,6 @@
 = Deleting product releases =
 
 The main page of a product series includes a list of releases of that series.
-When the user has launchpad.Edit rights on any of the releases, there will
-be a link to a page where that release can be deleted.
 
     >>> user_browser.open('http://launchpad.dev/firefox/trunk')
     >>> print extract_text(find_tag_by_id(
@@ -15,9 +13,14 @@ be a link to a page where that release can be deleted.
     0.9.1...
     0.9...
 
-A user without the necessary rights won't see the links and won't be able
-to see the +delete page.
 
+A User with launchpad.Edit rights for a release can see the delete link and
+access the delete page. A user without the necessary rights won't see the
+link and cannot access the +delete page.
+
+    >>> user_browser.getLink('0.9.2').click()
+    >>> print user_browser.title
+    Mozilla Firefox 0.9.2 in Launchpad
     >>> user_browser.getLink(url='/firefox/trunk/0.9.2/+delete')
     Traceback (most recent call last):
     ...
@@ -30,29 +33,29 @@ to see the +delete page.
 Salgado has the necessary rights, so he sees the link and the +delete page.
 
     >>> salgados_browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
-    >>> salgados_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> salgados_browser.open('http://launchpad.dev/firefox/trunk/0.9.2')
     >>> salgados_browser.getLink(url='/firefox/trunk/0.9.2/+delete').click()
     >>> print salgados_browser.title
     Delete Mozilla Firefox 0.9.2...
 
-The 0.9.2 release has some files associated with it, so it can't be deleted.
+The 0.9.2 release has some files associated with it. Salgado reads that
+they will be deleted too.
 
     >>> print extract_text(find_main_content(salgados_browser.contents))
-    This release cannot be deleted...
-    >>> salgados_browser.getControl('Yes, Delete it')
-    Traceback (most recent call last):
-    ...
-    LookupError:...
+    Delete Mozilla Firefox 0.9.2 "One (secure) Tree Hill" ...
+    The following files must be deleted:
+    firefox-0.9.2.orig.tar.gz ...
 
-If the release had no files associated with it, we'd be able to delete it.
+Salgado chooses the delete button, then reads that the action is successful.
 
-    >>> salgados_browser.open('http://launchpad.dev/firefox/trunk')
-    >>> salgados_browser.getLink(url='/firefox/trunk/0.9.1/+delete').click()
-    >>> print salgados_browser.title
-    Delete Mozilla Firefox 0.9.1...
-    >>> salgados_browser.getControl('Yes, Delete it').click()
+    >>> salgados_browser.getControl('Delete this Release').click()
     >>> print salgados_browser.title
     Overview of Mozilla Firefox Series: trunk
-    >>> msgs = get_feedback_messages(salgados_browser.contents)
-    >>> print "\n".join(msg for msg in msgs)
-    Release 0.9.1 deleted.
+    >>> for message in get_feedback_messages(salgados_browser.contents):
+    ...     print message
+    Release 0.9.2 deleted.
+    >>> print extract_text(
+    ...     find_tag_by_id(salgados_browser.contents, 'series_trunk'))
+    Version     Codename    Date Released
+    0.9.1...
+    0.9...

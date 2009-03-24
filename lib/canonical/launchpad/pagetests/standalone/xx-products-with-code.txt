@@ -19,10 +19,5 @@ This page hangs off the launchpad root site.
     >>> for anchor in contents.fetch('a'):
     ...     print anchor['href']
     /
-    /evolution
     /firefox
-    /gnome-terminal
-    /iso-codes
-    /landscape
-    /thunderbird
 

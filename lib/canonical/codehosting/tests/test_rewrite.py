@@ -9,7 +9,7 @@ import signal
 import subprocess
 import unittest
 
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.rewrite import BranchRewriter
 from canonical.config import config

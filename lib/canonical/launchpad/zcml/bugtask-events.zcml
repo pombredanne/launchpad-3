@@ -4,8 +4,8 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bugtask_added" />
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
+   handler="canonical.launchpad.subscribers.bugactivity.notify_bugtask_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
@@ -19,23 +19,17 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.mailnotification.notify_bugtask_edited" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.karma.bugtask_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugTask
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.dispatch_linked_question_notifications"
-   />
 
 </configure>

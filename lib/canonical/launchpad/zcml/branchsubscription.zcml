@@ -7,6 +7,7 @@
   <!-- BranchSubscription -->
   <class class="canonical.launchpad.database.BranchSubscription">
     <allow interface="canonical.launchpad.interfaces.IBranchSubscription" />
+    <allow interface="canonical.launchpad.interfaces.branchtarget.IHasBranchTarget"/>
     <require
         permission="zope.Public"
         set_schema="canonical.launchpad.interfaces.IBranchSubscription"

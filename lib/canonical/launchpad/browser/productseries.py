@@ -13,11 +13,12 @@ __all__ = [
     'ProductSeriesLinkBranchFromCodeView',
     'ProductSeriesNavigation',
     'ProductSeriesOverviewMenu',
+    'ProductSeriesOverviewNavigationMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
-    'ProductSeriesTranslationMenu',
+    'ProductSeriesTranslationsMenu',
     'ProductSeriesTranslationsExportView',
     'ProductSeriesView',
     ]
@@ -42,7 +43,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
-    Link, Navigation, StandardLaunchpadFacets, stepto)
+    Link, Navigation, NavigationMenu, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
@@ -219,25 +220,43 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
         return Link('+addspec', text, summary, icon='add')
 
 
-class ProductSeriesTranslationMenu(ApplicationMenu):
+class ProductSeriesTranslationsMenuMixIn:
     """Translation menu for ProductSeries.
     """
+    def overview(self):
+        text = 'Overview'
+        return Link('', text)
 
-    usedfor = IProductSeries
-    facet = 'translations'
-    links = ['translationupload', 'imports', 'translationdownload']
-
-    def imports(self):
-        text = 'See import queue'
-        return Link('+imports', text)
-
+    @enabled_with_permission('launchpad.Edit')
     def translationupload(self):
-        text = 'Upload translations'
+        text = 'Upload'
         return Link('+translations-upload', text, icon='add')
 
     def translationdownload(self):
-        text = 'Download translations'
+        text = 'Download'
         return Link('+export', text, icon='download')
+
+    def imports(self):
+        text = 'Import queue'
+        return Link('+imports', text)
+
+
+class ProductSeriesOverviewNavigationMenu(NavigationMenu):
+    """Overview navigation menus for `IProductSeries` objects."""
+    # Suppress the ProductOverviewNavigationMenu from showing on series,
+    # release, and milestone pages.
+    usedfor = IProductSeries
+    facet = 'overview'
+    links = ()
+
+
+class ProductSeriesTranslationsMenu(NavigationMenu,
+                                    ProductSeriesTranslationsMenuMixIn):
+    """Translations navigation menus for `IProductSeries` objects."""
+    usedfor = IProductSeries
+    facet = 'translations'
+    links = ('overview', 'translationupload', 'translationdownload',
+             'imports')
 
 
 class ProductSeriesTranslationsExportView(BaseExportView):

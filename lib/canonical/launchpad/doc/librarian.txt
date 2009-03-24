@@ -533,7 +533,9 @@ settings.
     >>> print os.environ['http_proxy']
     http://foo.bar:1234
 
-    >>> print restricted_file.read()
+    # AaronBentley 2009-02-13 bug=329140
+    # This causes a spurious test failure on systems that use wildcard DNS.
+    #>>> print restricted_file.read()
     Traceback (most recent call last):
     ...
     URLError: <urlopen error (-2, 'Name or service not known')>

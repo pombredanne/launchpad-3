@@ -2,21 +2,43 @@
 
 Branch merge proposals can be fetched through the API.
 
+    >>> from canonical.launchpad.interfaces.codereviewcomment import (
+    ...     CodeReviewVote)
 
-    >>> login('foo.bar@canonical.com')
-    >>> proposal = factory.makeBranchMergeProposal()
-    >>> proposal.source_branch.owner.name = 'source'
-    >>> proposal.source_branch.name = 'fix-it'
-    >>> proposal.source_branch.product.name = 'fooix'
-    >>> proposal.target_branch.owner.name = 'target'
-    >>> proposal.target_branch.name = 'trunk'
-    >>> proposal.target_branch.product.name = 'fooix'
-    >>> proposal_url = canonical_url(proposal, rootsite='api')
+    >>> login('admin@canonical.com')
+    >>> fixit_proposal = factory.makeBranchMergeProposal()
+    >>> fixit_proposal.source_branch.owner.name = 'source'
+    >>> fixit_proposal.source_branch.name = 'fix-it'
+    >>> fixit_proposal.source_branch.product.name = 'fooix'
+    >>> fixit_proposal.target_branch.owner.name = 'target'
+    >>> fixit_proposal.target_branch.name = 'trunk'
+    >>> fixit_proposal.target_branch.product.name = 'fooix'
+    >>> comment = factory.makeCodeReviewComment(
+    ...     subject='Looks good', body='This is great work',
+    ...     vote=CodeReviewVote.APPROVE, vote_tag='code',
+    ...     merge_proposal=fixit_proposal)
+    >>> comment2 = factory.makeCodeReviewComment(
+    ...     subject='Not really', body='This is mediocre work.',
+    ...     vote=CodeReviewVote.ABSTAIN, parent=comment,
+    ...     merge_proposal=fixit_proposal)
+
+    >>> proposal_url = canonical_url(fixit_proposal, rootsite='api')
+    >>> new_person = factory.makePerson()
+    >>> target_owner = fixit_proposal.target_branch.owner
     >>> logout()
+
+We use the webservice as an unrelated, unprivileged user.
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> webservice = webservice_for_person(
+    ...     new_person, permission=OAuthPermission.READ_PUBLIC)
 
     >>> merge_proposal = webservice.get(proposal_url).jsonBody()
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(merge_proposal)
+    address: u'mp+1@code.launchpad.dev'
+    all_comments_collection_link: u'http://.../~source/fooix/fix-it/+merge/1/all_comments'
     commit_message: None
     date_created: ...
     date_merged: None
@@ -26,17 +48,268 @@ Branch merge proposals can be fetched through the API.
     dependent_branch_link: None
     merge_reporter_link: None
     merged_revno: None
+    preview_diff_link: None
     queue_position: None
     queue_status: u'Work in progress'
     queued_revision_id: None
     queuer_link: None
-    registrant_link: u'http://api.launchpad.dev/beta/~person-name13'
-    resource_type_link: u'http://api.launchpad.dev/beta/#branch_merge_proposal'
+    registrant_link: u'http://.../~person-name13'
+    resource_type_link: u'http://.../#branch_merge_proposal'
     reviewer_link: None
-    self_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/...'
-    source_branch_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    source_branch_link: u'http://.../~source/fooix/fix-it'
     superseded_by_link: None
     supersedes_link: None
-    target_branch_link: u'http://api.launchpad.dev/beta/~target/fooix/trunk'
+    target_branch_link: u'http://.../~target/fooix/trunk'
+    votes_collection_link: u'http://.../~source/fooix/fix-it/+merge/.../votes'
 
+
+== Read the comments ==
+
+The comments on a branch merge proposal are exposed through the API.
+
+    >>> all_comments = webservice.get(
+    ...     merge_proposal['all_comments_collection_link']).jsonBody()
+    >>> print len(all_comments['entries'])
+    2
+    >>> pprint_entry(all_comments['entries'][0])
+    branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/1'
+    id: 1
+    message_body: u'This is great work'
+    resource_type_link: u'http://.../#code_review_comment'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/1/comments/1'
+    title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
+    vote: u'Approve'
+    vote_tag: u'code'
+
+    >>> comment_2 = webservice.named_get(
+    ...     merge_proposal['self_link'], 'getComment', id=2).jsonBody()
+    >>> pprint_entry(comment_2)
+    branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/1'
+    id: 2
+    message_body: u'This is mediocre work.'
+    resource_type_link: u'http://.../#code_review_comment'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/1/comments/2'
+    title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
+    vote: u'Abstain'
+    vote_tag: None
+
+
+== Check the votes ==
+
+The votes on a branch merge proposal can be checked through the API.
+
+    >>> votes = webservice.get(
+    ...     merge_proposal['votes_collection_link']).jsonBody()['entries']
+    >>> print len(votes)
+    2
+    >>> pprint_entry(votes[0])
+    branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    comment_link: u'http://.../~source/fooix/fix-it/+merge/1/comments/...'
+    date_created: u'...'
+    registrant_link: u'http://.../~person-name20'
+    resource_type_link: u'http://.../#code_review_vote_reference'
+    review_type: u'code'
+    reviewer_link: u'http://.../~person-name20'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/.../+review/...'
+
+
+== Performing a Review ==
+
+A review can be performed through the API.
+
+    >>> person = webservice.get('/~target').jsonBody()
+    >>> is_valid = webservice.named_get(
+    ...     merge_proposal['self_link'], 'isPersonValidReviewer',
+    ...     reviewer=person['self_link']).jsonBody()
+    >>> print is_valid
+    True
+
+A review can be requested of the person 'target', since he's a valid reviewer.
+
+    >>> reviewer_webservice = webservice_for_person(
+    ...     target_owner, permission=OAuthPermission.WRITE_PUBLIC)
+
+    >>> reviewer = reviewer_webservice.named_post(
+    ...     merge_proposal['self_link'], 'nominateReviewer',
+    ...     reviewer=person['self_link'], review_type='code')
+    >>> print reviewer
+    HTTP/1.1 200 Ok ...
+    >>> reviewer_entry = reviewer.jsonBody()
+    >>> pprint_entry(reviewer_entry)
+    branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/1'
+    comment_link: None
+    date_created: u'...'
+    registrant_link: u'http://.../~target'
+    resource_type_link: u'http://.../#code_review_vote_reference'
+    review_type: u'code'
+    reviewer_link: u'http://.../~target'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/1/+review/3'
+
+    >>> vote = reviewer_webservice.get(reviewer_entry['self_link'])
+    >>> print vote
+    HTTP/1.1 200 Ok ...
+
+Now the code review should be made.
+
+    >>> comment = reviewer_webservice.named_post(
+    ...     merge_proposal['self_link'], 'createComment',
+    ...     subject='Great work', content='This is great work',
+    ...     vote=CodeReviewVote.APPROVE.title, review_type='code').jsonBody()
+    >>> pprint_entry(comment)
+    branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/1'
+    id: 3
+    message_body: u'This is great work'
+    resource_type_link: u'http://.../#code_review_comment'
+    self_link: u'http://.../~source/fooix/fix-it/+merge/1/comments/3'
+    title: u'Comment on proposed merge of ~source/fooix/fix-it into ~target/fooix/trunk'
+    vote: u'Approve'
+    vote_tag: u'code'
+
+
+== Updating the preview diff ==
+
+The merge proposal can now be updated with the diff that reflects what the
+merge would look like if the source branch was merged into the target branch.
+
+    >>> diff_content = '''\
+    ... === modified file 'fooix.txt'
+    ... --- fooix.txt 2009-01-01 12:00:00 +0000
+    ... +++ fooix.txt 2009-02-02 12:34:56 +0000
+    ... @@ some numbers @@
+    ...  original
+    ... -removed
+    ... +added
+    ... '''
+    >>> response = reviewer_webservice.named_post(
+    ...     merge_proposal['self_link'], 'updatePreviewDiff',
+    ...     diff_content=diff_content,
+    ...     diff_stat='M fooix.txt', source_revision_id='rev-a',
+    ...     target_revision_id='rev-b', conflicts='oh, no conflicts')
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    Content-Length: ...
+    Content-Type: application/json
+    Vary: ...
+    ...
+
+The diff is now visible through the merge proposal.
+
+    >>> merge_proposal = webservice.get(proposal_url).jsonBody()
+    >>> preview_diff = webservice.get(
+    ...     merge_proposal['preview_diff_link']).jsonBody()
+    >>> pprint_entry(preview_diff)
+    added_lines_count: None
+    branch_merge_proposal_link:
+      u'http://.../~source/fooix/fix-it/+merge/1'
+    conflicts: u'oh, no conflicts'
+    dependent_revision_id: None
+    diff_lines_count: 7
+    diff_text_link:
+      u'http://.../~source/fooix/fix-it/+merge/1/+preview-diff/diff_text'
+    diffstat: u'M fooix.txt'
+    removed_lines_count: None
+    resource_type_link: u'http://.../#preview_diff'
+    self_link:
+      u'http://.../~source/fooix/fix-it/+merge/1/+preview-diff'
+    source_revision_id: u'rev-a'
+    stale: True
+    target_revision_id: u'rev-b'
+
+It is possible that the diff will be empty.
+
+    >>> response = reviewer_webservice.named_post(
+    ...     merge_proposal['self_link'], 'updatePreviewDiff',
+    ...     diff_content='',
+    ...     diff_stat='', source_revision_id='rev-c',
+    ...     target_revision_id='rev-d', conflicts=None)
+    >>> print response.getOutput()
+    HTTP/1.1 200 Ok
+    Content-Length: ...
+    Content-Type: application/json
+    Vary: ...
+    ...
+
+== Getting a Project's Pending Merge Proposals ==
+
+It is possible to view all of a project's merge proposals or filter the
+proposals by their status.
+
+    >>> def print_proposal(proposal):
+    ...     print proposal['self_link'] + ' - ' + \
+    ...         proposal['queue_status']
+
+
+    >>> proposals = webservice.named_get(
+    ...     '/fooix', 'getMergeProposals').jsonBody()
+    >>> for proposal in proposals['entries']:
+    ...     print_proposal(proposal)
+    http://.../~source/fooix/fix-it/+merge/1 - Work in progress
+
+
+Or I can look for anything that is approved.
+
+    >>> login('admin@canonical.com')
+    >>> from canonical.launchpad.interfaces.branchmergeproposal import (
+    ...     BranchMergeProposalStatus)
+    >>> fixit_proposal.approveBranch(fixit_proposal.target_branch.owner, '1')
+    >>> logout()
+
+    >>> def print_proposals(webservice, url, status=None):
+    ...     proposals = webservice.named_get(
+    ...         url, 'getMergeProposals',
+    ...         status=status).jsonBody()
+    ...     for proposal in proposals['entries']:
+    ...         print_proposal(proposal)
+
+    >>> print_proposals(
+    ...     webservice, url='/fooix',
+    ...     status=[BranchMergeProposalStatus.CODE_APPROVED.title])
+    http://.../~source/fooix/fix-it/+merge/1 - Approved
+
+If the branch is private it is not visible to an unpriveleged user.
+
+    >>> login('admin@canonical.com')
+    >>> fixit_proposal.source_branch.private = True
+    >>> branch_owner = fixit_proposal.source_branch.owner
+    >>> logout()
+
+    >>> print_proposals(
+    ...     webservice, url='/fooix',
+    ...     status=[BranchMergeProposalStatus.CODE_APPROVED.title])
+
+If we get a webservice for the owner of the source branch, then they can see
+the proposal if they have allowed the API to access private bits.
+
+    >>> service = webservice_for_person(
+    ...     branch_owner, permission=OAuthPermission.READ_PRIVATE)
+    >>> print_proposals(
+    ...     service, url='/fooix',
+    ...     status=[BranchMergeProposalStatus.CODE_APPROVED.title])
+    http://.../~source/fooix/fix-it/+merge/1 - Approved
+
+    >>> login('foo.bar@canonical.com')
+    >>> fixit_proposal.source_branch.private = False
+    >>> logout()
+
+
+== Getting a Person's Pending Merge Proposals ==
+
+It is possible to view all of a person's merge proposals or filter their
+proposals by their status.
+
+    >>> proposals = webservice.named_get('/~source', 'getMergeProposals',
+    ...     ).jsonBody()
+    >>> print_proposals(service, url='/~source')
+    http://.../~source/fooix/fix-it/+merge/1 - Approved
+
+The person's proposals can also be filtered by status.
+
+    >>> login('foo.bar@canonical.com')
+    >>> fixit_proposal.rejectBranch(fixit_proposal.target_branch.owner, '1')
+    >>> logout()
+
+    >>> print_proposals(webservice, url='/~source',
+    ...     status=[BranchMergeProposalStatus.REJECTED.title])
+    http://.../~source/fooix/fix-it/+merge/1 - Rejected
 

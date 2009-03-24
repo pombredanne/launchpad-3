@@ -176,12 +176,14 @@ instance which has several bugs that we wish to watch:
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1585, so we add a watch against the remote bug.
 
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.RT)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, '1585', sample_person)
+    ...     example_bug_tracker, '1585',
+    ...     getUtility(ILaunchpadCelebrities).janitor)
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1585: None
@@ -195,7 +197,7 @@ remote status for, the bug watch that we have created.
     >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> rt = TestRequestTracker(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
-    INFO:...:Updating 1 watches on http://bugs.some.where
+    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1585: new
@@ -223,7 +225,7 @@ tracker with a variety of statuses.
 
     >>> rt.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
-    INFO:...:Updating 5 watches on http://bugs.some.where
+    INFO:...:Updating 5 watches for 5 bugs on http://bugs.some.where
     CALLED urlopen(u'REST/1.0/search/ticket/')
 
 The bug statuses have now been imported from the Example.com bug
@@ -237,3 +239,30 @@ statuses:
     Remote bug 1587: Confirmed
     Remote bug 1588: Fix Released
     Remote bug 1589: Invalid
+
+
+== Getting the remote product for a bug ==
+
+It's possible to get the remote product for a remote RT bug using
+getRemoteProduct(). In the case of RT, what we refer to in Launchpad as
+a "remote product" is in fact the name of an RT ticket Queue. RT has no
+concept of products, only queues, so though there'e a terminology
+mismatch the meaning is essentially the same.
+
+    >>> print rt.getRemoteProduct(1585)
+    OpenSSL-Bugs
+
+If you try to get the remote product of a bug that doesn't exist you'll
+get a BugNotFound error.
+
+    >>> print rt.getRemoteProduct('this-doesnt-exist')
+    Traceback (most recent call last):
+      ...
+    BugNotFound: this-doesnt-exist
+
+If for some reason the RT instance doesn't return a Queue name for a
+bug, getRemoteProduct() will return None.
+
+    >>> del rt.bugs[1589]['queue']
+    >>> print rt.getRemoteProduct(1589)
+    None

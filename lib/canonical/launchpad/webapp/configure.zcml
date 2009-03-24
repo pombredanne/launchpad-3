@@ -25,6 +25,13 @@
     </class>
 
     <adapter
+        for="zope.interface.Interface
+             zope.publisher.interfaces.http.IHTTPRequest"
+        provides="zope.traversing.browser.interfaces.IAbsoluteURL"
+        factory="canonical.launchpad.webapp.publisher.CanonicalAbsoluteURL"
+        />
+
+    <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
@@ -44,6 +51,14 @@
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.SlaveDatabasePolicy"
         />
+
+    <!-- lazr.batchnavigator hook -->
+    <adapter
+        factory='.batching.FiniteSequenceAdapter' />
+    
+    <adapter
+        factory='.batching.FiniteSequenceAdapter'
+        for='storm.zope.interfaces.ISQLObjectResultSet' />
 
     <!-- links -->
     <class class="canonical.launchpad.webapp.menu.LinkData">
@@ -112,7 +127,7 @@
 
     <!-- TALES enum-value: namespace -->
     <adapter
-        for="canonical.lazr.BaseItem"
+        for="lazr.enum.BaseItem"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.EnumValueAPI"
         name="enumvalue"
@@ -197,6 +212,13 @@
         for="canonical.launchpad.interfaces.IBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IArchive"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ArchiveImageDisplayAPI"
         name="image"
         />
 
@@ -369,6 +391,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.diff.IPreviewDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.ICodeImport"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
@@ -429,6 +458,12 @@
         for="canonical.launchpad.interfaces.IBugWatch"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugWatchFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="canonical.launchpad.webapp.interfaces.ILink"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.LinkFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -554,6 +589,13 @@
         factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
         />
 
+    <adapter
+        factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result" />
+    <!-- It also works for the legacy SQLObject interface. -->
+    <adapter
+        factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result"
+        for="storm.zope.interfaces.ISQLObjectResultSet" />
+
     <!--These pages are used for testing BrowserNotificationMessages
         They are protected with admin privileges rather than being installed
         on the debug port because we use them in page tests and as an easy way
@@ -635,14 +677,6 @@
         />
     </class>
 
-    <!-- the URI class -->
-    <class class="canonical.launchpad.webapp.uri.URI">
-      <allow attributes="scheme userinfo host port path query fragment
-          authority hier_part
-          __str__ __repr__ __eq__ __ne__ replace resolve append contains
-          ensureSlash ensureNoSlash" />
-    </class>
-
     <!-- Define the widget used by Choice fields that use huge vocabularies -->
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
@@ -670,6 +704,21 @@
         permission="zope.Public"
         class="canonical.launchpad.webapp.dbpolicy.WhichDbView"
         layer="canonical.launchpad.layers.PageTestLayer"
+        />
+
+    <class class="canonical.launchpad.webapp.vocabulary.CountableIterator">
+      <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
+    <class class="canonical.launchpad.webapp.vocabulary.BatchedCountableIterator">
+      <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
+    <!-- Create a namespace to render the form of any LaunchpadFormView-->
+    <view
+        name="form" type="*"
+        provides="zope.traversing.interfaces.ITraversable" for="*"
+        factory="canonical.launchpad.webapp.namespace.FormNamespaceView"
         />
 
 </configure>

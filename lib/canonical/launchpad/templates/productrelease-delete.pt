@@ -6,47 +6,38 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-</metal:portlets>
-
 <div metal:fill-slot="main">
-
-  <tal:deletable condition="view/canBeDeleted">
-    <div metal:use-macro="context/@@launchpad_form/form">
-
-      <div metal:fill-slot="extra_info" class="documentDescription">
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      <p>
         Are you sure you want to delete the
         <strong tal:content="context/version">0.1</strong> release of
         <strong tal:content="context/productseries/title">series</strong>?
+      </p>
+
+      <div tal:condition="context/files">
+        <p>
+          The following files must be <em>deleted</em>:
+        </p>
+
+        <ul>
+          <li tal:repeat="file context/files">
+            <strong tal:content="file/libraryfile/filename">foo.tgz</strong>
+          </li>
+        </ul>
       </div>
 
+      <p>
+        Release deletion is permanent.
+      </p>
     </div>
-  </tal:deletable>
-
-  <tal:non-deletable condition="not: view/canBeDeleted">
-    <h1>This release cannot be deleted</h1>
-
-    <p>The following files are associated with this release, so it can't be
-    deleted.</p>
-
-    <ul>
-      <li tal:repeat="file context/files">
-        <strong tal:content="file/libraryfile/filename">foo.tgz</strong>
-      </li>
-    </ul>
-
-    <p>To be able to delete this release you must first
-      <a tal:attributes="href context/fmt:url">delete the files associated
-        with it</a>.
-    </p>
-  </tal:non-deletable>
-
+  </div>
 </div>
 
 </body>

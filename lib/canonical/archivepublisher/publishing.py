@@ -6,13 +6,10 @@ __metaclass__ = type
 
 import apt_pkg
 from datetime import datetime
-import gzip
 import logging
 from md5 import md5
 import os
 from sha import sha
-import stat
-import tempfile
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -22,10 +19,13 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
+from canonical.archivepublisher.utils import RepositoryIndexFile
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.binarypackagerelease import (
+    BinaryPackageFormat)
 from canonical.launchpad.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from canonical.launchpad.interfaces.component import IComponentSet
@@ -113,7 +113,7 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
     """
     if archive.purpose != ArchivePurpose.PPA:
         log.debug("Finding configuration for %s %s."
-                  % (archive.distribution.name, archive.title))
+                  % (archive.distribution.name, archive.displayname))
     else:
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)
@@ -346,11 +346,6 @@ class Publisher(object):
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 self._writeDistroSeries(distroseries, pocket)
 
-    def _makeFileGroupWriteableAndWorldReadable(self, file_path):
-        """Make the file group readable/writable and world readable."""
-        mode = stat.S_IMODE(os.stat(file_path).st_mode)
-        os.chmod(file_path, mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IROTH)
-
     def _writeComponentIndexes(self, distroseries, pocket, component):
         """Write Index files for single distroseries + pocket + component.
 
@@ -365,89 +360,52 @@ class Publisher(object):
 
         self.log.debug("Generating Sources")
 
-        source_index_basepath = os.path.join(
+        source_index_root = os.path.join(
             self._config.distsroot, suite_name, component.name, 'source')
-        if os.path.exists(source_index_basepath):
-            assert os.access(source_index_basepath, os.W_OK), \
-                    "%s not writeable!" % source_index_basepath
-        else:
-            os.makedirs(source_index_basepath)
-
-        fd_gz, temp_index_gz = tempfile.mkstemp(
-            dir=self._config.temproot, prefix='source-index-gz_')
-        source_index_gz = gzip.GzipFile(fileobj=os.fdopen(fd_gz, "wb"))
-        fd, temp_index = tempfile.mkstemp(
-            dir=self._config.temproot, prefix='source-index_')
-        source_index = os.fdopen(fd, "wb")
+        source_index = RepositoryIndexFile(
+            source_index_root, self._config.temproot, 'Sources')
 
         for spp in distroseries.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
             component=component, archive=self.archive):
-            source_index.write(spp.getIndexStanza().encode('utf8'))
-            source_index.write('\n\n')
-            source_index_gz.write(spp.getIndexStanza().encode('utf8'))
-            source_index_gz.write('\n\n')
+            stanza = spp.getIndexStanza().encode('utf8') + '\n\n'
+            source_index.write(stanza)
+
         source_index.close()
-        source_index_gz.close()
-
-        source_index_gz_path = os.path.join(
-            source_index_basepath, "Sources.gz")
-        source_index_path = os.path.join(source_index_basepath, "Sources")
-
-        # Move the the archive index files to the right place.
-        os.rename(temp_index, source_index_path)
-        os.rename(temp_index_gz, source_index_gz_path)
-
-        # XXX julian 2007-10-03
-        # This is kinda papering over a problem somewhere that causes the
-        # files to get created with permissions that don't allow group/world
-        # read access.  See https://bugs.launchpad.net/soyuz/+bug/148471
-        self._makeFileGroupWriteableAndWorldReadable(source_index_path)
-        self._makeFileGroupWriteableAndWorldReadable(source_index_gz_path)
 
         for arch in distroseries.architectures:
             arch_path = 'binary-%s' % arch.architecturetag
+
             self.log.debug("Generating Packages for %s" % arch_path)
 
-            package_index_basepath = os.path.join(
+            package_index_root = os.path.join(
                 self._config.distsroot, suite_name, component.name, arch_path)
-            if os.path.exists(package_index_basepath):
-                assert os.access(package_index_basepath, os.W_OK), \
-                        "%s not writeable!" % package_index_basepath
-            else:
-                os.makedirs(package_index_basepath)
+            package_index = RepositoryIndexFile(
+                package_index_root, self._config.temproot, 'Packages')
 
-            fd_gz, temp_index_gz = tempfile.mkstemp(
-                dir=self._config.temproot, prefix='%s-index-gz_' % arch_path)
-            fd, temp_index = tempfile.mkstemp(
-                dir=self._config.temproot, prefix='%s-index_' % arch_path)
-            package_index_gz = gzip.GzipFile(
-                fileobj=os.fdopen(fd_gz,"wb"))
-            package_index = os.fdopen(fd, "wb")
+            di_index_root = os.path.join(
+                self._config.distsroot, suite_name, component.name,
+                'debian-installer', arch_path)
+            di_index = RepositoryIndexFile(
+                di_index_root, self._config.temproot, 'Packages')
 
             for bpp in distroseries.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,
                 component=component, archive=self.archive):
-                package_index.write(bpp.getIndexStanza().encode('utf-8'))
-                package_index.write('\n\n')
-                package_index_gz.write(bpp.getIndexStanza().encode('utf-8'))
-                package_index_gz.write('\n\n')
+                stanza = bpp.getIndexStanza().encode('utf-8') + '\n\n'
+                if (bpp.binarypackagerelease.binpackageformat ==
+                    BinaryPackageFormat.DEB):
+                    package_index.write(stanza)
+                elif (bpp.binarypackagerelease.binpackageformat ==
+                      BinaryPackageFormat.UDEB):
+                    di_index.write(stanza)
+                else:
+                    self.log.debug(
+                        "Cannot publish %s because it is not a DEB or "
+                        "UDEB file" % bpp.displayname)
+
             package_index.close()
-            package_index_gz.close()
-
-            package_index_gz_path = os.path.join(
-                package_index_basepath, "Packages.gz")
-            package_index_path = os.path.join(
-                package_index_basepath, "Packages")
-
-            # Move the the archive index files to the right place.
-            os.rename(temp_index, package_index_path)
-            os.rename(temp_index_gz, package_index_gz_path)
-
-            # Make the files group writable and world readable.
-            self._makeFileGroupWriteableAndWorldReadable(package_index_path)
-            self._makeFileGroupWriteableAndWorldReadable(
-                package_index_gz_path)
+            di_index.close()
 
         # Inject static requests for Release files into self.apt_handler
         # in a way which works for NoMoreAptFtpArchive without changing
@@ -581,8 +539,8 @@ class Publisher(object):
             clean_architecture = architecture[7:]
             file_stub = "Packages"
 
-            # Only the primary archive has debian-installer.
-            if self.archive.purpose == ArchivePurpose.PRIMARY:
+            # Only the primary and PPA archives have debian-installer.
+            if self.archive.purpose != ArchivePurpose.PARTNER:
                 # Set up the debian-installer paths for main_archive.
                 # d-i paths are nested inside the component.
                 di_path = os.path.join(

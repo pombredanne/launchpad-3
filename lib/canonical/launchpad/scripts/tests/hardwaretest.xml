@@ -391,4 +391,36 @@
       <answer type="measurement" unit="MB/sec">38.4</answer>
     </question>
   </questions>
+  <!-- miscellaneous additional text data.
+  -->
+  <context>
+    <!-- info: The text output of the command specified in the "command"
+             attribute. The "commmand" attribute must contain the complote
+             command line used to produce the text output, including
+             parameters used to invoke a program.
+    -->
+    <info command="dmidecode">
+# dmidecode 2.9
+SMBIOS 2.4 present.
+73 structures occupying 2436 bytes.
+Table at 0x000E0010.
+
+Handle 0x0000, DMI type 0, 24 bytes
+BIOS Information
+        Vendor: LENOVO
+    </info>
+
+    <info command="lspci -vvn">
+00:00.0 0600: 8086:2a00 (rev 0c)
+        Subsystem: 17aa:20b1
+        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- &gt;TAbort- &lt;TAbort-
+        Latency: 0
+        Capabilities: [e0] Vendor Specific Information &gt;?&lt;
+        Kernel modules: intel-agp
+
+00:01.0 0604: 8086:2a01 (rev 0c)
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV-
+    </info>
+  </context>
 </system>

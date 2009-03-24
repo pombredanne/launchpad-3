@@ -8,6 +8,9 @@
             permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IAccountPrivate" />
         <require
+            permission="launchpad.Special"
+            interface="canonical.launchpad.interfaces.IAccountSpecialRestricted" />
+        <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IAccount" />
     </class>
@@ -17,6 +20,12 @@
         provides="canonical.launchpad.interfaces.IAccountSet">
         <allow interface="canonical.launchpad.interfaces.IAccountSet" />
     </securedutility>
+
+    <adapter
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
+        provides="canonical.launchpad.interfaces.IAccount"
+        factory="canonical.launchpad.components.account.accountFromPrincipal"
+      />
 
 </configure>
 

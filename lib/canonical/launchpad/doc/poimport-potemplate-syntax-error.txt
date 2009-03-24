@@ -7,11 +7,9 @@ In this test, we are going to check that we detect and notify the error.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.interfaces import ITranslationImportQueue
     >>> from canonical.launchpad.database import POTemplateSubset
-    >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
@@ -62,10 +60,13 @@ TranslationFormatSyntaxError
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> (subject, message) = potemplate.importFromQueue(entry)
 
-The status is now FAILED:
+The import failed.
 
-    >>> entry.status == RosettaImportStatus.FAILED
-    True
+    >>> print entry.status.name
+    FAILED
+
+    >>> print entry.error_output
+    No header found in this pofile
 
 And the code composed email with a notification of the error.
 

@@ -22,6 +22,24 @@
       }
       :link {background: none; color: #00c;}
       html, body {height: 100%; margin: 0; padding: 0;} /* pushes footer down */
+      table.listing {margin: 0; width: 100%; font-size: 90%;}
+      table.listing, table.listing tbody, table.listing td.end-of-section {
+        border-bottom: 1px solid #d2d2d2;}
+      table.listing thead, table.listing thead th, table.listing tfoot tr,
+      table.listing tr.thead th {
+        border: 1px solid #d2d2d2;
+        background-color: #fff;
+      }
+      table.listing th, table.listing td {padding: 0.25em;}
+      table.listing table tbody, table.listing table thead,
+      table.listing table thead th, table.listing tfoot tr,
+      table.listing table tfoot td, table.listing table td {
+        border: none;
+      }
+      thead {vertical-align: bottom;}
+      th, td {vertical-align: baseline;}
+      th {text-align: right;}
+      thead th, tr.thead th {text-align: center;}
       #nonfooter {position: relative; min-height: 100%;}
       * html #nonfooter {height: 100%;}
       #footer {
@@ -104,7 +122,7 @@
 
           <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
             <strong>Warning:</strong>
-            <em tal:content="view/openid_request/trust_root" /> does not look
+            <em tal:content="trust_root" /> does not look
             like a trustworthy URL.
           </p>
           <div tal:condition="logo">

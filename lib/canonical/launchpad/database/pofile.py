@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212,W0231
 
 """`SQLObject` implementation of `IPOFile` interface."""
@@ -10,7 +10,6 @@ __all__ = [
     'POFileSet',
     'POFileToChangedFromPackagedAdapter',
     'POFileToTranslationFileDataAdapter',
-    'POFileTranslator',
     ]
 
 import datetime
@@ -34,8 +33,7 @@ from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import TranslationMessage
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.pofile import (
-    IPOFile, IPOFileSet, IPOFileTranslator)
+from canonical.launchpad.interfaces.pofile import IPOFile, IPOFileSet
 from canonical.launchpad.interfaces.translationcommonformat import (
     ITranslationFileData)
 from canonical.launchpad.interfaces.translationexporter import (
@@ -108,8 +106,7 @@ def _check_translation_perms(permission, translators, person):
 
 
 def _person_has_not_licensed_translations(person):
-    """Whether a person has not agreed to BSD license for their translations.
-    """
+    """Whether a person has declined to BSD-license their translations."""
     if (person.translations_relicensing_agreement is not None and
         person.translations_relicensing_agreement is False):
         return True
@@ -757,7 +754,7 @@ class POFile(SQLBase, POFileMixIn):
         if path != self.path and self.potemplate.isPOFilePathAvailable(path):
             self.path = path
 
-    def importFromQueue(self, entry_to_import, logger=None):
+    def importFromQueue(self, entry_to_import, logger=None, txn=None):
         """See `IPOFile`."""
         assert entry_to_import is not None, "Attempt to import None entry."
         assert entry_to_import.import_into.id == self.id, (
@@ -789,6 +786,7 @@ class POFile(SQLBase, POFileMixIn):
         #   everything but the messages with errors. We handle it returning a
         #   list of faulty messages.
         import_rejected = False
+        needs_notification_for_imported = False
         error_text = None
         try:
             errors = translation_importer.importFile(entry_to_import, logger)
@@ -800,6 +798,8 @@ class POFile(SQLBase, POFileMixIn):
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-not-exported-from-rosetta.txt'
             import_rejected = True
+            entry_to_import.error_output = (
+                "File was not exported from Launchpad.")
         except (TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError), exception:
             # The import failed with a format error. We log it and select the
@@ -810,6 +810,8 @@ class POFile(SQLBase, POFileMixIn):
             template_mail = 'poimport-syntax-error.txt'
             import_rejected = True
             error_text = str(exception)
+            entry_to_import.error_output = error_text
+            needs_notification_for_imported = True
         except OutdatedTranslationError:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
@@ -817,11 +819,20 @@ class POFile(SQLBase, POFileMixIn):
                 logger.info('Got an old version for %s' % self.title)
             template_mail = 'poimport-got-old-version.txt'
             import_rejected = True
+            entry_to_import.error_output = (
+                "Header's PO-Revision-Date is older than in last imported "
+                "version.")
         except TooManyPluralFormsError:
             if logger:
                 logger.warning("Too many plural forms.")
             template_mail = 'poimport-too-many-plural-forms.txt'
             import_rejected = True
+            entry_to_import.error_output = "Too many plural forms."
+        else:
+            # The import succeeded.  There may still be non-fatal errors
+            # or warnings for individual messages (kept as a list in
+            # "errors"), but we compose the text for that later.
+            entry_to_import.error_output = None
 
         # Prepare the mail notification.
         msgsets_imported = TranslationMessage.select(
@@ -850,7 +861,7 @@ class POFile(SQLBase, POFileMixIn):
             # need to notify the user.
             subject = 'Import problem - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
-        elif len(errors):
+        elif len(errors) > 0:
             # There were some errors with translations.
             errorsdetails = ''
             for error in errors:
@@ -864,10 +875,13 @@ class POFile(SQLBase, POFileMixIn):
                     error_message,
                     pomessage)
 
+            entry_to_import.error_output = (
+                "Imported, but with errors:\n" + errorsdetails)
+
             replacements['numberoferrors'] = len(errors)
             replacements['errorsdetails'] = errorsdetails
-            replacements['numberofcorrectmessages'] = (msgsets_imported -
-                len(errors))
+            replacements['numberofcorrectmessages'] = (
+                msgsets_imported - len(errors))
 
             template_mail = 'poimport-with-errors.txt'
             subject = 'Translation problems - %s - %s' % (
@@ -883,6 +897,13 @@ class POFile(SQLBase, POFileMixIn):
             # file, we tag it as FAILED.
             entry_to_import.status = RosettaImportStatus.FAILED
         else:
+            if (entry_to_import.is_published and
+                not needs_notification_for_imported):
+                # If it's a published upload (i.e. from a package or bzr
+                # branch), do not send success notifications unless they
+                # are needed.
+                subject = None
+
             entry_to_import.status = RosettaImportStatus.IMPORTED
             # Assign karma to the importer if this is not an automatic import
             # (all automatic imports come from the rosetta expert user) and
@@ -1120,7 +1141,7 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def importFromQueue(self, entry_to_import, logger=None):
+    def importFromQueue(self, entry_to_import, logger=None, txn=None):
         """See `IPOFile`."""
         raise NotImplementedError
 
@@ -1194,20 +1215,6 @@ class POFileSet:
         """See `IPOFileSet`."""
         return POFile.select(
             "id >= %s" % quote(starting_id), orderBy="id", limit=batch_size)
-
-
-class POFileTranslator(SQLBase):
-    """See `IPOFileTranslator`."""
-
-    implements(IPOFileTranslator)
-    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
-    person = ForeignKey(
-        dbName='person', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
-    latest_message = ForeignKey(foreignKey='TranslationMessage',
-        dbName='latest_message', notNull=True)
-    date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
-        notNull=False, default=None)
 
 
 class POFileToTranslationFileDataAdapter:

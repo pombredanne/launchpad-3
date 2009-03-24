@@ -22,7 +22,7 @@ from canonical.lazr.rest.error import WebServiceExceptionView
 
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation,
-    WebServiceLayer)
+    IWebServiceClientRequest)
 
 
 class IRegisterDirective(Interface):
@@ -104,11 +104,12 @@ def register_webservice_operations(context, interface):
         factory = generate_operation_adapter(method)
         context.action(
             discriminator=(
-                'adapter', (interface, WebServiceLayer), provides, tag['as']),
+                'adapter', (interface, IWebServiceClientRequest),
+                provides, tag['as']),
             callable=handler,
             args=('provideAdapter',
-                  (interface, WebServiceLayer), provides, tag['as'], factory,
-                  context.info),
+                  (interface, IWebServiceClientRequest), provides, 
+                  tag['as'], factory, context.info),
             )
 
 
@@ -117,11 +118,11 @@ def register_exception_view(context, exception):
     """
     context.action(
         discriminator=(
-            'view', exception, 'index.html', WebServiceLayer,
-            WebServiceLayer),
+            'view', exception, 'index.html', IWebServiceClientRequest,
+            IWebServiceClientRequest),
         callable=handler,
         args=('provideAdapter',
-              (exception, WebServiceLayer), Interface, 'index.html',
+              (exception, IWebServiceClientRequest), Interface, 'index.html',
               WebServiceExceptionView, context.info),
         )
 

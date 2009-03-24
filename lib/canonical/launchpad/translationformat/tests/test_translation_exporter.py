@@ -67,10 +67,9 @@ class TranslationExporterTestCase(unittest.TestCase):
             sorted(exporter_formats, key=attrgetter('name')),
             [TranslationFileFormat.MO,
              TranslationFileFormat.PO,
-             TranslationFileFormat.POCHANGED,
              ],
             'PO source file should be exported as '
-            'PO, MO and POCHANGED formats')
+            'PO and MO formats')
 
         exporter_formats = []
         exporters_available = (

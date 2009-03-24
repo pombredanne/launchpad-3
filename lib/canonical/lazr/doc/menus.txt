@@ -265,7 +265,7 @@ methods can access `self.context`.
     ...     IFacetLink, ILink, ILinkData)
     >>> from canonical.launchpad.webapp.menu import (
     ...     FacetLink, MenuLink)
-    >>> from canonical.launchpad.webapp.uri import URI
+    >>> from lazr.uri import URI
 
     # The adapters for the link types used by menus are registered in ZCML.
     # That is not the focus of this test so they are manually registered.

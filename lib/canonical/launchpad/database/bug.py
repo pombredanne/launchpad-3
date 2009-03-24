@@ -6,8 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'Bug', 'BugBecameQuestionEvent', 'BugSet', 'get_bug_tags',
-    'get_bug_tags_open_count']
+    'Bug',
+    'BugBecameQuestionEvent',
+    'BugSet',
+    'get_bug_tags',
+    'get_bug_tags_open_count',
+    ]
 
 
 import mimetypes
@@ -27,17 +31,44 @@ from sqlobject import SQLObjectNotFound
 from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
 from storm.store import Store
 
-from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskStatus, BugTrackerType, IndexedMessage,
-    DistroSeriesStatus, IBug, IBugAttachmentSet, IBugBecameQuestionEvent,
-    IBugBranch, IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet,
-    ICveSet, IDistribution, IDistroSeries, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IPersonSet, IProduct, IProductSeries,
-    IQuestionTarget, ISourcePackage, IStructuralSubscriptionTarget,
-    NominationError, NominationSeriesObsoleteError, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
+from lazr.lifecycle.snapshot import Snapshot
+
+from canonical.launchpad.components.bugchange import (
+    BranchLinkedToBug, BranchUnlinkedFromBug, BugWatchAdded, BugWatchRemoved,
+    UnsubscribedFromBug)
+from canonical.launchpad.interfaces import IQuestionTarget
+from canonical.launchpad.interfaces.bug import (
+    IBug, IBugBecameQuestionEvent, IBugSet)
+from canonical.launchpad.interfaces.bugactivity import IBugActivitySet
+from canonical.launchpad.interfaces.bugattachment import (
+    BugAttachmentType, IBugAttachmentSet)
+from canonical.launchpad.interfaces.bugbranch import IBugBranch
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+from canonical.launchpad.interfaces.bugnomination import (
+    NominationError, NominationSeriesObsoleteError)
+from canonical.launchpad.interfaces.bugnotification import (
+    IBugNotificationSet)
+from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from canonical.launchpad.interfaces.cve import ICveSet
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.message import (
+    IMessage, IndexedMessage)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.structuralsubscription import (
-    BugNotificationLevel)
+    BugNotificationLevel, IStructuralSubscriptionTarget)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -62,12 +93,9 @@ from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person, ValidPersonCache
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.validators.person import validate_public_person
-from canonical.launchpad.event.sqlobjectevent import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.snapshot import Snapshot
+    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
 
 # XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
@@ -190,10 +218,6 @@ class Bug(SQLBase):
                            intermediateTable='BugMessage',
                            prejoins=['owner'],
                            orderBy=['datecreated', 'id'])
-    productinfestations = SQLMultipleJoin(
-            'BugProductInfestation', joinColumn='bug', orderBy='id')
-    packageinfestations = SQLMultipleJoin(
-            'BugPackageInfestation', joinColumn='bug', orderBy='id')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
@@ -360,10 +384,13 @@ class Bug(SQLBase):
         Store.of(sub).flush()
         return sub
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                self.addChange(UnsubscribedFromBug(
+                    when=UTC_NOW, person=unsubscribed_by,
+                    unsubscribed_user=person))
                 store = Store.of(sub)
                 store.remove(sub)
                 # Make sure that the subscription removal has been
@@ -377,7 +404,7 @@ class Bug(SQLBase):
         bugs_unsubscribed = []
         for dupe in self.duplicates:
             if dupe.isSubscribed(person):
-                dupe.unsubscribe(person)
+                dupe.unsubscribe(person, person)
                 bugs_unsubscribed.append(dupe)
 
         return bugs_unsubscribed
@@ -625,6 +652,33 @@ class Bug(SQLBase):
              bug=self, is_comment=True,
              message=message, recipients=recipients)
 
+    def addChange(self, change):
+        """See `IBug`."""
+        when = change.when
+        if when is None:
+            when = UTC_NOW
+
+        # Only try to add something to the activity log if we have some
+        # data.
+        activity_data = change.getBugActivity()
+        if activity_data is not None:
+            bug_activity = getUtility(IBugActivitySet).new(
+                self, when, change.person,
+                activity_data['whatchanged'],
+                activity_data.get('oldvalue'),
+                activity_data.get('newvalue'),
+                activity_data.get('message'))
+
+        notification_data = change.getBugNotification()
+        if notification_data is not None:
+            recipients = change.getBugNotificationRecipients()
+            assert notification_data.get('text') is not None, (
+                "notification_data must include a `text` value.")
+
+            self.addChangeNotification(
+                notification_data['text'], change.person, recipients,
+                when)
+
     def expireNotifications(self):
         """See `IBug`."""
         for notification in BugNotification.selectBy(
@@ -646,7 +700,7 @@ class Bug(SQLBase):
         if not bugmsg:
             return
 
-        notify(SQLObjectCreatedEvent(bugmsg, user=owner))
+        notify(ObjectCreatedEvent(bugmsg, user=owner))
 
         return bugmsg.message
 
@@ -668,6 +722,44 @@ class Bug(SQLBase):
             Store.of(result).flush()
             return result
 
+    def addTask(self, owner, target):
+        """See `IBug`."""
+        product = None
+        product_series = None
+        distribution = None
+        distro_series = None
+        source_package_name = None
+
+        # Turn `target` into something more useful.
+        if IProduct.providedBy(target):
+            product = target
+        if IProductSeries.providedBy(target):
+            product_series = target
+        if IDistribution.providedBy(target):
+            distribution = target
+        if IDistroSeries.providedBy(target):
+            distro_series = target
+        if IDistributionSourcePackage.providedBy(target):
+            distribution = target.distribution
+            source_package_name = target.sourcepackagename
+        if ISourcePackage.providedBy(target):
+            if target.distroseries is not None:
+                distro_series = target.distroseries
+                source_package_name = target.sourcepackagename
+            elif target.distribution is not None:
+                distribution = target.distribution
+                source_package_name = target.sourcepackagename
+            else:
+                source_package_name = target.sourcepackagename
+
+        new_task = getUtility(IBugTaskSet).createTask(
+            self, owner=owner, product=product,
+            productseries=product_series, distribution=distribution,
+            distroseries=distro_series,
+            sourcepackagename=source_package_name)
+
+        return new_task
+
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
         # We shouldn't add duplicate bug watches.
@@ -677,7 +769,14 @@ class Bug(SQLBase):
                 bug=self, bugtracker=bugtracker,
                 remotebug=remotebug, owner=owner)
             Store.of(bug_watch).flush()
+        self.addChange(BugWatchAdded(UTC_NOW, owner, bug_watch))
+        notify(ObjectCreatedEvent(bug_watch, user=owner))
         return bug_watch
+
+    def removeWatch(self, bug_watch, user):
+        """See `IBug`."""
+        self.addChange(BugWatchRemoved(UTC_NOW, user, bug_watch))
+        bug_watch.destroySelf()
 
     def addAttachment(self, owner, data, comment, filename, is_patch=False,
                       content_type=None, description=None):
@@ -734,15 +833,24 @@ class Bug(SQLBase):
             registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
-        notify(SQLObjectCreatedEvent(bug_branch))
+        self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch))
+        notify(ObjectCreatedEvent(bug_branch))
 
         return bug_branch
+
+    def removeBranch(self, branch, user):
+        """See `IBug`."""
+        bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
+        if bug_branch is not None:
+            self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch))
+            notify(ObjectDeletedEvent(bug_branch, user=user))
+            bug_branch.destroySelf()
 
     def linkCVE(self, cve, user):
         """See `IBug`."""
         if cve not in self.cves:
             bugcve = BugCve(bug=self, cve=cve)
-            notify(SQLObjectCreatedEvent(bugcve, user=user))
+            notify(ObjectCreatedEvent(bugcve, user=user))
             return bugcve
 
     # XXX intellectronica 2008-11-06 Bug #294858:
@@ -752,11 +860,11 @@ class Bug(SQLBase):
         self.linkCVE(cve, user)
         return None
 
-    def unlinkCVE(self, cve, user=None):
+    def unlinkCVE(self, cve, user):
         """See `IBug`."""
         for cve_link in self.cve_links:
             if cve_link.cve.id == cve.id:
-                notify(SQLObjectDeletedEvent(cve_link, user=user))
+                notify(ObjectDeletedEvent(cve_link, user=user))
                 BugCve.delete(cve_link.id)
                 break
 
@@ -829,7 +937,7 @@ class Bug(SQLBase):
                 owner=person, subject=self.followup_subject(),
                 content=comment)
         notify(
-            SQLObjectModifiedEvent(
+            ObjectModifiedEvent(
                 object=bugtask,
                 object_before_modification=bugtask_before_modification,
                 edited_fields=edited_fields,
@@ -875,14 +983,14 @@ class Bug(SQLBase):
         # if no offer exists, create one from scratch
         mentoringoffer = MentoringOffer(owner=user, team=team,
             bug=self)
-        notify(SQLObjectCreatedEvent(mentoringoffer, user=user))
+        notify(ObjectCreatedEvent(mentoringoffer, user=user))
         return mentoringoffer
 
     def retractMentoring(self, user):
         """See `ICanBeMentored`."""
         mentoringoffer = MentoringOffer.selectOneBy(bug=self, owner=user)
         if mentoringoffer is not None:
-            notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
+            notify(ObjectDeletedEvent(mentoringoffer, user=user))
             MentoringOffer.delete(mentoringoffer.id)
 
     def getMessageChunks(self):
@@ -1076,7 +1184,7 @@ class Bug(SQLBase):
         bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
         bugtask.transitionToStatus(status, user)
-        notify(SQLObjectModifiedEvent(
+        notify(ObjectModifiedEvent(
             bugtask, bugtask_before_modification, ['status'], user=user))
 
         return bugtask

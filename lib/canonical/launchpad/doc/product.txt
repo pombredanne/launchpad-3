@@ -461,21 +461,16 @@ By marking all of Thunderbird's branches as Abandoned, thunderbird will
 no longer appear in the result set.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     BranchLifecycleStatus, IBranchSet)
-    >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForContext(
-    ...     context=productset.getByName('thunderbird'),
-    ...     lifecycle_statuses=None)
+    ...     BranchLifecycleStatus)
+    >>> from canonical.launchpad.interfaces.branchcollection import (
+    ...     IAllBranches)
+    >>> thunderbird_branches = getUtility(IAllBranches).inProduct(
+    ...     productset.getByName('thunderbird')).getBranches()
 
     # Only an owner, admin, or a bazaar expert can set the
     # branch.lifecycle_status.
     >>> login('foo.bar@canonical.com')
-    >>> for branch_view in thunderbird_branches:
-    ...     # XXX: MichaelHudson 2007-10-12 bug=154016: getBranchesForContext
-    ...     # returns objects from BranchWithSortKeys, which is a view and so
-    ...     # can't be modified.  Get the branch with the same id.  This can
-    ...     # go away when BranchWithSortKeys goes away, i.e. when we get
-    ...     # away from SQLObject.
-    ...     branch = getUtility(IBranchSet).get(branch_view.id)
+    >>> for branch in thunderbird_branches:
     ...     branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
 
     >>> for product in productset.getProductsWithBranches():
@@ -672,50 +667,3 @@ branch.
     datetime.datetime(...)
     >>> print product.default_stacked_on_branch.name
     trunk
-
-
-== Getting the upstream bug filing URL for a product ==
-
-Products that don't use Launchpad for bug tracking can be linked to
-external bug trackers. In order to make it easier for users to file bugs
-on upstream bug trackers, it's possible to get the bug filing URL for a
-given product's upstream bug tracker using its `upstream_bug_filing_url`
-property.
-
-We'll link a product to an upstream bug tracker to demonstrate this.
-
-    >>> bugtracker = factory.makeBugTracker('http://example.com')
-    >>> product.bugtracker = bugtracker
-    >>> product.remote_product = u'foo'
-
-    >>> print product.upstream_bug_filing_url
-    http://example.com/enter_bug.cgi?product=foo
-
-If the product's `bugtracker` isn't specified its
-`upstream_bug_filing_url` property will be None.
-
-    >>> product.bugtracker = None
-    >>> print product.upstream_bug_filing_url
-    None
-
-Similarly, if the product's `remote_product` attribute is None and its
-bug tracker is one which requires an upstream product, the product's
-`upstream_bug_filing_url` will be None
-
-    >>> product.bugtracker = bugtracker
-    >>> product.remote_product = None
-    >>> print product.upstream_bug_filing_url
-    None
-
-However, some remote bug trackers, notably Trac, only track one product
-at a time. They don't need a remote product in order to provide a bug
-filing URL, so the `upstream_bug_filing_url` for products linked to such
-bug trackers will always be a usable URL.
-
-    >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
-    >>> trac_bugtracker = factory.makeBugTracker(
-    ...     'http://trac.example.com', BugTrackerType.TRAC)
-    >>> product.bugtracker = trac_bugtracker
-
-    >>> print product.upstream_bug_filing_url
-    http://trac.example.com/newticket

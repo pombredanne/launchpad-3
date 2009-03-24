@@ -231,7 +231,7 @@ class TestBugzilla(Bugzilla):
     buglist_page = 'buglist.cgi'
     bug_id_form_element = 'bug_id'
 
-    def __init__(self, baseurl, version=None):
+    def __init__(self, baseurl='http://bugzilla.example.com/', version=None):
         Bugzilla.__init__(self, baseurl, version=version)
         self.bugzilla_bugs = self._getBugsToTest()
 

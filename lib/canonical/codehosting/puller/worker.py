@@ -15,16 +15,16 @@ from bzrlib.progress import DummyProgress
 from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import get_transport
 from bzrlib import urlutils
+from bzrlib.ui import SilentUIFactory
 import bzrlib.ui
 
 from canonical.config import config
-from canonical.codehosting.branchfs import get_puller_server
-from canonical.codehosting.bzrutils import ProgressUIFactory
+from canonical.codehosting.vfs import get_puller_server
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.launchpad.interfaces.branch import (
     BranchType, get_blacklisted_hostnames)
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from lazr.uri import URI, InvalidURIError
 
 
 __all__ = [
@@ -858,8 +858,12 @@ class WorkerProgressBar(DummyProgress):
         return self
 
 
-class PullerWorkerUIFactory(ProgressUIFactory):
+class PullerWorkerUIFactory(SilentUIFactory):
     """An UIFactory that always says yes to breaking locks."""
+
+    def __init__(self, puller_worker_protocol):
+        SilentUIFactory.__init__(self)
+        self.puller_worker_protocol = puller_worker_protocol
 
     def get_boolean(self, prompt):
         """If we're asked to break a lock like a stale lock of ours, say yes.
@@ -872,6 +876,9 @@ class PullerWorkerUIFactory(ProgressUIFactory):
         else:
             return False
 
+    def _progress_updated(self, task):
+        self.puller_worker_protocol.progressMade()
+
 
 def install_worker_ui_factory(puller_worker_protocol):
     """Install a special UIFactory for puller workers.
@@ -882,9 +889,4 @@ def install_worker_ui_factory(puller_worker_protocol):
     2) Break locks if and only if they appear to be stale locks
        created by another puller worker process.
     """
-    def factory(*args, **kw):
-        r = WorkerProgressBar(*args, **kw)
-        r.puller_worker_protocol = puller_worker_protocol
-        return r
-    bzrlib.ui.ui_factory = PullerWorkerUIFactory(factory)
-    bzrlib.ui.ui_factory.puller_worker_protocol = puller_worker_protocol
+    bzrlib.ui.ui_factory = PullerWorkerUIFactory(puller_worker_protocol)

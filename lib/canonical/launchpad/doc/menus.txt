@@ -459,7 +459,7 @@ To test this, we need a dummy request object that provides `getURL()`.
     ... 
     ...     def setPrincipal(self, principal):
     ...         self.principal = principal
-    >>> from canonical.launchpad.webapp.uri import URI
+    >>> from lazr.uri import URI
 
 The following request is for a url that is different from all of the
 facet menu links for 'sesamestreet'.  So, all links will be linked.

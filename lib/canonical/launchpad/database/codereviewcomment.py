@@ -19,13 +19,18 @@ from canonical.launchpad.interfaces import (
     ICodeReviewCommentDeletion,
     )
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
+from canonical.launchpad.interfaces.branchtarget import IHasBranchTarget
 
 
 class CodeReviewComment(SQLBase):
     """A table linking branch merge proposals and messages."""
 
-    implements(IBranchNavigationMenu, ICodeReviewComment,
-        ICodeReviewCommentDeletion)
+    implements(
+        IBranchNavigationMenu,
+        ICodeReviewComment,
+        ICodeReviewCommentDeletion,
+        IHasBranchTarget,
+        )
 
     _table = 'CodeReviewMessage'
 
@@ -37,15 +42,23 @@ class CodeReviewComment(SQLBase):
     vote_tag = StringCol(default=None)
 
     @property
+    def target(self):
+        """See `IHasBranchTarget`."""
+        return self.branch_merge_proposal.target
+
+    @property
     def title(self):
         return ('Comment on proposed merge of %(source)s into %(target)s' %
             {'source': self.branch_merge_proposal.source_branch.displayname,
              'target': self.branch_merge_proposal.target_branch.displayname,
             })
 
-    def getMessage(self):
-        """See `ICodeReviewComment`."""
-        return self.message.text_contents
+    @property
+    def message_body(self):
+        """See `ICodeReviewComment'."""
+        for chunk in self.message:
+            if chunk.content:
+                return chunk.content
 
     def getAttachments(self):
         """See `ICodeReviewComment`."""

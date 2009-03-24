@@ -48,12 +48,13 @@ PPA in order to be able to copy packages.
     >>> jblack_browser = setupBrowser(
     ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
 
+    >>> jblack_extra_browser = setupBrowser(
+    ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
+
     >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
-    Profile /
-    ...
     Copy packages from PPA for Celso Providelo
     To be able to copy packages you have to participate in at least one
     PPA. Activate your own PPA or join a team with an active PPA.
@@ -134,7 +135,7 @@ default and wants to refine the options.
 
     >>> jblack_browser.getControl(
     ...     name='field.name_filter').value = 'pmount'
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
 There we go, James can be certain about which package to select, only
 pmount is presented.
@@ -164,10 +165,10 @@ helper function will do this job in this test.
 The page section id is built using "pub$ID" notation.
 
     >>> pmount_pub_id = getPPAPubIDsFor('cprov', 'pmount')[0]
-    >>> pmount_details_id = "pub%s" % pmount_pub_id
-    >>> pmount_details = find_tag_by_id(
-    ...     jblack_browser.contents, pmount_details_id)
-    >>> print extract_text(pmount_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % pmount_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
       Published on 2007-07-09
       Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
@@ -179,9 +180,9 @@ The page section id is built using "pub$ID" notation.
       -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
     Builds
       i386
-    Built Packages
+    Built packages
       pmount pmount shortdesc
-    Download files from Librarian
+    Package files
       No files published for this package.
 
 James is absolutely sure that's the package he wants, he selects it.
@@ -252,10 +253,10 @@ were not copied and instead a build was already created in his PPA
 context.
 
     >>> pmount_pub_id = getPPAPubIDsFor('jblack', 'pmount')[0]
-    >>> pmount_details_id = "pub%s" % pmount_pub_id
-    >>> pmount_details = find_tag_by_id(
-    ...     jblack_browser.contents, pmount_details_id)
-    >>> print extract_text(pmount_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % pmount_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
       Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
     Changelog
@@ -266,7 +267,7 @@ context.
       -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
     Builds
       i386
-    Download files from Librarian
+    Package files
       No files published for this package.
 
 The package was copied from the primary archive and not from a PPA.
@@ -348,8 +349,8 @@ The destination series always default to 'The same series'.
     ...     'Destination series').displayValue
     ['The same series']
 
-When he requests the copy a error is raised, since a copy of a
-published source to 'This PPA' and 'The same series' is not allowed
+When he requests the action, nothing is copied, since a copy of a
+published source to 'This PPA' and 'The same series' has no effect,
 because it results in publishing cruft (the former publishing record
 will be dominated and the archive won't be changed).
 
@@ -357,12 +358,10 @@ will be dominated and the archive won't be changed).
     >>> messages = get_feedback_messages(jblack_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    There is 1 error.
-    The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already building in the destination archive for Hoary)
+    All packages already copied to PPA for James Blackwell.
 
 Without thinking much James erroneously selects 'hoary' series and
-pushes the copy button. The same error is raised.
+pushes the copy button. The same message is rendered.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -374,9 +373,7 @@ pushes the copy button. The same error is raised.
     >>> messages = get_feedback_messages(jblack_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    There is 1 error.
-    The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already building in the destination archive for Hoary)
+    All packages already copied to PPA for James Blackwell.
 
 Darn, now James being more careful and re-selects the 'pmount' source
 and 'grumpy' as Destination Series.
@@ -557,7 +554,7 @@ broken package.
 James uses the 'delete-packages' interface in his PPA to delete the
 'pmount' source in hoary.
 
-    >>> jblack_browser.getLink('Personal Package Archive').click()
+    >>> jblack_browser.getLink('default PPA').click()
     >>> jblack_browser.getLink('Delete packages').click()
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -568,7 +565,7 @@ James uses the 'delete-packages' interface in his PPA to delete the
 James return to his PPA overview page and checks that the package is
 really deleted.
 
-    >>> jblack_browser.getLink('Personal Package Archive').click()
+    >>> jblack_browser.getLink('default PPA').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
     >>> jblack_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(jblack_browser.contents)
@@ -598,7 +595,7 @@ Packages in other status can be browsed by adjusting the status
 filter dropdown box.
 
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
@@ -673,7 +670,7 @@ together.
 
     >>> jblack_browser.getControl("Create").click()
 
-    >>> jblack_browser.getLink('Activate Personal Package Archive').click()
+    >>> jblack_browser.getLink('Create a new PPA').click()
     >>> jblack_browser.getControl(name="field.accepted").value = True
     >>> jblack_browser.getControl(name="field.description").value = (
     ...    'Come friends ...')
@@ -755,32 +752,32 @@ James just gives a quick look to the details section of each copied
 sources to ensure the binaries are really there.
 
     >>> pmount_pub_id = getPPAPubIDsFor('jblack-friends', 'pmount')[0]
-    >>> pmount_details_id = "pub%s" % pmount_pub_id
-    >>> pmount_details = find_tag_by_id(
-    ...     jblack_browser.contents, pmount_details_id)
-    >>> print extract_text(pmount_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % pmount_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
     ...
-    Built Packages
+    Built packages
       pmount
     ...
 
     >>> iceweasel_pub_id = getPPAPubIDsFor('jblack-friends', 'iceweasel')[0]
-    >>> iceweasel_details_id = "pub%s" % iceweasel_pub_id
-    >>> iceweasel_details = find_tag_by_id(
-    ...     jblack_browser.contents, iceweasel_details_id)
-    >>> print extract_text(iceweasel_details)
+    >>> expander_url = jblack_browser.getLink(
+    ...     id='pub%s-expander' % iceweasel_pub_id).url
+    >>> jblack_extra_browser.open(expander_url)
+    >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
     ...
-    Built Packages
+    Built packages
       mozilla-firefox
       ff from iceweasel
     ...
 
 Not using his brain again, James tries to copy the two sources to the
 same location within James Blackwell Friends' PPAs, pretty much as if
-he was trying to break Launchpad. Poor James, this time he gets a
-plural error message.
+he was trying to break Launchpad. Poor James, this time he gets
+completely ignored.
 
     >>> jblack_browser.getLink('Copy packages').click()
 
@@ -795,12 +792,7 @@ plural error message.
     >>> messages = get_feedback_messages(jblack_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    There is 1 error.
-    The following sources cannot be copied:
-    iceweasel 1.0 in hoary (same version already has published
-        binaries in the destination archive),
-    pmount 0.1-1 in hoary (same version already has published
-        binaries in the destination archive)
+    All packages already copied to PPA for James Blackwell Friends.
 
 James goes wild and decided to create a new team PPA for his sandbox
 tests.
@@ -816,7 +808,7 @@ tests.
 
     >>> jblack_browser.getControl("Create").click()
 
-    >>> jblack_browser.getLink('Activate Personal Package Archive').click()
+    >>> jblack_browser.getLink('Create a new PPA').click()
     >>> jblack_browser.getControl(name="field.accepted").value = True
     >>> jblack_browser.getControl(name="field.description").value = (
     ...    'Come friends ...')
@@ -832,7 +824,7 @@ insane because PPA-copy-ui is so cool.
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -884,7 +876,7 @@ interface can be used to resurrect deleted packages.
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> deleted_pub_id = getPPAPubIDsFor(
@@ -1091,7 +1083,8 @@ to copy the *same* version with different contents to grumpy in his PPA.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: foo 1.1 in hoary
-    (binaries conflicting with the existing ones)
+    (a different source with the same version is published in the
+     destination archive)
 
 James thinks that his last chance will be copying the just-uploaded
 foo-9.9 source from 'James-Friend's PPA.
@@ -1100,7 +1093,7 @@ foo-9.9 source from 'James-Friend's PPA.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> jblack_browser.getControl(name='field.name_filter').value = 'foo'
-    >>> jblack_browser.getControl("Update").click()
+    >>> jblack_browser.getControl("Filter").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source     Uploader  Published   Status     Series   Section  Build Status

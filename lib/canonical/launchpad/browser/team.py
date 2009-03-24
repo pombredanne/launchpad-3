@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd
+# Copyright 2004-2009 Canonical Ltd
 
 __metaclass__ = type
 __all__ = [
@@ -53,8 +53,8 @@ from canonical.launchpad.interfaces.mailinglist import (
     PostedMessageStatus)
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
-    ImmutableVisibilityError, PersonVisibility, TeamContactMethod,
-    TeamSubscriptionPolicy)
+    ImmutableVisibilityError, PRIVATE_TEAM_PREFIX, PersonVisibility,
+    TeamContactMethod, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy
@@ -107,18 +107,86 @@ class HasRenewalPolicyMixin:
             field_name)
 
 
-class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
+class TeamFormMixin:
+    """Form to be used on forms which conditionally display team visiblity.
 
-    schema = ITeam
+    The visibility field should only be shown to users with
+    launchpad.Commercial permission on the team.
+    """
     field_names = [
-        'teamowner', 'name', 'displayname', 'teamdescription',
-        'subscriptionpolicy', 'defaultmembershipperiod',
-        'renewal_policy', 'defaultrenewalperiod', 'visibility']
+        "name", "visibility", "displayname", "contactemail",
+        "teamdescription", "subscriptionpolicy",
+        "defaultmembershipperiod", "renewal_policy",
+        "defaultrenewalperiod",  "teamowner",
+        ]
+    private_prefix = PRIVATE_TEAM_PREFIX
+
+    @property
+    def _validate_visibility_consistency(self):
+        """Perform a consistency check regarding visibility.
+
+        This property must be overridden if the current context is not an
+        IPerson.
+        """
+        return self.context.visibility_consistency_warning
+
+    @property
+    def _visibility(self):
+        """Return the visibility for the object."""
+        return self.context.visibility
+
+    @property
+    def _name(self):
+        return self.context.name
+
+    def validate(self, data):
+        if 'visibility' in data:
+            visibility = data['visibility']
+        else:
+            visibility = self._visibility
+        if visibility != PersonVisibility.PUBLIC:
+            if 'visibility' in data:
+                warning = self._validate_visibility_consistency
+                if warning is not None:
+                    self.setFieldError('visibility', warning)
+            if (data['subscriptionpolicy']
+                != TeamSubscriptionPolicy.RESTRICTED):
+                self.setFieldError(
+                    'subscriptionpolicy',
+                    'Private teams must have a Restricted subscription '
+                    'policy.')
+
+    def conditionallyOmitVisibility(self):
+        """Remove the visibility field if not authorized."""
+        if not check_permission('launchpad.Commercial', self.context):
+            self.form_fields = self.form_fields.omit('visibility')
+
+
+class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
+                   LaunchpadEditFormView):
+    """View for editing team details."""
+    schema = ITeam
+
+    # teamowner cannot be a HiddenUserWidget or the edit form would change the
+    # owner to the person doing the editing.
     custom_widget('teamowner', SinglePopupWidget, visible=False)
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
         'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+
+    def setUpFields(self):
+        """See `LaunchpadViewForm`.
+
+        When editing a team the contactemail field is not displayed.
+        """
+        # Make an instance copy of field_names so as to not modify the single
+        # class list.
+        self.field_names = list(self.field_names)
+        self.field_names.remove('contactemail')
+        super(TeamEditView, self).setUpFields()
+        self.conditionallyOmitVisibility()
 
     @action('Save', name='save')
     def action_save(self, action, data):
@@ -127,32 +195,6 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
         except ImmutableVisibilityError, error:
             self.request.response.addErrorNotification(str(error))
         self.next_url = canonical_url(self.context)
-
-    def validate(self, data):
-        if 'visibility' in data:
-            visibility = data['visibility']
-        else:
-            visibility = self.context.visibility
-        if visibility != PersonVisibility.PUBLIC:
-            if 'visibility' in data:
-                warning = self.context.visibility_consistency_warning
-                if warning is not None:
-                    self.setFieldError('visibility', warning)
-            if (data['subscriptionpolicy']
-                != TeamSubscriptionPolicy.RESTRICTED):
-                self.setFieldError(
-                    'subscriptionpolicy',
-                    'Private teams must have a Restricted subscription'
-                    ' policy.')
-
-    def setUpFields(self):
-        """See `LaunchpadViewForm`.
-
-        Only Launchpad Admins get to see the visibility field.
-        """
-        super(TeamEditView, self).setUpFields()
-        if not check_permission('launchpad.Admin', self.context):
-            self.form_fields = self.form_fields.omit('visibility')
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
@@ -706,19 +748,25 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         self.next_url = canonical_url(self.context)
 
 
-class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
-
+class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
+    """View for adding a new team."""
     schema = ITeamCreation
     label = ''
-    field_names = ["name", "displayname", "contactemail", "teamdescription",
-                   "subscriptionpolicy", "defaultmembershipperiod",
-                   "renewal_policy", "defaultrenewalperiod", "teamowner"]
+
     custom_widget('teamowner', HiddenUserWidget)
-    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
         'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+
+    def setUpFields(self):
+        """See `LaunchpadViewForm`.
+
+        Only Launchpad Admins get to see the visibility field.
+        """
+        super(TeamAddView, self).setUpFields()
+        self.conditionallyOmitVisibility()
 
     @action('Create', name='create')
     def create_action(self, action, data):
@@ -732,7 +780,9 @@ class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
         team = getUtility(IPersonSet).newTeam(
             teamowner, name, displayname, teamdescription,
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
-
+        visibility = data.get('visibility')
+        if visibility:
+            team.visibility = visibility
         email = data.get('contactemail')
         if email is not None:
             generateTokenAndValidationEmail(email, team)
@@ -745,6 +795,24 @@ class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
                 "message for up to an hour or two.)" % email)
 
         self.next_url = canonical_url(team)
+
+    @property
+    def _validate_visibility_consistency(self):
+        """See `TeamFormMixin`."""
+        return None
+
+    @property
+    def _visibility(self):
+        """Return the visibility for the object.
+
+        For a new team it is PUBLIC unless otherwise set in the form data.
+        """
+        return PersonVisibility.PUBLIC
+
+    @property
+    def _name(self):
+        return None
+
 
 
 class ProposedTeamMembersEditView(LaunchpadFormView):
@@ -843,7 +911,8 @@ class TeamMapView(LaunchpadView):
     def initialize(self):
         # Tell our main-template to include Google's gmap2 javascript so that
         # we can render the map.
-        self.request.needs_gmap2 = True
+        if len(self.mapped_participants) > 0:
+            self.request.needs_gmap2 = True
 
     @cachedproperty
     def mapped_participants(self):
@@ -851,9 +920,19 @@ class TeamMapView(LaunchpadView):
         return self.context.mapped_participants
 
     @cachedproperty
+    def mapped_participants_count(self):
+        """Count of participants with locations."""
+        return len(self.mapped_participants)
+
+    @cachedproperty
     def unmapped_participants(self):
         """Participants (ordered by name) with no recorded locations."""
         return list(self.context.unmapped_participants)
+
+    @cachedproperty
+    def unmapped_participants_count(self):
+        """Count of participants with no recorded locations."""
+        return len(self.unmapped_participants)
 
     @cachedproperty
     def times(self):
@@ -901,8 +980,14 @@ class TeamMapView(LaunchpadView):
         """HTML which shows the map with location of the team's members."""
         return """
             <script type="text/javascript">
-                renderTeamMap(%(min_lat)s, %(max_lat)s, %(min_lng)s,
-                              %(max_lng)s, %(center_lat)s, %(center_lng)s);
+                YUI().use('node', 'lp.mapping', function(Y) {
+                    function renderMap() {
+                        Y.lp.mapping.renderTeamMap(
+                            %(min_lat)s, %(max_lat)s, %(min_lng)s,
+                            %(max_lng)s, %(center_lat)s, %(center_lng)s);
+                     }
+                     Y.on("domready", renderMap);
+                });
             </script>""" % self.bounds
 
     @property
@@ -910,7 +995,13 @@ class TeamMapView(LaunchpadView):
         """The HTML which shows a small version of the team's map."""
         return """
             <script type="text/javascript">
-                renderTeamMapSmall(%(center_lat)s, %(center_lng)s);
+                YUI().use('node', 'lp.mapping', function(Y) {
+                    function renderMap() {
+                        Y.lp.mapping.renderTeamMapSmall(
+                            %(center_lat)s, %(center_lng)s);
+                     }
+                     Y.on("domready", renderMap);
+                });
             </script>""" % self.bounds
 
 

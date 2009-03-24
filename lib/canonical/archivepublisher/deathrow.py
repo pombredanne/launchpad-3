@@ -146,8 +146,8 @@ class DeathRow:
 
         return (sources, binaries)
 
-    def canRemove(self, publication_class, file_md5):
-        """Check if given MD5 can be removed from the archive pool.
+    def canRemove(self, publication_class, filename, file_md5):
+        """Check if given (filename, MD5) can be removed from the pool.
 
         Check the archive reference-counter implemented in:
         `SecureSourcePackagePublishingHistory` or
@@ -183,8 +183,9 @@ class DeathRow:
 
         clauses.append("""
            LibraryFileAlias.content = LibraryFileContent.id AND
+           LibraryFileAlias.filename = %s AND
            LibraryFileContent.md5 = %s
-        """ % sqlvalues(file_md5))
+        """ % sqlvalues(filename, file_md5))
         clauseTables.extend(
             ['LibraryFileAlias', 'LibraryFileContent'])
 
@@ -217,7 +218,7 @@ class DeathRow:
         bytes = 0
         condemned_files = set()
         condemned_records = set()
-        considered_md5s = set()
+        considered_files = set()
         details = {}
 
         def checkPubRecord(pub_record, publication_class):
@@ -231,29 +232,35 @@ class DeathRow:
             for pub_file in pub_record.files:
                 filename = pub_file.libraryfilealiasfilename
                 file_md5 = pub_file.libraryfilealias.content.md5
+
                 self.logger.debug("Checking %s (%s)" % (filename, file_md5))
 
-                # Check if the LibraryFileAlias in question was already
-                # verified. If it was, continue.
-                if file_md5 in considered_md5s:
-                    self.logger.debug("Already verified.")
-                    continue
-                considered_md5s.add(file_md5)
-
-                # Check if the removal is allowed, if not continue.
-                if not self.canRemove(publication_class, file_md5):
-                    self.logger.debug("Cannot remove.")
-                    continue
-
-                # Update local containers, in preparation to file removal.
+                # Calculating the file path in pool.
                 pub_file_details = (
                     pub_file.libraryfilealiasfilename,
                     pub_file.sourcepackagename,
                     pub_file.componentname,
                     )
                 file_path = self.diskpool.pathFor(*pub_file_details)
-                details.setdefault(file_path, pub_file_details)
 
+                # Check if the LibraryFileAlias in question was already
+                # verified. If the verification was already made and the
+                # file is condemned queue the publishing record for removal
+                # otherwise just continue the iteration.
+                if (filename, file_md5) in considered_files:
+                    self.logger.debug("Already verified.")
+                    if file_path in condemned_files:
+                        condemned_records.add(pub_file.publishing_record)
+                    continue
+                considered_files.add((filename, file_md5))
+
+                # Check if the removal is allowed, if not continue.
+                if not self.canRemove(publication_class, filename, file_md5):
+                    self.logger.debug("Cannot remove.")
+                    continue
+
+                # Update local containers, in preparation to file removal.
+                details.setdefault(file_path, pub_file_details)
                 condemned_files.add(file_path)
                 condemned_records.add(pub_file.publishing_record)
 
@@ -284,11 +291,7 @@ class DeathRow:
                 # It's safe for us to let this slide because it means that
                 # the file is already gone.
                 self.logger.debug(
-                    "File to remove %s %s/%s is not in pool, skipping" %
-                    (component_name, source_name, file_name))
-            except:
-                self.logger.exception(
-                    "Removing file %s %s/%s generated exception, continuing" %
+                    "File for removing %s %s/%s is not in pool, skipping" %
                     (component_name, source_name, file_name))
 
         self.logger.info("Total bytes freed: %s" % bytes)

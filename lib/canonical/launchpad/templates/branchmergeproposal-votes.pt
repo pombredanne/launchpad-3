@@ -67,6 +67,16 @@
       </td>
     </tr>
 
+    <tr>
+      <td colspan="4" style="padding-top: 1em; patting-bottom: 0.5em">
+        Review <a href="https://help.launchpad.net/Code/Review"
+                  class="help">via email</a>:
+        <img src="/@@/mail" style="padding-left:0.5em"/>
+        <a tal:attributes="href string:mailto:${context/address}"
+           tal:content="context/address">mp-x@launchpad.net</a>
+      </td>
+    </tr>
+
     <tal:request-review define="link context/menu:context/request_review"
                         condition="link/enabled">
     <tr>

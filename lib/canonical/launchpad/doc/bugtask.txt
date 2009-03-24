@@ -795,7 +795,7 @@ listings) to explicit subscribers and Launchpad admins. Public bugs are visible
 to anyone.
 
     >>> from zope.event import notify
-    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
 
 
 == Privacy and Unprivileged Users ==
@@ -811,7 +811,7 @@ later on the interaction between privacy and teams (see the section
 entitled _Privacy and Team Awareness_):
 
     >>> from canonical.launchpad.interfaces import IBug
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 
@@ -824,7 +824,7 @@ entitled _Privacy and Team Awareness_):
     >>> bug_upstream_firefox_no_svg_support.bug.setPrivate(
     ...     True, getUtility(ILaunchBag).user)
     True
-    >>> bug_set_private = SQLObjectModifiedEvent(
+    >>> bug_set_private = ObjectModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
     ...     ["id", "title", "private"])
     >>> notify(bug_set_private)
@@ -1241,8 +1241,7 @@ If a mentoring offer gets made...
 
 ... or a branch gets linked to the bug...
 
-    >>> from canonical.launchpad.interfaces import IBranchSet
-    >>> branch = list(getUtility(IBranchSet))[0]
+    >>> branch = factory.makeAnyBranch()
     >>> bug_three.addBranch(branch, no_priv)
     <BugBranch at ...>
 

@@ -7,6 +7,7 @@ __all__ = ['DistroSeriesPackageCache', ]
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey
+from storm.locals import RawStr
 
 from canonical.database.sqlbase import SQLBase
 
@@ -24,6 +25,7 @@ class DistroSeriesPackageCache(SQLBase):
     binarypackagename = ForeignKey(dbName='binarypackagename',
         foreignKey='BinaryPackageName', notNull=True)
 
+    fti = RawStr(allow_none=True, default=None)
     name = StringCol(notNull=False, default=None)
     summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)

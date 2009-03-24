@@ -17,14 +17,11 @@ import mimetypes
 
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
-from canonical.launchpad.interfaces.productseries import IProductSeriesSet
+    IProductRelease, IProductReleaseFileAddForm)
 
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
@@ -59,7 +56,7 @@ class ProductReleaseContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def add_file(self):
         text = 'Add download file'
-        return Link('+adddownloadfile', text, icon='edit')
+        return Link('+adddownloadfile', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
@@ -71,39 +68,55 @@ class ProductReleaseContextMenu(ContextMenu):
         return Link('+rdf', text, icon='download')
 
 
-class ProductReleaseAddView(AddView):
+class ProductReleaseAddView(LaunchpadFormView):
+    """View to add a release to a `ProductSeries`."""
+    schema = IProductRelease
+    field_names = [
+        'version', 'codename', 'summary', 'description', 'changelog']
+    custom_widget('summary', TextAreaWidget, width=62, height=5)
 
-    __used_for__ = IProductRelease
+    @property
+    def label(self):
+        """The form label."""
+        return 'Register a new %s release' % self.context.name
 
-    _nextURL = '.'
-
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
-        user = getUtility(ILaunchBag).user
-        product_series_set = getUtility(IProductSeriesSet)
-        product_series = product_series_set[data['productseries']]
+    @action('Add', name='add')
+    def createRelease(self, action, data):
+        user = self.user
+        product_series = self.context
         newrelease = product_series.addRelease(
             data['version'], user, codename=data['codename'],
             summary=data['summary'], description=data['description'],
             changelog=data['changelog'])
-        self._nextURL = canonical_url(newrelease)
+        self.next_url = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class ProductReleaseEditView(LaunchpadEditFormView):
     """Edit view for ProductRelease objects"""
 
     schema = IProductRelease
-    label = "Edit project release details"
-    field_names = ["summary", "description", "changelog", "codename"]
+    field_names = [
+        "summary", "description", "changelog", "codename", "version"]
     custom_widget('summary', TextAreaWidget, width=62, height=5)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit %s release details' % self.context.title
 
     @action('Change', name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class ProductReleaseRdfView(object):
@@ -140,6 +153,11 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     schema = IProductReleaseFileAddForm
 
     custom_widget('description', TextWidget, width=62)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Add a download file to %s' % self.context.title
 
     @action('Upload', name='add')
     def add_action(self, action, data):
@@ -185,6 +203,10 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
         self.next_url = canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
     """View for ProductRelease overview."""
@@ -201,20 +223,24 @@ class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
 
 class ProductReleaseDeleteView(LaunchpadFormView):
     """A view for deleting an `IProductRelease`."""
-    label = 'Delete release'
     schema = IProductRelease
     field_names = []
 
-    def canBeDeleted(self, action=None):
-        """Can this release be deleted?
+    @property
+    def label(self):
+        """The form label."""
+        return 'Delete %s' % self.context.title
 
-        Only releases which have no files associated with it can be deleted.
-        """
-        return self.context.files.count() == 0
-
-    @action('Yes, Delete it', name='delete', condition=canBeDeleted)
+    @action('Delete this Release', name='delete')
     def add_action(self, action, data):
+        for release_file in self.context.files:
+            release_file.destroySelf()
         self.request.response.addInfoNotification(
             "Release %s deleted." % self.context.version)
         self.next_url = canonical_url(self.context.productseries)
         self.context.destroySelf()
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+

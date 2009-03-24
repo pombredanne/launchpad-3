@@ -43,6 +43,10 @@ class IArchiveAuthTokenView(Interface):
         title=_("Token"), required=True, readonly=True,
         description=_("The access token to the archive for this person."))
 
+    archive_url = TextLine(
+        title=_("Archive url"), readonly=True,
+        description=_(
+            "External archive URL including basic auth for this person"))
 
 class IArchiveAuthTokenEdit(Interface):
     """Interface for Archive Auth Tokens requiring launchpad.Edit."""
@@ -68,5 +72,20 @@ class IArchiveAuthTokenSet(Interface):
         """Retrieve a token by its token text.
 
         :param token: The token text for the token.
-        :return An object conforming to IArchiveAuthToken
+        :return: An object conforming to IArchiveAuthToken
+        """
+
+    def getByArchive(archive):
+        """Retrieve all the tokens for an archive.
+
+        :param archive: The context archive.
+        :return: A result set containing `IArchiveAuthToken`s.
+        """
+
+    def getActiveTokenForArchiveAndPerson(archive, person):
+        """Retrieve an active token for the given archive and person.
+
+        :param archive: The archive to which the token corresponds.
+        :param person: The person to which the token corresponds.
+        :return An object conforming to IArchiveAuthToken or None.
         """

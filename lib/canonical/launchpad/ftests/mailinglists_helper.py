@@ -17,7 +17,6 @@ __all__ = [
     ]
 
 
-import re
 import xmlrpclib
 
 from BeautifulSoup import BeautifulSoup, SoupStrainer
@@ -141,7 +140,7 @@ def print_review_table(content):
                 # representation of whether the button is checked or not.  In
                 # the latter two cases, just print the text.
                 if thtd.input is None:
-                    text = re.sub(u'&nbsp;', ' ', thtd.a.contents[1])
+                    text = thtd.a.contents[0]
                     print '%s <%s>' % (text, thtd.a.get('href')),
                 else:
                     if thtd.input.get('checked', None):

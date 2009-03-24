@@ -42,11 +42,13 @@ default: inplace
 
 schema: build clean_codehosting
 	$(MAKE) -C database/schema
-	$(PYTHON) ./utilities/make-dummy-hosted-branches
 	$(RM) -r /var/tmp/fatsam
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
+
+hosted_branches:
+	$(PYTHON) ./utilities/make-dummy-hosted-branches
 
 $(WADL_FILE): $(BZR_VERSION_INFO)
 	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py > $@
@@ -55,16 +57,6 @@ $(API_INDEX): $(WADL_FILE) $(WADL_XSL)
 	$(XSLTPROC) $(WADL_XSL) $(WADL_FILE) > $@
 
 apidoc: compile $(API_INDEX)
-
-check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
-
-check_launchpad_storm_on_merge: check_launchpad_on_merge
-
-check_sourcecode_dependencies:
-	# Use the check_for_launchpad rule which runs tests over a smaller
-	# set of libraries, for performance and reliability reasons.
-	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_loggerhead_on_merge:
 	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
@@ -78,29 +70,15 @@ dbfreeze_check:
 	  `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\)" | wc -l` -eq 0 ]
 
-check_not_a_ui_merge:
-	[ ! -f do-not-merge-to-mainline.txt ]
+check_merge: dbfreeze_check
+	${PYTHON} lib/canonical/tests/test_no_conflict_marker.py
 
-check_merge: check_not_a_ui_merge build check
-	# Work around the current idiom of 'make check' getting too long
-	# because of hct and related tests. note that this is a short
-	# term solution, the long term solution will need to be
-	# finer grained testing anyway.
-	# Run all tests. test_on_merge.py takes care of setting up the
-	# database.
+# This can be removed once we move to zc.buildout and we have versioned
+# dependencies, but for now we run both Launchpad and all other
+# dependencies tests for any merge to sourcecode.
+check_sourcecode_merge: build check
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
-
-check_merge_ui: build check
-	# Same as check_merge, except we don't need to do check_not_a_ui_merge.
-	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
-
-check_merge_edge: dbfreeze_check check_merge
-	# Allow the merge if there are no database updates, including
-	# database patches or datamigration scripts (which should live
-	# in database/schema/pending. Used for maintaining the
-	# edge.lauchpad.net branch.
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
@@ -171,7 +149,7 @@ start-gdb: inplace stop support_files
 		-r librarian,google-webservice -C $(CONFFILE) \
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: inplace stop
+run_all: inplace stop hosted_branches
 	$(RM) thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
@@ -191,14 +169,7 @@ pull_branches: support_files
 	# mirrored area.
 	$(PYTHON) cronscripts/supermirror-pull.py upload
 
-rewritemap:
-	# Build rewrite map that maps friendly branch names to IDs. Necessary
-	# for http access to branches and for the branch scanner.
-	mkdir -p $(CODEHOSTING_ROOT)/config
-	$(PYTHON) cronscripts/supermirror_rewritemap.py \
-		$(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
-
-scan_branches: rewritemap
+scan_branches:
 	# Scan branches from the filesystem into the database.
 	$(PYTHON) cronscripts/branch-scanner.py
 
@@ -325,9 +296,8 @@ tags:
 	ctags -R --exclude='*yui/2.6.0*' --exclude='*-min.js' lib/canonical && \
 		ctags --exclude=lib/canonical -a -R lib/
 
-.PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop	\
-	start run ftest_build ftest_inplace test_build test_inplace	\
-	pagetests check check_merge schema default launchpad.pot	\
-	check_launchpad_on_merge check_merge_ui pull rewritemap scan	\
-	sync_branches check_loggerhead_on_merge reload-apache		\
-	check_launchpad_storm_on_merge
+.PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
+	start run ftest_build ftest_inplace test_build test_inplace pagetests\
+	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
+	schema default launchpad.pot check_merge_ui pull scan sync_branches\
+	reload-apache hosted_branches

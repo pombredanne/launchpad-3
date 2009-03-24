@@ -27,6 +27,7 @@
  * Use absolute units (e.g. px, pt) only when image sizes or CSS limitations
    demand it. Otherwise, use relative units (%, em).
 */
+.yui-ieditor {padding-right: 288px};
 
 .demo {background-color: #fee;}
 
@@ -45,6 +46,7 @@
 .clearfix {display: block;}
 /* End hiding from MSIE for Mac */
 .visualClear {display: block; clear: both;} /* XXX Remove this */
+a {outline: none;}
 abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
 address {font-style: inherit;}
 * html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
@@ -113,6 +115,15 @@ code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
 /* Links that don't open separate pages are green to denote their behavior: */
 a[onclick], .collapsible legend a               {color: #063;}
 a[onclick]:active, .collapsible legend a:active {color: #093;}
+
+/* Help links */
+a.help {
+  border-bottom: 1px dotted #03a;
+  cursor: help;}
+}
+a.help:hover, a.help:hover {
+  text-decoration: none;
+}
 
 h1, h2, h3, h4, h5, h6 {
   background: none;
@@ -208,10 +219,11 @@ input[type="text"], input[type="search"], input[type="submit"],
 input[type="reset"], textarea {
   font-size: 1em; /* Forces a readable font size in Safari */
 }
-button, input[type="button"], input[type="file"], input[type="password"],
-input[type="submit"], input[type="text"], select, textarea {
+form button, form input[type="button"], form input[type="file"], form input[type="password"],
+form input[type="submit"], form input[type="text"], form select, form textarea {
   margin-right: 0.5em;
 }
+button{padding:0;}
 input.urlTextType {width: 100%;}
 .fieldRequired, .fieldOptional {color: #999;}
 .formHelp {margin-top: 0.2em; margin-bottom: 0.5em; color: #777;}
@@ -254,8 +266,10 @@ table.contributions td {vertical-align: middle; width: 16px; text-align: left;}
 /* ==== Listing tables ==== */
 
 table.listing {margin: 0; width: 100%; font-size: 90%;}
-table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
-table.listing thead, table.listing thead th, table.listing tfoot tr {
+table.listing, table.listing tbody, table.listing td.end-of-section {
+  border-bottom: 1px solid #d2d2d2;}
+table.listing thead, table.listing thead th, table.listing tfoot tr,
+table.listing tr.thead th {
   border: 1px solid #d2d2d2;
   background-color: #fff;
 }
@@ -270,7 +284,8 @@ table.listing tr.note {font-size: smaller;}
 table.listing th, table.listing td {padding: 0.25em;}
 /* We don't want extra padding on nested tables, such as batch navigation. */
 table.listing table th, table.listing table td {padding: 0;}
-table.listing thead th {font-size: 1.125em; white-space: nowrap;}
+table.listing thead th, table.listing tr.thead th {
+  font-size: 1.125em; white-space: nowrap;}
 table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
 table.listing tr.note td {border-style: none;}
 table.listing img {vertical-align: middle;}
@@ -284,6 +299,12 @@ table.duplicate.listing * {color: #999;}
 
 table.listing table.simple {margin-left: 2em;}
 table.listing table.simple td {padding: 0.25em;}
+
+table.listing .section-heading {
+  font-size: 1.2em;
+  border: none;
+  padding-top: 1.5em;
+}
 
 table.compressed { width: auto }
 table.compressed td { padding: 0.25em 0.5em }
@@ -428,13 +449,6 @@ form.primary.search {
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
 
-h1 em, h2 em, h3 em, h4 em, h5 em {
-  font-style: normal;
-  color: #353535;
-}
-h1 span, h2 span, h3 span, h4 span, h5 span {
-  color: #656565;
-}
 strong em {
   font-style: normal;
   color: #353535;
@@ -1048,6 +1062,91 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 .pillar div.portlet, .pillar div.section {clear: both; margin-bottom: 2em;}
 .pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
 
+/* === Official Bug Tag Management === */
+
+.official-tags-layout-table {
+  width: 100%;
+}
+
+.official-tags-layout-table td {
+  padding: 0;
+}
+
+.official-tags-layout-table th {
+  text-align: left;
+  font-size: 1.25em;
+  padding-bottom: 5px;
+}
+
+.official-tags-layout-table .left-column,
+.official-tags-layout-table .right-column {
+  vertical-align: top;
+  width: 45%;
+}
+
+.official-tags-layout-table .middle-column {
+  text-align: center;
+  padding: 20px;
+}
+
+.official-tags-layout-table .middle-column input[type='submit'] {
+  width: 75px;
+  margin: 5px;
+}
+
+.official-tags-layout-table .input-field-layout-table td {
+  border-style: none;
+  padding: 5px;
+}
+
+.official-tags-layout-table ul {
+  list-style-type: none;
+  padding-left: 0 !important;
+  margin: 0 !important;
+}
+
+.official-tags-layout-table li.selected {
+  background-color: #eee;
+}
+
+.official-tags-layout-table ul .tag-used-count {
+  color: #888;
+  font-size: 75%;
+}
+
+.official-tags-layout-table .list-scrollable-area {
+  height: 10em;
+  overflow-y: scroll;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #eee;
+}
+
+.official-tags-layout-table .left-column .list-scrollable-area {
+  background-color: #fefecc;
+}
+
+.official-tag-error-message {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
+.official-tag-error-message-header {
+  font-weight: bold;
+  font-size: 1.25em;
+  margin-left: 1em;
+}
+
+.official-tag-error-message-value {
+  color: red;
+  text-decoration: underline;
+}
+
+a.official-tag { /* Looks just like a normal link */ }
+
+a.unofficial-tag {
+  color: #333;
+}
 
 /* === Portlets === */
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
@@ -1296,6 +1395,45 @@ beside the mugshot. */
   padding-top: 0;
 }
 
+.important-notice-container {
+  text-align: center;
+  width: 100%;
+  padding-bottom: 1em;
+  position: relative;
+}
+
+.important-notice-balloon {
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  background-color: #ededed;
+  padding: 1em;
+  border: 1px solid #000;
+  width: auto;
+  overflow: hidden;
+}
+
+.important-notice-buttons {
+  float: right;
+}
+
+.important-notice-cancel-button {
+  visibility: hidden;
+  cursor: pointer;
+}
+
+.important-notice {
+  padding: 0px 0px 40px 0px;
+  height: 32px;
+  overflow: hidden;
+}
+
+.important-notice a {
+  font-weight: bold;
+  color: black;
+  text-decoration: underline;
+}
+
 /* Soyuz-related styles (that don't have a facet, but generally are
  * under Overview)
  */
@@ -1350,13 +1488,31 @@ table#package-requests {
     width: 60em;
     margin: 1em 0;
 }
-table#package-requests td{
+table#package-requests td {
     padding: 0.5em;
+}
+form.package-search-filter {
+    clear: both;
 }
 h1.disabled {
     color: grey;
 }
+table#packages_list {
+    margin-top: 1em;
+}
+p.update-failure-message {
+    background: url(/@@/no) center left no-repeat;
+    padding-left: 18px;
+}
 
+.update-in-progress-message {
+    background: url(/@@/spinner) center left no-repeat;
+    padding-left: 18px;
+}
+
+a.update-retry {
+    padding-left: 1em;
+}
 /* --- Code --- */
 
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
@@ -1414,6 +1570,9 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .mergestatusQUEUED            {color: black;}
 .mergestatusSUPERSEDED        {color: grey;}
 
+.stale-diff { color: #f60; }
+.conflicts-diff { color: red; }
+
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -1437,9 +1596,33 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   float: right;
 }
 .codereviewcomment {font: 120% monospace;}
-.codereviewcomment .attachment {
+.codereviewcomment .attachment, #review-diff .attachment {
   background-color: #f6f6f6;
 }
+
+body.tab-branches table.listing .section-heading {
+  color: #d18b39;
+}
+
+#proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
+table.diff {
+   white-space: pre-wrap;
+   font: 120% monospace;
+   width: 100%;
+   background-color: white;
+}
+table.diff .text { width: 99%; padding-left: 0.5em; }
+table.diff .line-no {
+  text-align: right;
+  background-color: #f6f6f6;
+  color: #999;
+  border-right: solid 4px white;
+}
+table.diff .diff-chunk, table.diff .diff-file, table.diff .diff-header {
+ font-weight: bold;
+}
+table.diff .diff-added { background-color: #92ED92; }
+table.diff .diff-removed { background-color: #FF7F7F; }
 .back-link { margin-top: 3em; }
 
 /* === Bugs === */
@@ -1763,32 +1946,29 @@ li {
 */
 
 /* Clouds of links. */
+.cloud-size-smallest {
+  font-size: 0.8em;
+}
 .cloud-size-small {
-  font-size: 1em;
+  font-size: 1.1em;
 }
 .cloud-size-medium {
-  font-size: 1.35em;
+  font-size: 1.4em;
 }
 .cloud-size-large {
   font-size: 1.7em;
 }
-.cloud-shade-dark {
+.cloud-size-largest {
+  font-size: 2.0em;
+}
+.cloud-dark {
   color: #00f;
 }
-.cloud-shade-medium {
+.cloud-medium {
   color: #7878ff;
 }
-.cloud-shade-light {
+.cloud-light {
   color: #b8b8ff;
-}
-.cloud-highlight-dark {
-  color: #00c500;
-}
-.cloud-highlight-medium {
-  color: #90e090;
-}
-.cloud-highlight-light {
-  color: #b8ffb8;
 }
 
 .lowerCaseText {

@@ -32,6 +32,7 @@ except AttributeError:
 BREAK_ON_TIMEOUT = bool(os.getenv('BREAK_ON_TIMEOUT'))
 LINES_TO_CAPTURE = 50
 LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=20)
+FAILURE_CAPTURE_INTERVAL = datetime.timedelta(seconds=60)
 SECONDS_TO_SNOOZE = 0.1
 Empty = object()
 NL = '\n'
@@ -122,6 +123,16 @@ class LogWatcher:
                         print NL.join(self.last_lines_read)
                         if BREAK_ON_TIMEOUT:
                             pdb.set_trace()
+                        else:
+                            # Wait a while longer, then print all the
+                            # additional lines that are read.  This helps
+                            # debug what comes after the timeout.
+                            time.sleep(FAILURE_CAPTURE_INTERVAL.seconds)
+                            print '--------------------'
+                            for line in self.lines:
+                                if line is Empty:
+                                    break
+                                print line
                     # Resetting expectations so you don't have to.
                     self.expecting_timeout = False
                     return 'Timed out'

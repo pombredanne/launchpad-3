@@ -338,9 +338,6 @@ class IProjectSet(Interface):
         """Return a list of Projects which need review, or which have
         products that needs review."""
 
-    def forSyncReview():
-        """Return a list of projects that have productseries ready to
-        import which need review."""
 
 class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
                      IHasOwner):
@@ -364,3 +361,4 @@ class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
     project = Object(schema=IProject,
                      title=u"The project this series belongs to",
                      required=True, readonly=True)
+

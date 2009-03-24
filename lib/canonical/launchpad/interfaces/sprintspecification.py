@@ -12,9 +12,10 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Int, Text, Datetime
+from lazr.enum import DBEnumeratedType, DBItem
+
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
-from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class ISprintSpecification(Interface):

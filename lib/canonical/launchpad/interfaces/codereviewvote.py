@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, Object, TextLine
+from zope.schema import Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -16,7 +16,9 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import (
     ICodeReviewComment)
-from canonical.launchpad.interfaces.person import IPerson
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 
 class ICodeReviewVoteReference(Interface):
@@ -25,30 +27,42 @@ class ICodeReviewVoteReference(Interface):
     There is at most one reference to a vote for each reviewer on a given
     branch merge proposal.
     """
+    export_as_webservice_entry()
 
-    branch_merge_proposal = Object(
-        title=_("The merge proposal that is the subject of this vote"),
-        required=True, schema=IBranchMergeProposal)
+    id = Int(
+        title=_("The ID of the vote reference"))
 
-    date_created = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
+    branch_merge_proposal = exported(
+        Reference(
+            title=_("The merge proposal that is the subject of this vote"),
+            required=True, schema=IBranchMergeProposal))
 
-    registrant = Object(
-        title=_("The person who originally registered this vote"),
-        required=True, schema=IPerson)
+    date_created = exported(
+        Datetime(
+            title=_('Date Created'), required=True, readonly=True))
 
-    reviewer = PublicPersonChoice(
-        title=_('Reviewer'), required=True,
-        description=_('A person who you want to review this.'),
-        vocabulary='ValidPersonOrTeam')
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("The person who originally registered this vote"),
+            required=True,
+            vocabulary='ValidPersonOrTeam'))
 
-    review_type = TextLine(
-        title=_('Review type'), required=False,
-        description=_(
-            "Lowercase keywords describing the type of review you're "
-            "performing."))
+    reviewer = exported(
+        PublicPersonChoice(
+            title=_('Reviewer'), required=True,
+            description=_('A person who you want to review this.'),
+            vocabulary='ValidPersonOrTeam'))
 
-    comment = Object(
-        title=_(
-            "The code review comment that contains the most recent vote."),
-        required=True, schema=ICodeReviewComment)
+    review_type = exported(
+        TextLine(
+            title=_('Review type'), required=False,
+            description=_(
+                "Lowercase keywords describing the type of review you're "
+                "performing.")))
+
+    comment = exported(
+        Reference(
+            title=_(
+                "The code review comment that contains the most recent vote."
+                ),
+            required=True, schema=ICodeReviewComment))

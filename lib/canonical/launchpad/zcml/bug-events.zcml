@@ -4,82 +4,72 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.bugcreation.at_least_one_task" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.bug_created" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.karma.bug_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugAttachment
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_attachment_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugAttachment
-        canonical.launchpad.event.interfaces.ISQLObjectDeletedEvent"
+        lazr.lifecycle.interfaces.IObjectDeletedEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_attachment_removed" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugAttachment
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugAttachment
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugBranch
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugBranch
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugCve
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_cve_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugCve
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugCve
-        canonical.launchpad.event.interfaces.ISQLObjectDeletedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_cve_deleted" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugCve
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.cve_added" />
 
 <subscriber
@@ -89,47 +79,42 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_comment_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.bug_comment_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.bugwatch_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_watch_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugWatch
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_watch_modified" />
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
+   handler="canonical.launchpad.subscribers.bugactivity.notify_bug_watch_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugSubscription
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+        lazr.lifecycle.interfaces.IObjectCreatedEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_subscription_added" />
 
 </configure>

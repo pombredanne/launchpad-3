@@ -9,7 +9,7 @@ Checks that the '+pots/' page redirects always to the '+translations' one.
   Content-Length: 0
   Content-Type: text/plain
   Location: ../+translations
-  <BLANKLINE>
+  ...
 
 Checks that the '+pots' page redirects always to the '+translations' one.
 
@@ -21,4 +21,4 @@ Checks that the '+pots' page redirects always to the '+translations' one.
   HTTP/1.1 303 See Other
   ...
   Location: .../ubuntu/hoary/+source/evolution/+pots...
-  <BLANKLINE>
+  ...

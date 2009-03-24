@@ -134,6 +134,14 @@ class IPackageUpload(Interface):
         on all the binarypackagerelease records arising from the build.
         """)
 
+    def isAutoSyncUpload(changed_by_email):
+        """Return True if this is a (Debian) auto sync upload.
+
+        Sync uploads are source-only, unsigned and not targeted to
+        the security pocket.  The Changed-By field is also the Katie
+        user (archive@ubuntu.com).
+        """
+
     def setNew():
         """Set queue state to NEW."""
 

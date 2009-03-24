@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -254,6 +254,41 @@ class PackageUpload(SQLBase):
                 "Cannot build any of the architectures requested: %s" %
                 sourcepackagerelease.architecturehintlist)
 
+    def _giveKarma(self):
+        """Assign karma as appropriate for an accepted upload."""
+        # Give some karma to the uploader for source uploads only.
+        if self.sources.count() == 0:
+            return
+
+        changed_by = self.sources[0].sourcepackagerelease.creator
+        if self.signing_key is not None:
+            uploader = self.signing_key.owner
+        else:
+            uploader = None
+
+        if self.archive.is_ppa:
+            main_karma_action = 'ppauploadaccepted'
+        else:
+            main_karma_action = 'distributionuploadaccepted'
+
+        distribution = self.distroseries.distribution
+        sourcepackagename = self.sources[
+            0].sourcepackagerelease.sourcepackagename
+
+        # The package creator always gets his karma.
+        changed_by.assignKarma(
+            main_karma_action, distribution=distribution,
+            sourcepackagename=sourcepackagename)
+
+        if self.archive.is_ppa:
+            return
+
+        # If a sponsor was involved, give him some too.
+        if uploader is not None and changed_by != uploader:
+            uploader.assignKarma(
+                'sponsoruploadaccepted', distribution=distribution,
+                sourcepackagename=sourcepackagename)
+
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
         debug(logger, "Setting it to ACCEPTED")
@@ -274,6 +309,7 @@ class PackageUpload(SQLBase):
             pas_verify=pas_verify, logger=logger)
         self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
         self._closeBugs(changesfile_path, logger)
+        self._giveKarma()
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
@@ -297,6 +333,9 @@ class PackageUpload(SQLBase):
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
         close_bugs_for_queue_item(self)
+
+        # Give some karma!
+        self._giveKarma()
 
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
@@ -325,13 +364,8 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return self.builds
 
-    def _is_auto_sync_upload(self, changed_by_email):
-        """Return True if this is a (Debian) auto sync upload.
-
-        Sync uploads are source-only, unsigned and not targeted to
-        the security pocket.  The Changed-By field is also the Katie
-        user (archive@ubuntu.com).
-        """
+    def isAutoSyncUpload(self, changed_by_email):
+        """See `IPackageUpload`."""
         katie = getUtility(ILaunchpadCelebrities).katie
         changed_by = self._emailToPerson(changed_by_email)
         return (not self.signing_key
@@ -810,7 +844,7 @@ class PackageUpload(SQLBase):
         do_sendmail(AcceptedMessage)
 
         # Don't send announcements for Debian auto sync uploads.
-        if self._is_auto_sync_upload(changed_by_email=changes['changed-by']):
+        if self.isAutoSyncUpload(changed_by_email=changes['changed-by']):
             return
 
         if announce_list:
@@ -1197,7 +1231,7 @@ class PackageUploadBuild(SQLBase):
                 [filename for filename in known_filenames])
             raise QueueInconsistentStateError(
                 'The following files are already published in %s:\n%s' % (
-                    self.packageupload.archive.title, filename_list))
+                    self.packageupload.archive.displayname, filename_list))
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""
@@ -1525,10 +1559,7 @@ class PackageUploadCustom(SQLBase):
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # XXX: dsilvers 2005-11-15: We should be able to get a
-        # sourcepackagerelease directly.
-        sourcepackagerelease = (
-            self.packageupload.builds[0].build.sourcepackagerelease)
+        sourcepackagerelease = self.packageupload.sourcepackagerelease
 
         # Ignore translation coming from PPA.
         if self.packageupload.isPPA():
@@ -1549,10 +1580,13 @@ class PackageUploadCustom(SQLBase):
             # packages in main.
             return
 
+        # Set the importer to package creator.
+        importer = sourcepackagerelease.creator
+
         # Attach the translation tarball. It's always published.
         try:
             sourcepackagerelease.attachTranslationFiles(
-                self.libraryfilealias, True)
+                self.libraryfilealias, True, importer=importer)
         except DownloadFailed:
             if logger is not None:
                 debug(logger, "Unable to fetch %s to import it into Rosetta" %

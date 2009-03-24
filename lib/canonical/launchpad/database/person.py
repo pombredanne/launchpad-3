@@ -1,6 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # vars() causes W0612
-# pylint: disable-msg=E0611,W0212,W0612
+# pylint: disable-msg=E0611,W0212,W0612,C0322
 
 """Implementation classes for a Person."""
 
@@ -11,6 +11,7 @@ __all__ = [
     'IrcIDSet',
     'JabberID',
     'JabberIDSet',
+    'Owner',
     'Person',
     'PersonLanguage',
     'PersonSet',
@@ -28,8 +29,9 @@ import re
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.interface import implements, alsoProvides
-from zope.component import getUtility
+from zope.interface import alsoProvides, implementer, implements
+from zope.component import adapter, getUtility
+from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
@@ -38,6 +40,7 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import Store
 from storm.expr import And, Join
+from storm.info import ClassAlias
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -52,7 +55,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.answercontact import AnswerContact
+from lp.answers.model.answercontact import AnswerContact
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
@@ -69,11 +72,13 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
 
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, AccountStatus, IAccountSet,
+    AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -106,8 +111,6 @@ from canonical.launchpad.interfaces.personnotification import (
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.project import IProject
-from canonical.launchpad.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
@@ -133,7 +136,7 @@ from canonical.launchpad.database.emailaddress import (
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pillar import PillarName
-from canonical.launchpad.database.pofile import POFileTranslator
+from canonical.launchpad.database.pofiletranslator import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.shipit import ShippingRequest
@@ -141,20 +144,18 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.specificationfeedback import (
-    SpecificationFeedback)
-from canonical.launchpad.database.specificationsubscription import (
-    SpecificationSubscription)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
-from canonical.launchpad.database.question import QuestionPersonSearch
+from lp.answers.model.question import QuestionPersonSearch
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
@@ -565,11 +566,6 @@ class Person(
 
     # specification-related joins
     @property
-    def approver_specs(self):
-        return shortlist(Specification.selectBy(
-            approver=self, orderBy=['-datecreated']))
-
-    @property
     def assigned_specs(self):
         return shortlist(Specification.selectBy(
             assignee=self, orderBy=['-datecreated']))
@@ -585,33 +581,6 @@ class Person(
             AND NOT (%(completed_clause)s)
             """ % replacements
         return Specification.select(query, orderBy=['-date_started'], limit=5)
-
-    @property
-    def created_specs(self):
-        return shortlist(Specification.selectBy(
-            owner=self, orderBy=['-datecreated']))
-
-    @property
-    def drafted_specs(self):
-        return shortlist(Specification.selectBy(
-            drafter=self, orderBy=['-datecreated']))
-
-    @property
-    def feedback_specs(self):
-        return shortlist(Specification.select(
-            AND(Specification.q.id == SpecificationFeedback.q.specificationID,
-                SpecificationFeedback.q.reviewerID == self.id),
-            clauseTables=['SpecificationFeedback'],
-            orderBy=['-datecreated']))
-
-    @property
-    def subscribed_specs(self):
-        specification_id = SpecificationSubscription.q.specificationID
-        return shortlist(Specification.select(
-            AND (Specification.q.id == specification_id,
-                 SpecificationSubscription.q.personID == self.id),
-            clauseTables=['SpecificationSubscription'],
-            orderBy=['-datecreated']))
 
     # mentorship
     @property
@@ -961,6 +930,17 @@ class Person(
     def isTeam(self):
         """Deprecated. Use is_team instead."""
         return self.teamowner is not None
+
+    def getMergeProposals(self, status=None, visible_by_user=None):
+        """See `IPerson`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self, status, visible_by_user=None)
 
     @property
     def mailing_list(self):
@@ -1854,10 +1834,9 @@ class Person(
             cur.execute("DELETE FROM %s WHERE %s=%d"
                         % (table, person_id_column, self.id))
 
-        # Update the account's status, password, preferred email and name.
+        # Update the account's status, preferred email and name.
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
-        self.password = None
         self.preferredemail.status = EmailAddressStatus.NEW
         self._preferredemail_cached = None
         base_new_name = self.name + '-deactivatedaccount'
@@ -1871,36 +1850,6 @@ class Person(
             new_name = base_new_name + str(count)
             count += 1
         return new_name
-
-    def reactivateAccount(self, comment, password, preferred_email):
-        """See `IPersonSpecialRestricted`.
-
-        :raise AssertionError: if the password is not valid.
-        :raise AssertionError: if the preferred email address is None.
-        :raise AssertionError: if this `Person` is a team.
-        """
-        if self.is_team:
-            raise AssertionError(
-                "Teams cannot be reactivated with this method.")
-        if password in (None, ''):
-            raise AssertionError(
-                "User %s cannot be reactivated without a "
-                "password." % self.name)
-        if preferred_email is None:
-            raise AssertionError(
-                "User %s cannot be reactivated without a "
-                "preferred email address." % self.name)
-        self.account.status = AccountStatus.ACTIVE
-        self.account.status_comment = comment
-        if '-deactivatedaccount' in self.name:
-            # The name was changed by deactivateAccount(). Restore the
-            # name, but we must ensure it does not conflict with a current
-            # user.
-            name_parts = self.name.split('-deactivatedaccount')
-            base_new_name = name_parts[0]
-            self.name = self._ensureNewName(base_new_name)
-        self.password = password
-        self.validateAndEnsurePreferredEmail(preferred_email)
 
     @property
     def visibility_consistency_warning(self):
@@ -2114,21 +2063,9 @@ class Person(
     @property
     def translation_history(self):
         """See `IPerson`."""
-        # Note that we can't use selectBy here because of the prejoins.
-        query = ['POFileTranslator.person = %s' % sqlvalues(self),
-                 'POFileTranslator.pofile = POFile.id',
-                 'POFile.language = Language.id',
-                 "Language.code <> 'en'"]
-        history = POFileTranslator.select(
-            ' AND '.join(query),
-            prejoins=[
-                'pofile.potemplate',
-                'latest_message',
-                'latest_message.potmsgset.msgid_singular',
-                'latest_message.msgstr0'],
-            clauseTables=['Language', 'POFile'],
-            orderBy="-date_last_touched")
-        return history
+        return POFileTranslator.select(
+            'POFileTranslator.person = %s' % sqlvalues(self),
+            orderBy='-date_last_touched')
 
     @property
     def translation_groups(self):
@@ -2176,17 +2113,24 @@ class Person(
         assert self.is_team, "This method must be used only for teams."
 
         if email is None:
-            if self.preferredemail is not None:
-                email_address = self.preferredemail
-                email_address.status = EmailAddressStatus.VALIDATED
-                email_address.syncUpdate()
-            self._preferredemail_cached = None
+            self._unsetPreferredEmail()
         else:
             self._setPreferredEmail(email)
+
+    def _unsetPreferredEmail(self):
+        """Change the preferred email address to VALIDATED."""
+        if self.preferredemail is not None:
+            email_address = self.preferredemail
+            email_address.status = EmailAddressStatus.VALIDATED
+            email_address.syncUpdate()
+        self._preferredemail_cached = None
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
         assert not self.is_team, "This method must not be used for teams."
+        if email is None:
+            self._unsetPreferredEmail()
+            return
         if (self.preferredemail is None
             and self.account_status != AccountStatus.ACTIVE):
             # XXX sinzui 2008-07-14 bug=248518:
@@ -2408,7 +2352,18 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
-        return Archive.selectOneBy(owner=self, purpose=ArchivePurpose.PPA)
+        return self.getPPAByName('ppa')
+
+    @property
+    def ppas(self):
+        """See `IPerson`."""
+        return Archive.selectBy(
+            owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
+
+    def getPPAByName(self, name):
+        """See `IPerson`."""
+        return Archive.selectOneBy(
+            owner=self, purpose=ArchivePurpose.PPA, name=name)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -2460,6 +2415,12 @@ class Person(
         else:
             # We don't want to subscribe to the list.
             return False
+
+    @property
+    def hardware_submissions(self):
+        """See `IPerson`."""
+        from canonical.launchpad.database.hwdb import HWSubmissionSet
+        return HWSubmissionSet().search(owner=self)
 
 
 class PersonSet:
@@ -3613,6 +3574,11 @@ class PersonSet:
              % sqlvalues(aliases), prejoins=["content"]))
 
 
+# Provide a storm alias from Person to Owner. This is useful in queries on
+# objects that have more than just an owner associated with them.
+Owner = ClassAlias(Person, 'Owner')
+
+
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'
 
@@ -3834,3 +3800,15 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
 
     finally:
         random.setstate(random_state)
+
+
+@adapter(IAccount)
+@implementer(IPerson)
+def person_from_account(account):
+    """Adapt an IAccount into an IPerson."""
+    # The IAccount interface does not publish the account.person reference.
+    naked_account = removeSecurityProxy(account)
+    person = ProxyFactory(naked_account.person)
+    if person is None:
+        raise ComponentLookupError
+    return person

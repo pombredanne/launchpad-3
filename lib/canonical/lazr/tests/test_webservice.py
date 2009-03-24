@@ -16,7 +16,7 @@ from zope.testing.cleanup import CleanUp
 
 from canonical.lazr.fields import Reference
 from canonical.lazr.interfaces.rest import (
-    ICollection, IEntry, IResourceGETOperation, WebServiceLayer)
+    ICollection, IEntry, IResourceGETOperation, IWebServiceClientRequest)
 from canonical.lazr.rest import ServiceRootResource
 from canonical.lazr.rest.declarations import (
     collection_default_content, exported, export_as_webservice_collection,
@@ -48,8 +48,8 @@ def get_operation_factory(model_interface, name):
         on the webservice.
     """
     return getGlobalSiteManager().adapters.lookup(
-            (model_interface, WebServiceLayer), IResourceGETOperation,
-            name=name)
+            (model_interface, IWebServiceClientRequest),
+            IResourceGETOperation, name=name)
 
 
 class IGenericEntry(Interface):

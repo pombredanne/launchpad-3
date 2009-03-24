@@ -19,12 +19,12 @@ from bzrlib.urlutils import local_path_from_url
 import transaction
 from zope.component import getUtility
 
-from canonical.codehosting.branchfs import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision, LoomTestMixin)
 from canonical.config import config
-from canonical.launchpad.interfaces import IBranchSet
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.testing import ZopelessAppServerLayer
 
 
@@ -38,7 +38,7 @@ class BranchScannerTest(TestCaseWithTransport, LoomTestMixin):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        self.db_branch = getUtility(IBranchSet)[self.branch_id]
+        self.db_branch = getUtility(IBranchLookup).get(self.branch_id)
         assert self.db_branch.revision_history.count() == 0
 
     def getWarehouseLocation(self, db_branch):

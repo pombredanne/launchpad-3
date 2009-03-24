@@ -15,13 +15,31 @@ from zope import thread
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
-        IBug, IDistribution, IDistroSeries, IPerson,
+        IAccount, IBug, IDistribution, IDistroSeries, IPerson,
         IProject, IProduct, ISourcePackage, IDistroArchSeries,
         ISpecification, IBugTask, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, ILaunchpadApplication, ILoggedInEvent, IOpenLaunchBag)
 
 _utc_tz = pytz.timezone('UTC')
+
+
+def get_principal():
+    """Return the principal for the current interaction."""
+    interaction = management.queryInteraction()
+    if interaction is None:
+        return None
+    principals = [
+        participation.principal
+        for participation in list(interaction.participations)
+        if participation.principal is not None
+        ]
+    if not principals:
+        return None
+    elif len(principals) > 1:
+        raise ValueError('Too many principals')
+    else:
+        return principals[0]
 
 
 class LaunchBag:
@@ -63,25 +81,13 @@ class LaunchBag:
 
     @property
     @block_implicit_flushes
+    def account(self):
+        return IAccount(get_principal(), None)
+
+    @property
+    @block_implicit_flushes
     def user(self):
-        interaction = management.queryInteraction()
-        if interaction is None:
-            return None
-        principals = [
-            participation.principal
-            for participation in list(interaction.participations)
-            if participation.principal is not None
-            ]
-        if not principals:
-            return None
-        elif len(principals) > 1:
-            raise ValueError('Too many principals')
-        else:
-            try:
-                person = IPerson(principals[0])
-            except TypeError:
-                person = None
-            return person
+        return IPerson(get_principal(), None)
 
     def add(self, obj):
         store = self._store
@@ -94,6 +100,7 @@ class LaunchBag:
         for attribute in self._registry.values():
             setattr(store, attribute, None)
         store.login = None
+        store.time_zone = None
 
     @property
     def site(self):
@@ -154,10 +161,13 @@ class LaunchBag:
 
     @property
     def time_zone(self):
-        if self.user and self.user.time_zone:
-            return pytz.timezone(self.user.time_zone)
-        # fall back to UTC
-        return _utc_tz
+        if getattr(self._store, "time_zone", None) is None:
+            if self.user and self.user.time_zone:
+                self._store.time_zone = pytz.timezone(self.user.time_zone)
+            else:
+                # fall back to UTC
+                self._store.time_zone = _utc_tz
+        return self._store.time_zone
 
 
 class LaunchBagView(object):

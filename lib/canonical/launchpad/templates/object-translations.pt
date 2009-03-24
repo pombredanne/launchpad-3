@@ -6,17 +6,13 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
->
+><!-- context/@@main_template/master
+      view/macro:page/onecolumn
+ -->
 
   <body>
-
-    <metal:portlets fill-slot="portlets">
-      <div tal:replace="structure context/@@+portlet-details" />
-      <div tal:replace="structure context/@@+portlet-preflangs" />
-    </metal:portlets>
-
     <div metal:fill-slot="main">
       <h1>
         Translation templates for
@@ -36,6 +32,5 @@
 
       <div tal:replace="structure context/@@+potlist" />
     </div>
-
   </body>
 </html>

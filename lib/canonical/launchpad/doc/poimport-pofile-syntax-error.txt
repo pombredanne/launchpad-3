@@ -76,14 +76,14 @@ We must approve the entry to be able to import it.
 
     >>> entry.status = RosettaImportStatus.APPROVED
 
-We do the import.
+The import fails.
 
     >>> (subject, message) = pofile.importFromQueue(entry)
-
-The status is now FAILED:
-
     >>> print entry.status.name
     FAILED
+
+    >>> print entry.error_output
+    Line 12: String is not quoted
 
 And the code composed an email with the notification of the error.
 

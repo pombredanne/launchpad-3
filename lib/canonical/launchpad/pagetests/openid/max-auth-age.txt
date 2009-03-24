@@ -58,10 +58,15 @@ their password.
       ...
     LookupError:...
 
+Since we know who the user is, the email field is pre-filled for their
+convenience:
+
+    >>> print browser.getControl(name='field.email').value
+    test@canonical.com
+
 If they do not enter their password correctly, they get an error message
 and can try again:
 
-    >>> browser.getControl(name='field.email').value = 'test@canonical.com'
     >>> browser.getControl(name='field.password').value = 'bad password'
     >>> browser.getControl('Continue').click()
 

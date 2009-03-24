@@ -70,6 +70,7 @@ Project groups are available at their canonical URL on the API virtual host.
     logo_link: u'http://.../mozilla/logo'
     mugshot_link: u'http://.../mozilla/mugshot'
     name: u'mozilla'
+    official_bug_tags: []
     owner_link: u'http://.../~name12'
     projects_collection_link: u'http://.../mozilla/projects'
     registrant_link: u'http://.../~name12'
@@ -126,6 +127,7 @@ Projects are available at their canonical URL on the API virtual host.
     licenses: []
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
+    official_bug_tags: []
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
@@ -174,6 +176,7 @@ several that are not available to non-privileged users marked as
     licenses: []
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
+    official_bug_tags: []
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
@@ -261,7 +264,7 @@ Attributes can be edited via the webservice.patch() method.
     ...     }
     >>> print webservice.patch(
     ...     '/firefox', 'application/json', dumps(patch))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 209 Content Returned
     ...
     >>> firefox = webservice.get('/firefox').jsonBody()
     >>> firefox['driver_link']
@@ -324,10 +327,10 @@ It is possible to get a batched list of all the projects.
     >>> len(project_entries)
     5
     >>> project_entries[0]['self_link']
-    u'http://.../arch-mirrors'
+    u'http://.../gnome-terminal'
     >>> for project in project_entries:
     ...   print project['display_name']
-    Arch mirrors
+    GNOME Terminal
     Mozilla Firefox
     Redfish
     The Landscape Project
@@ -512,7 +515,7 @@ Verify a project does not exist and then create it.
     HTTP/1.1 201 Created
     ...
     Location: http://.../my-new-project
-    <BLANKLINE>
+    ...
 
     >>> print webservice.get('/my-new-project')
     HTTP/1.1 200 Ok
@@ -605,24 +608,34 @@ by comparing the self_link, which every resource has.
 The entry for a project series is available at its canonical URL on the
 virtual host.
 
-    >>> firefox_1_0 = webservice.get('/firefox/1.0').jsonBody()
-    >>> pprint_entry(firefox_1_0)
-    active_milestones_collection_link: u'http://.../firefox/1.0/active_milestones'
-    all_milestones_collection_link: u'http://.../firefox/1.0/all_milestones'
+    >>> login('test@canonical.com')
+    >>> babadoo = factory.makeProduct(name='babadoo')
+    >>> foobadoo = factory.makeProductSeries(product=babadoo, name='foobadoo')
+    >>> foobadoo.summary = u'Foobadoo support for Babadoo'
+    >>> fooey = factory.makeAnyBranch(product=babadoo, name='fooey')
+    >>> foobadoo.user_branch = fooey
+    >>> logout()
+
+    >>> babadoo_foobadoo = webservice.get('/babadoo/foobadoo').jsonBody()
+    >>> pprint_entry(babadoo_foobadoo)
+    active_milestones_collection_link: u'http://.../babadoo/foobadoo/active_milestones'
+    all_milestones_collection_link: u'http://.../babadoo/foobadoo/all_milestones'
+    branch_link: u'http://api.launchpad.dev/beta/~person-name12/babadoo/fooey'
     bug_reporting_guidelines: None
-    date_created: u'2005-06-06T08:59:51.898385+00:00'
-    display_name: u'1.0'
+    date_created: u'...'
+    display_name: u'foobadoo'
     driver_link: None
-    drivers_collection_link: u'http://.../firefox/1.0/drivers'
-    name: u'1.0'
-    owner_link: u'http://.../~name12'
-    project_link: u'http://.../firefox'
-    releases_collection_link: u'http://.../firefox/1.0/releases'
+    drivers_collection_link: u'http://.../babadoo/foobadoo/drivers'
+    name: u'foobadoo'
+    official_bug_tags: []
+    owner_link: u'http://.../~person-name8'
+    project_link: u'http://.../babadoo'
+    releases_collection_link: u'http://.../babadoo/foobadoo/releases'
     resource_type_link: u'...'
-    self_link: u'http://.../firefox/1.0'
+    self_link: u'http://.../babadoo/foobadoo'
     status: u'Active Development'
-    summary: u'The 1.0 branch of the Mozilla web browser...'
-    title: u'Mozilla Firefox Series: 1.0'
+    summary: u'Foobadoo support for Babadoo'
+    title: u'Babadoo Series: foobadoo'
 
 = Creating a milestone on the product series =
 
@@ -630,6 +643,7 @@ The newMilstone method is called by sending "ws.op=newMilestone"
 as a request variable along with the parameters. The
 webservice.named_post() method simplifies this for us.
 
+    >>> firefox_1_0 = webservice.get('/firefox/1.0').jsonBody()
     >>> response = webservice.named_post(
     ...     firefox_1_0['self_link'], 'newMilestone', {},
     ...     name='alpha1', date_targeted=u'2005-06-06',
@@ -638,6 +652,7 @@ webservice.named_post() method simplifies this for us.
     HTTP/1.1 201 Created
     ...
     Location: http://.../firefox/+milestone/alpha1
+    ...
     >>> milestone = webservice.get(response.getHeader('Location')).jsonBody()
     >>> print milestone['name']
     alpha1
@@ -712,6 +727,7 @@ webservice.named_post() method simplifies this for us.
     HTTP/1.1 201 Created
     ...
     Location: http://.../firefox/1.0/rc1
+    ...
     >>> release = webservice.get(response.getHeader('Location')).jsonBody()
     >>> print release['version']
     rc1
@@ -754,6 +770,7 @@ host.
     description: None
     is_visible: True
     name: u'1.0'
+    official_bug_tags: []
     resource_type_link: u'...'
     self_link: u'http://.../firefox/+milestone/1.0'
     series_target_link: u'http://.../firefox/trunk'
@@ -802,6 +819,7 @@ The actual file redirects to the librarian when accessed.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../firefox-0.9.2.orig.tar.gz
+    ...
 
 The signature file will redirect too, if found.  In this case there is
 no signature so we get a 404.
@@ -856,7 +874,7 @@ API 'add_file' method.
     HTTP/1.1 201 Created
     ...
     Location: http://...firefox/1.0/1.0.0/+file/filename.txt
-    <BLANKLINE>
+    ...
 
 Firefox 1.0/1.0.0 now has one file.
 
@@ -877,7 +895,7 @@ available then it must be explicitly set to None.
     HTTP/1.1 201 Created
     ...
     Location: http://...firefox/1.0/1.0.0/+file/filename2.txt
-    <BLANKLINE>
+    ...
 
 Firefox 1.0/1.0.0 now has two files.
 
@@ -895,6 +913,7 @@ The file redirects to the librarian when accessed.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../filename.txt
+    ...
 
 Project release files can be deleted using the 'delete' method.  The
 project maintainer, project series owners, admins, or registry experts
@@ -920,7 +939,7 @@ retrieved through the API.
     >>> # Do some housekeeping not using the API to setup the Mega
     >>> # Money Maker with a commercial subscription.
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IMilestoneSet, IProductSet
+    >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('bac@canonical.com')
     >>> product_set = getUtility(IProductSet)

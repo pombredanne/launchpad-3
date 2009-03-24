@@ -49,15 +49,14 @@ We are going to import it as the Rosetta expert team, like we do with
 automatic imports from Ubuntu. In this case, we shouldn't give any kind
 of karma to that user.
 
-    >>> login('rosetta@launchpad.net')
-
-Do the import.
-
     >>> comes_from_upstream = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     potemplate.path, potemplate_contents, comes_from_upstream,
     ...     rosetta_experts, productseries=potemplate.productseries,
     ...     potemplate=potemplate)
+
+    # Login as a rosetta expert to be able to change the import's status.
+    >>> login('carlos@canonical.com')
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> entry_id = entry.id
 

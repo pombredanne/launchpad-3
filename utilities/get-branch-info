@@ -12,9 +12,10 @@ from bzrlib.urlutils import join
 
 from zope.component import getUtility
 
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
-from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
+from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.publisher import canonical_url
 
@@ -22,8 +23,8 @@ from canonical.launchpad.webapp.publisher import canonical_url
 def main(args):
     branch_url = args[1]
     execute_zcml_for_scripts()
-    branch_set = getUtility(IBranchSet)
-    branch = branch_set.getByUrl(branch_url)
+    branch_lookup = getUtility(IBranchLookup)
+    branch = branch_lookup.getByUrl(branch_url)
     if branch is None:
         print "Could not find branch at %r" % (branch_url,)
         return
@@ -38,9 +39,11 @@ def main(args):
         print 'External URL:', branch.url
     branch_path = branch_id_to_path(branch.id)
     if branch.branch_type == BranchType.HOSTED:
-        hosted_path = join(config.codehosting.branches_root, branch_path)
+        hosted_path = join(
+            config.codehosting.hosted_branches_root, branch_path)
         print 'Hosted copy:',  hosted_path
-    mirrored_path = join(config.supermirror.branchesdest, branch_path)
+    mirrored_path = join(
+        config.codehosting.mirrored_branches_root, branch_path)
     print 'Mirrored copy:', mirrored_path
 
 

@@ -29,12 +29,12 @@ class IncomingEmailError(Exception):
 
 def get_main_body(signed_msg):
     """Returns the first text part of the email."""
-    msg = signed_msg.signedMessage
+    msg = getattr(signed_msg, 'signedMessage', None)
     if msg is None:
         # The email wasn't signed.
         msg = signed_msg
     if msg.is_multipart():
-        for part in msg.get_payload():
+        for part in msg.walk():
             if part.get_content_type() == 'text/plain':
                 return part.get_payload(decode=True)
     else:
@@ -198,7 +198,9 @@ def get_person_or_team(person_name_or_email):
     return person_term.value
 
 
-def ensure_not_weakly_authenticated(signed_msg, context):
+def ensure_not_weakly_authenticated(signed_msg, context,
+                                    error_template='not-signed.txt',
+                                    no_key_template='key-not-registered.txt'):
     """Make sure that the current principal is not weakly authenticated."""
     cur_principal = get_current_principal()
     # The security machinery doesn't know about
@@ -208,11 +210,11 @@ def ensure_not_weakly_authenticated(signed_msg, context):
     if IWeaklyAuthenticatedPrincipal.providedBy(cur_principal):
         if signed_msg.signature is None:
             error_message = get_error_message(
-                'not-signed.txt', context=context)
+                error_template, context=context)
         else:
             import_url = canonical_url(
                 getUtility(ILaunchBag).user) + '/+editpgpkeys'
             error_message = get_error_message(
-                'key-not-registered.txt', import_url=import_url,
+                no_key_template, import_url=import_url,
                 context=context)
         raise IncomingEmailError(error_message)

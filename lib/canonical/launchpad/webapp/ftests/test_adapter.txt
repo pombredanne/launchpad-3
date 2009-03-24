@@ -142,11 +142,6 @@ timeout being reported by PostgreSQL is actually working:
     TimeoutError: ...SELECT pg_sleep(0.2)...
     >>> clear_request_started()
 
-Turn off the timemachine so nobody hurts themselves:
-
-    >>> import time
-    >>> canonical.launchpad.webapp.adapter.time = time.time
-
 
 Set the timeout to 5000ms for the next tests:
 
@@ -160,6 +155,12 @@ Set the timeout to 5000ms for the next tests:
     >>> print current_statement_timeout(store)
     5000ms
     >>> clear_request_started()
+
+
+Turn off the timemachine so nobody hurts themselves:
+
+    >>> import time
+    >>> canonical.launchpad.webapp.adapter.time = time.time
 
 
 Request Timeout
