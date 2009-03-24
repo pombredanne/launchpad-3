@@ -80,7 +80,7 @@ class TargetBranchWidget(LaunchpadRadioWidget):
                 target_branches.remove(self.dev_focus)
             target_branches.insert(0, self.dev_focus)
 
-        # Make sure the the source branch isn't in the target_branches.
+        # Make sure the source branch isn't in the target_branches.
         if branch in target_branches:
             target_branches.remove(branch)
 

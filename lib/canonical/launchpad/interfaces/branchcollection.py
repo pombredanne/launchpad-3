@@ -77,6 +77,18 @@ class IBranchCollection(Interface):
             statuses. If not, return all merge proposals.
         """
 
+    def getMergeProposalsForReviewer(reviewer, status=None):
+        """Return a result set of merge proposals for the given reviewer.
+
+        That is, all merge proposals that 'reviewer' has voted on or has been
+        invited to vote on.
+
+        :param reviewer: An `IPerson` who is a reviewer.
+        :param status: An iterable of queue_status of the proposals to return.
+            If None is specified, all the proposals of all possible states
+            are returned.
+        """
+
     def inProduct(product):
         """Restrict the collection to branches in 'product'."""
 

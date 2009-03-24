@@ -298,17 +298,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
-    @property
-    def default_stacked_on_branch(self):
-        """See `IProduct`."""
-        default_branch = self.development_focus.series_branch
-        if default_branch is None:
-            return None
-        elif default_branch.last_mirrored is None:
-            return None
-        else:
-            return default_branch
-
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)
