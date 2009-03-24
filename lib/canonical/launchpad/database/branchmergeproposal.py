@@ -25,9 +25,8 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import classProvides, implements
-from zope.security.proxy import removeSecurityProxy
 
-from storm.expr import Desc, Join, LeftJoin
+from storm.expr import Join, LeftJoin
 from storm.locals import Int, Reference, Unicode
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLObjectNotFound)

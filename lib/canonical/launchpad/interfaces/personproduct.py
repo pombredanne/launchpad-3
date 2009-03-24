@@ -1,4 +1,5 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0213
 
 """A person's view on a product."""
 
