@@ -12,6 +12,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import SQL, Min
 
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDNonce
@@ -131,8 +132,8 @@ class CodeImportResultPruner(TunableLoop):
                 CodeImportResult.date_created
                     < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                         - interval '30 days'
-                AND CodeImportResult.code_import >= %d
-                AND CodeImportResult.code_import < %d + %d
+                AND CodeImportResult.code_import >= %s
+                AND CodeImportResult.code_import < %s + %s
                 AND CodeImportResult.id NOT IN (
                     SELECT LatestResult.id
                     FROM CodeImportResult AS LatestResult
@@ -142,8 +143,10 @@ class CodeImportResultPruner(TunableLoop):
                     ORDER BY LatestResult.id DESC
                     LIMIT 4)
             """ % sqlvalues(
-                self.code_import_id, self.code_import_id, chunk_size))
-        self.code_import_id += chunk_size
+                self.next_code_import_id,
+                self.next_code_import_id,
+                chunk_size))
+        self.next_code_import_id += chunk_size
         transaction.commit()
 
 

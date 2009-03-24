@@ -13,9 +13,12 @@ from pytz import UTC
 from storm.locals import Min
 import transaction
 
+from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDNonce
 from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.codeimportresult import (
+    CodeImportResultStatus)
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.scripts.garbo import (
     DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector)
@@ -142,6 +145,47 @@ class TestGarbo(TestCase):
         # And none of them are older than 1 day
         earliest = store.find(Min(OpenIDNonce.timestamp)).one()
         self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
+
+    def test_CodeImportResultPruner(self):
+        now = datetime.utcnow().replace(tzinfo=UTC)
+        store = IMasterStore(CodeImportResult)
+
+        def new_code_import_result(timestamp):
+            LaunchpadZopelessLayer.switchDbUser('testadmin')
+            CodeImportResult(
+                date_created=timestamp,
+                code_importID=1, machineID=1, requesting_userID=1,
+                status=CodeImportResultStatus.FAILURE,
+                date_job_started=timestamp)
+            transaction.commit()
+
+        new_code_import_result(now - timedelta(days=60))
+        new_code_import_result(now - timedelta(days=19))
+        new_code_import_result(now - timedelta(days=20))
+        new_code_import_result(now - timedelta(days=21))
+
+        # Run the garbage collector
+        self.runDaily()
+
+        # Nothing is removed, because we always keep the 4 latest.
+        self.failUnlessEqual(
+            store.find(CodeImportResult).count(), 4)
+
+        new_code_import_result(now - timedelta(days=31))
+        self.runDaily()
+        self.failUnlessEqual(
+            store.find(CodeImportResult).count(), 4)
+
+        new_code_import_result(now - timedelta(days=29))
+        self.runDaily()
+        self.failUnlessEqual(
+            store.find(CodeImportResult).count(), 4)
+
+        # We now have no CodeImportResults older than 30 days
+        self.failUnless(
+            store.find(
+                Min(CodeImportResult.date_created)).one().replace(tzinfo=UTC)
+            >= now - timedelta(days=30))
 
 
 def test_suite():
