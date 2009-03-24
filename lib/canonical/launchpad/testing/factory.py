@@ -1267,7 +1267,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
-                       translation_domain=None):
+                       translation_domain=None, path=None):
         """Make a new translation template."""
         if productseries is None and distroseries is None:
             # No context for this template; set up a productseries.
@@ -1290,7 +1290,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             else:
                 owner = productseries.owner
 
-        return subset.new(name, translation_domain, 'messages.pot', owner)
+        if path is None:
+            path = 'messages.pot'
+
+        return subset.new(name, translation_domain, path, owner)
 
     def makePOFile(self, language_code, potemplate=None, owner=None):
         """Make a new translation file."""

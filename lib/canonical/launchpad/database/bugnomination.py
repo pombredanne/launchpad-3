@@ -27,6 +27,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.components.bugchange import BugTaskAdded
 from canonical.launchpad.interfaces import (
     BugNominationStatus, IBugNomination, IBugNominationSet,
     ILaunchpadCelebrities, NotFoundError)
@@ -82,7 +83,8 @@ class BugNomination(SQLBase):
         else:
             targets.append(self.productseries)
         for target in targets:
-            self.bug.addTask(approver, target)
+            bug_task = self.bug.addTask(approver, target)
+            self.bug.addChange(BugTaskAdded(UTC_NOW, approver, bug_task))
 
     def decline(self, decliner):
         """See IBugNomination."""

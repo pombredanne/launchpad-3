@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -10,7 +10,7 @@ __all__ = [
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import In, Or
+from storm.expr import In
 from warnings import warn
 from zope.component import getUtility
 from zope.interface import implements
@@ -92,6 +92,21 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
         return (Milestone.productseries == self)
+
+    def _get_user_branch(self):
+        """Backwards compatibility for the 2.2.3 release."""
+        return self.branch
+
+    def _set_user_branch(self, branch):
+        """Backwards compatibility for the 2.2.3 release."""
+        self.branch = branch
+
+    user_branch = property(_get_user_branch, _set_user_branch)
+
+    @property
+    def series_branch(self):
+        """Backwards compatibility for the 2.2.3 release."""
+        return self.branch
 
     @property
     def releases(self):

@@ -19,6 +19,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad.interfaces.branch import IBranchCloud, IBranchSet
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.codeimport import ICodeImportSet
 from canonical.launchpad.interfaces.launchpad import IBazaarApplication
 from canonical.launchpad.interfaces.product import IProduct, IProductSet
@@ -44,7 +45,8 @@ class BazaarApplicationView(LaunchpadView):
 
     @property
     def branch_count(self):
-        return getUtility(IBranchSet).count()
+        """Return the number of public branches."""
+        return getUtility(IAllBranches).visibleByUser(None).count()
 
     @property
     def product_count(self):

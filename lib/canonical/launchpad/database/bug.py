@@ -37,7 +37,7 @@ from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.components.bugchange import (
     BranchLinkedToBug, BranchUnlinkedFromBug, BugWatchAdded, BugWatchRemoved,
-    UnsubscribedFromBug)
+    SeriesNominated, UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -1061,6 +1061,8 @@ class Bug(SQLBase):
             productseries=productseries)
         if nomination.canApprove(owner):
             nomination.approve(owner)
+        else:
+            self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
     def canBeNominatedFor(self, nomination_target):
