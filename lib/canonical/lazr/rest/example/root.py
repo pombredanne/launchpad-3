@@ -7,8 +7,7 @@ __all__ = ['Cookbook',
            'CookbookServiceRootResource',
            'CookbookSet',
            'CookbookWebServiceObject',
-           'CookbookServiceRootAbsoluteURL',
-           'Cuisine']
+           'CookbookServiceRootAbsoluteURL']
 
 from datetime import date
 
