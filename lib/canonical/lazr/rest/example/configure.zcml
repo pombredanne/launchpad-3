@@ -8,6 +8,7 @@
       <allow interface='canonical.lazr.rest.example.interfaces.ICookbookSet' />
   </class>
 
+  <permission id="lazr.restful.example.View" title="Viewing something" />
   <permission id="lazr.restful.example.ViewPrivate"
    title="Viewing private information" />
 
@@ -58,6 +59,12 @@
   <utility
     provides="canonical.lazr.interfaces.rest.IServiceRootResource"
     factory="canonical.lazr.rest.example.root.CookbookServiceRootResource" />
+
+  <utility
+    name="Cuisine"
+    component="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    />
 
   <adapter factory="canonical.lazr.rest.example.root.SimpleByteStorage" />
   <class class="canonical.lazr.rest.example.root.SimpleByteStorage">

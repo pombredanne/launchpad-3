@@ -7,17 +7,14 @@ fields. This is similar to Zope's widget interface, but much smaller.
 To test the various marshallers we create a dummy request and
 application root.
 
-    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
-    >>> from canonical.launchpad.webapp.servers import WebServicePublication
-    >>> request = WebServiceTestRequest(method='GET')
-    >>> request.setPublication(WebServicePublication(None))
-    >>> login(ANONYMOUS, request)
+    >>> from canonical.lazr.testing.webservice import (
+    ...     WebServiceTestRequest, WebServiceTestPublication)
+    >>> from canonical.lazr.rest.example.root import (
+    ...     CookbookServiceRootResource)
+    >>> request = WebServiceTestRequest("", {})
+    >>> application = CookbookServiceRootResource()
+    >>> request.setPublication(WebServiceTestPublication(application))
     >>> request.processInputs()
-
-    >>> from canonical.launchpad.systemhomes import WebServiceApplication
-    >>> root = WebServiceApplication()
-    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
-    >>> getUtility(IOpenLaunchBag).add(root)
 
 
 == IFieldMarshaller and SimpleFieldMarshaller ==
@@ -130,6 +127,15 @@ unchanged.
 
 The marshaller for a Bool field checks that the JSON value is either
 True or False. A ValueError is raised when its not the case.
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns="http://namespaces.zope.org/zope">
+    ...   <include package="zope.app.component" file="meta.zcml"/>
+    ...   <include package="canonical.lazr.rest" />
+    ...   <include package="canonical.lazr.rest" file="ftesting.zcml" />
+    ... </configure>
+    ... """)
 
     >>> from zope.component import getMultiAdapter
     >>> from zope.schema import Bool
@@ -374,16 +380,16 @@ representation name states that it's a link.
 And the unmarshall() method returns a link that will serve the file.
 
     >>> from canonical.lazr.rest import EntryResource
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.lazr.rest.example.interfaces import ICookbookSet
     >>> from zope.component import getUtility
     >>> entry_resource = EntryResource(
-    ...     getUtility(IPersonSet).getByName('name16'), request)
+    ...     getUtility(ICookbookSet).get('Everyday Greens'), request)
 
 (The value would be the BytesStorage instance used to store the
 content, but it's not needed.)
 
     >>> marshaller.unmarshall(entry_resource, None)
-    u'http://.../~name16/data'
+    'http://.../cookbooks/Everyday%20Greens/data'
 
 
 ==== ASCIILine ====
@@ -521,60 +527,6 @@ None is returned unchanged:
     None
 
 
-=== Choice of SQLObjectVocabularyBase ===
-
-For vocabularies based on SQLObjectVocabularyBase, the values are
-interpreted as URLs referencing objects on the web service. If the given
-string is a URL corresponding to a vocabulary item, the marshaller
-returns that item. Otherwise it raises a ValueError.
-
-    # Bind the field, to resolve the vocabulary name.
-    >>> field = Choice(__name__='some_person', vocabulary='ValidPersonOrTeam')
-    >>> field = field.bind(None)
-    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
-    >>> verifyObject(IFieldMarshaller, marshaller)
-    True
-
-    >>> from canonical.launchpad.interfaces import IPerson
-    >>> person = marshaller.marshall_from_request(
-    ...     "http://api.launchpad.dev/beta/~salgado")
-    >>> IPerson.providedBy(person)
-    True
-    >>> person.name
-    u'salgado'
-
-    >>> from canonical.launchpad.interfaces import IPerson
-    >>> ubuntu_team = marshaller.marshall_from_json_data(
-    ...     "http://api.launchpad.dev/beta/~ubuntu-team")
-    >>> ubuntu_team.name
-    u'ubuntu-team'
-
-    >>> marshaller.marshall_from_request(
-    ...     "http://api.launchpad.dev/beta/~nosuchperson")
-    Traceback (most recent call last):
-    ...
-    ValueError: No such object "http://api.launchpad.dev/beta/~nosuchperson".
-
-    >>> marshaller.marshall_from_json_data("salgado")
-    Traceback (most recent call last):
-    ...
-    ValueError: "salgado" is not a valid URI.
-
-Instead of unmarshall() returning the Person object (which
-wouldn't look nice in a JSON representation), this marshaller returns
-the URL to that object.
-
-    >>> person_resource = EntryResource(person, request)
-
-    >>> marshaller.unmarshall(person_resource, person)
-    u'http://.../~salgado'
-
-This marshaller also appends '_link' to the representation name of
-this field, so that clients can know this is a link to another
-resource and not a random string.
-
-    >>> marshaller.representation_name
-    'some_person_link'
 
 
 == Collections ==
@@ -587,11 +539,12 @@ marshaller for its value_type.
 
     >>> from zope.schema import List, Tuple, Set
     >>> list_of_strings_field = List(value_type=Text())
+    >>> from canonical.lazr.rest.example.interfaces import Cuisine
     >>> tuple_of_ints_field = Tuple(value_type=Int())
     >>> list_of_choices_field = List(
-    ...     value_type=Choice(vocabulary=BugTaskStatus))
+    ...     value_type=Choice(vocabulary=Cuisine))
     >>> set_of_choices_field = Set(
-    ...  value_type=Choice(vocabulary='ValidPersonOrTeam')).bind(None)
+    ...  value_type=Choice(vocabulary=Cuisine)).bind(None)
 
     >>> list_marshaller = getMultiAdapter(
     ...     (list_of_strings_field, request), IFieldMarshaller)
@@ -639,7 +592,7 @@ validate against the more specific marshaller.
     ValueError: got 'int', expected unicode: 1
 
     >>> choice_list_marshaller.marshall_from_request(
-    ...     [u'Confirmed', u'NoSuchChoice'])
+    ...     [u'Vegetarian', u'NoSuchChoice'])
     Traceback (most recent call last):
     ...
     ValueError: Invalid value "NoSuchChoice"...
@@ -648,17 +601,17 @@ The return type is correctly typed to the concrete collection.
 
     >>> tuple_marshaller.marshall_from_json_data([1, 2, 3])
     (1, 2, 3)
-    >>> set_marshaller.marshall_from_json_data(
-    ...     ['http://api.launchpad.dev/beta/~salgado',
-    ...      'http://api.launchpad.dev/beta/~ubuntu-team'])
-    set([<Person...>, <Person...>])
+    >>> marshalled_set = set_marshaller.marshall_from_json_data(
+    ...     ['Vegetarian', 'Dessert'])
+    >>> marshalled_set
+    set([<Item Cuisine.DESSERT, ...>, <Item Cuisine.VEGETARIAN, ...>])
 
     >>> result = choice_list_marshaller.marshall_from_request(
-    ...     [u'Confirmed', u'New'])
+    ...     [u'Vegetarian', u'General'])
     >>> type(result)
     <type 'list'>
     >>> [item.title for item in result]
-    ['Confirmed', 'New']
+    ['Vegetarian', 'General']
 
 
 When coming from the request, either a list or a JSON-encoded
@@ -691,8 +644,8 @@ single-element list.
 The unmarshall() method will return a list containing the unmarshalled
 representation of each its members.
 
-    >>> sorted(set_marshaller.unmarshall(None, set([person, ubuntu_team])))
-    [u'http://.../~salgado', u'http://.../~ubuntu-team']
+    >>> sorted(set_marshaller.unmarshall(None, marshalled_set))
+    ['Dessert', 'Vegetarian']
 
 
 == CollectionField ==
@@ -706,8 +659,9 @@ something like that.)
 
     >>> from zope.schema import Object
     >>> from canonical.lazr.fields import CollectionField
+    >>> from canonical.lazr.rest.example.interfaces import IRecipe
     >>> field = CollectionField(
-    ...     __name__='person_memberships', value_type=Object(schema=IPerson))
+    ...     __name__='recipes', value_type=Object(schema=IRecipe))
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
     >>> verifyObject(IFieldMarshaller, marshaller)
     True
@@ -715,11 +669,11 @@ something like that.)
 Instead of serving the actual collection, collection marshallers serve
 a URL to that collection.
 
-    >>> marshaller.unmarshall(person_resource, ["member 1", "member 2"])
-    u'http://.../~salgado/person_memberships'
+    >>> marshaller.unmarshall(entry_resource, ["recipe 1", "recipe 2"])
+    'http://.../cookbooks/Everyday%20Greens/recipes'
 
 They also annotate the representation name of the field, so that
 clients know this is a link to a collection-type resource.
 
     >>> marshaller.representation_name
-    'person_memberships_collection_link'
+    'recipes_collection_link'
