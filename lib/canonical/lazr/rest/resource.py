@@ -17,6 +17,7 @@ __all__ = [
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'RedirectResource',
     'render_field_to_html',
     'ResourceJSONEncoder',
     'RESTUtilityBase',
@@ -135,6 +136,20 @@ class JSONItem:
     def toDataForJSON(self):
         """See `ISJONPublishable`"""
         return str(self.context.title)
+
+
+class RedirectResource:
+    """A resource that redirects to another URL."""
+    implements(IHTTPResource)
+
+    def __init__(self, url, request):
+        self.url = url
+        self.request = request
+
+    def __call__(self):
+        url = self.url
+        self.request.response.setStatus(301)
+        self.request.response.setHeader("Location", url)
 
 
 class HTTPResource:

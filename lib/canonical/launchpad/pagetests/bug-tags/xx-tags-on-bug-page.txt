@@ -96,3 +96,27 @@ to the list of all bugs having that tag in this context.
     2 Blackhole Trash folder
       &mdash; Medium New
 
+Using official tags for the first time does not require confirmation.
+
+    >>> import transaction
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> login('foo.bar@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> u'an-official-tag' in firefox.getUsedBugTags()
+    False
+    >>> firefox.official_bug_tags = [u'an-official-tag']
+    >>> transaction.commit()
+    >>> logout()
+    
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+    >>> user_browser.getLink(text="Update description / tags").click()
+    >>> user_browser.getControl('Tags').value = 'an-official-tag'
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.getControl('Yes, define new tag')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Yes, define new tag'
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/firefox/+bug/1

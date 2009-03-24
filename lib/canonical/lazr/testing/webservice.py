@@ -22,7 +22,7 @@ import urllib
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller
-from zope.component import getMultiAdapter, getUtility, queryMultiAdapter
+from zope.component import getUtility, queryMultiAdapter
 from zope.interface import implements
 from zope.publisher.browser import BrowserRequest
 from zope.publisher.interfaces import IPublication, IPublishTraverse, NotFound
@@ -208,14 +208,16 @@ class TestPublication:
 
     def handleException(self, object, request, exc_info, retry_allowed=1):
         """Prints the exception."""
-        traceback.print_exception(*exc_info)
-        exception = exc_info[1]
         # Reproduce the behavior of ZopePublication by looking up a view
         # for this exception.
-        view = getMultiAdapter((exception, request), name='index.html')
-        exc_info = None
-        request.response.reset()
-        request.response.setResult(view())
+        exception = exc_info[1]
+        view = queryMultiAdapter((exception, request), name='index.html')
+        if view is not None:
+            exc_info = None
+            request.response.reset()
+            request.response.setResult(view())
+        else:
+            traceback.print_exception(*exc_info)
 
     def endRequest(self, request, ob):
         """Ends the interaction."""
@@ -441,5 +443,11 @@ class CookbookWebServiceCaller(WebServiceCaller):
             handle_errors, CookbookWebServiceHTTPCaller())
 
 
+class CookbookWebServiceAjaxCaller(CookbookWebServiceCaller):
+    """A caller that simulates an Ajax client like a web browser."""
 
-
+    def apiVersion(self):
+        """Introduce the Ajax path override to the URI prefix."""
+        config = getUtility(IWebServiceConfiguration)
+        return (config.path_override
+                + '/' + config.service_version_uri_prefix)

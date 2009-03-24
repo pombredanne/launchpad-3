@@ -249,9 +249,11 @@ First, we create some bug watches to test with:
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.TRAC)
 
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, '1', sample_person)
+    ...     example_bug_tracker, '1',
+    ...     getUtility(ILaunchpadCelebrities).janitor)
 
 
 Collect the Example.com watches:

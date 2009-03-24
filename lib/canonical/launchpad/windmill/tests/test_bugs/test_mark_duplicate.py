@@ -60,3 +60,10 @@ def test_mark_duplicate_form_overlay():
         xpath=u"//span[@id='mark-duplicate-text']/a[1]",
         validator=u'bug #1')
 
+    # Finally, clicking on the link to the bug takes you to the master.
+    client.click(link=u'bug #1')
+    client.waits.forPageLoad(timeout=u'20000')
+    client.asserts.assertText(
+        xpath=u"//h1[@id='bug-title']/span[1]",
+        validator=u'Firefox does not support SVG')
+

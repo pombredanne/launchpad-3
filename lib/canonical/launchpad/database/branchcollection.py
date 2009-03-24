@@ -28,9 +28,10 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.branch import (
-    IBranchSet, user_has_special_branch_access)
+    user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchcollection import (
     IBranchCollection, InvalidFilter)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -219,7 +220,7 @@ class GenericBranchCollection:
     def _getExactMatch(self, search_term):
         """Return the exact branch that 'search_term' matches, or None."""
         search_term = search_term.rstrip('/')
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         branch = branch_set.getByUniqueName(search_term)
         if branch is None:
             branch = branch_set.getByUrl(search_term)
