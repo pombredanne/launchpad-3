@@ -97,7 +97,7 @@
     <p tal:condition="view/too_many_related_projects_found"
       class="limit-encountered">
       <tal:project-count replace="view/related_projects_count" /> projects are
-      related to <tal:name replace="context/displayname" />. Displaying only
+      related to <tal:name replace="context/fmt:displayname" />. Displaying only
       the first <tal:max-results replace="view/max_results_to_display" />:
     </p>
 
@@ -162,7 +162,7 @@
       iceweasel
     </td>
     <td>
-      <a tal:attributes="href ppa/fmt:url" tal:content="ppa/title" /> -
+      <a tal:attributes="href ppa/fmt:url" tal:content="ppa/displayname" /> -
       <a class="distroseries" tal:attributes="href distroseries/fmt:url"
          tal:content="distroseries/fullseriesname" />
     </td>

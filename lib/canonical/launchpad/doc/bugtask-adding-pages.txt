@@ -55,7 +55,7 @@ that product is required:
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': '',
-    ...     'field.visited_steps': 'choose_product'}
+    ...     'field.__visited_steps__': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.getFieldError('product')
@@ -66,7 +66,7 @@ If we supply a valid product, it will move on to the next step.
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'evolution',
-    ...     'field.visited_steps': 'choose_product'}
+    ...     'field.__visited_steps__': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
@@ -81,7 +81,7 @@ If the validation fails, an error will be displayed.
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'firefox',
-    ...     'field.visited_steps': 'choose_product'}
+    ...     'field.__visited_steps__': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
@@ -219,11 +219,14 @@ validation (for example, a bugtask for that product already exists),
 the user will be kept in the first step and asked to choose the product.
 
 Note that for the form of the second step to be processed we have to
-include its (and all previous) step_name in field.visited_steps.
+include its (and all previous) step_name in field.__visited_steps__.
 
     >>> form = {
-    ...     'field.actions.continue': '1', 'field.product': u'no-such-product',
-    ...     'field.visited_steps': 'choose_product specify_remote_bug_url'}
+    ...     'field.actions.continue': '1',
+    ...     'field.product': u'no-such-product',
+    ...     'field.__visited_steps__':
+    ...         'choose_product|specify_remote_bug_url',
+    ...     }
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
@@ -349,7 +352,7 @@ we ask the user if he wants to register the bugtracker as well.
 Confirming the bugtracker creation will cause the new task to be added and
 linked to the new bug watch.
 
-    >>> form['field.visited_steps'] += " %s" % add_task_view.step_name
+    >>> form['field.__visited_steps__'] += "|%s" % add_task_view.step_name
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     ObjectCreatedEvent: <BugWatch at ...>
@@ -371,7 +374,8 @@ and the bug watch will be added without any confirmation needed:
     >>> form['field.product'] = u'alsa-utils'
     >>> form['field.bug_url'] = (
     ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
-    >>> form['field.visited_steps'] = "choose_product specify_remote_bug_url"
+    >>> form['field.__visited_steps__'] = (
+    ...     "choose_product|specify_remote_bug_url")
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     ObjectCreatedEvent: <BugWatch at ...>
@@ -438,7 +442,7 @@ confirmation page.
     >>> form['field.link_upstream_how'] = u'UNLINKED_UPSTREAM'
     >>> form['field.bug_url'] = u''
     >>> form['field.product'] = u'thunderbird'
-    >>> form['field.visited_steps'] = u'choose_product'
+    >>> form['field.__visited_steps__'] = u'choose_product'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.errors
@@ -619,7 +623,7 @@ search link includes the summary only.
 
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'frobnitz',
-    ...     'field.visited_steps': 'choose_product'}
+    ...     'field.__visited_steps__': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
 

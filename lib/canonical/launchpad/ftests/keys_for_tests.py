@@ -83,7 +83,7 @@ def import_secret_test_key(keyfile='test@canonical.com.sec'):
     """
     gpghandler = getUtility(IGPGHandler)
     seckey = open(os.path.join(gpgkeysdir, keyfile)).read()
-    key = gpghandler.importSecretKey(seckey)
+    return gpghandler.importSecretKey(seckey)
 
 def test_pubkey_file_from_email(email_addr):
     """Get the file name for a test pubkey by email address."""

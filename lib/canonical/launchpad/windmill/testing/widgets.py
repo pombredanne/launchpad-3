@@ -61,9 +61,10 @@ class InlineEditorWidgetTest:
         client.waits.forElement(
             xpath=u"//h1[@id='%s']/a/img" % self.widget_id, timeout=u'8000')
         client.waits.forElement(
-            timeout=u'8000', xpath=u"//h1[@id='%s']//input" % self.widget_id)
+            timeout=u'8000',
+            xpath=u"//h1[@id='%s']//textarea" % self.widget_id)
         client.type(
-            xpath=u"//h1[@id='%s']//input" % self.widget_id,
+            xpath=u"//h1[@id='%s']//textarea" % self.widget_id,
             text=self.new_value)
         client.click(xpath=u"//h1[@id='%s']//button[1]" % self.widget_id)
         client.asserts.assertNode(

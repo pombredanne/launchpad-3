@@ -495,7 +495,7 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
             Choice(__name__='status',
                    title=_('Status'),
                    vocabulary=status_vocabulary,
-                   description=_("Select the the distroseries status."),
+                   description=_("Select the distroseries status."),
                    required=True))
 
     @action("Change")

@@ -35,9 +35,13 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.launchpad.components.bugchange import (
+    BranchLinkedToBug, BranchUnlinkedFromBug, BugWatchAdded, BugWatchRemoved,
+    SeriesNominated, UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
+from canonical.launchpad.interfaces.bugactivity import IBugActivitySet
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from canonical.launchpad.interfaces.bugbranch import IBugBranch
@@ -214,10 +218,6 @@ class Bug(SQLBase):
                            intermediateTable='BugMessage',
                            prejoins=['owner'],
                            orderBy=['datecreated', 'id'])
-    productinfestations = SQLMultipleJoin(
-            'BugProductInfestation', joinColumn='bug', orderBy='id')
-    packageinfestations = SQLMultipleJoin(
-            'BugPackageInfestation', joinColumn='bug', orderBy='id')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
@@ -390,10 +390,13 @@ class Bug(SQLBase):
         Store.of(sub).flush()
         return sub
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                self.addChange(UnsubscribedFromBug(
+                    when=UTC_NOW, person=unsubscribed_by,
+                    unsubscribed_user=person))
                 store = Store.of(sub)
                 store.remove(sub)
                 # Make sure that the subscription removal has been
@@ -407,7 +410,7 @@ class Bug(SQLBase):
         bugs_unsubscribed = []
         for dupe in self.duplicates:
             if dupe.isSubscribed(person):
-                dupe.unsubscribe(person)
+                dupe.unsubscribe(person, person)
                 bugs_unsubscribed.append(dupe)
 
         return bugs_unsubscribed
@@ -655,6 +658,33 @@ class Bug(SQLBase):
              bug=self, is_comment=True,
              message=message, recipients=recipients)
 
+    def addChange(self, change):
+        """See `IBug`."""
+        when = change.when
+        if when is None:
+            when = UTC_NOW
+
+        # Only try to add something to the activity log if we have some
+        # data.
+        activity_data = change.getBugActivity()
+        if activity_data is not None:
+            bug_activity = getUtility(IBugActivitySet).new(
+                self, when, change.person,
+                activity_data['whatchanged'],
+                activity_data.get('oldvalue'),
+                activity_data.get('newvalue'),
+                activity_data.get('message'))
+
+        notification_data = change.getBugNotification()
+        if notification_data is not None:
+            recipients = change.getBugNotificationRecipients()
+            assert notification_data.get('text') is not None, (
+                "notification_data must include a `text` value.")
+
+            self.addChangeNotification(
+                notification_data['text'], change.person, recipients,
+                when)
+
     def expireNotifications(self):
         """See `IBug`."""
         for notification in BugNotification.selectBy(
@@ -745,7 +775,14 @@ class Bug(SQLBase):
                 bug=self, bugtracker=bugtracker,
                 remotebug=remotebug, owner=owner)
             Store.of(bug_watch).flush()
+        self.addChange(BugWatchAdded(UTC_NOW, owner, bug_watch))
+        notify(ObjectCreatedEvent(bug_watch, user=owner))
         return bug_watch
+
+    def removeWatch(self, bug_watch, user):
+        """See `IBug`."""
+        self.addChange(BugWatchRemoved(UTC_NOW, user, bug_watch))
+        bug_watch.destroySelf()
 
     def addAttachment(self, owner, data, comment, filename, is_patch=False,
                       content_type=None, description=None):
@@ -802,9 +839,18 @@ class Bug(SQLBase):
             registrant=registrant)
         branch.date_last_modified = UTC_NOW
 
+        self.addChange(BranchLinkedToBug(UTC_NOW, registrant, branch))
         notify(ObjectCreatedEvent(bug_branch))
 
         return bug_branch
+
+    def removeBranch(self, branch, user):
+        """See `IBug`."""
+        bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
+        if bug_branch is not None:
+            self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch))
+            notify(ObjectDeletedEvent(bug_branch, user=user))
+            bug_branch.destroySelf()
 
     def linkCVE(self, cve, user):
         """See `IBug`."""
@@ -820,7 +866,7 @@ class Bug(SQLBase):
         self.linkCVE(cve, user)
         return None
 
-    def unlinkCVE(self, cve, user=None):
+    def unlinkCVE(self, cve, user):
         """See `IBug`."""
         for cve_link in self.cve_links:
             if cve_link.cve.id == cve.id:
@@ -1021,6 +1067,8 @@ class Bug(SQLBase):
             productseries=productseries)
         if nomination.canApprove(owner):
             nomination.approve(owner)
+        else:
+            self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
     def canBeNominatedFor(self, nomination_target):

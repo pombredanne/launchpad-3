@@ -117,13 +117,12 @@
           <tal:not-logged-in condition="not:request/lp:person">
             <p>
               If you are
-              <tal:person replace="context/owner/displayname" />,
+              <tal:person replace="context/owner/fmt:displayname" />,
               <a href="+login">log in</a> to begin the setup process.
             </p>
             <p>
               Otherwise, you might want to talk with
-              <a tal:attributes="href context/owner/fmt:url"
-                 tal:content="context/owner/displayname">
+              <a tal:replace="structure context/owner/fmt:link">
                 Foo Bar
               </a>, the project registrant, about using Launchpad for
               translations.
@@ -131,8 +130,7 @@
           </tal:not-logged-in>
           <p tal:condition="request/lp:person">
             You might want to talk with
-            <a tal:attributes="href context/owner/fmt:url"
-               tal:content="context/owner/displayname">
+            <a tal:replace="structure context/owner/fmt:link">
               Foo Bar
             </a>, the project registrant, about using Launchpad for
             translations.

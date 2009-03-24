@@ -10,12 +10,15 @@ __all__ = [
 
 import pytz
 
+from storm.expr import And, Desc, LeftJoin, Select
 from storm.locals import DateTime, Int, Reference, Store, Storm, Unicode
 
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
+from canonical.launchpad.database.archiveauthtoken import ArchiveAuthToken
+from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriber)
 
@@ -27,17 +30,17 @@ class ArchiveSubscriber(Storm):
 
     id = Int(primary=True)
 
-    archiveID = Int(name='archive', allow_none=False)
-    archive = Reference(archiveID, 'Archive.id')
+    archive_id = Int(name='archive', allow_none=False)
+    archive = Reference(archive_id, 'Archive.id')
 
-    registrantID = Int(name='registrant', allow_none=False)
-    registrant = Reference(registrantID, 'Person.id')
+    registrant_id = Int(name='registrant', allow_none=False)
+    registrant = Reference(registrant_id, 'Person.id')
 
     date_created = DateTime(
         name='date_created', allow_none=False, tzinfo=pytz.UTC)
 
-    subscriberID = Int(name='subscriber', allow_none=False)
-    subscriber = Reference(subscriberID, 'Person.id')
+    subscriber_id = Int(name='subscriber', allow_none=False)
+    subscriber = Reference(subscriber_id, 'Person.id')
 
     date_expires = DateTime(
         name='date_expires', allow_none=True, tzinfo=pytz.UTC)
@@ -51,8 +54,14 @@ class ArchiveSubscriber(Storm):
     date_cancelled = DateTime(
         name='date_cancelled', allow_none=True, tzinfo=pytz.UTC)
 
-    cancelled_byID = Int(name='cancelled_by', allow_none=True)
-    cancelled_by = Reference(cancelled_byID, 'Person.id')
+    cancelled_by_id = Int(name='cancelled_by', allow_none=True)
+    cancelled_by = Reference(cancelled_by_id, 'Person.id')
+
+    @property
+    def title(self):
+        """See `IArchiveSubscriber`."""
+        return "Subscription of %s to %s" % (
+            self.subscriber.displayname, self.archive.displayname)
 
     def cancel(self, cancelled_by):
         """See `IArchiveSubscriber`."""
@@ -64,17 +73,101 @@ class ArchiveSubscriber(Storm):
 class ArchiveSubscriberSet:
     """See `IArchiveSubscriberSet`."""
 
-    def getBySubscriber(self, subscriber):
+    def getBySubscriber(self, subscriber, archive=None, current_only=True):
         """See `IArchiveSubscriberSet`."""
+
+        # Grab the extra Storm expressions, for this query,
+        # depending on the params:
+        extra_exprs = self._getExprsForSubscriptionQueries(
+            archive, current_only)
+
+        # Set the main expression to find all the subscriptions for
+        # which the subscriber is a direct subscriber OR is a member
+        # of a subscribed team.
+        # Note: the subscription to the owner itself will also be
+        # part of the join as there is a TeamParticipation entry
+        # showing that each person is a member of the "team" that
+        # consists of themselves.
         store = Store.of(subscriber)
         return store.find(
             ArchiveSubscriber,
-            ArchiveSubscriber.subscriber == subscriber)
+            ArchiveSubscriber.subscriber_id.is_in(
+                self._getTeamsWithSubscriptionsForUser(
+                    subscriber)),
+            *extra_exprs).order_by(Desc(ArchiveSubscriber.date_created))
 
-    def getByArchive(self, archive):
+    def getBySubscriberWithActiveToken(self, subscriber, archive=None):
         """See `IArchiveSubscriberSet`."""
+
+        # We need a left join with ArchiveSubscriber as
+        # the origin:
+        origin = [
+            ArchiveSubscriber,
+            LeftJoin(
+                ArchiveAuthToken,
+                And(
+                    ArchiveAuthToken.archive_id ==
+                        ArchiveSubscriber.archive_id,
+                    ArchiveAuthToken.person_id == subscriber.id,
+                    ArchiveAuthToken.date_deactivated == None))]
+
+        # Grab the extra Storm expressions, for this query,
+        # depending on the params:
+        extra_exprs = self._getExprsForSubscriptionQueries(
+            archive)
+
+        store = Store.of(subscriber)
+        return store.using(*origin).find(
+            (ArchiveSubscriber, ArchiveAuthToken),
+            ArchiveSubscriber.subscriber_id.is_in(
+                self._getTeamsWithSubscriptionsForUser(
+                    subscriber)),
+            *extra_exprs).order_by(Desc(ArchiveSubscriber.date_created))
+
+    def getByArchive(self, archive, current_only=True):
+        """See `IArchiveSubscriberSet`."""
+        # Grab the extra Storm expressions, for this query,
+        # depending on the params:
+        extra_exprs = self._getExprsForSubscriptionQueries(
+            archive, current_only)
+
         store = Store.of(archive)
         return store.find(
             ArchiveSubscriber,
-            ArchiveSubscriber.archive == archive)
+            *extra_exprs).order_by(Desc(ArchiveSubscriber.date_created))
 
+    def _getExprsForSubscriptionQueries(self, archive=None,
+                                        current_only=True):
+        """Return the Storm expressions required for the parameters.
+
+        Just to keep the code DRY.
+        """
+        extra_exprs = []
+
+        # Restrict the results to the specified archive if requested:
+        if archive:
+            extra_exprs.append(ArchiveSubscriber.archive == archive)
+
+        # Restrict the results to only those subscriptions that are current
+        # if requested:
+        if current_only:
+            extra_exprs.append(
+                ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT)
+
+        return extra_exprs
+
+    def _getTeamsWithSubscriptionsForUser(self, subscriber):
+        """Return a subselect that defines all the teams the subscriber
+        is a member of.that have subscriptions.
+
+        Just to keep the code DRY.
+        """
+        # Include subscriptions for teams of which the subscriber is a
+        # member. First create a subselect to capture all the teams that are
+        # subscribed to archives AND the user is a member of:
+        return Select(
+            TeamParticipation.teamID,
+            where=And(
+                TeamParticipation.personID == subscriber.id,
+                TeamParticipation.teamID ==
+                    ArchiveSubscriber.subscriber_id))

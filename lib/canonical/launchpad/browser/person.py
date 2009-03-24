@@ -79,6 +79,7 @@ __all__ = [
     'archive_to_person',
     ]
 
+import cgi
 import copy
 import itertools
 import pytz
@@ -147,13 +148,14 @@ from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.launchpad import (
-    INotificationRecipientSet, UnknownRecipientError)
+    ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
-from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
@@ -173,7 +175,7 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
-from canonical.launchpad.browser.questiontarget import SearchQuestionsView
+from lp.answers.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
 
@@ -198,6 +200,8 @@ from lazr.uri import URI, InvalidURIError
 from canonical.launchpad import _
 
 from canonical.lazr.utils import smartquote
+
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
@@ -277,6 +281,17 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, pillar_name):
+        # If the pillar is a product, then return the PersonProduct.
+        pillar = getUtility(IPillarNameSet).getByName(pillar_name)
+        if IProduct.providedBy(pillar):
+            person_product = getUtility(IPersonProductFactory).create(
+                self.context, pillar)
+            # If accessed through an alias, redirect to the proper name.
+            if pillar.name != pillar_name:
+                return self.redirectSubTree(canonical_url(person_product))
+            getUtility(IOpenLaunchBag).add(pillar)
+            return person_product
+        # Otherwise look for a branch.
         try:
             branch = getUtility(IBranchNamespaceSet).traverse(
                 self._getSegments(pillar_name))
@@ -832,33 +847,22 @@ class CommonMenuLinks:
         target = '+related-software'
         text = 'List assigned packages'
         summary = 'Packages assigned to %s' % self.context.browsername
-        return Link(target, text, summary, icon='packages')
+        return Link(target, text, summary, icon='package-source')
 
     def related_projects(self):
         target = '+related-software#projects'
         text = 'List related projects'
         summary = 'Projects %s is involved with' % self.context.browsername
-        return Link(target, text, summary, icon='packages')
+        return Link(target, text, summary, icon='product')
 
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
         target = "+activate-ppa"
-        text = 'Activate Personal Package Archive'
+        text = 'Create a new PPA'
         summary = ('Acknowledge terms of service for Launchpad Personal '
-                   'Package Archive.')
+                   'Package Archive and create a new PPA.')
         enabled = not bool(self.context.archive)
-        return Link(target, text, summary, icon='edit', enabled=enabled)
-
-    def show_ppa(self):
-        target = '+archive'
-        text = 'Personal Package Archive'
-        summary = 'Browse Personal Package Archive packages.'
-        archive = self.context.archive
-        enable_link = (archive is not None and
-                       check_permission('launchpad.View', archive))
-        if enable_link:
-            target = canonical_url(self.context.archive)
-        return Link(target, text, summary, icon='info', enabled=enable_link)
+        return Link(target, text, summary, icon='add', enabled=enabled)
 
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
@@ -870,7 +874,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
-             'administer', 'related_projects', 'activate_ppa', 'show_ppa']
+             'administer', 'related_projects', 'activate_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -983,43 +987,13 @@ class IPersonEditMenu(Interface):
 class IPersonRelatedSoftwareMenu(Interface):
     """A marker interface for the 'Related Software' navigation menu."""
 
-class PersonPPANavigationMenuMixin:
-    """A mixin that provides the PPA navigation menu link."""
 
-    def show_ppa(self):
-        """Show the link to a Personal Package Archive.
-
-        The person's archive link changes depending on the status of the
-        archive and the privileges of the viewer.
-        """
-        archive = self.context.archive
-        has_archive = archive is not None
-        user_can_edit_archive = check_permission('launchpad.Edit',
-                                                 self.context)
-
-        text = 'Personal Package Archive'
-        summary = 'Browse Personal Package Archive packages.'
-        if has_archive:
-            target = canonical_url(archive)
-            enable_link = check_permission('launchpad.View', archive)
-        elif user_can_edit_archive:
-            summary = 'Activate Personal Package Archive'
-            target = '+activate-ppa'
-            enable_link = True
-        else:
-            target = '+archive'
-            enable_link = False
-
-        return Link(target, text, summary, icon='info', enabled=enable_link)
-
-
-class PersonOverviewNavigationMenu(
-    NavigationMenu, PersonPPANavigationMenuMixin):
+class PersonOverviewNavigationMenu(NavigationMenu):
     """The top-level menu of actions a Person may take."""
 
     usedfor = IPerson
     facet = 'overview'
-    links = ('profile', 'related_software', 'karma', 'show_ppa')
+    links = ('profile', 'related_software', 'karma')
 
     def __init__(self, context):
         context = IPerson(context)
@@ -1118,7 +1092,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editlanguages', 'map', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
              'reassign', 'common_packages', 'related_projects',
-             'activate_ppa', 'show_ppa']
+             'activate_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1144,7 +1118,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def members(self):
         target = '+members'
         text = 'Show all members'
-        return Link(target, text, icon='people')
+        return Link(target, text, icon='team')
 
     @enabled_with_permission('launchpad.Edit')
     def received_invitations(self):
@@ -1185,7 +1159,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def mugshots(self):
         target = '+mugshots'
         text = 'Show member photos'
-        return Link(target, text, icon='people')
+        return Link(target, text, icon='team')
 
     def polls(self):
         target = '+polls'
@@ -1205,7 +1179,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = (
             'The address Launchpad uses to contact %s' %
             self.context.browsername)
-        return Link(target, text, summary, icon='mail')
+        return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
@@ -1247,13 +1221,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewNavigationMenu(
-    NavigationMenu, PersonPPANavigationMenuMixin):
+class TeamOverviewNavigationMenu(NavigationMenu):
     """A top-level menu for navigation within a Team."""
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['profile', 'polls', 'members', 'show_ppa']
+    links = ['profile', 'polls', 'members']
 
     def profile(self):
         target = ''
@@ -2384,7 +2357,7 @@ class PersonLanguagesView(LaunchpadView):
     def submitLanguages(self):
         '''Process a POST request to the language preference form.
 
-        This list of languages submitted is compared to the the list of
+        This list of languages submitted is compared to the list of
         languages the user has, and the latter is matched to the former.
         '''
 
@@ -2399,22 +2372,25 @@ class PersonLanguagesView(LaunchpadView):
         if self.is_current_user:
             subject = "your"
         else:
-            subject = "%s's" % self.context.displayname
+            subject = "%s's" % cgi.escape(self.context.displayname)
 
         # Add languages to the user's preferences.
+        messages = []
         for language in set(new_languages) - set(old_languages):
             self.context.addLanguage(language)
-            self.request.response.addInfoNotification(
+            messages.append(
                 "Added %(language)s to %(subject)s preferred languages." %
                 {'language' : language.englishname, 'subject' : subject})
 
         # Remove languages from the user's preferences.
         for language in set(old_languages) - set(new_languages):
             self.context.removeLanguage(language)
-            self.request.response.addInfoNotification(
+            messages.append(
                 "Removed %(language)s from %(subject)s preferred languages." %
                 {'language' : language.englishname, 'subject' : subject})
-
+        if len(messages) > 0:
+            message = structured('<br />'.join(messages))
+            self.request.response.addInfoNotification(message)
         redirection_url = self.request.get('redirection_url')
         if redirection_url:
             self.request.response.redirect(redirection_url)
@@ -2578,19 +2554,19 @@ class PersonView(LaunchpadView, FeedsMixin):
         params = BugTaskSearchParams(
             user=self.user, assignee=self.context, omit_dupes=True,
             status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
-        return self.context.searchTasks(params)[:5]
+        return list(self.context.searchTasks(params)[:5])
 
     @cachedproperty
     def assigned_specs_in_progress(self):
         """Return up to 5 assigned specs that are being worked on."""
-        return self.context.assigned_specs_in_progress
+        return list(self.context.assigned_specs_in_progress)
 
     @property
     def has_assigned_bugs_or_specs_in_progress(self):
         """Does the user have any bugs or specs that are being worked on?"""
         bugtasks = self.assigned_bugs_in_progress
         specs = self.assigned_specs_in_progress
-        return bugtasks.count() > 0 or specs.count() > 0
+        return len(bugtasks) > 0 or len(specs) > 0
 
     @property
     def viewing_own_page(self):
@@ -2770,6 +2746,16 @@ class PersonView(LaunchpadView, FeedsMixin):
             return mailing_list.archive_url
         else:
             return None
+
+    @cachedproperty
+    def languages(self):
+        """The user's preferred languages, or English is none are set."""
+        languages = list(self.context.languages)
+        if len(languages) > 0:
+            englishnames = [language.englishname for language in languages]
+            return ', '.join(sorted(englishnames))
+        else:
+            return getUtility(ILaunchpadCelebrities).english.englishname
 
 
 class EmailAddressVisibleState:
@@ -4686,7 +4672,12 @@ class PersonRelatedSoftwareView(LaunchpadView):
         """The number of project owned or driven by this person."""
         return self._related_projects().count()
 
-    @property
+    @cachedproperty
+    def has_more_related_projects(self):
+        """Does this person have more than five related projects?"""
+        return self.related_projects_count > 5
+
+    @cachedproperty
     def too_many_related_projects_found(self):
         """Does the user have more related projects than can be displayed?"""
         return self.related_projects_count > self.max_results_to_display

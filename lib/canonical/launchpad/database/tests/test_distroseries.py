@@ -17,12 +17,13 @@ from canonical.launchpad.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease)
 from canonical.launchpad.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
-class TestDistroSeriesCurrentSourceReleases(unittest.TestCase):
+class TestDistroSeriesCurrentSourceReleases(TestCase):
     """Test for DistroSeries.getCurrentSourceReleases()."""
 
     layer = LaunchpadFunctionalLayer
@@ -44,7 +45,7 @@ class TestDistroSeriesCurrentSourceReleases(unittest.TestCase):
         return self.development_series
 
     def assertCurrentVersion(self, expected_version, package_name=None):
-        """Assert the the current version of a package is the expected one.
+        """Assert the current version of a package is the expected one.
 
         It uses getCurrentSourceReleases() to get the version.
 
@@ -145,7 +146,7 @@ class TestDistroSeriesCurrentSourceReleases(unittest.TestCase):
 
 class TestDistroSeriesSet(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def _get_translatables(self):
         distro_series_set = getUtility(IDistroSeriesSet)
@@ -200,8 +201,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             translatables, self._ref_translatables(),
             "After hiding all translation, a distroseries should not be "
             "translatable but translatables() returns %r instead of %r." % (
-                translatables, self._ref_translatables())
-            )
+                translatables, self._ref_translatables()))
 
 
 def test_suite():

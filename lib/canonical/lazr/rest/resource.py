@@ -17,6 +17,7 @@ __all__ = [
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'RedirectResource',
     'render_field_to_html',
     'ResourceJSONEncoder',
     'RESTUtilityBase',
@@ -40,8 +41,8 @@ from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope import component
 from zope.component import (
-    adapts, getAdapters, getAllUtilitiesRegisteredFor,
-    getMultiAdapter, getUtility, queryAdapter)
+    adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
+    getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.publisher.http import init_status_codes, status_reasons
@@ -62,19 +63,18 @@ from lazr.enum import BaseItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.lazr.interfaces.fields import IReferenceChoice
-
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.lazr.interfaces import (
+from canonical.lazr.interfaces.fields import (
+    ICollectionField, IReferenceChoice)
+from canonical.lazr.interfaces.rest import (
     ICollection, ICollectionResource, IEntry, IEntryField,
     IEntryFieldResource, IEntryResource, IFieldHTMLRenderer,
     IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
-    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue, LAZR_WEBSERVICE_NAME,
-    IWebServiceConfiguration, WebServiceLayer)
-from canonical.lazr.interfaces.fields import ICollectionField
+    ITopLevelEntryLink, IUnmarshallingDoesntNeedValue,
+    IWebServiceClientRequest, IWebServiceConfiguration, LAZR_WEBSERVICE_NAME)
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -127,8 +127,8 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
 class JSONItem:
     """JSONPublishable adapter for lazr.enum."""
-    adapts(BaseItem)
     implements(IJSONPublishable)
+    adapts(BaseItem)
 
     def __init__(self, context):
         self.context = context
@@ -136,6 +136,20 @@ class JSONItem:
     def toDataForJSON(self):
         """See `ISJONPublishable`"""
         return str(self.context.title)
+
+
+class RedirectResource:
+    """A resource that redirects to another URL."""
+    implements(IHTTPResource)
+
+    def __init__(self, url, request):
+        self.url = url
+        self.request = request
+
+    def __call__(self):
+        url = self.url
+        self.request.response.setStatus(301)
+        self.request.response.setHeader("Location", url)
 
 
 class HTTPResource:
@@ -696,7 +710,7 @@ class FieldUnmarshallerMixin:
         return name, renderer(value)
 
 
-@component.adapter(Interface, IField, WebServiceLayer)
+@component.adapter(Interface, IField, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def render_field_to_html(object, field, request):
     """Turn a field's current value into an XHTML snippet.
@@ -1552,6 +1566,7 @@ class Collection:
 class ScopedCollection:
     """A collection associated with some parent object."""
     implements(IScopedCollection)
+    adapts(Interface, Interface)
 
     def __init__(self, context, collection):
         """Initialize the scoped collection.

@@ -274,7 +274,7 @@ Bug.setPrivate adds all indirect subscribers to the bug as direct
 subscribers, but we want to see what the bug looks like if we're not a
 subscriber.
 
-    >>> firefox_crashes.unsubscribe(current_user)
+    >>> firefox_crashes.unsubscribe(current_user, current_user)
 
 A private bug has a title "private bug".
 
@@ -306,6 +306,30 @@ Except, that is, when the FAQ doesn't exist:
     ...     )
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p>faq 999</p>
+
+
+== Branch references ==
+
+Branch references are linkified:
+
+    >>> text = (
+    ...     'lp:~foo/bar/baz\n'
+    ...     'lp:~foo/+junk/baz\n'
+    ...     'lp:~foo/ubuntu/jaunty/evolution/baz\n'
+    ...     'lp:foo/bar\n'
+    ...     'lp:foo\n'
+    ...     'lp:foo/bar/baz\n'
+    ...     'lp:///foo\n'
+    ...     'lp:/foo\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/+branch/~foo/bar/baz">lp:~foo/bar/baz</a><br />
+    <a href="/+branch/~foo/+junk/baz">lp:~foo/+junk/baz</a><br />
+    <a href="/+branch/~foo/ubuntu/jaunty/evolution/baz">lp:~foo/ubuntu/jaunty/evolution/baz</a><br />
+    <a href="/+branch/foo/bar">lp:foo/bar</a><br />
+    <a href="/+branch/foo">lp:foo</a><br />
+    <a href="/+branch/foo/bar/baz">lp:foo/bar/baz</a><br />
+    <a href="/+branch/foo">lp:///foo</a><br />
+    <a href="/+branch/foo">lp:/foo</a></p>
 
 
 == OOPS references ==
@@ -415,9 +439,16 @@ is dealing with bugs, and 'url' when it is dealing with URLs.
 First, let's try a match of nothing it understands.  This is a bug, so we get
 an AssertionError.
 
-    >>> matchobj = re.match('(?P<bug>xxx)?(?P<faq>www)?(?P<url>yyy)?(?P<oops>zzz)?', 'fish')
+    >>> matchobj = re.match(
+    ...     ('(?P<bug>xxx)?(?P<faq>www)?(?P<url>yyy)?(?P<oops>zzz)?'
+    ...      '(?P<lpbranchurl>www)?'),
+    ...     'fish')
     >>> sorted(matchobj.groupdict().items())
-    [('bug', None), ('faq', None), ('oops', None), ('url', None)]
+    [('bug', None),
+     ('faq', None),
+      ('lpbranchurl', None),
+      ('oops', None),
+      ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
     Traceback (most recent call last):
     ...

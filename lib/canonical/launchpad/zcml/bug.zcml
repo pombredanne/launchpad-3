@@ -29,8 +29,7 @@
                         owner duplicateof communityscore communitytimestamp
                         hits hitstimestamp activityscore activitytimestamp
                         displayname activity initial_message bug_branches
-                        productinfestations packageinfestations watches
-                        cves cve_links duplicates
+                        watches cves cve_links duplicates
                         attachments questions specifications followup_subject
                         isSubscribed messages getBugNotificationRecipients
                         hasBranch security_related tags getMessageChunks
@@ -47,12 +46,14 @@
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
+                        removeWatch
                         linkCVE linkCVEAndReturnNothing unlinkCVE findCvesInText
-                        newMessage linkMessage addBranch addAttachment
+                        newMessage linkMessage addBranch removeBranch
+                        addAttachment
                         unsubscribeFromDupes subscribe unsubscribe addNomination
                         expireNotifications setStatus setPrivate
                         convertToQuestion isUserAffected
-                        markUserAffected addTask"
+                        markUserAffected addTask addChange"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore

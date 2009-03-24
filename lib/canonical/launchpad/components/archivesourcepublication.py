@@ -13,7 +13,6 @@ __all__ = [
     'ArchiveSourcePublications',
     ]
 
-import operator
 
 from zope.component import getUtility
 
@@ -25,22 +24,16 @@ from lazr.delegates import delegates
 
 
 class ArchiveSourcePackageRelease:
-    """Decorated `SourcePackageRelease` with cached 'package_diffs'.
+    """Decorated `SourcePackageRelease` with cached 'upload_changesfile'.
 
-    It receives the related `PackageDiff` records, so they don't need
+    It receives the related upload changesfile, so it doesn't need
     to be recalculated.
     """
     delegates(ISourcePackageRelease)
 
-    def __init__(self, context, packagediffs, changesfile):
+    def __init__(self, context, changesfile):
         self.context = context
-        self._packagediffs = packagediffs
         self._changesfile = changesfile
-
-    @property
-    def package_diffs(self):
-        """See `ISourcePackageRelease`."""
-        return self._packagediffs
 
     @property
     def upload_changesfile(self):
@@ -56,25 +49,16 @@ class ArchiveSourcePublication:
     """
     delegates(ISourcePackagePublishingHistory)
 
-    def __init__(self, context, sourceandbinarylibraryfiles,
-                 publishedbinaries, builds, packagediffs, changesfile):
+    def __init__(self, context, publishedbinaries, builds, changesfile):
         self.context = context
-        self._sourceandbinarylibraryfiles = sourceandbinarylibraryfiles
         self._publishedbinaries = publishedbinaries
         self._builds = builds
-        self._packagediffs = packagediffs
         self._changesfile = changesfile
 
     @property
     def sourcepackagerelease(self):
         return ArchiveSourcePackageRelease(
-            self.context.sourcepackagerelease, self._packagediffs,
-            self._changesfile)
-
-    def getSourceAndBinaryLibraryFiles(self):
-        """See `ISourcePackagePublishingHistory`."""
-        return sorted(self._sourceandbinarylibraryfiles,
-                      key=operator.attrgetter('filename'))
+            self.context.sourcepackagerelease, self._changesfile)
 
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -121,14 +105,6 @@ class ArchiveSourcePublications:
             (source, build) for source, build, arch in build_set]
         return self.groupBySource(source_and_builds)
 
-    def getFilesBySource(self):
-        """Source and binary files for all source publications."""
-        file_set = getUtility(IPublishingSet).getFilesForSources(
-            self._source_publications)
-        source_and_files = [
-            (source, file) for source, file, content in file_set]
-        return self.groupBySource(source_and_files)
-
     def getBinariesBySource(self):
         """Binary publication for sources."""
         publishing_set = getUtility(IPublishingSet)
@@ -138,16 +114,6 @@ class ArchiveSourcePublications:
             (source, binary)
             for source, binary, binary_release, name, arch in binary_set]
         return self.groupBySource(source_and_binaries)
-
-    def getPackageDiffsBySource(self):
-        """PackageDiffs for sources."""
-        publishing_set = getUtility(IPublishingSet)
-        packagediff_set = publishing_set.getPackageDiffsForSources(
-            self._source_publications)
-        source_and_packagediffs = [
-            (source, packagediff)
-            for source, packagediff, file, content in packagediff_set]
-        return self.groupBySource(source_and_packagediffs)
 
     def getChangesFileBySource(self):
         """Map changesfiles by their corresponding source publications."""
@@ -172,22 +138,17 @@ class ArchiveSourcePublications:
 
         # Load the extra-information for all source publications.
         builds_by_source = self.getBuildsBySource()
-        files_by_source = self.getFilesBySource()
         binaries_by_source = self.getBinariesBySource()
-        packagediffs_by_source = self.getPackageDiffsBySource()
         changesfiles_by_source = self.getChangesFileBySource()
 
         # Build the decorated object with the information we have.
         for pub in self._source_publications:
             builds = builds_by_source.get(pub, [])
-            files = files_by_source.get(pub, [])
             binaries = binaries_by_source.get(pub, [])
-            packagediffs = packagediffs_by_source.get(pub, [])
             changesfile = changesfiles_by_source.get(pub, None)
             complete_pub = ArchiveSourcePublication(
-                pub, sourceandbinarylibraryfiles=files,
-                publishedbinaries=binaries, builds=builds,
-                packagediffs=packagediffs, changesfile=changesfile)
+                pub, publishedbinaries=binaries, builds=builds,
+                changesfile=changesfile)
             results.append(complete_pub)
 
         return iter(results)

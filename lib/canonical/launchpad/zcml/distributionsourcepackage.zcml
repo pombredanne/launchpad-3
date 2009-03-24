@@ -22,7 +22,8 @@
                   getSubscription parent_subscription_target
                   getBugNotificationsRecipients
                   getReleasesAndPublishingHistory
-                  upstream_product" />
+                  upstream_product target_type_display
+                  official_bug_tags" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addSubscription addBugSubscription
@@ -44,11 +45,6 @@
       set_attributes="bug_reporting_guidelines"
       />
   </class>
-  <adapter
-    provides="canonical.launchpad.interfaces.IFAQTarget"
-    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-    factory="canonical.launchpad.components.answertracker.distrosourcepackage_to_faqtarget"
-    />
   <adapter
       for="canonical.launchpad.interfaces.IDistributionSourcePackage"
       provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"

@@ -11,9 +11,7 @@ from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
-from lazr.batchnavigator.interfaces import (
-    # InvalidBatchSizeError is a reimport for convenience
-    IBatchNavigator, InvalidBatchSizeError)
+from lazr.batchnavigator.interfaces import IBatchNavigator
 from lazr.enum import DBEnumeratedType, DBItem, use_template
 
 from canonical.launchpad import _
@@ -58,13 +56,6 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
 
     One example would be a URL containing uppercase letters.
     """
-
-# annotate external interface
-# XXX flacoste 2008/05/09 bug=185958:
-# Ideally, we would use error_status, to set this up and
-# register the view, but cyclic imports prevents us from doing
-# so. This should be fixed once we move webapp stuff into LAZR.
-InvalidBatchSizeError.__lazr_webservice_error__ = 400
 
 
 class ILaunchpadContainer(Interface):
@@ -438,7 +429,7 @@ class IBrowserFormNG(Interface):
         """
 
     def getAll(name, default=None):
-        """Return the the list of values submitted under field name.
+        """Return the list of values submitted under field name.
 
         If the field wasn't submitted return the default value. (If default
         is None, an empty list will be returned. It is an error to use

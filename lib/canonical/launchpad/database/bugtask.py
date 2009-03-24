@@ -137,16 +137,18 @@ class BugTaskDelta:
     def __init__(self, bugtask, product=None,
                  sourcepackagename=None, status=None, importance=None,
                  assignee=None, milestone=None, statusexplanation=None,
-                 bugwatch=None):
+                 bugwatch=None, target=None):
         self.bugtask = bugtask
+
+        self.assignee = assignee
+        self.bugwatch = bugwatch
+        self.importance = importance
+        self.milestone = milestone
         self.product = product
         self.sourcepackagename = sourcepackagename
         self.status = status
-        self.importance = importance
-        self.assignee = assignee
-        self.target = milestone
         self.statusexplanation = statusexplanation
-        self.bugwatch = bugwatch
+        self.target = target
 
 
 class BugTaskMixin:
@@ -1510,6 +1512,17 @@ class BugTaskSet:
             )
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
+
+        if params.affected_user:
+            affected_user_clause = """
+            BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, BugAffectsPerson
+                WHERE BugTask.bug = BugAffectsPerson.bug
+                AND BugAffectsPerson.person = %(affected_user)s
+                AND BugAffectsPerson.affected = TRUE
+            )
+            """ % sqlvalues(affected_user=params.affected_user)
+            extra_clauses.append(affected_user_clause)
 
         if params.nominated_for:
             mappings = sqlvalues(
