@@ -212,6 +212,18 @@ class FakeProductSeries(FakeDatabaseObject):
 
     branch = None
 
+    @property
+    def series_branch(self):
+        return self.branch
+
+    def _get_user_branch(self):
+        return self.branch
+
+    def _set_user_branch(self, branch):
+        self.branch = branch
+
+    user_branch = property(_get_user_branch, _set_user_branch)
+
 
 class FakeScriptActivity(FakeDatabaseObject):
     """Fake script activity."""
