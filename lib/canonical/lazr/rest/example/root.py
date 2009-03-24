@@ -7,7 +7,8 @@ __all__ = ['Cookbook',
            'CookbookServiceRootResource',
            'CookbookSet',
            'CookbookWebServiceObject',
-           'CookbookServiceRootAbsoluteURL']
+           'CookbookServiceRootAbsoluteURL',
+           'Cuisine']
 
 from datetime import date
 
@@ -15,18 +16,54 @@ from zope.interface import implements
 from zope.traversing.browser.interfaces import IAbsoluteURL
 from zope.component import adapts, getUtility
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+from zope.schema.interfaces import IBytes
 
 from canonical.lazr.rest import ServiceRootResource
+
 from canonical.lazr.interfaces.rest import (
-    IServiceRootResource, ITopLevelEntryLink, IWebServiceConfiguration)
+    IByteStorage, IEntry, IServiceRootResource, ITopLevelEntryLink,
+    IWebServiceConfiguration)
 from canonical.lazr.rest.example.interfaces import (
     AlreadyNew, Cuisine, ICookbook, ICookbookSet, IDish, IDishSet,
     IRecipe, IRecipeSet, IHasGet, NameAlreadyTaken)
 
 
+
 #Entry classes.
 class CookbookWebServiceObject:
     """A basic object published through the web service."""
+
+class SimpleByteStorage(CookbookWebServiceObject):
+    """A simple IByteStorage implementation"""
+    implements(IByteStorage)
+    adapts(IEntry, IBytes)
+
+    def __init__(self, entry, field):
+        self.entry = entry
+        self.field = field
+        self.is_stored = getattr(
+            self.entry, field.__name__, None) is not None
+        if self.is_stored:
+            self.filename = getattr(self.entry, field.__name__).filename
+        else:
+            self.filename = field.__name__
+
+        # AbsoluteURL implementation.
+        self.__parent__ = self.entry.context
+        self.__name__ = self.field.__name__
+
+    @property
+    def alias_url(self):
+        return 'http://librarian.dev/files/%s' % self.filename
+
+    def createStored(self, mediaType, representation, filename=None):
+        self.representation = representation
+        if filename is not None:
+            self.filename = filename
+        setattr(self.entry, self.field.__name__, self)
+
+    def deleteStored(self):
+        setattr(self.entry, self.field.__name__, None)
 
 
 class Cookbook(CookbookWebServiceObject):
@@ -40,6 +77,7 @@ class Cookbook(CookbookWebServiceObject):
         self.recipes = []
         self.copyright_date = copyright_date
         self.confirmed = confirmed
+        self.cover = None
 
     @property
     def __name__(self):
@@ -101,6 +139,7 @@ class Recipe(CookbookWebServiceObject):
         self.cookbook.recipes.append(self)
         self.instructions = instructions
         self.private = private
+        self.prepared_image = None
 
     @property
     def __name__(self):

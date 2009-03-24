@@ -15,7 +15,7 @@ __all__ = ['AlreadyNew',
            'NameAlreadyTaken']
 
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Date, Int, TextLine, Text
+from zope.schema import Bool, Bytes, Choice, Date, Int, TextLine, Text
 
 from lazr.enum import EnumeratedType, Item
 
@@ -84,6 +84,9 @@ class IRecipe(Interface):
                                  required=True))
     private = exported(Bool(title=u"Whether the public can see this recipe.",
                        default=False))
+    prepared_image = exported(
+        Bytes(0, 5000, title=u"An image of the prepared dish.",
+              readonly=True))
 
 
 class ICookbook(IHasGet):
@@ -102,6 +105,8 @@ class ICookbook(IHasGet):
         vocabulary=Cuisine, title=u"Cuisine", required=False, default=None))
     recipes = exported(CollectionField(title=u"Recipes in this cookbook",
                                        value_type=Reference(schema=IRecipe)))
+    cover = exported(
+        Bytes(0, 5000, title=u"An image of the cookbook's cover."))
 
     @operation_parameters(
         search=TextLine(title=u"String to search for in recipe name."))

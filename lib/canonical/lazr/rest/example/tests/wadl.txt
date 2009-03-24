@@ -164,7 +164,62 @@ the representation of a top-level collection.
 
 == Hosted file resources ==
 
-TBA
+A hosted file resource is the web service's access point for a file
+(usually a binary) hosted elsewhere. The most prominent hosted file in
+the example web service is a cookbook's cover image.
+
+A hosted file resource responds to GET requests by redirecting the
+client to the externally hosted file. It responds to PUT or DELETE
+requests by updating or deleting the underlying binary file.
+
+The behavior laid out in the previous paragraph is also defined in the
+WADL documents served by the web service itself. You can use content
+negotiation to get a WADL description of any hosted file resource.
+
+A cookbook starts out with no hosted cover, and an ordinary
+GET to the place where the cover would be results in a 404 error.
+
+    >>> print webservice.get(entry_url + '/cover')
+    HTTP/1.1 404 Not Found
+    ...
+
+But if the client is interested in learning how to create a cover at
+/cookbooks/Everyday%20Greens/cover, it can use content negotiation to
+get a WADL description of the resource-to-be.
+
+    >>> wadl = webservice.get(
+    ...     entry_url + '/cover',
+    ...     'application/vd.sun.wadl+xml').getBody()
+    >>> wadl_schema.validate(wadl)
+    True
+    >>> wadl_schema.error_log
+    ''
+
+    >>> tree = etree.fromstring(wadl)
+
+Just like with the WADL description of an entry or collection
+resource, the WADL representation of a hosted file resource is not
+much more than a reference to a big WADL file at the service root. To
+find out about the capabilities of the resource-to-be, the client
+needs to fetch the WADL representation of the service root and look
+for the XML element with the ID "HostedFile".
+
+    >>> tree.tag
+    '...application'
+
+    >>> resources = single_list_value(tree)
+    >>> resources.tag
+    '...resources'
+    >>> resources.attrib['base']
+    'http://.../The%20Joy%20of%20Cooking/cover'
+
+    >>> resource = single_list_value(resources)
+    >>> resource.tag
+    '...resource'
+    >>> resource.attrib['path']
+    ''
+    >>> resource.attrib['type']
+    'http://...#HostedFile'
 
 
 == The service root ==
@@ -934,9 +989,56 @@ required, and fixed to a particular value.
     'make_more_interesting'
 
 
-== Hosted binary files ==
+== Hosted file resources ==
 
-TBA.
+One interesting type of parameter not shown above is a link to an
+externally hosted file managed by the web service, such as a
+cookbook's cover.
+
+    >>> cover_param = single_list_value(
+    ...     [param for param in full_rep
+    ...      if param.attrib['name'] == 'cover_link'])
+    >>> doc, cover_link = cover_param
+    >>> cover_link.attrib['resource_type']
+    'http://...#HostedFile'
+
+What can the client do to this hosted file resource?
+
+    >>> get, put, delete = list(hosted_binary_resource_type)
+
+The client can send GET to the resource, and be redirected to a file
+hosted externally.
+
+    >>> get.tag
+    '...method'
+    >>> get.attrib['name']
+    'GET'
+    >>> get_response = single_list_value(get)
+    >>> get_representation = single_list_value(get_response)
+    >>> get_representation.attrib['status']
+    '303'
+    >>> redirect_param = single_list_value(get_representation)
+    >>> redirect_param.tag
+    '...param'
+    >>> redirect_param.attrib['style']
+    'header'
+    >>> redirect_param.attrib['name']
+    'Location'
+
+The client can PUT a hosted file:
+
+    >>> put.tag
+    '...method'
+    >>> put.attrib['name']
+    'PUT'
+
+The client can DELETE an existing file:
+
+    >>> delete.tag
+    '...method'
+    >>> delete.attrib['name']
+    'DELETE'
+
 
 
 == A non-top-level collection resource type ==
