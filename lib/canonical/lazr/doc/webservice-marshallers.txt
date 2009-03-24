@@ -11,7 +11,7 @@ application root.
     ...     WebServiceTestRequest, WebServiceTestPublication)
     >>> from canonical.lazr.rest.example.root import (
     ...     CookbookServiceRootResource)
-    >>> request = WebServiceTestRequest("", {})
+    >>> request = WebServiceTestRequest("", {'HTTP_HOST': 'cookbooks.dev'})
     >>> application = CookbookServiceRootResource()
     >>> request.setPublication(WebServiceTestPublication(application))
     >>> request.processInputs()
@@ -527,6 +527,31 @@ None is returned unchanged:
     None
 
 
+== Objects ==
+
+An object is marshalled to its URL.
+
+    >>> from canonical.lazr.fields import Reference
+    >>> from canonical.lazr.rest.example.interfaces import ICookbook
+    >>> reference_field = Reference(schema=ICookbook)
+    >>> reference_marshaller = getMultiAdapter(
+    ...     (reference_field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, reference_marshaller)
+    True
+
+    >>> from canonical.lazr.rest.example.root import COOKBOOKS
+    >>> cookbook = COOKBOOKS[0]
+    >>> cookbook_url = reference_marshaller.unmarshall(None, cookbook)
+    >>> print cookbook_url
+    http://.../cookbooks/Mastering%20the%20Art%20of%20French%20Cooking
+
+A URL is unmarshalled to the underlying object.
+
+    >>> cookbook = reference_marshaller.marshall_from_json_data(cookbook_url)
+    >>> cookbook.name
+    u'Mastering the Art of French Cooking'
+
+
 == Collections ==
 
 The most complicated kind of marshaller is one that manages a
@@ -655,11 +680,10 @@ collection of IPerson objects associated with some IPerson. (This
 might be the list of teams in which a person has a membership, or
 something like that.)
 
-    >>> from zope.schema import Object
     >>> from canonical.lazr.fields import CollectionField
     >>> from canonical.lazr.rest.example.interfaces import IRecipe
     >>> field = CollectionField(
-    ...     __name__='recipes', value_type=Object(schema=IRecipe))
+    ...     __name__='recipes', value_type=Reference(schema=IRecipe))
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
     >>> verifyObject(IFieldMarshaller, marshaller)
     True
