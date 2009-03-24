@@ -9,8 +9,10 @@
   <h2>Branches related to</h2>
 
   <ul>
-    <li tal:repeat="team view/teams_with_branches">
-      <a tal:replace="structure team/fmt:link">team name</a>
+    <li tal:repeat="item view/teams_with_branches">
+      <img src="/@@/team" />
+      <a tal:content="item/team/displayname"
+         tal:attributes="href item/url_provider/fmt:url">team name</a>
     </li>
   </ul>
 </div>

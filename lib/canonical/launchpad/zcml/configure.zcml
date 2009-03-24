@@ -112,6 +112,7 @@
     <include file="pillar.zcml" />
     <include file="person.zcml" />
     <include file="personnotification.zcml" />
+    <include file="personproduct.zcml" />
     <include file="poexportrequest.zcml" />
     <include file="pofile.zcml" />
     <include file="pofiletranslator.zcml" />

@@ -151,6 +151,8 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
@@ -279,6 +281,17 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, pillar_name):
+        # If the pillar is a product, then return the PersonProduct.
+        pillar = getUtility(IPillarNameSet).getByName(pillar_name)
+        if IProduct.providedBy(pillar):
+            person_product = getUtility(IPersonProductFactory).create(
+                self.context, pillar)
+            # If accessed through an alias, redirect to the proper name.
+            if pillar.name != pillar_name:
+                return self.redirectSubTree(canonical_url(person_product))
+            getUtility(IOpenLaunchBag).add(pillar)
+            return person_product
+        # Otherwise look for a branch.
         try:
             branch = getUtility(IBranchNamespaceSet).traverse(
                 self._getSegments(pillar_name))

@@ -892,52 +892,6 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             self._get_merge_proposals(
                 november, visible_by_user=self.factory.makePerson()))
 
-    def test_getProposalsForReviewer(self):
-        reviewer = self.factory.makePerson()
-        proposal = self.factory.makeBranchMergeProposal()
-        proposal.nominateReviewer(reviewer, reviewer)
-        proposal2 = self.factory.makeBranchMergeProposal()
-        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
-            reviewer)
-        self.assertEqual([proposal], list(proposals))
-
-    def test_getProposalsForReviewer_filter_status(self):
-        reviewer = self.factory.makePerson()
-        proposal1 = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
-        proposal1.nominateReviewer(reviewer, reviewer)
-        proposal2 = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal2.nominateReviewer(reviewer, reviewer)
-        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
-            reviewer, [BranchMergeProposalStatus.NEEDS_REVIEW])
-        self.assertEqual([proposal1], list(proposals))
-
-    def test_getProposalsForReviewer_anonymous(self):
-        # Don't include proposals for private branches for anonymous views.
-        reviewer = self.factory.makePerson()
-        target_branch = self.factory.makeAnyBranch(private=True)
-        proposal = self.factory.makeBranchMergeProposal(
-            target_branch=target_branch)
-        proposal.nominateReviewer(reviewer, reviewer)
-        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
-            reviewer)
-        self.assertEqual([], list(proposals))
-
-    def test_getProposalsForReviewer_anonymous_source_private(self):
-        # Don't include proposals for private branches for anonymous views.
-        reviewer = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        source_branch = self.factory.makeProductBranch(
-            product=product, private=True)
-        target_branch = self.factory.makeProductBranch(product=product)
-        proposal = self.factory.makeBranchMergeProposal(
-            source_branch=source_branch, target_branch=target_branch)
-        proposal.nominateReviewer(reviewer, reviewer)
-        proposals = BranchMergeProposalGetter.getProposalsForReviewer(
-            reviewer)
-        self.assertEqual([], list(proposals))
-
 
 class TestBranchMergeProposalDeletion(TestCaseWithFactory):
     """Deleting a branch merge proposal deletes relevant objects."""
