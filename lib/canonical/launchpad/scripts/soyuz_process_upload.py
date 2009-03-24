@@ -71,7 +71,6 @@ class ProcessUpload(LaunchpadScript):
 
         self.options.base_fsroot = os.path.abspath(self.args[0])
         try:
-            print("fsroot: '%s'" % self.options.base_fsroot)
             if not os.path.isdir(self.options.base_fsroot):
                 raise LaunchpadScriptFailure(
                     "%s is not a directory" % self.options.base_fsroot)
