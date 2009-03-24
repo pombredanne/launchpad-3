@@ -443,7 +443,6 @@ class StoreSelector:
         db_policy.uninstall()
         return db_policy
 
-
     @staticmethod
     def get_current():
         """See `IStoreSelector`."""
