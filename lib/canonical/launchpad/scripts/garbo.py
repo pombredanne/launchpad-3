@@ -5,6 +5,8 @@
 __metaclass__ = type
 __all__ = ['DailyDatabaseGarbageCollector', 'HourlyDatabaseGarbageCollector']
 
+import time
+
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -12,6 +14,7 @@ from storm.locals import SQL
 
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
+from canonical.launchpad.database.openidconsumer import OpenIDNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadCronScript
@@ -79,23 +82,24 @@ class OpenIDNoncePruner(TunableLoop):
 
     def __init__(self):
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        self.oldest_age = self.store.execute("""
-            SELECT COALESCE(
-                EXTRACT(EPOCH FROM CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
-                - MIN(timestamp), 0)
-            FROM OpenIDNonce
-            """).get_one()[0]
+        self.earliest_timestamp = self.store.execute(
+            "SELECT MIN(timestamp) FROM OpenIDNonce").get_one()[0]
+        utc_now = int(time.mktime(time.gmtime()))
+        self.earliest_wanted_timestamp = utc_now - ONE_DAY_IN_SECONDS
 
     def isDone(self):
-        return self.oldest_age <= ONE_DAY_IN_SECONDS
+        return (
+            self.earliest_timestamp is None
+            or self.earliest_timestamp >= self.earliest_wanted_timestamp)
 
     def __call__(self, chunk_size):
-        self.oldest_age = max(ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
-        self.store.execute("""
-            DELETE FROM OpenIDNonce
-            WHERE timestamp < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                - interval '%d seconds'
-            """ % self.oldest_age)
+        self.earliest_timestamp = min(
+            self.earliest_wanted_timestamp,
+            self.earliest_timestamp + chunk_size)
+
+        self.store.find(
+            OpenIDNonce,
+            OpenIDNonce.timestamp < self.earliest_timestamp).remove()
         transaction.commit()
 
 

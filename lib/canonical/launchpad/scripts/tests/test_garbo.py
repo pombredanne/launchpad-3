@@ -6,12 +6,14 @@ __metaclass__ = type
 __all__ = []
 
 from datetime import datetime, timedelta
+import time
 import unittest
 
 from pytz import UTC
 import transaction
 
-from canonical.launchpad.database import OAuthNonce
+from canonical.launchpad.database.oauth import OAuthNonce
+from canonical.launchpad.database.openidconsumer import OpenIDNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.scripts.garbo import (
@@ -20,6 +22,7 @@ from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
+
 
 class TestGarboScript(TestCase):
     layer = LaunchpadScriptLayer
@@ -74,7 +77,7 @@ class TestGarbo(TestCase):
 
         # Make sure we start with 0 nonces.
         self.failUnlessEqual(
-            0, IMasterStore(OAuthNonce).find(OAuthNonce).count())
+            IMasterStore(OAuthNonce).find(OAuthNonce).count(), 0)
 
         for timestamp in timestamps:
             OAuthNonce(
@@ -85,13 +88,49 @@ class TestGarbo(TestCase):
 
         # Make sure we have 4 nonces now.
         self.failUnlessEqual(
-            4, IMasterStore(OAuthNonce).find(OAuthNonce).count())
+            IMasterStore(OAuthNonce).find(OAuthNonce).count(), 4)
 
         self.runHourly()
 
         # Now back to two, having removed the two garbage entries.
         self.failUnlessEqual(
-            2, IMasterStore(OAuthNonce).find(OAuthNonce).count())
+            IMasterStore(OAuthNonce).find(OAuthNonce).count(), 2)
+
+    def test_OpenIDNoncePruner(self):
+        now = int(time.mktime(time.gmtime()))
+        MINUTES = 60
+        HOURS = 60 * 60
+        DAYS = 24 * HOURS
+        timestamps = [
+            now - 2 * DAYS, # Garbage
+            now - 1 * DAYS - 1 * MINUTES, # Garbage
+            now - 1 * DAYS + 1 * MINUTES, # Not garbage
+            now, # Not garbage
+            ]
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        store = IMasterStore(OpenIDNonce)
+
+        # Make sure we start with 0 nonces.
+        self.failUnlessEqual(store.find(OpenIDNonce).count(), 0)
+
+        for timestamp in timestamps:
+            nonce = store.add(OpenIDNonce())
+            nonce.server_url = unicode(timestamp)
+            nonce.timestamp = timestamp
+            nonce.salt = u'aa'
+            store.add(nonce)
+        transaction.commit()
+
+        # Make sure we have 4 nonces now.
+        self.failUnlessEqual(store.find(OpenIDNonce).count(), 4)
+
+        # Run the garbage collector.
+        self.runHourly()
+
+        # We should now have 2 nonces.
+        self.failUnlessEqual(store.find(OpenIDNonce).count(), 2)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
