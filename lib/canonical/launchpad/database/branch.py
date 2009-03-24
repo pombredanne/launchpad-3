@@ -834,13 +834,6 @@ class BranchSet:
 
     implements(IBranchSet)
 
-    def __iter__(self):
-        """See `IBranchSet`."""
-        # XXX: JonathanLange 2009-02-10 spec=package-branches: Prejoining
-        # product is probably not the best idea, given that there'll be a lot
-        # of package branches.
-        return iter(Branch.select(prejoins=['owner', 'product']))
-
     def countBranchesWithAssociatedBugs(self):
         """See `IBranchSet`."""
         return Branch.select(
