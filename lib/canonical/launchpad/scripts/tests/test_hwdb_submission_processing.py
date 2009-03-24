@@ -9,7 +9,6 @@ import logging
 import os
 import pytz
 from unittest import TestCase, TestLoader
-from urllib2 import HTTPError, URLError
 
 from zope.component import getUtility
 from zope.testing.loghandler import Handler
@@ -22,11 +21,10 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWVendorNameSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.librarian.ftests.harness import fillLibrarianFile
-from canonical.launchpad.scripts import hwdbsubmissions
+from canonical.librarian.interfaces import LibrarianServerError
 from canonical.launchpad.scripts.hwdbsubmissions import (
-    HALDevice, LibrarianServerError, PCI_CLASS_BRIDGE,
-    PCI_CLASS_SERIALBUS_CONTROLLER, PCI_CLASS_STORAGE,
-    PCI_SUBCLASS_BRIDGE_CARDBUS, PCI_SUBCLASS_BRIDGE_PCI,
+    HALDevice, PCI_CLASS_BRIDGE, PCI_CLASS_SERIALBUS_CONTROLLER,
+    PCI_CLASS_STORAGE, PCI_SUBCLASS_BRIDGE_CARDBUS, PCI_SUBCLASS_BRIDGE_PCI,
     PCI_SUBCLASS_SERIALBUS_USB, PCI_SUBCLASS_STORAGE_SATA, SubmissionParser,
     process_pending_submissions)
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
@@ -2455,60 +2453,6 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
             'property not treated as a real device.')
 
 
-class MockLibraryFileAlias:
-    """A fake implemetation of class LibraryFileAlias.
-
-    Instances of this class can be configured to raise an HTTPError.
-    """
-
-    def __init__(self, data, exception, max_errors=0):
-        """Initialize an instance.
-
-        :param data: The data stored in the library file.
-        :param exception: The exception that will be raised in read() calls.
-        :param max_errors: If this number is greater than zero, the first
-            max_errors calls of read() will fail with an HTTPError. All
-            following calls will succeed.
-        """
-        self.data = data
-        self.exception = exception
-        self.max_errors = max_errors
-        self.error_count = 0
-
-    def open(self):
-        pass
-
-    def read(self):
-        if self.error_count < self.max_errors:
-            self.error_count += 1
-            raise self.exception
-        else:
-            return self.data
-
-    def close(self):
-        pass
-
-
-class MockSleep:
-    """A mock implementation of time.sleep()
-
-    This method does not perform an actual sleep, in order to keep
-    the run time of the tests of SubmissionParser.loadRawSubmissionData()
-    in reasonable limits. The delay of caused by time.sleep() calls in this
-    method may accumulate up to 2047 seconds.
-    Instead, this class sums the entire time that should be spent
-    sleep()ing.
-    """
-
-    def __init__(self):
-        self.time_slept = 0
-
-    def __call__(self, seconds):
-        """A surrogate for time.sleep()."""
-        self.time_slept += seconds
-        return
-
-
 class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
     """Tests of the HWDB popoluation with submitted data."""
 
@@ -3412,150 +3356,6 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
 
         SubmissionParser.processSubmission = process_submission_regular
 
-    def testLoadRawSubmissionData(self):
-        """Test of loadRawSubmissionData(), regular case."""
-        submission = self.createSubmissionData(
-            data='test-load-raw-data', compress=False,
-            submission_key='test-load-raw-data-key', private=False)
-        parser = SubmissionParser()
-        result = parser.loadRawSubmissionData(submission.raw_submission)
-        self.assertEqual(
-            result, 'test-load-raw-data',
-            'Unexpected result load raw submission data: %r' % result)
-
-    def testLoadRawSubmissionDataServerShortLived5xxHTTPError(self):
-        """Test of loadRawSubmissionData(), short time 5xx server errors."""
-        # Accessing the The Librarian server may cause HTTPErrors. For
-        # 5xx errors, loadRawSubmissionData() retries up to 11 times to
-        # access ther server, waiting at most 2047 seconds.
-        real_sleep = hwdbsubmissions.sleep
-        hwdbsubmissions.sleep = MockSleep()
-
-        submission_parser = SubmissionParser()
-        exception = HTTPError(
-            'http://fake.url/', 500,
-            'MockLibraryFileAlias read error', None, None)
-        raw_submission = MockLibraryFileAlias(
-            'test-load-raw-data-2', exception=exception, max_errors=11)
-
-        result = submission_parser.loadRawSubmissionData(raw_submission)
-        self.assertEqual(
-            result, 'test-load-raw-data-2',
-            'loadRawSubmissionData() did not return the expected result '
-            'for a short-lived 503 error during LibraryFileAlias.open()')
-        self.assertEqual(
-            hwdbsubmissions.sleep.time_slept, 2047,
-            'loadRawSubmissionData() spent %i seconds waiting for the '
-            'Librarian server; expected 2047 seconds.'
-            % hwdbsubmissions.sleep.time_slept)
-
-        hwdbsubmissions.sleep = real_sleep
-
-    def testLoadRawSubmissionDataServerShortLivedURLError(self):
-        """Test of loadRawSubmissionData(), short time 5xx server errors."""
-        # Accessing the The Librarian server may cause URLErrors.
-        # In this case, loadRawSubmissionData() retries up to 11 times to
-        # access ther server, waiting at most 2047 seconds.
-        real_sleep = hwdbsubmissions.sleep
-        hwdbsubmissions.sleep = MockSleep()
-
-        submission_parser = SubmissionParser()
-        exception = URLError('Connection refused')
-        raw_submission = MockLibraryFileAlias(
-            'test-load-raw-data-2', exception=exception, max_errors=11)
-
-        result = submission_parser.loadRawSubmissionData(raw_submission)
-        self.assertEqual(
-            result, 'test-load-raw-data-2',
-            'loadRawSubmissionData() did not return the expected result '
-            'for a short-lived 503 error during LibraryFileAlias.open()')
-        self.assertEqual(
-            hwdbsubmissions.sleep.time_slept, 2047,
-            'loadRawSubmissionData() spent %i seconds waiting for the '
-            'Librarian server; expected 2047 seconds.'
-            % hwdbsubmissions.sleep.time_slept)
-
-        hwdbsubmissions.sleep = real_sleep
-
-    def testLoadRawSubmissionDataServerLongLived5xxHTTPError(self):
-        """Test of loadRawSubmissionData(), long lasting 5xx server errors."""
-        # Accessing the The Librarian server may cause HTTPErrors. For
-        # 5xx errors, loadRawSubmissionData() retries up to 11 times to
-        # read the data, waiting at most 2047 seconds. If the error lasts
-        # longer than 11 retries/2047 seconds, loadRawSubmissionData()
-        # raises a LibrarianServerError.
-        real_sleep = hwdbsubmissions.sleep
-        hwdbsubmissions.sleep = MockSleep()
-
-        submission_parser = SubmissionParser()
-        exception = HTTPError(
-            'http://fake.url/', 500,
-            'MockLibraryFileAlias read error', None, None)
-        raw_submission = MockLibraryFileAlias(
-            'test-load-raw-data-3', exception=exception, max_errors=12)
-
-        self.assertRaises(
-            LibrarianServerError, submission_parser.loadRawSubmissionData,
-            raw_submission)
-        self.assertEqual(
-            hwdbsubmissions.sleep.time_slept, 2047,
-            'loadRawSubmissionData() spent %i seconds waiting for the '
-            'Librarian server; expected 2047 seconds.'
-            % hwdbsubmissions.sleep.time_slept)
-
-        hwdbsubmissions.sleep = real_sleep
-
-    def testLoadRawSubmissionDataServerLongLivedURLError(self):
-        """Test of loadRawSubmissionData(), long lasting URLErrors."""
-        # Accessing the The Librarian server may cause URLErrors, when
-        # the machine is completely down. In this case,
-        # loadRawSubmissionData() retries up to 11 times to read the data,
-        # waiting at most 2047 seconds. If the error lasts longer than
-        # 11 retries/2047 seconds, loadRawSubmissionData() raises a
-        # LibrarianServerError.
-        real_sleep = hwdbsubmissions.sleep
-        hwdbsubmissions.sleep = MockSleep()
-
-        submission_parser = SubmissionParser()
-        exception = URLError('Connection refused')
-        raw_submission = MockLibraryFileAlias(
-            'test-load-raw-data-3', exception=exception, max_errors=12)
-
-        self.assertRaises(
-            LibrarianServerError, submission_parser.loadRawSubmissionData,
-            raw_submission)
-        self.assertEqual(
-            hwdbsubmissions.sleep.time_slept, 2047,
-            'loadRawSubmissionData() spent %i seconds waiting for the '
-            'Librarian server; expected 2047 seconds.'
-            % hwdbsubmissions.sleep.time_slept)
-
-        hwdbsubmissions.sleep = real_sleep
-
-    def testLoadRawSubmissionDataServerNon5xxHTTPError(self):
-        """Test of loadRawSubmissionData(), short time server error."""
-        # Accessing the The Librarian server may cause HTTPErrors. For
-        # non-5xx errors, loadRawSubmissionData() fails immediately
-        # and re-raises the HTTPError.
-        real_sleep = hwdbsubmissions.sleep
-        hwdbsubmissions.sleep = MockSleep()
-
-        submission_parser = SubmissionParser()
-        exception = HTTPError(
-            'http://fake.url/', 404, 'Not found', None, None)
-        raw_submission = MockLibraryFileAlias(
-            'test-load-raw-data-2', exception=exception, max_errors=1)
-        self.assertRaises(
-            HTTPError, submission_parser.loadRawSubmissionData,
-            raw_submission)
-        self.assertEqual(
-            hwdbsubmissions.sleep.time_slept, 0,
-            'loadRawSubmissionData() spent %i seconds waiting for the '
-            'Librarian server; expected 0 seconds.'
-            % hwdbsubmissions.sleep.time_slept)
-
-        hwdbsubmissions.sleep = real_sleep
-
     def testProcessingLoopExceptionHandling(self):
         """Test of the exception handling of ProcessingLoop.__call__()"""
         def processSubmission(self, submission):
@@ -3610,7 +3410,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             submission_1.status, HWSubmissionProcessingStatus.PROCESSED,
             'Unexpected status of submission 1: %s' % submission_1.status)
 
-        # ... while the second submission haa the status SUBMITTED.
+        # ... while the second submission has the status SUBMITTED.
         submission_set = getUtility(IHWSubmissionSet)
         submission_2 = submission_set.getBySubmissionKey('submission-2')
         self.assertEqual(
