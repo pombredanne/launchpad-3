@@ -6,10 +6,13 @@ __metaclass__ = type
 __all__ = ['ProcessUpload']
 
 import os
+import sys
 
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 
 
 class ProcessUpload(LaunchpadScript):
@@ -67,14 +70,27 @@ class ProcessUpload(LaunchpadScript):
                 "argument, namely the fsroot for the upload.")
 
         self.options.base_fsroot = os.path.abspath(self.args[0])
-
-        if not os.path.isdir(self.options.base_fsroot):
-            raise LaunchpadScriptFailure(
-                "%s is not a directory" % self.options.base_fsroot)
-
-        self.logger.debug("Initialising connection.")
-        UploadProcessor(
-            self.options, self.txn, self.logger).processUploadQueue()
+        try:
+            print("fsroot: '%s'" % self.options.base_fsroot)
+            if not os.path.isdir(self.options.base_fsroot):
+                raise LaunchpadScriptFailure(
+                    "%s is not a directory" % self.options.base_fsroot)
+            self.logger.debug("Initialising connection.")
+            UploadProcessor(
+                self.options, self.txn, self.logger).processUploadQueue()
+        except (KeyboardInterrupt, SystemExit):
+            # We should never catch these exceptions.
+            raise
+        except Exception, error:
+            info = sys.exc_info()
+            message = (
+                'Exception while processing upload %s'
+                % self.options.base_fsroot)
+            properties = [('error-explanation', message)]
+            request = ScriptRequest(properties)
+            error_utility = ErrorReportingUtility()
+            error_utility.raising(info, request)
+            self.logger.error('%s (%s)' % (message, request.oopsid))
 
     @property
     def lockfilename(self):
