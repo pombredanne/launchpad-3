@@ -270,9 +270,9 @@ that are not in progress.
     >>> view = create_initialized_view(user, name='+portlet-currentfocus')
     >>> view.has_assigned_bugs_or_specs_in_progress
     False
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     0
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     0
     >>> print view.render()
     <BLANKLINE>
@@ -290,9 +290,9 @@ in progress state.
     >>> spec.assignee = user
     >>> view.has_assigned_bugs_or_specs_in_progress
     False
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     0
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     0
 
 The specification is displayed only when it is in a in progress state
@@ -310,9 +310,9 @@ the user is working on.
     >>> view = create_initialized_view(user, name='+portlet-currentfocus')
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     0
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     1
     >>> print view.render()
     <div id="working-on">...
@@ -329,22 +329,25 @@ Assigned bugs do not display when their status is not INPROGRESS.
     >>> bug.bugtasks[0].transitionToAssignee(user)
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     0
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     1
 
 The assigned bug is displayed in the "Working on..." section when
 its status is in INPROGRESS.
 
     >>> from canonical.launchpad.interfaces import BugTaskStatus
-
     >>> bug.bugtasks[0].transitionToStatus(BugTaskStatus.INPROGRESS, user)
+
+    # Create a new view because we're testing some cached properties.
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
+
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     1
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     1
     >>> print view.render()
     <div id="working-on">...
@@ -365,22 +368,29 @@ Multiple bugs and specs are displayed.
     >>> another_bug.bugtasks[0].transitionToAssignee(user)
     >>> another_bug.bugtasks[0].transitionToStatus(
     ...     BugTaskStatus.INPROGRESS, user)
+
+    # Create a new view because we're testing some cached properties.
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
+
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     2
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     1
 
 But duplicate bugs are never displayed.
 
     >>> another_bug.duplicateof = bug
 
+    # Create a new view because we're testing some cached properties.
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
+
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
-    >>> view.assigned_bugs_in_progress.count()
+    >>> len(view.assigned_bugs_in_progress)
     1
-    >>> view.assigned_specs_in_progress.count()
+    >>> len(view.assigned_specs_in_progress)
     1
 
 
