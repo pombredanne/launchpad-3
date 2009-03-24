@@ -294,28 +294,6 @@ If we change one tag, it's basically removing one and adding another:
     ** Tags removed: bar
     -----------------------------
 
-= Adding a new bug task =
-
-Because adding a new task is sort of like "editing" a bug,
-get_bug_edit_notification_texts generates text representations when a
-new task is added to a bug. To demonstrate what they look like, let's
-pretend we had just added task five:
-
-    >>> ubuntu_mozilla_task = getUtility(IBugTaskSet).get(17)
-    >>> bug_one = getUtility(IBugSet).get(1)
-
-    >>> bug_delta = BugDelta(
-    ...     bug = bug_one,
-    ...     bugurl = "http://www.example.com/bugs/1",
-    ...     user = sample_person,
-    ...     added_bugtasks = ubuntu_mozilla_task)
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
-    ...     print "-----------------------------"
-    ** Also affects: mozilla-firefox (Ubuntu)
-       Importance: Medium
-           Status: New
-    -----------------------------
 
 = Editing a bug task =
 
@@ -380,29 +358,6 @@ edited:
     ...     print "-----------------------------"
     ** Changed in: mozilla-firefox (Debian)
          Assignee: Sample Person (name12) => (unassigned)
-    -----------------------------
-
-= Adding and editing bug watches =
-
-We can add a bugwatch while adding a new bugtask.
-
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
-    >>> mozilla_bug_watch = getUtility(IBugWatchSet).get(1)
-    >>> mozilla_bugtask = getUtility(IBugTaskSet).get(15)
-    >>> mozilla_bugtask.bugwatch = mozilla_bug_watch
-
-    >>> bug_delta = BugDelta(
-    ...     bug=edited_bug,
-    ...     bugurl="http://www.example.com/bugs/2",
-    ...     user=sample_person,
-    ...     added_bugtasks=mozilla_bugtask)
-    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
-    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
-    ...     print "-----------------------------"
-    ** Also affects: firefox via
-       https://bugzilla.mozilla.org/show_bug.cgi?id=42
-       Importance: High
-           Status: New
     -----------------------------
 
 

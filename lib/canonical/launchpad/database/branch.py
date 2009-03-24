@@ -838,10 +838,6 @@ class BranchSet:
         # of package branches.
         return iter(Branch.select(prejoins=['owner', 'product']))
 
-    def count(self):
-        """See `IBranchSet`."""
-        return Branch.select('NOT Branch.private').count()
-
     def countBranchesWithAssociatedBugs(self):
         """See `IBranchSet`."""
         return Branch.select(
