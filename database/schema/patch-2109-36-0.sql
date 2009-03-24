@@ -13,9 +13,9 @@ CREATE TABLE HWDMIValue (
     id serial primary key,
     key text,
     value text,
-    handle integer REFERENCES HWDMIHandle
+    handle integer NOT NULL REFERENCES HWDMIHandle(id)
 );
 
 CREATE INDEX hwdmivalue__hanlde__idx ON HWDMIValue(handle);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 36, 0);
