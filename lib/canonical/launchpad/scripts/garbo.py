@@ -10,7 +10,7 @@ import time
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
-from storm.locals import SQL, Min
+from storm.locals import SQL, Max, Min
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.codeimportresult import CodeImportResult
@@ -114,16 +114,18 @@ class CodeImportResultPruner(TunableLoop):
     maximum_chunk_size = 100
     def __init__(self):
         self.store = IMasterStore(CodeImportResult)
-        self.min_code_import, self.max_code_import = self.store.execute("""
-            SELECT
-                coalesce(min(code_import),0),
-                coalesce(max(code_import),-1)
-            FROM CodeImportResult
-            """).get_one()
+
+        self.min_code_import = self.store.find(
+            Min(CodeImportResult.code_importID)).one()
+        self.max_code_import = self.store.find(
+            Max(CodeImportResult.code_importID)).one()
+
         self.next_code_import_id = self.min_code_import
 
     def isDone(self):
-        return self.next_code_import_id > self.max_code_import
+        return (
+            self.min_code_import is None
+            or self.next_code_import_id > self.max_code_import)
 
     def __call__(self, chunk_size):
         self.store.execute("""
@@ -140,7 +142,7 @@ class CodeImportResultPruner(TunableLoop):
                     WHERE
                         LatestResult.code_import
                             = CodeImportResult.code_import
-                    ORDER BY LatestResult.id DESC
+                    ORDER BY LatestResult.date_created DESC
                     LIMIT 4)
             """ % sqlvalues(
                 self.next_code_import_id,
