@@ -23,23 +23,28 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 
-def wrap_text(text, width=80):
-    """The TextWrapper's handling of code is somewhat suspect.
+def quote_text_as_email(text, width=80):
+    """Quote the text as if it is an email response.
 
-    Break the string into lines, and use the TextWrapper to wrap the
-    individual lines.
+    Uses '> ' as a line prefix, and breaks long lines.
+
+    Trailing whitespace is stripped.
     """
     # Empty text begets empty text.
-    if len(text.strip()) == 0:
+    text = text.rstrip()
+    if not text:
         return ''
     prefix = '> '
+    # The TextWrapper's handling of code is somewhat suspect.
     wrapper = TextWrapper(
         initial_indent=prefix,
         subsequent_indent=prefix,
         width=width,
         replace_whitespace=False)
     result = []
-    for line in text.strip('\n').split('\n'):
+    # Break the string into lines, and use the TextWrapper to wrap the
+    # individual lines.
+    for line in text.rstrip().split('\n'):
         # TextWrapper won't do an indent of an empty string.
         if line.strip() == '':
             result.append(prefix)
@@ -146,7 +151,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         quoted comment being replied to.
         """
         if self.is_reply:
-            comment = wrap_text(self.reply_to.message_body)
+            comment = quote_text_as_email(self.reply_to.message_body)
         else:
             comment = ''
         return {'comment': comment}
