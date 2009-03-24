@@ -933,9 +933,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
     def testOopsCreation(self):
         """Test the the creation of an OOPS upon upload processing failure.
 
-        We create a bogus changes file here; that will result in an exception
-        thrown when it's processed. That exception should initiate the
-        creation of an OOPS report.
+        In order to trigger the exception needed a bogus changes file will be
+        used.
+        That exception will then initiate the creation of an OOPS report.
         """
         processor = UploadProcessor(
             self.options, self.layer.txn, self.log)
@@ -951,12 +951,26 @@ class TestUploadProcessor(TestUploadProcessorBase):
             '%s/%s' % (upload_dir, 'bogus.changes'), 'w')
         file_handle.write(bogus_changesfile_data)
         file_handle.close()
-        try:
-            processor.processUpload(*(os.path.split(upload_dir)))
-        except OSError:
-            # The exception thrown can be safely ignored for the purpose of
-            # this test.
-            pass
+
+        # The upload directory will be something like:
+        #   /tmp/tmpv8WHuX/incoming/foocomm_1.0-1_proposed
+        #
+        # We need to construct the equivalent path where failed uploads are
+        # relocated to e.g.
+        #   /tmp/tmpv8WHuX/failed/foocomm_1.0-1_proposed
+        #
+        # because processUpload() will fail and subsequently want to relocate
+        # the upload.
+        dirname, basename = os.path.split(upload_dir)
+        upload_prefix, ignore_this = os.path.split(dirname)
+        failed_relocation_path = os.path.join(
+            *(upload_prefix, 'failed', basename))
+        if not os.path.isdir(failed_relocation_path):
+            os.makedirs(failed_relocation_path)
+
+        # Now we finally have all that's needed to call the method of
+        # interest.
+        processor.processUpload(*(os.path.split(upload_dir)))
 
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
