@@ -441,8 +441,8 @@ class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
                 return item
             valid_titles.append(item.title)
         raise ValueError(
-            'Invalid value "%s". Acceptable values are: %s' %
-            (value, ', '.join(valid_titles)))
+            ('Invalid value "%s". Acceptable values are: %s' %
+             (value, ', '.join(valid_titles))).encode("utf-8"))
 
     def unmarshall(self, entry, value):
         if value is None:
