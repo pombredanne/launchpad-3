@@ -9,10 +9,7 @@ import shutil
 import tempfile
 import unittest
 
-from cStringIO import StringIO
-
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -26,14 +23,12 @@ class TestProcessUpload(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.queue_location)
 
-    def runProcessUpload(self, extra_args=None, queue_location=None):
+    def runProcessUpload(self, extra_args=None):
         """Run process-upload.py, returning the result and output."""
         if extra_args is None:
             extra_args = []
-        if queue_location is None:
-            queue_location = self.queue_location
         script = os.path.join(config.root, "scripts", "process-upload.py")
-        args = [sys.executable, script, "-vvv", queue_location]
+        args = [sys.executable, script, "-vvv", self.queue_location]
         args.extend(extra_args)
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -86,34 +81,6 @@ class TestProcessUpload(unittest.TestCase):
 
         # release the locally acquired lockfile
         locker.release()
-
-    def testOopsCreation(self):
-        """Try a simple process-upload run.
-
-        Observe it creating the OOPS upon being passed a bogus queue
-        location path.
-        """
-        returncode, out, err = self.runProcessUpload(
-            queue_location='/bogus_path')
-        self.assertEqual(0, returncode)
-
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
-        self.failUnless(
-            error_text.find('Exception-Type: LaunchpadScriptFailure') >= 0,
-            'Expected Exception type not found in OOPS report:\n%s'
-            % error_text)
-
-        expected_explanation = (
-            'error-explanation=Exception while processing upload '
-            '/bogus_path')
-        self.failUnless(
-            error_text.find(expected_explanation) >= 0,
-            'Expected Exception text not found in OOPS report:\n%s'
-            % error_text)
 
 
 def test_suite():
