@@ -100,6 +100,27 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         self.approver.approve(self.entry)
         self.assertEqual(RosettaImportStatus.APPROVED, self.entry.status)
 
+    def test_replace_existing_generic_path_approved(self):
+        # If an upload file has a generic path that does not yield a
+        # translation domain it is still approved if an entry with the same
+        # file name exsits.
+        existing_domain = self.factory.getUniqueString()
+        self._upload_template('po/messages.pot',
+                               existing_domain, 'po/messages.pot')
+        self.approver.approve(self.entry)
+        self.assertEqual(RosettaImportStatus.APPROVED, self.entry.status)
+
+    def test_replace_existing_generic_path_domain(self):
+        # Uploads with a generic path do not overwrite the translation domain
+        # on the existing POTemplate entry.
+        existing_domain = self.factory.getUniqueString()
+        self._upload_template('po/messages.pot',
+                               existing_domain, 'po/messages.pot')
+        self.approver.approve(self.entry)
+        self.assertIsNot(None, self.entry.potemplate)
+        self.assertEqual(
+            existing_domain, self.entry.potemplate.translation_domain)
+
     def _upload_second_template(self, new_domain):
         # Upload a second template when there is one in the database already.
         existing_domain = self.factory.getUniqueString()
