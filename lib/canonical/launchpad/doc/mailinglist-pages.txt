@@ -71,9 +71,8 @@ that there are no data structures on the Mailman side that we care
 about.  This is not enforced by Launchpad, and a purging a list invokes
 no communication between the two systems.
 
-    >>> from canonical.launchpad.ftests import mailinglists_helper
-    >>> team_one, list_one = mailinglists_helper.new_team(
-    ...     'team-one', with_list=True)
+    >>> team_one, list_one = factory.makeTeamAndMailingList(
+    ...     'team-one', 'no-priv')
 
     >>> the_owner = team_one.teamowner.preferredemail.email
 
@@ -124,11 +123,11 @@ Now the team owner deactivates the mailing list.  When this completes
 successfully, the mailing list will have been archived and removed on the
 Mailman side.
 
-    >>> view = create_view(an_admin)
+    >>> from canonical.launchpad.ftests.mailinglists_helper import mailman
 
     >>> login('no-priv@canonical.com')
     >>> list_one.deactivate()
-    >>> mailinglists_helper.mailman.act()
+    >>> mailman.act()
     >>> logout()
     >>> transaction.commit()
 
