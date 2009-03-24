@@ -88,10 +88,7 @@ function createBugDuplicateFormOverlay(form_content) {
         form_submit_button: Y.Node.create(
             '<button type=\'submit\' name=\'field.actions.change\' ' +
             'value=\'Change\' class=\'lazr-pos lazr-btn\' >OK</button>'),
-        align: {
-            points: 
-                [Y.WidgetPositionExt.CC, Y.WidgetPositionExt.CC]
-        },
+        centered: true,
         form_submit_callback: update_bug_duplicate,
         visible: false
     });
