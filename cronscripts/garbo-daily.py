@@ -14,6 +14,6 @@ import _pythonpath
 from canonical.launchpad.scripts.garbo import DailyDatabaseGarbageCollector
 
 if __name__ == '__main__':
-    script = DailyDatabaseGarbageCollector('garbo-daily', 'garbo-daily')
+    script = DailyDatabaseGarbageCollector()
     script.lock_and_run()
 

@@ -14,6 +14,6 @@ import _pythonpath
 from canonical.launchpad.scripts.garbo import HourlyDatabaseGarbageCollector
 
 if __name__ == '__main__':
-    script = HourlyDatabaseGarbageCollector('garbo-hourly', 'garbo-hourly')
+    script = HourlyDatabaseGarbageCollector()
     script.lock_and_run()
 

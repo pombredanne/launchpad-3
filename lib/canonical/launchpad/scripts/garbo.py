@@ -3,7 +3,7 @@
 """Database garbage collection."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['DailyDatabaseGarbageCollector', 'HourlyDatabaseGarbageCollector']
 
 import transaction
 from zope.component import getUtility
@@ -21,20 +21,6 @@ from canonical.launchpad.webapp.interfaces import (
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
-
-
-class HourlyDatabaseGarbageCollector(LaunchpadCronScript):
-    def main(self):
-        self.logger.info("Pruning OAuthNonce")
-        OAuthNoncePruner().run()
-        self.logger.info("Pruning OpenIDNonce")
-        OpenIDNoncePruner().run()
-
-
-class DailyDatabaseGarbageCollector(LaunchpadCronScript):
-    def main(self):
-        self.logger.info("Pruning CodeImportResult")
-        CodeImportResultPruner().run()
 
 
 class TunableLoop:
@@ -155,4 +141,33 @@ class CodeImportResultPruner(TunableLoop):
                 self.code_import_id, self.code_import_id, chunk_size))
         self.code_import_id += chunk_size
         transaction.commit()
+
+
+class BaseDatabaseGarbageCollector(LaunchpadCronScript):
+    """Abstract base class to run a collection of TunableLoops."""
+    script_name = None # Script name for locking and database user. Override.
+    tunable_loops = None # Collection of TunableLoops. Override.
+
+    def __init__(self, test_args=None):
+        super(BaseDatabaseGarbageCollector, self).__init__(
+            self.script_name, dbuser=self.script_name, test_args=test_args)
+
+    def main(self):
+        for tunable_loop in self.tunable_loops:
+            self.logger.info("Running %s" % tunable_loop.__name__)
+            tunable_loop().run()
+
+
+class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
+    script_name = 'garbo-hourly'
+    tunable_loops = [
+        OAuthNoncePruner,
+        OpenIDNoncePruner,
+        ]
+
+class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
+    script_name = 'garbo-daily'
+    tunable_loops = [
+        CodeImportResultPruner,
+        ]
 
