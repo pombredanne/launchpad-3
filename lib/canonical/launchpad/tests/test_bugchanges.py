@@ -11,12 +11,16 @@ from zope.interface import providedBy
 from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.cve import ICveSet
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    BugNotificationLevel)
+from canonical.launchpad.mailnotification import add_bug_change_notifications
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -863,6 +867,127 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_activity=expected_activity,
             expected_notification=expected_notification)
+
+
+class TestBugNotificationRecipients(unittest.TestCase):
+    """Tests to make sure that the right set of people get notified."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login('foo.bar@canonical.com')
+        self.factory = LaunchpadObjectFactory()
+
+    def test_assignee_removed(self):
+        # If the assignee is removed from the bug task, the old assignee
+        # still gets an e-mail notification about it.
+        bug = self.factory.makeBug()
+        [bug_task] =  bug.bugtasks
+        old_assignee = self.factory.makePerson()
+        bug_task.transitionToAssignee(old_assignee)
+        old_bug_task = Snapshot(bug_task, providing=providedBy(bug_task))
+        bug_task.transitionToAssignee(None)
+        bug_task_delta = bug_task.getDelta(old_bug_task)
+
+        bug_delta = BugDelta(
+            bug=bug_task.bug,
+            bugurl='http://example.com/',
+            bugtask_deltas=bug_task_delta,
+            user=old_assignee)
+        add_bug_change_notifications(bug_delta, old_bugtask=old_bug_task)
+
+        assignee_notification = BugNotification.selectFirstBy(
+            bug=bug_task.bug, orderBy='-id')
+        self.assertEqual(assignee_notification.message.owner, old_assignee)
+        sent_people = set(
+            recipient.person.name
+            for recipient in assignee_notification.recipients)
+        expected_people = set(
+            [bug_task.product.owner.name,
+             bug_task.bug.owner.name,
+             old_assignee.name])
+        self.assertEqual(sent_people, expected_people)
+
+    def test_add_task_structural_subscriber_meta(self):
+        # If a task gets added to a bug, the structural subscribers that
+        # are subscribed to at least METADATA are notified.
+        bug = self.factory.makeBug()
+        [existing_task] = bug.bugtasks
+        new_product = self.factory.makeProduct()
+        lifecycle_subscriber = self.factory.makePerson()
+        subscription = new_product.addBugSubscription(
+            lifecycle_subscriber, lifecycle_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.LIFECYCLE
+        metadata_subscriber = self.factory.makePerson()
+        subscription = new_product.addBugSubscription(
+            metadata_subscriber, metadata_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.METADATA
+        task_adder = self.factory.makePerson()
+        added_task = bug.addTask(task_adder, new_product)
+        notify(ObjectCreatedEvent(added_task, user=task_adder))
+
+        task_notification = BugNotification.selectFirstBy(
+            bug=bug, orderBy='-id')
+        self.assertEqual(task_notification.message.owner, task_adder)
+        sent_people = set(
+            recipient.person.name
+            for recipient in task_notification.recipients)
+        expected_people = set(
+            [added_task.product.owner.name,
+             existing_task.product.owner.name,
+             bug.owner.name,
+             metadata_subscriber.name])
+        self.assertEqual(sent_people, expected_people)
+
+    def test_change_task_structural_subscriber_meta(self):
+        # If a task gets retargeted  to another product, both the old
+        # and new product's structural subscribers that are subscribed
+        # to at least METADATA are notified.
+        bug = self.factory.makeBug()
+        [bug_task] = bug.bugtasks
+
+        old_product = bug_task.product
+        old_lifecycle_subscriber = self.factory.makePerson(
+            name='old-lifecycle')
+        subscription = old_product.addBugSubscription(
+            old_lifecycle_subscriber, old_lifecycle_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.LIFECYCLE
+        old_metadata_subscriber = self.factory.makePerson(
+            name='old-metadata')
+        subscription = old_product.addBugSubscription(
+            old_metadata_subscriber, old_metadata_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.METADATA
+        new_product = self.factory.makeProduct()
+        new_lifecycle_subscriber = self.factory.makePerson(
+            name='new-lifecycle')
+        subscription = new_product.addBugSubscription(
+            new_lifecycle_subscriber, new_lifecycle_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.LIFECYCLE
+        new_metadata_subscriber = self.factory.makePerson(
+            name='new-metadata')
+        subscription = new_product.addBugSubscription(
+            new_metadata_subscriber, new_metadata_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.METADATA
+
+        task_changer = self.factory.makePerson()
+        old_bug_task = Snapshot(bug_task, providing=providedBy(bug_task))
+        bug_task.transitionToTarget(new_product)
+        notify(ObjectModifiedEvent(
+            bug_task, old_bug_task, ['target'], user=task_changer))
+
+        task_notification = BugNotification.selectFirstBy(
+            bug=bug, orderBy='-id')
+        self.assertEqual(task_notification.message.owner, task_changer)
+        sent_people = set(
+            recipient.person.name
+            for recipient in task_notification.recipients)
+        expected_people = set(
+            [new_product.owner.name,
+             old_product.owner.name,
+             bug.owner.name,
+             old_metadata_subscriber.name,
+             new_metadata_subscriber.name])
+        self.assertEqual(sent_people, expected_people)
 
 
 def test_suite():
