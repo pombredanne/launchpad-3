@@ -375,7 +375,7 @@ When an anonymous submitter later registers a Launchpad account, the field
 
 If somebody has a Launchpad account, but submits HWDB test data using
 an email address which he has not added to his account, the submission
-will have the the `owner` field set to None.
+will have the `owner` field set to None.
 
     >>> submission = hw_submission_set.createSubmission(
     ...     date_created=date_created,

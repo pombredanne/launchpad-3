@@ -1,3 +1,6 @@
+Archive Subscriptions
+=====================
+
 Activating a subscription for a private archive is a two-step process.
 First the archive owner needs to add a subscription for a person or
 team - this is the purpose of the ArchiveSubscribersView.
@@ -7,7 +10,9 @@ needs to activate their subscription, which will update the
 private-ppas-sources.list file displayed to them. This is the purpose
 of the PersonArchiveSubscriptions View.
 
-== ArchiveSubscribersView ==
+
+ArchiveSubscribersView
+----------------------
 
 The ArchiveSubscribersView presents all the subscribers for an archive, as
 well as allowing the addition of new subscribers.
@@ -36,19 +41,21 @@ using the has_subscriptions property:
 POSTing with out data just causes the validation to display:
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+subscriptions", method="POST",
+    ...     cprov.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
-    ...     form={'field.actions.add': 'Add'})
+    ...     form={
+    ...         'field.actions.add': 'Add',
+    ...         'field.date_expires': '',
+    ...         'field.subscriber': ''})
     >>> for error in view.errors:
-    ...     print error
-    Required field is missing
-
+    ...     print error.field_name, view.getFieldError(error.field_name)
+    subscriber Required input is missing.
 
 The view can be used to add a new subscriber:
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+subscriptions", method="POST",
+    ...     cprov.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
@@ -80,7 +87,7 @@ subscribers:
 The same subscriber cannot be added a second time:
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+subscriptions", method="POST",
+    ...     cprov.archive, name="+subscriptions",
     ...     form={
     ...         'field.subscriber': 'spiv',
     ...         'field.description': "spiv's still my friend",
@@ -98,7 +105,7 @@ But the same person can be a subscriber of other archives:
 
     >>> login('mark@hbd.com')
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions", method="POST",
+    ...     sabdfl.archive, name="+subscriptions",
     ...     form={
     ...         'field.subscriber': 'spiv',
     ...         'field.description': "spiv's still my friend",
@@ -115,7 +122,7 @@ subscriber, but the date_expires must be in the future:
 
     >>> transaction.commit()
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions", method="POST",
+    ...     sabdfl.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
@@ -133,7 +140,7 @@ So we try again with an expiry date in the future:
     >>> import datetime
     >>> future_date = datetime.date.today() + datetime.timedelta(30)
     >>> view = create_initialized_view(
-    ...     sabdfl.archive, name="+subscriptions", method="POST",
+    ...     sabdfl.archive, name="+subscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archive/ppa/+subscriptions",
     ...     form={
@@ -227,7 +234,8 @@ Just uncancel the subscription before continuing on.
     >>> spiv_subscription.cancelled_by = None
     >>> spiv_subscription.date_cancelled = None
 
-== PersonArchiveSubscriptions View ==
+PersonArchiveSubscriptions View
+-------------------------------
 
 The PersonArchiveSubscriptions view provides all the archive subscriptions
 for a person, as well as the ability to activate subscriptions.
@@ -255,7 +263,7 @@ subscriptions for the person, with a corresponding token for each:
     ...     for subscription_and_token in view.subscriptions_with_tokens:
     ...         subscription = subscription_and_token['subscription']
     ...         token = subscription_and_token['token']
-    ...         print subscription.archive.title
+    ...         print subscription.archive.displayname
     ...         print subscription.description
     ...         token_text = "None"
     ...         if token:
@@ -276,11 +284,9 @@ Posting an Archive ID to the PersonArchiveSubscriptionView will
 generate a token for that archive:
 
     >>> view = create_initialized_view(
-    ...     spiv,
-    ...     name="+archivesubscriptions",
+    ...     spiv, name="+archivesubscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archivesubscriptions",
-    ...     method="post",
     ...     form={"archive_id": str(sabdfl.archive.id)})
 
 The view redirects to itself after activating the subscription:
@@ -310,11 +316,11 @@ The user will also see a notification of the subscription activation:
     Your subscription to 'Private PPA for Mark Shuttleworth' has been
     activated. Please update your custom sources.list as described below.
 
-The PersonArchiveSubscriptionsView also provides an 
+The PersonArchiveSubscriptionsView also provides an
 active_subscriptions_with_tokens property:
 
     >>> for subs_with_token in view.active_subscriptions_with_tokens:
-    ...     print subs_with_token['subscription'].archive.title
+    ...     print subs_with_token['subscription'].archive.displayname
     ...     if subs_with_token['token'] is not None:
     ...         print "Token"
     Private PPA for Mark Shuttleworth              Token
@@ -331,11 +337,9 @@ Activate the second subscription and then verify that there are no more
 pending subscriptions:
 
     >>> view = create_initialized_view(
-    ...     spiv,
-    ...     name="+archivesubscriptions",
+    ...     spiv, name="+archivesubscriptions",
     ...     server_url=
     ...         "https://launchpad.dev/~cprov/+archivesubscriptions",
-    ...     method="post",
     ...     form={"archive_id": str(cprov.archive.id)})
     >>> view.pending_subscriptions
     []
@@ -370,26 +374,32 @@ before and after the bad requests:
 
 Now do the bad requests, ensuring a 302 is issued each time:
 
-    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
-    ...     method="post", form={"archive_id": "abcd"})
+    >>> view = create_initialized_view(
+    ...     spiv, name="+archivesubscriptions",
+    ...     form={"archive_id": "abcd"})
     >>> view.request.response.getStatus()
     302
-    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
-    ...     method="post", form={"archive_wrong": "abcd"})
+
+    >>> view = create_initialized_view(
+    ...     spiv, name="+archivesubscriptions",
+    ...     form={"archive_wrong": "abcd"})
     >>> view.request.response.getStatus()
     302
-    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
-    ...     method="post", form={"archive_id": "99999"})
+
+    >>> view = create_initialized_view(
+    ...     spiv, name="+archivesubscriptions",
+    ...     form={"archive_id": "99999"})
     >>> view.request.response.getStatus()
     302
-    >>> view = create_initialized_view(spiv, name="+archivesubscriptions",
-    ...     method="post", form={"archive_id": str(ubuntu.main_archive.id)})
+
+    >>> view = create_initialized_view(
+    ...     spiv, name="+archivesubscriptions",
+    ...     form={"archive_id": str(ubuntu.main_archive.id)})
     >>> view.request.response.getStatus()
     302
 
 After all the bad requests, the number of tokens in the database should
-remain unchange:
+remain unchanged:
 
     >>> store.find(ArchiveAuthToken).count()
     2
-

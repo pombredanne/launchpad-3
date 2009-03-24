@@ -572,7 +572,7 @@ class AffectsEmailCommand(EmailCommand):
         return bugtask, event
 
     def _targetBug(self, user, bug, series, sourcepackagename=None):
-        """Try to target the bug the the given distroseries.
+        """Try to target the bug the given distroseries.
 
         If the user doesn't have permission to target the bug directly,
         only a nomination will be created.

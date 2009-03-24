@@ -103,7 +103,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         flush_database_updates()
 
     def assertBugTaskIsPendingBugWatchElsewhere(self, bugtask):
-        """Assert the the bugtask is pending a bug watch elsewhere.
+        """Assert the bugtask is pending a bug watch elsewhere.
 
         Pending a bugwatch elsewhere means that at least one of the bugtask's
         related task's target isn't using Malone, and that
