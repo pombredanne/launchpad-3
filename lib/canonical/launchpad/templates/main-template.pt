@@ -92,19 +92,11 @@
         />
     <link rel="stylesheet" type="text/css"
         tal:attributes="href
-        string:${icingroot}/lazr/build/picker/assets/picker-core.css"
+        string:${icingroot}/lazr/build/picker/assets/skins/sam/picker.css"
         />
     <link rel="stylesheet" type="text/css"
         tal:attributes="href
-        string:${icingroot}/lazr/build/picker/assets/skins/sam/picker-skin.css"
-        />
-    <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/activator/assets/activator-core.css"
-        />
-    <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/activator/assets/skins/sam/activator-skin.css"
+        string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
         />
 
     <tal:devmode condition="devmode">
