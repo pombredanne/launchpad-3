@@ -462,9 +462,10 @@ class BranchPullQueueTest(TestCaseWithFactory):
         # stacked-on branch for the project is private and the branch is
         # MIRRORED then we don't include the default stacked-on branch's
         # details in the tuple.
-        default_branch = self.factory.makeAnyBranch(private=True)
-        product = removeSecurityProxy(default_branch).product
-        product.development_focus.user_branch = default_branch
+        product = self.factory.makeProduct()
+        default_branch = self.factory.makeProductBranch(
+            product=product, private=True)
+        self.factory.enableDefaultStackingForProduct(product, default_branch)
         mirrored_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=product)
         info = self.storage._getBranchPullInfo(mirrored_branch)
