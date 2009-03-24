@@ -61,13 +61,13 @@ class TestGetByUniqueName(TestCaseWithFactory):
 
 
 class TestGetByPath(TestCaseWithFactory):
-    """Test `IBranchLookup._getByPath`."""
+    """Test `IBranchLookup.getByLPPath`."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.branch_lookup = removeSecurityProxy(getUtility(IBranchLookup))
+        self.branch_lookup = getUtility(IBranchLookup)
 
     def getByPath(self, path):
         return self.branch_lookup.getByLPPath(path)
@@ -289,9 +289,7 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
 
     def assertTraverses(self, path, result):
         """Assert that 'path' resolves to 'result'."""
-        self.assertEqual(
-            result, self.traverser.traverse(path),
-            "Traversed to wrong result")
+        self.assertEqual(result, self.traverser.traverse(path))
 
     def test_error_fallthrough_product_series(self):
         # For the short name of a series branch, `traverse` raises
@@ -300,14 +298,13 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         # a non-existent series.
         self.assertRaises(
             NoSuchProduct, self.traverser.traverse, 'bb/dd')
-        product = self.factory.makeProduct('bb')
+        product = self.factory.makeProduct(name='bb')
         self.assertRaises(
             NoSuchProductSeries, self.traverser.traverse, 'bb/dd')
 
     def test_product_series(self):
-        # `traverse` resolves the short name for a product series to the
-        # branch associated with that series, and includes the series in the
-        # tuple.
+        # `traverse` resolves the path to a product series to the product
+        # series itself.
         series = self.factory.makeSeries()
         short_name = '%s/%s' % (series.product.name, series.name)
         self.assertTraverses(short_name, series)
@@ -324,14 +321,13 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
             InvalidProductName, self.traverser.traverse, 'b')
 
     def test_product(self):
-        # `traverse` resolves 'product' to the development focus branch for
-        # the product and the series that is the development focus.
+        # `traverse` resolves the name of a product to the product itself.
         product = self.factory.makeProduct()
         self.assertTraverses(product.name, product)
 
     def test_source_package(self):
-        # `traverse` resolves 'distro/series/package' to the official branch
-        # for the release pocket of that package in that series.
+        # `traverse` resolves 'distro/series/package' to the release pocket of
+        # that package in that series.
         package = self.factory.makeSourcePackage()
         self.assertTraverses(
             package.path, (package, PackagePublishingPocket.RELEASE))
@@ -382,7 +378,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         owner = self.factory.makePerson(name='aa')
         self.assertRaises(
             NoSuchProduct, self.branch_lookup.getByLPPath, '~aa/bb/c')
-        product = self.factory.makeProduct('bb')
+        product = self.factory.makeProduct(name='bb')
         self.assertRaises(
             NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/bb/c')
 
@@ -458,7 +454,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # If the given path refers to an object with an invisible linked
         # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
         # weren't there at all.
-        branch = self.factory.makeProductBranch(private = True)
+        branch = self.factory.makeProductBranch(private=True)
         product = removeSecurityProxy(branch).product
         removeSecurityProxy(product).development_focus.user_branch = branch
         self.assertRaises(
