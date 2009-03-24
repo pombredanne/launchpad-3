@@ -527,8 +527,6 @@ None is returned unchanged:
     None
 
 
-
-
 == Collections ==
 
 The most complicated kind of marshaller is one that manages a
