@@ -1,4 +1,5 @@
 # Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0706
 
 """Unit tests for the public codehosting API."""
 
