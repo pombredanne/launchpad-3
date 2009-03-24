@@ -952,25 +952,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         file_handle.write(bogus_changesfile_data)
         file_handle.close()
 
-        # The upload directory will be something like:
-        #   /tmp/tmpv8WHuX/incoming/foocomm_1.0-1_proposed
-        #
-        # We need to construct the equivalent path where failed uploads are
-        # relocated to e.g.
-        #   /tmp/tmpv8WHuX/failed/foocomm_1.0-1_proposed
-        #
-        # because processUpload() will fail and subsequently want to relocate
-        # the upload.
-        dirname, basename = os.path.split(upload_dir)
-        upload_prefix, ignore_this = os.path.split(dirname)
-        failed_relocation_path = os.path.join(
-            *(upload_prefix, 'failed', basename))
-        if not os.path.isdir(failed_relocation_path):
-            os.makedirs(failed_relocation_path)
-
-        # Now we finally have all that's needed to call the method of
-        # interest.
-        processor.processUpload(*(os.path.split(upload_dir)))
+        processor.processUploadQueue()
 
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
