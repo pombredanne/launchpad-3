@@ -607,14 +607,12 @@ class DatabaseLayer(BaseLayer):
         if DatabaseLayer._reset_between_tests:
             LaunchpadTestSetup().tearDown()
 
-        # Should this raise a LayerInvariantError instead?
-        import canonical.launchpad.webapp.adapter
-        db_policies = canonical.launchpad.webapp.adapter._local.db_policies
-        if db_policies:
+        # Fail tests that forget to uninstall their database policies.
+        from canonical.launchpad.webapp.adapter import StoreSelector
+        while StoreSelector.get_current() is not None:
             BaseLayer.flagTestIsolationFailure(
-                "Database policies pushed but no tpopped: %s"
-                % repr(db_policies))
-            del db_policies[:]
+                "Database policy %s still installed"
+                % repr(StoreSelector.pop()))
 
     use_mockdb = False
     mockdb_mode = None
