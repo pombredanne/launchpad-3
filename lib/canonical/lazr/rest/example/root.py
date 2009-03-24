@@ -20,8 +20,8 @@ from canonical.lazr.rest import ServiceRootResource
 from canonical.lazr.interfaces.rest import (
     IServiceRootResource, IWebServiceConfiguration)
 from canonical.lazr.rest.example.interfaces import (
-    AlreadyNouvelle, ICookbook, ICookbookSet, IDish, IDishSet, IRecipe,
-    IRecipeSet, IHasGet, NameAlreadyTaken)
+    AlreadyNew, Cuisine, ICookbook, ICookbookSet, IDish, IDishSet,
+    IRecipe, IRecipeSet, IHasGet, NameAlreadyTaken)
 
 
 #Entry classes.
@@ -32,9 +32,11 @@ class CookbookWebServiceObject:
 class Cookbook(CookbookWebServiceObject):
     """An object representing a cookbook"""
     implements(ICookbook)
-    def __init__(self, name, cuisine, copyright_date, confirmed=False):
+    def __init__(self, name, description, cuisine, copyright_date,
+                 confirmed=False):
         self.name = name
         self.cuisine = cuisine
+        self.description = description
         self.recipes = []
         self.copyright_date = copyright_date
         self.confirmed = confirmed
@@ -65,11 +67,11 @@ class Cookbook(CookbookWebServiceObject):
 
     def make_more_interesting(self):
         """See `ICookbook`."""
-        if self.cuisine.find("Nouvelle ") == 0:
-            raise AlreadyNouvelle(
-                "The 'Nouvelle' trick can't be used on this cookbook "
-                "because its cuisine is already 'Nouvelle'.")
-        self.cuisine = "Nouvelle " + self.cuisine
+        if self.name.find("The New ") == 0:
+            raise AlreadyNew(
+                "The 'New' trick can't be used on this cookbook "
+                "because its name already starts with 'The New'.")
+        self.name = "The New " + self.name
 
 
 class Dish(CookbookWebServiceObject):
@@ -161,12 +163,20 @@ class CookbookSet(CookbookTopLevelObject):
             recipes.extend(cookbook.find_recipes(search))
         return recipes
 
-    def create(self, name, cuisine, copyright_date):
+    def find_for_cuisine(self, cuisine):
+        """See `ICookbookSet`"""
+        cookbooks = []
+        for cookbook in self.cookbooks:
+            if cookbook.cuisine == cuisine:
+                cookbooks.append(cookbook)
+        return cookbooks
+
+    def create(self, name, description, cuisine, copyright_date):
         for cookbook in self.cookbooks:
             if cookbook.name == name:
                 raise NameAlreadyTaken(
                     'A cookbook called "%s" already exists.' % name)
-        cookbook = Cookbook(name, cuisine, copyright_date)
+        cookbook = Cookbook(name, description, cuisine, copyright_date)
         self.cookbooks.append(cookbook)
         return cookbook
 
@@ -219,14 +229,15 @@ def year(year):
     """Turn a year into a datetime.date object."""
     return date(year, 1, 1)
 
-C1 = Cookbook(u"Mastering the Art of French Cooking", "French", year(1961))
-C2 = Cookbook(u"The Joy of Cooking", "General", year(1995))
-C3 = Cookbook(u"James Beard's American Cookery", "American", year(1972))
-C4 = Cookbook(u"Everyday Greens", "Vegetarian", year(2003))
-C5 = Cookbook(u"I'm Just Here For The Food", "American", year(2002))
-C6 = Cookbook(u"Cooking Without Recipes", "General", year(1959))
-C7 = Cookbook(u"Construsions un repas", "Fran\xc3\xa7ais".decode("utf-8"),
-              2007)
+C1 = Cookbook(u"Mastering the Art of French Cooking", "", Cuisine.FRANCAIS,
+              year(1961))
+C2 = Cookbook(u"The Joy of Cooking", "", Cuisine.GENERAL, year(1995))
+C3 = Cookbook(u"James Beard's American Cookery", "", Cuisine.AMERICAN,
+              year(1972))
+C4 = Cookbook(u"Everyday Greens", "", Cuisine.VEGETARIAN, year(2003))
+C5 = Cookbook(u"I'm Just Here For The Food", "", Cuisine.GENERAL, year(2002))
+C6 = Cookbook(u"Cooking Without Recipes", "", Cuisine.GENERAL, year(1959))
+C7 = Cookbook(u"Construsions un repas", "", Cuisine.FRANCAIS, year(2007))
 COOKBOOKS = [C1, C2, C3, C4, C5, C6, C7]
 
 D1 = Dish("Roast chicken")

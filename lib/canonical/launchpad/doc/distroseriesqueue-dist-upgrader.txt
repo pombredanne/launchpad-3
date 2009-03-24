@@ -26,9 +26,11 @@ First, test the rejection of a missapplied changesfile name:
   >>> upload = NascentUpload(
   ...     datadir('dist-upgrader/dist-upgrader_20060302.0120.changes'),
   ...     sync_policy, mock_logger)
+  DEBUG: Changes file can be unsigned.
+  >>> upload.process()
   Traceback (most recent call last):
   ...
-  FatalUploadError: dist-upgrader_20060302.0120.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
+  EarlyReturnUploadError: An error occurred that prevented further processing.
 
 Now do a proper upload into the system.
 

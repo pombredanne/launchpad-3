@@ -145,7 +145,7 @@ function update_bug_duplicate(data) {
 
                 if (new_dup_url !== null) {
                     dupe_span.set('innerHTML', [
-                        'Duplicate of <a href=\'' + new_dup_url + '\'>',
+                        'Duplicate of <a href=\'/bugs/' + new_dup_id + '\'>',
                         'bug #' + new_dup_id +'</a> ',
                         '<a class=\'menu-link-mark-dupe\' ',
                         'href=\'' + update_dupe_url + '\'>',
@@ -160,7 +160,7 @@ function update_bug_duplicate(data) {
                 }
                 Y.lazr.anim.green_flash({node: dupe_span}).run();
                 // ensure the new link is hooked up correctly:
-                dupe_span.get('a.menu-link-mark-dupe').on(
+                dupe_span.query('a.menu-link-mark-dupe').on(
                     'click', function(e){
                         e.preventDefault();
                         duplicate_form_overlay.show();

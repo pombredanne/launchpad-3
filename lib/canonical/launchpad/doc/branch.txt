@@ -144,22 +144,6 @@ case) and -, +, _ and @ are allowed after that.
     LaunchpadValidationError: Invalid branch name 'invalid name!'.  Branch ...
 
 
-== Determining the number of branches ==
-
-The IBranchSet can tell us how many public branches there are
-registered.  As this, and several other methods documented below,
-queries the global state of the system, we just test the difference
-creating a branch makes to avoid gratuitous fragility in the test.
-
-    >>> before_count = branchset.count()
-    >>> new_branch = factory.makeAnyBranch()
-    >>> branchset.count() - before_count
-    1
-    >>> new_branch = factory.makeAnyBranch(private=True)
-    >>> branchset.count() - before_count
-    1
-
-
 == Determing the number of branches with bugs ==
 
 The count of branches that have bugs associated with them is another

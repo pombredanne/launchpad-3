@@ -8,16 +8,16 @@ JSON or XHTML-fragment representation.
 
     >>> from urllib import quote
     >>> cookbook_url = quote("/cookbooks/The Joy of Cooking")
-    >>> field_url = cookbook_url + "/cuisine"
+    >>> field_url = cookbook_url + "/description"
 
     >>> import simplejson
-    >>> def set_cuisine(cuisine):
-    ...     """Sets the cuisine for "The Joy of Cooking"."""
-    ...     representation = {'cuisine': cuisine}
+    >>> def set_description(description):
+    ...     """Sets the description for "The Joy of Cooking"."""
+    ...     representation = {'description': description}
     ...     ignore = webservice(cookbook_url, 'PATCH',
     ...                         simplejson.dumps(representation))
 
-    >>> set_cuisine("<b>General</b>")
+    >>> set_description("<b>Bold description</b>")
 
     >>> print webservice.get(field_url)
     HTTP/1.1 200 Ok
@@ -26,16 +26,16 @@ JSON or XHTML-fragment representation.
     ...
 
     >>> print webservice.get(field_url).jsonBody()
-    <b>General</b>
+    <b>Bold description</b>
 
     >>> print webservice.get(field_url, 'application/xhtml+xml')
     HTTP/1.1 200 Ok
     ...
     Content-Type: application/xhtml+xml
     ...
-    &lt;b&gt;General&lt;/b&gt;
+    &lt;b&gt;Bold description&lt;/b&gt;
 
-    >>> set_cuisine("General")
+    >>> set_description("Description")
 
 
 = Supported methods =
@@ -79,13 +79,13 @@ respond to conditional GET.
     HTTP/1.1 304 Not Modified
     ...
 
-    >>> set_cuisine("new cuisine")
+    >>> set_description("new description")
     >>> print webservice.get(field_url,
     ...                      headers={'If-None-Match': etag})
     HTTP/1.1 200 Ok
     ...
 
-    >>> set_cuisine("General")
+    >>> set_description("Description")
 
 
 = Custom representations =
@@ -96,7 +96,7 @@ a simple text node.
   >>> print webservice.get(field_url, 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  General
+  Description
 
 But it's possible to define a custom HTML renderer for a particular
 object and field type. Here's a simple renderer that bolds whatever
@@ -124,13 +124,13 @@ ITextLine field of an IPerson entry...
   >>> manager = getGlobalSiteManager()
   >>> manager.registerAdapter(dummy_renderer)
 
-...and the XHTML representation of an ICookbook's cuisine will be the
+...and the XHTML representation of an ICookbook's description will be the
 result of calling a dummy_renderer object.
 
   >>> print webservice.get(field_url, 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  <b>General</b>
+  <b>Description</b>
 
 In fact, that adapter will be used for every ITextLine field of an
 ICookbook.
@@ -168,7 +168,7 @@ renderer we just defined.
   >>> print webservice.get(field_url, 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  General
+  Description
 
 
 == Defining a custom representation for a single field ==
@@ -178,12 +178,12 @@ particular field, by registering a view on the field. This code
 creates a custom renderer for IPerson.display_name, by registering
 a view on IPerson called "display_name".
 
-  >>> manager.registerAdapter(dummy_renderer, name='cuisine')
+  >>> manager.registerAdapter(dummy_renderer, name='description')
 
   >>> print webservice.get(field_url, 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  <b>General</b>
+  <b>Description</b>
 
 Unlike what happened when we registered an renderer for
 ICookbook/ITextLine, other ITextLine fields of ICookbook are not affected.
@@ -199,16 +199,16 @@ representations of that entry's fields.
   >>> print webservice.get(cookbook_url, 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  <dt>cuisine</dt>
-  <dd><b>General</b></dd>
+  <dt>description</dt>
+  <dd><b>Description</b></dd>
   ...
 
 Before we continue, here's some code to unregister the view.
 
   >>> ignored = getGlobalSiteManager().unregisterAdapter(
-  ...      dummy_renderer, name='cuisine')
+  ...      dummy_renderer, name='description')
 
   >>> print webservice.get(field_url, 'application/xhtml+xml')
   HTTP/1.1 200 Ok
   ...
-  General
+  Description
