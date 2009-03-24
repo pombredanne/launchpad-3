@@ -104,6 +104,11 @@ class IArchivePublic(IHasOwner):
             constraint=name_validator,
             description=_("The name of this archive.")))
 
+    title = exported(
+        TextLine(
+            title=_("Title"), required=False,
+            description=_("A title for this archive.")))
+
     enabled = Bool(
         title=_("Enabled"), required=False,
         description=_("Whether the archive is enabled or not."))

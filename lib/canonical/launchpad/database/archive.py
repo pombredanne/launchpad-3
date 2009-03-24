@@ -107,6 +107,8 @@ class Archive(SQLBase):
     name = StringCol(
         dbName='name', notNull=True, storm_validator=_validate_archive_name)
 
+    title = StringCol(dbName='title', notNull=True)
+
     description = StringCol(dbName='description', notNull=False, default=None)
 
     distribution = ForeignKey(
@@ -1264,9 +1266,16 @@ class ArchiveSet:
                     "Person '%s' already has a PPA named '%s'." %
                     (owner.name, name))
 
-        return Archive(
-            owner=owner, distribution=distribution, name=name,
+        new_archive = Archive(
+            owner=owner, distribution=distribution, name=name, title='',
             description=description, purpose=purpose, publish=publish)
+
+        # XXX cprov bug=340457: update 'title' with 'displayname' contents
+        # until we allow users to edit it.
+        new_archive.title = new_archive.displayname
+
+        return new_archive
+
 
     def __iter__(self):
         """See `IArchiveSet`."""

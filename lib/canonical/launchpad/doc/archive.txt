@@ -2323,3 +2323,44 @@ When there are not matching PPAs, None is returned.
 
     >>> print sabdfl.getPPAByName('not-found')
     None
+
+
+== Transition to editable title ==
+
+We are currently in a transition period for user-editable 'title' for
+Archive. The 'title' column exists in the database and the existing
+archives were migrated to set 'title' with the content of its
+'displayname'.
+
+    >>> for archive in ubuntu.all_distro_archives:
+    ...     print archive.title, archive.title == archive.displayname
+    Primary Archive for Ubuntu Linux True
+    Partner Archive for Ubuntu Linux True
+
+    >>> cprov_archive.title == cprov_archive.displayname
+    True
+
+New archives are automatically updated to propagate this condition,
+until we have the opportunity to implement the UI allowin users to
+edit 'title'.
+
+    >>> new_ppa = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PPA,
+    ...     distribution=ubuntu, name='test-ppa')
+    >>> new_ppa.title == new_ppa.displayname
+    True
+
+    >>> new_copy = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     distribution=ubuntu, name='test-rebuild')
+    >>> new_copy.title == new_copy.displayname
+    True
+
+During this transition period nobody can edit 'title'.
+
+    >>> login("foo.bar@canonical.com")
+    >>> new_ppa.title = 'No-way!'
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ('title', <Archive at ...>)
+

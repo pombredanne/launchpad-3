@@ -24,6 +24,7 @@ We publish a subset of their attributes.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: None
+    title: u'PPA for Celso Providelo'
 
 While the Archive signing key is being generated its
 'signing_key_fingerprint' attribute is None.
@@ -86,6 +87,7 @@ The archive has the following attributes:
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../ubuntutest/+archive/primary'
     signing_key_fingerprint: None
+    title: u'Primary Archive for Ubuntu Test'
 
 A distribution can also provide a list of all its archives:
 
@@ -626,6 +628,7 @@ the IArchive context, in this case only Celso has it.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
+    title: u'PPA for Celso Providelo'
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/ppa").jsonBody())
     description: u'packages to help my friends.'
@@ -637,7 +640,7 @@ the IArchive context, in this case only Celso has it.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
-
+    title: u'PPA for Celso Providelo'
 
 == Modifying privacy ==
 
@@ -689,3 +692,23 @@ the same for `syncSource` or `syncSources` operations.
     CannotCopy: private 1.0 in hoary
     (Cannot copy private source into public archives.)
     <BLANKLINE>
+
+
+== Archive editable title ==
+
+As noted before it contains a static copy of the archive 'displayname'
+at the time it was created.
+
+    >>> print cprov_archive['title']
+    PPA for Celso Providelo
+
+During this transition period, 'title' will be available in the API
+but users won't be able to edit it.
+
+    >>> print cprov_webservice.patch(
+    ...     cprov_archive['self_link'], 'application/json',
+    ...     simplejson.dumps({'title': 'boing'})).getOutput()
+    HTTP/1.1 500 Internal Server Error
+    ...
+    ForbiddenAttribute: ('title', <Archive at ...>)
+
