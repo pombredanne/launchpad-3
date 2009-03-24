@@ -136,13 +136,14 @@ class TestPersonProductBranchTraversal(TestCaseWithFactory):
         return traverser.publishTraverse(request, name)
 
     def test_product_branch(self):
+        # The branch is returned if the branch does exist.
         branch = self.factory.makeProductBranch(
             owner=self.person, product=self.product)
         segments = [branch.name]
         self.assertEqual(branch, self.traverse(segments))
 
     def test_product_branch_no_such_branch(self):
-        # Since the branch is not found, an IPersonProduct is returned.
+        # NotFound is raised if the branch name doesn't exist.
         branch_name = self.factory.getUniqueString()
         self.assertRaises(NotFound, self.traverse, [branch_name])
 
