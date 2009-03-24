@@ -39,6 +39,17 @@ class TestBugChanges(unittest.TestCase):
         self.bug_task = self.bug.bugtasks[0]
         self.saveOldChanges()
 
+        # Add some structural subscribers to show that notifications
+        # aren't sent to LIFECYCLE subscribers by default.
+        self.lifecycle_subscriber = self.factory.makePerson()
+        subscription = product.addBugSubscription(
+            self.lifecycle_subscriber, self.lifecycle_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.LIFECYCLE
+        self.metadata_subscriber = self.factory.makePerson()
+        subscription = product.addBugSubscription(
+            self.metadata_subscriber, self.metadata_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.METADATA
+
     def saveOldChanges(self, bug=None):
         """Save the old changes to a bug.
 
@@ -66,7 +77,8 @@ class TestBugChanges(unittest.TestCase):
         return getattr(obj_before_modification, attribute)
 
     def assertRecordedChange(self, expected_activity=None,
-                             expected_notification=None, bug=None):
+                             expected_notification=None, bug=None,
+                             expected_recipients=None):
         """Assert that things were recorded as expected."""
         if bug is None:
             bug = self.bug
@@ -120,6 +132,13 @@ class TestBugChanges(unittest.TestCase):
                     added_notification.message.owner,
                     expected_notification['person'])
                 self.assertFalse(added_notification.is_comment)
+                if expected_recipients is None:
+                    expected_recipients = bug.getBugNotificationRecipients(
+                        level=BugNotificationLevel.METADATA)
+                self.assertEqual(
+                    set(recipient.person
+                        for recipient in added_notification.recipients),
+                    set(expected_recipients))
 
     def test_subscribe(self):
         # Subscribing someone to a bug adds an item to the activity log,
@@ -756,9 +775,12 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             }
 
+        # The person who was subscribed to meta data changes for the old
+        # product was notified.
         self.assertRecordedChange(
             expected_activity=None,
-            expected_notification=expected_notification)
+            expected_notification=expected_notification,
+            expected_recipients=[self.user, self.metadata_subscriber])
 
     def test_target_bugtask_to_sourcepackage(self):
         # When a bugtask's target is changed, BugActivity and
