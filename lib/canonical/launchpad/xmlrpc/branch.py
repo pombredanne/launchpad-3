@@ -217,7 +217,9 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
     def _resolve_lp_path(self, path):
         """See `IPublicCodehostingAPI`."""
         # Separate method because Zope's mapply raises errors if we use
-        # decorators in XMLRPC methods. No idea why.
+        # decorators in XMLRPC methods. mapply checks that the passed
+        # arguments match the formal parameters. Decorators normally have
+        # *args and **kwargs, which mapply fails on.
         strip_path = path.strip('/')
         if strip_path == '':
             raise faults.InvalidBranchIdentifier(path)
