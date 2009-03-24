@@ -140,10 +140,6 @@ class BugTaskAdded(BugChangeBase):
             'text': '\n'.join(lines)
             }
 
-    def getBugNotificationRecipients(self):
-        """See `IBugChange`."""
-        # Send the notification to the default recipients.
-
 
 class SeriesNominated(BugChangeBase):
     """A user nominated the bug to be fixed in a series."""
@@ -497,10 +493,10 @@ class BugTaskAttributeChange(AttributeChange):
 class BugTaskTargetChange(AttributeChange):
     """Used to represent a change in a BugTask's target."""
 
-    def __init__(self, bug_task, when, person, what_changed,
-                 old_value, new_value, recipients=None):
+    def __init__(self, bug_task, when, person,
+                 what_changed, old_value, new_value):
         super(BugTaskTargetChange, self).__init__(
-            when, person, what_changed, old_value, new_value, recipients)
+            when, person, what_changed, old_value, new_value)
         self.bug_task = bug_task
 
     def getBugActivity(self):
