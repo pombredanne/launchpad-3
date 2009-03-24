@@ -19,7 +19,7 @@ class OpStats(LaunchpadXMLRPCView):
 
     @classmethod
     def resetStats(cls):
-        """Reset the the collected stats to 0."""
+        """Reset the collected stats to 0."""
         OpStats.stats.update({
             # Global
             'requests': 0, # Requests, all protocols, all statuses

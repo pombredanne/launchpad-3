@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -32,6 +33,8 @@ class _BaseBranchTarget:
 
 class PackageBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
+
+    default_stacked_on_branch = None
 
     def __init__(self, sourcepackage):
         self.sourcepackage = sourcepackage
@@ -66,6 +69,7 @@ class PersonBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
 
     name = '+junk'
+    default_stacked_on_branch = None
 
     def __init__(self, person):
         self.person = person
@@ -107,6 +111,23 @@ class ProductBranchTarget(_BaseBranchTarget):
     def name(self):
         """See `IBranchTarget`."""
         return self.product.name
+
+    @property
+    def default_stacked_on_branch(self):
+        """See `IBranchTarget`."""
+        default_branch = self.product.development_focus.series_branch
+        if default_branch is None:
+            return None
+        try:
+            last_mirrored = default_branch.last_mirrored
+        except Unauthorized:
+            # If we cannot see the default stacked-on branch, then return
+            # None.
+            return None
+        if last_mirrored is None:
+            return None
+        else:
+            return default_branch
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""

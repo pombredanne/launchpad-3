@@ -189,7 +189,7 @@ to which the provided subscriber belongs:
 Finally, many callsites of getBySubscriber() will be interested not only
 in each subscription of the subscriber, but also the generated
 ArchiveAuthToken for each subscription of the subscriber. These can
-be returned as well using the the getBySubscriberWithActiveToken():
+be returned as well using the getBySubscriberWithActiveToken():
 
 First create a token for joesmith's subscription for cprov's archive:
 
