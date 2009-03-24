@@ -931,10 +931,11 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.checkComponentOverride("bar_1.0-1", "universe")
 
     def testOopsCreation(self):
-        """Test the overriding of the component on uploads.
+        """Test the the creation of an OOPS upon upload processing failure.
 
-        Components other than non-free and contrib should override to
-        universe.
+        We create a bogus changes file here; that will result in an exception
+        thrown when it's processed. That exception should initiate the
+        creation of an OOPS report.
         """
         processor = UploadProcessor(
             self.options, self.layer.txn, self.log)
