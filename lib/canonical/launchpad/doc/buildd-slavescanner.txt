@@ -1166,7 +1166,7 @@ credentials, unlike the archive itself.
 Finally, the archive purpose is overridden to PRIMARY instead of PPA
 for any archives that have require_virtualized as False.
 
-In this circumstance, it also used the component override from the PRIMARY
+In this circumstance, it also uses the component override from the PRIMARY
 archive and not the one from the PPA, which on the absence of ancestry
 defaults to 'universe'.
 
@@ -1194,7 +1194,7 @@ This is so that the mangling tools will run over the built packages.
     Archive Purpose: PRIMARY
     Archive Private: True
 
-We will create a ancestry in the primary archive target to the 'main'
+We will create an ancestry in the primary archive target to the 'main'
 component and this time the dispatching will follow that component.
 
     >>> sourcename = candidate.build.sourcepackagerelease.name
