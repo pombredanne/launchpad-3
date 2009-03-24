@@ -110,7 +110,7 @@ def traverse_distro_archive(distribution, name):
 
 
 def traverse_named_ppa(person_name, ppa_name):
-    """For PPAs, traverse the the right place.
+    """For PPAs, traverse the right place.
 
     :param person_name: The person part of the URL
     :param ppa_name: The PPA name part of the URL
