@@ -253,8 +253,7 @@ class NoLinkedBranch(LaunchpadFault):
     """The object has no branch registered with it."""
 
     error_code = 170
-    msg_template = (
-        '%(object_name)s has no branch associated with it.')
+    msg_template = ('%(object_name)s has no default branch.')
 
     def __init__(self, component):
         # XXX: JonathanLange 2009-03-21 spec=package-branches bug=345739: This
