@@ -312,7 +312,7 @@ class IAccountSet(Interface):
 
          :param open_identifier: An ascii compatible string that is either
              the old or new openid_identifier that belongs to an account.
-         :return: An `IAccount`, or None if the the openid_identifier does
+         :return: An `IAccount`, or None if the openid_identifier does
              not belong to an account.
          """
 

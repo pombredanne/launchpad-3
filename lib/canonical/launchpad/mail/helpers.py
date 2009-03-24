@@ -42,7 +42,7 @@ def get_main_body(signed_msg):
 
 
 def get_bugtask_type(bugtask):
-    """Returns the specific IBugTask interface the the bugtask provides.
+    """Returns the specific IBugTask interface the bugtask provides.
 
         >>> from canonical.launchpad.interfaces import (
         ...     IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask)

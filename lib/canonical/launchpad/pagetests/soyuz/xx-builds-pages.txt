@@ -350,7 +350,7 @@ unsatisfied dependencies is presented.
 
 == Builds page messages ==
 
-When the the anonymous user first views the builds page a distribution
+When the anonymous user first views the builds page a distribution
 that has no builds, for instance 'debian' in our sampledata, the page
 says 'No packages are currently building'. We assume that this is your
 first view if there are no GET arguments.
