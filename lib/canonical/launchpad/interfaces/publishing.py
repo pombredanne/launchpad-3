@@ -734,10 +734,11 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             description=_('The Person responsible for the removal'),
             required=False, readonly=False,
         ))
-    removal_comment = Text(
-        title=_('Reason why this publication is going to be removed.'),
-        required=False, readonly=False,
-        )
+    removal_comment = exported(
+        Text(
+            title=_("Removal Comment"),
+            description=_('Reason why this publication is going to be removed.'),
+            required=False, readonly=False))
 
 
 class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
@@ -751,7 +752,7 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
         TextLine(
             title=_("Binary Package Name"),
             required=False, readonly=True))
-    binarypackage_version = exported(
+    binary_package_version = exported(
         TextLine(
             title=_("Binary Package Version"),
             required=False, readonly=True))

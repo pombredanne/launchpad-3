@@ -43,6 +43,23 @@ class SourcePublicationURL:
         return u"+sourcepub/%s" % self.context.id
 
 
+class BinaryPublicationURL:
+    """Dynamic URL declaration for `IBinaryPackagePublishingHistory`"""
+    implements(ICanonicalUrlData)
+    rootsite = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def inside(self):
+        return self.context.archive
+
+    @property
+    def path(self):
+        return u"+binarypub/%s" % self.context.id
+
+
 class BasePublishingRecordView(LaunchpadView):
     """Base Publishing view class."""
 

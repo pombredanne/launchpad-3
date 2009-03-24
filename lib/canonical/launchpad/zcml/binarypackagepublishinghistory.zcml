@@ -33,6 +33,13 @@
       />
   </browser:pages>
 
+  <browser:url
+    for="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory"
+    path_expression="string:+binarypub"
+    attribute_to_parent="archive"
+    urldata="canonical.launchpad.browser.publishing.BinaryPublicationURL"
+  />
+
   <!-- BinaryPackageFilePublishing -->
   <class class="canonical.launchpad.database.BinaryPackageFilePublishing">
     <allow
