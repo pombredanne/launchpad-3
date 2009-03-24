@@ -148,6 +148,9 @@
         activity/oldvalue/fmt:obfuscate-email">
       Activity text.
       </tal:old-value>
+      <tal:comment replace="nothing">
+        &#8594; is a unicode right-arrow.
+      </tal:comment>
       &#8594;
       <tal:new-value content="structure
         activity/newvalue/fmt:obfuscate-email">
