@@ -1,16 +1,22 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
 from datetime import datetime
+import gzip
 import os
 from StringIO import StringIO
 import tempfile
 import unittest
 
+from zope.component import getUtility
+
 from canonical.launchpad.database.librarian import ParsedApacheLog
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
+    create_or_update_parsedlog_entry, DBUSER,
     get_host_date_status_and_request, get_day, get_files_to_parse,
     get_method_and_file_id, parse_file)
 from canonical.launchpad.testing import TestCase
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer, ZopelessLayer
 
 
@@ -148,7 +154,7 @@ class TestParsedFilesDetection(TestCase):
     root = os.path.join(here, 'apache-log-files')
 
     def setUp(self):
-        self.layer.switchDbUser('librarianlogparser')
+        self.layer.switchDbUser(DBUSER)
 
     def test_not_parsed_file(self):
         # A file that has never been parsed will have to be parsed from the
@@ -160,9 +166,10 @@ class TestParsedFilesDetection(TestCase):
     def test_completely_parsed_file(self):
         # A file that has been completely parsed will be skipped.
         file_name = 'launchpadlibrarian.net.access-log'
-        content = open(os.path.join(self.root, file_name)).read()
-        first_line, rest = content.split('\n', 1)
-        parsed_file = ParsedApacheLog(first_line, len(content))
+        fd = open(os.path.join(self.root, file_name))
+        first_line = fd.readline()
+        fd.seek(0)
+        ParsedApacheLog(first_line, len(fd.read()))
 
         self.failUnlessEqual(get_files_to_parse(self.root, [file_name]), {})
 
@@ -171,9 +178,8 @@ class TestParsedFilesDetection(TestCase):
         # added will be parsed again, starting from where parsing stopped last
         # time.
         file_name = 'launchpadlibrarian.net.access-log'
-        content = open(os.path.join(self.root, file_name)).read()
-        first_line, rest = content.split('\n', 1)
-        parsed_file = ParsedApacheLog(first_line, len(first_line))
+        first_line = open(os.path.join(self.root, file_name)).readline()
+        ParsedApacheLog(first_line, len(first_line))
 
         files_to_parse = get_files_to_parse(self.root, [file_name])
         self.failUnlessEqual(files_to_parse.values(), [len(first_line)])
@@ -184,7 +190,7 @@ class TestParsedFilesDetection(TestCase):
         # with a name matching that of an already parsed file but with content
         # differing from the last file with that name parsed, we know we need
         # to parse the file from the start.
-        parsed_file = ParsedApacheLog('First line', bytes_read=1000)
+        ParsedApacheLog('First line', bytes_read=1000)
 
         # This file has the same name of the previous one (which has been
         # parsed already), but its first line is different, so we'll have to
@@ -196,6 +202,66 @@ class TestParsedFilesDetection(TestCase):
         fd.close()
         files_to_parse = get_files_to_parse(self.root, [file_name])
         self.failUnlessEqual(files_to_parse.values(), [0])
+
+    def test_gzipped_file(self):
+        # get_files_to_parse() handles gzipped files just like uncompressed
+        # ones.
+        # The first time we see one, we'll parse from the beginning.
+        file_name = 'launchpadlibrarian.net.access-log.1.gz'
+        first_line = gzip.open(os.path.join(self.root, file_name)).readline()
+        files_to_parse = get_files_to_parse(self.root, [file_name])
+        self.failUnlessEqual(files_to_parse.values(), [0])
+
+        # And in subsequent runs of the script we will resume from where we
+        # stopped last time. (Here we pretend we parsed only the first line)
+        ParsedApacheLog(first_line, len(first_line))
+        files_to_parse = get_files_to_parse(self.root, [file_name])
+        self.failUnlessEqual(files_to_parse.values(), [len(first_line)])
+
+
+class Test_create_or_update_parsedlog_entry(TestCase):
+    """Test the create_or_update_parsedlog_entry function."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.layer.switchDbUser(DBUSER)
+
+    def test_creation_of_new_entries(self):
+        # When given a first_line that doesn't exist in the ParsedApacheLog
+        # table, create_or_update_parsedlog_entry() will create a new entry
+        # with the given number of bytes read.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        first_line = u'First line'
+        create_or_update_parsedlog_entry(
+            first_line, parsed_bytes=len(first_line))
+
+        entry = store.find(ParsedApacheLog, first_line=first_line).one()
+        self.assertIsNot(None, entry)
+        self.assertEqual(entry.bytes_read, len(first_line))
+
+    def test_update_of_existing_entries(self):
+        # When given a first_line that already exists in the ParsedApacheLog
+        # table, create_or_update_parsedlog_entry() will update that entry
+        # with the given number of bytes read.
+        first_line = u'First line'
+        create_or_update_parsedlog_entry(first_line, parsed_bytes=2)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        entry = store.find(ParsedApacheLog, first_line=first_line).one()
+
+        # Here we see that the new entry was created.
+        self.assertIsNot(None, entry)
+        self.assertEqual(entry.bytes_read, 2)
+
+        create_or_update_parsedlog_entry(
+            first_line, parsed_bytes=len(first_line))
+
+        # And here we see that same entry was updated by the second call to
+        # create_or_update_parsedlog_entry().
+        entry2 = store.find(ParsedApacheLog, first_line=first_line).one()
+        self.assertIs(entry, entry2)
+        self.assertIsNot(None, entry2)
+        self.assertEqual(entry2.bytes_read, len(first_line))
 
 
 def test_suite():
