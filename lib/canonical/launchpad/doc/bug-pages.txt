@@ -811,7 +811,7 @@ First, some set-up.
     ...     (bug.bugtasks[0], request), name="+index")
 
 The activity_and_comments property of BugTaskView is a list of comments
-and activity on a bug, ordered by the date that they ocurred. Each item
+and activity on a bug, ordered by the date that they occurred. Each item
 is encapsulated in a dict, in the form: {'comment': <BugComment>} or
 {'activity': <BugActivity>}. Each dict also contains a 'date' item,
 which is used to sort the list.
