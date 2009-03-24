@@ -77,9 +77,10 @@ STANDARD_BADGES = {
     'mentoring': Badge('/@@/mentoring', '/@@/mentoring-large',
                        '(Mentoring available)', 'Mentoring available',
                        'mentoringbadge'),
-    'mergeproposal': Badge('/@@/merge-proposal-icon', '/@@/merge-proposal-large',
-                       '(Has a merge proposal)', 'Has a merge proposal',
-                       'mpbadge'),
+    'mergeproposal': Badge('/@@/merge-proposal-icon',
+                           '/@@/merge-proposal-large',
+                           '(Has a merge proposal)', 'Has a merge proposal',
+                           'mpbadge'),
     }
 
 

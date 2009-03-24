@@ -142,6 +142,14 @@ class BranchBadges(HasBadgeBase):
         """Show a warning badge if there are mirror failures."""
         return self.context.mirror_failures > 0
 
+    def isMergeproposalBadgeVisible(self):
+        """Show a proposal badge if there are any landing targets."""
+        for proposal in self.context.landing_targets:
+            # Stop on the first visible one.
+            if check_permission('launchpad.View', proposal):
+                return True
+        return False
+
     def getBadge(self, badge_name):
         """See `IHasBadges`."""
         if badge_name == "warning":
