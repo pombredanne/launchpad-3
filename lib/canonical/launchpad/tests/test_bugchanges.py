@@ -1093,6 +1093,5 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=task_added_notification)
 
 
-
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
