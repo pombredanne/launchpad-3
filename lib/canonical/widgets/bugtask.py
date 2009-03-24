@@ -55,7 +55,7 @@ class BugTaskAssigneeWidget(Widget):
         self.setUpNames()
 
     def setUpNames(self):
-        """Set up the the names used by this widget."""
+        """Set up the names used by this widget."""
         self.assigned_to = "%s.assigned_to" % self.name
         self.assign_to_me = "%s.assign_to_me" % self.name
         self.assign_to_nobody = "%s.assign_to_nobody" % self.name

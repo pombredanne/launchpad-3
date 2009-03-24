@@ -456,7 +456,7 @@ target, we reset it in order to avoid data inconsistencies.
 
 == Bug subscriptions ==
 
-We can get the the collection of subscriptions to a bug.
+We can get the collection of subscriptions to a bug.
 
   >>> bug_one_subscriptions_url = bug_one['subscriptions_collection_link']
   >>> subscriptions = webservice.get(bug_one_subscriptions_url).jsonBody()

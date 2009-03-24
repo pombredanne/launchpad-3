@@ -20,6 +20,7 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposal,
     IBranchMergeProposalGetter, IBranchMergeProposalListingBatchNavigator)
@@ -167,6 +168,10 @@ class BranchMergeProposalListingView(LaunchpadView):
 class PersonBMPListingView(BranchMergeProposalListingView):
     """Base class for the proposal listings that defines the user."""
 
+    def _getCollection(self):
+        """Return the branch collection for the view."""
+        return getUtility(IAllBranches).visibleByUser(self.user)
+
     def getUserFromContext(self):
         """Get the relevant user from the context."""
         return self.context
@@ -206,8 +211,8 @@ class PersonRequestedReviewsView(PersonBMPListingView):
 
     def getVisibleProposalsForUser(self):
         """Branch merge proposals that are visible by the logged in user."""
-        return getUtility(IBranchMergeProposalGetter).getProposalsForReviewer(
-            self.context, self._queue_status, self.user)
+        return self._getCollection().getMergeProposalsForReviewer(
+            self.getUserFromContext(), self._queue_status)
 
 
 class PersonApprovedMergesView(PersonBMPListingView):
