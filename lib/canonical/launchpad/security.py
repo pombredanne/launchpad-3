@@ -1984,6 +1984,22 @@ class EditArchiveSubscriber(AuthorizationBase):
         return user.inTeam(admins)
 
 
+class ViewSourcePackagePublishingHistory(AuthorizationBase):
+    """Restrict viewing of source publications."""
+    permission = "launchpad.View"
+    usedfor = ISourcePackagePublishingHistory
+
+    def checkAuthenticated(self, user):
+        view_archive = ViewArchive(self.obj.archive)
+        if view_archive.checkAuthenticated(user):
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+    def checkUnauthenticated(self):
+        return not self.obj.private
+
+
 class ViewSourcePackageRelease(AuthorizationBase):
     """Restrict viewing of source packages.
 
