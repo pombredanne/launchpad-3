@@ -673,11 +673,11 @@ representation of each its members.
 
 == CollectionField ==
 
-Since CollectionField are really a list of references to other objects,
-and they are exposed using a dedicated CollectionResource, the marshaller
-for this kind of field is simpler.  Let's do an example with a
-collection of IPerson objects associated with some IPerson. (This
-might be the list of teams in which a person has a membership, or
+Since CollectionField are really a list of references to other
+objects, and they are exposed using a dedicated CollectionResource,
+the marshaller for this kind of field is simpler.  Let's do an example
+with a collection of IRecipe objects associated with some
+ICookbook. (This might be the list of recipes in the cookbook, or
 something like that.)
 
     >>> from canonical.lazr.fields import CollectionField

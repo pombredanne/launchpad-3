@@ -60,12 +60,6 @@
     provides="canonical.lazr.interfaces.rest.IServiceRootResource"
     factory="canonical.lazr.rest.example.root.CookbookServiceRootResource" />
 
-  <utility
-    name="Cuisine"
-    component="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    />
-
   <adapter factory="canonical.lazr.rest.example.root.SimpleByteStorage" />
   <class class="canonical.lazr.rest.example.root.SimpleByteStorage">
       <allow interface='canonical.lazr.interfaces.rest.IByteStorage' />
