@@ -41,6 +41,7 @@ from datetime import datetime, timedelta
 import cgi
 import pytz
 import re
+from simplejson import dumps
 import urllib
 from operator import attrgetter
 
@@ -860,6 +861,20 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         target_official_tags = self.context.target.official_bug_tags
         return [tag for tag in self.context.bug.tags
                 if tag not in target_official_tags]
+
+    @property
+    def available_official_tags_js(self):
+        """Return the list of available official tags for the bug as JSON.
+
+        The list comprises of the official tags for all targets for which the
+        bug has a task. It is returned as Javascript snippet, to be ambedded in
+        the bug page.
+        """
+        available_tags = set()
+        for task in self.context.bug.bugtasks:
+            available_tags.update(task.target.official_bug_tags)
+        return 'var available_official_tags = %s;' % dumps(list(sorted(
+            available_tags)))
 
 
 class BugTaskPortletView:

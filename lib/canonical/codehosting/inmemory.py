@@ -246,6 +246,7 @@ class FakeProduct(FakeDatabaseObject):
 @adapter(FakeProduct)
 @implementer(IBranchTarget)
 def fake_product_to_branch_target(fake_product):
+    """Adapt a `FakeProduct` to `IBranchTarget`."""
     return ProductBranchTarget(fake_product)
 
 
@@ -256,6 +257,7 @@ class FakeProductSeries(FakeDatabaseObject):
 
     @property
     def series_branch(self):
+        """See `IProductSeries`."""
         return self.user_branch
 
 

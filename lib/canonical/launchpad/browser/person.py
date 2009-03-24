@@ -2541,19 +2541,19 @@ class PersonView(LaunchpadView, FeedsMixin):
         params = BugTaskSearchParams(
             user=self.user, assignee=self.context, omit_dupes=True,
             status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
-        return self.context.searchTasks(params)[:5]
+        return list(self.context.searchTasks(params)[:5])
 
     @cachedproperty
     def assigned_specs_in_progress(self):
         """Return up to 5 assigned specs that are being worked on."""
-        return self.context.assigned_specs_in_progress
+        return list(self.context.assigned_specs_in_progress)
 
     @property
     def has_assigned_bugs_or_specs_in_progress(self):
         """Does the user have any bugs or specs that are being worked on?"""
         bugtasks = self.assigned_bugs_in_progress
         specs = self.assigned_specs_in_progress
-        return bugtasks.count() > 0 or specs.count() > 0
+        return len(bugtasks) > 0 or len(specs) > 0
 
     @property
     def viewing_own_page(self):
