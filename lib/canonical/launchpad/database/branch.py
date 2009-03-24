@@ -834,10 +834,6 @@ class BranchSet:
 
     implements(IBranchSet)
 
-    def count(self):
-        """See `IBranchSet`."""
-        return Branch.select('NOT Branch.private').count()
-
     def countBranchesWithAssociatedBugs(self):
         """See `IBranchSet`."""
         return Branch.select(
