@@ -20,17 +20,16 @@ Let's look at a bug that has no attachments:
 == Creating attachments ==
 
 To create an attachment, call IBug.addAttachment. It will emit an
-SQLObjectCreatedEvent in order to trigger email notifications:
+ObjectCreatedEvent in order to trigger email notifications:
 
     >>> from StringIO import StringIO
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.event.interfaces import (
-    ...     ISQLObjectCreatedEvent)
+    >>> from lazr.lifecycle.event import IObjectCreatedEvent
     >>> def attachment_added(attachment, event):
     ...     print "Attachment added: %r" % attachment.libraryfile.filename
     >>> event_listener = TestEventListener(
-    ...     IBugAttachment, ISQLObjectCreatedEvent, attachment_added)
+    ...     IBugAttachment, IObjectCreatedEvent, attachment_added)
 
     >>> filecontent = "Some useful information."
     >>> data = StringIO(filecontent)
@@ -229,7 +228,7 @@ If the request contains no attachment description the filename should be used.
     u'RA.txt'
 
 
-Since the SQLObjectCreatedEvent was generated, a notification about the
+Since the ObjectCreatedEvent was generated, a notification about the
 attachment was added.
 
     >>> from canonical.launchpad.database import BugNotification
@@ -344,7 +343,7 @@ attachments attributes:
     ...
     Unauthorized: (..., 'title',...
 
-Of course, anonymous is also not allowed to access or set the them:
+Of course, anonymous is also not allowed to access or set them:
 
     >>> login(ANONYMOUS)
     >>> attachment.title
@@ -443,7 +442,7 @@ It's also possible to delete attachments.
     ...     print attachment.title
     Attachment to be deleted
 
-    >>> attachment.removeFromBug()
+    >>> attachment.removeFromBug(user=foobar)
     >>> bug_two.attachments.count()
     0
 

@@ -8,6 +8,7 @@ __all__ = [
     'BrowserWindowDimensions',
     'IcingContribFolder',
     'EdubuntuIcingFolder',
+    'get_launchpad_views',
     'Hierarchy',
     'IcingFolder',
     'KubuntuIcingFolder',
@@ -52,7 +53,7 @@ from canonical.launchpad.interfaces.announcement import IAnnouncementSet
 from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
-from canonical.launchpad.interfaces.branch import IBranchSet
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
@@ -77,7 +78,6 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.project import IProjectSet
-from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from canonical.launchpad.interfaces.specification import ISpecificationSet
@@ -96,7 +96,7 @@ from canonical.launchpad.webapp.interfaces import (
     NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 from canonical.launchpad.webapp.url import urlparse, urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.xmlrpc.faults import NoBranchForSeries, NoSuchSeries
@@ -109,6 +109,8 @@ from canonical.widgets.project import ProjectScopeWidget
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
 from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
+
+from lp.answers.interfaces.questioncollection import IQuestionSet
 
 
 class MaloneApplicationNavigation(Navigation):
@@ -251,6 +253,10 @@ class Hierarchy(LaunchpadView):
         working_url = baseurl
         for segment in urlparts[2].split('/'):
             working_url = urlappend(working_url, segment)
+            # Segments starting with '+' should be ignored because they
+            # will never correspond to an object in navigation.
+            if segment.startswith('+'):
+                continue
             pathurls.append(working_url)
 
         # We assume a 1:1 relationship between the traversed_objects list and
@@ -590,7 +596,7 @@ class LaunchpadRootNavigation(Navigation):
         """
         path = '/'.join(self.request.stepstogo)
         try:
-            branch_data = getUtility(IBranchSet).getByLPPath(path)
+            branch_data = getUtility(IBranchLookup).getByLPPath(path)
         except (NoBranchForSeries, NoSuchSeries):
             raise NotFoundError
         branch, trailing, series = branch_data
@@ -601,12 +607,22 @@ class LaunchpadRootNavigation(Navigation):
             url = urlappend(url, trailing)
         return self.redirectSubTree(url)
 
+    @stepto('+builds')
+    def redirect_buildfarm(self):
+        """Redirect old /+builds requests to new URL, /builders."""
+        new_url = '/builders'
+        return self.redirectSubTree(
+            urlappend(new_url, '/'.join(self.request.stepstogo)))
+
+    # XXX cprov 2009-03-19 bug=345877: path segments starting with '+'
+    # should never correspond to a valid traversal, they confuse the
+    # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
-        '+builds': IBuilderSet,
+        'builders': IBuilderSet,
         '+code': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
@@ -1037,3 +1053,30 @@ class BrowserWindowDimensions(LaunchpadView):
 
     def render(self):
         return u'Thanks.'
+
+
+def get_launchpad_views(cookies):
+    """The state of optional page elements the user may choose to view.
+
+    :param cookies: The request.cookies object that contains launchpad_views.
+    :return: A dict of all the view states.
+    """
+    views = {
+        'small_maps': True,
+        }
+    cookie = cookies.get('launchpad_views', '')
+    if len(cookie) > 0:
+        pairs = cookie.split('&')
+        for pair in pairs:
+            parts = pair.split('=')
+            if len(parts) != 2:
+                # The cookie is malformed, possibly hacked.
+                continue
+            key, value = parts
+            if not key in views:
+                # The cookie may be hacked.
+                continue
+            # 'false' is the value that the browser script sets to disable a
+            # part of a page. Any other value is considered to be 'true'.
+            views[key] = value != 'false'
+    return views

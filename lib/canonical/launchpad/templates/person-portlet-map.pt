@@ -5,7 +5,7 @@
   omit-tag="">
 
 <div class="portlet" id="portlet-map"
-     tal:define="link context/menu:overview/editlocation">
+     tal:define="overview_menu context/menu:overview">
 
   <h2>Location</h2>
 
@@ -16,9 +16,12 @@
 
   <tal:show-map condition="view/should_show_map_portlet">
     <tal:map condition="context/latitude">
-      <div id="person_map_div" style="height: 200px; border: 1px;"></div>
+      <div id="person_map_div" class="small-map"
+        style="height: 200px; border: 1px;"></div>
       <tal:mapscript replace="structure view/map_portlet_html" />
-      <p tal:condition="link/enabled" tal:content="structure link/render" />
+       <div id="person_map_actions">
+        <a tal:replace="structure overview_menu/editlocation/fmt:link-icon" /> &nbsp;
+      </div>
     </tal:map>
 
     <tal:comment condition="nothing">
@@ -26,7 +29,7 @@
       permission to set it, so we don't need to check that the link is enabled.
     </tal:comment>
     <a tal:condition="not: context/latitude"
-       tal:attributes="href link/target"
+       tal:attributes="href overview_menu/editlocation/target"
       ><img src="/+icing/portlet-map-unknown.png" />
     </a>
   </tal:show-map>

@@ -18,10 +18,10 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 
 
@@ -312,7 +312,7 @@ class IAccountSet(Interface):
 
          :param open_identifier: An ascii compatible string that is either
              the old or new openid_identifier that belongs to an account.
-         :return: An `IAccount`, or None if the the openid_identifier does
+         :return: An `IAccount`, or None if the openid_identifier does
              not belong to an account.
          """
 

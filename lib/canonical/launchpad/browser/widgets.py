@@ -29,14 +29,15 @@ from zope.app.form.browser import TextAreaWidget, TextWidget, IntWidget
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import BranchType, IBranch, IBranchSet
+from canonical.launchpad.interfaces import BranchType, IBranch
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.tales import BranchFormatterAPI
-from canonical.launchpad.webapp.uri import InvalidURIError, URI
+from lazr.uri import InvalidURIError, URI
 from canonical.widgets import SinglePopupWidget, StrippedTextWidget
 
 
@@ -155,7 +156,7 @@ class BranchPopupWidget(SinglePopupWidget):
         # needs to be rewritten to get the sourcepackage and distroseries out
         # of the launch bag.
         url = unicode(URI(url).ensureNoSlash())
-        if getUtility(IBranchSet).getByUrl(url) is not None:
+        if getUtility(IBranchLookup).getByUrl(url) is not None:
             raise AlreadyRegisteredError('Already a branch for %r' % (url,))
         # Make sure the URL is valid.
         IBranch['url'].validate(url)

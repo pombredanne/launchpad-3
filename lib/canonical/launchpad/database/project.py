@@ -37,12 +37,12 @@ from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.faq import FAQ, FAQSearch
+from lp.answers.model.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import (
-    HasMilestonesMixin, Milestone, ProjectMilestone)
+    Milestone, ProjectMilestone, milestone_sort_key)
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.product import Product
@@ -51,7 +51,7 @@ from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
-from canonical.launchpad.database.question import QuestionTargetSearch
+from lp.answers.model.question import QuestionTargetSearch
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
@@ -270,6 +270,14 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Customize `search_params` for this milestone."""
         search_params.setProject(self)
 
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        official_bug_tags = set()
+        for product in self.products:
+            official_bug_tags.update(product.official_bug_tags)
+        return sorted(official_bug_tags)
+
     def getUsedBugTags(self):
         """See `IHasBugs`."""
         if not self.products:
@@ -375,8 +383,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         milestones = shortlist(
             [ProjectMilestone(self, name, dateexpected, visible)
              for name, dateexpected, visible in result])
-        return sorted(milestones, key=HasMilestonesMixin.milestone_sort_key,
-                      reverse=True)
+        return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     @property
     def milestones(self):

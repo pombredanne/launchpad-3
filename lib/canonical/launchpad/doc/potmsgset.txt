@@ -695,9 +695,17 @@ translations in Spanish:
 
     >>> suggestions = (
     ...     evo_product_message.getExternallyUsedTranslationMessages(spanish))
+    >>> print_suggestions(suggestions)
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package
+    "evolution":  caratas (Launchpad)
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package
+    "evolution":  tarjetas (Upstream)
 
     >>> suggestions = evo_distro_message.getExternallyUsedTranslationMessages(
     ...    spanish)
+    >>> print_suggestions(suggestions)
+    Spanish (es) translation of evolution-2.2 in Evolution trunk:
+    tarjetas (Launchpad & Upstream)
 
 We need to be logged in as an admin to do some special attribute
 changes:
@@ -814,6 +822,11 @@ active) as it's another context.
     >>> wiki_submissions = (
     ...     potmsgset_untranslated.getExternallySuggestedTranslationMessages(
     ...         pofile.language))
+    >>> print_suggestions(wiki_submissions)
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution":
+    blah, blah, blah (None)
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution":
+    lalalala (None)
 
 However, if the hoary template version is not current and thus hidden,
 we get no suggestions.

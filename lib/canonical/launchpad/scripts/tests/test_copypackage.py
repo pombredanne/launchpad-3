@@ -337,7 +337,7 @@ class TestCopyPackage(TestCase):
 
         This operation is required to propagate partner uploads across several
         suites, avoiding to build (and modify) the package multiple times to
-        have it available for all supported suites independent of the the
+        have it available for all supported suites independent of the
         time they were released.
         """
         copy_helper = self.getCopier(
@@ -366,6 +366,7 @@ class TestCopyPackage(TestCase):
         fake_chroot = getUtility(ILibraryFileAliasSet)[1]
         distroseries['i386'].addOrUpdateChroot(fake_chroot)
         test_publisher = SoyuzTestPublisher()
+        test_publisher.setUpDefaultDistroSeries(distroseries)
         test_publisher.person = getUtility(IPersonSet).getByName("name16")
         return test_publisher
 
@@ -562,6 +563,50 @@ class TestCopyPackage(TestCase):
         self.assertEqual(
             new_build.title,
             'hppa build of boing 1.0 in ubuntu hoary RELEASE')
+
+    def testVersionConflictInDifferentPockets(self):
+        """Copy-package stops copies conflicting in different pocket.
+
+        Copy candidates are checks against all occurrences of the same
+        name and version in the destination archive, regardless the series
+        and pocket. In practical terms, it denies copies that will end up
+        'unpublishable' due to conflicts in the repository filesystem.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        warty = ubuntu.getSeries('warty')
+        test_publisher = self.getTestPublisher(warty)
+
+        # Create a 'probe - 1.1' with a binary in warty-proposed suite
+        # in the ubuntu primary archive.
+        proposed_source = test_publisher.getPubSource(
+            sourcename='probe', version='1.1',
+            pocket=PackagePublishingPocket.PROPOSED)
+        proposed_binaries = test_publisher.getPubBinaries(
+            pub_source=proposed_source,
+            pocket=PackagePublishingPocket.PROPOSED)
+
+        # Create a different 'probe - 1.1' in Celso's PPA.
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        candidate_source = test_publisher.getPubSource(
+            sourcename='probe', version='1.1', archive=cprov.archive)
+        candidate_binaries = test_publisher.getPubBinaries(
+            pub_source=candidate_source, archive=cprov.archive)
+
+        # Perform the copy from the 'probe - 1.1' version from Celso's PPA
+        # to the warty-updates in the ubuntu primary archive.
+        copy_helper = self.getCopier(
+            sourcename='probe', from_ppa='cprov', include_binaries=True,
+            from_suite='warty', to_suite='warty-updates')
+        copy_helper.logger = TestLogger()
+        copied = copy_helper.mainTask()
+
+        # The copy request was denied and the error message is clear about
+        # why it happened.
+        self.assertEqual(0, len(copied))
+        self.assertEqual(
+            'probe 1.1 in warty (a different source with the same version '
+            'is published in the destination archive)',
+            copy_helper.logger.lines[-1])
 
     def _setupSecurityPropagationContext(self, sourcename):
         """Setup a security propagation publishing context.

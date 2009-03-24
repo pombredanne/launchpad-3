@@ -46,7 +46,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 def normalise_leading_slashes(rest):

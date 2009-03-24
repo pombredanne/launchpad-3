@@ -27,7 +27,8 @@ from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
+from canonical.launchpad.ftests import (
+    ANONYMOUS, import_secret_test_key, login, logout, syncUpdate)
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType,
@@ -40,8 +41,8 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
-    capture_events, LaunchpadObjectFactory, login_person, TestCaseWithFactory,
-    time_counter)
+    capture_events, GPGSigningContext, LaunchpadObjectFactory, login_person,
+    TestCaseWithFactory, time_counter)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.testing import verifyObject
 
@@ -1254,8 +1255,11 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
 
     def test_run_creates_proposal(self):
         """CreateMergeProposalJob.run should create a merge proposal."""
+        key = import_secret_test_key()
+        signing_context = GPGSigningContext(key.fingerprint, password='test')
         message, file_alias, source, target = (
-            self.factory.makeMergeDirectiveEmail())
+            self.factory.makeMergeDirectiveEmail(
+                signing_context=signing_context))
         job = CreateMergeProposalJob.create(file_alias)
         transaction.commit()
         proposal, comment = job.run()

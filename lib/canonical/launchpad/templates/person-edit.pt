@@ -10,7 +10,8 @@
   i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="main">
+    <div metal:fill-slot="main"
+      tal:define="overview_menu context/menu:overview">
       <h1>Change your personal details</h1>
 
       <div metal:use-macro="context/@@launchpad_form/form">
@@ -25,23 +26,19 @@
       <h2 style="margin-top: 2em;">Other actions</h2>
       <ul style="list-style-type:none; padding-left:1.5em;">
         <li
-          tal:content="
-          structure context/menu:overview/editlanguages/render">
+          tal:content="structure overview_menu/editlanguages/fmt:link-icon">
           Set your preferred language
         </li>
         <li
-          tal:content="
-          structure context/menu:overview/editwikinames/render">
+          tal:content="structure overview_menu/editwikinames/fmt:link-icon">
           Edit your wiki names
         </li>
         <li
-          tal:content="
-          structure context/menu:overview/editircnicknames/render">
+          tal:content="structure overview_menu/editircnicknames/fmt:link-icon">
           Edit your IRC contact names
         </li>
         <li
-          tal:content="
-          structure context/menu:overview/editjabberids/render">
+          tal:content="structure overview_menu/editjabberids/fmt:link-icon">
           Edit your Jabber contact names
         </li>
       </ul>

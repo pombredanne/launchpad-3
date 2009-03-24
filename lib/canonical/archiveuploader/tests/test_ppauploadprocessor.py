@@ -256,6 +256,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         queue_root = self.uploadprocessor.last_processed_upload.queue_root
+        self.assertEqual(queue_root.archive, self.name16.archive)
         self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
         self.assertEqual(queue_root.distroseries.name, "breezy")
 
@@ -287,9 +288,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # bad distribution name.
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find distribution 'BADNAME'\n"
-            "Further error processing not "
-            "possible because of a critical previous error.")
+            "Could not find PPA named 'BADNAME' for 'name16'\n"
+            "Further error processing not possible because of a "
+            "critical previous error.")
 
     def testPPAPublisherOverrides(self):
         """Check that PPA components override to main at publishing time,
@@ -387,6 +388,17 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         [queue_item] = queue_items
         self.checkFilesRestrictedInLibrarian(queue_item, False)
 
+    def testNamedPPABinaryUploads(self):
+        """Check the usual binary upload life-cycle for named PPAs."""
+        # Source upload.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        queue_root = self.uploadprocessor.last_processed_upload.queue_root
+        self.assertEqual(queue_root.archive, self.name16.archive)
+        self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
+        self.assertEqual(queue_root.distroseries.name, "breezy")
+
     def testPPACopiedSources(self):
         """Check PPA binary uploads for copied sources."""
         # Source upload to name16 PPA.
@@ -404,7 +416,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         cprov_pub_bar = name16_pub_bar.copyTo(
             self.breezy, PackagePublishingPocket.RELEASE, cprov.archive)
         self.assertEqual(
-            cprov_pub_bar.sourcepackagerelease.upload_archive.title,
+            cprov_pub_bar.sourcepackagerelease.upload_archive.displayname,
             'PPA for Foo Bar')
 
         # Create a build record for source bar for breezy-i386
@@ -454,7 +466,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "Could not find PPA for 'spiv'\n"
+            "Could not find PPA named 'ppa' for 'spiv'\n"
             "Further error processing not "
             "possible because of a critical previous error.")
 
@@ -642,7 +654,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA for Celso Providelo only supports uploads to 'ubuntu'\n"
+            "Could not find PPA named 'ubuntutest' for 'cprov'\n"
             "Further error processing not possible because of a "
             "critical previous error.")
 
@@ -664,7 +676,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA upload path must start with '~'.\n"
+            "Could not find distribution 'biscuit'\n"
             "Further error "
             "processing not possible because of a critical previous error.")
 

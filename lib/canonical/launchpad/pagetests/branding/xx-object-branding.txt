@@ -8,7 +8,7 @@ logo, for page headings, and a mugshot, which is a large brand for the
 object's homepage.
 
 Most objects allow you to edit all three of these branding items. However,
-for IPerson and ISprint, we do not currently allow the customisation of hte
+for IPerson and ISprint, we do not currently allow the customisation of the
 icon, as we think this will create too much noise in the UI.
 
 Team branding
@@ -24,6 +24,7 @@ Team branding
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team'
+    >>> browser.getLink('Change details').click()
     >>> browser.getLink('Change branding').click()
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+branding'
@@ -50,6 +51,7 @@ Here we see the updated values.
 
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team'
+    >>> browser.getLink('Change details').click()
     >>> browser.getLink('Change branding').click()
 
     >>> browser.getControl(name='field.icon.action').value
@@ -134,6 +136,7 @@ Project branding
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> browser.url
     'http://launchpad.dev/mozilla'
+    >>> browser.getLink('Change details').click()
     >>> browser.getLink('Change branding').click()
     >>> browser.url
     'http://launchpad.dev/mozilla/+branding'
@@ -160,6 +163,7 @@ Here we see the updated values.
 
     >>> browser.url
     'http://launchpad.dev/mozilla'
+    >>> browser.getLink('Change details').click()
     >>> browser.getLink('Change branding').click()
 
     >>> browser.getControl(name='field.icon.action').value
@@ -252,6 +256,7 @@ Again, for Sprints, we have not exposed icon editing through the UI.
     >>> browser.open('http://launchpad.dev/sprints/futurista')
     >>> browser.url
     'http://launchpad.dev/sprints/futurista'
+    >>> browser.getLink('Change details').click()
     >>> browser.getLink('Change branding').click()
     >>> browser.url
     'http://launchpad.dev/sprints/futurista/+branding'
@@ -278,6 +283,7 @@ Here we see the updated values.
 
     >>> browser.url
     'http://launchpad.dev/sprints/futurista'
+    >>> browser.getLink('Change details').click()
     >>> browser.getLink('Change branding').click()
 
     #>>> browser.getControl(name='field.icon.action').value
@@ -292,4 +298,3 @@ Here we see the updated values.
     ['keep']
     >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
     u'.../mugshot.png'
-

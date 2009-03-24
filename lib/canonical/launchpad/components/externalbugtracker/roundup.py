@@ -14,7 +14,7 @@ from canonical.launchpad.components.externalbugtracker import (
     UnknownRemoteStatusError, UnparseableBugData)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 PYTHON_BUGS_HOSTNAME = 'bugs.python.org'

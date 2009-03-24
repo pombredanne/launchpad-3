@@ -1,6 +1,6 @@
 = Code Import Events =
 
-The code-import events record the audit trail of the the code import
+The code-import events record the audit trail of the code import
 system. Events record a log that can be used to diagnose the interaction
 of the multiple moving parts that form the code-import system and to
 measure the quality of the service.
@@ -87,18 +87,19 @@ CodeImportEvent, we need to use the CodeImport constructor directly.
 
     >>> from canonical.launchpad.interfaces import (
     ...     CodeImportEventDataType, BranchType, ILaunchpadCelebrities,
-    ...     IBranchSet, IPersonSet, IProductSet)
+    ...     IPersonSet, IProductSet)
     >>> from canonical.launchpad.database import CodeImport
+    >>> from canonical.launchpad.interfaces.branchnamespace import (
+    ...     get_branch_namespace)
 
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
 
     >>> def new_code_import(name, **kw_details):
     ...     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     ...     product = getUtility(IProductSet).getByName('firefox')
-    ...     import_branch = getUtility(IBranchSet).new(
-    ...         BranchType.IMPORTED,
-    ...         name, vcs_imports, vcs_imports, product,
-    ...         None, 'Import branch')
+    ...     namespace = get_branch_namespace(vcs_imports, product=product)
+    ...     import_branch = namespace.createBranch(
+    ...         BranchType.IMPORTED, name, vcs_imports, title='Import branch')
     ...     return CodeImport(
     ...         registrant=nopriv, owner=nopriv, branch=import_branch,
     ...         **kw_details)
@@ -180,7 +181,7 @@ working on unproxied database objects.
 ICodeImportEventSet defines a protocol so it is able to find changes
 applied to the code import. Before making any change, the beginModify
 method must be called. It returns a token that captures the initial
-state of the the code import.
+state of the code import.
 
     >>> fail_if_argument_is_none(event_set.beginModify, None)
 

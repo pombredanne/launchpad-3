@@ -7,7 +7,7 @@
  <dt tal:content="text obj/name">
   The name of the field.
  </dt>
- <dd tal:content="text obj/value">
+ <dd tal:content="structure obj/value">
   The value of the field.
  </dd>
 </tal:fields>

@@ -225,7 +225,7 @@ Bar are now owned/driven by the registry admins team.
 
 Accounts can be reactivated. A comment is required to log why this was
 done, and a password is required too. There are two preconditions before
-this method can be called on a Person: The password and the preferred
+this method can be called on an Account: The password and the preferred
 email address cannot not be None.
 
     >>> foobar.account.reactivate(

@@ -8,7 +8,6 @@ import datetime
 import pytz
 import unittest
 
-from bzrlib.tests import adapt_tests, TestScenarioApplier
 from bzrlib.urlutils import escape
 
 from zope.component import getUtility
@@ -16,11 +15,12 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
-    BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranchSet,
-    BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
@@ -62,12 +62,18 @@ class TestRunWithLogin(TestCaseWithFactory):
         # run_with_login logs in as user given as the first argument
         # to the method being decorated.
         username = run_with_login(self.person.id, get_logged_in_username)
+        # person.name is a protected field so we must be logged in before
+        # attempting to access it.
+        login(ANONYMOUS)
         self.assertEqual(self.person.name, username)
+        logout()
 
     def test_loginAsRequesterName(self):
         # run_with_login can take a username as well as user id.
         username = run_with_login(self.person.name, get_logged_in_username)
+        login(ANONYMOUS)
         self.assertEqual(self.person.name, username)
+        logout()
 
     def test_logoutAtEnd(self):
         # run_with_login logs out once the decorated method is
@@ -89,7 +95,9 @@ class TestRunWithLogin(TestCaseWithFactory):
         # run_with_login passes in the Launchpad Person object of the
         # requesting user.
         user = run_with_login(self.person.id, lambda x: x)
+        login(ANONYMOUS)
         self.assertEqual(self.person.name, user.name)
+        logout()
 
     def test_invalidRequester(self):
         # A method wrapped with run_with_login raises NotFoundError if
@@ -113,7 +121,7 @@ class BranchPullerTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchPuller`.
 
     :ivar frontend: A nullary callable that returns an object that implements
-        getPullerEndpoint, getLaunchpadObjectFactory and getBranchSet.
+        getPullerEndpoint, getLaunchpadObjectFactory and getBranchLookup.
     """
 
     def setUp(self):
@@ -121,7 +129,7 @@ class BranchPullerTest(TestCaseWithFactory):
         frontend = self.frontend()
         self.storage = frontend.getPullerEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.branch_set = frontend.getBranchSet()
+        self.branch_lookup = frontend.getBranchLookup()
         self.getLastActivity = frontend.getLastActivity
 
     def assertFaultEqual(self, expected_fault, observed_fault):
@@ -169,7 +177,7 @@ class BranchPullerTest(TestCaseWithFactory):
         """Return a branch ID that isn't in the database."""
         branch_id = 999
         # We can't be sure until the sample data is gone.
-        self.assertIs(self.branch_set.get(branch_id), None)
+        self.assertIs(self.branch_lookup.get(branch_id), None)
         return branch_id
 
     def test_startMirroring(self):
@@ -450,13 +458,14 @@ class BranchPullQueueTest(TestCaseWithFactory):
 
     def test_getBranchPullInfo_private_branch(self):
         # We don't want to stack mirrored branches onto private branches:
-        # mirrored branches are public by their nature. This, if the default
+        # mirrored branches are public by their nature. Thus, if the default
         # stacked-on branch for the project is private and the branch is
         # MIRRORED then we don't include the default stacked-on branch's
         # details in the tuple.
-        default_branch = self.factory.makeAnyBranch(private=True)
-        product = removeSecurityProxy(default_branch).product
-        product.development_focus.user_branch = default_branch
+        product = self.factory.makeProduct()
+        default_branch = self.factory.makeProductBranch(
+            product=product, private=True)
+        self.factory.enableDefaultStackingForProduct(product, default_branch)
         mirrored_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=product)
         info = self.storage._getBranchPullInfo(mirrored_branch)
@@ -493,7 +502,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         frontend = self.frontend()
         self.branchfs = frontend.getFilesystemEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.branch_set = frontend.getBranchSet()
+        self.branch_lookup = frontend.getBranchLookup()
 
     def assertFaultEqual(self, expected_fault, observed_fault):
         """Assert that `expected_fault` equals `observed_fault`."""
@@ -511,7 +520,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_id = self.branchfs.createBranch(
             owner.id, escape('/~%s/%s/%s' % (owner.name, product.name, name)))
         login(ANONYMOUS)
-        branch = self.branch_set.get(branch_id)
+        branch = self.branch_lookup.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(product, branch.product)
         self.assertEqual(name, branch.name)
@@ -532,7 +541,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_id = self.branchfs.createBranch(
             owner.id, escape('/~%s/%s/%s' % (owner.name, '+junk', name)))
         login(ANONYMOUS)
-        branch = self.branch_set.get(branch_id)
+        branch = self.branch_lookup.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(None, branch.product)
         self.assertEqual(name, branch.name)
@@ -540,16 +549,19 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_team_junk(self):
-        # createBranch cannot create +junk branches on teams -- it raises
-        # PermissionDenied.
-        owner = self.factory.makePerson()
-        team = self.factory.makeTeam(owner)
+        # createBranch can create +junk branches on teams.
+        registrant = self.factory.makePerson()
+        team = self.factory.makeTeam(registrant)
         name = self.factory.getUniqueString()
-        fault = self.branchfs.createBranch(
-            owner.id, escape('/~%s/+junk/%s' % (team.name, name)))
-        expected_fault = faults.PermissionDenied(
-            BranchCreationNoTeamOwnedJunkBranches.error_message)
-        self.assertFaultEqual(expected_fault, fault)
+        branch_id = self.branchfs.createBranch(
+            registrant.id, escape('/~%s/+junk/%s' % (team.name, name)))
+        login(ANONYMOUS)
+        branch = self.branch_lookup.get(branch_id)
+        self.assertEqual(team, branch.owner)
+        self.assertEqual(None, branch.product)
+        self.assertEqual(name, branch.name)
+        self.assertEqual(registrant, branch.registrant)
+        self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.
@@ -629,7 +641,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         branch_id = self.branchfs.createBranch(owner.id, escape(unique_name))
         login(ANONYMOUS)
-        branch = self.branch_set.get(branch_id)
+        branch = self.branch_lookup.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(sourcepackage.distroseries, branch.distroseries)
         self.assertEqual(
@@ -732,7 +744,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(private=private)
         self.factory.enableDefaultStackingForProduct(product, branch)
-        self.assertEqual(product.default_stacked_on_branch, branch)
+        target = IBranchTarget(removeSecurityProxy(product))
+        self.assertEqual(target.default_stacked_on_branch, branch)
         return product, branch
 
     def test_translatePath_cannot_translate(self):
@@ -1016,28 +1029,18 @@ class LaunchpadDatabaseFrontend:
         """
         return LaunchpadObjectFactory()
 
-    def getBranchSet(self):
-        """Return an implementation of `IBranchSet`.
+    def getBranchLookup(self):
+        """Return an implementation of `IBranchLookup`.
 
         Tests should use this to get the branch set they need, rather than
         using 'getUtility(IBranchSet)'. This allows in-memory implementations
         to work correctly.
         """
-        return getUtility(IBranchSet)
+        return getUtility(IBranchLookup)
 
     def getLastActivity(self, activity_name):
         """Get the last script activity with 'activity_name'."""
         return getUtility(IScriptActivitySet).getLastActivity(activity_name)
-
-
-class PullerEndpointScenarioApplier(TestScenarioApplier):
-
-    scenarios = [
-        ('db', {'frontend': LaunchpadDatabaseFrontend,
-                'layer': DatabaseFunctionalLayer}),
-        ('inmemory', {'frontend': InMemoryFrontend,
-                      'layer': FunctionalLayer}),
-        ]
 
 
 def test_suite():
@@ -1048,7 +1051,22 @@ def test_suite():
          loader.loadTestsFromTestCase(BranchPullQueueTest),
          loader.loadTestsFromTestCase(BranchFileSystemTest),
          ])
-    adapt_tests(puller_tests, PullerEndpointScenarioApplier(), suite)
+    scenarios = [
+        ('db', {'frontend': LaunchpadDatabaseFrontend,
+                'layer': DatabaseFunctionalLayer}),
+        ('inmemory', {'frontend': InMemoryFrontend,
+                      'layer': FunctionalLayer}),
+        ]
+    try:
+        from bzrlib.tests import multiply_tests
+        multiply_tests(puller_tests, scenarios, suite)
+    except ImportError:
+        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
+        # once sourcecode/bzr has bzr.dev r4102.
+        from bzrlib.tests import adapt_tests, TestScenarioApplier
+        applier = TestScenarioApplier()
+        applier.scenarios = scenarios
+        adapt_tests(puller_tests, applier, suite)
     suite.addTests(
         map(loader.loadTestsFromTestCase,
             [TestRunWithLogin, TestIterateSplit]))

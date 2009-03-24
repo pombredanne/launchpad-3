@@ -7,7 +7,7 @@ __all__ = []
 
 import unittest
 
-from zope.component import getAdapter
+from zope.component import getAdapter, getGlobalSiteManager, provideUtility
 from zope.interface.verify import verifyObject
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 
@@ -20,6 +20,8 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IDatabasePolicy, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
+
+from canonical.launchpad.webapp.tests import DummyConfigurationTestCase
 
 
 class BaseDatabasePolicyTestCase(unittest.TestCase):
@@ -63,15 +65,17 @@ class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
         self.assertEquals(SLAVE_FLAVOR, StoreSelector.getDefaultFlavor())
 
 
-class MasterDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
+class MasterDatabasePolicyTestCase(
+    BaseDatabasePolicyTestCase, DummyConfigurationTestCase):
     """Tests for the `MasterDatabasePolicy`."""
 
     def setUp(self):
+        super(MasterDatabasePolicyTestCase, self).setUp()
         self.policy = MasterDatabasePolicy(
            LaunchpadTestRequest(SERVER_URL='http://launchpad.dev'))
 
     def test_XMLRPCRequest_uses_MasterPolicy(self):
-        """XMLRPC should always use the master flavor, since they always 
+        """XMLRPC should always use the master flavor, since they always
         use POST and do not support session cookies.
         """
         request = LaunchpadTestRequest(
@@ -87,8 +91,9 @@ class MasterDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
         it's likely that clients won't support cookies and thus mixing read
         and write requests will result in incoherent views of the data.
         """
-        request = LaunchpadTestRequest(
-            SERVER_URL='http://api.launchpad.dev/beta')
+        server_url = ('http://api.launchpad.dev/'
+                      + self.config.service_version_uri_prefix)
+        request = LaunchpadTestRequest(SERVER_URL=server_url)
         setFirstLayer(request, WebServiceLayer)
         policy = getAdapter(request, IDatabasePolicy)
         self.failUnless(

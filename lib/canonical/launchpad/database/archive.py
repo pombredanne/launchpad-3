@@ -18,6 +18,7 @@ from storm.locals import Count, Join
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.archiveuploader.utils import re_issource, re_isadeb
@@ -54,11 +55,13 @@ from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
     IArchive, IArchiveSet, IDistributionArchive, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, SourceNotFound)
+    PocketNotFound, SourceNotFound, default_name_by_purpose)
+from canonical.launchpad.interfaces.archiveauthtoken import (
+    IArchiveAuthTokenSet)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus)
+    ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -182,23 +185,28 @@ class Archive(SQLBase):
         return self.purpose in MAIN_ARCHIVE_PURPOSES
 
     @property
-    def title(self):
+    def displayname(self):
         """See `IArchive`."""
         if self.is_ppa:
-            title = 'PPA for %s' % self.owner.displayname
-            if self.private:
-                title = "Private %s" % title
-            return title
-        elif self.is_copy:
-            if self.private:
-                title = ("Private copy archive %s for %s" %
-                         (self.name, self.owner.displayname))
+            if self.name == default_name_by_purpose.get(ArchivePurpose.PPA):
+                displayname = 'PPA for %s' % self.owner.displayname
             else:
-                title = ("Copy archive %s for %s" %
-                         (self.name, self.owner.displayname))
-            return title
-        else:
-            return '%s for %s' % (self.purpose.title, self.distribution.title)
+                displayname = 'PPA named %s for %s' % (
+                    self.name, self.owner.displayname)
+            if self.private:
+                displayname = "Private %s" % displayname
+            return displayname
+
+        if self.is_copy:
+            if self.private:
+                displayname = "Private copy archive %s for %s" % (
+                    self.name, self.owner.displayname)
+            else:
+                displayname = "Copy archive %s for %s" % (
+                    self.name, self.owner.displayname)
+            return displayname
+
+        return '%s for %s' % (self.purpose.title, self.distribution.title)
 
     @property
     def series_with_sources(self):
@@ -279,8 +287,11 @@ class Archive(SQLBase):
         elif self.is_ppa:
             if self.private:
                 pubconf.distroroot = ppa_config.private_root
+                pubconf.htaccessroot = os.path.join(
+                    pubconf.distroroot, self.owner.name, self.name)
             else:
                 pubconf.distroroot = ppa_config.root
+                pubconf.htaccessroot = None
             pubconf.archiveroot = os.path.join(
                 pubconf.distroroot, self.owner.name, self.name,
                 self.distribution.name)
@@ -323,7 +334,7 @@ class Archive(SQLBase):
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False):
+                            exact_match=False, published_since_date=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -375,6 +386,11 @@ class Archive(SQLBase):
             clauses.append("""
                 SourcePackagePublishingHistory.pocket = %s
             """ % sqlvalues(pocket))
+
+        if published_since_date is not None:
+            clauses.append("""
+                SourcePackagePublishingHistory.datepublished >= %s
+            """ % sqlvalues(published_since_date))
 
         preJoins = [
             'sourcepackagerelease.creator',
@@ -1091,6 +1107,28 @@ class Archive(SQLBase):
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
+
+        # First, ensure that a current subscription exists for the
+        # person and archive:
+        # XXX: noodles 2009-03-02 bug=336779: This can be removed once
+        # newAuthToken() is moved into IArchiveView.
+        subscription_set = getUtility(IArchiveSubscriberSet)
+        subscriptions = subscription_set.getBySubscriber(person, archive=self)
+        if subscriptions.count() == 0:
+            raise Unauthorized(
+                "You do not have a subscription for %s." % self.displayname)
+
+        # Second, ensure that the current subscription does not already
+        # have a token:
+        token_set = getUtility(IArchiveAuthTokenSet)
+        previous_token = token_set.getActiveTokenForArchiveAndPerson(
+            self, person)
+        if previous_token:
+            raise ArchiveSubscriptionError(
+                "%s already has a token for %s." % (
+                    person.displayname, self.displayname))
+
+        # Now onto the actual token creation:
         if token is None:
             token = create_unique_token_for_table(20, ArchiveAuthToken.token)
         archive_auth_token = ArchiveAuthToken()
@@ -1118,7 +1156,7 @@ class Archive(SQLBase):
         subscription.subscriber = subscriber
         subscription.date_expires = date_expires
         subscription.description = description
-        subscription.status = ArchiveSubscriberStatus.ACTIVE
+        subscription.status = ArchiveSubscriberStatus.CURRENT
         subscription.date_created = UTC_NOW
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.add(subscription)
@@ -1163,17 +1201,12 @@ class ArchiveSet:
 
         :return: the name text to be used as name.
         """
-        name_by_purpose = {
-            ArchivePurpose.PRIMARY: 'primary',
-            ArchivePurpose.PPA: 'ppa',
-            ArchivePurpose.PARTNER: 'partner',
-            }
-
-        if purpose not in name_by_purpose.keys():
+        if purpose not in default_name_by_purpose.keys():
             raise AssertionError(
                 "'%s' purpose has no default name." % purpose.name)
 
-        return name_by_purpose[purpose]
+        return default_name_by_purpose[purpose]
+
 
     def getByDistroPurpose(self, distribution, purpose, name=None):
         """See `IArchiveSet`."""
@@ -1378,6 +1411,14 @@ class ArchiveSet:
                     status_and_counters[key] += status_counter
 
         return status_and_counters
+
+    def getPrivatePPAs(self):
+        """See `IArchiveSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            Archive,
+            Archive.private == True,
+            Archive.purpose == ArchivePurpose.PPA)
 
     def getArchivesForDistribution(self, distribution, name=None,
                                    purposes=None, user=None):

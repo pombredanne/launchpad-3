@@ -3,19 +3,19 @@
 == Filing a Bug ==
 
 There are three objects on which you can file a bug. An
-SQLObjectCreatedEvent is published when the bug is filed. Let's register
+ObjectCreatedEvent is published when the bug is filed. Let's register
 an event listener to demonstrate this.
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> import transaction
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+    >>> from lazr.lifecycle.event import IObjectCreatedEvent
     >>> from canonical.launchpad.interfaces import IBug
     >>> def on_created_event(object, event):
-    ...     print "SQLObjectCreatedEvent: %r" % object
+    ...     print "ObjectCreatedEvent: %r" % object
     >>> on_created_listener = TestEventListener(
-    ...     IBug, ISQLObjectCreatedEvent, on_created_event)
+    ...     IBug, IObjectCreatedEvent, on_created_event)
 
 1. Filing a bug on a distribution.
 
@@ -49,7 +49,7 @@ comment, of the bug report.
     >>> launchbag.add(ubuntu)
 
     >>> ubuntu_filebug.initialize()
-    SQLObjectCreatedEvent: <Bug at ...>
+    ObjectCreatedEvent: <Bug at ...>
 
     >>> launchbag.clear()
 
@@ -86,7 +86,7 @@ the bugtask.
     >>> firefox_filebug = getMultiAdapter((firefox, request), name="+filebug")
 
     >>> firefox_filebug.initialize()
-    SQLObjectCreatedEvent: <Bug at ...>
+    ObjectCreatedEvent: <Bug at ...>
 
 3. Filing a bug on a distribution source package.
 
@@ -108,7 +108,7 @@ You can also access the +filebug page from a sourcepackage.
     >>> launchbag.add(ubuntu)
 
     >>> ubuntu_firefox_filebug.initialize()
-    SQLObjectCreatedEvent: <Bug at ...>
+    ObjectCreatedEvent: <Bug at ...>
 
     >>> launchbag.clear()
 
@@ -321,7 +321,7 @@ However, if we now unsubscribe Foo Bar, it will say
 'Subscribe/Unsubscribe' since he will have the option of either
 subscribing himself or unsubscribing the Launchpad team.
 
-    >>> bug_one.unsubscribe(foo_bar)
+    >>> bug_one.unsubscribe(foo_bar, foo_bar)
 
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
@@ -337,7 +337,7 @@ other team, it will say only 'Subscribe'.
     >>> shipit_team = getUtility(IPersonSet).getByName('shipit-admins')
     >>> foo_bar.inTeam(shipit_team)
     False
-    >>> bug_one.unsubscribe(launchpad_team)
+    >>> bug_one.unsubscribe(launchpad_team, foo_bar)
     >>> bug_one.subscribe(shipit_team, shipit_team)
     <BugSubscription at ...>
 

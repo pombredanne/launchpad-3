@@ -17,14 +17,13 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Object, Text
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.codeimport import ICodeImport
 from canonical.launchpad.interfaces.codeimportmachine import (
     ICodeImportMachine)
 from canonical.launchpad.interfaces.person import IPerson
-from canonical.lazr import (
-    DBEnumeratedType, DBItem)
 
 
 class CodeImportJobState(DBEnumeratedType):
@@ -149,7 +148,7 @@ class ICodeImportJobSetPublic(Interface):
         """Select a job for the given machine to run and mark it as started.
 
         If there is not already a CodeImportMachine with the given hostname,
-        one will be created in the the ONLINE state.
+        one will be created in the ONLINE state.
 
         This method selects a job that is due to be run for running on the
         given machine and calls ICodeImportJobWorkflowPublic.startJob() on it.

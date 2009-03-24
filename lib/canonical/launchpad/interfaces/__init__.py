@@ -3,9 +3,8 @@
 
 __metaclass__ = type
 
-# README:
-# Please DO NOT put interfaces in this file. Put them in the correct
-# file, one file for each interface type: person, project, bug, etc.
+# XXX flacoste 2009/03/18 We should use specific imports instead of
+# importing from this module.
 
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.malone import *
@@ -21,7 +20,6 @@ from canonical.launchpad.interfaces.archive import *
 from canonical.launchpad.interfaces.archivedependency import *
 from canonical.launchpad.interfaces.archivepermission import *
 from canonical.launchpad.interfaces.announcement import *
-from canonical.launchpad.interfaces.answercontact import *
 from canonical.launchpad.interfaces.authserver import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
@@ -86,16 +84,12 @@ from canonical.launchpad.interfaces.distroseriessourcepackagerelease import *
 from canonical.launchpad.interfaces.emailaddress import *
 from canonical.launchpad.interfaces.entitlement import *
 from canonical.launchpad.interfaces.externalbugtracker import *
-from canonical.launchpad.interfaces.faq import *
-from canonical.launchpad.interfaces.faqcollection import *
-from canonical.launchpad.interfaces.faqtarget import *
 from canonical.launchpad.interfaces.featuredproject import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
 from canonical.launchpad.interfaces.hwdb import *
-from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *
@@ -170,14 +164,6 @@ from canonical.launchpad.interfaces.translationmessage import *
 from canonical.launchpad.interfaces.translations import *
 from canonical.launchpad.interfaces.translationsoverview import *
 from canonical.launchpad.interfaces.translationtemplateitem import *
-from canonical.launchpad.interfaces.question import *
-from canonical.launchpad.interfaces.questionbug import *
-from canonical.launchpad.interfaces.questioncollection import *
-from canonical.launchpad.interfaces.questionenums import *
-from canonical.launchpad.interfaces.questionmessage import *
-from canonical.launchpad.interfaces.questionreopening import *
-from canonical.launchpad.interfaces.questionsubscription import *
-from canonical.launchpad.interfaces.questiontarget import *
 from canonical.launchpad.interfaces.translationcommonformat import *
 from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translationimportqueue import *
@@ -187,6 +173,20 @@ from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.packagediff import *
+
+
+from lp.answers.interfaces.answercontact import *
+from lp.answers.interfaces.faq import *
+from lp.answers.interfaces.faqcollection import *
+from lp.answers.interfaces.faqtarget import *
+from lp.answers.interfaces.question import *
+from lp.coop.answersbugs.interfaces import *
+from lp.answers.interfaces.questioncollection import *
+from lp.answers.interfaces.questionenums import *
+from lp.answers.interfaces.questionmessage import *
+from lp.answers.interfaces.questionreopening import *
+from lp.answers.interfaces.questionsubscription import *
+from lp.answers.interfaces.questiontarget import *
 
 from canonical.launchpad.interfaces._schema_circular_imports import *
 

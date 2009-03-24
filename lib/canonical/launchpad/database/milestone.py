@@ -7,6 +7,7 @@ __all__ = [
     'Milestone',
     'MilestoneSet',
     'ProjectMilestone',
+    'milestone_sort_key',
     ]
 
 import datetime
@@ -31,29 +32,30 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
+FUTURE_NONE = datetime.date(datetime.MAXYEAR, 1, 1)
+
+
+def milestone_sort_key(milestone):
+    """Enable sorting by the Milestone dateexpected and name."""
+    if milestone.dateexpected is None:
+        # A datetime.datetime object cannot be compared with None.
+        # Milestones with dateexpected=None are sorted as being
+        # way in the future.
+        date = FUTURE_NONE
+    elif isinstance(milestone.dateexpected, datetime.datetime):
+        # XXX: EdwinGrubbs 2009-02-06 bug=326384:
+        # The Milestone.dateexpected should be changed into a date column,
+        # since the class defines the field as a DateCol, so that a list
+        # of milestones can't have some dateexpected attributes that are
+        # datetimes and others that are dates, which can't be compared.
+        date = milestone.dateexpected.date()
+    else:
+        date = milestone.dateexpected
+    return (date, expand_numbers(milestone.name))
+
+
 class HasMilestonesMixin:
     implements(IHasMilestones)
-
-    _FUTURE_NONE = datetime.date(datetime.MAXYEAR, 1, 1)
-
-    @classmethod
-    def milestone_sort_key(cls, milestone):
-        """Enable sorting by the Milestone dateexpected and name."""
-        if milestone.dateexpected is None:
-            # A datetime.datetime object cannot be compared with None.
-            # Milestones with dateexpected=None are sorted as being
-            # way in the future.
-            date = cls._FUTURE_NONE
-        elif isinstance(milestone.dateexpected, datetime.datetime):
-            # XXX: EdwinGrubbs 2009-02-06 bug=326384:
-            # The Milestone.dateexpected should be changed into a date column,
-            # since the class defines the field as a DateCol, so that a list
-            # of milestones can't have some dateexpected attributes that are
-            # datetimes and others that are dates, which can't be compared.
-            date = milestone.dateexpected.date()
-        else:
-            date = milestone.dateexpected
-        return (date, expand_numbers(milestone.name))
 
     def _getMilestoneCondition(self):
         """Provides condition for milestones and all_milestones properties.
@@ -70,7 +72,7 @@ class HasMilestonesMixin:
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone, self._getMilestoneCondition())
-        return sorted(result, key=self.milestone_sort_key, reverse=True)
+        return sorted(result, key=milestone_sort_key, reverse=True)
 
     @property
     def milestones(self):
@@ -79,7 +81,7 @@ class HasMilestonesMixin:
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
                                 Milestone.visible == True))
-        return sorted(result, key=self.milestone_sort_key, reverse=True)
+        return sorted(result, key=milestone_sort_key, reverse=True)
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
@@ -138,6 +140,11 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
         search_params.milestone = self
+    
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.target.official_bug_tags
 
 
 class MilestoneSet:
@@ -233,3 +240,9 @@ class ProjectMilestone(HasBugsBase):
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
         search_params.milestone = self
+
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.target.official_bug_tags
+

@@ -62,6 +62,13 @@ class FakeLogger:
     def error(self, *stuff, **kw):
         self.message('ERROR', *stuff, **kw)
 
+    exception = error
+
+    def critical(self, *stuff, **kw):
+        self.message('CRITICAL', *stuff, **kw)
+
+    fatal = critical
+
     def info(self, *stuff, **kw):
         self.message('INFO', *stuff, **kw)
 

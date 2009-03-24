@@ -11,6 +11,7 @@ import unittest
 
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
+from zope.testing.cleanup import cleanUp
 
 from canonical.config import config
 from canonical.database.sqlbase import (
@@ -190,6 +191,10 @@ def noPrivSetUp(test):
     setUp(test)
     login('no-priv@canonical.com')
 
+def layerlessTearDown(test):
+    """Clean up any Zope registrations."""
+    cleanUp()
+
 def _createUbuntuBugTaskLinkedToQuestion():
     """Get the id of an Ubuntu bugtask linked to a question.
 
@@ -366,6 +371,12 @@ special = {
             stdout_logging=False, layer=None
             ),
 
+    'webservice-configuration.txt': LayeredDocFileSuite(
+            '../doc/webservice-configuration.txt',
+            setUp=setGlobs, tearDown=layerlessTearDown, layer=None
+            ),
+
+
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distroseries-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
@@ -411,12 +422,6 @@ special = {
             '../doc/buildd-scoring.txt',
             setUp=builddmasterSetUp,
             layer=LaunchpadZopelessLayer,
-            ),
-    'buildd-queuebuilder.txt': LayeredDocFileSuite(
-            '../doc/buildd-queuebuilder.txt',
-            setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer,
-            stdout_logging_level=logging.WARNING
             ),
     'close-account.txt': LayeredDocFileSuite(
             '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
@@ -591,24 +596,6 @@ special = {
             '../doc/bugtracker-person.txt',
             setUp=checkwatchesSetUp,
             tearDown=uploaderTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
-            '../doc/answer-tracker-notifications-linked-bug.txt',
-            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'answer-tracker-notifications-linked-bug.txt-uploader':
-            LayeredDocFileSuite(
-                '../doc/answer-tracker-notifications-linked-bug.txt',
-                setUp=uploaderBugLinkedToQuestionSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer
-                ),
-    'answer-tracker-notifications-linked-bug.txt-queued': LayeredDocFileSuite(
-            '../doc/answer-tracker-notifications-linked-bug.txt',
-            setUp=uploadQueueBugLinkedToQuestionSetUp,
-            tearDown=tearDown,
             layer=LaunchpadZopelessLayer
             ),
     'mailinglist-xmlrpc.txt': LayeredDocFileSuite(

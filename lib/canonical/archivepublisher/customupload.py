@@ -16,11 +16,11 @@ __all__ = ['CustomUpload', 'CustomUploadError']
 
 import os
 import shutil
-import stat
 import tarfile
 import tempfile
 
-from canonical.archivepublisher.debversion import Version as make_version
+from canonical.archivepublisher.debversion import (
+    Version as make_version, VersionError)
 
 
 class CustomUploadError(Exception):
@@ -172,11 +172,32 @@ class CustomUpload:
                 self.tarfile_path, self.targetdir)
 
     def fixCurrentSymlink(self):
-        """Update the 'current' symlink and prune old uploads from the tree."""
-        # Get an appropriately-sorted list of the installer directories now
-        # present in the target.
-        versions = [inst for inst in os.listdir(self.targetdir)
-                    if inst != 'current']
+        """Update the 'current' symlink and prune old entries.
+
+        The 'current' symbolic link will point to the latest version present
+        in 'targetdir' and only the latest 3 valid entries will be kept.
+
+        Entries named as invalid versions, for instance 'alpha-X', will be
+        ignored and left alone. That's because they were probably copied
+        manually into this location, they should remain in place.
+
+        See `DebVersion` for more information about version validation.
+        """
+        # Get an appropriately-sorted list of the valid installer directories
+        # now present in the target. Deliberately skip 'broken' versions
+        # because they can't be sorted anyway.
+        versions = []
+        for inst in os.listdir(self.targetdir):
+            # Skip the symlink.
+            if inst == 'current':
+                continue
+            # Skip broken versions.
+            try:
+                make_version(inst)
+            except VersionError:
+                continue
+            # Append the valid versions to the list.
+            versions.append(inst)
         versions.sort(key=make_version, reverse=True)
 
         # Make sure the 'current' symlink points to the most recent version

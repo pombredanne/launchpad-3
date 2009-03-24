@@ -229,8 +229,6 @@ class OpenIDMixin_checkTeamMembership_TestCase(TestCaseWithFactory):
             'guilherme.salgado@canonical.com')
         self.account = self.factory.makeAccount(
             'Test account, without a person')
-        self.account_email = self.factory.makeEmail(
-            'test@example.com', None, self.account)
         class CheckTeamMembershipTest(OpenIDMixin):
             # Must create this class so that we can override account, which is
             # a @property on OpenIDMixin.

@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -39,7 +39,7 @@ class LoopTuner:
     """
 
     def __init__(self, operation, goal_seconds, minimum_chunk_size=1,
-            maximum_chunk_size=1000000000):
+            maximum_chunk_size=1000000000, cooldown_time=None):
         """Initialize a loop, to be run to completion at most once.
 
         Parameters:
@@ -58,12 +58,15 @@ class LoopTuner:
             needed even if the ITunableLoop ignores chunk size for whatever
             reason, since reaching floating-point infinity would seriously
             break the algorithm's arithmetic.
+        cooldown_time: time (in seconds, float) to sleep between consecutive
+            operation runs.  Defaults to None for no sleep.
         """
         assert(ITunableLoop.providedBy(operation))
         self.operation = operation
         self.goal_seconds = float(goal_seconds)
         self.minimum_chunk_size = minimum_chunk_size
         self.maximum_chunk_size = maximum_chunk_size
+        self.cooldown_time = cooldown_time
 
     def run(self):
         """Run the loop to completion."""
@@ -80,6 +83,8 @@ class LoopTuner:
             last_clock = new_clock
             logging.info("Iteration %d (size %.1f): %.3f seconds" %
                          (iteration, chunk_size, time_taken))
+
+            last_clock = self._coolDown(last_clock)
 
             total_size += chunk_size
 
@@ -108,6 +113,23 @@ class LoopTuner:
             "average size %f (%s/s)" %
                 (total_size, iteration, total_time, average_size,
                  average_speed))
+
+    def _coolDown(self, bedtime):
+        """Sleep for `self.cooldown_time` seconds, if set.
+
+        Assumes that anything the main LoopTuner loop does apart from
+        doing a chunk of work or sleeping takes zero time.
+
+        :param bedtime: Time the cooldown started, i.e. the time the
+        chunk of real work was completed.
+        :return: Time when cooldown completed, i.e. the starting time
+        for a next chunk of work.
+        """
+        if self.cooldown_time is None or self.cooldown_time <= 0.0:
+            return bedtime
+        else:
+            time.sleep(self.cooldown_time)
+            return self._time()
 
     def _time(self):
         """Monotonic system timer with unit of 1 second.

@@ -37,7 +37,7 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url, get_current_browser_request,
     LaunchpadView, UserAttributeCache)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.uri import InvalidURIError, URI
+from lazr.uri import InvalidURIError, URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 

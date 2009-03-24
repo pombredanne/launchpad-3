@@ -1,5 +1,14 @@
 = Batch Navigation =
 
+Most of the test for this behavior is in the lazr.batchnavigation package.
+
+This documents and tests the Launchpad-specific elements of its usage.
+
+Note that our use of the batching code relies on the registration of
+canonical.launchpad.webapp.batching.FiniteSequenceAdapter for
+storm.zope.interfaces.IResultSet and
+storm.zope.interfaces.ISQLObjectResultSet.
+
 Batch navigation provides a way to navigate batch results in a web
 page by providing URL links to the next, previous and numbered pages
 of results.
@@ -34,153 +43,6 @@ Some sample data.
 
   >>> reindeer = ['Dasher', 'Dancer', 'Prancer', 'Vixen', 'Comet',
   ...     'Cupid', 'Donner', 'Blitzen', 'Rudolph']
-
-You can create a batch and a batch navigator like so:
-
-  >>> reindeer_batch_navigator = BatchNavigator(
-  ...     reindeer, build_request(), size=3)
-
-The BatchNavigator implements IBatchNavigator.
-
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
-
-    >>> verifyObject(IBatchNavigator, reindeer_batch_navigator)
-    True
-
-The BatchNavigator implements IBatchNavigator.
-
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
-
-    >>> verifyObject(IBatchNavigator, reindeer_batch_navigator)
-    True
-
-You can ask the navigator for the chunk of results currently being shown
-(e.g. to iterate over them for rendering in ZPT):
-
-  >>> list(reindeer_batch_navigator.currentBatch())
-  ['Dasher', 'Dancer', 'Prancer']
-
-You can ask for the first, previous, next and last results' links:
-
-  >>> reindeer_batch_navigator.firstBatchURL()
-  ''
-  >>> reindeer_batch_navigator.prevBatchURL()
-  ''
-  >>> reindeer_batch_navigator.nextBatchURL()
-  'http://www.example.com/foo?start=3'
-  >>> reindeer_batch_navigator.lastBatchURL()
-  'http://www.example.com/foo?start=6'
-
-The next link will be empty when there are no further results:
-
-  >>> request = build_request({"start": "3", "batch": "20"})
-  >>> last_reindeer_batch_navigator = BatchNavigator(reindeer, request=request)
-  >>> last_reindeer_batch_navigator.nextBatchURL()
-  ''
-
-The first and previous link should appear even when we start at a point between 0
-and the batch size:
-
-  >>> request = build_request({"start": "2", "batch": "3"})
-  >>> last_reindeer_batch_navigator = BatchNavigator(reindeer, request=request)
-
-Here, we can see too that the batch argument appears as part of the URL.
-That's because the request asked for a different size than the default
-one when we create the Batch object, by default, it's 5.
-
-  >>> last_reindeer_batch_navigator.firstBatchURL()
-  'http://www.example.com/foo?start=0&batch=3'
-
-  >>> last_reindeer_batch_navigator.prevBatchURL()
-  'http://www.example.com/foo?start=0&batch=3'
-
-This all works with query strings in the URLs, too:
-
-  >>> request = build_request({'fnorb': 'bar',
-  ...                          'start': '3',
-  ...                          'batch': '3'})
-  >>> reindeer_batch_navigator_with_qs = BatchNavigator(
-  ...     reindeer, request, size=3)
-
-In this case, we created the BatchNavigator with a default size of '3' and
-the request is asking exactly that number of items per batch, and thus, we
-don't need to show 'batch' as part of the URL.
-
-  >>> reindeer_batch_navigator_with_qs.firstBatchURL()
-  'http://www.example.com/foo?fnorb=bar&start=0'
-  >>> reindeer_batch_navigator_with_qs.prevBatchURL()
-  'http://www.example.com/foo?fnorb=bar&start=0'
-  >>> reindeer_batch_navigator_with_qs.nextBatchURL()
-  'http://www.example.com/foo?fnorb=bar&start=6'
-  >>> reindeer_batch_navigator_with_qs.lastBatchURL()
-  'http://www.example.com/foo?fnorb=bar&start=6'
-
-You can ask for the links for each of the result pages:
-
-  >>> links = reindeer_batch_navigator.batchPageURLs()
-  >>> for link in links:
-  ...     label, url = link.items()[0]
-  ...     print label, url
-  [1] http://www.example.com/foo?start=0
-  2 http://www.example.com/foo?start=3
-  3 http://www.example.com/foo?start=6
-  _last_ http://www.example.com/foo?start=6
-
-We ensure that batch arguments supplied in the URL are observed
-for POST operations too:
-
-  >>> request = build_request({'fnorb': 'bar',
-  ...                          'start': '3',
-  ...                          'batch': '3'}, method='POST')
-  >>> reindeer_batch_navigator_post_with_qs = BatchNavigator(
-  ...     reindeer, request)
-
-  >>> reindeer_batch_navigator_post_with_qs.start
-  3
-  >>> reindeer_batch_navigator_post_with_qs.nextBatchURL()
-  'http://www.example.com/foo?fnorb=bar&start=6&batch=3'
-
-We ensure that multiple size and batch arguments supplied in the URL
-(which get turned into lists by Zope) don't blow up the application:
-
-  >>> request = build_request({'batch': [u"1", u"3"], 'start': [u'2', u'3']})
-  >>> navigator = BatchNavigator(reindeer, request=request)
-  >>> navigator.nextBatchURL()
-  'http://www.example.com/foo?start=5&batch=5'
-
-== Empty Batches ==
-
-You can also create an empty batch that will not have any items:
-
-  >>> null_batch_navigator = BatchNavigator(
-  ...     None, build_request(), size=3)
-  >>> null_batch_navigator.firstBatchURL()
-  ''
-  >>> null_batch_navigator.nextBatchURL()
-  ''
-  >>> null_batch_navigator.prevBatchURL()
-  ''
-  >>> null_batch_navigator.lastBatchURL()
-  ''
-
-  >>> null_batch_navigator = BatchNavigator(
-  ...     [], build_request(), size=3)
-  >>> null_batch_navigator.firstBatchURL()
-  ''
-  >>> null_batch_navigator.nextBatchURL()
-  ''
-  >>> null_batch_navigator.prevBatchURL()
-  ''
-  >>> null_batch_navigator.lastBatchURL()
-  ''
-
-TODO:
-
-  - blowing up when start is beyond end
-  - orphans
-  - overlap
 
 == Performance with SQLObject ==
 
@@ -223,62 +85,6 @@ COUNTs are issued:
   True
 
 
-== Adding callback functions ==
-
-Sometimes it is useful to have a function called with the batched
-values once they have been determined.  This is the case when there
-are subsequent queries that are needed to be executed for each batch,
-and it is undesirable or overly expensive to execute the query for
-every value in the entire result set.
-
-The callback function must define two parameters.  The first is the 
-batch navigator object itself, and the second it the current batch.
-The callback function is called once and only once when the
-BatchNavigator is constructed, and the current batch is determined.
-
-  >>> def print_callback(context, batch):
-  ...     for item in batch:
-  ...         print item
-
-  >>> reindeer_batch_navigator = BatchNavigator(
-  ...     reindeer, build_request(), size=3, callback=print_callback)
-  Dasher
-  Dancer
-  Prancer
-
-  >>> request = build_request({"start": "3", "batch": "20"})
-  >>> last_reindeer_batch_navigator = BatchNavigator(
-  ...     reindeer, request=request, callback=print_callback)
-  Vixen
-  Comet
-  Cupid
-  Donner
-  Blitzen
-  Rudolph
-
-Most likely, the callback function will be bound to a view class.
-By providing the batch navigator itself as the context for the
-callback allows the addition of extra member variables.  This is
-useful as the BatchNavigator becomes the context in page templates
-that are batched.
-
-  >>> class ReindeerView:
-  ...     def constructReindeerFromAtoms(self, context, batch):
-  ...         # some significantly slow process
-  ...         view.built_reindeer = list(batch)
-  ...     def batchedReindeer(self):
-  ...         return BatchNavigator(
-  ...            reindeer, build_request(), size=3,
-  ...            callback=self.constructReindeerFromAtoms)
-
-  >>> view = ReindeerView()
-  >>> batch_navigator = view.batchedReindeer()
-  >>> print view.built_reindeer
-  ['Dasher', 'Dancer', 'Prancer']
-  >>> print list(batch_navigator.currentBatch())
-  ['Dasher', 'Dancer', 'Prancer']
-
-
 == Maximum batch size ==
 
 Since the batch size is exposed in the URL, it's possible for users to
@@ -300,43 +106,6 @@ InvalidBatchSizeError is raised.
     InvalidBatchSizeError: Maximum for "batch" parameter is 5.
 
     >>> ignored = config.pop('max-batch-size')
-
-
-== URL parameters ==
-
-Normally, any parameters passed in the current page's URL are
-reproduced in the batch navigator's links.  A "transient" parameter is
-one that was only relevant for the current page request and shouldn't be
-passed on to subsequent ones.
-
-In this next batch navigator, two parameters occur in the page's URL:
-"noisy" and "quiet."
-
-    >>> request_parameters = {
-    ...     'quiet': 'ssht',
-    ...     'noisy': 'HELLO',
-    ...     }
-
-    >>> request_with_parameters = build_request(request_parameters)
-
-One parameter, "quiet," is transient.  There is another transient
-parameter called "absent," but it's not passed in our ongoing page
-request.
-
-    >>> navigator_with_parameters = BatchNavigator(
-    ...     reindeer, request_with_parameters, size=3,
-    ...     transient_parameters=['quiet', 'absent'])
-
-Of these three parameters, only "noisy" recurs in the links produced by
-the batch navigator.
-
-    >>> navigator_with_parameters.nextBatchURL()
-    'http://www.example.com/foo?noisy=HELLO&start=3'
-    >>> navigator_with_parameters.lastBatchURL()
-    'http://www.example.com/foo?noisy=HELLO&start=6'
-
-The transient parameter is omitted, and the one that was never passed in
-in the first place does not magically appear.
 
 
 == Batch views ==
@@ -379,34 +148,3 @@ batches, only the upper navigation links view will render.
     ...     (navigator, request), name='+navigation-links-lower')
     >>> lower_view.render()
     u''
-
-
-== Batch headings ==
-
-The batched values are usually one kind of object such as bugs. The
-BatchNavigator's heading property contains a description of the objects
-for display.
-
-    >>> navigator.heading
-    'results'
-
-There is a special case for when there is only one item in the batch,
-the singular version of the heading is returned.
-
-    >>> navigator = BatchNavigator(['only-one'], request=request)
-    >>> navigator.heading
-    'result'
-
-The heading can be set by passing a singular and a plural version of
-the heading. The batch navigation will return the appropriate
-header based on the total items in the batch.
-
-    >>> navigator = BatchNavigator(reindeer, request=request)
-    >>> navigator.setHeadings('bug', 'bugs')
-    >>> navigator.heading
-    'bugs'
-
-    >>> navigator = BatchNavigator(['only-one'], request=request)
-    >>> navigator.setHeadings('bug', 'bugs')
-    >>> navigator.heading
-    'bug'

@@ -7,12 +7,14 @@ __all__ = [
     'reset_all_branch_last_modified',
     ]
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 
-from canonical.config import config
+from zope.component import getUtility
+
 from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.database.branch import BranchSet
+from canonical.launchpad.interfaces.branchcollection import IAllBranches
+
 
 def reset_all_branch_last_modified(last_modified=datetime.now(pytz.UTC)):
     """Reset the date_last_modifed value on all the branches.
@@ -20,9 +22,8 @@ def reset_all_branch_last_modified(last_modified=datetime.now(pytz.UTC)):
     DO NOT use this in a non-pagetest.
     """
     login('foo.bar@canonical.com')
-    branch_set = BranchSet()
-    for branch in branch_set:
+    branches = getUtility(IAllBranches).getBranches()
+    for branch in branches:
         branch.date_last_modified = last_modified
-        branch.syncUpdate()
     logout()
 

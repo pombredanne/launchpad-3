@@ -228,7 +228,7 @@ class SubmissionParser(object):
         """Parse the <client> node in the <summary> section.
 
         :return: A dictionary with keys 'name', 'version', 'plugins'.
-                 Name and version describe the the client program that
+                 Name and version describe the client program that
                  produced the submission. Pugins is a list with one
                  entry per client plugin; each entry is dictionary with
                  the keys 'name' and 'version'.
@@ -1585,7 +1585,7 @@ class HALDevice:
 
         If the vendor name is 'ATA', and if the model name contains
         at least one ' ' character, the string before the first ' ' is
-        returned as the vendor name, and the the string after the first
+        returned as the vendor name, and the string after the first
         ' ' is returned as the model name.
 
         In all other cases, vendor and model name are returned unmodified.

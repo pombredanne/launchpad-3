@@ -179,9 +179,8 @@ logged in user.
     'http://launchpad.dev/people/+me/+login'
 
 If they login with their existing credentials, we will automatically create
-an associated Person entry for that account.
+a Person and associate it with that account.
 
-    >>> browser.handleErrors = False
     >>> browser.getControl(
     ...     'E-mail address:', index=0).value = 'new-user@example.com'
     >>> browser.getControl('Password').value = 'test2'
@@ -195,6 +194,7 @@ an associated Person entry for that account.
     >>> getUtility(IPersonSet).getByAccount(account)
     <Person ... new-user ...
     >>> logout()
+
 
 == Cleanup ==
 

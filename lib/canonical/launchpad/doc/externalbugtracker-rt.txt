@@ -176,12 +176,14 @@ instance which has several bugs that we wish to watch:
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1585, so we add a watch against the remote bug.
 
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.RT)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, '1585', sample_person)
+    ...     example_bug_tracker, '1585',
+    ...     getUtility(ILaunchpadCelebrities).janitor)
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1585: None
@@ -195,7 +197,7 @@ remote status for, the bug watch that we have created.
     >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> rt = TestRequestTracker(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
-    INFO:...:Updating 1 watches on http://bugs.some.where
+    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1585: new
@@ -223,7 +225,7 @@ tracker with a variety of statuses.
 
     >>> rt.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
-    INFO:...:Updating 5 watches on http://bugs.some.where
+    INFO:...:Updating 5 watches for 5 bugs on http://bugs.some.where
     CALLED urlopen(u'REST/1.0/search/ticket/')
 
 The bug statuses have now been imported from the Example.com bug

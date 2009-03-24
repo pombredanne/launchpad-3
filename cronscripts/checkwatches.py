@@ -18,17 +18,30 @@ class CheckWatches(LaunchpadCronScript):
 
     def add_my_options(self):
         """See `LaunchpadScript`."""
-        self.parser.add_option('-t', '--bug-tracker', action='append',
+        self.parser.add_option(
+            '-t', '--bug-tracker', action='append',
             dest='bug_trackers', metavar="BUG_TRACKER",
             help="Only check a given bug tracker. Specifying more than "
                 "one bugtracker using this option will check all the "
                 "bugtrackers specified.")
+        self.parser.add_option(
+            '-b', '--batch-size', action='store', dest='batch_size',
+            help="Set the number of watches to be checked per bug "
+                 "tracker in this run. If BATCH_SIZE is 0, all watches "
+                 "on the bug tracker that are eligible for checking will "
+                 "be checked.")
 
     def main(self):
         start_time = time.time()
 
         updater = BugWatchUpdater(self.txn, self.logger)
-        updater.updateBugTrackers(self.options.bug_trackers)
+
+        # Make sure batch_size is an integer or None.
+        batch_size = self.options.batch_size
+        if batch_size is not None:
+            batch_size = int(batch_size)
+
+        updater.updateBugTrackers(self.options.bug_trackers, batch_size)
 
         run_time = time.time() - start_time
         self.logger.info("Time for this run: %.3f seconds." % run_time)

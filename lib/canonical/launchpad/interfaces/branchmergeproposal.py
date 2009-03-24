@@ -25,7 +25,8 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+    Bytes, Choice, Datetime, Int, Object, Text, TextLine)
+from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
@@ -33,7 +34,6 @@ from canonical.launchpad.interfaces import IBranch, IPerson
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,
@@ -186,16 +186,8 @@ class IBranchMergeProposal(Interface):
             readonly=True,
             description=_("The current state of the proposal.")))
 
-    reviewer = exported(
-        PublicPersonChoice(
-            title=_('Default Review Team'),
-            required=False,
-            vocabulary='ValidPersonOrTeam',
-            description=_("The reviewer of a branch is the person or team "
-                          "that is responsible for reviewing proposals and "
-                          "merging into this branch.")))
-
-
+    # Not to be confused with a code reviewer. A code reviewer is someone who
+    # can vote or has voted on a proposal.
     reviewer = exported(
         PublicPersonChoice(
             title=_('Review person or team'), required=False,
@@ -333,8 +325,12 @@ class IBranchMergeProposal(Interface):
 
 
     # Cannot specify value type without creating a circular dependency
-    votes = List(
-        title=_('The votes cast or expected for this proposal'),
+    votes = exported(
+        CollectionField(
+            title=_('The votes cast or expected for this proposal'),
+            value_type=Reference(schema=Interface), #ICodeReviewVoteReference
+            readonly=True
+            )
         )
 
     def isValidTransition(next_state, user=None):
@@ -568,24 +564,7 @@ class IBranchMergeProposalGetter(Interface):
     def getProposalsForContext(context, status=None, visible_by_user=None):
         """Return BranchMergeProposals associated with the context.
 
-        :param context: Either a 'Person' or 'Product'.
-        :param status: An iterable of queue_status of the proposals to return.
-            If None is specified, all the proposals of all possible states
-            are returned.
-        :param visible_by_user: If a person is not supplied, only merge
-            proposals based on public branches are returned.  If a person is
-            supplied, merge proposals based on both public branches, and the
-            private branches that the person is entitled to see are returned.
-            Private branches are only visible to the owner and subscribers of
-            the branch, and to LP admins.
-        :raises BadBranchMergeProposalSearchContext: If the context is not
-            understood.
-        """
-
-    def getProposalsForReviewer(context, status=None, visible_by_user=None):
-        """Returen BranchMergeProposals associated with a reviewer.
-
-        :param context: Either a 'Person' or 'Product'.
+        :param context: Either an `IPerson` or `IProduct`.
         :param status: An iterable of queue_status of the proposals to return.
             If None is specified, all the proposals of all possible states
             are returned.

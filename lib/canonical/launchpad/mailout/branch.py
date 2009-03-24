@@ -6,8 +6,9 @@ __metaclass__ = type
 
 
 from canonical.launchpad.components.branch import BranchDelta
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.webapp import canonical_url
@@ -15,8 +16,9 @@ from canonical.launchpad.webapp import canonical_url
 
 def send_branch_modified_notifications(branch, event):
     """Notify the related people that a branch has been modifed."""
+    user = IPerson(event.user)
     branch_delta = BranchDelta.construct(
-        event.object_before_modification, branch, event.user)
+        event.object_before_modification, branch, user)
     if branch_delta is None:
         return
     # If there is no one interested, then bail out early.
@@ -27,7 +29,7 @@ def send_branch_modified_notifications(branch, event):
     actual_recipients = {}
     # If the person editing the branch isn't in the team of the owner
     # then notify the branch owner of the changes as well.
-    if not event.user.inTeam(branch.owner):
+    if not user.inTeam(branch.owner):
         # Existing rationales are kept.
         recipients.add(branch.owner, None, None)
     for recipient in recipients:
@@ -43,7 +45,7 @@ def send_branch_modified_notifications(branch, event):
                 RecipientReason.forBranchSubscriber(
                     subscription, recipient, rationale)
     from_address = format_address(
-        event.user.displayname, event.user.preferredemail.email)
+        user.displayname, user.preferredemail.email)
     mailer = BranchMailer.forBranchModified(branch, actual_recipients,
         from_address, branch_delta)
     mailer.sendAll()

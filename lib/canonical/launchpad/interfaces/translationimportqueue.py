@@ -1,13 +1,12 @@
-# Copyright 2005-2008 Canonical Ltd. All rights reserved.
+# Copyright 2005-2009 Canonical Ltd. All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Field, Text, TextLine
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import TranslationFileFormat
-
-from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad.interfaces.translationcommonformat import (
     TranslationImportExportBaseException)
@@ -21,8 +20,10 @@ __all__ = [
     'IEditTranslationImportQueueEntry',
     'IHasTranslationImports',
     'RosettaImportStatus',
+    'SpecialTranslationImportTargetFilter',
     'TranslationFileType',
     ]
+
 
 class TranslationImportQueueConflictError(
                                     TranslationImportExportBaseException):
@@ -74,6 +75,22 @@ class RosettaImportStatus(DBEnumeratedType):
         Blocked
 
         The entry has been blocked to be imported by a Rosetta Expert.
+        """)
+
+
+class SpecialTranslationImportTargetFilter(DBEnumeratedType):
+    """Special "meta-targets" to filter the queue view by."""
+
+    PRODUCT = DBItem(1, """
+        Any project
+
+        Any project registered in Launchpad.
+        """)
+
+    DISTRIBUTION = DBItem(2, """
+        Any distribution
+
+        Any distribution registered in Launchpad.
         """)
 
 
@@ -142,6 +159,9 @@ class ITranslationImportQueueEntry(Interface):
         title=_("The timestamp when the status was changed."),
         required=True)
 
+    is_targeted_to_ubuntu = Attribute(
+        "True if this entry is to be imported into the Ubuntu distribution.")
+
     sourcepackage = Attribute("The sourcepackage associated with this entry.")
 
     guessed_potemplate = Attribute(
@@ -205,9 +225,6 @@ class ITranslationImportQueue(Interface):
 
     def entryCount():
         """Return the number of TranslationImportQueueEntry records."""
-
-    def iterNeedReview():
-        """Iterate over all entries in the queue that need review."""
 
     def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
@@ -315,11 +332,9 @@ class ITranslationImportQueue(Interface):
     def remove(entry):
         """Remove the given :entry: from the queue."""
 
-class TranslationFileType(EnumeratedType):
-    """The different types of translation files that can be imported.
 
-    .
-    """
+class TranslationFileType(EnumeratedType):
+    """The different types of translation files that can be imported."""
 
     UNSPEC = Item("""
         <Please specify>
@@ -379,6 +394,14 @@ class IEditTranslationImportQueueEntry(Interface):
             "Used with PO file format when generating MO files for inclusion "
             "in language pack or MO tarball exports."),
         required=False)
+
+    languagepack = Bool(
+        title=_("Include translations for this template in language packs?"),
+        description=_("For POT only: "
+            "Check this box if this template is part of a language pack so "
+            "its translations should be exported that way."),
+        required=True,
+        default=False)
 
     potemplate = Choice(
         title=_("Template"),

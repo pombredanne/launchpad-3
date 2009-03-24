@@ -12,10 +12,13 @@ import logging
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
+
+from storm.expr import In, LeftJoin
 from storm.references import Reference
 
 from canonical.config import config
@@ -27,11 +30,16 @@ from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.components.archivedependencies import (
     get_components_for_building)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
+from canonical.launchpad.database.builder import Builder
 from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
      get_contact_email_addresses, filenameToContentType, get_email_template)
@@ -46,6 +54,8 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
 
@@ -828,8 +838,8 @@ class BuildSet:
         queries.append("archive=%s" % sqlvalues(archive))
         clause = " AND ".join(queries)
 
-        return Build.select(
-            clause, clauseTables=clauseTables,orderBy=orderBy)
+        return self._decorate_with_prejoins(
+            Build.select(clause, clauseTables=clauseTables, orderBy=orderBy))
 
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
@@ -892,17 +902,17 @@ class BuildSet:
             """ % ','.join(
                 sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
-        prejoins = [
-            "sourcepackagerelease",
-            "sourcepackagerelease.sourcepackagename",
-            "buildlog",
-            "buildlog.content",
-            ]
+        return self._decorate_with_prejoins(
+            Build.select(' AND '.join(condition_clauses),
+            clauseTables=clauseTables, orderBy=orderBy))
 
-        return Build.select(' AND '.join(condition_clauses),
-                            clauseTables=clauseTables,
-                            prejoins=prejoins,
-                            orderBy=orderBy)
+    def _decorate_with_prejoins(self, result_set):
+        """Decorate build records with related data prefetch functionality."""
+        # Grab the native storm result set.
+        result_set = removeSecurityProxy(result_set)._result_set
+        decorated_results = DecoratedResultSet(
+            result_set, pre_iter_hook=self._prefetchBuildData)
+        return decorated_results
 
     def retryDepWaiting(self, distroarchseries):
         """See `IBuildSet`. """
@@ -995,3 +1005,57 @@ class BuildSet:
                 'status': BuildSetStatus.FULLYBUILT,
                 'builds': builds,
                 }
+
+    def _prefetchBuildData(self, results):
+        """Used to pre-populate the cache with build related data.
+
+        When dealing with a group of Build records we can't use the
+        prejoin facility to also fetch BuildQueue, SourcePackageRelease
+        and LibraryFileAlias records in a single query because the
+        result set is too large and the queries time out too often.
+
+        So this method receives a list of Build instances and fetches the
+        corresponding SourcePackageRelease and LibraryFileAlias rows
+        (prejoined with the appropriate SourcePackageName and
+        LibraryFileContent respectively) as well as builders related to the
+        Builds at hand.
+        """
+        from canonical.launchpad.database.sourcepackagename import (
+            SourcePackageName)
+        from canonical.launchpad.database.sourcepackagerelease import (
+            SourcePackageRelease)
+
+        # Prefetching is not needed if the original result set is empty.
+        if len(results) == 0:
+            return
+
+        build_ids = [build.id for build in results]
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = (
+            Build,
+            LeftJoin(
+                SourcePackageRelease,
+                SourcePackageRelease.id == Build.sourcepackagereleaseID),
+            LeftJoin(
+                SourcePackageName,
+                SourcePackageName.id
+                    == SourcePackageRelease.sourcepackagenameID),
+            LeftJoin(LibraryFileAlias,
+                     LibraryFileAlias.id == Build.buildlogID),
+            LeftJoin(LibraryFileContent,
+                     LibraryFileContent.id == LibraryFileAlias.contentID),
+            LeftJoin(
+                Builder,
+                Builder.id == Build.builderID),
+            )
+        result_set = store.using(*origin).find(
+            (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
+             LibraryFileContent, Builder),
+            In(Build.id, build_ids))
+
+        # Force query execution so that the ancillary data gets fetched
+        # and added to StupidCache.
+        # We are doing this here because there is no "real" caller of
+        # this (pre_iter_hook()) method that will iterate over the
+        # result set and force the query execution that way.
+        return list(result_set)

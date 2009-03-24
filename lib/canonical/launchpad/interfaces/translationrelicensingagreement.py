@@ -2,11 +2,10 @@
 
 from zope.interface import Interface
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text
+from lazr.enum import EnumeratedType, Item
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
-
-from canonical.lazr import EnumeratedType, Item
 
 __metaclass__ = type
 __all__ = [
@@ -37,10 +36,10 @@ class ITranslationRelicensingAgreement(Interface):
 
 
 class TranslationRelicensingAgreementOptions(EnumeratedType):
-    BSD = Item("""I agree to licence all my translations in Launchpad """
-               """using the BSD licence.""")
-    REMOVE = Item("""I do not want to use the BSD licence and understand this """
-                  """means I can't make translations in Launchpad.""")
+    BSD = Item("I agree to licence all my translations in Launchpad "
+               "using the BSD licence.")
+    REMOVE = Item("I do not want to use the BSD licence and understand this "
+                  "means I can't make translations in Launchpad.")
 
 
 class ITranslationRelicensingAgreementEdit(ITranslationRelicensingAgreement):

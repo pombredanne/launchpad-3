@@ -16,7 +16,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
+from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalExists, IBranchMergeProposalGetter,
     ICreateMergeProposalJobSource, UserNotBranchReviewer)
@@ -37,7 +38,7 @@ from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 class BadBranchMergeProposalAddress(Exception):
@@ -245,32 +246,20 @@ class CodeHandler:
 
     def createMergeProposalJob(self, mail, email_addr, file_alias):
         """Check that the message is signed and create the job."""
-        # XXX: TimPenhey 2009-02-25 bug 329834
-        # Disable the signed requirement as LP's signed message handling does
-        # not handle the case where the first part is a clear signed message
-        # with an attached directive.  This is the default behaviour of
-        # Thunderbird, and until the signed message handling is fixed, we
-        # don't want to annoy too many of our users.
-        # See also:
-        #   TestCodeHandler.disabled_test_processMergeDirectiveEmailNeedsGPG
-        getUtility(ICreateMergeProposalJobSource).create(file_alias)
+        try:
+            ensure_not_weakly_authenticated(
+                mail, email_addr, 'not-signed-md.txt',
+                'key-not-registered-md.txt')
+        except IncomingEmailError, error:
+            user = getUtility(ILaunchBag).user
+            send_process_error_notification(
+                str(user.preferredemail.email),
+                'Submit Request Failure',
+                error.message, mail, error.failing_command)
+            transaction.abort()
+        else:
+            getUtility(ICreateMergeProposalJobSource).create(file_alias)
         return True
-        # Commenting out to make lint happy, but not deleting because we
-        # actually want this code.
-        #try:
-        #    ensure_not_weakly_authenticated(
-        #        mail, email_addr, 'not-signed-md.txt',
-        #        'key-not-registered-md.txt')
-        #except IncomingEmailError, error:
-        #    user = getUtility(ILaunchBag).user
-        #    send_process_error_notification(
-        #        str(user.preferredemail.email),
-        #        'Submit Request Failure',
-        #        error.message, mail, error.failing_command)
-        #    transaction.abort()
-        #else:
-        #    getUtility(ICreateMergeProposalJobSource).create(file_alias)
-        #return True
 
     def processCommands(self, context, email_body_text):
         """Process the commadns in the email_body_text against the context."""
@@ -370,7 +359,7 @@ class CodeHandler:
             performed.
         :return: source_branch, target_branch
         """
-        mp_target = getUtility(IBranchSet).getByUrl(md.target_branch)
+        mp_target = getUtility(IBranchLookup).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
         if md.bundle is None:
@@ -400,8 +389,8 @@ class CodeHandler:
         :param submitter: The person submitting the merge proposal.
         """
         if url is not None:
-            branches = getUtility(IBranchSet)
-            unique_name = branches.URIToUniqueName(URI(url))
+            branches = getUtility(IBranchLookup)
+            unique_name = branches.uriToUniqueName(URI(url))
             if unique_name is not None:
                 namespace_name, base = split_unique_name(unique_name)
                 return lookup_branch_namespace(namespace_name), base
@@ -430,7 +419,7 @@ class CodeHandler:
 
     def _getSourceNoBundle(self, md, target, submitter):
         """Get a source branch for a merge directive with no bundle."""
-        mp_source = getUtility(IBranchSet).getByUrl(md.source_branch)
+        mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.REMOTE, md.source_branch, target, submitter)
@@ -440,7 +429,7 @@ class CodeHandler:
         """Get a source branch for a merge directive with a bundle."""
         mp_source = None
         if md.source_branch is not None:
-            mp_source = getUtility(IBranchSet).getByUrl(md.source_branch)
+            mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.HOSTED, md.source_branch, target,
