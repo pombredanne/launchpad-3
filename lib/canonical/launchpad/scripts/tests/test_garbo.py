@@ -10,6 +10,7 @@ import time
 import unittest
 
 from pytz import UTC
+from storm.locals import Min
 import transaction
 
 from canonical.launchpad.database.oauth import OAuthNonce
@@ -66,6 +67,7 @@ class TestGarbo(TestCase):
         collector.main()
 
     def test_OAuthNoncePruner(self):
+        store = IMasterStore(OAuthNonce)
         now = datetime.utcnow().replace(tzinfo=UTC)
         timestamps = [
             now - timedelta(days=2), # Garbage
@@ -76,8 +78,7 @@ class TestGarbo(TestCase):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
 
         # Make sure we start with 0 nonces.
-        self.failUnlessEqual(
-            IMasterStore(OAuthNonce).find(OAuthNonce).count(), 0)
+        self.failUnlessEqual(store.find(OAuthNonce).count(), 0)
 
         for timestamp in timestamps:
             OAuthNonce(
@@ -87,14 +88,21 @@ class TestGarbo(TestCase):
         transaction.commit()
 
         # Make sure we have 4 nonces now.
-        self.failUnlessEqual(
-            IMasterStore(OAuthNonce).find(OAuthNonce).count(), 4)
+        self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
 
         self.runHourly()
 
         # Now back to two, having removed the two garbage entries.
-        self.failUnlessEqual(
-            IMasterStore(OAuthNonce).find(OAuthNonce).count(), 2)
+        self.failUnlessEqual(store.find(OAuthNonce).count(), 2)
+
+        # And none of them are older than a day.
+        # Hmm... why is it I'm putting tz aware datetimes in and getting
+        # naive datetimes back? Bug in the SQLObject compatibility layer?
+        # Test is still fine as we know the timezone.
+        self.failUnless(
+            store.find(
+                Min(OAuthNonce.request_timestamp)).one().replace(tzinfo=UTC)
+            >= now - timedelta(days=1))
 
     def test_OpenIDNoncePruner(self):
         now = int(time.mktime(time.gmtime()))
@@ -130,6 +138,10 @@ class TestGarbo(TestCase):
 
         # We should now have 2 nonces.
         self.failUnlessEqual(store.find(OpenIDNonce).count(), 2)
+
+        # And none of them are older than 1 day
+        earliest = store.find(Min(OpenIDNonce.timestamp)).one()
+        self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
 
 
 def test_suite():

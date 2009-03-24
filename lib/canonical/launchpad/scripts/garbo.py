@@ -10,7 +10,7 @@ import time
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
-from storm.locals import SQL
+from storm.locals import SQL, Min
 
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
@@ -82,8 +82,8 @@ class OpenIDNoncePruner(TunableLoop):
 
     def __init__(self):
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        self.earliest_timestamp = self.store.execute(
-            "SELECT MIN(timestamp) FROM OpenIDNonce").get_one()[0]
+        self.earliest_timestamp = self.store.find(
+            Min(OpenIDNonce.timestamp)).one()
         utc_now = int(time.mktime(time.gmtime()))
         self.earliest_wanted_timestamp = utc_now - ONE_DAY_IN_SECONDS
 
