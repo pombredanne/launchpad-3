@@ -931,8 +931,6 @@ class Bug(SQLBase):
         bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
         edited_fields = ['status']
         if comment is not None:
-            bugtask.statusexplanation = comment
-            edited_fields.append('statusexplanation')
             self.newMessage(
                 owner=person, subject=self.followup_subject(),
                 content=comment)

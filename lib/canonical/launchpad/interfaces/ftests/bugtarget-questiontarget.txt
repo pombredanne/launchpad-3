@@ -113,14 +113,10 @@ the bug.
     >>> question.messages[-1].text_contents
     u'This is a question.'
 
-Once converted to a question, the bugtask status is Invalid. The
-statusexplanation is set to the comment the user provided to
-explain why the bug is a question.
+Once converted to a question, the bugtask status is Invalid.
 
     >>> bug.bugtasks[-1].status.title
     'Invalid'
-    >>> print bug.bugtasks[-1].statusexplanation
-    This is a question.
 
 Subscribers to the bug are notified that the bug was made into a
 question and that the bugtasks are Invalid.
