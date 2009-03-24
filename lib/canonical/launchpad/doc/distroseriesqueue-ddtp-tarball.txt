@@ -50,9 +50,10 @@ doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
   >>> upload = NascentUpload(
   ...     datadir('ddtp-tarball/translations-main_20060728.changes'),
   ...     sync_policy, mock_logger_quiet)
+  >>> upload.process()
   Traceback (most recent call last):
   ...
-  FatalUploadError: translations-main_20060728.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
+  EarlyReturnUploadError: An error occurred that prevented further processing.
 
 Now do a proper upload into the system.
 
