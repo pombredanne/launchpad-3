@@ -81,8 +81,28 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
     ...     "This bug report should be private").selected = True
     >>> admin_browser.getControl("Change").click()
 
-Alterations to the summary of a bug will show up along with any comments
-that have been added.
+    >>> admin_browser.open('http://launchpad.dev/bugs/15')
+    >>> print_comments(admin_browser.contents)
+    No Privileges Person wrote ...
+    Here's a comment for testing, like.
+    --------
+    ... ago Foo Bar
+    summary changed:
+    Nonsensical bugs are useless &#8594; A new title for this bug
+    --------
+    ... ago Foo Bar
+    visibility changed:
+    public  &#8594; private
+    --------
+
+Changes to a bug's security_related field will be displayed as 'security
+vulnerability' changes, with values of 'yes' or 'no'.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
+    >>> admin_browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
+    >>> admin_browser.getControl("Change").click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
@@ -96,4 +116,8 @@ that have been added.
     ... ago Foo Bar
     visibility changed:
     public  &#8594; private
+    --------
+    ... ago Foo Bar
+    security vulnerability changed:
+    no  &#8594; yes
     --------
