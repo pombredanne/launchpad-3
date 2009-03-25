@@ -19,41 +19,41 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
     """The XMLRPC API provided by the old AuthServer and used by the wikis."""
     implements(IAuthServer)
 
-    def getUser(self, loginID):
+    def getUser(self, login_id):
         """See `IAuthServer`."""
-        return self._getPersonDict(self._getPerson(loginID))
+        return self._getPersonDict(self._getPerson(login_id))
 
-    def getSSHKeys(self, loginID):
+    def getSSHKeys(self, login_id):
         """See `IAuthServer`."""
-        person = self._getPerson(loginID)
+        person = self._getPerson(login_id)
         if person is None:
             return []
         return [(key.keytype.title, key.keytext) for key in person.sshkeys]
 
-    def _getPerson(self, loginID):
-        """Look up a person by loginID.
+    def _getPerson(self, login_id):
+        """Look up a person by login_id.
 
-        The loginID will be first tried as an email address, then as a numeric
-        ID, then finally as a nickname.
+        The login_id will be first tried as an email address, then as a
+        numeric ID, then finally as a nickname.
 
         :returns: a `Person` or None if not found.
         """
         try:
-            if not isinstance(loginID, unicode):
+            if not isinstance(login_id, unicode):
                 # Refuse to guess encoding, so we decode as 'ascii'
-                loginID = str(loginID).decode('ascii')
+                login_id = str(login_id).decode('ascii')
         except UnicodeDecodeError:
             return None
 
         person_set = getUtility(IPersonSet)
 
         # Try as email first.
-        person = person_set.getByEmail(loginID)
+        person = person_set.getByEmail(login_id)
 
         # If email didn't work, try as id.
         if person is None:
             try:
-                person_id = int(loginID)
+                person_id = int(login_id)
             except ValueError:
                 pass
             else:
@@ -61,7 +61,7 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
 
         # If id didn't work, try as nick-name.
         if person is None:
-            person = person_set.getByName(loginID)
+            person = person_set.getByName(login_id)
 
         return person
 
