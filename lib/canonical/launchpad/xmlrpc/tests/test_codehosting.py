@@ -937,9 +937,11 @@ class BranchFileSystemTest(TestCaseWithFactory):
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
             translation)
 
-    def assertControlDirectory(self, unique_name, trailing_path, translation):
+    def assertTranslationIsControlDirectory(self, translation,
+                                            default_stacked_on,
+                                            trailing_path):
         """Assert that 'translation' points to the right control transport."""
-        unique_name = escape(u'/' + unique_name)
+        unique_name = escape(u'/' + default_stacked_on)
         expected_translation = (
             CONTROL_TRANSPORT,
             {'default_stack_on': unique_name}, trailing_path)
@@ -951,7 +953,10 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr', translation)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
 
     def test_translatePath_control_directory_no_stacked_set(self):
         # When there's no default stacked-on branch set for the project, we
@@ -974,7 +979,10 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr', translation)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
 
     def test_translatePath_control_directory_other_owner(self):
         requester = self.factory.makePerson()
@@ -983,7 +991,10 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr' % (owner.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr', translation)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
 
     def test_translatePath_control_directory_package_no_focus(self):
         # If the package has no default stacked-on branch, then don't show the
@@ -1006,7 +1017,10 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = '/~%s/%s/.bzr/' % (requester.name, package.path)
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr', translation)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
 
 
 class TestIterateSplit(TestCase):
