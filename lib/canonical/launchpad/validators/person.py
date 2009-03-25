@@ -21,7 +21,7 @@ class PrivatePersonLinkageError(ValueError):
 
 @block_implicit_flushes
 def validate_public_person(obj, attr, value):
-    """Validate that the the person identified by value is public."""
+    """Validate that the person identified by value is public."""
     if value is None:
         return None
     assert isinstance(value, (int, long)), (

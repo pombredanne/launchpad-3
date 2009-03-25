@@ -45,7 +45,7 @@ An anonymous cannot see the email address anywhere in the page.
     >>> description.renderContents()
     '<p>Shirtpkdf &lt;email address hidden&gt; lkjd hlkjfds...'
 
-Nor can the anonymous user see the email address in the the +viewstatus
+Nor can the anonymous user see the email address in the +viewstatus
 page.
 
     >>> anon_browser.open(
