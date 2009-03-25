@@ -77,7 +77,7 @@ def apply_patches_replicated():
     replication.helpers.sync(timeout=600)
 
     outf = StringIO()
-    
+
     # Start a transaction block.
     print >> outf, "try {"
 
@@ -239,18 +239,18 @@ def apply_patches_replicated():
         # Merge the sets.
         # Sync.
         # Drop the holding set.
-        for slave_node in replication.helpers.get_slave_nodes():
+        for slave_node in replication.helpers.get_slave_nodes(con):
             print >> outf, dedent("""\
-                echo 'Subscribing holding set to %s.';
+                echo 'Subscribing holding set to @node%d_node.';
                 subscribe set (
-                    id=@holding_set, provider=@master_node, receiver=@%s,
-                    forward=yes);
+                    id=@holding_set,
+                    provider=@master_node, receiver=@node%d_node, forward=yes);
                 echo 'Waiting for sync';
                 sync (id=1);
                 wait for event (
                     origin=ALL, confirmed=ALL, wait on=@master_node
                     );
-                """ % (slave_node.nickname, slave_node.nickname))
+                """ % (slave_node.node_id, slave_node.node_id))
 
         print >> outf, dedent("""\
             echo 'Merging holding set to lpmain';
