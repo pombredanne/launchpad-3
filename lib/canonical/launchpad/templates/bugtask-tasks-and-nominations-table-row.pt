@@ -85,17 +85,8 @@
         define="assignee_content_id string:assignee-content-box-${context/id}">
         <span tal:attributes="id assignee_content_id">
           <span class="yui-activator-data-box">
-            <tal:has_assignee condition="context/assignee">
-              <a style="padding: 0.25em; text-decoration: none;"
-                 tal:attributes="
-                   href string:${context/assignee/fmt:url}/+assignedbugs"
-              >
-                <img tal:attributes="src context/assignee/fmt:icon_url" />
-                <tal:name replace="context/assignee/fmt:displayname">
-                  assignee.displayname
-                </tal:name>
-              </a>
-            </tal:has_assignee>
+            <tal:link
+              replace="structure context/assignee/fmt:link/+assignedbugs"/>
           </span>
           <button class="lazr-btn yui-activator-act yui-activator-hidden">
           Edit
@@ -105,8 +96,10 @@
         <script tal:condition="context/required:launchpad.Edit"
                 tal:content="structure string:
         YUI().use('lp.picker', function(Y) {
-            Y.lp.picker.addBugTaskAssigneeEditor(
+            Y.lp.picker.addPickerPatcher(
                 '${view/bugtask_canonical_url}',
+                '/~',
+                'assignee_link',
                 '${assignee_content_id}');
         });
         "/>
