@@ -127,7 +127,7 @@ _replicate:
 	./slon_ctl.py start \
 		 node1_node "dbname=${_MASTER} user=slony"
 	# Initialize the cluster and create replication sets.
-	./initialize.py -vv
+	./initialize.py
 	# Create the soon-to-be-slave database, empty at this point.
 	createdb --encoding=UTF8 --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
 	# Start the slon daemon for the slave
@@ -138,6 +138,9 @@ _replicate:
 	../schema/upgrade.py
 	../schema/fti.py
 	../schema/security.py --cluster -U slony
+	# Migrate tables to the authdb replication set, creating the set
+	# and subscribing nodes to it as necessary.
+	./populate_auth_replication_set.py -U slony
 	# Restart slon daemons with default lag setting.
 	./slon_ctl.py stop
 	./slon_ctl.py --lag="${LAG}" start

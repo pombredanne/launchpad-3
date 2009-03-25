@@ -36,7 +36,7 @@ So, with textwrap:
 
 
 Note in the above example that the "...gets sent.\n\nit's..." got
-squished into being on the the same line, which is obviously not what
+squished into being on the same line, which is obviously not what
 we want.
 
 MailWrapper to the rescue!

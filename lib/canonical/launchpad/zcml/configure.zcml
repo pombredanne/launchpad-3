@@ -27,6 +27,7 @@
     <include file="branchnamespace.zcml" />
     <include file="branchref.zcml" />
     <include file="branchrevision.zcml" />
+    <include file="branchscanner.zcml" />
     <include file="branchsubscription.zcml" />
     <include file="branchtarget.zcml" />
     <include file="bugactivity.zcml" />
@@ -112,6 +113,7 @@
     <include file="pillar.zcml" />
     <include file="person.zcml" />
     <include file="personnotification.zcml" />
+    <include file="personproduct.zcml" />
     <include file="poexportrequest.zcml" />
     <include file="pofile.zcml" />
     <include file="pofiletranslator.zcml" />

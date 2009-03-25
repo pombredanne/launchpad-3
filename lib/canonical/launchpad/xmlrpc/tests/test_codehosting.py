@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
     BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
@@ -457,13 +458,14 @@ class BranchPullQueueTest(TestCaseWithFactory):
 
     def test_getBranchPullInfo_private_branch(self):
         # We don't want to stack mirrored branches onto private branches:
-        # mirrored branches are public by their nature. This, if the default
+        # mirrored branches are public by their nature. Thus, if the default
         # stacked-on branch for the project is private and the branch is
         # MIRRORED then we don't include the default stacked-on branch's
         # details in the tuple.
-        default_branch = self.factory.makeAnyBranch(private=True)
-        product = removeSecurityProxy(default_branch).product
-        product.development_focus.branch = default_branch
+        product = self.factory.makeProduct()
+        default_branch = self.factory.makeProductBranch(
+            product=product, private=True)
+        self.factory.enableDefaultStackingForProduct(product, default_branch)
         mirrored_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=product)
         info = self.storage._getBranchPullInfo(mirrored_branch)
@@ -742,7 +744,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(private=private)
         self.factory.enableDefaultStackingForProduct(product, branch)
-        self.assertEqual(product.default_stacked_on_branch, branch)
+        target = IBranchTarget(removeSecurityProxy(product))
+        self.assertEqual(target.default_stacked_on_branch, branch)
         return product, branch
 
     def test_translatePath_cannot_translate(self):

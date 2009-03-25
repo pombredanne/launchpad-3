@@ -27,21 +27,20 @@ CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 
 # Seed tables for the authdb replication set to be passed to
 # calculate_replication_set().
-AUTHDB_SEED = set([
+AUTHDB_SEED = frozenset([
+    ('public', 'account'),
+    ('public', 'openidassociations'),
     ])
 
 # Seed tables for the lpmain replication set to be passed to
 # calculate_replication_set().
-LPMAIN_SEED = set([
-    # These tables are scheduled to move to the authdb seed.
-    ('public', 'account'),
-    ('public', 'openidassociations'),
-    ('public', 'oauthnonce'),
-
+LPMAIN_SEED = frozenset([
     ('public', 'person'),
     ('public', 'launchpaddatabaserevision'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
+    ('public', 'openidnonce'),
+    ('public', 'oauthnonce'),
     ('public', 'codeimportmachine'),
     ('public', 'scriptactivity'),
     ('public', 'standardshipitrequest'),
@@ -132,12 +131,12 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
         script = preamble() + script
 
     if sync is not None:
-        script = script + """
+        script = script + dedent("""\
             sync (id = @master_node);
             wait for event (
                 origin = ALL, confirmed = ALL,
                 wait on = @master_node, timeout = %d);
-            """ % sync
+            """ % sync)
 
     # Copy the script to a NamedTemporaryFile rather than just pumping it
     # to slonik via stdin. This way it can be examined if slonik appears
@@ -411,7 +410,7 @@ def calculate_replication_set(cur, seeds):
 def discover_unreplicated(cur):
     """Inspect the database for tables and sequences in the public schema
     that are not in a replication set.
-    
+
     :returns: (unreplicated_tables_set, unreplicated_sequences_set)
     """
     all_tables = all_tables_in_schema(cur, 'public')

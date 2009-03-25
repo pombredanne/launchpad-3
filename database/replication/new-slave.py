@@ -159,6 +159,16 @@ def main():
             origin = ALL, confirmed = ALL,
             wait on = @master_node, timeout = 0);
 
+        echo 'Subscribing new node to authdb replication set.';
+        subscribe set (
+            id=@authdb_set, provider=@master_node, receiver=@new_node);
+
+        echo 'Waiting for sync... this might take a while...';
+        sync (id = @master_node);
+        wait for event (
+            origin = ALL, confirmed = ALL,
+            wait on = @master_node, timeout = 0);
+
         echo 'Subscribing new node to main replication set.';
         subscribe set (
             id=@lpmain_set, provider=@master_node, receiver=@new_node);
