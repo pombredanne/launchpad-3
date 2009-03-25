@@ -7,6 +7,7 @@ This module should not have any actual tests.
 
 __metaclass__ = type
 __all__ = [
+    'GPGSigningContext',
     'LaunchpadObjectFactory',
     'ObjectFactory',
     'time_counter',
@@ -25,7 +26,7 @@ import os.path
 import pytz
 from storm.store import Store
 import transaction
-from zope.component import getUtility
+from zope.component import ComponentLookupError, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.autodecorate import AutoDecorate
@@ -73,6 +74,7 @@ from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.hwdb import (
     HWSubmissionFormat, IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -106,8 +108,8 @@ from canonical.launchpad.database.distributionsourcepackage import (
     DistributionSourcePackage)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
-from canonical.launchpad.webapp.adapter import StoreSelector
-from canonical.launchpad.webapp.interfaces import ALL_STORES, MASTER_FLAVOR
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+from canonical.launchpad.webapp.interfaces import IStoreSelector
 
 SPACE = ' '
 
@@ -136,7 +138,7 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
 
 def default_master_store(func):
     """Decorator to temporarily set the default Store to the master.
-    
+
     In some cases, such as in the middle of a page test story,
     we might be calling factory methods with the default Store set
     to the slave which breaks stuff. For instance, if we set an account's
@@ -144,16 +146,16 @@ def default_master_store(func):
     However, if we then read it back the default Store has to be used.
     """
     def with_default_master_store(*args, **kw):
-        current_flavors = {}
-        for store in ALL_STORES:
-            current_flavors[store] = StoreSelector.getDefaultFlavor(store)
         try:
-            for store in ALL_STORES:
-                StoreSelector.setDefaultFlavor(store, MASTER_FLAVOR)
+            store_selector = getUtility(IStoreSelector)
+        except ComponentLookupError:
+            # Utilities not registered. No policies.
+            return func(*args, **kw)
+        store_selector.push(MasterDatabasePolicy())
+        try:
             return func(*args, **kw)
         finally:
-            for store in ALL_STORES:
-                StoreSelector.setDefaultFlavor(store, current_flavors[store])
+            store_selector.pop()
     return with_default_master_store
 
 
@@ -161,6 +163,15 @@ def default_master_store(func):
 # example, makeBranch(product=None) means "make a junk branch".
 # None, because None means "junk branch".
 _DEFAULT = object()
+
+
+class GPGSigningContext:
+    """A helper object to hold the fingerprint, password and mode."""
+
+    def __init__(self, fingerprint, password='', mode=None):
+        self.fingerprint = fingerprint
+        self.password = password
+        self.mode = mode
 
 
 class ObjectFactory:
@@ -379,7 +390,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                 MailingListAutoSubscribePolicy.NEVER
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
-            alternative_address, person, EmailAddressStatus.VALIDATED, account)
+            alternative_address, person,
+            EmailAddressStatus.VALIDATED, account)
         transaction.commit()
         self._stuff_preferredemail_cache(person)
         return person
@@ -934,7 +946,19 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
             attachment_contents=None, force_transfer_encoding=False,
-            email_address=None):
+            email_address=None, signing_context=None):
+        """Return an ISignedMessage.
+
+        :param msgid: An rfc2822 message-id.
+        :param body: The body of the message.
+        :param attachment_contents: The contents of an attachment.
+        :param force_transfer_encoding: If True, ensure a transfer encoding is
+            used.
+        :param email_address: The address the mail is from.
+        :param signing_context: A GPGSigningContext instance containing the
+            gpg key to sign with.  If None, the message is unsigned.  The
+            context also contains the password and gpg signing mode.
+        """
         mail = SignedMessage()
         if email_address is None:
             person = self.makePerson()
@@ -949,6 +973,12 @@ class LaunchpadObjectFactory(ObjectFactory):
             body = self.getUniqueString('body')
         mail['Message-Id'] = msgid
         mail['Date'] = formatdate()
+        if signing_context is not None:
+            gpghandler = getUtility(IGPGHandler)
+            body = gpghandler.signContent(
+                body, signing_context.fingerprint,
+                signing_context.password, signing_context.mode)
+            assert body is not None
         if attachment_contents is None:
             mail.set_payload(body)
             body_part = mail
@@ -1079,25 +1109,30 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
                                     svn_branch_url=None, cvs_root=None,
-                                    cvs_module=None):
+                                    cvs_module=None, git_repo_url=None):
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'svn'
         if rcstype == 'svn':
-            assert cvs_root is cvs_module is None
+            assert cvs_root is cvs_module is git_repo_url is None
             if svn_branch_url is None:
                 svn_branch_url = self.getUniqueURL()
         elif rcstype == 'cvs':
-            assert svn_branch_url is None
+            assert svn_branch_url is git_repo_url is None
             if cvs_root is None:
                 cvs_root = self.getUniqueString()
             if cvs_module is None:
                 cvs_module = self.getUniqueString()
+        elif rcstype == 'git':
+            assert cvs_root is cvs_module is svn_branch_url is None
+            if git_repo_url is None:
+                git_repo_url = self.getUniqueURL(scheme='git')
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return CodeImportSourceDetails(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
+            git_repo_url)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
@@ -1266,7 +1301,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
-                       translation_domain=None):
+                       translation_domain=None, path=None):
         """Make a new translation template."""
         if productseries is None and distroseries is None:
             # No context for this template; set up a productseries.
@@ -1289,7 +1324,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             else:
                 owner = productseries.owner
 
-        return subset.new(name, translation_domain, 'messages.pot', owner)
+        if path is None:
+            path = 'messages.pot'
+
+        return subset.new(name, translation_domain, path, owner)
 
     def makePOFile(self, language_code, potemplate=None, owner=None):
         """Make a new translation file."""
@@ -1446,8 +1484,16 @@ class LaunchpadObjectFactory(ObjectFactory):
                 msg.attach(attachment)
         return msg
 
-    def makeBundleMergeDirectiveEmail(self, source_branch, target_branch):
-        """Create a merge directive email from two bzr branches."""
+    def makeBundleMergeDirectiveEmail(self, source_branch, target_branch,
+                                      signing_context=None):
+        """Create a merge directive email from two bzr branches.
+
+        :param source_branch: The source branch for the merge directive.
+        :param target_branch: The target branch for the merge directive.
+        :param signing_context: A GPGSigningContext instance containing the
+            gpg key to sign with.  If None, the message is unsigned.  The
+            context also contains the password and gpg signing mode.
+        """
         from bzrlib.merge_directive import MergeDirective2
         md = MergeDirective2.from_objects(
             source_branch.repository, source_branch.last_revision(),
@@ -1457,7 +1503,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             timezone=0)
         return self.makeSignedMessage(
             body='My body', subject='My subject',
-            attachment_contents=''.join(md.to_lines()))
+            attachment_contents=''.join(md.to_lines()),
+            signing_context=signing_context)
 
     def makeMergeDirective(self, source_branch=None, target_branch=None,
         source_branch_url=None, target_branch_url=None):
@@ -1494,10 +1541,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             source_branch=source_branch_url, base_revision_id='base-revid',
             patch='booga')
 
-    def makeMergeDirectiveEmail(self, body='Hi!\n'):
+    def makeMergeDirectiveEmail(self, body='Hi!\n', signing_context=None):
         """Create an email with a merge directive attached.
 
         :param body: The message body to use for the email.
+        :param signing_context: A GPGSigningContext instance containing the
+            gpg key to sign with.  If None, the message is unsigned.  The
+            context also contains the password and gpg signing mode.
         :return: message, file_alias, source_branch, target_branch
         """
         target_branch = self.makeProductBranch()
@@ -1505,7 +1555,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             product=target_branch.product)
         md = self.makeMergeDirective(source_branch, target_branch)
         message = self.makeSignedMessage(body=body,
-            subject='My subject', attachment_contents=''.join(md.to_lines()))
+            subject='My subject', attachment_contents=''.join(md.to_lines()),
+            signing_context=signing_context)
         message_string = message.as_string()
         file_alias = getUtility(ILibraryFileAliasSet).create(
             '*', len(message_string), StringIO(message_string), '*')

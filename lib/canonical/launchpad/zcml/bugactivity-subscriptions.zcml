@@ -26,11 +26,6 @@
              lazr.lifecycle.interfaces.IObjectDeletedEvent"
         handler="canonical.launchpad.subscribers.bugactivity.record_cve_unlinked_from_bug" />
 
-    <subscriber
-        for="canonical.launchpad.interfaces.IBugTask
-             zope.lifecycleevent.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.subscribers.bugactivity.record_bug_task_added" />
-
      <subscriber
         for="canonical.launchpad.interfaces.IBugTask
              lazr.lifecycle.interfaces.IObjectModifiedEvent"

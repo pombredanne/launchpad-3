@@ -831,38 +831,12 @@ class BranchSet:
 
     implements(IBranchSet)
 
-    def __iter__(self):
-        """See `IBranchSet`."""
-        # XXX: JonathanLange 2009-02-10 spec=package-branches: Prejoining
-        # product is probably not the best idea, given that there'll be a lot
-        # of package branches.
-        return iter(Branch.select(prejoins=['owner', 'product']))
-
-    def count(self):
-        """See `IBranchSet`."""
-        return Branch.select('NOT Branch.private').count()
-
     def countBranchesWithAssociatedBugs(self):
         """See `IBranchSet`."""
         return Branch.select(
             'NOT Branch.private AND Branch.id = BugBranch.branch',
             clauseTables=['BugBranch'],
             distinct=True).count()
-
-    def getBranchesToScan(self):
-        """See `IBranchSet`"""
-        # Return branches where the scanned and mirrored IDs don't match.
-        # Branches with a NULL last_mirrored_id have never been
-        # successfully mirrored so there is no point scanning them.
-        # Branches with a NULL last_scanned_id have not been scanned yet,
-        # so are included.
-
-        return Branch.select('''
-            Branch.branch_type <> %s AND
-            Branch.last_mirrored_id IS NOT NULL AND
-            (Branch.last_scanned_id IS NULL OR
-             Branch.last_scanned_id <> Branch.last_mirrored_id)
-            ''' % quote(BranchType.REMOTE))
 
     def getRecentlyChangedBranches(
         self, branch_count=None,

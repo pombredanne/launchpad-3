@@ -1,10 +1,12 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Tests for branch contexts."""
 
 __metaclass__ = type
 
 import unittest
+
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.branchtarget import (
     PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
@@ -62,6 +64,12 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
              self.original],
             list(target.components))
 
+    def test_default_stacked_on_branch(self):
+        # XXX: JonathanLange 2009-03-23 spec=package-branches bug=347057: We
+        # don't support default stacking for package branch yet.
+        target = IBranchTarget(self.original)
+        self.assertIs(None, target.default_stacked_on_branch)
+
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -91,6 +99,11 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertEqual([self.original], list(target.components))
 
+    def test_default_stacked_on_branch(self):
+        # Junk branches are not stacked by default, ever.
+        target = IBranchTarget(self.original)
+        self.assertIs(None, target.default_stacked_on_branch)
+
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -118,6 +131,33 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
     def test_components(self):
         target = IBranchTarget(self.original)
         self.assertEqual([self.original], list(target.components))
+
+    def test_default_stacked_on_branch_no_dev_focus(self):
+        # The default stacked-on branch for a product target that has no
+        # development focus is None.
+        target = IBranchTarget(self.original)
+        self.assertIs(None, target.default_stacked_on_branch)
+
+    def _setDevelopmentFocus(self, product, branch):
+        removeSecurityProxy(product).development_focus.user_branch = branch
+
+    def test_default_stacked_on_branch_unmirrored_dev_focus(self):
+        # If the development focus hasn't been mirrored, then don't use it as
+        # the default stacked-on branch.
+        branch = self.factory.makeProductBranch(product=self.original)
+        self._setDevelopmentFocus(self.original, branch)
+        target = IBranchTarget(self.original)
+        self.assertIs(None, target.default_stacked_on_branch)
+
+    def test_default_stacked_on_branch_has_been_mirrored(self):
+        # If the development focus has been mirrored, then use it as the
+        # default stacked-on branch.
+        branch = self.factory.makeProductBranch(product=self.original)
+        self._setDevelopmentFocus(self.original, branch)
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        target = IBranchTarget(self.original)
+        self.assertEqual(branch, target.default_stacked_on_branch)
 
 
 class TestPrimaryContext(TestCaseWithFactory):

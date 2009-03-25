@@ -148,6 +148,10 @@ The tags are sorted by popularity.
     >>> firesocks = getUtility(IProductSet).getByName('firesocks')
     >>> fs_bug_2 = factory.makeBug(product=firesocks)
     >>> fs_bug_2.tags = ['official-tag-05', 'unofficial-tag-05']
+    >>> fs_bug_3 = factory.makeBug(product=firesocks)
+    >>> fs_bug_3.tags = ['official-tag-07']
+    >>> fs_bug_4 = factory.makeBug(product=firesocks)
+    >>> fs_bug_4.tags = ['official-tag-07']
     >>> transaction.commit()
     >>> logout()
 
@@ -155,13 +159,13 @@ The tags are sorted by popularity.
     >>> print_tags_portlet(find_tag_by_id(browser.contents, 'portlet-tags'))
     Official Tags
     -------------
+    official-tag-07   2
     official-tag-05   1
     official-tag-01   0
     official-tag-02   0
     official-tag-03   0
     official-tag-04   0
     official-tag-06   0
-    official-tag-07   0
     official-tag-08   0
     official-tag-09   0
     official-tag-10   0
@@ -194,6 +198,7 @@ If no official tags are defined, the title of the unofficial ones is changed.
     >>> print_tags_portlet(find_tag_by_id(browser.contents, 'portlet-tags'))
     Tags
     ----
+    official-tag-07   2
     unofficial-tag-05   2
     official-tag-05   1
     unofficial-tag-01   1
@@ -203,6 +208,32 @@ If no official tags are defined, the title of the unofficial ones is changed.
     unofficial-tag-06   1
     unofficial-tag-07   1
     unofficial-tag-08   1
-    unofficial-tag-09   1
     <BLANKLINE>
+
+
+== Entering Official Tags ==
+
+=== Available Official Tags in Javascript ===
+
+The list of available official tags is present on the page as a Javascript
+variable. This list is used to initialise the tag entry widget. The list
+comprises of the official tags of all targets for which the bug has a task.
+
+    >>> login('foo.bar@canonical.com')
+    >>> product1 = factory.makeProduct()
+    >>> product2 = factory.makeProduct()
+    >>> product1.official_bug_tags = [u'eenie', u'meenie']
+    >>> product2.official_bug_tags = [u'miney', u'moe']
+    >>> bug = factory.makeBug(product=product1)
+    >>> bug.addTask(target=product2, owner=factory.makePerson())
+    <BugTask at ...>
+    >>> bug_url = canonical_url(bug)
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> browser.open(bug_url)
+    >>> js = find_tag_by_id(browser.contents, 'available-official-tags-js')
+    >>> print js
+    <script...>var available_official_tags =
+    ["eenie", "meenie", "miney", "moe"];</script>
 
