@@ -658,7 +658,7 @@ class Bug(SQLBase):
              bug=self, is_comment=True,
              message=message, recipients=recipients)
 
-    def addChange(self, change):
+    def addChange(self, change, recipients=None):
         """See `IBug`."""
         when = change.when
         if when is None:
@@ -677,7 +677,6 @@ class Bug(SQLBase):
 
         notification_data = change.getBugNotification()
         if notification_data is not None:
-            recipients = change.getBugNotificationRecipients()
             assert notification_data.get('text') is not None, (
                 "notification_data must include a `text` value.")
 

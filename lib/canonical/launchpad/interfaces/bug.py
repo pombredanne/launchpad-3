@@ -387,11 +387,14 @@ class IBug(ICanBeMentored):
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
 
-    def addChange(change):
+    def addChange(change, recipients=None):
         """Record a change to the bug.
 
         :param change: An `IBugChange` instance from which to take the
             change data.
+        :param recipients: A set of `IBugNotificationRecipient`s to whom
+            to send notifications about this change. If None is passed
+            the default list of recipients for the bug will be used.
         """
 
     def expireNotifications():
