@@ -65,7 +65,6 @@ from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import (
@@ -75,6 +74,8 @@ from canonical.lazr.interfaces.rest import (
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue,
     IWebServiceClientRequest, IWebServiceConfiguration, LAZR_WEBSERVICE_NAME)
+from canonical.lazr.utils import get_current_browser_request
+
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
