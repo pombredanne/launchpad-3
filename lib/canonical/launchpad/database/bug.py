@@ -36,7 +36,8 @@ from lazr.lifecycle.event import (
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.components.bugchange import (
-    BranchLinkedToBug, BranchUnlinkedFromBug, UnsubscribedFromBug)
+    BranchLinkedToBug, BranchUnlinkedFromBug, BugWatchAdded, BugWatchRemoved,
+    SeriesNominated, UnsubscribedFromBug)
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet)
@@ -768,7 +769,14 @@ class Bug(SQLBase):
                 bug=self, bugtracker=bugtracker,
                 remotebug=remotebug, owner=owner)
             Store.of(bug_watch).flush()
+        self.addChange(BugWatchAdded(UTC_NOW, owner, bug_watch))
+        notify(ObjectCreatedEvent(bug_watch, user=owner))
         return bug_watch
+
+    def removeWatch(self, bug_watch, user):
+        """See `IBug`."""
+        self.addChange(BugWatchRemoved(UTC_NOW, user, bug_watch))
+        bug_watch.destroySelf()
 
     def addAttachment(self, owner, data, comment, filename, is_patch=False,
                       content_type=None, description=None):
@@ -852,7 +860,7 @@ class Bug(SQLBase):
         self.linkCVE(cve, user)
         return None
 
-    def unlinkCVE(self, cve, user=None):
+    def unlinkCVE(self, cve, user):
         """See `IBug`."""
         for cve_link in self.cve_links:
             if cve_link.cve.id == cve.id:
@@ -1053,6 +1061,8 @@ class Bug(SQLBase):
             productseries=productseries)
         if nomination.canApprove(owner):
             nomination.approve(owner)
+        else:
+            self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
     def canBeNominatedFor(self, nomination_target):

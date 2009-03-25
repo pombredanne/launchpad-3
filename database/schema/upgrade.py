@@ -239,7 +239,7 @@ def apply_patches_replicated():
         # Merge the sets.
         # Sync.
         # Drop the holding set.
-        for slave_node in get_slave_nodes():
+        for slave_node in replication.helpers.get_slave_nodes():
             print >> outf, dedent("""\
                 echo 'Subscribing holding set to %s.';
                 subscribe set (

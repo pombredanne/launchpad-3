@@ -28,7 +28,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IBuilderSet"
-        path_expression="string:+builds"
+        path_expression="string:builders"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
