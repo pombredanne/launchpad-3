@@ -30,3 +30,45 @@ The activity log itself is presented as a table.
     10 Aug 05 16:30 | Sample Person | bug |  |  | assigned to source ...
     10 Aug 05 16:30 | Sample Person | bug |  |  | assigned to source ...
     24 Feb 06 21:34 | Foo Bar | mozilla-firefox: statusexplanation |  |  |
+
+
+== Activity interleaved with comments ==
+
+Some bug activity is show interleaved with comments on a bug's main
+page.
+
+    >>> def print_comments(page):
+    ...     """Print all the comments on the page."""
+    ...     comment_divs = find_tags_by_class(page, 'boardComment')
+    ...     for div_tag in comment_divs:
+    ...         print extract_text(div_tag)
+    ...         print '-' * 8
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+addcomment')
+    >>> user_browser.getControl(name='field.comment').value = (
+    ...     "Here's a comment for testing, like.")
+    >>> user_browser.getControl('Save Changes').click()
+    >>> print_comments(user_browser.contents)
+    No Privileges Person wrote ...
+    Here's a comment for testing, like.
+    --------
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
+    >>> admin_browser.getControl('Summary').value = (
+    ...     "A new title for this bug")
+    >>> admin_browser.getControl('Change').click()
+
+Alterations to the summary of a bug will show up along with any comments
+that have been added.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/15')
+    >>> print_comments(user_browser.contents)
+    No Privileges Person wrote ...
+    Here's a comment for testing, like.
+    --------
+    ... ago Foo Bar
+    summary changed:
+    Nonsensical bugs are useless &#8594; A new title for this bug
+    --------
