@@ -246,32 +246,20 @@ class CodeHandler:
 
     def createMergeProposalJob(self, mail, email_addr, file_alias):
         """Check that the message is signed and create the job."""
-        # XXX: TimPenhey 2009-02-25 bug 329834
-        # Disable the signed requirement as LP's signed message handling does
-        # not handle the case where the first part is a clear signed message
-        # with an attached directive.  This is the default behaviour of
-        # Thunderbird, and until the signed message handling is fixed, we
-        # don't want to annoy too many of our users.
-        # See also:
-        #   TestCodeHandler.disabled_test_processMergeDirectiveEmailNeedsGPG
-        getUtility(ICreateMergeProposalJobSource).create(file_alias)
+        try:
+            ensure_not_weakly_authenticated(
+                mail, email_addr, 'not-signed-md.txt',
+                'key-not-registered-md.txt')
+        except IncomingEmailError, error:
+            user = getUtility(ILaunchBag).user
+            send_process_error_notification(
+                str(user.preferredemail.email),
+                'Submit Request Failure',
+                error.message, mail, error.failing_command)
+            transaction.abort()
+        else:
+            getUtility(ICreateMergeProposalJobSource).create(file_alias)
         return True
-        # Commenting out to make lint happy, but not deleting because we
-        # actually want this code.
-        #try:
-        #    ensure_not_weakly_authenticated(
-        #        mail, email_addr, 'not-signed-md.txt',
-        #        'key-not-registered-md.txt')
-        #except IncomingEmailError, error:
-        #    user = getUtility(ILaunchBag).user
-        #    send_process_error_notification(
-        #        str(user.preferredemail.email),
-        #        'Submit Request Failure',
-        #        error.message, mail, error.failing_command)
-        #    transaction.abort()
-        #else:
-        #    getUtility(ICreateMergeProposalJobSource).create(file_alias)
-        #return True
 
     def processCommands(self, context, email_body_text):
         """Process the commadns in the email_body_text against the context."""

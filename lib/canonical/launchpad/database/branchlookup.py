@@ -78,7 +78,7 @@ class RootTraversable:
             raise InvalidProductName(name)
         pillar = getUtility(IPillarNameSet).getByName(name)
         if pillar is None:
-            # Actually, the pillar is such *anything*. The user might be
+            # Actually, the pillar is no such *anything*. The user might be
             # trying to refer to a project, a distribution or a product. We
             # raise a NoSuchProduct error since that's what we used to raise
             # when we only supported product & junk branches.

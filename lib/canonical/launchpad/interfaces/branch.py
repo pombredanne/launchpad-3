@@ -916,7 +916,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
             pertinant to the landing such as testing notes.
         :param date_created: Used to specify the date_created value of the
             merge request.
-        :param needs_review: Used to specify the the proposal is ready for
+        :param needs_review: Used to specify the proposal is ready for
             review right now.
         :param initial_comment: An optional initial comment can be added
             when adding the new target.
@@ -1149,20 +1149,11 @@ class IBranch(IHasOwner, IHasBranchTarget):
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
-    def count():
-        """Return the number of branches in the database.
-
-        Only counts public branches.
-        """
-
     def countBranchesWithAssociatedBugs():
         """Return the number of branches that have bugs associated.
 
         Only counts public branches.
         """
-
-    def getBranchesToScan():
-        """Return an iterator for the branches that need to be scanned."""
 
     def getRecentlyChangedBranches(
         branch_count=None,

@@ -144,22 +144,6 @@ case) and -, +, _ and @ are allowed after that.
     LaunchpadValidationError: Invalid branch name 'invalid name!'.  Branch ...
 
 
-== Determining the number of branches ==
-
-The IBranchSet can tell us how many public branches there are
-registered.  As this, and several other methods documented below,
-queries the global state of the system, we just test the difference
-creating a branch makes to avoid gratuitous fragility in the test.
-
-    >>> before_count = branchset.count()
-    >>> new_branch = factory.makeAnyBranch()
-    >>> branchset.count() - before_count
-    1
-    >>> new_branch = factory.makeAnyBranch(private=True)
-    >>> branchset.count() - before_count
-    1
-
-
 == Determing the number of branches with bugs ==
 
 The count of branches that have bugs associated with them is another
@@ -443,7 +427,7 @@ of the revision_history attribute but without building the list.
     2 5
     1 4
 
-There are two methods for getting only the the latest items of the revision
+There are two methods for getting only the latest items of the revision
 history.
 
 Branch.latest_revisions give a specific count of BranchRevisions at the end of
@@ -568,66 +552,6 @@ For a public branch without revisions, the link is disabled.
     >>> print branch.revision_count
     0
     >>> print branch.code_is_browseable
-    False
-
-
-== Branch Scan List ==
-
-To speed up the branch scanning process, we only want to scan those
-branches that have new information available to be scanned.
-
-This accomplished by making the branch puller and branch scanner
-record the last revision IDs in the branch that they saw.
-
-If the last mirrored and last scanned revision IDs differ for a
-branch, then they will be included in the scan list:
-
-    >>> branch = branch_lookup.get(1)
-    >>> branch.last_mirrored_id = 'rev-2'
-    >>> branch.last_scanned_id = 'rev-1'
-    >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
-    True
-
-When the branch is scanned, the scanned ID will be updated, and the
-branch will no longer appear in the list:
-
-    >>> branch.last_scanned_id = 'rev-2'
-    >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
-    False
-
-If a branch has not been scanned yet, it will have a null scanned ID,
-so is included in the branch pull list:
-
-    >>> branch.last_scanned_id = None
-    >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
-    True
-
-Remote branches are not scanned.
-
-    >>> old_type = branch.branch_type
-    >>> branch.branch_type = BranchType.REMOTE
-    >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
-    False
-    >>> branch.branch_type = old_type
-    >>> syncUpdate(branch)
-
-If a branch has not been mirrored, it will have a null mirrored ID.
-There is no point in mirroring such branches, whatever the last
-scanned ID is.
-
-    >>> branch.last_mirrored_id = None
-    >>> branch.last_scanned_id = None
-    >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
-    False
-
-    >>> branch.last_scanned_id = 'rev-1'
-    >>> syncUpdate(branch)
-    >>> branch in branchset.getBranchesToScan()
     False
 
 

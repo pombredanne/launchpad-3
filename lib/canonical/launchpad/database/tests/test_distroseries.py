@@ -47,7 +47,7 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
         return self.development_series
 
     def assertCurrentVersion(self, expected_version, package_name=None):
-        """Assert the the current version of a package is the expected one.
+        """Assert the current version of a package is the expected one.
 
         It uses getCurrentSourceReleases() to get the version.
 

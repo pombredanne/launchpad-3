@@ -217,7 +217,9 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
     def _resolve_lp_path(self, path):
         """See `IPublicCodehostingAPI`."""
         # Separate method because Zope's mapply raises errors if we use
-        # decorators in XMLRPC methods. No idea why.
+        # decorators in XMLRPC methods. mapply checks that the passed
+        # arguments match the formal parameters. Decorators normally have
+        # *args and **kwargs, which mapply fails on.
         strip_path = path.strip('/')
         if strip_path == '':
             raise faults.InvalidBranchIdentifier(path)
@@ -230,10 +232,10 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             # name. This lets people push new branches up to Launchpad using
             # lp: URL syntax.
             return self._getUniqueNameResultDict(strip_path)
-        # XXX: JonathanLange 2009-03-21: All of this is repetitive and thus
-        # error prone. Alternatives are directly raising faults from the model
-        # code(blech) or some automated way of reraising as faults or using a
-        # narrower range of faults (e.g. only one "NoSuch" fault).
+        # XXX: JonathanLange 2009-03-21 bug=347728: All of this is repetitive
+        # and thus error prone. Alternatives are directly raising faults from
+        # the model code(blech) or some automated way of reraising as faults
+        # or using a narrower range of faults (e.g. only one "NoSuch" fault).
         except InvalidBranchIdentifier, e:
             raise faults.InvalidBranchIdentifier(e.path)
         except InvalidProductName, e:
