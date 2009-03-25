@@ -75,10 +75,6 @@ class FakeRequest:
         self.principal = None
         self.interaction = None
         self.traversed_objects = []
-        # XXX: noodles 2009-02-12 bug=328462
-        # NOTE: There shouldn't be a dependency here on LP code, but
-        # some of the tests are using this FakeRequest to create
-        # a launchpad.webapp.BatchNavigator object.
         self.query_string_params = {}
         self.method = 'GET'
 
@@ -263,10 +259,10 @@ class WebServiceCaller:
         if resource_path.startswith('/'):
             # Prevent os.path.join() from interpreting resource_path as an
             # absolute url. This allows paths that appear consistent with urls
-            # from other *.launchpad.dev virtual hosts.
+            # from other virtual hosts.
             # For example:
-            #   /firefox = http://launchpad.dev/firefox
-            #   /firefox = http://api.launchpad.dev/beta/firefox
+            #   /firefox = http://foo.dev/firefox
+            #   /firefox = http://api.foo.dev/beta/firefox
             resource_path = resource_path[1:]
         url_with_version = os.path.join(api_version, resource_path)
         return urljoin(self.base_url, url_with_version)

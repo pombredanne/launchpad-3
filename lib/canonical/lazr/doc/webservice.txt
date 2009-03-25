@@ -944,7 +944,7 @@ service root resource.
 
 If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
-'http://api.launchpad.net/beta/'.
+'http://api.cookbooks.dev/beta/'.
 
     >>> app = MyServiceRootResource()
     >>> webservice_configuration.root = app
@@ -1042,7 +1042,7 @@ the web service, they will we wrapped in the appropriate
 CollectionResource.
 
 The following example is equivalent to requesting
-'http://api.launchpad.net/cookbooks/'. The code will traverse to the
+'http://api.cookbooks.dev/cookbooks/'. The code will traverse to the
 CookbookSet published normally at '/cookbooks' and it will be wrapped
 into a CollectionResource.
 
