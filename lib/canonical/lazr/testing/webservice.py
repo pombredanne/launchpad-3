@@ -32,7 +32,6 @@ from zope.proxy import ProxyBase
 from zope.security.checker import ProxyFactory
 from zope.security.management import endInteraction, newInteraction
 
-from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.lazr.interfaces.rest import (
     IWebServiceConfiguration, IWebServiceLayer)
 from canonical.lazr.rest.publisher import (
@@ -96,14 +95,6 @@ class FakeRequest:
         This method is called by traversal machinery.
         """
         self._stack = stack
-
-    @property
-    def stepstogo(self):
-        """See IBasicLaunchpadRequest.
-
-        This method is called by traversal machinery.
-        """
-        return StepsToGo(self)
 
     def getApplicationURL(self):
         return "http://api.example.org"
