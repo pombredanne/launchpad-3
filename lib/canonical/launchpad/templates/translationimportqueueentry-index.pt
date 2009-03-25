@@ -10,22 +10,7 @@
   i18n:domain="launchpad"
 >
   <body>
-  <metal:leftportlets fill-slot="portlets_one">
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:rightportlets>
-
   <metal:script fill-slot="head_epilogue">
-    <style type="text/css">
-    .dont_show_fields {
-        visibility: collapse;
-     }
-    .do_show_fields {
-        visibility: visible;
-     }
-    </style>
     <script type="text/javascript">
     YUI().use('node', function(Y) {
         var fields = {'POT':
@@ -33,8 +18,11 @@
                              'field.languagepack'],
                       'PO':
                             ['field.potemplate', 'field.potemplate_name',
-                             'field.language', 'field.variant']
+                             'field.language', 'field.variant'],
+                       'UNSPEC': []
                      };
+        var nodes = {};
+        var last_file_type = 'UNSPEC';
 
         function getElemById(elem_id) {
             // XXX 'elem_id' is a Zope form field, and triggers
@@ -49,34 +37,38 @@
             return field.ancestor('tr');
         }
 
-        function switchClassOnFields(the_fields, add_class, rem_class) {
-            for (var field_index = 0;
-                 field_index < the_fields.length;
-                 field_index++) {
-                var tr = getEnclosingTR(the_fields[field_index]);
-                if (tr != null) {
-                    tr.removeClass(rem_class);
-                    tr.addClass(add_class);
-                }
+        function buildNodeLists() {
+            for (var ftype in fields) {
+                var the_class = ftype + '_row';
+                Y.Array.each(fields[ftype], function(field) {
+                    var tr = getEnclosingTR(field);
+                    if (tr != null) {
+                        tr.addClass(the_class);
+                        tr.setStyle('visibility', 'collapse');
+                    }
+                });
+                nodes[ftype] = Y.all('.' + the_class);
             }
+        }
+
+        function updateCurrentFileType(file_type) {
+            if (nodes[last_file_type] != null)
+                nodes[last_file_type].setStyle('visibility', 'collapse');
+            if (nodes[file_type] != null)
+                nodes[file_type].setStyle('visibility', 'visible');
+            last_file_type = file_type;
         }
 
         function handleFileTypeChange() {
             var file_type = this.get('value');
-            switchActiveFields(file_type);
-        }
-
-        function switchActiveFields(file_type) {
-            switchClassOnFields(fields[file_type],
-                                'do_show_fields', 'dont_show_fields');
-            switchClassOnFields(fields[file_type == 'PO' ? 'POT' : 'PO'],
-                                'dont_show_fields', 'do_show_fields');
+            if (file_type != last_file_type)
+                updateCurrentFileType(file_type);
         }
 
         Y.on('domready', function(){
+            buildNodeLists();
             var file_type_field = getElemById('field.file_type');
-            var file_type = file_type_field.get('value');
-            switchActiveFields(file_type);
+            updateCurrentFileType(file_type_field.get('value'));
             file_type_field.on('change', handleFileTypeChange);
         });
     });

@@ -368,8 +368,7 @@ class IEditTranslationImportQueueEntry(Interface):
     path = TextLine(
         title=_("Path"),
         description=_(
-            "The path to this file inside the source tree. If it's empty, we"
-            " use the one from the queue entry."),
+            "The path to this file inside the source tree."),
         required=True)
 
     sourcepackagename = Choice(
