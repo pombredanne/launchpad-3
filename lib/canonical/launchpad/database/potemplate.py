@@ -347,7 +347,7 @@ class POTemplate(SQLBase, RosettaStats):
             clauses.append('TranslationTemplateItem.sequence > 0')
 
         query = POTMsgSet.select(" AND ".join(clauses),
-                                 clauseTables = ['TranslationTemplateItem'],
+                                 clauseTables=['TranslationTemplateItem'],
                                  orderBy=['TranslationTemplateItem.sequence'])
         return query.prejoin(['msgid_singular', 'msgid_plural'])
 
@@ -460,15 +460,17 @@ class POTemplate(SQLBase, RosettaStats):
             return " = %s" % sqlvalues(value)
 
     def _getPOTMsgSetBy(self, msgid_singular, msgid_plural=None, context=None,
-                        shared=False):
-        """Look for a POTMsgSet by msgid_singular, msgid_plural, context,
-        and whether to look in any of the shared templates as well.
+                        sharing_templates=False):
+        """Look for a POTMsgSet by msgid_singular, msgid_plural, context.
+
+        If `sharing_templates` is True, and the current template has no such
+        POTMsgSet, look through sharing templates as well.
         """
         clauses = [
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
             ]
         clause_tables = ['TranslationTemplateItem']
-        if shared:
+        if sharing_templates:
             clauses.extend([
                 'TranslationTemplateItem.potemplate = POTemplate.id',
                 'TranslationTemplateItem.potmsgset = POTMsgSet.id',
@@ -734,7 +736,7 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             msgid_plural = self.getOrCreatePOMsgID(plural_text)
         potmsgset = self._getPOTMsgSetBy(msgid_singular, msgid_plural,
-                                         context, shared=True)
+                                         context, sharing_templates=True)
         if potmsgset is None:
             potmsgset = self.createMessageSetFromText(
                 singular_text, plural_text, context)

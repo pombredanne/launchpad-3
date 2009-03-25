@@ -11,14 +11,14 @@ from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestTranslationSharedPOTemplate(unittest.TestCase):
-    """Test behaviour of "shared" PO templates."""
+class TestTranslationSharingPOTemplate(unittest.TestCase):
+    """Test behaviour of "sharing" PO templates."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up context to test in."""
-        # Create a product with two series and a shared POTemplate
+        # Create a product with two series and sharing POTemplates
         # in different series ('devel' and 'stable').
         factory = LaunchpadObjectFactory()
         self.factory = factory
@@ -29,7 +29,7 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
             name='stable', product=self.foo)
         self.foo.official_rosetta = True
 
-        # POTemplate is 'shared' if it has the same name ('messages').
+        # POTemplate is a 'sharing' one if it has the same name ('messages').
         self.devel_potemplate = factory.makePOTemplate(
             productseries=self.foo_devel, name="messages")
         self.stable_potemplate = factory.makePOTemplate(self.foo_stable,
@@ -81,7 +81,7 @@ class TestTranslationSharedPOTemplate(unittest.TestCase):
             sequence)
         self.assertEquals(potmsgset, read_potmsgset)
 
-        # It's still not present in different shared PO template.
+        # It's still not present in different sharing PO template.
         read_potmsgset = self.stable_potemplate.getPOTMsgSetBySequence(
             sequence)
         self.assertEquals(read_potmsgset, None)

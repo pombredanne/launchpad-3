@@ -6,7 +6,7 @@ We need to get a POTMsgSet object to performe this test.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import POTemplate, TranslationMessage
+    >>> from canonical.launchpad.database import TranslationMessage
     >>> from canonical.launchpad.interfaces import (
     ...     ILanguageSet, IPersonSet, IPOTMsgSet, IProductSet)
 
