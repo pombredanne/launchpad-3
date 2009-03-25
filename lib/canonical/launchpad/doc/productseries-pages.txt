@@ -117,7 +117,7 @@ attribute of the ProductSeries.
     No import.
     >>> view.initialize()
     >>> print productseries.translations_autoimport_mode.title
-    Import PO templates.
+    Import template files.
 
 Also, a branch job to upload the full set of translation files has been
 created to create the initial database entries from the files in the branch.
