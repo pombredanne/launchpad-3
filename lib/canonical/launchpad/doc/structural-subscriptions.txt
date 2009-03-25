@@ -144,7 +144,7 @@ both subscribers to the package, and subscribers to the distribution.
     name16 "Subscriber (Ubuntu)"
     name12 "Subscriber (evolution in ubuntu)"
 
-We can pass the the parameter `level` to getBugNotificationsRecipients().
+We can pass the parameter `level` to getBugNotificationsRecipients().
 Subscribers whose subscription level is lower than the given parameter
 are not returned.
 

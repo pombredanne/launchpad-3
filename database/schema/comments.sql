@@ -2153,6 +2153,16 @@ COMMENT ON COLUMN HWTestAnswerCountDevice.answer IS 'The test answer.';
 COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver combination.';
 
 
+COMMENT ON TABLE HWDMIHandle IS 'A DMI Handle appearing in the DMI data of a submission.';
+COMMENT ON COLUMN HWDMIHandle.handle IS 'The ID of the handle.';
+COMMENT ON COLUMN HWDMIHandle.type IS 'The type of the handle.';
+
+
+COMMENT ON TABLE HWDMIValue IS 'Key/value pairs of DMI data of a handle.';
+COMMENT ON COLUMN HWDMIValue.key IS 'The key.';
+COMMENT ON COLUMN HWDMIValue.value IS 'The value';
+COMMENT ON COLUMN HWDMIValue.handle IS 'The handle to which this key/value pair belongs.';
+
 -- Job
 
 COMMENT ON TABLE Job IS 'Common info about a job.';

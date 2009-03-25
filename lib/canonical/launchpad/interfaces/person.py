@@ -1377,7 +1377,7 @@ class IPersonEditRestricted(Interface):
         team will actually be invited to join this one. Otherwise the team
         is added as if it were a person.
 
-        If the the person is not a team, and may_subscribe_to_list
+        If the person is not a team, and may_subscribe_to_list
         is True, then the person may be subscribed to the team's
         mailing list, depending on the list status and the person's
         auto-subscribe settings.
