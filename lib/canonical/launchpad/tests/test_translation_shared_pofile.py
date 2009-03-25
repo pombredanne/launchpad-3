@@ -6,15 +6,9 @@ from datetime import datetime, timedelta
 import pytz
 import unittest
 
-import transaction
-
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.translationtemplateitem import (
-    TranslationTemplateItem)
-from canonical.launchpad.interfaces import (
-    ILanguageSet, TranslationFileFormat, TranslationValidationStatus)
+from canonical.launchpad.interfaces import TranslationValidationStatus
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -675,8 +669,8 @@ class TestTranslationSharedPOFile(unittest.TestCase):
         #  - 2 unreviewed suggestions (for translated and untranslated each)
         #  - 2 imported translations, out of which 1 is changed in LP
         #  - 1 LP-provided translation
-        # For a total of 6 messages, 4 translated (1 from import, 3 only in LP,
-        # where 1 is changed from imported)
+        # For a total of 6 messages, 4 translated (1 from import,
+        # 3 only in LP, where 1 is changed from imported).
 
         # First POTMsgSet (self.potmsgset) is untranslated.
 
