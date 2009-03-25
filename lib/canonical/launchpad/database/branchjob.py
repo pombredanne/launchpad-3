@@ -23,7 +23,6 @@ import transaction
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-from canonical.codehosting import iter_list_chunks
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.database.job import Job
@@ -335,7 +334,7 @@ class RevisionsAddedJob(BranchJobDerived):
             self.bzr_branch.unlock()
 
     def getDiffForRevisions(self, from_revision_id, to_revision_id):
-        """Get the diff from txx"""
+        """Generate the diff between from_revision_id and to_revision_id."""
         # Try to reuse a tree from the last time through.
         repository = self.bzr_branch.repository
         from_tree = self._tree_cache.get(from_revision_id)
