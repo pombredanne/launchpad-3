@@ -218,6 +218,7 @@ class ResetPasswordView(BaseAuthTokenView, LaunchpadFormView):
         else:
             naked_account.password = data.get('password')
 
+        person = None
         if self.context.requester is not None:
             person = IMasterObject(self.context.requester, None)
             # Make sure this person has a preferred email address.

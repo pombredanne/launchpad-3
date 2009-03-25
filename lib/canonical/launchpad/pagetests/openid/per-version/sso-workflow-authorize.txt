@@ -39,8 +39,8 @@ has not ever used Launchpad to authenticate with a relying party.
     >>> login('foo.bar@canonical.com')
 
     >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
-    >>> policy = SSODatabasePolicy(LaunchpadTestRequest())
-    >>> policy.beforeTraverse()
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
 
     >>> rp_summary_set = getUtility(IOpenIDRPSummarySet)
     >>> summaries = rp_summary_set.getByIdentifier(
@@ -48,7 +48,7 @@ has not ever used Launchpad to authenticate with a relying party.
     >>> summaries.count()
     0
 
-    >>> policy.afterCall()
+    >>> db_policy = getUtility(IStoreSelector).pop()
 
     >>> logout()
 
