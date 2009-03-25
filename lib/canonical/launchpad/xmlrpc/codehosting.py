@@ -276,6 +276,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         except (InvalidNamespace, NotFoundError):
             return
         if not ('.bzr' == trailing_path or trailing_path.startswith('.bzr/')):
+            # '.bzr' is OK, '.bzr/foo' is OK, '.bzrfoo' is not.
             return
         default_branch = namespace.target.default_stacked_on_branch
         if default_branch is None:
