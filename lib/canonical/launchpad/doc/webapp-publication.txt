@@ -1363,5 +1363,9 @@ defined by TIMESTAMP_SKEW_WINDOW.
 
 Close the bogus request that was started by the call to
 beforeTraversal, in order to ensure we leave our state sane.
+Also, pop all the database policies we have been accumulating.
 
     >>> publication.endRequest(request, None)
+    >>> store_selector = getUtility(IStoreSelector)
+    >>> while store_selector.get_current():
+    ...     db_policy = store_selector.pop()
