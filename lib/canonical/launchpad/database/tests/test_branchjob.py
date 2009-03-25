@@ -335,6 +335,20 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         out = [x.revision_id for x, y in job.iterAddedMainline()]
         self.assertEqual(['rev2'], out)
 
+    def test_iterAddedMainline_order(self):
+        """iterAddedMainline iterates in commit order."""
+        self.useBzrBranches()
+        branch, tree = self.create3CommitsBranch()
+        job = RevisionsAddedJob.create(branch, 'rev1', 'rev3', '')
+        job.bzr_branch.lock_write()
+        self.addCleanup(job.bzr_branch.unlock)
+        # Since we've gone from rev1 to rev3, we've added rev2 and rev3.
+        [(rev2, revno2), (rev3, revno3)] = list(job.iterAddedMainline())
+        self.assertEqual('rev2', rev2.revision_id)
+        self.assertEqual(2, revno2)
+        self.assertEqual('rev3', rev3.revision_id)
+        self.assertEqual(3, revno3)
+
     def makeBranchWithCommit(self):
         """Create a branch with a commit."""
         jrandom = self.factory.makePerson(name='jrandom')
