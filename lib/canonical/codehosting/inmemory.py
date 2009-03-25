@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 
 """In-memory doubles of core codehosting objects."""
 
@@ -14,8 +14,7 @@ from bzrlib.urlutils import escape, unescape
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchnamespace import BranchNamespaceSet
-from canonical.launchpad.interfaces.branch import (
-    BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
+from canonical.launchpad.interfaces.branch import BranchType, IBranch
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
@@ -212,6 +211,18 @@ class FakeProductSeries(FakeDatabaseObject):
     """Fake product series."""
 
     branch = None
+
+    @property
+    def series_branch(self):
+        return self.branch
+
+    def _get_user_branch(self):
+        return self.branch
+
+    def _set_user_branch(self, branch):
+        self.branch = branch
+
+    user_branch = property(_get_user_branch, _set_user_branch)
 
 
 class FakeScriptActivity(FakeDatabaseObject):
@@ -476,9 +487,6 @@ class FakeBranchFilesystem:
                  % (registrant.displayname, owner.displayname)))
         product = sourcepackage = None
         if data['product'] == '+junk':
-            if owner.isTeam():
-                return faults.PermissionDenied(
-                    BranchCreationNoTeamOwnedJunkBranches.error_message)
             product = None
         elif data['product'] is not None:
             product = self._product_set.getByName(data['product'])
@@ -648,11 +656,11 @@ class InMemoryFrontend:
         """
         return self._factory
 
-    def getBranchSet(self):
+    def getBranchLookup(self):
         """See `LaunchpadDatabaseFrontend`.
 
-        Returns a partial implementation of `IBranchSet` -- enough to pass the
-        tests.
+        Returns a partial implementation of `IBranchLookup` -- enough to pass
+        the tests.
         """
         return self._branch_set
 
