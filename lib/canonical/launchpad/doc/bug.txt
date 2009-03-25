@@ -1094,3 +1094,15 @@ And we can change whether a user is marked as affected or unaffected.
     0
     >>> test_bug.users_affected_count
     2
+
+We can also get the collection of users affected by a bug.
+
+    >>> for user in test_bug.users_affected:
+    ...     print user.name
+    person-name14
+    person-name17
+
+    >>> unaffecting_bug = factory.makeBug()
+    >>> print unaffecting_bug.users_affected
+    []
+
