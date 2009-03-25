@@ -23,7 +23,7 @@ from canonical.launchpad.database.openidserver import OpenIDAuthorization
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
 from canonical.launchpad.interfaces.shipit import IShipitAccount
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.testing.pages import setupBrowser
@@ -46,15 +46,17 @@ class SSODatabasePolicyTestCase(TestCaseWithFactory):
         super(SSODatabasePolicyTestCase, self).tearDown()
 
 
-class SimpleRegistrationTestCase(SSODatabasePolicyTestCase):
+class SimpleRegistrationTestCase(TestCase):
     """Tests for Simple Registration helpers in OpenIDMixin"""
+
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
-        super(SSODatabasePolicyTestCase, self).setUp()
+        super(SimpleRegistrationTestCase, self).setUp()
 
     def tearDown(self):
-        super(SSODatabasePolicyTestCase, self).tearDown()
+        super(SimpleRegistrationTestCase, self).tearDown()
         logout()
 
     def test_sreg_field_names(self):
@@ -121,8 +123,10 @@ class SimpleRegistrationTestCase(SSODatabasePolicyTestCase):
             ('timezone', u'Europe/Paris')])
 
 
-class PreAuthorizeRPViewTestCase(SSODatabasePolicyTestCase):
+class PreAuthorizeRPViewTestCase(TestCase):
     """Test for the PreAuthorizeRPView."""
+
+    layer = DatabaseFunctionalLayer
 
     def test_pre_authorize_works_with_slave_store(self):
         """
@@ -143,9 +147,14 @@ class PreAuthorizeRPViewTestCase(SSODatabasePolicyTestCase):
 
         # We do not use the isAuthorized API because we don't know the client
         # id used by browser, since no cookie were used.
-        self.failUnless(OpenIDAuthorization.selectOneBy(
-            accountID=no_priv.accountID, trust_root='http://launchpad.dev/'),
-            "Pre-authorization record wasn't created.")
+        getUtility(IStoreSelector).push(SSODatabasePolicy())
+        try:
+            self.failUnless(OpenIDAuthorization.selectOneBy(
+                accountID=no_priv.accountID,
+                trust_root='http://launchpad.dev/'),
+                "Pre-authorization record wasn't created.")
+        finally:
+            getUtility(IStoreSelector).pop()
 
 
 class FakeOpenIdRequest:

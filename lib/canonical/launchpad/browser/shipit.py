@@ -59,8 +59,8 @@ from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
     ILaunchBag, IShipItApplication, UnexpectedFormData)
-from canonical.launchpad.interfaces.openidserver import (
-    ILaunchpadOpenIDStoreFactory)
+from canonical.launchpad.interfaces.openidconsumer import (
+    IOpenIDConsumerStoreFactory)
 from canonical.launchpad.interfaces.shipit import (
     IShipitAccount, IShipItReportSet, IShipItSurveySet, IShippingRequestAdmin,
     IShippingRequestEdit, IShippingRequestSet, IShippingRequestUser,
@@ -133,7 +133,7 @@ class BaseLoginView(LaunchpadView):
 
     def _getConsumer(self):
         session = ISession(self.request)[self._openid_session_ns]
-        store = getUtility(ILaunchpadOpenIDStoreFactory)()
+        store = getUtility(IOpenIDConsumerStoreFactory)()
         return Consumer(session, store)
 
     def _redirect(self):

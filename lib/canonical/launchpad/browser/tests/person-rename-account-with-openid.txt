@@ -1,11 +1,6 @@
 Renaming an account and the OpenID public identifier
 ====================================================
 
-    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
-    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
-    >>> from zope.component import getUtility
-    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
-
 When you rename an account, you are also changing your delegated OpenID
 identity. This means that if you used that identifier to log into a third
 party site, there is a chance that you'll lock yourself out of those sites.
@@ -48,11 +43,15 @@ Same thing if they logged in using OpenID only to known trust roots.
 
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPConfigSet, IOpenIDRPSummarySet)
-
     >>> trust_root = getUtility(IOpenIDRPConfigSet).new(
     ...     'https://shop.canonical.com/', 'The Shop', 'For our fans')
+    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> store_selector = getUtility(IStoreSelector)
+    >>> store_selector.push(SSODatabasePolicy())
     >>> record = getUtility(IOpenIDRPSummarySet).record(
     ...     joe.account, 'https://shop.canonical.com/')
+    >>> db_policy = store_selector.pop()
     >>> transaction.commit()
 
     >>> form_data['field.name'] = 'joe'
@@ -66,10 +65,13 @@ But if the user has logged in using OpenID into an unknown trust root, we
 assume that they did with the public profile identifier and warn them about
 the potential pitfalls of this.
 
+    >>> store_selector.push(SSODatabasePolicy())
     >>> record = getUtility(IOpenIDRPSummarySet).record(
     ...     joe.account, 'http://sourceforge.net/')
     >>> record = getUtility(IOpenIDRPSummarySet).record(
     ...     joe.account, 'http://my.very.cool.site.com/')
+    >>> db_policy = store_selector.pop()
+    >>> transaction.commit()
 
     >>> form_data['field.name'] = 'i-know-what-i-am-doing-joe'
     >>> harness.submit('save', form_data)
@@ -99,6 +101,3 @@ the name change if they click save again:
     False
     >>> print joe.name
     i-know-what-i-am-doing-joe
-
-    >>> db_policy = getUtility(IStoreSelector).pop()
-

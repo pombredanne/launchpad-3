@@ -34,6 +34,7 @@ recently, using the OpenID service.
     >>> import pytz
     >>> from datetime import datetime
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.account import IAccountSet
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPSummarySet)

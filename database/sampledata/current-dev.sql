@@ -4422,11 +4422,11 @@ ALTER TABLE officialbugtag DISABLE TRIGGER ALL;
 ALTER TABLE officialbugtag ENABLE TRIGGER ALL;
 
 
-ALTER TABLE openidassociations DISABLE TRIGGER ALL;
+ALTER TABLE openidassociation DISABLE TRIGGER ALL;
 
 
 
-ALTER TABLE openidassociations ENABLE TRIGGER ALL;
+ALTER TABLE openidassociation ENABLE TRIGGER ALL;
 
 
 ALTER TABLE openidauthorization DISABLE TRIGGER ALL;

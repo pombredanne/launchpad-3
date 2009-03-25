@@ -70,6 +70,8 @@ IOpenIDRPConfig entry.
 
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPConfigSet)
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> shop = getUtility(IOpenIDRPConfigSet).new(
     ...     'https://shop.canonical.com/', 'The Shop', 'For our fans.')
     >>> transaction.commit()
@@ -79,6 +81,7 @@ IOpenIDRPConfig entry.
     No Privileges Person
       identifier: http://openid.launchpad.dev/+id/no-priv_oid
       trust_root: http://moodle.org
+    >>> db_policy = getUtility(IStoreSelector).pop()
 
 
 == IOpenIDRPSummary ==

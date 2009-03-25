@@ -29,7 +29,8 @@ CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 # calculate_replication_set().
 AUTHDB_SEED = frozenset([
     ('public', 'account'),
-    ('public', 'openidassociations'),
+    ('public', 'openidassociation'),
+    ('public', 'openidnonce'),
     ])
 
 # Seed tables for the lpmain replication set to be passed to
@@ -39,7 +40,8 @@ LPMAIN_SEED = frozenset([
     ('public', 'launchpaddatabaserevision'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
-    ('public', 'openidnonce'),
+    ('public', 'openidconsumerassociation'),
+    ('public', 'openidconsumernonce'),
     ('public', 'oauthnonce'),
     ('public', 'codeimportmachine'),
     ('public', 'scriptactivity'),
@@ -183,12 +185,12 @@ def get_master_node(con, set_id=1):
     """Return the master Node, or None if the cluster is still being setup."""
     nodes = _get_nodes(con, """
         SELECT DISTINCT
-            pa_server AS node_id,
+            set_origin AS node_id,
             'master',
             pa_conninfo AS connection_string,
             True
         FROM _sl.sl_set
-        JOIN _sl.sl_path ON set_origin = pa_server
+        LEFT OUTER JOIN _sl.sl_path ON set_origin = pa_server
         WHERE set_id = %d
         """ % set_id)
     if not nodes:
