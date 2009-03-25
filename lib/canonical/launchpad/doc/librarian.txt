@@ -563,3 +563,40 @@ public `LibraryFileAlias` the traversal chain is extended with a
 
     >>> view.target == public_file.http_url
     True
+
+
+== Download counts ==
+
+The download counts for librarian files are stored in the
+LibraryFileDownloadCount table, broken down by day and country, but there's
+also a 'hits' attribute on ILibraryFileAlias, which holds the total number of
+times that file has been downloaded.
+
+The count starts at 0, and cannot be change directly.
+
+    >>> public_file.hits
+    0
+    >>> public_file.hits = 10
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
+
+To change that, we have to use the updateDownloadCount() method, which takes
+care of creating/updating the necessary LibraryFileDownloadCount entries.
+
+    >>> from canonical.launchpad.interfaces.country import ICountrySet
+    >>> country_set = getUtility(ICountrySet)
+    >>> november_1st_2006 = datetime(2006, 11, 1)
+    >>> brazil = country_set['BR']
+    >>> public_file.updateDownloadCount(november_1st_2006, brazil, count=1)
+    >>> public_file.hits
+    1
+
+    >>> japan = country_set['JP']
+    >>> public_file.updateDownloadCount(november_1st_2006, japan, count=1)
+    >>> public_file.hits
+    2
+
+    >>> public_file.updateDownloadCount(november_1st_2006, brazil, count=1)
+    >>> public_file.hits
+    3
