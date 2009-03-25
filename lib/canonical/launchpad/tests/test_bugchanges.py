@@ -1104,7 +1104,6 @@ class TestBugChanges(unittest.TestCase):
             'whatchanged': 'marked as duplicate',
             'oldvalue': None,
             'newvalue': str(self.bug.id),
-            'message': '',
             }
 
         expected_notification = {
@@ -1131,7 +1130,6 @@ class TestBugChanges(unittest.TestCase):
             'whatchanged': 'removed duplicate marker',
             'oldvalue': str(self.bug.id),
             'newvalue': None,
-            'message': '',
             }
 
         expected_notification = {
@@ -1160,7 +1158,6 @@ class TestBugChanges(unittest.TestCase):
             'whatchanged': 'changed duplicate marker',
             'oldvalue': str(bug_one.id),
             'newvalue': str(bug_two.id),
-            'message': '',
             }
 
         expected_notifications = [
