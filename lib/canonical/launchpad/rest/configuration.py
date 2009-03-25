@@ -59,6 +59,6 @@ class LaunchpadWebServiceConfiguration:
         is_developer = getUtility(ILaunchBag).developer
         return (is_developer or config.canonical.show_tracebacks)
 
-    def current_request_user(self):
+    def get_request_user(self):
         """See `IWebServiceConfiguration`."""
         return getUtility(ILaunchBag).user
