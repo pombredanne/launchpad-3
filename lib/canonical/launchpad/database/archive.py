@@ -1207,7 +1207,6 @@ class ArchiveSet:
             Archive.purpose != %s
             """ % sqlvalues(distribution, name, ArchivePurpose.PPA))
 
-
     def _getDefaultDisplayname(self, name, owner, distribution, purpose):
         """See `IArchive`."""
         if purpose == ArchivePurpose.PPA:
