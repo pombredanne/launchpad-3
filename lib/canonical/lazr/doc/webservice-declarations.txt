@@ -945,7 +945,7 @@ is just a dummy.
     ...     code_revision = "1.0b"
     ...     default_batch_size = 50
     ...
-    ...     def current_request_user(self):
+    ...     def get_request_user(self):
     ...         return 'A user'
     >>> provideUtility(MyWebServiceConfiguration(), IWebServiceConfiguration)
 
