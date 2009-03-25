@@ -248,6 +248,12 @@ class Bug(SQLBase):
     users_unaffected_count = IntCol(notNull=True, default=0)
 
     @property
+    def users_affected(self):
+        """See `IBug`."""
+        return [bap.person for bap
+                in Store.of(self).find(BugAffectsPerson, bug=self)]
+
+    @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
         inside = self.bugtasks[0]

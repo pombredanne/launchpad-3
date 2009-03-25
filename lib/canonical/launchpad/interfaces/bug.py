@@ -273,6 +273,10 @@ class IBug(ICanBeMentored):
     users_unaffected_count = exported(
         Int(title=_('The number of users unaffected by this bug'),
             required=True, readonly=True))
+    users_affected = exported(CollectionField(
+            title=_('Users affected'),
+            value_type=Reference(schema=IPerson),
+            readonly=True))
 
     messages = CollectionField(
             title=_("The messages related to this object, in reverse "
