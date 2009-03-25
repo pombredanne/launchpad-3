@@ -402,7 +402,7 @@ Foo Bar's message gets sent to each individual member of he team.
         Ubuntu Team <support@ubuntu.com>
 
 The Guadamen team now registers an external contact address (they could
-have also used the their Launchpad mailing list address).
+have also used their Launchpad mailing list address).
 
     >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     IEmailAddressSet)

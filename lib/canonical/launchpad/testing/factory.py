@@ -7,6 +7,7 @@ This module should not have any actual tests.
 
 __metaclass__ = type
 __all__ = [
+    'GPGSigningContext',
     'LaunchpadObjectFactory',
     'ObjectFactory',
     'time_counter',
@@ -66,6 +67,7 @@ from canonical.launchpad.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.hwdb import (
     HWSubmissionFormat, IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -129,6 +131,15 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
 # example, makeBranch(product=None) means "make a junk branch".
 # None, because None means "junk branch".
 _DEFAULT = object()
+
+
+class GPGSigningContext:
+    """A helper object to hold the fingerprint, password and mode."""
+
+    def __init__(self, fingerprint, password='', mode=None):
+        self.fingerprint = fingerprint
+        self.password = password
+        self.mode = mode
 
 
 class ObjectFactory:
@@ -856,7 +867,19 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
             attachment_contents=None, force_transfer_encoding=False,
-            email_address=None):
+            email_address=None, signing_context=None):
+        """Return an ISignedMessage.
+
+        :param msgid: An rfc2822 message-id.
+        :param body: The body of the message.
+        :param attachment_contents: The contents of an attachment.
+        :param force_transfer_encoding: If True, ensure a transfer encoding is
+            used.
+        :param email_address: The address the mail is from.
+        :param signing_context: A GPGSigningContext instance containing the
+            gpg key to sign with.  If None, the message is unsigned.  The
+            context also contains the password and gpg signing mode.
+        """
         mail = SignedMessage()
         if email_address is None:
             person = self.makePerson()
@@ -871,6 +894,12 @@ class LaunchpadObjectFactory(ObjectFactory):
             body = self.getUniqueString('body')
         mail['Message-Id'] = msgid
         mail['Date'] = formatdate()
+        if signing_context is not None:
+            gpghandler = getUtility(IGPGHandler)
+            body = gpghandler.signContent(
+                body, signing_context.fingerprint,
+                signing_context.password, signing_context.mode)
+            assert body is not None
         if attachment_contents is None:
             mail.set_payload(body)
             body_part = mail
@@ -1367,8 +1396,16 @@ class LaunchpadObjectFactory(ObjectFactory):
                 msg.attach(attachment)
         return msg
 
-    def makeBundleMergeDirectiveEmail(self, source_branch, target_branch):
-        """Create a merge directive email from two bzr branches."""
+    def makeBundleMergeDirectiveEmail(self, source_branch, target_branch,
+                                      signing_context=None):
+        """Create a merge directive email from two bzr branches.
+
+        :param source_branch: The source branch for the merge directive.
+        :param target_branch: The target branch for the merge directive.
+        :param signing_context: A GPGSigningContext instance containing the
+            gpg key to sign with.  If None, the message is unsigned.  The
+            context also contains the password and gpg signing mode.
+        """
         from bzrlib.merge_directive import MergeDirective2
         md = MergeDirective2.from_objects(
             source_branch.repository, source_branch.last_revision(),
@@ -1378,7 +1415,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             timezone=0)
         return self.makeSignedMessage(
             body='My body', subject='My subject',
-            attachment_contents=''.join(md.to_lines()))
+            attachment_contents=''.join(md.to_lines()),
+            signing_context=signing_context)
 
     def makeMergeDirective(self, source_branch=None, target_branch=None,
         source_branch_url=None, target_branch_url=None):
@@ -1415,10 +1453,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             source_branch=source_branch_url, base_revision_id='base-revid',
             patch='booga')
 
-    def makeMergeDirectiveEmail(self, body='Hi!\n'):
+    def makeMergeDirectiveEmail(self, body='Hi!\n', signing_context=None):
         """Create an email with a merge directive attached.
 
         :param body: The message body to use for the email.
+        :param signing_context: A GPGSigningContext instance containing the
+            gpg key to sign with.  If None, the message is unsigned.  The
+            context also contains the password and gpg signing mode.
         :return: message, file_alias, source_branch, target_branch
         """
         target_branch = self.makeProductBranch()
@@ -1426,7 +1467,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             product=target_branch.product)
         md = self.makeMergeDirective(source_branch, target_branch)
         message = self.makeSignedMessage(body=body,
-            subject='My subject', attachment_contents=''.join(md.to_lines()))
+            subject='My subject', attachment_contents=''.join(md.to_lines()),
+            signing_context=signing_context)
         message_string = message.as_string()
         file_alias = getUtility(ILibraryFileAliasSet).create(
             '*', len(message_string), StringIO(message_string), '*')
