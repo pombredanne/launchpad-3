@@ -8,6 +8,7 @@
       <allow interface='canonical.lazr.rest.example.interfaces.ICookbookSet' />
   </class>
 
+  <permission id="lazr.restful.example.View" title="Viewing something" />
   <permission id="lazr.restful.example.ViewPrivate"
    title="Viewing private information" />
 
