@@ -591,30 +591,13 @@ def get_bug_edit_notification_texts(bug_delta):
     # figure out what's been changed; add that information to the
     # list as appropriate
     changes = []
-    if bug_delta.duplicateof is not None:
-        new_bug_dupe = bug_delta.duplicateof['new']
-        old_bug_dupe = bug_delta.duplicateof['old']
-        assert new_bug_dupe is not None or old_bug_dupe is not None
-        assert new_bug_dupe != old_bug_dupe
-        if old_bug_dupe is not None:
-            change_info = (
-                u"** This bug is no longer a duplicate of bug %d\n" %
-                    old_bug_dupe.id)
-            change_info += u'   %s' % old_bug_dupe.title
-            changes.append(change_info)
-        if new_bug_dupe is not None:
-            change_info = (
-                u"** This bug has been marked a duplicate of bug %d\n" %
-                    new_bug_dupe.id)
-            change_info += '   %s' % new_bug_dupe.title
-            changes.append(change_info)
 
     # The order of the field names in this list is important; this is
     # the order in which changes will appear both in the bug activity
     # log and in notification emails.
     bug_change_field_names = [
-        'title', 'description', 'private', 'security_related', 'tags',
-        'attachment',
+        'duplicateof', 'title', 'description', 'private', 'security_related',
+        'tags', 'attachment',
         ]
     for field_name in bug_change_field_names:
         field_delta = getattr(bug_delta, field_name)

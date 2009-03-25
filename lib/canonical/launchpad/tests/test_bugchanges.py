@@ -1160,22 +1160,18 @@ class TestBugChanges(unittest.TestCase):
             'newvalue': str(bug_two.id),
             }
 
-        expected_notifications = [
-            {
-                'person': self.user,
-                'text': ("** This bug is no longer a duplicate of bug %d\n"
-                         "   %s" % (bug_one.id, bug_one.title)),
-                },
-            {
-                'person': self.user,
-                'text': ("** This bug has been marked a duplicate of bug %d\n"
-                         "   %s" % (bug_two.id, bug_two.title)),
-                },
-            ]
+        expected_notification = {
+            'person': self.user,
+            'text': ("** This bug is no longer a duplicate of bug %d\n"
+                     "   %s\n"
+                     "** This bug has been marked a duplicate of bug %d\n"
+                     "   %s" % (bug_one.id, bug_one.title,
+                                bug_two.id, bug_two.title)),
+            }
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notifications)
+            expected_notification=expected_notification)
 
 
 def test_suite():

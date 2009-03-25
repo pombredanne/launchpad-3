@@ -24,7 +24,6 @@ from textwrap import dedent
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
 
@@ -255,6 +254,50 @@ class BugDescriptionChange(AttributeChange):
         notification_text = (
             u"** Description changed:\n\n%s" % description_diff)
         return {'text': notification_text}
+
+
+class BugDuplicateChange(AttributeChange):
+    """Describes a change to a bug's duplicate marker."""
+
+    def getBugActivity(self):
+        if self.old_value is not None and self.new_value is not None:
+            return {
+                'whatchanged': 'changed duplicate marker',
+                'oldvalue': str(self.old_value.id),
+                'newvalue': str(self.new_value.id),
+                }
+        elif self.old_value is None:
+            return {
+                'whatchanged': 'marked as duplicate',
+                'newvalue': str(self.new_value.id),
+                }
+        elif self.new_value is None:
+            return {
+                'whatchanged': 'removed duplicate marker',
+                'oldvalue': str(self.old_value.id),
+                }
+        else:
+            raise AssertionError(
+                "There is no change: both the old bug and new bug are None.")
+
+    def getBugNotification(self):
+        if self.old_value is not None and self.new_value is not None:
+            text = ("** This bug is no longer a duplicate of bug %d\n"
+                    "   %s\n"
+                    "** This bug has been marked a duplicate of bug %d\n"
+                    "   %s" % (self.old_value.id, self.old_value.title,
+                               self.new_value.id, self.new_value.title))
+        elif self.old_value is None:
+            text = ("** This bug has been marked a duplicate of bug %d\n"
+                    "   %s" % (self.new_value.id, self.new_value.title))
+        elif self.new_value is None:
+            text = ("** This bug is no longer a duplicate of bug %d\n"
+                    "   %s" % (self.old_value.id, self.old_value.title))
+        else:
+            raise AssertionError(
+                "There is no change: both the old bug and new bug are None.")
+
+        return {'text': text}
 
 
 class BugTitleChange(AttributeChange):
@@ -499,6 +542,7 @@ BUG_CHANGE_LOOKUP = {
     'tags': BugTagsChange,
     'title': BugTitleChange,
     'attachment': BugAttachmentChange,
+    'duplicateof': BugDuplicateChange,
     }
 
 
