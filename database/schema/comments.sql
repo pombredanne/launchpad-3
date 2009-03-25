@@ -1869,7 +1869,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.error_output IS 'Error output from
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
 COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
-COMMENT ON COLUMN Archive.title IS 'User defined title for this archive.';
+COMMENT ON COLUMN Archive.displayname IS 'User defined displayname for this archive.';
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';

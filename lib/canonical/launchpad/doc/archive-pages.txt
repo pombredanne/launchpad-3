@@ -568,7 +568,7 @@ to set PPA for Pirulito Team as dependency of his PPA.
     >>> dependencies = view.widgets.get('selected_dependencies').vocabulary
     >>> for dependency in dependencies:
     ...     print dependency.value.displayname
-    Private PPA for Pirulito Team
+    PPA for Pirulito Team
 
 Remove Celso's membership on the new team and made his PPA public
 again to not affect subsequent tests.
