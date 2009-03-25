@@ -429,7 +429,7 @@ class IBrowserFormNG(Interface):
         """
 
     def getAll(name, default=None):
-        """Return the the list of values submitted under field name.
+        """Return the list of values submitted under field name.
 
         If the field wasn't submitted return the default value. (If default
         is None, an empty list will be returned. It is an error to use

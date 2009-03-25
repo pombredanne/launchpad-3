@@ -12,8 +12,9 @@ import transaction
 from zope.component import getUtility
 
 from canonical.testing import ZopelessAppServerLayer
-from canonical.codehosting.vfs import get_multi_server
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.ftests import import_secret_test_key
+from canonical.launchpad.testing import (
+    GPGSigningContext, TestCaseWithFactory)
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.database.branchmergeproposal import (
     CreateMergeProposalJob)
@@ -26,8 +27,11 @@ class TestCreateMergeProposals(TestCaseWithFactory):
 
     def test_create_merge_proposals(self):
         """Ensure create_merge_proposals runs and creates proposals."""
+        key = import_secret_test_key()
+        signing_context = GPGSigningContext(key.fingerprint, password='test')
         email, file_alias, source, target = (
-            self.factory.makeMergeDirectiveEmail())
+            self.factory.makeMergeDirectiveEmail(
+                signing_context=signing_context))
         CreateMergeProposalJob.create(file_alias)
         self.assertEqual(0, source.landing_targets.count())
         transaction.commit()

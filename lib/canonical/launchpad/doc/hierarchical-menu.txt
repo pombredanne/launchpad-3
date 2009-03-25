@@ -208,7 +208,7 @@ the builder's context has an IPathAdapter registration.
         text='Spam'
         icon='<img src="/@@/recipe"/>'>
 
-The icon is not set if the the default image adapter can not find an
+The icon is not set if the default image adapter can not find an
 icon for the object.
 
     # We'll use the default image adapter, which doesn't know about
