@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Pending proposals</h1>
+  <h1>Pending proposals for <tal:displayname replace="context/displayname"/></h1>
 
   <tal:has-proposals condition="view/proposal_count"
                      define = "to_do view/review_groups/to_do|nothing;

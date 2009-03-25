@@ -275,6 +275,10 @@ class IBug(ICanBeMentored):
     users_unaffected_count = exported(
         Int(title=_('The number of users unaffected by this bug'),
             required=True, readonly=True))
+    users_affected = exported(CollectionField(
+            title=_('Users affected'),
+            value_type=Reference(schema=IPerson),
+            readonly=True))
 
     messages = CollectionField(
             title=_("The messages related to this object, in reverse "
@@ -385,11 +389,14 @@ class IBug(ICanBeMentored):
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
 
-    def addChange(change):
+    def addChange(change, recipients=None):
         """Record a change to the bug.
 
         :param change: An `IBugChange` instance from which to take the
             change data.
+        :param recipients: A set of `IBugNotificationRecipient`s to whom
+            to send notifications about this change. If None is passed
+            the default list of recipients for the bug will be used.
         """
 
     def expireNotifications():

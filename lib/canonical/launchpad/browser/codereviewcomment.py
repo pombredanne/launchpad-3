@@ -31,6 +31,8 @@ def quote_text_as_email(text, width=80):
     Trailing whitespace is stripped.
     """
     # Empty text begets empty text.
+    if text is None:
+        return ''
     text = text.rstrip()
     if not text:
         return ''

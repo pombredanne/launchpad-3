@@ -594,6 +594,28 @@ class LaunchpadObjectFactory(ObjectFactory):
         naked_series.user_branch = branch
         return branch
 
+    def enableDefaultStackingForPackage(self, package, branch):
+        """Give 'package' a default stacked-on branch.
+
+        :param package: The package to give a default stacked-on branch to.
+        :param branch: The branch that should be the default stacked-on
+            branch.
+        """
+        from canonical.launchpad.testing import run_with_login
+        # 'branch' might be private, so we remove the security proxy to get at
+        # the methods.
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.startMirroring()
+        naked_branch.mirrorComplete('rev1')
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.development_version.setBranch,
+            PackagePublishingPocket.RELEASE,
+            branch,
+            ubuntu_branches.teamowner)
+        return branch
+
     def makeBranchMergeQueue(self, name=None):
         """Create a new multi branch merge queue."""
         if name is None:
@@ -1169,13 +1191,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
         naked_distribution = removeSecurityProxy(distribution)
-        return naked_distribution.newSeries(
+        series = naked_distribution.newSeries(
             version=version,
             name=name,
             displayname=name,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
+        series.status = status
+        return series
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag='powerpc', processorfamily=None,
