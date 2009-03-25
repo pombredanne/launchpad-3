@@ -86,7 +86,10 @@
         tal:attributes="href
         string:${icingroot}/lazr/build/inlineedit/assets/skins/sam/editor.css"
         />
-
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/autocomplete/assets/skins/sam/autocomplete.css"
+        />
     <tal:devmode condition="devmode">
       <script type="text/javascript"
               tal:attributes="src string:${yui}/yui/yui.js"></script>
@@ -139,6 +142,8 @@
               tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/inlineedit/editor.js"></script>
+      <script type="text/javascript"
+              tal:attributes="src string:${lazr_js}/autocomplete/autocomplete.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lazr_js}/overlay/overlay.js"></script>
       <script type="text/javascript"
