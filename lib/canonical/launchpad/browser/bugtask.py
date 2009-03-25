@@ -2904,8 +2904,11 @@ class BugTaskTableRowView(LaunchpadView):
     @property
     def assignee_picker_widget(self):
         assignee_content_id = 'assignee-content-box-%s' % self.context.id
-        assignee_html = PersonFormatterAPI(self.context.assignee).link(
-            '+assignedbugs')
+        if self.context.assignee is None:
+            assignee_html = 'None'
+        else:
+            assignee_html = PersonFormatterAPI(self.context.assignee).link(
+                '+assignedbugs')
         return InlineEditPickerWidget(
             context=self.context,
             request=self.request,

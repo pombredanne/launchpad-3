@@ -159,6 +159,10 @@ class InlineEditPickerWidget:
             self.id = id
 
     @classmethod
+    def delete_button_id(self):
+        return 'delete-button-%s' % self.id
+
+    @classmethod
     def _generate_id(cls):
         """Return a presumably unique id for this widget."""
         cls.last_id += 1

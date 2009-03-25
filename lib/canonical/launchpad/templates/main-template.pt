@@ -171,8 +171,6 @@
               tal:attributes="src string:${lp_js}/inlinehelp/inlinehelp.js"></script>
       <script type="text/javascript"
               tal:attributes="src string:${lp_js}/client/client.js"></script>
-      <script type="text/javascript"
-              tal:attributes="src string:${lp_js}/client/helpers.js"></script>
     </tal:devmode>
     <tal:production condition="not:devmode">
       <script type="text/javascript"

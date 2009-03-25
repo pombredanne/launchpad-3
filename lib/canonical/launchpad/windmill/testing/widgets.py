@@ -139,7 +139,7 @@ class InlinePickerWidgetTest:
         client.open(url=self.url)
         client.waits.forPageLoad(timeout=u'20000')
 
-        # Click on assignee edit button for first bugtask.
+        # Click on assignee edit button.
         client.waits.forElement(
             xpath=u"//span[@id='%s']/button" % self.activator_id,
             timeout=u'20000')
@@ -151,6 +151,7 @@ class InlinePickerWidgetTest:
                               self.result_index)
 
         # Verify update.
+        client.waits.sleep(milliseconds=u'2000')
         client.asserts.assertText(
             xpath=u"//span[@id='%s']//a" % self.activator_id,
             validator=self.new_value)
@@ -166,6 +167,33 @@ class InlinePickerWidgetTest:
         client.asserts.assertText(
             xpath=u"//span[@id='%s']//a" % self.activator_id,
             validator=self.new_value)
+
+        # Click on assignee delete button.
+        client.click(
+            xpath=u"//span[@id='%s']/img[@class='delete-button']"
+                  % self.activator_id)
+        client.waits.sleep(milliseconds=u'2000')
+
+        # Verify delete.
+        client.asserts.assertText(
+            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+                  % self.activator_id,
+            validator='deleted')
+
+        # Reload the page to verify that the selected value is persisted.
+        client.open(url=self.url)
+        client.waits.forPageLoad(timeout=u'20000')
+
+        # Verify delete, again.
+        client.waits.forElement(
+            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+                  % self.activator_id,
+            timeout=u'20000')
+        client.asserts.assertText(
+            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+                  % self.activator_id,
+            validator='None')
+
 
 class FormPickerWidgetTest:
     """Test that the Picker widget edits a form value properly."""

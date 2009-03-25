@@ -5,6 +5,9 @@
     <button class="lazr-btn yui-activator-act yui-activator-hidden">
       Edit
     </button>
+    <img class="delete-button" src="/@@/trash-icon"
+         style="cursor: pointer; vertical-align: top"
+         tal:condition="context/required:launchpad.Edit"/>
     <div class="yui-activator-message-box yui-activator-hidden"/>
 </span>
 <script tal:condition="context/required:launchpad.Edit"
