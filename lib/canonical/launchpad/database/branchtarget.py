@@ -31,7 +31,7 @@ def check_default_stacked_on(branch):
     Branches that are *not* suitable include:
       - remote branches
       - branches the user cannot see
-      - unmirrored branches
+      - branches that have not yet been successfully processed by the puller.
 
     If the given branch is not suitable, return None. For convenience, also
     returns None if passed None. Otherwise, return the branch.
