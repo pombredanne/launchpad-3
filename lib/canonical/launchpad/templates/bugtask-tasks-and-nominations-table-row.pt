@@ -69,7 +69,7 @@
       <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 
-    <td style="margin: 0; padding: 0; vertical-align: middle">
+    <td colspan="2" style="margin: 0; padding: 0; vertical-align: middle">
       <tal:has_watch condition="context/bugwatch">
         <div style="text-decoration: none; padding: 0.25em">
           <img tal:condition="not:context/bugwatch/last_error_type"
@@ -81,28 +81,10 @@
           </a>
         </div>
       </tal:has_watch>
-      <tal:has_no_watch condition="not: context/bugwatch"
-        define="assignee_content_id string:assignee-content-box-${context/id}">
-        <span tal:attributes="id assignee_content_id">
-          <span class="yui-activator-data-box">
-            <tal:link
-              replace="structure context/assignee/fmt:link/+assignedbugs"/>
-          </span>
-          <button class="lazr-btn yui-activator-act yui-activator-hidden">
-          Edit
-          </button>
-          <div class="yui-activator-message-box yui-activator-hidden"/>
+      <tal:has_no_watch condition="not: context/bugwatch">
+        <span tal:replace="structure view/assignee_picker_widget">
+          Assignee Name and Edit Button
         </span>
-        <script tal:condition="context/required:launchpad.Edit"
-                tal:content="structure string:
-        YUI().use('lp.picker', function(Y) {
-            Y.lp.picker.addPickerPatcher(
-                '${view/bugtask_canonical_url}',
-                '/~',
-                'assignee_link',
-                '${assignee_content_id}');
-        });
-        "/>
       </tal:has_no_watch>
     </td>
 

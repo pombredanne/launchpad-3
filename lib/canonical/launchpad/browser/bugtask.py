@@ -136,7 +136,8 @@ from canonical.widgets.bugtask import (
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from canonical.widgets.lazrjs import TextLineEditorWidget
+from canonical.widgets.lazrjs import (
+    InlineEditPickerWidget, TextLineEditorWidget)
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -2853,6 +2854,23 @@ class BugTaskTableRowView(LaunchpadView):
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
         return canonical_url(self.context)
+
+    @property
+    def assignee_picker_widget(self):
+        assignee_content_id = 'assignee-content-box-%s' % self.context.id
+        assignee_html = PersonFormatterAPI(self.context.assignee).link(
+            '+assignedbugs')
+        return InlineEditPickerWidget(
+            context=self.context,
+            request=self.request,
+            py_attribute='assignee',
+            json_attribute='assignee_link',
+            json_attribute_uri_base='/~',
+            vocabulary=IBugTask['assignee'].vocabularyName,
+            default_html=assignee_html,
+            id=assignee_content_id,
+            header='Change assignee',
+            step_title='Search for people or teams');
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):

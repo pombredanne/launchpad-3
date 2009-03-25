@@ -260,7 +260,7 @@ class VocabularyPickerWidget(SinglePopupWidget):
 
     header = 'Select an item'
 
-    max_description_length = 40
+    step_title = 'Search'
 
     @property
     def suffix(self):
@@ -288,7 +288,7 @@ class VocabularyPickerWidget(SinglePopupWidget):
         js = js_template % dict(
             vocabulary=choice.vocabularyName,
             header=self.header,
-            max_description_length=self.max_description_length,
+            step_title=self.step_title,
             show_widget_id=self.show_widget_id,
             input_id=self.name)
         return ('(<a id="%s" href="javascript:" class="ajax">'
