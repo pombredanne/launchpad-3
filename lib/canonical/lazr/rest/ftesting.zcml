@@ -8,6 +8,7 @@
     <include package="zope.security" file="meta.zcml"/>
     <include package="zope.component"/>
     <include package="zope.traversing"/>
+    <include package="lazr.enum"/>
     <include file="configure.zcml" />
     <include file="meta.zcml" />
     <include file="example/configure.zcml" />
@@ -17,8 +18,5 @@
     <securityPolicy
      component="canonical.lazr.rest.example.security.CookbookWebServiceSecurityPolicy"
      />
-
-    <permission
-      id="lazr.restful.example.View" title="Viewing something" />
 
 </configure>

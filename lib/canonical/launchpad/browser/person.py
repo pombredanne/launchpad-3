@@ -151,6 +151,8 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
@@ -279,6 +281,17 @@ class BranchTraversalMixin:
         raise NotFoundError
 
     def traverse(self, pillar_name):
+        # If the pillar is a product, then return the PersonProduct.
+        pillar = getUtility(IPillarNameSet).getByName(pillar_name)
+        if IProduct.providedBy(pillar):
+            person_product = getUtility(IPersonProductFactory).create(
+                self.context, pillar)
+            # If accessed through an alias, redirect to the proper name.
+            if pillar.name != pillar_name:
+                return self.redirectSubTree(canonical_url(person_product))
+            getUtility(IOpenLaunchBag).add(pillar)
+            return person_product
+        # Otherwise look for a branch.
         try:
             branch = getUtility(IBranchNamespaceSet).traverse(
                 self._getSegments(pillar_name))
@@ -2344,7 +2357,7 @@ class PersonLanguagesView(LaunchpadView):
     def submitLanguages(self):
         '''Process a POST request to the language preference form.
 
-        This list of languages submitted is compared to the the list of
+        This list of languages submitted is compared to the list of
         languages the user has, and the latter is matched to the former.
         '''
 
@@ -2541,19 +2554,19 @@ class PersonView(LaunchpadView, FeedsMixin):
         params = BugTaskSearchParams(
             user=self.user, assignee=self.context, omit_dupes=True,
             status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
-        return self.context.searchTasks(params)[:5]
+        return list(self.context.searchTasks(params)[:5])
 
     @cachedproperty
     def assigned_specs_in_progress(self):
         """Return up to 5 assigned specs that are being worked on."""
-        return self.context.assigned_specs_in_progress
+        return list(self.context.assigned_specs_in_progress)
 
     @property
     def has_assigned_bugs_or_specs_in_progress(self):
         """Does the user have any bugs or specs that are being worked on?"""
         bugtasks = self.assigned_bugs_in_progress
         specs = self.assigned_specs_in_progress
-        return bugtasks.count() > 0 or specs.count() > 0
+        return len(bugtasks) > 0 or len(specs) > 0
 
     @property
     def viewing_own_page(self):

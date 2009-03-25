@@ -1065,6 +1065,91 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 .pillar div.portlet, .pillar div.section {clear: both; margin-bottom: 2em;}
 .pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
 
+/* === Official Bug Tag Management === */
+
+.official-tags-layout-table {
+  width: 100%;
+}
+
+.official-tags-layout-table td {
+  padding: 0;
+}
+
+.official-tags-layout-table th {
+  text-align: left;
+  font-size: 1.25em;
+  padding-bottom: 5px;
+}
+
+.official-tags-layout-table .left-column,
+.official-tags-layout-table .right-column {
+  vertical-align: top;
+  width: 45%;
+}
+
+.official-tags-layout-table .middle-column {
+  text-align: center;
+  padding: 20px;
+}
+
+.official-tags-layout-table .middle-column input[type='submit'] {
+  width: 75px;
+  margin: 5px;
+}
+
+.official-tags-layout-table .input-field-layout-table td {
+  border-style: none;
+  padding: 5px;
+}
+
+.official-tags-layout-table ul {
+  list-style-type: none;
+  padding-left: 0 !important;
+  margin: 0 !important;
+}
+
+.official-tags-layout-table li.selected {
+  background-color: #eee;
+}
+
+.official-tags-layout-table ul .tag-used-count {
+  color: #888;
+  font-size: 75%;
+}
+
+.official-tags-layout-table .list-scrollable-area {
+  height: 10em;
+  overflow-y: scroll;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #eee;
+}
+
+.official-tags-layout-table .left-column .list-scrollable-area {
+  background-color: #fefecc;
+}
+
+.official-tag-error-message {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
+.official-tag-error-message-header {
+  font-weight: bold;
+  font-size: 1.25em;
+  margin-left: 1em;
+}
+
+.official-tag-error-message-value {
+  color: red;
+  text-decoration: underline;
+}
+
+a.official-tag { /* Looks just like a normal link */ }
+
+a.unofficial-tag {
+  color: #333;
+}
 
 /* === Portlets === */
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
@@ -1210,8 +1295,16 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
-.boardCommentDetails {background-color: #eee; padding: 0.5em 12px;}
+.boardCommentDetails {
+  background-color: #eee;
+  padding: 0.5em 12px;
+  border-bottom: 1px solid #ddd
+}
 .boardCommentBody {padding: 0.5em 12px 0;}
+.boardBugActivityBody {
+  background-color: #eee;
+  padding: 0.5em 12px 0.5em;
+}
 .boardCommentContent { line-height: 1.5em;}
 .boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
 dl.faq dt {font-weight: bold;}

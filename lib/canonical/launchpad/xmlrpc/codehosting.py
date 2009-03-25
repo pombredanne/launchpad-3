@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
 from canonical.launchpad.interfaces.person import IPersonSet, NoSuchPerson
-from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
+from canonical.launchpad.interfaces.product import NoSuchProduct
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
@@ -68,14 +68,11 @@ class BranchPuller(LaunchpadXMLRPCView):
         if branch.branch_type == BranchType.REMOTE:
             raise AssertionError(
                 'Remote branches should never be in the pull queue.')
-        if branch.product is None:
-            default_branch = None
-        else:
-            default_branch = branch.product.default_stacked_on_branch
+        default_branch = branch.target.default_stacked_on_branch
         if default_branch is None:
             default_branch = ''
-        elif (default_branch.private
-              and branch.branch_type == BranchType.MIRRORED):
+        elif (branch.branch_type == BranchType.MIRRORED
+              and default_branch.private):
             default_branch = ''
         else:
             default_branch = '/' + default_branch.unique_name
@@ -274,16 +271,14 @@ class BranchFileSystem(LaunchpadXMLRPCView):
     def _serializeControlDirectory(self, requester, product_path,
                                    trailing_path):
         try:
-            owner_name, product_name, bazaar = product_path.split('/')
-        except ValueError:
-            # Wrong number of segments -- can't be a product.
+            namespace = lookup_branch_namespace(
+                unescape(product_path).encode('utf-8'))
+        except (InvalidNamespace, NotFoundError):
             return
-        if bazaar != '.bzr':
+        if not ('.bzr' == trailing_path or trailing_path.startswith('.bzr/')):
+            # '.bzr' is OK, '.bzr/foo' is OK, '.bzrfoo' is not.
             return
-        product = getUtility(IProductSet).getByName(product_name)
-        if product is None:
-            return
-        default_branch = product.default_stacked_on_branch
+        default_branch = namespace.target.default_stacked_on_branch
         if default_branch is None:
             return
         try:
@@ -293,7 +288,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         return (
             CONTROL_TRANSPORT,
             {'default_stack_on': escape('/' + unique_name)},
-            '/'.join([bazaar, trailing_path]))
+            trailing_path)
 
     def translatePath(self, requester_id, path):
         """See `IBranchFileSystem`."""

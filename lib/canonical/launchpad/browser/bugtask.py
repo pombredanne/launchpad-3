@@ -41,8 +41,9 @@ from datetime import datetime, timedelta
 import cgi
 import pytz
 import re
+from simplejson import dumps
 import urllib
-from operator import attrgetter
+from operator import attrgetter, itemgetter
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
@@ -81,6 +82,8 @@ from canonical.launchpad.webapp import (
 from lazr.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
+from canonical.launchpad.interfaces.bugactivity import IBugActivity
+from canonical.launchpad.interfaces.bugmessage import IBugComment
 from canonical.launchpad.interfaces.bugnomination import (
     BugNominationStatus, IBugNominationSet)
 from canonical.launchpad.interfaces.bug import IBug, IBugSet
@@ -766,6 +769,21 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         assert len(comments) > 0, "A bug should have at least one comment."
         return comments
 
+    @property
+    def activity_and_comments(self):
+        interesting_changes = [
+             'security vulnerability', 'summary', 'visibility']
+        activity_and_comments = [
+            {'comment': comment, 'date': comment.datecreated}
+            for comment in self.visible_comments_for_display]
+        activity_and_comments.extend(
+            {'activity': activity, 'date': activity.datechanged}
+            for activity in self.context.bug.activity
+            if activity.whatchanged in interesting_changes)
+
+        activity_and_comments.sort(key=itemgetter('date'))
+        return activity_and_comments
+
     @cachedproperty
     def visible_comments(self):
         """All visible comments.
@@ -847,6 +865,34 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
                 "days if no further activity occurs.")
 
         return message % days_to_expiration
+
+    @property
+    def official_tags(self):
+        """The list of official tags for this bug."""
+        target_official_tags = self.context.target.official_bug_tags
+        return [tag for tag in self.context.bug.tags
+                if tag in target_official_tags]
+
+    @property
+    def unofficial_tags(self):
+        """The list of unofficial tags for this bug."""
+        target_official_tags = self.context.target.official_bug_tags
+        return [tag for tag in self.context.bug.tags
+                if tag not in target_official_tags]
+
+    @property
+    def available_official_tags_js(self):
+        """Return the list of available official tags for the bug as JSON.
+
+        The list comprises of the official tags for all targets for which the
+        bug has a task. It is returned as Javascript snippet, to be ambedded in
+        the bug page.
+        """
+        available_tags = set()
+        for task in self.context.bug.bugtasks:
+            available_tags.update(task.target.official_bug_tags)
+        return 'var available_official_tags = %s;' % dumps(list(sorted(
+            available_tags)))
 
 
 class BugTaskPortletView:

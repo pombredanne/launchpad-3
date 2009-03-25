@@ -69,12 +69,27 @@ class IBranchCollection(Interface):
         :param join_product: Left Join the Product table with Branch.product.
         """
 
-    def getMergeProposals(statuses=None):
+    def getMergeProposals(statuses=None, for_branches=None):
         """Return a result set of merge proposals for the branches in this
         collection.
 
         :param statuses: If specified, only return merge proposals with these
             statuses. If not, return all merge proposals.
+        :param for_branches: An iterable of branches what will restrict the
+            resulting set of merge proposals to be only those for the
+            branches specified.
+        """
+
+    def getMergeProposalsForReviewer(reviewer, status=None):
+        """Return a result set of merge proposals for the given reviewer.
+
+        That is, all merge proposals that 'reviewer' has voted on or has been
+        invited to vote on.
+
+        :param reviewer: An `IPerson` who is a reviewer.
+        :param status: An iterable of queue_status of the proposals to return.
+            If None is specified, all the proposals of all possible states
+            are returned.
         """
 
     def inProduct(product):

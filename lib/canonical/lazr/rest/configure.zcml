@@ -241,14 +241,6 @@
         />
 
     <adapter
-        for="zope.schema.interfaces.IChoice
-             zope.publisher.interfaces.http.IHTTPRequest
-             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
-        provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.marshallers.ObjectLookupFieldMarshaller"
-        />
-
-    <adapter
         for="zope.schema.interfaces.IObject
              zope.publisher.interfaces.http.IHTTPRequest"
         provides="canonical.lazr.interfaces.IFieldMarshaller"

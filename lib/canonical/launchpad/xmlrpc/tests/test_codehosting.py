@@ -16,14 +16,15 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
     BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -457,13 +458,14 @@ class BranchPullQueueTest(TestCaseWithFactory):
 
     def test_getBranchPullInfo_private_branch(self):
         # We don't want to stack mirrored branches onto private branches:
-        # mirrored branches are public by their nature. This, if the default
+        # mirrored branches are public by their nature. Thus, if the default
         # stacked-on branch for the project is private and the branch is
         # MIRRORED then we don't include the default stacked-on branch's
         # details in the tuple.
-        default_branch = self.factory.makeAnyBranch(private=True)
-        product = removeSecurityProxy(default_branch).product
-        product.development_focus.user_branch = default_branch
+        product = self.factory.makeProduct()
+        default_branch = self.factory.makeProductBranch(
+            product=product, private=True)
+        self.factory.enableDefaultStackingForProduct(product, default_branch)
         mirrored_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=product)
         info = self.storage._getBranchPullInfo(mirrored_branch)
@@ -742,7 +744,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(private=private)
         self.factory.enableDefaultStackingForProduct(product, branch)
-        self.assertEqual(product.default_stacked_on_branch, branch)
+        target = IBranchTarget(removeSecurityProxy(product))
+        self.assertEqual(target.default_stacked_on_branch, branch)
         return product, branch
 
     def test_translatePath_cannot_translate(self):
@@ -934,9 +937,11 @@ class BranchFileSystemTest(TestCaseWithFactory):
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
             translation)
 
-    def assertControlDirectory(self, unique_name, trailing_path, translation):
+    def assertTranslationIsControlDirectory(self, translation,
+                                            default_stacked_on,
+                                            trailing_path):
         """Assert that 'translation' points to the right control transport."""
-        unique_name = escape(u'/' + unique_name)
+        unique_name = escape(u'/' + default_stacked_on)
         expected_translation = (
             CONTROL_TRANSPORT,
             {'default_stack_on': unique_name}, trailing_path)
@@ -948,7 +953,10 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
 
     def test_translatePath_control_directory_no_stacked_set(self):
         # When there's no default stacked-on branch set for the project, we
@@ -971,7 +979,10 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
 
     def test_translatePath_control_directory_other_owner(self):
         requester = self.factory.makePerson()
@@ -980,7 +991,36 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr' % (owner.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
+
+    def test_translatePath_control_directory_package_no_focus(self):
+        # If the package has no default stacked-on branch, then don't show the
+        # control directory.
+        requester = self.factory.makePerson()
+        package = self.factory.makeSourcePackage()
+        self.assertIs(None, IBranchTarget(package).default_stacked_on_branch)
+        path = '/~%s/%s/.bzr/' % (requester.name, package.path)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_control_directory_package(self):
+        # If the package has a default stacked-on branch, then show the
+        # control directory.
+        requester = self.factory.makePerson()
+        package = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=package)
+        self.factory.enableDefaultStackingForPackage(package, branch)
+        self.assertIsNot(
+            None, IBranchTarget(package).default_stacked_on_branch)
+        path = '/~%s/%s/.bzr/' % (requester.name, package.path)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertTranslationIsControlDirectory(
+            translation,
+            default_stacked_on=branch.unique_name,
+            trailing_path='.bzr')
 
 
 class TestIterateSplit(TestCase):

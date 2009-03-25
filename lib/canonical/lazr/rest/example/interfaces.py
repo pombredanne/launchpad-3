@@ -4,7 +4,8 @@
 """Interface objects for the LAZR example web service."""
 
 __metaclass__ = type
-__all__ = ['AlreadyNouvelle',
+__all__ = ['AlreadyNew',
+           'Cuisine',
            'ICookbook',
            'ICookbookSet',
            'IDish',
@@ -15,8 +16,9 @@ __all__ = ['AlreadyNouvelle',
            'NameAlreadyTaken']
 
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Date, Int, TextLine, Text
+from zope.schema import Bool, Bytes, Choice, Date, Int, TextLine, Text
 
+from lazr.enum import EnumeratedType, Item
 
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
@@ -27,8 +29,8 @@ from canonical.lazr.rest.declarations import (
     operation_parameters, operation_returns_collection_of, webservice_error)
 
 
-class AlreadyNouvelle(Exception):
-    """A cookbook's cuisine prohibits the cheap 'Nouvelle' trick."""
+class AlreadyNew(Exception):
+    """A cookbook's name prohibits the cheap 'The New' trick."""
     webservice_error(400)
 
 
@@ -45,6 +47,17 @@ class WhitespaceStrippingTextLine(TextLine):
         if value is not None:
             value = value.strip()
         super(WhitespaceStrippingTextLine, self).set(object, value)
+
+
+class Cuisine(EnumeratedType):
+    """A vocabulary for cuisines."""
+
+    GENERAL = Item("General", "General cooking")
+    VEGETARIAN = Item("Vegetarian", "Vegetarian cooking")
+    AMERICAN = Item("American", "Traditional American cooking")
+    DESSERT = Item("Dessert", "Desserts")
+    FRANCAIS = Item("Fran\xc3\xa7ais".decode("utf-8"),
+                    "Cuisine fran\xc3\xa7ais".decode("utf-8"))
 
 
 class IHasGet(Interface):
@@ -72,20 +85,29 @@ class IRecipe(Interface):
                                  required=True))
     private = exported(Bool(title=u"Whether the public can see this recipe.",
                        default=False))
+    prepared_image = exported(
+        Bytes(0, 5000, title=u"An image of the prepared dish.",
+              readonly=True))
 
 
 class ICookbook(IHasGet):
     """A cookbook, annotated for export to the web service."""
     export_as_webservice_entry()
     name = exported(TextLine(title=u"Name", required=True))
-    copyright_date = exported(Date(title=u"Copyright Date", readonly=True))
+    copyright_date = exported(
+        Date(title=u"Copyright Date", readonly=True,
+             description=u"The copyright date for this work."))
+    description = exported(
+        WhitespaceStrippingTextLine(title=u"Description", required=False))
     confirmed = exported(Bool(
             title=u"Whether this information has been confirmed",
             default=False))
-    cuisine = exported(WhitespaceStrippingTextLine(
-            title=u"Cuisine", required=False, default=None))
+    cuisine = exported(Choice(
+        vocabulary=Cuisine, title=u"Cuisine", required=False, default=None))
     recipes = exported(CollectionField(title=u"Recipes in this cookbook",
                                        value_type=Reference(schema=IRecipe)))
+    cover = exported(
+        Bytes(0, 5000, title=u"An image of the cookbook's cover."))
 
     @operation_parameters(
         search=TextLine(title=u"String to search for in recipe name."))
@@ -123,9 +145,17 @@ class ICookbookSet(IHasGet):
     def find_recipes(search):
         """Search for recipes across cookbooks."""
 
-    @export_factory_operation(ICookbook,
-                              ['name', 'cuisine', 'copyright_date'])
-    def create(name, cuisine, copyright_date):
+    @operation_parameters(
+        cuisine=Choice(vocabulary=Cuisine,
+                       title=u"Cuisine to search for in recipe name."))
+    @operation_returns_collection_of(ICookbook)
+    @export_read_operation()
+    def find_for_cuisine(cuisine):
+        """Search for cookbooks of a given cuisine."""
+
+    @export_factory_operation(
+        ICookbook, ['name', 'description', 'cuisine', 'copyright_date'])
+    def create(name, description, cuisine, copyright_date):
         """Create a new cookbook."""
 
     featured = Attribute("The currently featured cookbook.")
