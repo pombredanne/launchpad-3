@@ -200,7 +200,7 @@ def get_master_node(con, set_id=1):
 def get_slave_nodes(con, set_id=1):
     """Return the list of slave Nodes."""
     return _get_nodes(con, """
-        SELECT
+        SELECT DISTINCT
             pa_server AS node_id,
             'slave' || pa_server,
             pa_conninfo AS connection_string,
