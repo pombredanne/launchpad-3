@@ -90,6 +90,17 @@ def create_replication_sets(
     authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences):
     """Create the replication sets."""
     log.info('Creating Slony-I replication sets.')
+
+    # Instead of creating both the authdb and lpmain replication sets,
+    # we just create the lpmain replication set containing everything.
+    # This way, we can then test the populate_auth_replication_set.py
+    # migration script that moves the relevant tables from the lpmain
+    # replication set to the authdb replication set.
+    # We will turn this behavior off once we are running two
+    # replication sets in production and remove the migration script.
+    lpmain_tables = lpmain_tables.union(authdb_tables)
+    lpmain_sequences = lpmain_sequences.union(authdb_sequences)
+
     script = ["try {"]
     # script,append("""
     #     echo 'Creating AuthDB replication set (@authdb_set)';

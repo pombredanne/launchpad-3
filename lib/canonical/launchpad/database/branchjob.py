@@ -27,6 +27,8 @@ from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.database.productseries import ProductSeries
+from canonical.launchpad.database.translationbranchapprover import (
+    TranslationBranchApprover)
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from canonical.launchpad.interfaces.branchjob import (
@@ -401,6 +403,14 @@ class RosettaUploadJob(BranchJobDerived):
 
     class_job_type = BranchJobType.ROSETTA_UPLOAD
 
+    def __init__(self, branch_job):
+        super(RosettaUploadJob, self).__init__(branch_job)
+
+        self.template_file_names = []
+        self.template_files_changed = []
+        self.translation_file_names = []
+        self.translation_files_changed = []
+
     @staticmethod
     def getMetadata(from_revision_id):
         return {
@@ -430,65 +440,113 @@ class RosettaUploadJob(BranchJobDerived):
         else:
             return None
 
-    def _get_translations_files(self):
-        """Extract the files from the branch tree.
+    def _iter_all_lists(self):
+        """Iterate through all the file lists.
 
-        :returns:  A dict with keys 'po' and 'pot', each mapping to a list
-             containing (file_name, file_content) tuples.
+        File names and files are stored in different lists according to their
+        type (template or translation). But some operations need to be
+        performed on both lists. This generator yields a pair of lists, one
+        containing all file names for the given type, the other containing
+        all file names *and* content of the changed files.
         """
+        yield (self.template_file_names, self.template_files_changed)
+        yield (self.translation_file_names, self.translation_files_changed)
+
+    def _iter_lists_and_uploaders(self, productseries=None):
+        """Iterate through all files for a productseries.
+
+        File names and files are stored in different lists according to their
+        type (template or translation). Which of these are needed depends on
+        the configuration of the product series these uploads are for. This
+        generator checks the configuration of the series and produces the
+        a lists of lists and a person object. The first list contains all
+        file names or the given type, the second contains all file names
+        *and* content of the changed files. The person is who is to be
+        credited as the importer of these files and will vary depending on
+        the file type.
+        """
+        if productseries.translations_autoimport_mode in (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,):
+            yield (self.template_file_names,
+                   self.template_files_changed,
+                   self._uploader_person_pot(productseries))
+            # Handling for other modes will go here.
+
+    @property
+    def file_names(self):
+        """A contatenation of all lists of filenames."""
+        return self.template_file_names + self.translation_file_names
+
+    def _init_translation_file_lists(self):
+        """Initialize the member variables that hold the information about
+        the relevant files.
+
+        The information is collected from the branch tree and stored in the
+        following member variables:
+        * file_names is a dictionary of two lists ('pot', 'po') of file names
+          that are POT or PO files respectively. This includes all files,
+          changed or unchanged.
+        * changed_files is a dictionary of two lists ('pot', 'po') of tuples
+          of (file_name, file_content) of all changed files that are POT or
+          PO files respectively.
+        """
+
         bzrbranch = self.branch.getBzrBranch()
         from_tree = bzrbranch.repository.revision_tree(
             self.from_revision_id)
         to_tree = bzrbranch.repository.revision_tree(
             self.branch.last_scanned_id)
-        pot_files = []
-        po_files = []
+
         importer = TranslationImporter()
+
+        to_tree.lock_read()
         try:
+            for dir, files in to_tree.walkdirs():
+                for afile in files:
+                    file_path, file_name, file_type = afile[:3]
+                    if file_type != 'file':
+                        continue
+                    if importer.isTemplateName(file_name):
+                        append_to = self.template_file_names
+                    elif importer.isTranslationName(file_name):
+                        append_to = self.translation_file_names
+                    else:
+                        continue
+                    append_to.append(file_path)
             from_tree.lock_read()
-            to_tree.lock_read()
-            for changed_file in to_tree.iter_changes(from_tree):
-                from_kind, to_kind = changed_file[6]
-                if to_kind != 'file':
-                    continue
-                file_id, (from_path, to_path) = changed_file[:2]
-                if importer.isTemplateName(to_path):
-                    append_to = pot_files
-                elif importer.isTranslationName(to_path):
-                    append_to = po_files
-                else:
-                    continue
-                append_to.append((
-                    to_path, to_tree.get_file_text(file_id)))
+            try:
+                for file_names, changed_files in self._iter_all_lists():
+                    for changed_file in to_tree.iter_changes(
+                            from_tree, specific_files=file_names):
+                        file_id, (from_path, to_path) = changed_file[:2]
+                        changed_files.append((
+                            to_path, to_tree.get_file_text(file_id)))
+            finally:
+                from_tree.unlock()
         finally:
-            from_tree.unlock()
             to_tree.unlock()
-        return {'pot': pot_files, 'po': po_files}
 
-    def _upload_types(self, series):
-        """Determine which file types to upload."""
-        if series.translations_autoimport_mode in (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES,):
-            yield 'pot'
-        # Further upload_types will be added here.
-
-    def _uploader_person(self, upload_type, series):
-        """Determine which person is the uploader."""
+    def _uploader_person_pot(self, series):
+        """Determine which person is the uploader for a pot file."""
         # Default uploader is the driver or owner of the series.
         uploader = series.driver
         if uploader is None:
             uploader = series.owner
-        # For po files, try to determine the author of the latest push.
-        if upload_type == 'po':
-            po_uploader = self.branch.getTipRevision().revision_author.person
-            if po_uploader is not None:
-                uploader = po_uploader
+        return uploader
 
+    def _uploader_person_po(self, series):
+        """Determine which person is the uploader for a po file."""
+        # For po files, try to determine the author of the latest push.
+        uploader = self.branch.getTipRevision().revision_author.person
+        if uploader is None:
+            uploader = self._uploader_person_pot(series)
         return uploader
 
     def run(self):
         """See `IRosettaUploadJob`."""
-        filenames = self._get_translations_files()
+        # This is not called upon job creation because the branch would
+        # neither have been mirrored nor scanned then.
+        self._init_translation_file_lists()
         # Get the product series that are connected to this branch and
         # that want to upload translations.
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
@@ -499,15 +557,17 @@ class RosettaUploadJob(BranchJobDerived):
                TranslationsBranchImportMode.NO_IMPORT)
         translation_import_queue = getUtility(ITranslationImportQueue)
         for series in productseries:
-            for upload_type in self._upload_types(series):
-                uploader = self._uploader_person(upload_type, series)
-                for upload_file_name, upload_file_content in (
-                     filenames[upload_type]):
+            approver = TranslationBranchApprover(self.file_names,
+                                                 productseries=series)
+            for iter_info in self._iter_lists_and_uploaders(series):
+                file_names, changed_files, uploader = iter_info
+                for upload_file_name, upload_file_content in changed_files:
                     if len(upload_file_content) == 0:
                         continue # Skip empty files
-                    translation_import_queue.addOrUpdateEntry(
+                    entry = translation_import_queue.addOrUpdateEntry(
                         upload_file_name, upload_file_content,
                         True, uploader, productseries=series)
+                    approver.approve(entry)
 
     @staticmethod
     def iterReady():

@@ -8,6 +8,7 @@
     <include package="zope.security" file="meta.zcml"/>
     <include package="zope.component"/>
     <include package="zope.traversing"/>
+    <include package="lazr.enum"/>
     <include file="configure.zcml" />
     <include file="meta.zcml" />
     <include file="example/configure.zcml" />

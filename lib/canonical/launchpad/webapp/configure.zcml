@@ -49,7 +49,7 @@
     <adapter
         for="canonical.launchpad.layers.FeedsLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.SlaveDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SlaveOnlyDatabasePolicy"
         />
 
     <!-- lazr.batchnavigator hook -->

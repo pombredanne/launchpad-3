@@ -12,9 +12,14 @@ from xmlrpclib import Fault
 
 from bzrlib.urlutils import escape, unescape
 
+from zope.component import adapter, getSiteManager
+from zope.interface import implementer
+
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchnamespace import BranchNamespaceSet
+from canonical.launchpad.database.branchtarget import ProductBranchTarget
 from canonical.launchpad.interfaces.branch import BranchType, IBranch
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
@@ -196,21 +201,35 @@ class FakeProduct(FakeDatabaseObject):
         self.name = name
         self.development_focus = FakeProductSeries()
 
-    @property
-    def default_stacked_on_branch(self):
-        b = self.development_focus.branch
-        if b is None:
-            return None
-        elif b._mirrored:
-            return b
-        else:
-            return None
+
+@adapter(FakeProduct)
+@implementer(IBranchTarget)
+def fake_product_to_branch_target(fake_product):
+    """Adapt a `FakeProduct` to `IBranchTarget`."""
+    return ProductBranchTarget(fake_product)
 
 
 class FakeProductSeries(FakeDatabaseObject):
     """Fake product series."""
 
     branch = None
+
+    @property
+    def series_branch(self):
+        return self.branch
+
+    def _get_user_branch(self):
+        return self.branch
+
+    def _set_user_branch(self, branch):
+        self.branch = branch
+
+    user_branch = property(_get_user_branch, _set_user_branch)
+
+    @property
+    def series_branch(self):
+        """See `IProductSeries`."""
+        return self.user_branch
 
 
 class FakeScriptActivity(FakeDatabaseObject):
@@ -352,8 +371,10 @@ class FakeObjectFactory(ObjectFactory):
         if branch is None:
             branch = self.makeBranch(product=product)
         branch._mirrored = True
-        product.development_focus.branch = branch
+        product.development_focus.user_branch = branch
+        branch.last_mirrored = 'rev1'
         return branch
+
 
 class FakeBranchPuller:
 
@@ -549,7 +570,7 @@ class FakeBranchFilesystem:
         product = self._product_set.getByName(product_name)
         if product is None:
             return
-        default_branch = product.default_stacked_on_branch
+        default_branch = IBranchTarget(product).default_stacked_on_branch
         if default_branch is None:
             return
         if not self._canRead(requester, default_branch):
@@ -619,6 +640,8 @@ class InMemoryFrontend:
             self._branch_set, self._person_set, self._product_set,
             self._distribution_set, self._distroseries_set,
             self._sourcepackagename_set, self._factory)
+        sm = getSiteManager()
+        sm.registerAdapter(fake_product_to_branch_target)
 
     def getFilesystemEndpoint(self):
         """See `LaunchpadDatabaseFrontend`.

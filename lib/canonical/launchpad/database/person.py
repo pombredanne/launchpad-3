@@ -1,6 +1,6 @@
 # Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # vars() causes W0612
-# pylint: disable-msg=E0611,W0212,W0612
+# pylint: disable-msg=E0611,W0212,W0612,C0322
 
 """Implementation classes for a Person."""
 
@@ -145,10 +145,6 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.specificationfeedback import (
-    SpecificationFeedback)
-from canonical.launchpad.database.specificationsubscription import (
-    SpecificationSubscription)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.teammembership import (
@@ -243,7 +239,7 @@ class Person(
         """Update any related Account.displayname.
 
         We can't do this in a DB trigger as soon the Account table will
-        in a seperate database to the Person table.
+        in a separate database to the Person table.
         """
         if self.accountID is not None:
             auth_store = getUtility(IStoreSelector).get(
@@ -268,9 +264,9 @@ class Person(
     # XXX StuartBishop 2008-05-13 bug=237280: The password,
     # account_status and account_status_comment properties should go. Note
     # that they override the current strict controls on Account, allowing
-    # access via Person to use the less strinct controls on that interface.
+    # access via Person to use the less strict controls on that interface.
     # Part of the process of removing these methods from Person will be
-    # losening the permissions on Account or fixing the callsites.
+    # loosening the permissions on Account or fixing the callsites.
     def _get_password(self):
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
@@ -586,11 +582,6 @@ class Person(
 
     # specification-related joins
     @property
-    def approver_specs(self):
-        return shortlist(Specification.selectBy(
-            approver=self, orderBy=['-datecreated']))
-
-    @property
     def assigned_specs(self):
         return shortlist(Specification.selectBy(
             assignee=self, orderBy=['-datecreated']))
@@ -606,33 +597,6 @@ class Person(
             AND NOT (%(completed_clause)s)
             """ % replacements
         return Specification.select(query, orderBy=['-date_started'], limit=5)
-
-    @property
-    def created_specs(self):
-        return shortlist(Specification.selectBy(
-            owner=self, orderBy=['-datecreated']))
-
-    @property
-    def drafted_specs(self):
-        return shortlist(Specification.selectBy(
-            drafter=self, orderBy=['-datecreated']))
-
-    @property
-    def feedback_specs(self):
-        return shortlist(Specification.select(
-            AND(Specification.q.id == SpecificationFeedback.q.specificationID,
-                SpecificationFeedback.q.reviewerID == self.id),
-            clauseTables=['SpecificationFeedback'],
-            orderBy=['-datecreated']))
-
-    @property
-    def subscribed_specs(self):
-        specification_id = SpecificationSubscription.q.specificationID
-        return shortlist(Specification.select(
-            AND (Specification.q.id == specification_id,
-                 SpecificationSubscription.q.personID == self.id),
-            clauseTables=['SpecificationSubscription'],
-            orderBy=['-datecreated']))
 
     # mentorship
     @property
