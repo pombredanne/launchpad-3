@@ -103,7 +103,7 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
     def test_replace_existing_generic_path_approved(self):
         # If an upload file has a generic path that does not yield a
         # translation domain it is still approved if an entry with the same
-        # file name exsits.
+        # file name exists.
         existing_domain = self.factory.getUniqueString()
         self._upload_template('po/messages.pot',
                                existing_domain, 'po/messages.pot')
