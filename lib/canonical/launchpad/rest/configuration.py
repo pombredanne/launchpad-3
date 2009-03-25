@@ -41,6 +41,14 @@ class LaunchpadWebServiceConfiguration:
         return request
 
     @property
+    def default_batch_size(self):
+        return config.launchpad.default_batch_size
+
+    @property
+    def max_batch_size(self):
+        return config.launchpad.max_batch_size
+
+    @property
     def show_tracebacks(self):
         """See `IWebServiceConfiguration`.
 

@@ -34,7 +34,7 @@ __all__ = [
     'IWebServiceLayer',
     ]
 
-from zope.schema import Bool, TextLine
+from zope.schema import Bool, Int, TextLine
 from zope.interface import Attribute, Interface
 # These two should really be imported from zope.interface, but
 # the import fascist complains because they are not in __all__ there.
@@ -362,6 +362,20 @@ class IWebServiceConfiguration(Interface):
         default=True,
         description=u"Whether or not to show tracebacks in an HTTP response "
         "for a request that raised an exception.")
+
+    default_batch_size = Int(
+        title=u"The default batch size to use when serving a collection",
+        default=50,
+        description=u"When the client requests a collection and doesn't "
+        "specify how many entries they want, this many entries will be "
+        "served them in the first page.")
+
+    max_batch_size = Int(
+        title=u"The maximum batch size",
+        default=300,
+        description=u"When the client requests a batch of entries from "
+        "a collection, they will not be allowed to request more entries "
+        "in the batch than this.")
 
     def createRequest(body_instream, environ):
         """A factory method that creates a request for the web service.

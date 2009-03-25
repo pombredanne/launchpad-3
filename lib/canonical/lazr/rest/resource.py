@@ -59,12 +59,12 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
+import lazr.batchnavigator
 from lazr.enum import BaseItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import (
@@ -92,6 +92,18 @@ init_status_codes()
 class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
     "A page template class for generating web service-related documents."
     pass
+
+
+class BatchNavigator(lazr.batchnavigator.BatchNavigator):
+    """A BatchNavigator that obeys the current IWebServiceConfiguration."""
+
+    @property
+    def default_batch_size(self):
+        return getUtility(IWebServiceConfiguration).default_batch_size
+
+    @property
+    def max_batch_size(self):
+        return getUtility(IWebServiceConfiguration).max_batch_size
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
