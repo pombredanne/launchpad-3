@@ -387,6 +387,13 @@ class IWebServiceConfiguration(Interface):
         :param environ: A dict containing the request environment.
         """
 
+    def current_request_user():
+        """The user who made the current web service request.
+
+        'User' here has whatever meaning it has in your application. This
+        value will be fed back into your code.
+        """
+
 
 class IUnmarshallingDoesntNeedValue(Interface):
     """A marker interface for unmarshallers that work without values.
