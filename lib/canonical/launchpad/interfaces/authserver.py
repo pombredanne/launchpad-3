@@ -43,14 +43,6 @@ class IAuthServer(Interface):
         :returns: user dict if loginID exists, otherwise empty dict
         """
 
-    def authUser(loginID, password):
-        """Authenticate a user
-
-        :param loginID: A login ID, same as for getUser.
-        :param password: A password, in clear text.
-        :returns: user dict if authenticated, otherwise empty dict
-        """
-
     def getSSHKeys(archiveName):
         """Retrieve SSH public keys for a given push mirror archive
 

@@ -13,7 +13,6 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import IAuthServer, IPersonSet
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
-from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 
 class AuthServerAPIView(LaunchpadXMLRPCView):
@@ -23,19 +22,6 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
     def getUser(self, loginID):
         """See `IAuthServer`."""
         return self._getPersonDict(self._getPerson(loginID))
-
-    def authUser(self, loginID, password):
-        """See `IAuthServer`."""
-
-        person = self._getPerson(loginID)
-        if person is None:
-            return {}
-
-        if not SSHADigestEncryptor().validate(password, person.password):
-            # Wrong password
-            return {}
-
-        return self._getPersonDict(person)
 
     def getSSHKeys(self, loginID):
         """See `IAuthServer`."""
@@ -79,19 +65,6 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
 
         return person
 
-    def _getTeams(self, person):
-        """Get list of teams a person is in.
-
-        Returns a list of team dicts (see IAuthServer).
-        """
-        teams = [
-            dict(id=person.id, name=person.name,
-                 displayname=person.displayname)]
-
-        return teams + [
-            dict(id=team.id, name=team.name, displayname=team.displayname)
-            for team in person.teams_participated_in]
-
     def _getPersonDict(self, person):
         """Return a dict representing 'person' to be returned over XML-RPC.
 
@@ -102,15 +75,5 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
 
         return {
             'id': person.id,
-            'displayname': person.displayname,
-            'emailaddresses': self._getEmailAddresses(person),
             'name': person.name,
-            'teams': self._getTeams(person),
         }
-
-    def _getEmailAddresses(self, person):
-        """Get the email addresses for a person"""
-        emails = [person.preferredemail] + list(person.validatedemails)
-        # Bypass zope's security because IEmailAddress.email is not public.
-        from zope.security.proxy import removeSecurityProxy
-        return [removeSecurityProxy(email).email for email in emails]

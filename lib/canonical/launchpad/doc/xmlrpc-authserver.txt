@@ -22,7 +22,8 @@ The AuthServerAPIView provides the IAuthServer XML-RPC API:
     >>> verifyObject(IAuthServer, authserver_api)
     True
 
-That interface allows the Moin wiki to access user information:
+That interface allows the codehosting SSH server to find information
+about users.
 
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
@@ -31,7 +32,5 @@ That interface allows the Moin wiki to access user information:
     ...     transport=XMLRPCTestTransport())
 
     >>> user_dict = authserver.getUser('foo.bar@canonical.com')
-    >>> user_dict['displayname']
-    'Foo Bar'
-    >>> sorted(user_dict['emailaddresses'])
-    ['admin@canonical.com', 'foo.bar@canonical.com']
+    >>> user_dict['name']
+    'foo.bar'
