@@ -68,7 +68,7 @@ class RootTraversable:
 
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`.
 
         :raise NoSuchProduct: If 'name' doesn't match an existing pillar.
@@ -105,7 +105,7 @@ class ProductTraversable(_BaseTraversable):
     adapts(IProduct)
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`.
 
         :raises NoSuchProductSeries: if 'name' doesn't match an existing
@@ -127,7 +127,7 @@ class DistributionTraversable(_BaseTraversable):
     adapts(IDistribution)
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`."""
         series = self.context.getSeries(name)
         if series is None:
@@ -147,7 +147,7 @@ class DistroSeriesTraversable(_BaseTraversable):
     adapts(IDistroSeries)
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`."""
         sourcepackage = self.context.getSourcePackage(name)
         if sourcepackage is None:
@@ -205,7 +205,7 @@ class LinkedBranchTraverser:
         traversable = RootTraversable()
         while segments:
             name = segments.pop(0)
-            context = traversable.traverse(name, segments)
+            context = traversable.traverse(name)
             traversable = ILinkedBranchTraversable(context, None)
             if traversable is None:
                 break
