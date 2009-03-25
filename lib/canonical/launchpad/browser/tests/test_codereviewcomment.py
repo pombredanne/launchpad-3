@@ -39,7 +39,7 @@ class TestQuoteTextAsEmail(TestCase):
         # Nothing just gives us an empty string.
         self.assertEqual('', quote_text_as_email(''))
 
-    def test_None_string(self):
+    def test_none_string(self):
         # If None is passed the quoted text is an empty string.
         self.assertEqual('', quote_text_as_email(None))
 
