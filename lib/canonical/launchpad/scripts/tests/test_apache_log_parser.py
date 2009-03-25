@@ -75,7 +75,7 @@ class TestLogFileParsing(TestCase):
         # days and library file IDs to number of downloads) and the total
         # number of bytes that have been parsed from this file.  In our sample
         # log, the file with ID 8196569 has been downloaded twice (once from
-        # Argentina and once from Australia) and the files with ID 12060796
+        # Argentina and once from Japan) and the files with ID 12060796
         # and 9096290 have been downloaded once.  The file with ID 15018215
         # has also been downloaded once (last line of the sample log), but
         # parse_file() always skips the last line as it may be truncated, so
@@ -84,13 +84,11 @@ class TestLogFileParsing(TestCase):
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
         downloads, parsed_bytes = parse_file(fd, start_position=0)
         date = datetime(2008, 6, 13)
-        self.assertEqual(downloads.keys(), [date])
-        daily_downloads = downloads[date]
         self.assertContentEqual(
-            daily_downloads.items(),
-            [('AR', {'8196569': 1}),
-             ('AU', {'9096290': 1, '12060796': 1}),
-             ('JP', {'8196569': 1})])
+            downloads.items(),
+            [('8196569', {date: {'AR': 1, 'JP': 1}}),
+             ('9096290', {date: {'AU': 1}}),
+             ('12060796', {date: {'AU': 1}})])
 
         # The last line is skipped, so we'll record that the file has been
         # parsed until the beginning of the last line.
@@ -107,9 +105,9 @@ class TestLogFileParsing(TestCase):
             fd, start_position=self._getLastLineStart(fd))
         self.assertEqual(parsed_bytes, fd.tell())
 
-        daily_downloads = downloads[datetime(2008, 6, 13)]
         self.assertContentEqual(
-            daily_downloads.items(), [('US', {'15018215': 1})])
+            downloads.items(),
+            [('15018215', {datetime(2008, 6, 13): {'US': 1}})])
 
     def _assertResponseWithGivenStatusIsIgnored(self, status):
         """Assert that responses with the given status are ignored."""
