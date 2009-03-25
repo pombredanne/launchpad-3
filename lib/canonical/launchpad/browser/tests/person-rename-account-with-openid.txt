@@ -2,9 +2,9 @@ Renaming an account and the OpenID public identifier
 ====================================================
 
     >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> dbpolicy = SSODatabasePolicy(LaunchpadTestRequest())
-    >>> dbpolicy.beforeTraversal()
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from zope.component import getUtility
+    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
 
 When you rename an account, you are also changing your delegated OpenID
 identity. This means that if you used that identifier to log into a third
@@ -100,5 +100,5 @@ the name change if they click save again:
     >>> print joe.name
     i-know-what-i-am-doing-joe
 
-    >>> dbpolicy.afterCall()
+    >>> db_policy = getUtility(IStoreSelector).pop()
 

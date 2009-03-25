@@ -204,6 +204,12 @@ class LayerDatabasePolicyTestCase(DummyConfigurationTestCase):
         policy = IDatabasePolicy(request)
         self.assertIsInstance(policy, MasterDatabasePolicy)
 
+    def test_SSOLayer_uses_SSODatabasePolicy(self):
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://openid.launchpad.dev/+openid')
+        policy = IDatabasePolicy(request)
+        self.assertIsInstance(policy, SSODatabasePolicy)
+
     def test_other_request_uses_LaunchpadDatabasePolicy(self):
         """By default, requests should use the LaunchpadDatabasePolicy."""
         server_url = 'http://launchpad.dev/'

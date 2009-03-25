@@ -28,6 +28,7 @@ from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.testing.pages import setupBrowser
 from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -37,13 +38,12 @@ class SSODatabasePolicyTestCase(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        self.dbpolicy = SSODatabasePolicy(LaunchpadTestRequest())
-        self.dbpolicy.beforeTraversal()
         super(SSODatabasePolicyTestCase, self).setUp()
+        getUtility(IStoreSelector).push(SSODatabasePolicy())
 
     def tearDown(self):
+        getUtility(IStoreSelector).pop()
         super(SSODatabasePolicyTestCase, self).tearDown()
-        self.dbpolicy.afterCall()
 
 
 class SimpleRegistrationTestCase(SSODatabasePolicyTestCase):

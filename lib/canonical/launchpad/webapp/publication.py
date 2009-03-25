@@ -162,12 +162,9 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
+        # Now we are logged in, install the correct IDatabasePolicy for
+        # this request.
         getUtility(IStoreSelector).push(IDatabasePolicy(request))
-
-        # XXX: Debug shite
-        if request.getURL().startswith('http://openid.'):
-            from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
-            assert isinstance(self.thread_locals.db_policy, SSODatabasePolicy)
 
         getUtility(IOpenLaunchBag).clear()
 
