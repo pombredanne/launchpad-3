@@ -36,11 +36,15 @@ class TestQuoteTextAsEmail(TestCase):
     """Test the quote_text_as_email helper method."""
 
     def test_empty_string(self):
-        # Nothing just gives us the prefix.
+        # Nothing just gives us an empty string.
         self.assertEqual('', quote_text_as_email(''))
 
+    def test_None_string(self):
+        # If None is passed the quoted text is an empty string.
+        self.assertEqual('', quote_text_as_email(None))
+
     def test_whitespace_string(self):
-        # Nothing just gives us the prefix.
+        # Just whitespace gives us an empty string.
         self.assertEqual('', quote_text_as_email('  \t '))
 
     def test_long_string(self):
