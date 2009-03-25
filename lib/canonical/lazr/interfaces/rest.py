@@ -387,7 +387,7 @@ class IWebServiceConfiguration(Interface):
         :param environ: A dict containing the request environment.
         """
 
-    def current_request_user():
+    def get_request_user():
         """The user who made the current web service request.
 
         'User' here has whatever meaning it has in your application. This

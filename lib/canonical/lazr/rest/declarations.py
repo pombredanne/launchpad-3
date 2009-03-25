@@ -673,7 +673,7 @@ def params_with_dereferenced_user(params):
     for name, value in params.items():
         if value is REQUEST_USER:
             params[name] = getUtility(
-                IWebServiceConfiguration).current_request_user()
+                IWebServiceConfiguration).get_request_user()
     return params
 
 
