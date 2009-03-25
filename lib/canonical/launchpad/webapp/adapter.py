@@ -27,17 +27,18 @@ import transaction
 from zope.component import getUtility
 from zope.interface import (
     classImplements, classProvides, alsoProvides, implements)
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config, dbconfig, DatabaseConfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.lazr.utils import safe_hasattr
-from canonical.launchpad.interfaces import (
-    IMasterObject, IMasterStore, ISlaveStore)
+from canonical.launchpad.interfaces import IMasterObject, IMasterStore
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
-    ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
+    AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
     MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.lazr.utils import safe_hasattr
 
 
 __all__ = [
@@ -423,104 +424,40 @@ install_tracer(LaunchpadTimeoutTracer())
 install_tracer(LaunchpadStatementTracer())
 
 
-class DisallowedStoreError(Exception):
-    """Raised when a request was made to access a Store that has been
-    blocked by the current policy.
-    """
-
-
 class StoreSelector:
+    """See `canonical.launchpad.webapp.interfaces.IStoreSelector`."""
     classProvides(IStoreSelector)
 
     @staticmethod
-    def setDefaultFlavor(name, flavor):
-        """Change what the DEFAULT_FLAVOR is for the current thread."""
-        if flavor is DEFAULT_FLAVOR:
-            flavor = MASTER_FLAVOR
+    def push(db_policy):
+        """See `IStoreSelector`."""
+        if not safe_hasattr(_local, 'db_policies'):
+            _local.db_policies = []
+        db_policy.install()
+        _local.db_policies.append(db_policy)
+
+    @staticmethod
+    def pop():
+        """See `IStoreSelector`."""
+        db_policy = _local.db_policies.pop()
+        db_policy.uninstall()
+        return db_policy
+
+    @staticmethod
+    def get_current():
+        """See `IStoreSelector`."""
         try:
-            _local.store_default_flavor[name] = flavor
-        except AttributeError:
-            _local.store_default_flavor = {}
-            _local.store_default_flavor[name] = flavor
-
-    @staticmethod
-    def setGlobalDefaultFlavor(flavor):
-        """Change what the DEFAULT_FLAVOR is for the current thread
-        for all Stores.
-        """
-        for store in ALL_STORES:
-            StoreSelector.setDefaultFlavor(store, flavor)
-
-    @staticmethod
-    def getDefaultFlavor(name):
-        """Get the DEFAULT_FLAVOR for the current thread."""
-        try:
-            return _local.store_default_flavor[name]
-        except (AttributeError, KeyError):
-            return MASTER_FLAVOR
-
-    @staticmethod
-    def setConfigSectionName(section):
-        """Change the section in the config file used to lookup database
-        connection details.
-
-        Pass None to reset to the default.
-        """
-        _local.store_dbconfig_section = section
-
-    @staticmethod
-    def getConfigSectionName():
-        """Return the section in the config file to use to lookup
-        database connection details.
-        """
-        try:
-            return _local.store_dbconfig_section or dbconfig.getSectionName()
-        except AttributeError:
-            return dbconfig.getSectionName()
-
-    @staticmethod
-    def setAllowedStores(allowed_stores):
-        """Specify which Stores may be accessed. Attempting to retrieve
-        Stores not on this whitelist will raise a DisallowedStoreError.
-
-        allowed_stores is a list of (store, flavor) tuples, such as
-        [(MAIN_STORE, SLAVE_FLAVOR), (AUTH_STORE, SLAVE_FLAVOR)].
-
-        Pass None to allow access to all Stores.
-        """
-        _local.allowed_stores = allowed_stores
-
-    @staticmethod
-    def getAllowedStores():
-        """Return the Store whitelist, as per `setAllowedStores`."""
-        return getattr(_local, 'allowed_stores', None)
+            return _local.db_policies[-1]
+        except (AttributeError, IndexError):
+            return None
 
     @staticmethod
     def get(name, flavor):
         """See `IStoreSelector`."""
-        assert flavor in (MASTER_FLAVOR, SLAVE_FLAVOR, DEFAULT_FLAVOR), (
-            'Invalid flavor %s' % flavor)
-
-        if flavor == DEFAULT_FLAVOR:
-            flavor = StoreSelector.getDefaultFlavor(name)
-
-        allowed_stores = StoreSelector.getAllowedStores()
-        if allowed_stores is not None and (name, flavor) not in allowed_stores:
-            raise DisallowedStoreError(name, flavor)
-
-        section = StoreSelector.getConfigSectionName()
-
-        store = getUtility(IZStorm).get(
-            '%s-%s-%s' % (section, name, flavor),
-            'launchpad:%s-%s-%s' % (section, name, flavor))
-
-        # Attach our marker interfaces
-        if flavor == MASTER_FLAVOR:
-            alsoProvides(store, IMasterStore)
-        else:
-            alsoProvides(store, ISlaveStore)
-
-        return store
+        db_policy = StoreSelector.get_current()
+        if db_policy is None:
+            db_policy = MasterDatabasePolicy(None)
+        return db_policy.getStore(name, flavor)
 
 
 # There are not many tables outside of the main replication set, so we

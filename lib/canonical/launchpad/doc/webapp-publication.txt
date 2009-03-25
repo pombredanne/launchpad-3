@@ -994,10 +994,12 @@ be automatically reverted in a GET request.
     >>> from canonical.launchpad.interfaces import IMasterStore
     >>> login('foo.bar@canonical.com')
     >>> txn = transaction.begin()
-    >>> foo_bar = IMasterStore(Person).find(
-    ...     Person,
-    ...     Person.id == EmailAddress.personID,
-    ...     EmailAddress.email == 'foo.bar@canonical.com').one()
+    >>> def get_foo_bar_person():
+    ...     return IMasterStore(Person).find(
+    ...         Person,
+    ...         Person.id == EmailAddress.personID,
+    ...         EmailAddress.email == 'foo.bar@canonical.com').one()
+    >>> foo_bar = get_foo_bar_person()
     >>> print foo_bar.city
     None
     >>> foo_bar.city = 'Montreal'
@@ -1012,16 +1014,14 @@ be automatically reverted in a GET request.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
     >>> txn = transaction.begin()
-    >>> foo_bar = IMasterStore(Person).find(
-    ...     Person,
-    ...     Person.id == EmailAddress.personID,
-    ...     EmailAddress.email == 'foo.bar@canonical.com').one()
+    >>> foo_bar = get_foo_bar_person()
     >>> print foo_bar.city
     None
 
 But not if the request uses POST, the changes will be preserved.
 
-    >>> foo_bar.city = 'Montreal'
+    >>> txn = transaction.begin()
+    >>> get_foo_bar_person().city = 'Darwin'
     >>> syncUpdate(foo_bar)
 
     >>> request, publication = get_request_and_publication(method='POST')
@@ -1033,9 +1033,8 @@ But not if the request uses POST, the changes will be preserved.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
     >>> txn = transaction.begin()
-    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
-    >>> print foo_bar.city
-    Montreal
+    >>> print get_foo_bar_person().city
+    Darwin
 
 
 === GET requests on api.launchpad.net ===
@@ -1048,15 +1047,20 @@ the OAuthNonce table.
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+    >>> from storm.locals import Store
+    >>> from canonical.launchpad.webapp.adapter import get_store_name
 
-    >>> from canonical.launchpad.webapp.adapter import StoreSelector
-    >>> from canonical.launchpad.webapp.interfaces import DEFAULT_FLAVOR
-    >>> StoreSelector.setGlobalDefaultFlavor(DEFAULT_FLAVOR)
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from zope.component import getUtility
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
+
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
     >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
     >>> access_token = token.createAccessToken()
+    >>> policy = getUtility(IStoreSelector).pop()
     >>> transaction.commit()
     >>> form = dict(
     ...     oauth_consumer_key='foobar123451432',
@@ -1234,7 +1238,7 @@ principal's access_level and scope will match what was specified in the
 token.
 
     >>> from canonical.launchpad.interfaces.product import IProductSet
-    >>> StoreSelector.setGlobalDefaultFlavor(DEFAULT_FLAVOR)
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
@@ -1249,6 +1253,7 @@ token.
     ...     oauth_signature="&".join([consumer.secret, access_token.secret]),
     ...     oauth_timestamp=time.time(),
     ...     oauth_nonce='4572616e48616d6d65724c61686176')
+    >>> policy = getUtility(IStoreSelector).pop()
     >>> test_request, publication = get_request_and_publication(
     ...     'api.launchpad.dev', 'GET',
     ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
@@ -1358,5 +1363,9 @@ defined by TIMESTAMP_SKEW_WINDOW.
 
 Close the bogus request that was started by the call to
 beforeTraversal, in order to ensure we leave our state sane.
+Also, pop all the database policies we have been accumulating.
 
     >>> publication.endRequest(request, None)
+    >>> store_selector = getUtility(IStoreSelector)
+    >>> while store_selector.get_current():
+    ...     db_policy = store_selector.pop()

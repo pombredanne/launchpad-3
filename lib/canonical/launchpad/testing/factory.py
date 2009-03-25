@@ -26,7 +26,7 @@ import os.path
 import pytz
 from storm.store import Store
 import transaction
-from zope.component import getUtility
+from zope.component import ComponentLookupError, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.autodecorate import AutoDecorate
@@ -108,8 +108,8 @@ from canonical.launchpad.database.distributionsourcepackage import (
     DistributionSourcePackage)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
-from canonical.launchpad.webapp.adapter import StoreSelector
-from canonical.launchpad.webapp.interfaces import ALL_STORES, MASTER_FLAVOR
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+from canonical.launchpad.webapp.interfaces import IStoreSelector
 
 SPACE = ' '
 
@@ -138,7 +138,7 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
 
 def default_master_store(func):
     """Decorator to temporarily set the default Store to the master.
-    
+
     In some cases, such as in the middle of a page test story,
     we might be calling factory methods with the default Store set
     to the slave which breaks stuff. For instance, if we set an account's
@@ -146,16 +146,16 @@ def default_master_store(func):
     However, if we then read it back the default Store has to be used.
     """
     def with_default_master_store(*args, **kw):
-        current_flavors = {}
-        for store in ALL_STORES:
-            current_flavors[store] = StoreSelector.getDefaultFlavor(store)
         try:
-            for store in ALL_STORES:
-                StoreSelector.setDefaultFlavor(store, MASTER_FLAVOR)
+            store_selector = getUtility(IStoreSelector)
+        except ComponentLookupError:
+            # Utilities not registered. No policies.
+            return func(*args, **kw)
+        store_selector.push(MasterDatabasePolicy())
+        try:
             return func(*args, **kw)
         finally:
-            for store in ALL_STORES:
-                StoreSelector.setDefaultFlavor(store, current_flavors[store])
+            store_selector.pop()
     return with_default_master_store
 
 
