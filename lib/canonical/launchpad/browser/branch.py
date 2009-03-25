@@ -962,12 +962,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 'owner',
                 'You are not a member of %s' % owner.displayname)
 
-        if owner.isTeam() and data.get('product') is None:
-            error = self.getFieldError('product')
-            if not error:
-                self.setFieldError('product',
-                                   'Teams cannot have junk branches.')
-
         branch_type = data.get('branch_type')
         # If branch_type failed to validate, then the rest of the method
         # doesn't make any sense.
