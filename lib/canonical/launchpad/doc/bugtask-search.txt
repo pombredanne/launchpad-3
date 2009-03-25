@@ -134,7 +134,7 @@ For example, no Firefox bugs are found when searching for
     >>> found_bugtasks.count()
     0
 
-If we add a comment containg the the search string to bug one, that bug
+If we add a comment containing the search string to bug one, that bug
 will be returned by the search only if search_comments is True.
 
     >>> from canonical.launchpad.interfaces import IBugSet

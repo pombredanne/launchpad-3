@@ -195,7 +195,7 @@ the 'find_recipes' operation.
     [u'.../recipes/2', u'.../recipes/4']
 
 Some entries support custom operations through POST. You can invoke a
-custom operation to modify a cookbook's cuisine, making it seem more
+custom operation to modify a cookbook's name, making it seem more
 interesting.
 
     >>> print webservice.get(joy_url).jsonBody()['cuisine']
@@ -205,17 +205,23 @@ interesting.
     HTTP/1.1 200 Ok
     ...
 
-    >>> print webservice.get(joy_url).jsonBody()['cuisine']
-    Nouvelle General
+    >>> new_joy_url = quote("/cookbooks/The New The Joy of Cooking")
+    >>> print webservice.get(new_joy_url).jsonBody()['name']
+    The New The Joy of Cooking
 
 Custom operations may have error handling.
 
-    >>> print webservice.named_post(joy_url, 'make_more_interesting', {})
+    >>> print webservice.named_post(new_joy_url, 'make_more_interesting', {})
     HTTP/1.1 400 Bad Request
     ...
-    The 'Nouvelle' trick can't be used on this cookbook because its
-    cuisine is already 'Nouvelle'.
+    The 'New' trick can't be used on this cookbook because its
+    name already starts with 'The New'.
     ...
+
+    >>> import simplejson
+    >>> ignore = webservice.patch(
+    ...     new_joy_url, 'application/json',
+    ...     simplejson.dumps({"name": "The Joy of Cooking"}))
 
 Trying to invoke a nonexistent custom operation yields an error.
 
@@ -233,7 +239,6 @@ describe part of the entry's new state, in which case the client
 should use the PATCH HTTP method. Or it may completely describe the
 entry's state, in which case the client should use PUT.
 
-    >>> import simplejson
     >>> def modify_cookbook(cookbook, representation, method, headers=None):
     ...     "A helper function to PUT or PATCH a cookbook."
     ...     new_headers = {'Content-type': 'application/json'}
@@ -243,11 +248,11 @@ entry's state, in which case the client should use PUT.
     ...                       simplejson.dumps(representation),
     ...                       headers)
 
-Here we use the web service to change the "Everyday Greens" cookbook
-so that its cuisine is in uppercase. The data returned is the new JSON
-representation of the object.
+Here we use the web service to change the cuisine of the "Everyday
+Greens" cookbook. The data returned is the new JSON representation of
+the object.
 
-    >>> print modify_cookbook('Everyday Greens', {'cuisine' : 'VEGETARIAN'},
+    >>> print modify_cookbook('Everyday Greens', {'cuisine' : 'American'},
     ...                       'PATCH')
     HTTP/1.1 209 Content Returned
     ...
@@ -256,7 +261,7 @@ representation of the object.
     {...}
 
     >>> print webservice.get(greens_url).jsonBody()['cuisine']
-    VEGETARIAN
+    American
 
 A modification might cause an entry's address to change. Here we use
 the web service to change the cookbook's name to 'Everyday Greens 2'.
@@ -290,7 +295,7 @@ also set the X-Content-Type-Override header, which will override the
 value of Content-Type.
 
     >>> print modify_cookbook('Everyday Greens',
-    ...     {'cuisine' : 'VEGETARIAN/VEGAN'}, 'POST',
+    ...     {'cuisine' : 'General'}, 'POST',
     ...     {'X-HTTP-Method-Override' : 'PATCH',
     ...      'Content-Type': 'not-a-valid-content/type',
     ...      'X-Content-Type-Override': 'application/json'})
@@ -318,7 +323,7 @@ the object that was modified.
 
     >>> greens = webservice.get(greens_url).jsonBody()
     >>> print greens['cuisine']
-    VEGETARIAN/VEGAN
+    General
 
     >>> greens['cuisine'] = 'Vegetarian'
     >>> print modify_cookbook('Everyday Greens', greens, 'PUT')
@@ -374,33 +379,34 @@ purpose, the response to a PUT or PATCH request includes a brand new
 JSON representation of the object, so that the client can know whether
 and which changes were made.
 
-Here's an example. If a cookbook's name contains leading or trailing
+Here's an example. If a cookbook's description contains leading or trailing
 whitespace, the whitespace will be stripped.
 
     >>> greens = webservice.get(greens_url).jsonBody()
-    >>> greens['cuisine']
-    u'Vegetarian'
+    >>> greens['description']
+    u''
     >>> first_etag = greens['http_etag']
 
-Send in a cuisine with leading or trailing whitespace and it'll be
+Send in a name with leading or trailing whitespace and it'll be
 transparently trimmed. The document returned from the POST request
 will be the new representation, modified by both client and server.
 
-    >>> greens = webservice(greens_url, "PATCH",
-    ...                     simplejson.dumps({'cuisine' : '  Veg '}),
-    ...                     {'Content-type': 'application/json'}).jsonBody()
-    >>> greens['cuisine']
-    u'Veg'
+    >>> greens = webservice(
+    ...     greens_url, "PATCH",
+    ...     simplejson.dumps({'description' : '  A description '}),
+    ...     {'Content-type': 'application/json'}).jsonBody()
+    >>> greens['description']
+    u'A description'
     >>> greens['http_etag'] == first_etag
     False
 
 The canonicalization works for PUT requests as well.
 
-    >>> greens['cuisine'] = "    Vegetarian "
+    >>> greens['description'] = "    Another description  "
     >>> greens = webservice(greens_url, "PUT", simplejson.dumps(greens),
     ...                     {'Content-type': 'application/json'}).jsonBody()
-    >>> greens['cuisine']
-    u'Vegetarian'
+    >>> greens['description']
+    u'Another description'
 
 
 === Conditional GET, PUT and PATCH ===

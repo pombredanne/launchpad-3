@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
 from canonical.launchpad.interfaces import branchpuller
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
@@ -69,14 +70,11 @@ class BranchPuller(LaunchpadXMLRPCView):
         if branch.branch_type == BranchType.REMOTE:
             raise AssertionError(
                 'Remote branches should never be in the pull queue.')
-        if branch.product is None:
-            default_branch = None
-        else:
-            default_branch = branch.product.default_stacked_on_branch
+        default_branch = branch.target.default_stacked_on_branch
         if default_branch is None:
             default_branch = ''
-        elif (default_branch.private
-              and branch.branch_type == BranchType.MIRRORED):
+        elif (branch.branch_type == BranchType.MIRRORED
+              and default_branch.private):
             default_branch = ''
         else:
             default_branch = '/' + default_branch.unique_name
@@ -285,7 +283,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
             return
-        default_branch = product.default_stacked_on_branch
+        default_branch = IBranchTarget(product).default_stacked_on_branch
         if default_branch is None:
             return
         try:

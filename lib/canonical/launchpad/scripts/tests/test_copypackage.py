@@ -337,7 +337,7 @@ class TestCopyPackage(TestCase):
 
         This operation is required to propagate partner uploads across several
         suites, avoiding to build (and modify) the package multiple times to
-        have it available for all supported suites independent of the the
+        have it available for all supported suites independent of the
         time they were released.
         """
         copy_helper = self.getCopier(

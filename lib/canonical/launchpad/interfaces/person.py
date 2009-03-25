@@ -655,23 +655,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "Any specifications related to this person, either because the are "
         "a subscriber, or an assignee, or a drafter, or the creator. "
         "Sorted newest-first.")
-    approver_specs = Attribute(
-        "Specifications this person is supposed to approve in due "
-        "course, newest first.")
     assigned_specs = Attribute(
         "Specifications assigned to this person, sorted newest first.")
     assigned_specs_in_progress = Attribute(
         "Specifications assigned to this person whose implementation is "
         "started but not yet completed, sorted newest first.")
-    drafted_specs = Attribute(
-        "Specifications being drafted by this person, sorted newest first.")
-    created_specs = Attribute(
-        "Specifications created by this person, sorted newest first.")
-    feedback_specs = Attribute(
-        "Specifications on which this person has been asked to provide "
-        "feedback, sorted newest first.")
-    subscribed_specs = Attribute(
-        "Specifications this person has subscribed to, sorted newest first.")
     team_mentorships = Attribute(
         "All the offers of mentoring which are relevant to this team.")
     teamowner = exported(
@@ -1421,7 +1409,7 @@ class IPersonEditRestricted(Interface):
         team will actually be invited to join this one. Otherwise the team
         is added as if it were a person.
 
-        If the the person is not a team, and may_subscribe_to_list
+        If the person is not a team, and may_subscribe_to_list
         is True, then the person may be subscribed to the team's
         mailing list, depending on the list status and the person's
         auto-subscribe settings.
