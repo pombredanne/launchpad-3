@@ -124,6 +124,8 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.archive import traverse_named_ppa
+from canonical.launchpad.browser.archivesubscription import (
+    traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
@@ -391,6 +393,12 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         if irc_nick is None or irc_nick.person != self.context:
             return None
         return irc_nick
+
+    @stepthrough('+archivesubscriptions')
+    def traverse_archive_subscription(self, archive_id):
+        """Traverse to the archive subscription for this person."""
+        return traverse_archive_subscription_for_subscriber(
+            self.context, archive_id)
 
 
 class TeamNavigation(PersonNavigation):
