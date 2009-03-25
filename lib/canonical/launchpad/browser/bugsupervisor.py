@@ -60,7 +60,7 @@ class BugSupervisorEditView(LaunchpadEditFormView):
             * A valid Person (email address or launchpad id).
             * A valid Team of which the current user is an administrator.
 
-        If the the bug supervisor entered does not meet any of the above
+        If the bug supervisor entered does not meet any of the above
         criteria then the submission will fail and the user will be notified
         of the error.
         """

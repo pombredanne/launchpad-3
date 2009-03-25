@@ -38,7 +38,7 @@ uploaded into the system.
   >>> dapper_amd64 = dapper.newArch('amd64', ProcessorFamily.get(3), True,
   ...     dapper.owner)
 
-Only uploads to the the RELEASE, UPDATES, SECURITY and PROPOSED pockets are
+Only uploads to the RELEASE, UPDATES, SECURITY and PROPOSED pockets are
 considered for import. An upload to the BACKPORT pocket won't appear in the
 queue:
 
