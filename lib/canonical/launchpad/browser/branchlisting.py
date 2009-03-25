@@ -53,8 +53,8 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranchSet)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchBatchNavigator,
-    IBranchSet)
+    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchBatchNavigator)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
@@ -279,12 +279,11 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         Branches have merge proposals badges if they've been proposed for
         merging into another branch (source branches)
         """
-        if not self.view.show_proposal_badges:
-            return set()
-        mp_branches = getUtility(
-            IBranchMergeProposalGetter).getProposalsForContext(
-            self.view.context, visible_by_user=self.view.user)
-        return set(mp_branch.source_branch.id for mp_branch in mp_branches)
+        proposals = (
+            self.view._getCollection()
+            .visibleByUser(self.view.user)
+            .getMergeProposals(for_branches=self._branches_for_current_batch))
+        return set(proposal.source_branch.id for proposal in proposals)
 
     @cachedproperty
     def tip_revisions(self):
@@ -382,10 +381,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     # pages.  Derived views can override this value to have the series links
     # shown in the branch listings.
     show_series_links = False
-    # Determining the merge proposals can be an expensive query if the branch
-    # collection is not sufficiently constrained.  The default is to show
-    # them.
-    show_proposal_badges = True
     extra_columns = []
     heading_template = 'Bazaar branches for %(displayname)s'
     # no_sort_by is a sequence of items from the BranchListingSort
@@ -596,7 +591,6 @@ class NoContextBranchListingView(BranchListingView):
 
     field_names = ['lifecycle']
     no_sort_by = (BranchListingSort.DEFAULT,)
-    show_proposal_badges = False
 
     no_branch_message = (
         'There are no branches that match the current status filter.')
@@ -607,40 +601,44 @@ class RecentlyRegisteredBranchesView(NoContextBranchListingView):
     """A batched view of branches orded by registration date."""
 
     page_title = 'Recently registered branches'
-    show_proposal_badges = False
 
-    def _branches(self, lifecycle_status):
-        """Return the branches ordered by date created."""
-        return getUtility(IBranchSet).getRecentlyRegisteredBranches(
-            lifecycle_statuses=lifecycle_status,
-            visible_by_user=self.user)
+    @property
+    def sort_by(self):
+        return BranchListingSort.NEWEST_FIRST
+
+    def _getCollection(self):
+        return getUtility(IAllBranches)
 
 
 class RecentlyImportedBranchesView(NoContextBranchListingView):
-    """A batched view of imported branches ordered by last scanned time."""
+    """A batched view of imported branches ordered by last modifed time."""
 
     page_title = 'Recently imported branches'
     extra_columns = ('product', 'date_created')
-    show_proposal_badges = False
 
-    def _branches(self, lifecycle_status):
-        """Return imported branches ordered by last update."""
-        return getUtility(IBranchSet).getRecentlyImportedBranches(
-            lifecycle_statuses=lifecycle_status,
-            visible_by_user=self.user)
+    @property
+    def sort_by(self):
+        return BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+
+    def _getCollection(self):
+        return (getUtility(IAllBranches)
+                .withBranchType(BranchType.IMPORTED)
+                .scanned())
 
 
 class RecentlyChangedBranchesView(NoContextBranchListingView):
-    """Batched view of non-imported branches ordered by last scanned time."""
+    """Batched view of non-imported branches ordered by last modified time."""
 
     page_title = 'Recently changed branches'
-    show_proposal_badges = False
 
-    def _branches(self, lifecycle_status):
-        """Return non-imported branches orded by last commit."""
-        return getUtility(IBranchSet).getRecentlyChangedBranches(
-            lifecycle_statuses=lifecycle_status,
-            visible_by_user=self.user)
+    @property
+    def sort_by(self):
+        return BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+
+    def _getCollection(self):
+        return (getUtility(IAllBranches)
+                .withBranchType(BranchType.HOSTED, BranchType.MIRRORED)
+                .scanned())
 
 
 class PersonBranchCountMixin:
@@ -1225,7 +1223,6 @@ class ProjectBranchesView(BranchListingView):
 
     no_sort_by = (BranchListingSort.DEFAULT,)
     extra_columns = ('author', 'product')
-    show_proposal_badges = False
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProject(self.context)
@@ -1259,7 +1256,6 @@ class SourcePackageBranchesView(BranchListingView):
     # registration page.
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
-    show_proposal_badges = False
 
     def _getCollection(self):
         return getUtility(IAllBranches).inSourcePackage(self.context)
