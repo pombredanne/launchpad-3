@@ -1162,13 +1162,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
         naked_distribution = removeSecurityProxy(distribution)
-        return naked_distribution.newSeries(
+        series = naked_distribution.newSeries(
             version=version,
             name=name,
             displayname=name,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
+        series.status = status
+        return series
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag='powerpc', processorfamily=None,
