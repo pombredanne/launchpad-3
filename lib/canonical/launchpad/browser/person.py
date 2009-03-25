@@ -993,7 +993,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'overview'
-    links = ('profile', 'related_software', 'karma')
+    links = ('profile', 'related_software', 'karma', 'ppas')
 
     def __init__(self, context):
         context = IPerson(context)
@@ -1013,6 +1013,12 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         target = '+karma'
         text = 'Karma'
         return Link(target, text)
+
+    def ppas(self):
+        target = '#ppas'
+        text = 'Personal Package Archives'
+        enabled = bool(self.context.ppas)
+        return Link(target, text, enabled=enabled)
 
 
 class PersonRelatedSoftwareNavigationMenu(NavigationMenu):

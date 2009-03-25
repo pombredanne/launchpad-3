@@ -7,17 +7,23 @@ Personal Package Archives have to be activated before they can be
 accessed, in this section we will cover the activation procedure for
 an user-PPA by its own user.
 
-A person's Personal Package Archive is accessible from the navigation
-menu.
+A section named 'Personal Package Archives' is presented in the
+user/team page.
 
    >>> anon_browser.open("http://launchpad.dev/~cprov")
+
    >>> print_tag_with_id(anon_browser.contents, 'ppas')
    Personal package archives
    PPA for Celso Providelo
 
-Since cprov's Personal Package Archive is already activated in
-sampledata, the 'Personal Package Archive' menu item takes you to his
-archive.
+That section is focused using the link in the navigation menu with the
+same name.
+
+   >>> print anon_browser.getLink('Personal Package Archives').url
+   http://launchpad.dev/~cprov#ppas
+
+Since cprov's PPA is already activated in sampledata, one can click
+its title in the 'Personal Package Archives' section.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
