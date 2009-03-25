@@ -1092,6 +1092,94 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=task_added_notification)
 
+    def test_marked_as_duplicate(self):
+        # When a bug is marked as a duplicate, activity is recorded
+        # and a notification is sent.
+        duplicate_bug = self.factory.makeBug()
+        self.saveOldChanges()
+        self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'marked as duplicate',
+            'oldvalue': None,
+            'newvalue': str(self.bug.id),
+            'message': '',
+            }
+
+        expected_notification = {
+            'person': self.user,
+            'text': ("** This bug has been marked a duplicate of bug %d\n"
+                     "   %s" % (self.bug.id, self.bug.title)),
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=duplicate_bug)
+
+    def test_unmarked_as_duplicate(self):
+        # When a bug is unmarked as a duplicate, activity is recorded
+        # and a notification is sent.
+        duplicate_bug = self.factory.makeBug()
+        duplicate_bug.duplicateof = self.bug
+        self.saveOldChanges()
+        self.changeAttribute(duplicate_bug, 'duplicateof', None)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'removed duplicate marker',
+            'oldvalue': str(self.bug.id),
+            'newvalue': None,
+            'message': '',
+            }
+
+        expected_notification = {
+            'person': self.user,
+            'text': ("** This bug is no longer a duplicate of bug %d\n"
+                     "   %s" % (self.bug.id, self.bug.title)),
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=duplicate_bug)
+
+    def test_changed_duplicate(self):
+        # When a bug is changed from being a duplicate of one bug to
+        # being a duplicate of another, activity is recorded and a
+        # notification is sent.
+        bug_one = self.factory.makeBug()
+        bug_two = self.factory.makeBug()
+        self.bug.duplicateof = bug_one
+        self.saveOldChanges()
+        self.changeAttribute(self.bug, 'duplicateof', bug_two)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'changed duplicate marker',
+            'oldvalue': str(bug_one.id),
+            'newvalue': str(bug_two.id),
+            'message': '',
+            }
+
+        expected_notifications = [
+            {
+                'person': self.user,
+                'text': ("** This bug is no longer a duplicate of bug %d\n"
+                         "   %s" % (bug_one.id, bug_one.title)),
+                },
+            {
+                'person': self.user,
+                'text': ("** This bug has been marked a duplicate of bug %d\n"
+                         "   %s" % (bug_two.id, bug_two.title)),
+                },
+            ]
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notifications)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
