@@ -1148,7 +1148,7 @@ set.
     ...     print "You just modified a cookbook."
 
     >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.lazr.testing.event import TestEventListener
     >>> cookbook_listener = TestEventListener(
     ...     ICookbook, IObjectModifiedEvent, modified_cookbook)
 
@@ -1873,7 +1873,7 @@ When identifying an object by URL, make sure the hostname of your URL
 matches the hostname you're requesting. If they don't match, your
 request will fail.
 
-    >>> change_joy_author(u'http://api.launchpad.net' + path)
+    >>> change_joy_author(u'http://not.the.same.host' + path)
     'author_link: No such object...'
 
 One possible source of hostname mismatches is the HTTP port. If the
@@ -1916,7 +1916,7 @@ A number of TALES adapters give different views on resource
 objects. The is_entry() function is a conditional that returns true when
 given an object that can be adapted to IEntry.
 
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from canonical.lazr.testing.tales import test_tales
     >>> test_tales("context/webservice:is_entry", context=A1)
     True
     >>> test_tales("context/webservice:is_entry", context=AUTHORS)
