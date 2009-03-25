@@ -19,8 +19,8 @@ from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestTranslationSharedPOTemplate(unittest.TestCase):
-    """Test behaviour of "shared" PO templates."""
+class TestTranslationSharedPOFile(unittest.TestCase):
+    """Test behaviour of PO files with shared POTMsgSets."""
 
     layer = LaunchpadZopelessLayer
 
