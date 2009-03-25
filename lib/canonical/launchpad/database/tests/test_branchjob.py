@@ -316,7 +316,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.useBzrBranches()
         branch, tree = self.create3CommitsBranch()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
-        job.bzr_branch.lock_write()
+        job.bzr_branch.lock_read()
         self.addCleanup(job.bzr_branch.unlock)
         [(revision, revno)] = list(job.iterAddedMainline())
         self.assertEqual(2, revno)
@@ -330,7 +330,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree.commit('rev3a', rev_id='rev3a')
         self.updateDBRevisions(branch, tree.branch, ['rev3', 'rev3a'])
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev3', '')
-        job.bzr_branch.lock_write()
+        job.bzr_branch.lock_read()
         self.addCleanup(job.bzr_branch.unlock)
         out = [x.revision_id for x, y in job.iterAddedMainline()]
         self.assertEqual(['rev2'], out)
@@ -340,7 +340,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.useBzrBranches()
         branch, tree = self.create3CommitsBranch()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev3', '')
-        job.bzr_branch.lock_write()
+        job.bzr_branch.lock_read()
         self.addCleanup(job.bzr_branch.unlock)
         # Since we've gone from rev1 to rev3, we've added rev2 and rev3.
         [(rev2, revno2), (rev3, revno3)] = list(job.iterAddedMainline())

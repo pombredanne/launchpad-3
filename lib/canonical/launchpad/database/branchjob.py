@@ -296,8 +296,8 @@ class RevisionsAddedJob(BranchJobDerived):
     def iterAddedMainline(self):
         """Iterate through revisions added to the mainline."""
         repository = self.bzr_branch.repository
-        added_revisions = repository.get_graph().find_difference(
-            self.last_scanned_id, self.last_revision_id)[1]
+        added_revisions = repository.get_graph().find_unique_ancestors(
+            self.last_revision_id, [self.last_scanned_id])
         # Avoid hitting the database since bzrlib makes it easy to check.
         # There are possibly more efficient ways to get the mainline
         # revisions, but this is simple and it works.
