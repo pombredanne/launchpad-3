@@ -607,6 +607,13 @@ class DatabaseLayer(BaseLayer):
         if DatabaseLayer._reset_between_tests:
             LaunchpadTestSetup().tearDown()
 
+        # Fail tests that forget to uninstall their database policies.
+        from canonical.launchpad.webapp.adapter import StoreSelector
+        while StoreSelector.get_current() is not None:
+            BaseLayer.flagTestIsolationFailure(
+                "Database policy %s still installed"
+                % repr(StoreSelector.pop()))
+
     use_mockdb = False
     mockdb_mode = None
 

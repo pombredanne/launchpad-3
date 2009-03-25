@@ -633,38 +633,3 @@ still shows up in the list.
     >>> for series in firefox_view.sorted_active_series_list:
     ...     print series.name
     trunk
-
-
-= Stacking policy =
-
-Launchpad stacks branches that are uploaded to a product. Each created
-branch is 'stacked' on to a default base branch, called the 'default
-stacked-on branch' in Bazaar terminology. This default stacked-on branch
-is the development focus branch of a product.
-
-A freshly created product has a development focus series but this
-series has no branch set, so the product has no
-default_stacked_on_branch.
-
-    >>> product = factory.makeProduct()
-    >>> print product.development_focus.branch
-    None
-    >>> print product.default_stacked_on_branch
-    None
-
-If a product has a development focus branch, it must have a non-NULL
-last_mirrored time to be suitable for use as a default stacked-on
-branch.
-
-    >>> branch = factory.makeProductBranch(name='trunk')
-    >>> print branch.last_mirrored
-    None
-    >>> product.development_focus.branch = branch
-    >>> print product.default_stacked_on_branch
-    None
-    >>> branch.startMirroring()
-    >>> branch.mirrorComplete('rev1')
-    >>> branch.last_mirrored
-    datetime.datetime(...)
-    >>> print product.default_stacked_on_branch.name
-    trunk

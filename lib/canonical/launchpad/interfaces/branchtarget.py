@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0213
 
 """Interface for branch targets.
@@ -17,7 +17,9 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from canonical.lazr.fields import Reference
 
 
 class IHasBranchTarget(Interface):
@@ -39,6 +41,14 @@ class IBranchTarget(IPrimaryContext):
         "An iterable of the objects that make up this branch target, from "
         "most-general to most-specific. In a URL, these would normally "
         "appear from left to right.")
+
+    default_stacked_on_branch = Reference(
+        # Should be an IBranch, but circular imports prevent it.
+        schema=Interface,
+        title=_("Default stacked-on branch"),
+        required=True, readonly=True,
+        description=_(
+            'The branch that new branches will be stacked on by default.'))
 
     def __eq__(other):
         """Is this target the same as another target?
