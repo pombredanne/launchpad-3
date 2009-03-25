@@ -33,4 +33,4 @@ about users.
 
     >>> user_dict = authserver.getUser('foo.bar@canonical.com')
     >>> user_dict['name']
-    'foo.bar'
+    'name16'
