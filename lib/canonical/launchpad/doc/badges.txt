@@ -30,6 +30,7 @@ Iterating over this collection gives:
     branch
     bug
     mentoring
+    mergeproposal
     private
     security
 
