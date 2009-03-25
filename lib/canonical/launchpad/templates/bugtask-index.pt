@@ -378,7 +378,7 @@ function update_bug_duplicate(data) {
                  class="unofficial-tag"
                  tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
             </span>
-            <input type="text" id="tag-input" style="display: none" />
+            <input type="text" id="tag-input" style="display: none; width: 25em;" />
             <img src="/@@/spinner" id="tags-edit-spinner" style="visibility: hidden; display: none" />
             <a href="+edit" title="Edit tags" id="edit-tags-trigger"><img src="/@@/edit" /></a>
             <button class="lazr-pos lazr-btn yui-ieditor-submit_button"
