@@ -49,6 +49,7 @@ from canonical.launchpad.interfaces.sourcepackagename import (
 from canonical.launchpad.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.mail_helpers import pop_notifications
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -928,6 +929,47 @@ class TestUploadProcessor(TestUploadProcessorBase):
         universe.
         """
         self.checkComponentOverride("bar_1.0-1", "universe")
+
+    def testOopsCreation(self):
+        """Test the the creation of an OOPS upon upload processing failure.
+
+        In order to trigger the exception needed a bogus changes file will be
+        used.
+        That exception will then initiate the creation of an OOPS report.
+        """
+        processor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        upload_dir = self.queueUpload("foocomm_1.0-1_proposed")
+        bogus_changesfile_data = '''
+        Ubuntu is a community developed, Linux-based operating system that is
+        perfect for laptops, desktops and servers. It contains all the
+        applications you need - a web browser, presentation, document and
+        spreadsheet software, instant messaging and much more.
+        '''
+        file_handle = open(
+            '%s/%s' % (upload_dir, 'bogus.changes'), 'w')
+        file_handle.write(bogus_changesfile_data)
+        file_handle.close()
+
+        processor.processUploadQueue()
+
+        error_utility = ErrorReportingUtility()
+        error_report = error_utility.getLastOopsReport()
+        fp = StringIO()
+        error_report.write(fp)
+        error_text = fp.getvalue()
+        self.failUnless(
+            error_text.find('Exception-Type: FatalUploadError') >= 0,
+            'Expected Exception type not found in OOPS report:\n%s'
+            % error_text)
+
+        expected_explanation = (
+            "Unable to find mandatory field 'files' in the changes file.")
+        self.failUnless(
+            error_text.find(expected_explanation) >= 0,
+            'Expected Exception text not found in OOPS report:\n%s'
+            % error_text)
 
     def testLZMADebUpload(self):
         """Make sure that data files compressed with lzma in Debs work.
