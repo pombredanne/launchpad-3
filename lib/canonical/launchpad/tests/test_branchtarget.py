@@ -76,6 +76,8 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         development_package = self.original.development_version
         default_branch = self.factory.makePackageBranch(
             sourcepackage=development_package)
+        default_branch.startMirroring()
+        default_branch.mirrorComplete(self.factory.getUniqueString())
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
             ubuntu_branches.teamowner,
@@ -197,10 +199,29 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.REMOTE)
         self.assertIs(None, check_default_stacked_on(branch))
 
+    def test_remote_thats_been_mirrored(self):
+        # Although REMOTE branches are not generally ever mirrored, it's
+        # possible for a branch to be turned into a REMOTE branch later in
+        # life.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
+        branch.startMirroring()
+        branch.mirrorComplete(self.factory.getUniqueString())
+        removeSecurityProxy(branch).branch_type = BranchType.REMOTE
+        self.assertIs(None, check_default_stacked_on(branch))
+
     def test_invisible(self):
         # `check_default_stacked_on` returns None for branches invisible to
         # the current user.
         branch = self.factory.makeAnyBranch(private=True)
+        self.assertIs(None, check_default_stacked_on(branch))
+
+    def test_invisible_been_mirrored(self):
+        # `check_default_stacked_on` returns None for branches invisible to
+        # the current user, even if those branches have already been mirrored.
+        branch = self.factory.makeAnyBranch(private=True)
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.startMirroring()
+        naked_branch.mirrorComplete(self.factory.getUniqueString())
         self.assertIs(None, check_default_stacked_on(branch))
 
     def test_been_mirrored(self):
