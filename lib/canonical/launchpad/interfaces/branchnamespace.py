@@ -26,6 +26,8 @@ class IBranchNamespace(Interface):
     name = Attribute(
         "The name of the namespace. This is prepended to the branch name.")
 
+    target = Attribute("The branch target for this namespace.")
+
     def createBranch(branch_type, name, registrant, url=None, title=None,
                      lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
                      summary=None, whiteboard=None):

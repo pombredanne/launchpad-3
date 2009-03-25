@@ -1672,26 +1672,7 @@ handled through the IByteStorage interface. For this example, let's define
 simple implementation that serves all files from the /files path.
 
     >>> from canonical.lazr.interfaces.rest import IByteStorage
-    >>> from zope.schema.interfaces import IBytes
-    >>> class SimpleByteStorage:
-    ...     implements(IByteStorage)
-    ...     adapts(IEntry, IBytes)
-    ...
-    ...     def __init__(self, entry, field):
-    ...         self.entry = entry
-    ...         self.field = field
-    ...         self.filename = field.__name__
-    ...         self.is_stored = getattr(
-    ...             self.entry, self.filename, None) is not None
-    ...         self.alias_url = (
-    ...             'http://librarian.dev/files/%s' % self.filename)
-    ...
-    ...     def createStored(self, mediaType, representation, filename=None):
-    ...         setattr(self.entry, self.field.__name__, representation)
-    ...
-    ...     def deleteStored(self): 
-    ...         setattr(self.entry, self.field.__name__, None)
-    ...
+    >>> from canonical.lazr.rest.example.root import SimpleByteStorage
     >>> protect_schema(SimpleByteStorage, IByteStorage)
     >>> sm.registerAdapter(SimpleByteStorage)
 
@@ -1717,7 +1698,7 @@ A cookbook can be given a cover with PUT.
     >>> file_resource = put_request.traverse(app)
     >>> file_resource()
 
-    >>> C2.cover
+    >>> C2.cover.representation
     'Pretend...'
 
 At this point it exists:
