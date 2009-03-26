@@ -52,6 +52,13 @@ def test_mark_duplicate_form_overlay():
     client.asserts.assertNode(
         xpath=u"//form[@id='lazr-formoverlay-form']/div[2]/ul/li")
 
+    # Clicking change again brings back the error dialog again
+    # (regression test for bug 347258)
+    client.click(name=u'field.actions.change')
+    client.waits.sleep(milliseconds=u'1000')
+    client.asserts.assertNode(
+        xpath=u"//form[@id='lazr-formoverlay-form']/div[2]/ul/li")
+
     # But entering a correct bug and submitting gets us back to a normal state
     client.type(text=u'1', id=u'field.duplicateof')
     client.click(name=u'field.actions.change')

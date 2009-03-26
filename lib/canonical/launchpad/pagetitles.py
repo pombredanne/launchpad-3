@@ -203,7 +203,8 @@ branchmergeproposal_editstatus = ViewLabel()
 
 branchmergeproposal_enqueue = 'Queue branch for merging'
 
-branchmergeproposal_index = 'Proposal to merge branch'
+def branchmergeproposal_index(context, view):
+    return 'Proposal to merge %s' % context.source_branch.bzr_identity
 
 branchmergeproposal_request_review = ViewLabel()
 
@@ -1031,7 +1032,7 @@ potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-product_active_reviews = 'Pending proposals'
+product_active_reviews = ContextDisplayName('Pending proposals for %s')
 
 product_add_from_project = 'Register a project in your project group'
 

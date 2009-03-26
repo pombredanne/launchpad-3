@@ -32,8 +32,6 @@ __all__ = [
     'IBranchBatchNavigator',
     'IBranchNavigationMenu',
     'IBranchSet',
-    'MAXIMUM_MIRROR_FAILURES',
-    'MIRROR_TIME_INCREMENT',
     'NoSuchBranch',
     'RepositoryFormat',
     'UICreatableBranchType',
@@ -42,7 +40,6 @@ __all__ = [
     ]
 
 from cgi import escape
-from datetime import timedelta
 import re
 
 # Ensure correct plugins are loaded. Do not delete this line.
@@ -368,13 +365,6 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.EXPERIMENTAL,
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
-
-
-# The maximum number of failures before we disable mirroring.
-MAXIMUM_MIRROR_FAILURES = 5
-
-# How frequently we mirror branches.
-MIRROR_TIME_INCREMENT = timedelta(hours=6)
 
 
 class BranchCreationException(Exception):
@@ -1240,12 +1230,6 @@ class IBranchSet(Interface):
         """
         # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
         # to change for source package branches.
-
-    def getPullQueue(branch_type):
-        """Return a queue of branches to mirror using the puller.
-
-        :param branch_type: A value from the `BranchType` enum.
-        """
 
     def getTargetBranchesForUsersMergeProposals(user, product):
         """Return a sequence of branches the user has targeted before."""

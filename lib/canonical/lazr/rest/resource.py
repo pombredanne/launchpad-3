@@ -57,15 +57,14 @@ from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IField, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
+from zope.security.management import checkPermission
 from zope.traversing.browser import absoluteURL
 
+from lazr.batchnavigator import BatchNavigator
 from lazr.enum import BaseItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import (
@@ -75,6 +74,8 @@ from canonical.lazr.interfaces.rest import (
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource,
     ITopLevelEntryLink, IUnmarshallingDoesntNeedValue,
     IWebServiceClientRequest, IWebServiceConfiguration, LAZR_WEBSERVICE_NAME)
+from canonical.lazr.utils import get_current_browser_request
+
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -528,6 +529,14 @@ class WebServiceBatchNavigator(BatchNavigator):
     start_variable_name = "ws.start"
     batch_variable_name = "ws.size"
 
+    @property
+    def default_batch_size(self):
+        return getUtility(IWebServiceConfiguration).default_batch_size
+
+    @property
+    def max_batch_size(self):
+        return getUtility(IWebServiceConfiguration).max_batch_size
+
 
 class BatchingResourceMixin:
 
@@ -559,7 +568,7 @@ class BatchingResourceMixin:
         view_permission = getUtility(IWebServiceConfiguration).view_permission
         resources = [EntryResource(entry, request)
                      for entry in navigator.batch
-                     if check_permission(view_permission, entry)]
+                     if checkPermission(view_permission, entry)]
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }
