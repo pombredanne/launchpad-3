@@ -624,11 +624,12 @@ direct member of that team.
 
 === Team Visibility ===
 
-A Team can have its visibility attribute set to PersonVisibility.PUBLIC
-or PersonVisibility.PRIVATE_MEMBERSHIP. To prevent leaking of private
-membership information, private-membership teams are only allowed to be
-connected with a few different database objects. This is enforced in the
-model, but there are also checks in the form handling to provide clearer
+A Team can have its visibility attribute set to
+PersonVisibility.PUBLIC, PersonVisibility.PRIVATE_MEMBERSHIP, or
+PersonVisibility.PRIVAT. To prevent leaking of private membership
+information, private-membership teams are only allowed to be connected
+with a few different database objects. This is enforced in the model,
+but there are also checks in the form handling to provide clearer
 error messages.
 
 The PublicPersonChoice for interface classes and the
@@ -644,7 +645,9 @@ reject it for the BugSubscription.person and
 BugSubscription.subscribed_by attributes.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from canonical.launchpad.interfaces.person import (
+    ...     IPersonSet, PersonVisibility)
     >>> from canonical.launchpad.database import BugSubscription
     >>> person_set = getUtility(IPersonSet)
     >>> bug_set = getUtility(IBugSet)
@@ -665,6 +668,34 @@ BugSubscription.subscribed_by attributes.
     ...
     PrivatePersonLinkageError: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
+
+Private teams can be subscribed to bugs.
+
+    >>> salgado = personset.getByName('salgado')
+    >>> private_team = factory.makeTeam(salgado, name='private-team',
+    ...     displayname='Private Team',
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> bug_subscription = BugSubscription(bug=bug, person=private_team,
+    ...     subscribed_by=guadamen)
+    >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
+    ...     subscribed_by=private_team)
+
+
+Teams also have a 'private' attribute that is true if the team is
+private membership or private and false for public teams.  It is also
+false for people.
+
+    >>> myteam.private
+    True
+
+    >>> private_team.private
+    True
+
+    >>> guadamen.private
+    False
+
+    >>> salgado.private
+    False
 
 
 == Latest Team Memberships ==
@@ -1286,7 +1317,6 @@ but, since an emailless Person cannot be considered to be valid, it
 takes no parameters regarding to emails or passwords.
 
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> person_set = getUtility(IPersonSet)
     >>> new_person = person_set.createPersonWithoutEmail(
     ...     'ix', PersonCreationRationale.BUGIMPORT,
     ...     comment="when importing bugs", displayname="Ford Prefect",
