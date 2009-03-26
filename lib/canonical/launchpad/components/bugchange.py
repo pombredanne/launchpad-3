@@ -515,8 +515,8 @@ class BugTaskTargetChange(AttributeChange):
         else:
             template = u"** Package changed: %s => %s"
         text = template % (
-            self.old_value.bugtargetdisplayname,
-            self.new_value.bugtargetdisplayname)
+            self.old_value.bugtargetname,
+            self.new_value.bugtargetname)
         return {'text': text}
 
 

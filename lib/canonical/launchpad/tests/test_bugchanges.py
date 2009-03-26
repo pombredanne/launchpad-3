@@ -777,8 +777,8 @@ class TestBugChanges(unittest.TestCase):
 
         expected_notification = {
             'text': u"** Project changed: %s => %s" % (
-                bug_task_before_modification.bugtargetdisplayname,
-                self.bug_task.bugtargetdisplayname),
+                bug_task_before_modification.bugtargetname,
+                self.bug_task.bugtargetname),
             'person': self.user,
             }
 
@@ -827,8 +827,8 @@ class TestBugChanges(unittest.TestCase):
 
         expected_notification = {
             'text': u"** Package changed: %s => %s" % (
-                bug_task_before_modification.bugtargetdisplayname,
-                source_package_bug_task.bugtargetdisplayname),
+                bug_task_before_modification.bugtargetname,
+                source_package_bug_task.bugtargetname),
             'person': self.user,
             }
 
