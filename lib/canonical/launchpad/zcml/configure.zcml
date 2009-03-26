@@ -24,6 +24,7 @@
     <include file="branchmergeproposal.zcml" />
     <include file="branchmergequeue.zcml" />
     <include file="branchnamespace.zcml" />
+    <include file="branchpuller.zcml" />
     <include file="branchref.zcml" />
     <include file="branchrevision.zcml" />
     <include file="branchscanner.zcml" />
