@@ -33,13 +33,13 @@ class TranslationsBranchImportMode(DBEnumeratedType):
     NO_IMPORT = DBItem(1, """
         No import.
 
-        Do not import any translation files from the branch.
+        Do not import any templates or translations from the branch.
         """)
 
     IMPORT_TEMPLATES = DBItem(2, """
-        Import PO templates.
+        Import template files.
 
-        Import all PO translation templates (.pot) found in the branch.
+        Import all translation template files found in the branch.
         """)
 
 
