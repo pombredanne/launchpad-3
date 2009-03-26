@@ -180,20 +180,12 @@ def product_linked_branch(product):
     return HasLinkedBranch(product.development_focus.series_branch)
 
 
-@adapter(ISourcePackagePocket)
-@implementer(ICanHasLinkedBranch)
-def source_package_linked_branch(sourcepackagepocket):
-    """The official branch for a pocket on a package is its linked branch."""
-    return HasLinkedBranch(sourcepackagepocket.branch)
-
-
 sm = getSiteManager()
 sm.registerAdapter(ProductTraversable)
 sm.registerAdapter(DistributionTraversable)
 sm.registerAdapter(DistroSeriesTraversable)
 sm.registerAdapter(product_series_linked_branch)
 sm.registerAdapter(product_linked_branch)
-sm.registerAdapter(source_package_linked_branch)
 
 
 class LinkedBranchTraverser:

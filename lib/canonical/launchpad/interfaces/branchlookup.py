@@ -165,15 +165,13 @@ class ISourcePackagePocketFactory(Interface):
         """
 
 
-class ISourcePackagePocket(Interface):
+class ISourcePackagePocket(ICanHasLinkedBranch):
     """A wrapper around a source package and a pocket.
 
     Used to provide a single object that can be used in exceptions about a
     sourcepackage and a pocket not having an official linked branch.
     """
 
-    branch = Attribute(
-        "The branch associated with this source package pocket.")
     displayname = Attribute("The display name")
     path = Attribute("The path of the source package pocket.")
     pocket = Attribute("The pocket.")
