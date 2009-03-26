@@ -433,6 +433,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return thedict
 
     @property
+    def development_version(self):
+        """See `ISourcePackage`."""
+        return self.__class__(
+            self.sourcepackagename, self.distribution.currentseries)
+
+    @property
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines

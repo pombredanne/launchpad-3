@@ -17,7 +17,6 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.traversing.interfaces import ITraversable, ITraverser
 
 
 class InvalidBranchIdentifier(Exception):
@@ -52,11 +51,14 @@ class ICanHasLinkedBranch(Interface):
     branch = Attribute("The linked branch.")
 
 
-class ILinkedBranchTraversable(ITraversable):
+class ILinkedBranchTraversable(Interface):
     """A thing that can be traversed to find a thing linked to a branch."""
 
+    def traverse(self, name):
+        """Return the object beneath this one that matches 'name'."""
 
-class ILinkedBranchTraverser(ITraverser):
+
+class ILinkedBranchTraverser(Interface):
     """Utility for traversing to an object that can have a linked branch."""
 
     def traverse(path):
@@ -165,15 +167,16 @@ class ISourcePackagePocketFactory(Interface):
         """
 
 
-class ISourcePackagePocket(Interface):
+class ISourcePackagePocket(ICanHasLinkedBranch):
     """A wrapper around a source package and a pocket.
 
     Used to provide a single object that can be used in exceptions about a
     sourcepackage and a pocket not having an official linked branch.
     """
 
-    branch = Attribute(
-        "The branch associated with this source package pocket.")
+    # XXX: JonathanLange 2009-03-26: This ought to go away when ISourcePackage
+    # gets a pocket attribute.
+
     displayname = Attribute("The display name")
     pocket = Attribute("The pocket.")
     sourcepackage = Attribute("The source package.")

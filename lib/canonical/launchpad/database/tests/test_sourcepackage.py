@@ -11,6 +11,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.seriessourcepackagebranch import (
@@ -100,6 +101,25 @@ class TestSourcePackage(TestCaseWithFactory):
             pocket.name.lower(),
             sourcepackage.name)
         self.assertEqual(path, sourcepackage.getPocketPath(pocket))
+
+    def test_development_version(self):
+        # ISourcePackage.development_version gets the development version of
+        # the source package.
+        distribution = self.factory.makeDistribution()
+        dev_series = self.factory.makeDistroRelease(
+            distribution=distribution, status=DistroSeriesStatus.DEVELOPMENT)
+        other_series = self.factory.makeDistroRelease(
+            distribution=distribution, status=DistroSeriesStatus.OBSOLETE)
+        self.assertEqual(dev_series, distribution.currentseries)
+        dev_sourcepackage = self.factory.makeSourcePackage(
+            distroseries=dev_series)
+        other_sourcepackage = self.factory.makeSourcePackage(
+            distroseries=other_series,
+            sourcepackagename=dev_sourcepackage.sourcepackagename)
+        self.assertEqual(
+            dev_sourcepackage, other_sourcepackage.development_version)
+        self.assertEqual(
+            dev_sourcepackage, dev_sourcepackage.development_version)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):

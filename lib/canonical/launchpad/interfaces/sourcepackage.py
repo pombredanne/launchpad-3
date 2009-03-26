@@ -120,6 +120,9 @@ class ISourcePackage(IBugTarget):
         "A mapping of pockets to officially linked branches, ordered by "
         "pocket enum value.")
 
+    development_version = Attribute(
+        "This package on the distro's current series.")
+
     def __getitem__(version):
         """Return the source package release with the given version in this
         distro series, or None."""

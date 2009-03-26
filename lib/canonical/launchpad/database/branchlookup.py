@@ -68,7 +68,7 @@ class RootTraversable:
 
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`.
 
         :raise NoSuchProduct: If 'name' doesn't match an existing pillar.
@@ -105,7 +105,7 @@ class ProductTraversable(_BaseTraversable):
     adapts(IProduct)
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`.
 
         :raises NoSuchProductSeries: if 'name' doesn't match an existing
@@ -127,7 +127,7 @@ class DistributionTraversable(_BaseTraversable):
     adapts(IDistribution)
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`."""
         # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
         # could also try to find a package and then return a reference to its
@@ -148,7 +148,7 @@ class DistroSeriesTraversable:
         self.distroseries = distroseries
         self.pocket = pocket
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`."""
         sourcepackage = self.distroseries.getSourcePackage(name)
         if sourcepackage is None:
@@ -180,20 +180,12 @@ def product_linked_branch(product):
     return HasLinkedBranch(product.development_focus.series_branch)
 
 
-@adapter(ISourcePackagePocket)
-@implementer(ICanHasLinkedBranch)
-def source_package_linked_branch(sourcepackagepocket):
-    """The official branch for a pocket on a package is its linked branch."""
-    return HasLinkedBranch(sourcepackagepocket.branch)
-
-
 sm = getSiteManager()
 sm.registerAdapter(ProductTraversable)
 sm.registerAdapter(DistributionTraversable)
 sm.registerAdapter(DistroSeriesTraversable)
 sm.registerAdapter(product_series_linked_branch)
 sm.registerAdapter(product_linked_branch)
-sm.registerAdapter(source_package_linked_branch)
 
 
 class LinkedBranchTraverser:
@@ -207,7 +199,7 @@ class LinkedBranchTraverser:
         traversable = RootTraversable()
         while segments:
             name = segments.pop(0)
-            context = traversable.traverse(name, segments)
+            context = traversable.traverse(name)
             traversable = adapt(context, ILinkedBranchTraversable)
             if traversable is None:
                 break

@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
 
 """Implementations of `IBranchNamespace`."""
 
@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
 from canonical.launchpad.interfaces.distribution import (
@@ -249,6 +250,11 @@ class PersonalNamespace(_BaseNamespace):
         """See `_BaseNamespace`."""
         return True
 
+    @property
+    def target(self):
+        """See `IBranchNamespace`."""
+        return IBranchTarget(self.owner)
+
 
 class ProductNamespace(_BaseNamespace):
     """A namespace for product branches.
@@ -270,6 +276,11 @@ class ProductNamespace(_BaseNamespace):
     def name(self):
         """See `IBranchNamespace`."""
         return '~%s/%s' % (self.owner.name, self.product.name)
+
+    @property
+    def target(self):
+        """See `IBranchNamespace`."""
+        return IBranchTarget(self.product)
 
     def _getRelatedPolicies(self):
         """Return the privacy policies relating to the owner."""
@@ -346,6 +357,11 @@ class PackageNamespace(_BaseNamespace):
     def name(self):
         """See `IBranchNamespace`."""
         return '~%s/%s' % (self.owner.name, self.sourcepackage.path)
+
+    @property
+    def target(self):
+        """See `IBranchNamespace`."""
+        return IBranchTarget(self.sourcepackage)
 
     def areNewBranchesPrivate(self):
         """See `IBranchNamespace`."""
