@@ -10,7 +10,7 @@
   <class class="canonical.launchpad.database.SourcePackagePublishingHistory">
     <require
       permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.archive.ISourcePackagePublishingHistory"
+      interface="canonical.launchpad.interfaces.publishing.ISourcePackagePublishingHistory"
       />
   </class>
 

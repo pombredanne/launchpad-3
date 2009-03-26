@@ -62,6 +62,8 @@ from canonical.launchpad.interfaces.oauth import (
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
+from canonical.launchpad.interfaces.publishing import (
+    ISourcePackagePublishingHistory)
 from canonical.launchpad.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
@@ -1997,7 +1999,7 @@ class ViewSourcePackagePublishingHistory(AuthorizationBase):
         return user.inTeam(admins)
 
     def checkUnauthenticated(self):
-        return not self.obj.private
+        return not self.obj.archive.private
 
 
 class ViewSourcePackageRelease(AuthorizationBase):
