@@ -73,6 +73,7 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
 from canonical.launchpad.webapp import (
@@ -3106,3 +3107,31 @@ class BugTaskExpirableListingView(LaunchpadView):
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
+
+
+class BugActivityItem:
+    """A decorated BugActivity."""
+    delegates(IBugActivity, 'activity')
+
+    def __init__(self, activity):
+        self.activity = activity
+
+    @property
+    def change_summary(self):
+        """Return a formatted summary of the change."""
+        return "%s changed" % self.activity.whatchanged
+
+    @property
+    def change_details(self):
+        """Return a detailed description of the change."""
+        return get_unified_diff(
+            self.activity.oldvalue, self.activity.newvalue, 72)
+
+    @property
+    def collapsible(self):
+        """Return True if this item's change_details should be collapsed."""
+        collapsible_changes = ['summary']
+        if self.activity.whatchanged in collapsible_changes:
+            return True
+        else:
+            return False

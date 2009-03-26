@@ -143,11 +143,12 @@
     </tal:activity_has_person>
   </div>
   <div class="boardBugActivityBody">
-      <tal:activity-change replace="activity/whatchanged" /> changed:
-      <tal:old-value content="structure
-        activity/oldvalue/fmt:obfuscate-email">
+      <b>
+        <tal:activity-change replace="activity/whatchanged" /> changed:
+      </b>
+      <span tal:content="activity/oldvalue" style="color: #777;">
       Activity text.
-      </tal:old-value>
+      </span>
       <tal:comment replace="nothing">
         &#8594; is a unicode right-arrow.
       </tal:comment>

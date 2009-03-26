@@ -204,3 +204,47 @@ are simple little functions.
     >>> print latest_activity.newvalue
     1.0
 
+
+== BugActivityItem ==
+
+BugActivityItem implements the stuff that BugActivity doesn't need to
+know about.
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> from canonical.launchpad.browser.bugtask import BugActivityItem
+    >>> from canonical.launchpad.interfaces import IBugActivitySet
+
+    >>> nowish = datetime(
+    ...     2009, 3, 26, 16, 40, 31, tzinfo=pytz.timezone('UTC'))
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='summary', oldvalue='Old value',
+    ...     newvalue='New value', person=user, datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+
+The BugActivityItem offers properties that can be used to render the
+activity sensibly in an HTML interface.
+
+    >>> print activity_item.change_summary
+    summary changed
+
+Summary changes are represented as unified diffs in the interface, in
+the same way as they are in notifications.
+
+    >>> print activity_item.change_details
+    - Old value
+    + New value
+
+Because they're represented as diffs, the activity item can be displayed
+in a collapsible box.
+
+    >>> activity_item.collapsible
+    True
+
+BugActivityItem delegates to IBugActivity, so we can still access the
+original BugActivity's properties if we want.
+
+    >>> print "%s: %s => %s" % (
+    ...     activity_item.whatchanged, activity_item.oldvalue,
+    ...     activity_item.newvalue)
+    summary: Old value => New value
