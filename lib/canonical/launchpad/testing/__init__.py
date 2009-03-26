@@ -12,6 +12,7 @@ import unittest
 from storm.store import Store
 
 import transaction
+from zope.component import getUtility
 import zope.event
 from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
@@ -22,6 +23,7 @@ from canonical.config import config
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.testing.factory import *
 
 from twisted.python.util import mergeFunctionMetadata
@@ -522,3 +524,15 @@ def with_anonymous_login(function):
         finally:
             logout()
     return mergeFunctionMetadata(function, wrapped)
+
+
+def run_with_login(person, function, *args, **kwargs):
+    """Run 'function' with 'person' logged in."""
+    current_person = getUtility(ILaunchBag).user
+    logout()
+    login_person(person)
+    try:
+        return function(*args, **kwargs)
+    finally:
+        logout()
+        login_person(current_person)
