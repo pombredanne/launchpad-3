@@ -229,7 +229,8 @@ activity sensibly in an HTML interface.
     summary changed
 
 Summary changes are represented as unified diffs in the interface, in
-the same way as they are in notifications.
+the same way as they are in notifications. They're wrapped in <pre />
+tags to make sure they're displayed correctly.
 
     >>> print activity_item.change_details
     - Old value

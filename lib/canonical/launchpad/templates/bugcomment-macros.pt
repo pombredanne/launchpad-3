@@ -142,20 +142,26 @@
       <tal:activity_person replace="structure activity/person/fmt:link" />
     </tal:activity_has_person>
   </div>
-  <div class="boardBugActivityBody">
-      <b>
-        <tal:activity-change replace="activity/whatchanged" /> changed:
-      </b>
-      <span tal:content="activity/oldvalue" style="color: #777;">
-      Activity text.
-      </span>
-      <tal:comment replace="nothing">
-        &#8594; is a unicode right-arrow.
-      </tal:comment>
-      &#8594;
-      <tal:new-value content="structure
-        activity/newvalue/fmt:obfuscate-email">
-      Activity text.
-      </tal:new-value>
+  <div class="boardCommentBody">
+    <div class="bug-comment">
+      <tal:uncollapsible-change condition="not: activity/collapsible">
+        <p>
+          <tal:change-summary replace="structure activity/change_summary" />:
+          <tal:change-details replace="structure activity/change_details" />
+        </p>
+      </tal:uncollapsible-change>
+
+      <tal:collapsible-change condition="activity/collapsible">
+        <p>
+          <tal:change-summary replace="structure activity/change_summary" />:
+        </p>
+        <p>
+          <span class="foldable">
+            <tal:change-details
+                replace="structure activity/change_details/fmt:nl_to_br" />
+          </span>
+        </p>
+      </tal:collapsible-change>
+    </div>
   </div>
 </div>

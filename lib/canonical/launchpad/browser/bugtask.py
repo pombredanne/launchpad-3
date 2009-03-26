@@ -3128,8 +3128,7 @@ class BugActivityItem:
         diffable_changes = ['summary']
 
         if self.whatchanged in diffable_changes:
-            return get_unified_diff(
-                self.oldvalue, self.newvalue, 72)
+            return get_unified_diff(self.oldvalue, self.newvalue, 72)
         else:
             return "%s &#8594; %s" % (self.oldvalue, self.newvalue)
 
