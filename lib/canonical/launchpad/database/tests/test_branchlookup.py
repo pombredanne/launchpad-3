@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, ILinkedBranchTraverser,
@@ -554,7 +554,6 @@ class TestSourcePackagePocket(TestCaseWithFactory):
             package.setBranch(
                 PackagePublishingPocket.SECURITY, branch, registrant)
         finally:
-            logout()
             login(ANONYMOUS)
         package_pocket = self.makeSourcePackagePocket(
             sourcepackage=package, pocket=PackagePublishingPocket.SECURITY)

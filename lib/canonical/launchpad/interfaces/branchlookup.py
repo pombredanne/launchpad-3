@@ -172,6 +172,9 @@ class ISourcePackagePocket(ICanHasLinkedBranch):
     sourcepackage and a pocket not having an official linked branch.
     """
 
+    # XXX: JonathanLange 2009-03-26: This ought to go away when ISourcePackage
+    # gets a pocket attribute.
+
     displayname = Attribute("The display name")
     path = Attribute("The path of the source package pocket.")
     pocket = Attribute("The pocket.")
