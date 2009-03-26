@@ -1852,6 +1852,16 @@ class Person(
         return new_name
 
     @property
+    def private(self):
+        """See `IPerson`."""
+        if not self.is_team:
+            return False
+        elif self.visibility == PersonVisibility.PUBLIC:
+            return False
+        else:
+            return True
+
+    @property
     def visibility_consistency_warning(self):
         """Warning used when changing the team's visibility.
 
