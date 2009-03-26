@@ -252,17 +252,14 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
 
         # Turn the result set into a list of dicts so it can be easily
         # accessed in TAL:
-        # Note to reviewer: Unsure how to best format this??
         return [
-            {
-                "subscription": IArchiveSubscriptionForSubscriber(
-                    subscription),
-                "token": token
-            } for subscription, token in subs_with_tokens]
+            dict(subscription=IArchiveSubscriptionForSubscriber(subscription),
+                 token=token)
+            for subscription, token in subs_with_tokens]
 
 
 class PersonArchiveSubscriptionView(LaunchpadView):
-    """Display a users archive subscription and relevant info.
+    """Display a user's archive subscription and relevant info.
 
     This includes the current sources.list entries (if the subscription
     has a current token), and the ability to generate and re-generate
@@ -295,7 +292,8 @@ class PersonArchiveSubscriptionView(LaunchpadView):
             token = self.context.archive.newAuthToken(self.context.subscriber)
 
             self.request.response.addNotification(structured(
-                "Your personal subscription to '%s' has been regenerated. "
+                "A new password for your personal subscription to '%s' "
+                "has been created. "
                 "Please update your custom sources.list as "
                 "described below." % self.context.archive.displayname))
 
@@ -319,12 +317,13 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         token = self.active_token
         archive = self.context.archive
         series_name = archive.distribution.currentseries.name
+        title = "Personal subscription of %s to %s" % (
+            self.context.subscriber.displayname, archive.displayname)
         return (
             "# %(title)s\n"
             "deb %(archive_url)s %(series_name)s main\n"
             "deb-src %(archive_url)s %(series_name)s main" % {
-                'title': "Personal subscription of %s to %s" % (
-                    self.context.subscriber.displayname, archive.displayname),
+                'title': title,
                 'archive_url': token.archive_url,
                 'series_name': series_name})
 

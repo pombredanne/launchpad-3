@@ -336,8 +336,9 @@ The view can also be used to regenerate the source.list entries.
     302
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    Your personal subscription to 'Private PPA for Celso Providelo' has been
-    regenerated. Please update your custom sources.list as described below.
+    A new password for your personal subscription to 'Private PPA for
+    Celso Providelo' has been created.
+    Please update your custom sources.list as described below.
 
     >>> view = create_initialized_view(spiv_subscription, name="+index")
     >>> view.active_token.token == original_token
