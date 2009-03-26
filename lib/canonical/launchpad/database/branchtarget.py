@@ -13,13 +13,40 @@ __all__ = [
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
 def branch_to_target(branch):
     """Adapt an IBranch to an IBranchTarget."""
     return branch.target
+
+
+def check_default_stacked_on(branch):
+    """Return 'branch' if suitable to be a default stacked-on branch.
+
+    Only certain branches are suitable to be default stacked-on branches.
+    Branches that are *not* suitable include:
+      - remote branches
+      - branches the user cannot see
+      - branches that have not yet been successfully processed by the puller.
+
+    If the given branch is not suitable, return None. For convenience, also
+    returns None if passed None. Otherwise, return the branch.
+    """
+    if branch is None:
+        return None
+    try:
+        branch_type = branch.branch_type
+    except Unauthorized:
+        return None
+    if branch_type == BranchType.REMOTE:
+        return None
+    if branch.last_mirrored is None:
+        return None
+    return branch
 
 
 class _BaseBranchTarget:
@@ -33,8 +60,6 @@ class _BaseBranchTarget:
 
 class PackageBranchTarget(_BaseBranchTarget):
     implements(IBranchTarget)
-
-    default_stacked_on_branch = None
 
     def __init__(self, sourcepackage):
         self.sourcepackage = sourcepackage
@@ -63,6 +88,13 @@ class PackageBranchTarget(_BaseBranchTarget):
         from canonical.launchpad.database.branchnamespace import (
             PackageNamespace)
         return PackageNamespace(owner, self.sourcepackage)
+
+    @property
+    def default_stacked_on_branch(self):
+        """See `IBranchTarget`."""
+        return check_default_stacked_on(
+            self.sourcepackage.development_version.getBranch(
+                PackagePublishingPocket.RELEASE))
 
 
 class PersonBranchTarget(_BaseBranchTarget):
@@ -115,19 +147,8 @@ class ProductBranchTarget(_BaseBranchTarget):
     @property
     def default_stacked_on_branch(self):
         """See `IBranchTarget`."""
-        default_branch = self.product.development_focus.series_branch
-        if default_branch is None:
-            return None
-        try:
-            last_mirrored = default_branch.last_mirrored
-        except Unauthorized:
-            # If we cannot see the default stacked-on branch, then return
-            # None.
-            return None
-        if last_mirrored is None:
-            return None
-        else:
-            return default_branch
+        return check_default_stacked_on(
+            self.product.development_focus.series_branch)
 
     def getNamespace(self, owner):
         """See `IBranchTarget`."""

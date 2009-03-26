@@ -100,7 +100,7 @@ can be changed for a feature.
 And the test can remove the data when it is done to restore the config.
 
     >>> config.pop('test_data')
-    (<lazr.config.ConfigData ...>,)
+    (<lazr.config...ConfigData ...>,)
     >>> config.answertracker.email_domain
     'answers.launchpad.net'
 

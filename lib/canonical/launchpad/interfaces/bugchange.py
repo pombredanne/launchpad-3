@@ -22,6 +22,3 @@ class IBugChange(Interface):
 
     def getBugNotification():
         """Return any `BugNotification`s for this event."""
-
-    def getBugNotificationRecipients():
-        """Return any recipients for the `BugNotification`s."""

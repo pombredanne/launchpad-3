@@ -48,6 +48,14 @@
 
    <webservice:register module="canonical.launchpad.interfaces" />
 
+   <adapter
+       for="zope.schema.interfaces.IChoice
+            zope.publisher.interfaces.http.IHTTPRequest
+            canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
+       provides="canonical.lazr.interfaces.IFieldMarshaller"
+       factory="canonical.lazr.rest.marshallers.ObjectLookupFieldMarshaller"
+       />
+
    <!-- The API documentation -->
     <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
