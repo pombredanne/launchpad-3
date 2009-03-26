@@ -248,3 +248,25 @@ original BugActivity's properties if we want.
     ...     activity_item.whatchanged, activity_item.oldvalue,
     ...     activity_item.newvalue)
     summary: Old value => New value
+
+For simpler changes, activity_item.change_details will simply return the
+change in the form old_value -> new_value. These changes will not be
+collapsible. The arrow will be represented by the unicode character
+&#8594;.
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='security vulnerability',
+    ...     oldvalue='no', newvalue='yes', person=user,
+    ...     datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+
+    >>> print activity_item.change_details
+    no &#8594; yes
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='visibility', oldvalue='public',
+    ...     newvalue='private', person=user, datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+
+    >>> print activity_item.change_details
+    public &#8594; private

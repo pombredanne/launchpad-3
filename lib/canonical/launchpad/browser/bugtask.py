@@ -777,7 +777,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             {'comment': comment, 'date': comment.datecreated}
             for comment in self.visible_comments_for_display]
         activity_and_comments.extend(
-            {'activity': activity, 'date': activity.datechanged}
+            {'activity': BugActivityItem(activity),
+             'date': activity.datechanged}
             for activity in self.context.bug.activity
             if activity.whatchanged in interesting_changes)
 
@@ -3119,19 +3120,24 @@ class BugActivityItem:
     @property
     def change_summary(self):
         """Return a formatted summary of the change."""
-        return "%s changed" % self.activity.whatchanged
+        return "%s changed" % self.whatchanged
 
     @property
     def change_details(self):
         """Return a detailed description of the change."""
-        return get_unified_diff(
-            self.activity.oldvalue, self.activity.newvalue, 72)
+        diffable_changes = ['summary']
+
+        if self.whatchanged in diffable_changes:
+            return get_unified_diff(
+                self.oldvalue, self.newvalue, 72)
+        else:
+            return "%s &#8594; %s" % (self.oldvalue, self.newvalue)
 
     @property
     def collapsible(self):
         """Return True if this item's change_details should be collapsed."""
         collapsible_changes = ['summary']
-        if self.activity.whatchanged in collapsible_changes:
+        if self.whatchanged in collapsible_changes:
             return True
         else:
             return False
