@@ -36,8 +36,8 @@ from lazr.lifecycle.event import (
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.components.bugchange import (
-    BranchLinkedToBug, BranchUnlinkedFromBug, BugWatchAdded, BugWatchRemoved,
-    SeriesNominated, UnsubscribedFromBug)
+    BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
+    BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
 from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
@@ -950,6 +950,7 @@ class Bug(SQLBase):
 
         question_target = IQuestionTarget(bugtask.target)
         question = question_target.createQuestionFromBug(self)
+        self.addChange(BugConvertedToQuestion(UTC_NOW, person, question))
 
         notify(BugBecameQuestionEvent(self, question, person))
         return question
