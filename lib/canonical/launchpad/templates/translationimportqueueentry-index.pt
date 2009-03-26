@@ -11,8 +11,13 @@
 >
   <body>
   <metal:script fill-slot="head_epilogue">
+    <style type="text/css">
+    .dont_show_fields {
+        visibility: collapse;
+    }
+    </style>
     <script type="text/javascript">
-    YUI().use('node', function(Y) {
+    YUI().use('node', 'lazr.anim', function(Y) {
         var fields = {'POT':
                             ['field.name', 'field.translation_domain',
                              'field.languagepack'],
@@ -32,8 +37,9 @@
 
         function getEnclosingTR(fieldname) {
             var field = getElemById(fieldname);
-            if( field == null )
+            if (field == null) {
                 return null;
+            }
             return field.ancestor('tr');
         }
 
@@ -44,7 +50,7 @@
                     var tr = getEnclosingTR(field);
                     if (tr != null) {
                         tr.addClass(the_class);
-                        tr.setStyle('visibility', 'collapse');
+                        tr.addClass('dont_show_fields');
                     }
                 });
                 nodes[ftype] = Y.all('.' + the_class);
@@ -52,23 +58,41 @@
         }
 
         function updateCurrentFileType(file_type) {
-            if (nodes[last_file_type] != null)
-                nodes[last_file_type].setStyle('visibility', 'collapse');
-            if (nodes[file_type] != null)
-                nodes[file_type].setStyle('visibility', 'visible');
+            for (ftype in nodes) {
+                if (ftype != file_type && nodes[ftype] != null) {
+                    nodes[ftype].addClass('dont_show_fields');
+                }
+            }
+            if (nodes[file_type] != null) {
+                nodes[file_type].removeClass('dont_show_fields');
+                nodes[file_type].each( function(node) {
+                    var anim = Y.lazr.anim.green_flash({ node: node });
+                    anim.run();
+                });
+            }
+            last_file_type = file_type;
+        }
+
+        function initCurrentFileType(file_type) {
+            // Same as updateCurrentFileType but without collapsing
+            // everything and without the green flash.
+            if (nodes[file_type] != null) {
+                nodes[file_type].removeClass('dont_show_fields');
+            }
             last_file_type = file_type;
         }
 
         function handleFileTypeChange() {
             var file_type = this.get('value');
-            if (file_type != last_file_type)
+            if (file_type != last_file_type) {
                 updateCurrentFileType(file_type);
+            }
         }
 
         Y.on('domready', function(){
             buildNodeLists();
             var file_type_field = getElemById('field.file_type');
-            updateCurrentFileType(file_type_field.get('value'));
+            initCurrentFileType(file_type_field.get('value'));
             file_type_field.on('change', handleFileTypeChange);
         });
     });

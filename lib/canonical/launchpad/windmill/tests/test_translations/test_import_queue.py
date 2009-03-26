@@ -30,6 +30,49 @@ class ImportQueueEntryTest:
             self.__name__ = name
         self.suite = suite
         self.user = user
+        self.client = None
+
+    FIELDS = {
+        'POT': [
+            'field.name',
+            'field.translation_domain',
+            ],
+        'PO': [
+            'field.potemplate',
+            'field.potemplate_name',
+            'field.language',
+            'field.variant',
+            ]
+    }
+    SELECT_FIELDS = [
+        'field.potemplate',
+        'field.language',
+    ]
+    def _getHiddenTRXpath(self, field_id):
+        if field_id in self.SELECT_FIELDS:
+            input_tag = 'select'
+        else:
+            input_tag = 'input'
+        return (
+            u"//tr[contains(@class,'dont_show_fields')]"
+            u"//%s[@id='%s']" % (input_tag, field_id)
+                )
+
+    def _assertAllFieldsVisible(self, groupname):
+        """Assert that all fields in this group do not have the
+        dont_show_fields class set.
+        """
+        for field_id in self.FIELDS[groupname]:
+            self.client.asserts.assertNotNode(
+                xpath=self._getHiddenTRXpath(field_id))
+
+    def _assertAllFieldsHidden(self, groupname):
+        """Assert that all fields in this group have the
+        dont_show_fields class set.
+        """
+        for field_id in self.FIELDS[groupname]:
+            self.client.asserts.assertNode(
+                xpath=self._getHiddenTRXpath(field_id))
 
     def __call__(self):
         """Tests that documentation links are shown/hidden properly.
@@ -41,36 +84,31 @@ class ImportQueueEntryTest:
         * makes sure it's hidden when you stay on the same translation;
         * makes sure it's shown again when you go to a different translation.
         """
-        client = WindmillTestClient(self.suite)
+        self.client = WindmillTestClient(self.suite)
 
         # Go to import queue page logged in as translations admin.
-        self.user.ensure_login(client)
-        client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'20000')
+        self.user.ensure_login(self.client)
+        self.client.open(url=self.url)
+        self.client.waits.forPageLoad(timeout=u'20000')
 
         # When the page is first called tha file_type is set to POT and
         # only the relevant form fields are displayed. When the file type
         # select box is changed to PO, other fields are shown hidden while
         # the first ones are hidden. Finally, all fields are hidden if the
         # file type is unspecified.
-        client.waits.forElement(id=u'field.file_type', timeout=u'8000')
-        client.asserts.assertSelected(id=u'field.file_type', validator=u'POT')
-        client.asserts.assertProperty(classname="POT_row",
-                                      validator="style.visibility|visible")
-        client.asserts.assertProperty(classname="PO_row",
-                                      validator="style.visibility|collapse")
+        self.client.waits.forElement(id=u'field.file_type', timeout=u'8000')
+        self.client.asserts.assertSelected(id=u'field.file_type',
+                                           validator=u'POT')
+        self._assertAllFieldsVisible('POT')
+        self._assertAllFieldsHidden('PO')
 
-        client.select(id=u'field.file_type', val=u'PO')
-        client.asserts.assertProperty(classname="POT_row",
-                                      validator="style.visibility|collapse")
-        client.asserts.assertProperty(classname="PO_row",
-                                      validator="style.visibility|visible")
+        self.client.select(id=u'field.file_type', val=u'PO')
+        self._assertAllFieldsVisible('PO')
+        self._assertAllFieldsHidden('POT')
 
-        client.select(id=u'field.file_type', val=u'UNSPEC')
-        client.asserts.assertProperty(classname="POT_row",
-                                      validator="style.visibility|collapse")
-        client.asserts.assertProperty(classname="PO_row",
-                                      validator="style.visibility|collapse")
+        self.client.select(id=u'field.file_type', val=u'UNSPEC')
+        self._assertAllFieldsHidden('POT')
+        self._assertAllFieldsHidden('PO')
 
 test_import_queue = ImportQueueEntryTest(
     name='test_import_queue')
