@@ -17,7 +17,6 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.traversing.interfaces import ITraversable, ITraverser
 
 
 class InvalidBranchIdentifier(Exception):
@@ -52,11 +51,14 @@ class ICanHasLinkedBranch(Interface):
     branch = Attribute("The linked branch.")
 
 
-class ILinkedBranchTraversable(ITraversable):
+class ILinkedBranchTraversable(Interface):
     """A thing that can be traversed to find a thing linked to a branch."""
 
+    def traverse(self, name):
+        """Return the object beneath this one that matches 'name'."""
 
-class ILinkedBranchTraverser(ITraverser):
+
+class ILinkedBranchTraverser(Interface):
     """Utility for traversing to an object that can have a linked branch."""
 
     def traverse(path):

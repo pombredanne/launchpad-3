@@ -68,7 +68,7 @@ class RootTraversable:
 
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`.
 
         :raise NoSuchProduct: If 'name' doesn't match an existing pillar.
@@ -105,7 +105,7 @@ class ProductTraversable(_BaseTraversable):
     adapts(IProduct)
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`.
 
         :raises NoSuchProductSeries: if 'name' doesn't match an existing
@@ -127,7 +127,7 @@ class DistributionTraversable(_BaseTraversable):
     adapts(IDistribution)
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`."""
         # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
         # could also try to find a package and then return a reference to its
@@ -148,7 +148,7 @@ class DistroSeriesTraversable:
         self.distroseries = distroseries
         self.pocket = pocket
 
-    def traverse(self, name, further_path):
+    def traverse(self, name):
         """See `ITraversable`."""
         sourcepackage = self.distroseries.getSourcePackage(name)
         if sourcepackage is None:
@@ -199,7 +199,7 @@ class LinkedBranchTraverser:
         traversable = RootTraversable()
         while segments:
             name = segments.pop(0)
-            context = traversable.traverse(name, segments)
+            context = traversable.traverse(name)
             traversable = adapt(context, ILinkedBranchTraversable)
             if traversable is None:
                 break

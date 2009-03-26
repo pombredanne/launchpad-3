@@ -8,13 +8,14 @@
       <allow interface='canonical.lazr.rest.example.interfaces.ICookbookSet' />
   </class>
 
+  <permission id="lazr.restful.example.View" title="Viewing something" />
   <permission id="lazr.restful.example.ViewPrivate"
    title="Viewing private information" />
 
   <class class="canonical.lazr.rest.example.root.Cookbook">
-    <require attributes="name copyright_date cuisine description recipes
-                         find_recipes make_more_interesting get"
-             set_attributes="name copyright_date cuisine description"
+    <require attributes="name copyright_date cover cuisine description
+                         recipes find_recipes make_more_interesting get"
+             set_attributes="name copyright_date cover cuisine description"
              permission="zope.Public" />
     <require attributes="confirmed"
              set_attributes="confirmed"
@@ -58,6 +59,12 @@
   <utility
     provides="canonical.lazr.interfaces.rest.IServiceRootResource"
     factory="canonical.lazr.rest.example.root.CookbookServiceRootResource" />
+
+  <adapter factory="canonical.lazr.rest.example.root.SimpleByteStorage" />
+  <class class="canonical.lazr.rest.example.root.SimpleByteStorage">
+      <allow interface='canonical.lazr.interfaces.rest.IByteStorage' />
+  </class>
+
 
   <adapter factory="canonical.lazr.rest.example.traversal.TraverseWithGet" />
   <adapter

@@ -29,11 +29,6 @@ The base class for BugChanges doesn't actually implement anything.
       ...
     NotImplementedError...
 
-    >>> base_instance.getBugNotificationRecipients()
-    Traceback (most recent call last):
-      ...
-    NotImplementedError...
-
 But the basic attributes are still available.
 
     >>> print base_instance.when
@@ -65,6 +60,9 @@ We'll create a test class that actually implements the methods we need.
     >>> example_person_2 = factory.makePerson(
     ...     displayname="Zaphod Beeblebrox")
 
+    >>> recipients = BugNotificationRecipients()
+    >>> recipients.addDirectSubscriber(example_person_2)
+
     >>> class TestBugChange(BugChangeBase):
     ...
     ...     bug_activity_data = {
@@ -77,18 +75,8 @@ We'll create a test class that actually implements the methods we need.
     ...         'text': 'Some message text',
     ...         }
     ...
-    ...     recipient_persons = [
-    ...         example_person_2,
-    ...         ]
-    ...
     ...     def getBugActivity(self):
     ...         return self.bug_activity_data
-    ...
-    ...     def getBugNotificationRecipients(self):
-    ...         recipients = BugNotificationRecipients()
-    ...         for recipient in self.recipient_persons:
-    ...             recipients.addDirectSubscriber(recipient)
-    ...         return recipients
     ...
     ...     def getBugNotification(self):
     ...         return self.bug_notification_data
@@ -103,7 +91,8 @@ We'll create a test class that actually implements the methods we need.
 BugActivity entries are added when addChange() is called.
 
     >>> example_bug.addChange(
-    ...     TestBugChange(when=nowish, person=example_person))
+    ...     TestBugChange(when=nowish, person=example_person),
+    ...     recipients=recipients)
     >>> print_bug_activity(example_bug.activity)
     2009-03-13...: Nothing OldValue => NewValue (Ford Prefect)
 
@@ -114,14 +103,14 @@ As are BugNotifications.
     >>> print latest_notification.message.text_contents
     Some message text
 
-The notification's recipients are taken from the result of
-getBugNotificationRecipients().
+The notification's recipients are taken from the recipients parameter
+passed to addChange().
 
     >>> for recipient in latest_notification.recipients:
     ...     print recipient.person.displayname
     Zaphod Beeblebrox
 
-Bug if getBugActivity() returns None, no activity entries will be added.
+But if getBugActivity() returns None, no activity entries will be added.
 
     >>> class NoActionBugChange(TestBugChange):
     ...     bug_activity_data = None
@@ -138,18 +127,10 @@ And if getBugNotification() returns None, no notification will be added.
     >>> new_latest_notification.id == latest_notification.id
     True
 
-If getBugNotificationRecipients() returns None the default recipient
-list for the Bug will be used. This includes people subscribed to the
+If no recipients are passed to addChange() the default recipient list
+for the Bug will be used. This includes people subscribed to the
 bug's target for Meta data changes, but not for lifecycle changes.
 
-    >>> class NoRecipientsBugChange(TestBugChange):
-    ...
-    ...     bug_notification_data = {
-    ...         'text': "Here's some sample text",
-    ...         }
-    ...
-    ...     def getBugNotificationRecipients(self):
-    ...         return None
 
     >>> from canonical.launchpad.interfaces import BugNotificationLevel
     >>> lifecycle_subscriber = factory.makePerson(
@@ -163,10 +144,10 @@ bug's target for Meta data changes, but not for lifecycle changes.
     ...     metadata_subscriber, metadata_subscriber)
     >>> subscription.bug_notification_level = BugNotificationLevel.METADATA
     >>> example_bug.addChange(
-    ...     NoRecipientsBugChange(when=nowish, person=example_person))
+    ...     TestBugChange(when=nowish, person=example_person))
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.text_contents
-    Here's some sample text
+    Some message text
 
     >>> recipients = [
     ...     recipient.person.displayname
