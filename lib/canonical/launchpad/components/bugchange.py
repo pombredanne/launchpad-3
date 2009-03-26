@@ -138,10 +138,6 @@ class BugTaskAdded(BugChangeBase):
             'text': '\n'.join(lines)
             }
 
-    def getBugNotificationRecipients(self):
-        """See `IBugChange`."""
-        # Send the notification to the default recipients.
-
 
 class SeriesNominated(BugChangeBase):
     """A user nominated the bug to be fixed in a series."""
