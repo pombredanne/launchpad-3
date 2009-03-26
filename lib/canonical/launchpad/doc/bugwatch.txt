@@ -486,3 +486,13 @@ errors, we ignore such bug watches.
     False
     >>> [bug_watch.remotebug for bug_watch in product.getLinkedBugWatches()]
     []
+
+Bug watches can be removed using the removeWatch method.
+
+    >>> bug_watch = factory.makeBugWatch(remote_bug='42')
+    >>> bug = bug_watch.bug
+    >>> [bug_watch.remotebug for bug_watch in bug.watches]
+    [u'42']
+    >>> bug.removeWatch(bug_watch, factory.makePerson())
+    >>> [bug_watch.remotebug for bug_watch in bug.watches]
+    []

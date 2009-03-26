@@ -201,15 +201,15 @@
         <div id="masthead">
            <metal:logo define-slot="header-logo" />
            <div id="search">
-            <tal:block condition="request/lp:person">
+            <tal:block condition="view/account">
               <form action="/+logout" class="login" method="post">
-                Logged in as <span tal:replace="request/lp:person/fmt:displayname" />
+                Logged in as <span tal:replace="view/account/displayname" />
                   &ndash;
                 <input type="submit" value="Log Out" />
               </form>
             </tal:block>
 
-            <tal:block condition="not: request/lp:person">
+            <tal:block condition="not: view/account">
               Not logged in &#8212;
               <a href="/login">
                 Log In / Register

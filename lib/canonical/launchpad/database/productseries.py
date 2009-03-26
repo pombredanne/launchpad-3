@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -10,7 +10,7 @@ __all__ = [
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import In, Or
+from storm.expr import In
 from warnings import warn
 from zope.component import getUtility
 from zope.interface import implements
@@ -48,6 +48,8 @@ from canonical.launchpad.interfaces import (
     SpecificationSort)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.interfaces.translations import (
+    TranslationsBranchImportMode)
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
@@ -75,6 +77,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         storm_validator=validate_public_person, notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
+    translations_autoimport_mode = EnumCol(
+        dbName='translations_autoimport_mode',
+        notNull=True,
+        schema=TranslationsBranchImportMode,
+        default=TranslationsBranchImportMode.NO_IMPORT)
     # where are the tarballs released from this branch placed?
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
@@ -85,6 +92,21 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
         return (Milestone.productseries == self)
+
+    def _get_user_branch(self):
+        """Backwards compatibility for the 2.2.3 release."""
+        return self.branch
+
+    def _set_user_branch(self, branch):
+        """Backwards compatibility for the 2.2.3 release."""
+        self.branch = branch
+
+    user_branch = property(_get_user_branch, _set_user_branch)
+
+    @property
+    def series_branch(self):
+        """Backwards compatibility for the 2.2.3 release."""
+        return self.branch
 
     @property
     def releases(self):
@@ -318,6 +340,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
+
+    @property
+    def official_bug_tags(self):
+        """See `IHasBugs`."""
+        return self.product.official_bug_tags
 
     def getUsedBugTags(self):
         """See IBugTarget."""

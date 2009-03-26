@@ -49,7 +49,7 @@
     <adapter
         for="canonical.launchpad.layers.FeedsLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.SlaveDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SlaveOnlyDatabasePolicy"
         />
 
     <!-- lazr.batchnavigator hook -->
@@ -212,6 +212,13 @@
         for="canonical.launchpad.interfaces.IBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IArchive"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ArchiveImageDisplayAPI"
         name="image"
         />
 

@@ -97,24 +97,11 @@ from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpcontrol import SMTPControl
-
+from canonical.lazr.testing.layers import MockRootFolder
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
 WAIT_INTERVAL = datetime.timedelta(seconds=180)
-
-
-class MockRootFolder:
-    """Implement the minimum functionality required by Z3 ZODB dependencies
-
-    Installed as part of FunctionalLayer.testSetUp() to allow the http()
-    method (zope.app.testing.functional.HTTPCaller) to work.
-    """
-    @property
-    def _p_jar(self):
-        return self
-    def sync(self):
-        pass
 
 
 class LayerError(Exception):
@@ -619,6 +606,13 @@ class DatabaseLayer(BaseLayer):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if DatabaseLayer._reset_between_tests:
             LaunchpadTestSetup().tearDown()
+
+        # Fail tests that forget to uninstall their database policies.
+        from canonical.launchpad.webapp.adapter import StoreSelector
+        while StoreSelector.get_current() is not None:
+            BaseLayer.flagTestIsolationFailure(
+                "Database policy %s still installed"
+                % repr(StoreSelector.pop()))
 
     use_mockdb = False
     mockdb_mode = None

@@ -4,7 +4,8 @@ __metaclass__ = type
 
 import re
 
-from zope.app.form.browser.textwidgets import IntWidget, TextWidget
+from zope.app.form.browser.textwidgets import (
+    IntWidget, TextAreaWidget, TextWidget)
 from zope.app.form.interfaces import ConversionError, WidgetInputError
 from zope.component import getUtility
 from zope.schema.interfaces import ConstraintNotSatisfied
@@ -38,12 +39,8 @@ class BugWidget(IntWidget):
                 raise ConversionError("Not a valid bug number or nickname.")
 
 
-class BugTagsWidget(TextWidget):
-    """A widget for editing bug tags."""
-
-    def __init__(self, field, value_type, request):
-        # We don't use value_type.
-        TextWidget.__init__(self, field, request)
+class BugTagsWidgetBase:
+    """Base class for bug tags widgets."""
 
     def _toFormValue(self, value):
         """Convert a list of strings to a single, space separated, string."""
@@ -65,7 +62,7 @@ class BugTagsWidget(TextWidget):
 
     def getInputValue(self):
         try:
-            return TextWidget.getInputValue(self)
+            return self._getInputValue()
         except WidgetInputError, input_error:
             # The standard error message isn't useful at all. We look to
             # see if it's a ConstraintNotSatisfied error and change it
@@ -86,3 +83,26 @@ class BugTagsWidget(TextWidget):
             else:
                 raise
 
+    def _getInputValue(self):
+        raise NotImplementedError('_getInputValue must be overloaded')
+
+class BugTagsWidget(BugTagsWidgetBase, TextWidget):
+    """A widget for editing bug tags."""
+
+    def __init__(self, field, value_type, request):
+        # We don't use value_type.
+        TextWidget.__init__(self, field, request)
+
+    def _getInputValue(self):
+        return TextWidget.getInputValue(self)
+
+
+class LargeBugTagsWidget(BugTagsWidgetBase, TextAreaWidget):
+    """A large widget for editing bug tags."""
+
+    def __init__(self, field, value_type, request):
+        # We don't use value_type.
+        TextAreaWidget.__init__(self, field, request)
+
+    def _getInputValue(self):
+        return TextAreaWidget.getInputValue(self)

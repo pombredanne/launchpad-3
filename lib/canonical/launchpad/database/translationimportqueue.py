@@ -1,4 +1,4 @@
-# Copyright 2005-2008 Canonical Ltd. All rights reserved.
+# Copyright 2005-2009 Canonical Ltd. All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -30,8 +30,8 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPerson, IPOFileSet, IPOTemplateSet, IProduct,
     IProductSeries, ISourcePackage, ITranslationImporter,
     ITranslationImportQueue, ITranslationImportQueueEntry, NotFoundError,
-    RosettaImportStatus, TranslationFileFormat,
-    TranslationImportQueueConflictError)
+    RosettaImportStatus, SpecialTranslationImportTargetFilter,
+    TranslationFileFormat, TranslationImportQueueConflictError)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -886,6 +886,10 @@ class TranslationImportQueue:
                 queries.append(
                     'sourcepackagename = %s' % sqlvalues(
                         target.sourcepackagename))
+            elif target == SpecialTranslationImportTargetFilter.PRODUCT:
+                queries.append('productseries IS NOT NULL')
+            elif target == SpecialTranslationImportTargetFilter.DISTRIBUTION:
+                queries.append('distroseries IS NOT NULL')
             else:
                 raise AssertionError(
                     'Target argument must be one of IPerson, IProduct,'

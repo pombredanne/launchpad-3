@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
 
 """Tests for ISeriesSourcePackageBranch."""
 
@@ -12,7 +12,11 @@ import pytz
 import transaction
 
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
@@ -21,9 +25,18 @@ from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestSeriesSourcePackageBranch(TestCaseWithFactory):
-    """Tests for ISeriesSourcePackageBranch."""
+    """Tests for `ISeriesSourcePackageBranch`."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        person = self.factory.makePerson()
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        removeSecurityProxy(ubuntu_branches).addMember(
+            person, ubuntu_branches.teamowner)
+        login_person(person)
+        self.addCleanup(logout)
 
     def test_new_sets_attributes(self):
         # ISeriesSourcePackageBranchSet.new sets all the defined attributes on
@@ -70,6 +83,23 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
             distroseries, PackagePublishingPocket.RELEASE, sourcepackagename,
             branch, registrant)
         self.assertProvides(sspb, ISeriesSourcePackageBranch)
+
+    def test_cannot_edit_branch_link(self):
+        # You can only edit an ISeriesSourcePackageBranch if you have edit
+        # permissions, which almost no one has.
+        series_set = getUtility(ISeriesSourcePackageBranchSet)
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        registrant = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch()
+        sspb = series_set.new(
+            distroseries, PackagePublishingPocket.RELEASE, sourcepackagename,
+            branch, registrant)
+        logout()
+        login(ANONYMOUS)
+        self.assertRaises(
+            Unauthorized, setattr, sspb, 'pocket',
+            PackagePublishingPocket.BACKPORTS)
 
 
 def test_suite():

@@ -21,20 +21,24 @@ def text_lines_to_set(text):
 
 # zope.testing.doctest: called as part of creating a DocTestSuite.
 permitted_database_imports = text_lines_to_set("""
-    zope.testing.doctest
-    canonical.librarian.db
-    canonical.doap.fileimporter
+    canonical.archivepublisher.deathrow
+    canonical.archivepublisher.domination
     canonical.archivepublisher.ftparchive
     canonical.archivepublisher.publishing
-    canonical.archivepublisher.domination
-    canonical.archivepublisher.deathrow
     canonical.codehosting.inmemory
     canonical.launchpad.browser.branchlisting
     canonical.launchpad.feed.branch
-    canonical.launchpad.vocabularies.dbobjects
+    canonical.launchpad.scripts.garbo
+    canonical.launchpad.scripts.librarian_apache_log_parser
     canonical.launchpad.validators.person
+    canonical.launchpad.vocabularies.dbobjects
     canonical.librarian.client
+    canonical.librarian.db
+    zope.testing.doctest
     """)
+# It's not worth creating a *Set utility for ParsedApacheLog, to be used only
+# in librarian_apache_log_parser, so instead we allow that module to import
+# from launchpad.database above.
 
 
 warned_database_imports = text_lines_to_set("""
@@ -57,6 +61,7 @@ def database_import_allowed_into(module_path):
         - The importer is from within canonical.launchpad.database.
         - The importer is a 'test' module.
         - The importer is in the set of permitted_database_imports.
+        - The importer is within a model module or package.
 
     Note that being in the set of warned_database_imports does not make
     the import allowed.
@@ -64,6 +69,7 @@ def database_import_allowed_into(module_path):
     """
     if (module_path == '__import__ hook' or
         module_path.startswith('canonical.launchpad.database') or
+        '.model' in module_path or
         is_test_module(module_path)):
         return True
     return module_path in permitted_database_imports

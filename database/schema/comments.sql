@@ -1869,6 +1869,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.error_output IS 'Error output from
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
 COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
+COMMENT ON COLUMN Archive.displayname IS 'User defined displayname for this archive.';
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';
@@ -1881,7 +1882,7 @@ COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached fo
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
 COMMENT ON COLUMN Archive.name IS 'The name of the archive.';
-COMMENT ON COLUMN Archive.name IS 'Whether this archive should be published.';
+COMMENT ON COLUMN Archive.publish IS 'Whether this archive should be published.';
 COMMENT ON COLUMN Archive.date_updated IS 'When were the rebuild statistics last updated?';
 COMMENT ON COLUMN Archive.total_count IS 'How many source packages are in the rebuild archive altogether?';
 COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need building?';
@@ -2026,6 +2027,9 @@ COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this en
 COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
 
+-- OpenIdNonce
+COMMENT ON TABLE OpenIdNonce IS 'Nonces for our OpenID consumer.';
+
 -- OpenIdRPConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
 COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';
@@ -2148,6 +2152,16 @@ COMMENT ON TABLE HWTestAnswerCountDevice IS 'Association of accumulated test res
 COMMENT ON COLUMN HWTestAnswerCountDevice.answer IS 'The test answer.';
 COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver combination.';
 
+
+COMMENT ON TABLE HWDMIHandle IS 'A DMI Handle appearing in the DMI data of a submission.';
+COMMENT ON COLUMN HWDMIHandle.handle IS 'The ID of the handle.';
+COMMENT ON COLUMN HWDMIHandle.type IS 'The type of the handle.';
+
+
+COMMENT ON TABLE HWDMIValue IS 'Key/value pairs of DMI data of a handle.';
+COMMENT ON COLUMN HWDMIValue.key IS 'The key.';
+COMMENT ON COLUMN HWDMIValue.value IS 'The value';
+COMMENT ON COLUMN HWDMIValue.handle IS 'The handle to which this key/value pair belongs.';
 
 -- Job
 

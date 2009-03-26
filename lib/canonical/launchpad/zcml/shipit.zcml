@@ -106,6 +106,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipitFrontPageView"
+        layer="canonical.launchpad.layers.ShipItKUbuntuLayer"
         permission="zope.Public"
         name="+index"
         template="../templates/shipit-index.pt" />
@@ -128,19 +129,30 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipItLoginView"
+        class="canonical.launchpad.browser.ShipitOpenIDLoginView"
         permission="zope.Public"
         name="login"
-        template="../templates/shipit-login.pt"
         />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipItLoginForServerCDsView"
+        class="canonical.launchpad.browser.ShipitOpenIDLoginForServerCDsView"
         permission="zope.Public"
         name="login-server"
-        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
-        template="../templates/shipit-login.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipitOpenIDCallbackView"
+        permission="zope.Public"
+        name="callback"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipitOpenIDCallbackForServerCDsView"
+        permission="zope.Public"
+        name="callback-server"
         />
 
     <browser:page
@@ -349,14 +361,11 @@
         template="../templates/shipit-portlet-navigation.pt"
         />
 
-    <browser:addform
+    <browser:page
         name="+new"
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
         facet="overview"
-        schema="canonical.launchpad.interfaces.IStandardShipItRequest"
         class="canonical.launchpad.browser.StandardShipItRequestAddView"
-        fields="flavour quantityx86 quantityamd64 user_description isdefault"
-        label="Create a new standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-new.pt"
         />

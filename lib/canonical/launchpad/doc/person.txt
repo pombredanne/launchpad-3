@@ -713,10 +713,12 @@ address:
     >>> print_people(personset.find('ubuntu'))
     Mirror Administrators (ubuntu-mirror-admins): []
     Sigurd Gartmann (sigurd-ubuntu): [u'sigurd-ubuntu@brogar.org']
+    Ubuntu branches (ubuntu-branches): []
     Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
     Ubuntu Gnome Team (name18): []
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Ubuntu Translators (ubuntu-translators): []
+    Ubuntu-branches-owner (ubuntu-branches-owner): [u'ubuntu-branches-owner@example.com']
 
     >>> print_people(personset.find('steve.alexander'))
     Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']

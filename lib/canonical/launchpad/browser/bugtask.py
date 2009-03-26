@@ -41,8 +41,9 @@ from datetime import datetime, timedelta
 import cgi
 import pytz
 import re
+from simplejson import dumps
 import urllib
-from operator import attrgetter
+from operator import attrgetter, itemgetter
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
@@ -81,6 +82,8 @@ from canonical.launchpad.webapp import (
 from lazr.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
+from canonical.launchpad.interfaces.bugactivity import IBugActivity
+from canonical.launchpad.interfaces.bugmessage import IBugComment
 from canonical.launchpad.interfaces.bugnomination import (
     BugNominationStatus, IBugNominationSet)
 from canonical.launchpad.interfaces.bug import IBug, IBugSet
@@ -585,7 +588,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         # will be prevented from calling methods on the main bug after
         # they unsubscribe from it!
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(self.user)
-        self.context.bug.unsubscribe(self.user)
+        self.context.bug.unsubscribe(self.user, self.user)
 
         self.request.response.addNotification(
             structured(
@@ -609,7 +612,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         # We'll also unsubscribe the other user from dupes of this bug,
         # otherwise they'll keep getting this bug's mail.
-        self.context.bug.unsubscribe(user)
+        self.context.bug.unsubscribe(user, self.user)
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(user)
         self.request.response.addNotification(
             structured(
@@ -696,15 +699,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             # context.
             if IUpstreamBugTask.providedBy(fake_task):
                 # Create a real upstream task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    product=fake_task.product)
+                real_task = fake_task.bug.addTask(
+                    getUtility(ILaunchBag).user, fake_task.product)
             elif IDistroBugTask.providedBy(fake_task):
                 # Create a real distro bug task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    distribution=fake_task.distribution,
-                    sourcepackagename=fake_task.sourcepackagename)
+                real_task = fake_task.bug.addTask(
+                    getUtility(ILaunchBag).user, fake_task.target)
             elif IDistroSeriesBugTask.providedBy(fake_task):
                 self._nominateBug(fake_task.distroseries)
                 return
@@ -767,6 +767,21 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         comments[0].text_for_display = ''
         assert len(comments) > 0, "A bug should have at least one comment."
         return comments
+
+    @property
+    def activity_and_comments(self):
+        interesting_changes = [
+             'security vulnerability', 'summary', 'visibility']
+        activity_and_comments = [
+            {'comment': comment, 'date': comment.datecreated}
+            for comment in self.visible_comments_for_display]
+        activity_and_comments.extend(
+            {'activity': activity, 'date': activity.datechanged}
+            for activity in self.context.bug.activity
+            if activity.whatchanged in interesting_changes)
+
+        activity_and_comments.sort(key=itemgetter('date'))
+        return activity_and_comments
 
     @cachedproperty
     def visible_comments(self):
@@ -849,6 +864,34 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
                 "days if no further activity occurs.")
 
         return message % days_to_expiration
+
+    @property
+    def official_tags(self):
+        """The list of official tags for this bug."""
+        target_official_tags = self.context.target.official_bug_tags
+        return [tag for tag in self.context.bug.tags
+                if tag in target_official_tags]
+
+    @property
+    def unofficial_tags(self):
+        """The list of unofficial tags for this bug."""
+        target_official_tags = self.context.target.official_bug_tags
+        return [tag for tag in self.context.bug.tags
+                if tag not in target_official_tags]
+
+    @property
+    def available_official_tags_js(self):
+        """Return the list of available official tags for the bug as JSON.
+
+        The list comprises of the official tags for all targets for which the
+        bug has a task. It is returned as Javascript snippet, to be ambedded in
+        the bug page.
+        """
+        available_tags = set()
+        for task in self.context.bug.bugtasks:
+            available_tags.update(task.target.official_bug_tags)
+        return 'var available_official_tags = %s;' % dumps(list(sorted(
+            available_tags)))
 
 
 class BugTaskPortletView:

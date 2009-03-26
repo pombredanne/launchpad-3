@@ -34,7 +34,7 @@ __all__ = [
     'IWebServiceLayer',
     ]
 
-from zope.schema import Bool, TextLine
+from zope.schema import Bool, Int, TextLine
 from zope.interface import Attribute, Interface
 # These two should really be imported from zope.interface, but
 # the import fascist complains because they are not in __all__ there.
@@ -42,7 +42,7 @@ from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
 from zope.publisher.interfaces.browser import (
     IBrowserRequest, IDefaultBrowserLayer)
-
+from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 
 # The namespace prefix for LAZR web service-related tags.
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
@@ -357,6 +357,26 @@ class IWebServiceConfiguration(Interface):
         running the webservice. This may be a revision number from version
         control, or a hand-chosen version number.""")
 
+    show_tracebacks = Bool(
+        title=u"Show tracebacks to end-users",
+        default=True,
+        description=u"Whether or not to show tracebacks in an HTTP response "
+        "for a request that raised an exception.")
+
+    default_batch_size = Int(
+        title=u"The default batch size to use when serving a collection",
+        default=50,
+        description=u"When the client requests a collection and doesn't "
+        "specify how many entries they want, this many entries will be "
+        "served them in the first page.")
+
+    max_batch_size = Int(
+        title=u"The maximum batch size",
+        default=300,
+        description=u"When the client requests a batch of entries from "
+        "a collection, they will not be allowed to request more entries "
+        "in the batch than this.")
+
     def createRequest(body_instream, environ):
         """A factory method that creates a request for the web service.
 
@@ -365,6 +385,13 @@ class IWebServiceConfiguration(Interface):
         :param body_instream: A file-like object containing the request
             input stream.
         :param environ: A dict containing the request environment.
+        """
+
+    def get_request_user():
+        """The user who made the current web service request.
+
+        'User' here has whatever meaning it has in your application. This
+        value will be fed back into your code.
         """
 
 
@@ -385,3 +412,5 @@ class IWebBrowserInitiatedRequest(Interface):
     know when a request was initiated by a web browser so that
     responses can be tweaked for their benefit.
     """
+
+InvalidBatchSizeError.__lazr_webservice_error__ = 400

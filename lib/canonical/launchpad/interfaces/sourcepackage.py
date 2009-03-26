@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Source package interfaces."""
@@ -7,18 +7,26 @@ __metaclass__ = type
 
 __all__ = [
     'ISourcePackage',
+    'ISourcePackageFactory',
     'SourcePackageFileType',
     'SourcePackageFormat',
     'SourcePackageRelationships',
     'SourcePackageUrgency',
     ]
 
-from zope.interface import Attribute
-from zope.schema import Object
+from zope.interface import Attribute, Interface
+from zope.schema import Choice, Object, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.component import IComponent
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    call_with, export_as_webservice_entry, export_read_operation,
+    export_write_operation, exported, operation_parameters,
+    operation_returns_entry, REQUEST_USER)
 
 
 class ISourcePackage(IBugTarget):
@@ -27,12 +35,19 @@ class ISourcePackage(IBugTarget):
     interface from the SourcePackage table, with the new table-less
     implementation."""
 
+    export_as_webservice_entry()
+
     id = Attribute("ID")
 
-    name = Attribute("The text name of this source package, from "
-                     "SourcePackageName.")
+    name = exported(
+        TextLine(
+            title=_("Name"), required=True,
+            description=_("The text name of this source package.")))
 
-    displayname = Attribute("A displayname, constructed, for this package")
+    displayname = exported(
+        TextLine(
+            title=_("Display name"), required=True,
+            description=_("A displayname, constructed, for this package")))
 
     path = Attribute("A path to this package, <distro>/<series>/<package>")
 
@@ -46,22 +61,35 @@ class ISourcePackage(IBugTarget):
     distinctreleases = Attribute("Return a distinct list "
         "of sourcepackagepublishinghistory for this source package.")
 
-    distribution = Attribute("Distribution")
+    distribution = exported(
+        Reference(
+            IDistribution, title=_("Distribution"), required=True,
+            description=_("The distribution for this source package.")))
 
-    distroseries = Attribute("The DistroSeries for this SourcePackage")
+    # The interface for this is really IDistroSeries, but importing that would
+    # cause circular imports. Set in _schema_circular_imports.
+    distroseries = exported(
+        Reference(
+            Interface, title=_("Distribution Series"), required=True,
+            description=_("The DistroSeries for this SourcePackage")))
 
     sourcepackagename = Attribute("SourcePackageName")
 
     bugtasks = Attribute("Bug Tasks that reference this Source Package name "
                     "in the context of this distribution.")
 
-    product = Attribute("The best guess we have as to the Launchpad Project "
-                    "associated with this SourcePackage.")
+    product = Attribute(
+        "The best guess we have as to the Launchpad Project associated with "
+        "this SourcePackage.")
 
-    productseries = Attribute("The best guess we have as to the Launchpad "
-                    "ProductSeries for this Source Package. Try find "
-                    "packaging information for this specific distroseries "
-                    "then try parent series and previous ubuntu series.")
+    productseries = exported(
+        Reference(
+            Interface, title=_("Product Series"), required=False,
+            description=_(
+                "The best guess we have as to the Launchpad ProductSeries "
+                "for this Source Package. Try find packaging information for "
+                "this specific distroseries then try parent series and "
+                "previous Ubuntu series.")))
 
     releases = Attribute("The full set of source package releases that "
         "have been published in this distroseries under this source "
@@ -87,6 +115,9 @@ class ISourcePackage(IBugTarget):
         "currently published in this distro series, organised by "
         "pocket. The result is a dictionary, with the pocket dbschema "
         "as a key, and a list of source package releases as the value.")
+
+    development_version = Attribute(
+        "This package on the distro's current series.")
 
     def __getitem__(version):
         """Return the source package release with the given version in this
@@ -119,9 +150,63 @@ class ISourcePackage(IBugTarget):
         and record that it was done by the owner.
         """
 
+    # 'pocket' should actually be a PackagePublishingPocket, but we say
+    # DBEnumeratedType to avoid circular imports. Correct interface specific
+    # in _schema_circular_imports.
+    @operation_parameters(
+        pocket=Choice(
+            title=_("Pocket"), required=True,
+            vocabulary=DBEnumeratedType))
+    # Actually returns an IBranch, but we say Interface here to avoid circular
+    # imports. Correct interface specified in _schema_circular_imports.
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getBranch(pocket):
+        """Get the official branch for this package in the given pocket.
+
+        :param pocket: A `PackagePublishingPocket`.
+        :return: An `IBranch`.
+        """
+
+    # 'pocket' should actually be a PackagePublishingPocket, and 'branch'
+    # should be IBranch, but we use the base classes to avoid circular
+    # imports. Correct interface specific in _schema_circular_imports.
+    @operation_parameters(
+        pocket=Choice(
+            title=_("Pocket"), required=True,
+            vocabulary=DBEnumeratedType),
+        branch=Reference(Interface, title=_("Branch")))
+    @call_with(registrant=REQUEST_USER)
+    @export_write_operation()
+    def setBranch(pocket, branch, registrant):
+        """Set the official branch for the given pocket of this package.
+
+        :param pocket: A `PackagePublishingPocket`.
+        :param branch: The branch to set as the official branch.
+        :param registrant: The individual who created this link.
+        :return: None
+        """
+
+    shouldimport = Attribute("""Whether we should import this or not.
+        By 'import' we mean sourcerer analysis resulting in a manifest and a
+        set of Bazaar branches which describe the source package release.
+        The attribute is True or False.""")
+
     latest_published_component = Object(
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
+
+
+class ISourcePackageFactory(Interface):
+    """A creator of source packages."""
+
+    def new(sourcepackagename, distroseries):
+        """Create a new `ISourcePackage`.
+
+        :param sourcepackagename: An `ISourcePackageName`.
+        :param distroseries: An `IDistroSeries`.
+        :return: `ISourcePackage`.
+        """
 
 
 class SourcePackageFileType(DBEnumeratedType):

@@ -19,7 +19,8 @@ from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.bugtask import (
     BugTaskSet, get_bug_privacy_filter)
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IMasterObject, IMasterStore)
 from canonical.launchpad.interfaces.bugtarget import IOfficialBugTag
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.product import IProduct
@@ -224,6 +225,34 @@ class OfficialBugTagTargetMixin:
     below, class OfficialBugTag.
     """
 
+    def _getOfficialTags(self):
+        """Get the official bug tags as a sorted list of strings."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        if IDistribution.providedBy(self):
+            target_clause = (OfficialBugTag.distribution == self)
+        elif IProduct.providedBy(self):
+            target_clause = (OfficialBugTag.product == self)
+        else:
+            raise AssertionError(
+                '%s is not a valid official bug target' % self)
+        tags = [
+            obt.tag for obt
+            in store.find(OfficialBugTag, target_clause).order_by('tag')]
+        return tags
+
+    def _setOfficialTags(self, tags):
+        """Set the official bug tags from a list of strings."""
+        new_tags = set([tag.lower() for tag in tags])
+        old_tags = set(self.official_bug_tags)
+        added_tags = new_tags.difference(old_tags)
+        removed_tags = old_tags.difference(new_tags)
+        for removed_tag in removed_tags:
+            self.removeOfficialBugTag(removed_tag)
+        for added_tag in added_tags:
+            self.addOfficialBugTag(added_tag)
+
+    official_bug_tags = property(_getOfficialTags, _setOfficialTags)
+
     def _getTag(self, tag):
         """Return the OfficialBugTag record for the given tag, if it exists.
 
@@ -244,9 +273,8 @@ class OfficialBugTagTargetMixin:
         if self._getTag(tag) is None:
             new_tag = OfficialBugTag()
             new_tag.tag = tag
-            new_tag.target = self
-            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-            store.add(new_tag)
+            new_tag.target = IMasterObject(self)
+            IMasterStore(OfficialBugTag).add(new_tag)
 
     def removeOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""
@@ -297,3 +325,4 @@ class OfficialBugTag(Storm):
                 'IDistribution instance or an IProduct instance.')
 
     target = property(target, _settarget, doc=target.__doc__)
+

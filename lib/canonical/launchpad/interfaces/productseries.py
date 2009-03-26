@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Product series interfaces."""
@@ -28,6 +28,8 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
+from canonical.launchpad.interfaces.translations import (
+    TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.validators import LaunchpadValidationError
 
@@ -208,6 +210,19 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             required=False,
             description=_("The Bazaar branch for this series.  Leave blank "
                           "if this series is not maintained in Bazaar.")))
+
+    user_branch = Attribute(
+        _("Backwards compatibility shim for IProductSeries.branch"))
+
+    series_branch = Attribute(
+        _("Backwards compatibility shim for IProductSeries.branch"))
+
+    translations_autoimport_mode = Choice(
+        title=_('Import mode'),
+        vocabulary=TranslationsBranchImportMode,
+        required=True,
+        description=_("Specify which files will be imported from the "
+                      "source code branch."))
 
     def getRelease(version):
         """Get the release in this series that has the specified version.

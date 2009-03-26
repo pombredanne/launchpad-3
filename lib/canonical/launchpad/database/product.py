@@ -47,7 +47,7 @@ from canonical.launchpad.database.commercialsubscription import (
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
-from canonical.launchpad.database.faq import FAQ, FAQSearch
+from lp.answers.model.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import (
     HasMilestonesMixin, Milestone)
@@ -59,7 +59,7 @@ from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.productseries import ProductSeries
-from canonical.launchpad.database.question import (
+from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -75,7 +75,6 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
     NotFoundError)
@@ -85,9 +84,6 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
-from canonical.launchpad.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.interfaces.specification import (
@@ -97,6 +93,13 @@ from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
+
+
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+
 
 def get_license_status(license_approved, license_reviewed, licenses):
     """Decide the license status for an `IProduct`.
@@ -294,17 +297,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     license_approved = BoolCol(dbName='license_approved',
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
-
-    @property
-    def default_stacked_on_branch(self):
-        """See `IProduct`."""
-        default_branch = self.development_focus.branch
-        if default_branch is None:
-            return None
-        elif default_branch.last_mirrored is None:
-            return None
-        else:
-            return default_branch
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):

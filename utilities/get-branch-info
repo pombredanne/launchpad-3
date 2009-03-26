@@ -14,7 +14,8 @@ from zope.component import getUtility
 
 from canonical.codehosting.vfs import branch_id_to_path
 from canonical.config import config
-from canonical.launchpad.interfaces.branch import BranchType, IBranchSet
+from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.publisher import canonical_url
 
@@ -22,8 +23,8 @@ from canonical.launchpad.webapp.publisher import canonical_url
 def main(args):
     branch_url = args[1]
     execute_zcml_for_scripts()
-    branch_set = getUtility(IBranchSet)
-    branch = branch_set.getByUrl(branch_url)
+    branch_lookup = getUtility(IBranchLookup)
+    branch = branch_lookup.getByUrl(branch_url)
     if branch is None:
         print "Could not find branch at %r" % (branch_url,)
         return

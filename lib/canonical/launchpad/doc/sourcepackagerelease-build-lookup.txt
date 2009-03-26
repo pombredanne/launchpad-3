@@ -54,7 +54,7 @@ optionally provide another status.
     >>> evo_build_i386.distroarchseries.architecturetag
     u'i386'
 
-    >>> print evo_build_i386.archive.title
+    >>> print evo_build_i386.archive.displayname
     Primary Archive for Ubuntu Linux
 
 The build record can be retrieved via getBuildByArch on hoary/i386
@@ -194,7 +194,7 @@ contents at the time it was built.
     >>> evo_build_i386_ppa.buildstate.name
     'NEEDSBUILD'
 
-    >>> print evo_build_i386_ppa.archive.title
+    >>> print evo_build_i386_ppa.archive.displayname
     PPA for Celso Providelo
 
 The copied source build lookup in the PPA returns the build created in
@@ -255,7 +255,7 @@ hoary PRIMARY archive.
     >>> print build_primary.title
     i386 build of foo 0.1 in ubuntu hoary RELEASE
 
-    >>> print build_primary.archive.title
+    >>> print build_primary.archive.displayname
     Primary Archive for Ubuntu Linux
 
 Then we can copy source and binary from PRIMARY archive to Celso's PPA:
@@ -281,7 +281,7 @@ bug #181736 report for previous mistakes in this area.
     >>> print cprov_build.title
     i386 build of foo 0.1 in ubuntu hoary RELEASE
 
-    >>> print cprov_build.archive.title
+    >>> print cprov_build.archive.displayname
     Primary Archive for Ubuntu Linux
 
 Another possible situation is when the user wants to rebuild the
@@ -333,7 +333,7 @@ following the build path of the corresponding published binaries.
     >>> print copied_build_candidate.title
     i386 build of foo 0.1 in ubuntu hoary RELEASE
 
-    >>> print copied_build_candidate.archive.title
+    >>> print copied_build_candidate.archive.displayname
     Primary Archive for Ubuntu Linux
 
 Now we can also copy the hoary source and its binary from Celso's PPA
@@ -362,6 +362,6 @@ original build that happened in the primary archive.
     >>> print sabdfl_build.title
     i386 build of foo 0.1 in ubuntu hoary RELEASE
 
-    >>> print sabdfl_build.archive.title
+    >>> print sabdfl_build.archive.displayname
     Primary Archive for Ubuntu Linux
 

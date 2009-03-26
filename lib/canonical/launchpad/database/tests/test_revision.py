@@ -20,8 +20,10 @@ from canonical.launchpad.database.karma import Karma
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
-    IBranchSet, IMasterObject, IRevisionSet)
+    IMasterObject, IRevisionSet)
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 from canonical.testing import DatabaseFunctionalLayer
@@ -251,7 +253,7 @@ class GetPublicRevisionsTestCase(TestCaseWithFactory):
             revision_date=revision_date)
 
     def _addRevisionsToBranch(self, branch, *revs):
-        # Add the revisions to the the branch.
+        # Add the revisions to the branch.
         for sequence, rev in enumerate(revs):
             branch.createBranchRevision(sequence, rev)
 
@@ -455,6 +457,16 @@ class TestGetRecentRevisionsForProduct(GetPublicRevisionsTestCase):
         self.assertEqual([(rev1, rev1.revision_author)],
                          self._getRecentRevisions())
 
+    def testRevisionsMustBeInActiveBranches(self):
+        # The revisions returned revision must be in a branch for the product.
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        branch = self.factory.makeProductBranch(
+            product=self.product,
+            lifecycle_status=BranchLifecycleStatus.MERGED)
+        branch.createBranchRevision(1, self._makeRevision())
+        self.assertEqual([(rev1, rev1.revision_author)],
+                         self._getRecentRevisions())
+
     def testRevisionDateRange(self):
         # Revisions where the revision_date is older than the day_limit, or
         # some time in the future are not returned.
@@ -486,7 +498,7 @@ class TestTipRevisionsForBranches(TestCase):
         for branch in branches:
             factory.makeRevisionsForBranch(branch)
         # Retrieve the updated branches (due to transaction boundaries).
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         self.branches = [branch_set.get(id) for id in branch_ids]
         self.revision_set = getUtility(IRevisionSet)
 
@@ -513,7 +525,7 @@ class TestTipRevisionsForBranches(TestCase):
             self.revision_set.getTipRevisionsForBranches(
                 self.branches[:1]))
         # XXX jamesh 2008-06-02: ensure that branch[0] is loaded
-        self.branches[0].last_scanned_id
+        last_scanned_id = self.branches[0].last_scanned_id
         self._breakTransaction()
         self.assertEqual(1, len(revisions))
         revision = revisions[0]

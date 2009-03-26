@@ -26,6 +26,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
     IRevisionParent, IRevisionProperty, IRevisionSet)
+from canonical.launchpad.interfaces.branch import (
+    DEFAULT_BRANCH_STATUS_IN_LISTING)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.helpers import shortlist
@@ -319,7 +321,7 @@ class RevisionSet:
 
         revision_subselect = Select(
             Min(Revision.id), revision_time_limit(days))
-
+        # Only look in active branches.
         result_set = Store.of(product).find(
             (Revision, RevisionAuthor),
             Revision.revision_author == RevisionAuthor.id,
@@ -327,6 +329,7 @@ class RevisionSet:
             BranchRevision.revision == Revision.id,
             BranchRevision.branch == Branch.id,
             Branch.product == product,
+            Branch.lifecycle_status.is_in(DEFAULT_BRANCH_STATUS_IN_LISTING),
             BranchRevision.revisionID >= revision_subselect)
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
