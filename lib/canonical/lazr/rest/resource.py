@@ -57,13 +57,13 @@ from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IField, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
+from zope.security.management import checkPermission
 from zope.traversing.browser import absoluteURL
 
 from lazr.enum import BaseItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces.fields import (
@@ -559,7 +559,7 @@ class BatchingResourceMixin:
         view_permission = getUtility(IWebServiceConfiguration).view_permission
         resources = [EntryResource(entry, request)
                      for entry in navigator.batch
-                     if check_permission(view_permission, entry)]
+                     if checkPermission(view_permission, entry)]
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }
