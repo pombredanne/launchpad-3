@@ -791,6 +791,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             else:
                 activity_by_date[activity.datechanged] = [activity]
 
+        # Sort all the lists to ensure that changes are written out in
+        # alphabetical order.
+        for date, activity_list in activity_by_date.items():
+            activity_by_date[date] = sorted(
+                activity_list, key=attrgetter('whatchanged'))
+
         return activity_by_date
 
     @cachedproperty
@@ -3149,9 +3155,14 @@ class BugActivityItem:
         diffable_changes = ['summary']
 
         if self.whatchanged in diffable_changes:
-            return get_unified_diff(self.oldvalue, self.newvalue, 72)
+            # If we're going to display it as a diff we replace \ns with
+            # <br />s so that the lines are separated properly.
+            diff = cgi.escape(
+                get_unified_diff(self.oldvalue, self.newvalue, 72), True)
+            return diff.replace("\n", "<br />")
         else:
-            return "%s &#8594; %s" % (self.oldvalue, self.newvalue)
+            return "%s &#8594; %s" % (
+                cgi.escape(self.oldvalue), cgi.escape(self.newvalue))
 
     @property
     def collapsible(self):
