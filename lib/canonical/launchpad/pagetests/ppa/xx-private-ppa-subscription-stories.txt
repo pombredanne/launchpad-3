@@ -282,8 +282,8 @@ is displayed
     >>> print(extract_text(regeneration_info))
     Your personal subscription security
     If you believe...
-    Note: after regenerating your personal subscription...
-    Generate new personal subscription
+    Note: after creating a new password for your personal subscription...
+    Generate new password
 
 
 When Joe clicks on the 'Generate new personal subscription' link
@@ -292,8 +292,9 @@ then the page is redisplayed with new sources.list entries and a notification.
     >>> joe_browser.getControl(name='regenerate').click()
     >>> for msg in get_feedback_messages(joe_browser.contents):
     ...     print msg
-    Your personal subscription to 'Private PPA for Celso Providelo' has
-    been regenerated. Please update your custom sources.list as described
+    A new password for your personal subscription to 'Private PPA for
+    Celso Providelo' has been created.
+    Please update your custom sources.list as described
     below.
 
 

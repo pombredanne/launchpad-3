@@ -50,16 +50,17 @@
     <div id="regenerate_token">
       <h2>Your personal subscription security</h2>
       <p>If you believe the security of your personal subscription
-         above has been compromised, you can generate a new subscription,
-         canceling the above entries.
+         above has been compromised, you can generate a new password
+         for your subscription, canceling the above entries.
       </p>
-      <p>Note: after regenerating your personal subscription, you
+      <p>Note: after creating a new password for your personal subscription
+      and updating your sources.list with the new entries, you
       will need to wait for up to ten minutes before you can download
-      using the new subscription.
+      using the new password.
       </p>
       <form action="" method="post">
         <button type="submit" name="regenerate" value="1">
-          Generate new personal subscription
+          Generate new password
         </button>
       </form>
     </div>
