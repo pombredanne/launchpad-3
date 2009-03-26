@@ -329,8 +329,8 @@ class Branch(SQLBase):
     @property
     def bzr_identity(self):
         """See `IBranch`."""
-        # XXX: JonathanLange 2009-03-19 spec=package-branches: This should not
-        # dispatch on product is None
+        # XXX: JonathanLange 2009-03-19 spec=package-branches bug=345740: This
+        # should not dispatch on product is None.
         if self.product is not None:
             series_branch = self.product.development_focus.series_branch
             is_dev_focus = (series_branch == self)

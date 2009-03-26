@@ -40,7 +40,8 @@ from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     NameLookupFailed, NotFoundError)
-from canonical.launchpad.xmlrpc import faults, return_fault
+from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.xmlrpc.helpers import return_fault
 from canonical.launchpad.webapp.interaction import Participation
 
 
