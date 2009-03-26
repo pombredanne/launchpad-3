@@ -548,8 +548,7 @@ attribute for the values to use in the activity log.
     >>> from canonical.launchpad.components.bugchange import (
     ...     BugTaskTargetChange)
 
-    >>> new_target = factory.makeProduct(
-    ...     name="magrathea", displayname="Magrathea")
+    >>> new_target = factory.makeProduct(name="magrathea")
 
     >>> target_change = BugTaskTargetChange(
     ...     bug_task=example_bug_task, when=nowish, person=example_person,
@@ -563,4 +562,4 @@ attribute for the values to use in the activity log.
 
     >>> notification_text = target_change.getBugNotification()['text']
     >>> print notification_text #doctest: -NORMALIZE_WHITESPACE
-    ** Retargetted: Heart of Gold => Magrathea
+    ** Project changed: heart-of-gold => magrathea
