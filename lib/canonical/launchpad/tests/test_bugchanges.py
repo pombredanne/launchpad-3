@@ -1126,7 +1126,7 @@ class TestBugChanges(unittest.TestCase):
             }
 
         self.assertRecordedChange(
-            expected_activity=status_activity,
+            expected_activity=[status_activity, conversion_activity],
             expected_notification=[status_notification,
                                    conversion_notification])
 

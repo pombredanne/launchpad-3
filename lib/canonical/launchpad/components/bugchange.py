@@ -114,7 +114,6 @@ class BugConvertedToQuestion(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
-        return None
         return dict(
             whatchanged='converted to question',
             newvalue=str(self.question.id))
