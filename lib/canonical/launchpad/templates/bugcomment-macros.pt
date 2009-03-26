@@ -134,34 +134,26 @@
   <div class="boardCommentDetails">
     <span
       style="float: right;"
-      tal:attributes="title activity/datechanged/fmt:datetime"
-      tal:content="activity/datechanged/fmt:displaydate">
+      tal:attributes="title activity_date/fmt:datetime"
+      tal:content="activity_date/fmt:displaydate">
       7 minutes ago
     </span>
     <tal:activity_has_person>
-      <tal:activity_person replace="structure activity/person/fmt:link" />
+      <tal:activity_person replace="structure activity_person/fmt:link" />
     </tal:activity_has_person>
   </div>
   <div class="boardCommentBody">
     <div class="bug-comment">
-      <tal:uncollapsible-change condition="not: activity/collapsible">
-        <p>
-          <tal:change-summary replace="structure activity/change_summary" />:
-          <tal:change-details replace="structure activity/change_details" />
-        </p>
-      </tal:uncollapsible-change>
-
-      <tal:collapsible-change condition="activity/collapsible">
-        <p>
-          <tal:change-summary replace="structure activity/change_summary" />:
-        </p>
-        <p>
-          <span class="foldable">
-            <tal:change-details
-                replace="structure activity/change_details/fmt:nl_to_br" />
-          </span>
-        </p>
-      </tal:collapsible-change>
+      <table style="margin-bottom: 1em; margin-top: 0.5em;">
+        <tr tal:repeat="activity activity_list">
+          <td style="text-align: right;">
+            <tal:summary replace="structure activity/change_summary" />:
+          </td>
+          <td>
+            <tal:details replace="structure activity/change_details" />
+          </td>
+        </tr>
+      </table>
     </div>
   </div>
 </div>

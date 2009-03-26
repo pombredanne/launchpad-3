@@ -836,10 +836,10 @@ by their datechanged property.
     >>> activity_and_comments = view.activity_and_comments
     >>> for activity_or_comment in activity_and_comments:
     ...     if 'activity' in activity_or_comment:
-    ...         activity = activity_or_comment['activity']
-    ...         print "%s: %s => %s" % (
-    ...             activity.whatchanged, activity.oldvalue,
-    ...             activity.newvalue)
+    ...         for activity in activity_or_comment['activity']:
+    ...             print "%s: %s => %s" % (
+    ...                 activity.whatchanged, activity.oldvalue,
+    ...                 activity.newvalue)
     ...     if 'comment' in activity_or_comment:
     ...         comment = activity_or_comment['comment']
     ...         print comment.text_for_display

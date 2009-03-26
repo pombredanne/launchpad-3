@@ -776,8 +776,15 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         The `BugActivityItem`s will be grouped by the date on which they
         occurred.
         """
+        interesting_changes = [
+             'security vulnerability', 'summary', 'visibility']
         activity_by_date = {}
+
         for activity in self.context.bug.activity:
+            # If we're not interested in the change, skip it.
+            if activity.whatchanged not in interesting_changes:
+                continue
+
             activity = BugActivityItem(activity)
             if activity.datechanged in activity_by_date:
                 activity_by_date[activity.datechanged].append(activity)
@@ -788,16 +795,13 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     @cachedproperty
     def activity_and_comments(self):
-        interesting_changes = [
-             'security vulnerability', 'summary', 'visibility']
         activity_and_comments = [
             {'comment': comment, 'date': comment.datecreated}
             for comment in self.visible_comments_for_display]
         activity_and_comments.extend(
-            {'activity': BugActivityItem(activity),
-             'date': activity.datechanged}
-            for activity in self.context.bug.activity
-            if activity.whatchanged in interesting_changes)
+            {'activity': activity_list, 'date': date,
+             'person': activity_list[0].person}
+            for date, activity_list in self.activity_by_date.items())
 
         activity_and_comments.sort(key=itemgetter('date'))
         return activity_and_comments

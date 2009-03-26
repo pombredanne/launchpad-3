@@ -70,7 +70,8 @@ that have been added.
     --------
     ... ago Foo Bar
     summary changed:
-    Nonsensical bugs are useless &#8594; A new title for this bug
+    - Nonsensical bugs are useless
+    + A new title for this bug
     --------
 
 Alterations to a bug's privacy will show up as 'visibility' changes.
@@ -88,7 +89,8 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
     --------
     ... ago Foo Bar
     summary changed:
-    Nonsensical bugs are useless &#8594; A new title for this bug
+    - Nonsensical bugs are useless
+    + A new title for this bug
     --------
     ... ago Foo Bar
     visibility changed:
@@ -111,7 +113,8 @@ vulnerability' changes, with values of 'yes' or 'no'.
     --------
     ... ago Foo Bar
     summary changed:
-    Nonsensical bugs are useless &#8594; A new title for this bug
+    - Nonsensical bugs are useless
+    + A new title for this bug
     --------
     ... ago Foo Bar
     visibility changed:
