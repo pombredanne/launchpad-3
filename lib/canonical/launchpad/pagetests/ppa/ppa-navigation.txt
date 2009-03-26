@@ -19,7 +19,7 @@ While navigating around the PPA the "structural location" remains the
 "PPA owner":
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Celso Providelo > default PPA
+    Hierarchy: Launchpad > Celso Providelo > PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov
@@ -41,7 +41,7 @@ the 'View build records' link.
 
 The user could return to the 'PPA' overview by using the breadcrumb link.
 
-    >>> print anon_browser.getLink('default PPA').url
+    >>> print anon_browser.getLink('PPA').url
     http://launchpad.dev/%7Ecprov/+archive/ppa
 
 The user can navigate to an individual build details:
@@ -53,7 +53,7 @@ The user can navigate to an individual build details:
     'i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Celso Providelo > default PPA
+    Hierarchy: Launchpad > Celso Providelo > PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov

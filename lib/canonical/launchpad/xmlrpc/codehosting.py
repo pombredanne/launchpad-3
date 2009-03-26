@@ -24,10 +24,11 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.branch import (
-    BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
+    BranchType, BranchCreationException, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
+from canonical.launchpad.interfaces import branchpuller
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
     LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
@@ -88,7 +89,8 @@ class BranchPuller(LaunchpadXMLRPCView):
         except KeyError:
             raise UnknownBranchTypeError(
                 'Unknown branch type: %r' % (branch_type,))
-        branches = getUtility(IBranchSet).getPullQueue(branch_type)
+        branches = getUtility(branchpuller.IBranchPuller).getPullQueue(
+            branch_type)
         return [self._getBranchPullInfo(branch) for branch in branches]
 
     def mirrorComplete(self, branch_id, last_revision_id):
