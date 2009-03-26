@@ -272,6 +272,17 @@ class TestScriptRunning(TestCase):
     layer = DatabaseFunctionalLayer
 
     def test_script_run(self):
+        # Before we run the script, the LibraryFileAliases with id 1, 2 and 3
+        # will have download counts set to 0.  After the script's run, each of
+        # them will have their download counts set to 1, matching the sample
+        # log files we use for this test:
+        # scripts/tests/apache-log-files-for-sampledata.
+        login(ANONYMOUS)
+        libraryfile_set = getUtility(ILibraryFileAliasSet)
+        self.assertEqual(libraryfile_set[1].hits, 0)
+        self.assertEqual(libraryfile_set[2].hits, 0)
+        self.assertEqual(libraryfile_set[3].hits, 0)
+
         process = subprocess.Popen(
             'cronscripts/parse-librarian-apache-access-logs.py', shell=True,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -283,8 +294,6 @@ class TestScriptRunning(TestCase):
         # Must commit because the changes were done in another transaction.
         import transaction
         transaction.commit()
-        login(ANONYMOUS)
-        libraryfile_set = getUtility(ILibraryFileAliasSet)
         self.assertEqual(libraryfile_set[1].hits, 1)
         self.assertEqual(libraryfile_set[2].hits, 1)
         self.assertEqual(libraryfile_set[3].hits, 1)
