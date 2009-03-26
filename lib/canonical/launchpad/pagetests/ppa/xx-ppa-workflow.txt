@@ -395,7 +395,7 @@ PPA overview page and discards the changes.
 
     >>> admin_browser.getControl("Cancel").click()
     >>> print admin_browser.title
-    Private PPA for Carlos Perelló Marín
+    PPA for Carlos Perelló Marín
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.whiteboard").value = (
@@ -403,7 +403,7 @@ PPA overview page and discards the changes.
     >>> admin_browser.getControl("Cancel").click()
 
     >>> print admin_browser.title
-    Private PPA for Carlos Perelló Marín
+    PPA for Carlos Perelló Marín
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))

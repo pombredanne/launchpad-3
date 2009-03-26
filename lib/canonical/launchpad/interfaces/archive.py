@@ -104,6 +104,11 @@ class IArchivePublic(IHasOwner):
             constraint=name_validator,
             description=_("The name of this archive.")))
 
+    displayname = exported(
+        TextLine(
+            title=_("Displayname"), required=False,
+            description=_("Displayname for this archive.")))
+
     enabled = Bool(
         title=_("Enabled"), required=False,
         description=_("Whether the archive is enabled or not."))
@@ -173,9 +178,6 @@ class IArchivePublic(IHasOwner):
 
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
-
-    displayname = exported(
-        Text(title=_("Archive displayname."), required=False))
 
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
