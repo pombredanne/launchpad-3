@@ -365,18 +365,22 @@ function update_bug_duplicate(data) {
 
         <div id="bug-description" tal:content="structure description" />
 
-          <div id="bug-tags" tal:condition="context/bug/tags"
-               style="width: 45%: text-align: left; float: left;">
+          <div id="bug-tags" style="width: 45%: text-align: left; float: left;">
             Tags:
             <span id="tag-list">
-              <a tal:repeat="tag view/official_tags"
-                 tal:content="tag"
-                 class="official-tag"
-                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
-              <a tal:repeat="tag view/unofficial_tags"
-                 tal:content="tag"
-                 class="unofficial-tag"
-                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+              <tal:if condition="context/bug/tags" omit-tag="">
+                <a tal:repeat="tag view/official_tags"
+                   tal:content="tag"
+                   class="official-tag"
+                   tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+                <a tal:repeat="tag view/unofficial_tags"
+                   tal:content="tag"
+                   class="unofficial-tag"
+                   tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+              </tal:if>
+              <tal:else condition="not: context/bug/tags" omit-tag="">
+                <span class="unofficial-tag">untugged</span>
+              </tal:else>
             </span>
             <form id="tags-form" style="display: inline">
                 <input type="text" id="tag-input" style="display: none; width: 25em;" />

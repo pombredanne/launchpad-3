@@ -1148,6 +1148,7 @@ a.unofficial-tag {
   color: #333;
 }
 
+/* Force the autocomplete widget to show on top of everything else */
 .yui-autocomplete {
   z-index: 1;
 }
