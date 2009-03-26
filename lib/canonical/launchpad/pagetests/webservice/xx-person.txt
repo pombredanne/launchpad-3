@@ -36,6 +36,7 @@ for teams (as they're defined in the ITeam interface).
     open_membership_invitations_collection_link: u'http://.../~salgado/open_membership_invitations'
     participants_collection_link: u'http://.../~salgado/participants'
     preferred_email_address_link: u'http://.../~salgado/+email/guilherme.salgado@canonical.com'
+    private: False
     proposed_members_collection_link: u'http://.../~salgado/proposed_members'
     resource_type_link: u'http://.../#person'
     self_link: u'http://.../~salgado'
@@ -78,6 +79,7 @@ for teams (as they're defined in the ITeam interface).
     open_membership_invitations_collection_link: u'http://.../~ubuntu-team/open_membership_invitations'
     participants_collection_link: u'http://.../~ubuntu-team/participants'
     preferred_email_address_link: u'http://.../~ubuntu-team/+email/support@ubuntu.com'
+    private: False
     proposed_members_collection_link: u'http://.../~ubuntu-team/proposed_members'
     renewal_policy: u'invite them to apply for renewal'
     resource_type_link: u'http://.../#team'
