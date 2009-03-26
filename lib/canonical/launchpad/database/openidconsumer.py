@@ -3,7 +3,7 @@
 """OpenID Consumer related database classes."""
 
 __metaclass__ = type
-__all__ = ['LaunchpadOpenIDNonce']
+__all__ = ['OpenIDConsumerNonce']
 
 from openid.store.sqlstore import PostgreSQLStore
 import psycopg2
@@ -25,7 +25,7 @@ class OpenIDConsumerNonce(Storm):
     id column and the timestamp is an epoch time integer rather than a
     datetime.
     """
-    __storm_table__ = "LaunchpadOpenIDNonce"
+    __storm_table__ = "OpenIDConsumerNonce"
     __storm_primary__ = "server_url", "timestamp", "salt"
 
     server_url = Unicode()
