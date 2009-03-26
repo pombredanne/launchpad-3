@@ -135,17 +135,17 @@ class TranslationBranchApprover(object):
         if not self.is_approval_possible:
             return entry
         potemplate = None
-        # Path must provide a translation domain.
-        domain = self.makeDomain(entry.path)
-        if domain == '':
-            return entry
         # Path must be a template path.
         if not self._potemplates.has_key(entry.path):
             return entry
 
+        domain = self.makeDomain(entry.path)
         if self._potemplates[entry.path] is None:
             if self.unmatched_objects > 0:
                 # Unmatched entries in database, do not approve.
+                return entry
+            # Path must provide a translation domain.
+            if domain == '':
                 return entry
             # No (possibly) matching entry found: create one.
             name = self.makeName(domain)
@@ -156,7 +156,8 @@ class TranslationBranchApprover(object):
             # A matching entry is found, the import can be approved.
             potemplate = self._potemplates[entry.path]
             potemplate.path = entry.path
-            potemplate.translation_domain = domain
+            if domain != '':
+                potemplate.translation_domain = domain
 
         # Approve the entry
         entry.potemplate = potemplate
