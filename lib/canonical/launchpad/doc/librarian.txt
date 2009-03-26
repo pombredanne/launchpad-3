@@ -592,11 +592,50 @@ care of creating/updating the necessary LibraryFileDownloadCount entries.
     >>> public_file.hits
     1
 
-    >>> japan = country_set['JP']
-    >>> public_file.updateDownloadCount(november_1st_2006, japan, count=1)
-    >>> public_file.hits
-    2
+This was the first hit for that file from Brazil on 2006 November first, so a
+new LibraryFileDownloadCount was created.
 
-    >>> public_file.updateDownloadCount(november_1st_2006, brazil, count=1)
+    >>> from canonical.launchpad.database.librarian import (
+    ...     LibraryFileDownloadCount)
+    >>> from storm.locals import Store
+    >>> store = Store.of(public_file)
+    >>> brazil_entry = store.find(
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=brazil, day=november_1st_2006).one()
+    >>> brazil_entry.count
+    1
+
+Below we simulate a hit from Japan on that same day, which will also create a
+new LibraryFileDownloadCount.
+
+    >>> japan = country_set['JP']
+    >>> public_file.updateDownloadCount(november_1st_2006, japan, count=3)
     >>> public_file.hits
+    4
+
+    >>> japan_entry = store.find(
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=japan, day=november_1st_2006).one()
+    >>> japan_entry.count
     3
+
+If there's another hit from Brazil on the same day, the existing entry will be
+updated.
+
+    >>> public_file.updateDownloadCount(november_1st_2006, brazil, count=2)
+    >>> public_file.hits
+    6
+    >>> brazil_entry.count
+    3
+
+If the hit happened on a different day, a separate entry would be created.
+
+    >>> november_2nd_2006 = datetime(2006, 11, 2)
+    >>> public_file.updateDownloadCount(november_2nd_2006, brazil, count=10)
+    >>> public_file.hits
+    16
+    >>> brazil_entry2 = store.find(
+    ...     LibraryFileDownloadCount, libraryfilealias=public_file,
+    ...     country=brazil, day=november_2nd_2006).one()
+    >>> brazil_entry2.count
+    10
