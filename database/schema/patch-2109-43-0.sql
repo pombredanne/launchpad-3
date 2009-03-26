@@ -39,4 +39,4 @@ UPDATE Archive SET displayname = ('Partner Archive for ' || d.title)
 ALTER TABLE Archive ALTER COLUMN displayname SET NOT NULL;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 43, 0);
