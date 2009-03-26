@@ -5,12 +5,15 @@
 __metaclass__ = type
 __all__ = [
     'BazaarBranchStore',
+    'BzrSvnImportWorker',
     'CSCVSImportWorker',
     'CodeImportSourceDetails',
     'ForeignTreeStore',
+    'GitImportWorker',
     'ImportWorker',
     'get_default_bazaar_branch_store',
-    'get_default_foreign_tree_store']
+    'get_default_foreign_tree_store',
+    ]
 
 
 import os
@@ -117,9 +120,12 @@ class CodeImportSourceDetails:
     :ivar branch_id: The id of the branch associated to this code import, used
         for locating the existing import and the foreign tree.
     :ivar rcstype: 'svn' or 'cvs' as appropriate.
-    :ivar svn_branch_url: The branch URL if rcstype == 'svn', None otherwise.
+    :ivar svn_branch_url: The branch URL if rcstype in ['svn', 'bzr-svn'],
+        None otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
+    :ivar git_repo_url: The URL of the git repo, if rcstype == 'git', None,
+        otherwise.
     """
 
     def __init__(self, branch_id, rcstype, svn_branch_url=None, cvs_root=None,
@@ -361,7 +367,8 @@ class CSCVSImportWorker(ImportWorker):
             and updated during the import process.
         :param logger: A `Logger` to pass to cscvs.
         """
-        ImportWorker.__init__(self, source_details, bazaar_branch_store, logger)
+        ImportWorker.__init__(
+            self, source_details, bazaar_branch_store, logger)
         self.foreign_tree_store = foreign_tree_store
 
 
@@ -430,7 +437,11 @@ class CSCVSImportWorker(ImportWorker):
 
 
 class PullingImportWorker(ImportWorker):
-    """An import worker for imports that can be done by a bzr plugin."""
+    """An import worker for imports that can be done by a bzr plugin.
+
+    Subclasses should override __init__ to set `pull_url` from the
+    source_details as appropriate.
+    """
 
     # XXX 2009-03-05, MichaelHudson, bug=338061: There should be a way to find
     # the 'default' rich-root format.
@@ -439,7 +450,40 @@ class PullingImportWorker(ImportWorker):
     def _doImport(self):
         bazaar_tree = self.getBazaarWorkingTree()
         bazaar_tree.branch.pull(
-            Branch.open(self.source_details.git_repo_url),
-            overwrite=True)
+            Branch.open(self.pull_url), overwrite=True)
         self.bazaar_branch_store.push(
             self.source_details.branch_id, bazaar_tree, self.required_format)
+
+
+class GitImportWorker(PullingImportWorker):
+    """XXX."""
+
+    def __init__(self, source_details, bazaar_branch_store, logger):
+        """Construct a `GitImportWorker`.
+
+        :param source_details: A `CodeImportSourceDetails` object.
+        :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
+            uses this to fetch and store the Bazaar branches that are created
+            and updated during the import process.
+        :param logger: A `Logger` to pass to cscvs.
+        """
+        ImportWorker.__init__(
+            self, source_details, bazaar_branch_store, logger)
+        self.pull_url = source_details.git_repo_url
+
+
+class BzrSvnImportWorker(PullingImportWorker):
+    """XXX."""
+
+    def __init__(self, source_details, bazaar_branch_store, logger):
+        """Construct a `BzrSvnImportWorker`.
+
+        :param source_details: A `CodeImportSourceDetails` object.
+        :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
+            uses this to fetch and store the Bazaar branches that are created
+            and updated during the import process.
+        :param logger: A `Logger` to pass to cscvs.
+        """
+        ImportWorker.__init__(
+            self, source_details, bazaar_branch_store, logger)
+        self.pull_url = source_details.svn_branch_url
