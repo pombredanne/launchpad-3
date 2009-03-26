@@ -6,14 +6,18 @@ __metaclass__ = type
 __all__ = []
 
 import os
+import doctest
 
 from zope.app.publication.zopepublication import ZopePublication
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
 from zope.app.testing.functional import FunctionalTestSetup
 from zope.configuration import xmlconfig
 from canonical.lazr.testing.layers import MockRootFolder
 
+DOCTEST_FLAGS = (
+    doctest.ELLIPSIS |
+    doctest.NORMALIZE_WHITESPACE |
+    doctest.REPORT_NDIFF)
 
 def setUp(test):
     """Set up the functional layer for LAZR tests."""
@@ -37,5 +41,5 @@ def test_suite():
         [name
          for name in os.listdir(os.path.dirname(__file__))
          if name.endswith('.txt')])
-    return LayeredDocFileSuite(
-        stdout_logging=True, setUp=setUp, tearDown=tearDown, *tests)
+    return doctest.DocFileSuite(
+        setUp=setUp, tearDown=tearDown, optionflags=DOCTEST_FLAGS, *tests)
