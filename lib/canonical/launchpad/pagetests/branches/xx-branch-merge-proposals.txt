@@ -63,7 +63,7 @@ There is a cancel link shown with the buttons.
 Registering the merge proposal takes the user to the new merge proposal.
 
     >>> print nopriv_browser.url
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/...
 
 
 == Editing a commit message ==
@@ -84,7 +84,7 @@ commit message can be set.
     ...         browser.contents, 'proposal-summary'))
     >>> print_summary(nopriv_browser)
     Status: Needs review
-    Proposed by: No Privileges Person 0 seconds ago
+    Proposed by: No Privileges Person ...
     Proposed branch: lp://dev/~name12/gnome-terminal/klingon
     Merge into: lp://dev/~name12/gnome-terminal/main
     Commit message: Add more mojo
