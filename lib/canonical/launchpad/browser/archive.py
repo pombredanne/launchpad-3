@@ -1330,45 +1330,51 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
 
 class ArchiveActivateView(LaunchpadFormView):
-    """PPA activation view class.
-
-    Ensure user has accepted the PPA Terms of Use by clicking in the
-    'accepted' checkbox.
-
-    It redirects to PPA page when PPA is already activated.
-    """
+    """PPA activation view class."""
 
     schema = IPPAActivateForm
     custom_widget('description', TextAreaWidget, height=3)
 
-    def initialize(self):
-        """Redirects user to the PPA page if it is already activated."""
-        LaunchpadFormView.initialize(self)
-        self.distribution = getUtility(ILaunchpadCelebrities).ubuntu
+    def setUpFields(self):
+        """Override `LaunchpadFormView`.
+
+        Reorder the fields in a way the make more sense to users and also
+        ommit 'name' if the user is creating his first PPA.
+        """
+        LaunchpadFormView.setUpFields(self)
+
         if self.context.archive is not None:
-            self.request.response.redirect(
-                canonical_url(self.context.archive))
+            self.form_fields = self.form_fields.select(
+                'name', 'accepted', 'description')
+        else:
+            self.form_fields = self.form_fields.select(
+                'accepted', 'description')
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
-        if len(self.errors) == 0:
-            if not data.get('accepted'):
-                self.addError(
-                    "PPA Terms of Service must be accepted to activate "
-                    "your PPA.")
+        if len(self.errors) > 0:
+            return
+
+        proposed_name = data.get('name')
+        if self.context.getPPAByName(proposed_name):
+            self.setFieldError(
+                'name', "You already have a PPA named '%s'" % proposed_name)
+
+        if not data.get('accepted'):
+            self.setFieldError(
+                'accepted',
+                "PPA Terms of Service must be accepted to activate a PPA.")
 
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
-        """Activate PPA and moves to its page."""
-        if self.context.archive is None:
-            getUtility(IArchiveSet).new(
-                owner=self.context, purpose=ArchivePurpose.PPA,
-                description=data['description'], distribution=None)
-        self.next_url = canonical_url(self.context.archive)
-
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        self.next_url = canonical_url(self.context)
+        """Activate a PPA and moves to its page."""
+        # 'name' field is ommited from the formdata for default PPAs and
+        # it's dealt by IArchive.new(), which will use the default PPA name.
+        name = data.get('name', None)
+        ppa = getUtility(IArchiveSet).new(
+            owner=self.context, purpose=ArchivePurpose.PPA,
+            name=name, description=data['description'])
+        self.next_url = canonical_url(ppa)
 
 
 class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
