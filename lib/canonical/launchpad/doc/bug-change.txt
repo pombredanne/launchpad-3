@@ -276,6 +276,31 @@ within the UI.
     summary
 
 
+=== BugDuplicateChange ===
+
+This describes a change to the duplicate marker for a bug.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugDuplicateChange)
+
+    >>> duplicate_bug = factory.makeBug(title="Fish can't walk")
+
+    >>> bug_duplicate_change = BugDuplicateChange(
+    ...     when=nowish, person=example_person,
+    ...     what_changed='duplicateof', old_value=None,
+    ...     new_value=duplicate_bug)
+    >>> print bug_duplicate_change.getBugNotification()['text']
+    ** This bug has been marked a duplicate of bug ...
+       Fish can't walk
+
+BugDuplicateChange overrides getBugActivity() to customize all the
+returned fields.
+
+    >>> print pretty(bug_duplicate_change.getBugActivity())
+    {'newvalue': '...',
+     'whatchanged': 'marked as duplicate'}
+
+
 === BugVisibilityChange ===
 
 BugVisibilityChange is used to represent a change in a Bug's `private`
