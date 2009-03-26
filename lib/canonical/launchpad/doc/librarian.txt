@@ -572,7 +572,7 @@ LibraryFileDownloadCount table, broken down by day and country, but there's
 also a 'hits' attribute on ILibraryFileAlias, which holds the total number of
 times that file has been downloaded.
 
-The count starts at 0, and cannot be change directly.
+The count starts at 0, and cannot be changed directly.
 
     >>> public_file.hits
     0
