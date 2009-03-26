@@ -77,8 +77,8 @@ class PlacelessAuthUtility:
             person_id = authdata.get('personid')
             if person_id is not None:
                 person = getUtility(IPersonSet).get(person_id)
-                if person is not None and person.account is not None:
-                    id = person.account.id
+                if person is not None and person.accountID is not None:
+                    id = person.accountID
 
         if id is None:
             return None
