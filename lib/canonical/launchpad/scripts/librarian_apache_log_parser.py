@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 
 from datetime import datetime
+import gzip
+import pytz
 import os
 
 from zope.component import getUtility
@@ -13,6 +15,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
+DBUSER = 'librarianlogparser'
 parser = apachelog.parser(apachelog.formats['extended'])
 
 
@@ -30,8 +33,11 @@ def get_files_to_parse(root, file_names):
     for file_name in file_names:
         file_path = os.path.join(root, file_name)
         file_size = os.path.getsize(file_path)
-        fd = open(file_path)
-        first_line = unicode(fd.readline().strip())
+        if file_name.endswith('.gz'):
+            fd = gzip.open(file_path)
+        else:
+            fd = open(file_path)
+        first_line = unicode(fd.readline())
         parsed_file = store.find(ParsedApacheLog, first_line=first_line).one()
         position = 0
         if parsed_file is not None:
@@ -102,6 +108,18 @@ def parse_file(fd, start_position):
         country_daily_downloads[file_id] += 1
 
     return downloads, parsed_bytes
+
+
+def create_or_update_parsedlog_entry(first_line, parsed_bytes):
+    """Create or update the ParsedApacheLog with the given first_line."""
+    first_line = unicode(first_line)
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    parsed_file = store.find(ParsedApacheLog, first_line=first_line).one()
+    if parsed_file is None:
+        ParsedApacheLog(first_line, parsed_bytes)
+    else:
+        parsed_file.bytes_read = parsed_bytes
+        parsed_file.date_last_parsed = datetime.now(pytz.UTC)
 
 
 def get_day(date):
