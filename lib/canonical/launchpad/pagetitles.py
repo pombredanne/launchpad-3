@@ -135,7 +135,7 @@ archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
 
 archive_index = ContextDisplayName('%s')
 
-archive_subscriber_edit = ContextTitle('Edit %s')
+archive_subscriber_edit = ContextDisplayName('Edit %s')
 
 archive_subscribers = ContextDisplayName('Manage subscriptions for %s')
 
@@ -880,6 +880,8 @@ people_newteam = 'Register a new team in Launchpad'
 people_requestmerge = 'Merge Launchpad accounts'
 
 people_requestmerge_multiple = 'Merge Launchpad accounts'
+
+person_archive_subscription = ContextDisplayName('%s')
 
 person_archive_subscriptions = ContextDisplayName(
     'Private archive subscriptions for %s')

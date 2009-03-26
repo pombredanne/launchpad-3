@@ -1,0 +1,69 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+  >
+<body>
+
+  <div metal:fill-slot="main">
+    <h1 tal:content="CONTEXTS/fmt:pagetitle">
+      Archive subscription for Joe Smith's private archive.
+    </h1>
+
+  <tal:activate condition="not: view/active_token">
+    <p>You have been subscribed to the archive
+      <tal:archive_name content="context/archive/displayname">
+        Private PPA for Joe Smith
+      </tal:archive_name>. Please confirm this subscription if you wish
+      to download software from this archive.
+    </p>
+    <form action="" method="post">
+      <button type="submit" name="activate" value="1">
+       Confirm subscription
+      </button>
+    </form>
+  </tal:activate>
+  <tal:active condition="view/active_token">
+    <div id="sources_list">
+      <h2>Custom sources.list entries</h2>
+      <p>The following sources.list entries will enable you to download
+         software from 
+        <tal:archive_name content="context/archive/displayname">
+          Private PPA for Joe Smith
+        </tal:archive_name>.
+      </p>
+      <p>You are recommended to copy these into a file such as:
+         /etc/apt/sources.list.d/private_ppa_sources.list . See
+         <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20Private%20PPA%20to%20your%20Ubuntu%20repositories"
+          >adding a private PPA to your Ubuntu repositories</a> for more details.
+          Note: it can take up to ten minutes after confirmation until you
+          will be able to download with the entries below.
+      </p>
+      <pre id="sources-list-entries" tal:content="view/private_ppa_sources_list" />
+    </div>
+    <div id="regenerate_token">
+      <h2>Your personal subscription security</h2>
+      <p>If you believe the security of your personal subscription
+         above has been compromised, you can generate a new subscription,
+         canceling the above entries.
+      </p>
+      <p>Note: after regenerating your personal subscription, you
+      will need to wait for up to ten minutes before you can download
+      using the new subscription.
+      </p>
+      <form action="" method="post">
+        <button type="submit" name="regenerate" value="1">
+          Generate new personal subscription
+        </button>
+      </form>
+    </div>
+  </tal:active>
+  </div>
+</body>
+</html>
