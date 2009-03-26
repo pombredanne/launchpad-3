@@ -63,7 +63,7 @@ from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
 from canonical.launchpad.interfaces.publishing import (
-    ISourcePackagePublishingHistory)
+    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
 from canonical.launchpad.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
@@ -2000,6 +2000,11 @@ class ViewSourcePackagePublishingHistory(AuthorizationBase):
 
     def checkUnauthenticated(self):
         return not self.obj.archive.private
+
+
+class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
+    """Restrict viewing of binary publications."""
+    usedfor = IBinaryPackagePublishingHistory
 
 
 class ViewSourcePackageRelease(AuthorizationBase):
