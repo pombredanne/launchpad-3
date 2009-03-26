@@ -25,7 +25,6 @@ from textwrap import dedent
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.webapp.publisher import canonical_url

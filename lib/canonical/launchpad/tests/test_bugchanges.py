@@ -11,7 +11,6 @@ from zope.interface import providedBy
 from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.bug import IBug
@@ -20,7 +19,6 @@ from canonical.launchpad.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus)
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
-from canonical.launchpad.mailnotification import add_bug_change_notifications
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer
