@@ -4,20 +4,24 @@ from datetime import datetime
 import gzip
 import os
 from StringIO import StringIO
+import subprocess
 import tempfile
 import unittest
 
 from zope.component import getUtility
 
 from canonical.launchpad.database.librarian import ParsedApacheLog
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
     create_or_update_parsedlog_entry, DBUSER,
     get_host_date_status_and_request, get_day, get_files_to_parse,
     get_method_and_file_id, parse_file)
+from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadZopelessLayer, ZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadZopelessLayer, ZopelessLayer)
 
 
 here = os.path.dirname(__file__)
@@ -260,6 +264,30 @@ class Test_create_or_update_parsedlog_entry(TestCase):
         self.assertIs(entry, entry2)
         self.assertIsNot(None, entry2)
         self.assertEqual(entry2.bytes_read, len(first_line))
+
+
+class TestScriptRunning(TestCase):
+    """Run parse-librarian-apache-access-logs.py and test its outcome."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_script_run(self):
+        process = subprocess.Popen(
+            'cronscripts/parse-librarian-apache-access-logs.py', shell=True,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        (out, err) = process.communicate()
+        self.assertEqual(
+            process.returncode, 0, "stdout:%s, stderr:%s" % (out, err))
+
+        # Must commit because the changes were done in another transaction.
+        import transaction
+        transaction.commit()
+        login(ANONYMOUS)
+        libraryfile_set = getUtility(ILibraryFileAliasSet)
+        self.assertEqual(libraryfile_set[1].hits, 1)
+        self.assertEqual(libraryfile_set[2].hits, 1)
+        self.assertEqual(libraryfile_set[3].hits, 1)
 
 
 def test_suite():
