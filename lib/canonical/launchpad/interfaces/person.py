@@ -799,6 +799,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             readonly=True, required=False,
             value_type=Reference(schema=Interface))) # HWSubmission
 
+    private = exported(Bool(
+            title=_("This team is private"),
+            readonly=True, required=False,
+            description=_("Private teams are visible only to "
+                          "their members.")))
+
     @invariant
     def personCannotHaveIcon(person):
         """Only Persons can have icons."""
