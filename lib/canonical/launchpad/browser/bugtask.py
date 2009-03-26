@@ -769,7 +769,24 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         assert len(comments) > 0, "A bug should have at least one comment."
         return comments
 
-    @property
+    @cachedproperty
+    def activity_by_date(self):
+        """Return a list of `BugActivityItem`s for the current bug.
+
+        The `BugActivityItem`s will be grouped by the date on which they
+        occurred.
+        """
+        activity_by_date = {}
+        for activity in self.context.bug.activity:
+            activity = BugActivityItem(activity)
+            if activity.datechanged in activity_by_date:
+                activity_by_date[activity.datechanged].append(activity)
+            else:
+                activity_by_date[activity.datechanged] = [activity]
+
+        return activity_by_date
+
+    @cachedproperty
     def activity_and_comments(self):
         interesting_changes = [
              'security vulnerability', 'summary', 'visibility']
