@@ -131,7 +131,7 @@ question and that the bugtasks are Invalid.
     >>> bug_notifications = BugNotification.select(orderBy='-id')
     >>> for notification in bug_notifications:
     ...     print notification.message.text_contents
-    ** bug changed to question:
+    ** Converted to question:
        http://answers.launchpad.dev/.../+question/...
     ** Changed in: ...
        Status: New => Invalid

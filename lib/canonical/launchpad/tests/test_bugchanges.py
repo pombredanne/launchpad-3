@@ -1114,7 +1114,7 @@ class TestBugChanges(unittest.TestCase):
         conversion_notification = {
             'person': self.user,
             'text': (
-                '** bug changed to question:\n'
+                '** Converted to question:\n'
                 '   %s' % canonical_url(converted_question))
             }
         status_notification = {

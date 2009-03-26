@@ -122,7 +122,7 @@ class BugConvertedToQuestion(BugChangeBase):
         """See `IBugChange`."""
         return {
             'text': (
-                '** bug changed to question:\n'
+                '** Converted to question:\n'
                 '   %s' % canonical_url(self.question)),
             }
 
