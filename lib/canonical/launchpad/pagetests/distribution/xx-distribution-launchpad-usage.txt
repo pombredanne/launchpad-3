@@ -101,7 +101,7 @@ bug expiration.
     Ubuntu Linux uses Launchpad for Bug Tracking.
 
 Foo Bar chooses to switch the bug tracker again, but this time he
-does not change the the expiration check box, and he does the whole
+does not change the expiration check box, and he does the whole
 operation before the page complete loading.
 
     >>> admin_browser.getLink('Change distribution details').click()

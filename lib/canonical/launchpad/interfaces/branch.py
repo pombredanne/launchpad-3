@@ -32,8 +32,6 @@ __all__ = [
     'IBranchBatchNavigator',
     'IBranchNavigationMenu',
     'IBranchSet',
-    'MAXIMUM_MIRROR_FAILURES',
-    'MIRROR_TIME_INCREMENT',
     'NoSuchBranch',
     'RepositoryFormat',
     'UICreatableBranchType',
@@ -42,7 +40,6 @@ __all__ = [
     ]
 
 from cgi import escape
-from datetime import timedelta
 import re
 
 # Ensure correct plugins are loaded. Do not delete this line.
@@ -368,13 +365,6 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.EXPERIMENTAL,
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
-
-
-# The maximum number of failures before we disable mirroring.
-MAXIMUM_MIRROR_FAILURES = 5
-
-# How frequently we mirror branches.
-MIRROR_TIME_INCREMENT = timedelta(hours=6)
 
 
 class BranchCreationException(Exception):
@@ -915,7 +905,7 @@ class IBranch(IHasOwner, IHasBranchTarget):
             pertinant to the landing such as testing notes.
         :param date_created: Used to specify the date_created value of the
             merge request.
-        :param needs_review: Used to specify the the proposal is ready for
+        :param needs_review: Used to specify the proposal is ready for
             review right now.
         :param initial_comment: An optional initial comment can be added
             when adding the new target.
@@ -1148,20 +1138,11 @@ class IBranch(IHasOwner, IHasBranchTarget):
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
-    def count():
-        """Return the number of branches in the database.
-
-        Only counts public branches.
-        """
-
     def countBranchesWithAssociatedBugs():
         """Return the number of branches that have bugs associated.
 
         Only counts public branches.
         """
-
-    def getBranchesToScan():
-        """Return an iterator for the branches that need to be scanned."""
 
     def getRecentlyChangedBranches(
         branch_count=None,
@@ -1249,12 +1230,6 @@ class IBranchSet(Interface):
         """
         # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
         # to change for source package branches.
-
-    def getPullQueue(branch_type):
-        """Return a queue of branches to mirror using the puller.
-
-        :param branch_type: A value from the `BranchType` enum.
-        """
 
     def getTargetBranchesForUsersMergeProposals(user, product):
         """Return a sequence of branches the user has targeted before."""

@@ -110,7 +110,7 @@ def traverse_distro_archive(distribution, name):
 
 
 def traverse_named_ppa(person_name, ppa_name):
-    """For PPAs, traverse the the right place.
+    """For PPAs, traverse the right place.
 
     :param person_name: The person part of the URL
     :param ppa_name: The PPA name part of the URL
@@ -345,7 +345,7 @@ class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
             default_ppa_name = default_name_by_purpose.get(
                 self.context.purpose)
             if self.context.name == default_ppa_name:
-                return 'default PPA'
+                return 'PPA'
             return '%s PPA' % self.context.name
 
         if self.context.is_copy:

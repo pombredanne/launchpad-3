@@ -15,7 +15,7 @@ The overview page has several tab links available.
     PPAs: http://launchpad.dev/ubuntu/+ppas
 
 "Details" is not linked because it is the currently active tab.  When a
-user clicks on "Announcements" he will see the the announcements page.
+user clicks on "Announcements" he will see the announcements page.
 
     >>> anon_browser.getLink("Announcements").click()
     >>> print anon_browser.url

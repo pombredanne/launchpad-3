@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212,W0141
 
 __metaclass__ = type
@@ -22,7 +22,6 @@ from storm.expr import And, Count, Desc, Max, Or, Select
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
-from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -43,14 +42,14 @@ from canonical.launchpad.event.branchmergeproposal import (
 from canonical.launchpad.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, BranchMergeControlStatus,
     BranchType, BranchTypeError, CannotDeleteBranch, ControlFormat,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
-    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, RepositoryFormat)
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
 from canonical.launchpad.interfaces.branchmergeproposal import (
      BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
+from canonical.launchpad.interfaces.branchpuller import IBranchPuller
 from canonical.launchpad.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.validators.person import validate_public_person
@@ -330,8 +329,8 @@ class Branch(SQLBase):
     @property
     def bzr_identity(self):
         """See `IBranch`."""
-        # XXX: JonathanLange 2009-03-19 spec=package-branches: This should not
-        # dispatch on product is None
+        # XXX: JonathanLange 2009-03-19 spec=package-branches bug=345740: This
+        # should not dispatch on product is None.
         if self.product is not None:
             series_branch = self.product.development_focus.series_branch
             is_dev_focus = (series_branch == self)
@@ -721,8 +720,9 @@ class Branch(SQLBase):
         if (self.next_mirror_time is None
             and self.branch_type == BranchType.MIRRORED):
             # No mirror was requested since we started mirroring.
+            increment = getUtility(IBranchPuller).MIRROR_TIME_INCREMENT
             self.next_mirror_time = (
-                datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
+                datetime.now(pytz.timezone('UTC')) + increment)
         self.last_mirrored_id = last_revision_id
 
     def mirrorFailed(self, reason):
@@ -731,11 +731,14 @@ class Branch(SQLBase):
             raise BranchTypeError(self.unique_name)
         self.mirror_failures += 1
         self.mirror_status_message = reason
+        branch_puller = getUtility(IBranchPuller)
+        max_failures = branch_puller.MAXIMUM_MIRROR_FAILURES
+        increment = branch_puller.MIRROR_TIME_INCREMENT
         if (self.branch_type == BranchType.MIRRORED
-            and self.mirror_failures < MAXIMUM_MIRROR_FAILURES):
+            and self.mirror_failures < max_failures):
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC'))
-                + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
+                + increment * 2 ** (self.mirror_failures - 1))
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
@@ -834,38 +837,12 @@ class BranchSet:
 
     implements(IBranchSet)
 
-    def __iter__(self):
-        """See `IBranchSet`."""
-        # XXX: JonathanLange 2009-02-10 spec=package-branches: Prejoining
-        # product is probably not the best idea, given that there'll be a lot
-        # of package branches.
-        return iter(Branch.select(prejoins=['owner', 'product']))
-
-    def count(self):
-        """See `IBranchSet`."""
-        return Branch.select('NOT Branch.private').count()
-
     def countBranchesWithAssociatedBugs(self):
         """See `IBranchSet`."""
         return Branch.select(
             'NOT Branch.private AND Branch.id = BugBranch.branch',
             clauseTables=['BugBranch'],
             distinct=True).count()
-
-    def getBranchesToScan(self):
-        """See `IBranchSet`"""
-        # Return branches where the scanned and mirrored IDs don't match.
-        # Branches with a NULL last_mirrored_id have never been
-        # successfully mirrored so there is no point scanning them.
-        # Branches with a NULL last_scanned_id have not been scanned yet,
-        # so are included.
-
-        return Branch.select('''
-            Branch.branch_type <> %s AND
-            Branch.last_mirrored_id IS NOT NULL AND
-            (Branch.last_scanned_id IS NULL OR
-             Branch.last_scanned_id <> Branch.last_mirrored_id)
-            ''' % quote(BranchType.REMOTE))
 
     def getRecentlyChangedBranches(
         self, branch_count=None,
@@ -924,13 +901,6 @@ class BranchSet:
             Desc(Branch.date_created), Desc(Branch.id))
         latest_branches.config(limit=quantity)
         return latest_branches
-
-    def getPullQueue(self, branch_type):
-        """See `IBranchSet`."""
-        return Branch.select(
-            AND(Branch.q.branch_type == branch_type,
-                Branch.q.next_mirror_time <= UTC_NOW),
-            prejoins=['owner', 'product'], orderBy='next_mirror_time')
 
     def getTargetBranchesForUsersMergeProposals(self, user, product):
         """See `IBranchSet`."""

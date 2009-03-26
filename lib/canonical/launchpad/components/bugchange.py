@@ -15,6 +15,7 @@ __all__ = [
     'BugWatchRemoved',
     'CveLinkedToBug',
     'CveUnlinkedFromBug',
+    'SeriesNominated',
     'UnsubscribedFromBug',
     'get_bug_change_class',
     ]
@@ -65,21 +66,15 @@ class BugChangeBase:
         """Return the `BugNotification` for this event."""
         raise NotImplementedError(self.getBugNotification)
 
-    def getBugNotificationRecipients(self):
-        """Return the recipients for this event."""
-        raise NotImplementedError(self.getBugNotificationRecipients)
-
 
 class AttributeChange(BugChangeBase):
     """A mixin class that provides basic functionality for `IBugChange`s."""
 
-    def __init__(self, when, person, what_changed, old_value, new_value,
-                 recipients=None):
+    def __init__(self, when, person, what_changed, old_value, new_value):
         super(AttributeChange, self).__init__(when, person)
         self.new_value = new_value
         self.old_value = old_value
         self.what_changed = what_changed
-        self.recipients = recipients
 
     def getBugActivity(self):
         """Return the BugActivity data for the textual change."""
@@ -88,9 +83,6 @@ class AttributeChange(BugChangeBase):
             'oldvalue': self.old_value,
             'whatchanged': self.what_changed,
             }
-
-    def getBugNotificationRecipients(self):
-        return self.recipients
 
 
 class UnsubscribedFromBug(BugChangeBase):
@@ -151,6 +143,24 @@ class BugTaskAdded(BugChangeBase):
         # Send the notification to the default recipients.
 
 
+class SeriesNominated(BugChangeBase):
+    """A user nominated the bug to be fixed in a series."""
+
+    def __init__(self, when, person, series):
+        super(SeriesNominated, self).__init__(when, person)
+        self.series = series
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='nominated for series',
+            newvalue=self.series.bugtargetname)
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return None
+
+
 class BugWatchAdded(BugChangeBase):
     """A bug watch was added to the bug."""
 
@@ -173,10 +183,6 @@ class BugWatchAdded(BugChangeBase):
                     self.bug_watch.bugtracker.title, self.bug_watch.remotebug,
                     self.bug_watch.url)),
             }
-
-    def getBugNotificationRecipients(self):
-        """See `IBugChange`."""
-        return None
 
 
 class BugWatchRemoved(BugChangeBase):
@@ -202,10 +208,6 @@ class BugWatchRemoved(BugChangeBase):
                     self.bug_watch.url)),
             }
 
-    def getBugNotificationRecipients(self):
-        """See `IBugChange`."""
-        return None
-
 
 class BranchLinkedToBug(BugChangeBase):
     """A branch got linked to the bug."""
@@ -224,11 +226,6 @@ class BranchLinkedToBug(BugChangeBase):
         """See `IBugChange`."""
         return {'text': '** Branch linked: %s' % self.branch.bzr_identity}
 
-    def getBugNotificationRecipients(self):
-        """See `IBugChange`."""
-        # Send the notification to the default recipients.
-        return None
-
 
 class BranchUnlinkedFromBug(BugChangeBase):
     """A branch got unlinked from the bug."""
@@ -246,11 +243,6 @@ class BranchUnlinkedFromBug(BugChangeBase):
     def getBugNotification(self):
         """See `IBugChange`."""
         return {'text': '** Branch unlinked: %s' % self.branch.bzr_identity}
-
-    def getBugNotificationRecipients(self):
-        """See `IBugChange`."""
-        # Send the notification to the default recipients.
-        return None
 
 
 class BugDescriptionChange(AttributeChange):
@@ -430,10 +422,6 @@ class CveLinkedToBug(BugChangeBase):
         """See `IBugChange`."""
         return {'text': "** CVE added: %s" % self.cve.url}
 
-    def getBugNotificationRecipients(self):
-        """See `IBugChange`."""
-        return None
-
 
 class CveUnlinkedFromBug(BugChangeBase):
     """Used to represent the unlinking of a CVE from a bug."""
@@ -452,10 +440,6 @@ class CveUnlinkedFromBug(BugChangeBase):
         """See `IBugChange`."""
         return {'text': "** CVE removed: %s" % self.cve.url}
 
-    def getBugNotificationRecipients(self):
-        """See `IBugChange`."""
-        return None
-
 
 class BugTaskAttributeChange(AttributeChange):
     """Used to represent a change in a BugTask's attributes."""
@@ -466,9 +450,9 @@ class BugTaskAttributeChange(AttributeChange):
         }
 
     def __init__(self, bug_task, when, person, what_changed, old_value,
-                 new_value, recipients=None):
+                 new_value):
         super(BugTaskAttributeChange, self).__init__(
-            when, person, what_changed, old_value, new_value, recipients)
+            when, person, what_changed, old_value, new_value)
 
         self.bug_task = bug_task
         display_attribute = self.display_attribute_map[self.what_changed]
