@@ -200,7 +200,7 @@
     <browser:page
         name="+addrelease"
         for="canonical.launchpad.interfaces.IProductSeries"
-        class="canonical.launchpad.browser.ProductReleaseAddView"
+        class="canonical.launchpad.browser.ProductReleaseFromSeriesAddView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productrelease-add.pt"

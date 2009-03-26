@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'ProductReleaseAddDownloadFileView',
     'ProductReleaseAddView',
+    'ProductReleaseFromSeriesAddView',
     'ProductReleaseContextMenu',
     'ProductReleaseDeleteView',
     'ProductReleaseEditView',
@@ -21,12 +22,15 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
 from zope.schema import Bool
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad.interfaces import (
     IProductRelease, IProductReleaseFileAddForm)
 
+from canonical.lazr.interface import copy_field
 from canonical.launchpad import _
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
@@ -77,22 +81,68 @@ class ProductReleaseContextMenu(ContextMenu):
         return Link(url, text)
 
 
-class ProductReleaseAddView(LaunchpadFormView):
+class ProductReleaseAddViewMixin(LaunchpadFormView):
+    """Mixin for creating a release from an existing or new milestone.
+
+    Subclasses need to define:
+        * The field_names list.
+        * The product_series attribute.
+        * A form action.
+    """
+    schema = IProductRelease
+
+    custom_widget('datereleased', DateTimeWidget)
+    custom_widget('release_notes', TextAreaWidget, height=7, width=62)
+    custom_widget('changelog', TextAreaWidget, height=7, width=62)
+
+    def _appendKeepMilestoneActiveField(self):
+        self.form_fields += FormFields(
+            Bool(
+                __name__='keep_milestone_active',
+                title=_("Keep the milestone active."),
+                description=_(
+                    "Only select this if bugs or blueprints still need "
+                    "to be targeted to this product release's milestone.")),
+            render_context=self.render_context)
+
+    def _createRelease(self, milestone, data):
+        """Create product release for this milestone."""
+        newrelease = milestone.createProductRelease(
+            self.user, changelog=data['changelog'],
+            release_notes=data['release_notes'],
+            datereleased=data['datereleased'])
+        # Set Milestone.active to false, since bugs & blueprints
+        # should not be targeted to a milestone in the past.
+        if data['keep_milestone_active'] is False:
+            milestone.active = False
+            self.request.response.addWarningNotification(structured(
+                _('The &ldquo;%s&rdquo; milestone for this product release '
+                  'was deactivated so that bugs & blueprints cannot be '
+                  'targeted to a milestone in the past.' % milestone.name)))
+        self.next_url = canonical_url(newrelease.productseries)
+        notify(ObjectCreatedEvent(newrelease))
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Register a new %s release' % self.context.product.name
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+
+class ProductReleaseAddView(ProductReleaseAddViewMixin):
     """Create a product release.
 
     Also, deactivate the milestone it is attached to.
     """
 
-    schema = IProductRelease
     field_names = [
         'datereleased',
         'release_notes',
         'changelog',
         ]
-
-    custom_widget('datereleased', DateTimeWidget)
-    custom_widget('release_notes', TextAreaWidget, height=7, width=62)
-    custom_widget('changelog', TextAreaWidget, height=7, width=62)
 
     def initialize(self):
         if self.context.product_release is not None:
@@ -106,42 +156,56 @@ class ProductReleaseAddView(LaunchpadFormView):
     def setUpFields(self):
         super(ProductReleaseAddView, self).setUpFields()
         if self.context.active is True:
-            self.form_fields += FormFields(
-                Bool(
-                    __name__='keep_milestone_active',
-                    title=_("Keep the milestone active."),
-                    description=_(
-                        "Only select this if bugs or blueprints still need "
-                        "to be targeted to this product release&rsquo;s "
-                        "milestone.")),
-                render_context=self.render_context)
-
-    @action(_('Publish release'), name='publish')
-    def publishRelease(self, action, data):
-        """Publish product release for this milestone."""
-        newrelease = self.context.createProductRelease(
-            self.user, changelog=data['changelog'],
-            release_notes=data['release_notes'],
-            datereleased=data['datereleased'])
-        # Set Milestone.active to false, since bugs & blueprints
-        # should not be targeted to a milestone in the past.
-        if data['keep_milestone_active'] is False:
-            self.context.active = False
-            self.request.response.addWarningNotification(
-                _("The milestone for this product release was deactivated "
-                  "so that bugs & blueprints cannot be targeted "
-                  "to a milestone in the past."))
-        self.next_url = canonical_url(newrelease)
-        notify(ObjectCreatedEvent(newrelease))
+            self._appendKeepMilestoneActiveField()
 
     @property
-    def label(self):
-        """The form label."""
-        return 'Register a new %s release' % self.context.product.name
+    def product_series(self):
+        return self.context.productseries
+
+    @action(_('Create release'), name='create')
+    def createRelease(self, action, data):
+        self._createRelease(self.context, data)
+
+
+class ProductReleaseFromSeriesAddView(ProductReleaseAddViewMixin):
+    """Create a product release and select or add a milestone.
+
+    Also, deactivate the milestone it is attached to.
+    """
+
+    field_names = [
+        'datereleased',
+        'release_notes',
+        'changelog',
+        ]
+
+    def setUpFields(self):
+        super(ProductReleaseFromSeriesAddView, self).setUpFields()
+        self._prependMilestoneField()
+        self._appendKeepMilestoneActiveField()
+
+    def _prependMilestoneField(self):
+        """Add Milestone Choice field with custom terms."""
+        terms = [
+            SimpleTerm(milestone, milestone.name, milestone.displayname)
+            for milestone in self.context.all_milestones
+            if milestone.product_release is None]
+        terms.insert(0, SimpleTerm(None, None, '- Select Milestone -'))
+        milestone_field = FormFields(
+            copy_field(
+                IProductRelease['milestone'],
+                __name__='milestone_for_release',
+                vocabulary=SimpleVocabulary(terms)))
+        self.form_fields = milestone_field + self.form_fields
 
     @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+    def product_series(self):
+        return self.context
+
+    @action(_('Create release'), name='create')
+    def createRelease(self, action, data):
+        milestone = data['milestone_for_release']
+        self._createRelease(milestone, data)
 
 
 class ProductReleaseEditView(LaunchpadEditFormView):
