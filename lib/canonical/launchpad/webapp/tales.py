@@ -2184,9 +2184,14 @@ class FormattersAPI:
             return '<a href="%s">%s</a>' % (url, text)
         elif match.group('lpbranchurl') is not None:
             lp_url = match.group('lpbranchurl')
+            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
             path = match.group('branch')
             url = '/+branch/%s' % path
-            return '<a href="%s">%s</a>' % (url, lp_url)
+            url, trailers = FormattersAPI._split_url_and_trailers(url)
+            return '<a href="%s">%s</a>%s' % (
+                cgi.escape(url, quote=True),
+                cgi.escape(lp_url),
+                cgi.escape(trailers))
         else:
             raise AssertionError("Unknown pattern matched.")
 
