@@ -1095,7 +1095,11 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=task_added_notification)
 
     def test_convert_to_question_no_comment(self):
-        # When a bug task is converted to a question.
+        # When a bug task is converted to a question, its status is
+        # first set to invalid, which causes the normal notifications for
+        # that to be added to the activity log and sent out as e-mail
+        # notification. After that another item is added to the activity
+        # log saying that the bug was converted to a question.
         self.bug.convertToQuestion(self.user)
         converted_question = self.bug.getQuestionCreatedFromBug()
 
