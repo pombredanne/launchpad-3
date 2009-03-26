@@ -219,19 +219,15 @@ class BranchLinkedToBug(BugChangeBase):
         """See `IBugChange`."""
         if self.branch.private:
             return None
-        else:
-            return dict(
-                whatchanged='branch linked',
-                newvalue=self.branch.bzr_identity)
+        return dict(
+            whatchanged='branch linked',
+            newvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
         if self.branch.private:
             return None
-        else:
-            return {
-                'text': '** Branch linked: %s' % self.branch.bzr_identity,
-                }
+        return {'text': '** Branch linked: %s' % self.branch.bzr_identity}
 
 
 class BranchUnlinkedFromBug(BugChangeBase):
@@ -245,19 +241,15 @@ class BranchUnlinkedFromBug(BugChangeBase):
         """See `IBugChange`."""
         if self.branch.private:
             return None
-        else:
-            return dict(
-                whatchanged='branch unlinked',
-                oldvalue=self.branch.bzr_identity)
+        return dict(
+            whatchanged='branch unlinked',
+            oldvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
         if self.branch.private:
             return None
-        else:
-            return {
-                'text': '** Branch unlinked: %s' % self.branch.bzr_identity,
-                }
+        return {'text': '** Branch unlinked: %s' % self.branch.bzr_identity}
 
 
 class BugDescriptionChange(AttributeChange):
