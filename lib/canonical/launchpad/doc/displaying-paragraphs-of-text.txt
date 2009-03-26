@@ -218,6 +218,9 @@ links:
     ...     'bug report 123\n'
     ...     'bug no. 123\n'
     ...     'bug#123\n'
+    ...     'bug-123\n'
+    ...     'bug-report-123\n'
+    ...     'bug=123\n'
     ...     'bug\n'
     ...     '#123\n'
     ...     'debug #52\n')
@@ -233,6 +236,9 @@ links:
     <a href="/bugs/123" title="No such bug">bug report 123</a><br />
     <a href="/bugs/123" title="No such bug">bug no. 123</a><br />
     <a href="/bugs/123" title="No such bug">bug#123</a><br />
+    <a href="/bugs/123" title="No such bug">bug-123</a><br />
+    <a href="/bugs/123" title="No such bug">bug-report-123</a><br />
+    <a href="/bugs/123" title="No such bug">bug=123</a><br />
     <a href="/bugs/123" title="No such bug">bug<br />
     #123</a><br />
     debug #52</p>
@@ -290,12 +296,16 @@ FAQ references are global, and also linkified:
     >>> text = (
     ...     'faq 1\n'
     ...     'faq #2\n'
+    ...     'faq-2\n'
+    ...     'faq=2\n'
     ...     'faq item 1\n'
     ...     'faq  number  2\n'
     ...     )
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="http://answers.launchpad.dev/ubuntu/+faq/1">faq 1</a><br />
     <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq #2</a><br />
+    <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq-2</a><br />
+    <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq=2</a><br />
     <a href="http://answers.launchpad.dev/ubuntu/+faq/1">faq item 1</a><br />
     <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq  number  2</a></p>
 
@@ -314,19 +324,25 @@ Branch references are linkified:
 
     >>> text = (
     ...     'lp:~foo/bar/baz\n'
+    ...     'lp:~foo/bar/bug-123\n'
     ...     'lp:~foo/+junk/baz\n'
     ...     'lp:~foo/ubuntu/jaunty/evolution/baz\n'
     ...     'lp:foo/bar\n'
     ...     'lp:foo\n'
+    ...     'lp:foo,\n'
+    ...     'lp:foo/bar.\n'
     ...     'lp:foo/bar/baz\n'
     ...     'lp:///foo\n'
     ...     'lp:/foo\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="/+branch/~foo/bar/baz">lp:~foo/bar/baz</a><br />
+    <a href="/+branch/~foo/bar/bug-123">lp:~foo/bar/bug-123</a><br />
     <a href="/+branch/~foo/+junk/baz">lp:~foo/+junk/baz</a><br />
     <a href="/+branch/~foo/ubuntu/jaunty/evolution/baz">lp:~foo/ubuntu/jaunty/evolution/baz</a><br />
     <a href="/+branch/foo/bar">lp:foo/bar</a><br />
     <a href="/+branch/foo">lp:foo</a><br />
+    <a href="/+branch/foo">lp:foo</a>,<br />
+    <a href="/+branch/foo/bar">lp:foo/bar</a>.<br />
     <a href="/+branch/foo/bar/baz">lp:foo/bar/baz</a><br />
     <a href="/+branch/foo">lp:///foo</a><br />
     <a href="/+branch/foo">lp:/foo</a></p>

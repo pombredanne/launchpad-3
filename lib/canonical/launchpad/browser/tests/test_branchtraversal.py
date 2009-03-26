@@ -16,7 +16,18 @@ from canonical.launchpad.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing import DatabaseFunctionalLayer
+
+
+class LocalFakeRequest(FakeRequest):
+    @property
+    def stepstogo(self):
+        """See IBasicLaunchpadRequest.
+
+        This method is called by traversal machinery.
+        """
+        return StepsToGo(self)
 
 
 class TestPersonBranchTraversal(TestCaseWithFactory):
@@ -48,7 +59,7 @@ class TestPersonBranchTraversal(TestCaseWithFactory):
         """
         stack = list(reversed(segments))
         name = stack.pop()
-        request = FakeRequest(['~' + self.person.name], stack)
+        request = LocalFakeRequest(['~' + self.person.name], stack)
         traverser = PersonNavigation(self.person, request)
         return traverser.publishTraverse(request, name)
 
@@ -130,7 +141,7 @@ class TestPersonProductBranchTraversal(TestCaseWithFactory):
         """
         stack = list(reversed(segments))
         name = stack.pop()
-        request = FakeRequest(
+        request = LocalFakeRequest(
             ['~' + self.person.name, self.product.name], stack)
         traverser = PersonProductNavigation(self.person_product, request)
         return traverser.publishTraverse(request, name)

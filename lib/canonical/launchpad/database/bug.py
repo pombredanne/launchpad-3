@@ -38,9 +38,10 @@ from lazr.lifecycle.snapshot import Snapshot
 from canonical.launchpad.components.bugchange import (
     BranchLinkedToBug, BranchUnlinkedFromBug, BugWatchAdded, BugWatchRemoved,
     SeriesNominated, UnsubscribedFromBug)
+from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet)
+    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue)
 from canonical.launchpad.interfaces.bugactivity import IBugActivitySet
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -92,6 +93,7 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person, ValidPersonCache
 from canonical.launchpad.database.pillar import pillar_sort_key
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.interfaces import (
@@ -246,6 +248,12 @@ class Bug(SQLBase):
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
+
+    @property
+    def users_affected(self):
+        """See `IBug`."""
+        return [bap.person for bap
+                in Store.of(self).find(BugAffectsPerson, bug=self)]
 
     @property
     def indexed_messages(self):
@@ -652,7 +660,7 @@ class Bug(SQLBase):
              bug=self, is_comment=True,
              message=message, recipients=recipients)
 
-    def addChange(self, change):
+    def addChange(self, change, recipients=None):
         """See `IBug`."""
         when = change.when
         if when is None:
@@ -671,7 +679,6 @@ class Bug(SQLBase):
 
         notification_data = change.getBugNotification()
         if notification_data is not None:
-            recipients = change.getBugNotificationRecipients()
             assert notification_data.get('text') is not None, (
                 "notification_data must include a `text` value.")
 
@@ -1296,6 +1303,22 @@ class Bug(SQLBase):
             if bap.affected != affected:
                 bap.affected = affected
                 self._flushAndInvalidate()
+
+    @property
+    def readonly_duplicateof(self):
+        """See `IBug`."""
+        return self.duplicateof
+
+    def markAsDuplicate(self, duplicate_of):
+        """See `IBug`."""
+        field = DuplicateBug()
+        field.context = self
+        try:
+            if duplicate_of is not None:
+                field._validate(duplicate_of)
+            self.duplicateof = duplicate_of
+        except LaunchpadValidationError, validation_error:
+            raise InvalidDuplicateValue(validation_error)
 
 
 class BugSet:
