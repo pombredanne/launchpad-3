@@ -27,8 +27,8 @@ those notifications look like.
     >>> from lazr.lifecycle.event import (
     ...     ObjectModifiedEvent, ObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IPersonSet, IDistributionSet, IDistroSeriesSet,
-    ...     ISourcePackageNameSet, IBugSet, CreateBugParams)
+    ...     CreateBugParams, IDistributionSet, IDistroSeriesSet, IPersonSet,
+    ...     IProductSet, ISourcePackageNameSet)
 
     >>> bug_submitter = getUtility(IPersonSet).get(12)
     >>> firefox = getUtility(IProductSet).get(4)
