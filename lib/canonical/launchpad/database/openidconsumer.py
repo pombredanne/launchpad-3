@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.interface import implements, classProvides
 
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.interfaces.openidconsumer import (
     IOpenIDConsumerStoreFactory)
 
@@ -61,7 +61,9 @@ class OpenIDConsumerStore(PostgreSQLStore):
         No transactional semantics in Launchpad because Z3 is already
         fully transactional so there is no need to reinvent the wheel.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        # We seem to need to force the use of the master store here,
+        # as we need to write on GET.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self.cur = store._connection._raw_connection.cursor()
         try:
             return func(*args, **kwargs)
