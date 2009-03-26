@@ -20,7 +20,7 @@ from canonical.launchpad.scripts.base import LaunchpadCronScript
 HTACCESS_TEMPLATE = """
 AuthType           Basic
 AuthName           "Token Required"
-AuthUserFile       .htpasswd
+AuthUserFile       %(path)s/.htpasswd
 Require            valid-user
 """
 
@@ -72,8 +72,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             # It's not there, so create it.
             if not os.path.exists(pub_config.htaccessroot):
                 os.makedirs(pub_config.htaccessroot)
+            interpolations = {"path" : pub_config.htaccessroot}
             file = open(htaccess_filename, "w")
-            file.write(HTACCESS_TEMPLATE)
+            file.write(HTACCESS_TEMPLATE % interpolations)
             file.close()
             self.logger.debug("Created .htaccess for %s" % ppa.displayname)
 

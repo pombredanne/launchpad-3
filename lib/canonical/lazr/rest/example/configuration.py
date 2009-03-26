@@ -25,6 +25,8 @@ class CookbookWebServiceConfiguration:
     use_https = False
     code_revision = "test.revision"
     show_tracebacks = True
+    default_batch_size = 5
+    max_batch_size=50
 
     def createRequest(self, body_instream, environ):
         """See `IWebServiceConfiguration`."""
