@@ -15,7 +15,7 @@ INSERT INTO OpenIDAssociation
     (server_url, handle, secret, issued, lifetime, assoc_type)
 SELECT server_url, handle, secret, issued, lifetime, assoc_type
 FROM OpenIDAssociations
-WHERE issued > EXTRACT(
+WHERE issued + lifetime > EXTRACT(
     EPOCH FROM CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '1 day');
 -- Can't drop tables now. Switch schema for upgrade.py to detect and handle.
 ALTER TABLE OpenIDAssociations SET SCHEMA todrop;
