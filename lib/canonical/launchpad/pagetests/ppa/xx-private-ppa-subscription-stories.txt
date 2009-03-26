@@ -175,7 +175,6 @@ and a browser for Celso currently navigated to the Manage Subscriptions page
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
 
-
 When Celso clicks 'Edit/Cancel' for the Launchpad Developers subscription
 and clicks Cancel
 
@@ -211,7 +210,7 @@ Given a subscription for Celso's private PPA
 
 When Joe visits his private archive subscriptions page:
 
-XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
+XXX: noodles 2009-03-10 bug=340405. The the +archivesubscriptions traversal
 will require launchpad.Admin until the backend .htaccess update
 machinery is in-place and tested:
 
@@ -223,65 +222,81 @@ machinery is in-place and tested:
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
 
-Then a list of all Joe's pending subscriptions is displayed, each with an
-Activate button
-
-    >>> for row in find_tags_by_class(joe_browser.contents,
-    ...                               "pending-archive-subscription-row"):
-    ...     print extract_text(row)
-    ...     if row.find('input', type="submit", value="Activate"):
-    ...         print "Activate"
-    Archive                             Subscription description
-    Private PPA for Celso Providelo     Joe is my friend          Activate
-
-And no private_sources.list file is displayed (as there are no active
-subscriptions)
-
-    >>> print find_tag_by_id(joe_browser.contents, 'sources_list')
-    None
-
-And a list of all Joe's subscriptions is displayed
+Then a list of all Joe's subscriptions is displayed
 
     >>> print_subscriptions_for_person(joe_browser.contents)
     Archive                             Subscription description Status
     Private PPA for Celso Providelo     Joe is my friend         Pending
+        Activate now
 
-When Joe clicks on the 'Activate subscription' button for Celso's PPA
+When Joe clicks on the 'Activate now' link for Celso's PPA
+Then the details of the subscription are displayed with a request
+to confirm the subscription.
 
-    >>> joe_browser.getControl(
-    ...     name="field.actions.activate_archive_9").click()
+    >>> joe_browser.getLink('Activate now').click()
+    >>> print extract_text(find_main_content(joe_browser.contents))
+    Subscription of Joe Smith to Private PPA for Celso Providelo
+    ...
+    Please confirm this subscription if you wish to download software from
+    this archive.
+    Confirm subscription
 
-Then there is no longer a list of pending subscriptions displayed
+When Joe clicks on the 'Confirm subscription' button
+Then a sources.list snippet is displayed.
+And a notification message is displayed on the screen
 
-    >>> print find_tags_by_class(joe_browser.contents,
-    ...                          "pending-archive-subscription-row")
-    []
-
-And a sources.list snippet is now included
-
+    >>> joe_browser.getControl(name='activate').click()
     >>> sources_list = find_tag_by_id(joe_browser.contents, 'sources_list')
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    # Personal subscriptions for private PPAs
-    # Private PPA for Celso Providelo
+    # Personal subscription of Joe Smith to Private PPA for Celso Providelo
     deb http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb-src http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
-And the list of Joe's current subscriptions reflects the correct status
-
-    >>> print_subscriptions_for_person(joe_browser.contents)
-    Archive                             Subscription description Status
-    Private PPA for Celso Providelo     Joe is my friend         Active
-
-And a notification message is displayed on the screen
-
     >>> for msg in get_feedback_messages(joe_browser.contents):
     ...     print msg
-    Your subscription to 'Private PPA for Celso Providelo' has been activated.
-    Please update your custom sources.list as described below.
+    Your personal subscription to 'Private PPA for Celso Providelo' has
+    been confirmed. Please update your custom sources.list as described below.
 
-=== Scenario 2: A user activates a team subscription ===
+When Joe navigates back to his current archive subscriptions
+Then the list of Joe's current subscriptions reflects the updated status
+
+    >>> joe_browser.open(
+    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
+    >>> print_subscriptions_for_person(joe_browser.contents)
+    Archive                             Subscription description Status
+    Private PPA for Celso Providelo     Joe is my friend         Active View
+
+=== Scenario 2: A user re-generates the token for a subscription ===
+
+Given an activated subscription to Celso's private PPA
+when Joe visits his private archive subscriptions page
+and clicks on the 'view' link to view a subscription
+then information regarding the generation of a new personal subscription
+is displayed
+
+    >>> joe_browser.getLink('View').click()
+    >>> regeneration_info = find_tag_by_id(
+    ...     joe_browser.contents, 'regenerate_token')
+    >>> print(extract_text(regeneration_info))
+    Your personal subscription security
+    If you believe...
+    Note: after creating a new password for your personal subscription...
+    Generate new password
+
+
+When Joe clicks on the 'Generate new personal subscription' link
+then the page is redisplayed with new sources.list entries and a notification.
+
+    >>> joe_browser.getControl(name='regenerate').click()
+    >>> for msg in get_feedback_messages(joe_browser.contents):
+    ...     print msg
+    A new password for your personal subscription to 'Private PPA for
+    Celso Providelo' has been created.
+    Please update your custom sources.list as described
+    below.
+
 
 == Story 4: A user's subscription expires or is cancelled ==
 

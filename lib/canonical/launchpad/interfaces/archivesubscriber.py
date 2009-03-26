@@ -10,6 +10,8 @@ __all__ = [
     'ArchiveSubscriptionError',
     'IArchiveSubscriber',
     'IArchiveSubscriberUI',
+    'IArchiveSubscriptionForOwner',
+    'IArchiveSubscriptionForSubscriber',
     'IArchiveSubscriberSet'
     ]
 
@@ -93,7 +95,9 @@ class IArchiveSubscriberView(Interface):
         IPerson, title=_("Cancelled By"), required=False,
         description=_("The person who cancelled the subscription."))
 
-    title = TextLine(title=_("Subscription title"), required=False)
+    displayname = TextLine(title=_("Subscription displayname"),
+        required=False)
+
 
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""
@@ -110,6 +114,13 @@ class IArchiveSubscriberEdit(Interface):
 
 class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
     """An interface for archive subscribers."""
+
+
+class IArchiveSubscriptionForOwner(IArchiveSubscriber):
+    """Marker interface so traversal works differently for PPA owners."""
+
+class IArchiveSubscriptionForSubscriber(IArchiveSubscriber):
+    """Marker interface so traversal works differently for PPA subscribers."""
 
 
 class IArchiveSubscriberSet(Interface):
