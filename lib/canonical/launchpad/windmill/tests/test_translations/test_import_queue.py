@@ -59,16 +59,19 @@ class ImportQueueEntryTest:
                 )
 
     def _assertAllFieldsVisible(self, groupname):
-        """Assert that all fields in this group do not have the
-        dont_show_fields class set.
+        """Assert that all fields in this group are visible.
+
+        Fields are visible if they do not have the dont_show_fields
+        class set.
         """
         for field_id in self.FIELDS[groupname]:
             self.client.asserts.assertNotNode(
                 xpath=self._getHiddenTRXpath(field_id))
 
     def _assertAllFieldsHidden(self, groupname):
-        """Assert that all fields in this group have the
-        dont_show_fields class set.
+        """Assert that all fields in this group are hidden.
+
+        Fields are hidden if they have the dont_show_fields class set.
         """
         for field_id in self.FIELDS[groupname]:
             self.client.asserts.assertNode(
