@@ -81,7 +81,10 @@ def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
         subscription = getUtility(IArchiveSubscriberSet).getBySubscriber(
             subscriber, archive=archive).first()
 
-    return subscription
+    if subscription is None:
+        return None
+    else:
+        return IArchiveSubscriptionForSubscriber(subscription)
 
 
 class ArchiveSubscribersView(LaunchpadFormView):

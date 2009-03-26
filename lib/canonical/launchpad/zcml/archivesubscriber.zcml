@@ -47,7 +47,7 @@
   <browser:page
     name="+index"
     facet="overview"
-    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriber"
+    for="canonical.launchpad.interfaces.archivesubscriber.IArchiveSubscriptionForSubscriber"
     class="canonical.launchpad.browser.archivesubscription.PersonArchiveSubscriptionView"
     permission="launchpad.View"
     template="../templates/person-archive-subscription.pt"
