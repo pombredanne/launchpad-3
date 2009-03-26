@@ -19,7 +19,4 @@
      component="canonical.lazr.rest.example.security.CookbookWebServiceSecurityPolicy"
      />
 
-    <permission
-      id="lazr.restful.example.View" title="Viewing something" />
-
 </configure>

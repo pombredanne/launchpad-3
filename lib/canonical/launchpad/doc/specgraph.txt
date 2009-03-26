@@ -320,9 +320,7 @@ a message explaining that the image was not linked.
     <p class="error message">There was an error linking the dependency tree
     to its specs.</p>
 
-    >>> from zope.error.interfaces import IErrorReportingUtility
-    >>> globalErrorUtility = getUtility(IErrorReportingUtility)
-    >>> oops_report = globalErrorUtility.getLastOopsReport()
+    >>> oops_report = graph_view.request.oops
     >>> print oops_report.type, oops_report.value
     ProblemRenderingGraph ("<stdin>:1: syntax error in line 1 near 'bad'...)
 
@@ -356,7 +354,7 @@ the page to link the image.
     <p class="error message">There was an error linking the dependency tree
     to its specs. Reload the page to link the image.</p>
 
-    >>> oops_report = globalErrorUtility.getLastOopsReport()
+    >>> oops_report = graph_view.request.oops
     >>> print oops_report.type, oops_report.value
     OSError [Errno 12] Cannot allocate memory
 

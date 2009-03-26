@@ -1292,8 +1292,16 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
-.boardCommentDetails {background-color: #eee; padding: 0.5em 12px;}
+.boardCommentDetails {
+  background-color: #eee;
+  padding: 0.5em 12px;
+  border-bottom: 1px solid #ddd
+}
 .boardCommentBody {padding: 0.5em 12px 0;}
+.boardBugActivityBody {
+  background-color: #eee;
+  padding: 0.5em 12px 0.5em;
+}
 .boardCommentContent { line-height: 1.5em;}
 .boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
 dl.faq dt {font-weight: bold;}

@@ -13,16 +13,17 @@ __all__ = [
     'BranchCreationForbidden',
     'BranchNameInUse',
     'BranchUniqueNameConflict',
+    'CannotHaveLinkedBranch',
     'check_fault',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
     'InvalidBranchIdentifier',
     'InvalidBranchName',
+    'InvalidBranchUniqueName',
     'InvalidProductIdentifier',
     'InvalidBranchUrl',
-    'NoBranchForSeries',
     'NoBranchWithID',
-    'NoDefaultBranchForPillar',
+    'NoLinkedBranch',
     'NoSuchBranch',
     'NoSuchBug',
     'NoSuchDistribution',
@@ -30,7 +31,7 @@ __all__ = [
     'NoSuchPerson',
     'NoSuchPersonWithName',
     'NoSuchProduct',
-    'NoSuchSeries',
+    'NoSuchProductSeries',
     'NoSuchTeamMailingList',
     'NotInTeam',
     'NoUrlForBranch',
@@ -40,6 +41,10 @@ __all__ = [
 
 
 import xmlrpclib
+
+from zope.security.interfaces import ForbiddenAttribute
+
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 
 def check_fault(fault, *fault_classes):
@@ -244,20 +249,31 @@ class BadStatus(LaunchpadFault):
         LaunchpadFault.__init__(self, team_name=team_name, status=status)
 
 
-class NoBranchForSeries(LaunchpadFault):
-    """The series has no branch registered with it."""
+class NoLinkedBranch(LaunchpadFault):
+    """The object has no branch registered with it."""
 
     error_code = 170
-    msg_template = (
-        'Series %(series_name)s on %(product_name)s has no branch associated '
-        'with it')
+    msg_template = ('%(object_name)s has no default branch.')
 
-    def __init__(self, series):
-        LaunchpadFault.__init__(
-            self, series_name=series.name, product_name=series.product.name)
+    def __init__(self, component):
+        # XXX: JonathanLange 2009-03-21 spec=package-branches bug=345739: This
+        # should include the pocket in the error message and not have any
+        # special logic wrt package branches.
+        component = self._getComponent(component)
+        LaunchpadFault.__init__(self, object_name=component.displayname)
+
+    def _getComponent(self, component):
+        try:
+            package = component[0]
+        except (TypeError, ForbiddenAttribute):
+            return component
+        if ISourcePackage.providedBy(package):
+            return package
+        else:
+            return component
 
 
-class NoSuchSeries(LaunchpadFault):
+class NoSuchProductSeries(LaunchpadFault):
     """There is no such series on a particular project."""
 
     error_code = 180
@@ -300,8 +316,8 @@ class BranchNameInUse(LaunchpadFault):
         LaunchpadFault.__init__(self, error=error)
 
 
-class NoDefaultBranchForPillar(LaunchpadFault):
-    """Raised we try to get a default branch for a pillar that can't have any.
+class CannotHaveLinkedBranch(LaunchpadFault):
+    """Raised when we get a linked branch for a thing that can't have any.
 
     An example of this is trying to get lp:bazaar, where 'bazaar' is a project
     group, or lp:ubuntu, where 'ubuntu' is a distro.
@@ -309,12 +325,13 @@ class NoDefaultBranchForPillar(LaunchpadFault):
 
     error_code = 230
     msg_template = (
-        "%(pillar_name)s is a %(pillar_type)s, and a %(pillar_type)s doesn't "
-        "have a default branch.")
+        "%(component_name)s is a %(component_type)s, and a "
+        "%(component_type)s doesn't have a default branch.")
 
-    def __init__(self, pillar_name, pillar_type):
+    def __init__(self, component):
         LaunchpadFault.__init__(
-            self, pillar_name=pillar_name, pillar_type=pillar_type)
+            self, component_name=component.displayname,
+            component_type=component.__class__.__name__.lower())
 
 
 class InvalidProductIdentifier(LaunchpadFault):
@@ -428,3 +445,42 @@ class NotFound(LaunchpadFault):
 
     def __init__(self, message="Not found."):
         LaunchpadFault.__init__(self, message=message)
+
+
+class InvalidBranchUniqueName(LaunchpadFault):
+    """Raised when a user tries to resolve a unique name that's incomplete.
+    """
+
+    error_code = 330
+    msg_template = (
+        "~%(path)s is too short to be a branch name. Try "
+        "'~<owner>/+junk/<branch>', '~<owner>/<product>/<branch> or "
+        "'~<owner>/<distribution>/<series>/<sourcepackage>/<branch>'.")
+
+    def __init__(self, path):
+        self.path = path
+        LaunchpadFault.__init__(self, path=path)
+
+
+class NoSuchDistroSeries(LaunchpadFault):
+    """Raised when the user tries to get a distroseries that doesn't exist."""
+
+    error_code = 340
+    msg_template = "No such distribution series %(distroseries_name)s."
+
+    def __init__(self, distroseries_name):
+        self.distroseries_name = distroseries_name
+        LaunchpadFault.__init__(self, distroseries_name=distroseries_name)
+
+
+class NoSuchSourcePackageName(LaunchpadFault):
+    """Raised when the user tries to get a sourcepackage that doesn't exist.
+    """
+
+    error_code = 350
+    msg_template = "No such source package %(sourcepackagename)s."
+
+    def __init__(self, sourcepackagename):
+        self.sourcepackagename = sourcepackagename
+        LaunchpadFault.__init__(self, sourcepackagename=sourcepackagename)
+
