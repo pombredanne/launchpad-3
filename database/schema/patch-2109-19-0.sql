@@ -7,10 +7,9 @@ CREATE TABLE LibraryFileDownloadCount (
         REFERENCES LibraryFileAlias
         ON DELETE CASCADE,
     day date NOT NULL,
-    country INTEGER REFERENCES country(id),
     count integer NOT NULL,
-    CONSTRAINT libraryfiledownloadcount__libraryfilealias__day__country__key
-        UNIQUE (libraryfilealias, day, country)
+    CONSTRAINT libraryfiledownloadcount__libraryfilealias__day__key
+        UNIQUE (libraryfilealias, day)
     );
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 19, 0);

@@ -20,4 +20,15 @@ CREATE INDEX parsedapachelog__first_line__idx ON ParsedApacheLog(first_line);
 
 ALTER TABLE LibraryFileAlias ADD COLUMN hits INTEGER NOT NULL DEFAULT 0;
 
+-- The country where the request for the file came from.
+ALTER TABLE LibraryFileDownloadCount
+    ADD COLUMN country INTEGER REFERENCES country(id);
+
+ALTER TABLE LibraryFileDownloadCount
+    DROP CONSTRAINT libraryfiledownloadcount__libraryfilealias__day__key;
+
+ALTER TABLE LibraryFileDownloadCount 
+    ADD CONSTRAINT libraryfiledownloadcount__libraryfilealias__day__country__key
+        UNIQUE (libraryfilealias, day, country);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 28, 0);
