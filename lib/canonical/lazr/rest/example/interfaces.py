@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = ['AlreadyNew',
+           'Cuisine',
            'ICookbook',
            'ICookbookSet',
            'IDish',
@@ -15,7 +16,7 @@ __all__ = ['AlreadyNew',
            'NameAlreadyTaken']
 
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Date, Int, TextLine, Text
+from zope.schema import Bool, Bytes, Choice, Date, Int, TextLine, Text
 
 from lazr.enum import EnumeratedType, Item
 
@@ -84,15 +85,20 @@ class IRecipe(Interface):
                                  required=True))
     private = exported(Bool(title=u"Whether the public can see this recipe.",
                        default=False))
+    prepared_image = exported(
+        Bytes(0, 5000, title=u"An image of the prepared dish.",
+              readonly=True))
 
 
 class ICookbook(IHasGet):
     """A cookbook, annotated for export to the web service."""
     export_as_webservice_entry()
     name = exported(TextLine(title=u"Name", required=True))
+    copyright_date = exported(
+        Date(title=u"Copyright Date", readonly=True,
+             description=u"The copyright date for this work."))
     description = exported(
         WhitespaceStrippingTextLine(title=u"Description", required=False))
-    copyright_date = exported(Date(title=u"Copyright Date", readonly=True))
     confirmed = exported(Bool(
             title=u"Whether this information has been confirmed",
             default=False))
@@ -100,6 +106,8 @@ class ICookbook(IHasGet):
         vocabulary=Cuisine, title=u"Cuisine", required=False, default=None))
     recipes = exported(CollectionField(title=u"Recipes in this cookbook",
                                        value_type=Reference(schema=IRecipe)))
+    cover = exported(
+        Bytes(0, 5000, title=u"An image of the cookbook's cover."))
 
     @operation_parameters(
         search=TextLine(title=u"String to search for in recipe name."))

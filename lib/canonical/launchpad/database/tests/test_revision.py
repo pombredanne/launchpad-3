@@ -21,6 +21,7 @@ from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import IRevisionSet
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.branch import BranchLifecycleStatus
 from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
@@ -452,6 +453,16 @@ class TestGetRecentRevisionsForProduct(GetPublicRevisionsTestCase):
         # The revisions returned revision must be in a branch for the product.
         rev1 = self._makeRevisionInBranch(product=self.product)
         rev2 = self._makeRevisionInBranch()
+        self.assertEqual([(rev1, rev1.revision_author)],
+                         self._getRecentRevisions())
+
+    def testRevisionsMustBeInActiveBranches(self):
+        # The revisions returned revision must be in a branch for the product.
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        branch = self.factory.makeProductBranch(
+            product=self.product,
+            lifecycle_status=BranchLifecycleStatus.MERGED)
+        branch.createBranchRevision(1, self._makeRevision())
         self.assertEqual([(rev1, rev1.revision_author)],
                          self._getRecentRevisions())
 

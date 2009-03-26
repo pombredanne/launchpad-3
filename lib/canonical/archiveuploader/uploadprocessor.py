@@ -50,6 +50,7 @@ __metaclass__ = type
 import os
 import shutil
 import stat
+import sys
 
 from zope.component import getUtility
 
@@ -59,7 +60,10 @@ from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import NotFoundError
+
 from contrib.glock import GlobalLock
 
 __all__ = [
@@ -165,9 +169,14 @@ class UploadProcessor:
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
-                self.log.error(
-                    "Unhandled exception from processing an upload",
-                    exc_info=True)
+                info = sys.exc_info()
+                message = (
+                    'Exception while processing upload %s' % upload_path)
+                properties = [('error-explanation', message)]
+                request = ScriptRequest(properties)
+                error_utility = ErrorReportingUtility()
+                error_utility.raising(info, request)
+                self.log.error('%s (%s)' % (message, request.oopsid))
                 some_failed = True
 
         if some_failed:
