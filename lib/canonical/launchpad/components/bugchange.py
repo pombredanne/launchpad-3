@@ -24,7 +24,6 @@ from textwrap import dedent
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
 
@@ -218,13 +217,21 @@ class BranchLinkedToBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
-        return dict(
-            whatchanged='branch linked',
-            newvalue=self.branch.bzr_identity)
+        if self.branch.private:
+            return None
+        else:
+            return dict(
+                whatchanged='branch linked',
+                newvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
-        return {'text': '** Branch linked: %s' % self.branch.bzr_identity}
+        if self.branch.private:
+            return None
+        else:
+            return {
+                'text': '** Branch linked: %s' % self.branch.bzr_identity,
+                }
 
 
 class BranchUnlinkedFromBug(BugChangeBase):
@@ -236,13 +243,21 @@ class BranchUnlinkedFromBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
-        return dict(
-            whatchanged='branch unlinked',
-            oldvalue=self.branch.bzr_identity)
+        if self.branch.private:
+            return None
+        else:
+            return dict(
+                whatchanged='branch unlinked',
+                oldvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
-        return {'text': '** Branch unlinked: %s' % self.branch.bzr_identity}
+        if self.branch.private:
+            return None
+        else:
+            return {
+                'text': '** Branch unlinked: %s' % self.branch.bzr_identity,
+                }
 
 
 class BugDescriptionChange(AttributeChange):
