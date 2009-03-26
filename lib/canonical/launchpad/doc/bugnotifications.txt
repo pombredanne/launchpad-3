@@ -288,17 +288,17 @@ this document:
 === Expiring notifications ===
 
 During bulk imports or changes of bugs, we often want to suppress
-email notifications.  Due to the previous operation, there are pending
-bug notifications for bug six:
+email notifications.  Due to the previous operation, there is a
+pending bug notification for bug 1:
 
-    >>> notifications = BugNotification.selectBy(bugID=6, date_emailed=None)
+    >>> notifications = BugNotification.selectBy(bugID=1, date_emailed=None)
     >>> notifications.count()
-    3
+    1
 
-These notifications can be expired using the expireNotifications()
+This notification can be expired using the expireNotifications()
 method:
 
-    >>> bug_six.expireNotifications()
-    >>> notifications = BugNotification.selectBy(bugID=6, date_emailed=None)
+    >>> bug.expireNotifications()
+    >>> notifications = BugNotification.selectBy(bugID=1, date_emailed=None)
     >>> notifications.count()
     0
