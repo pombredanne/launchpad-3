@@ -1233,6 +1233,12 @@ class ArchiveSet:
         if name is None:
             name = self._getDefaultArchiveNameByPurpose(purpose)
 
+        # Deny Archives names equal their distribution names. This conflict
+        # results in archives with awkward repository URLs
+        if name == distribution.name:
+            raise AssertionError(
+                'Archives cannot have the same name as their distribution.')
+
         # Copy archives are to be instantiated with the 'publish' flag turned
         # off.
         if purpose == ArchivePurpose.COPY:

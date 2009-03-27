@@ -2292,6 +2292,19 @@ different displayname format, including their names.
     >>> print another_ppa.displayname
     PPA named nightly for Mark Shuttleworth
 
+Additionally, archives, despite of their purpose, cannot have the same
+name as their distribution.
+
+    >>> boingolinux = factory.makeDistribution(name='boingolinux')
+
+    >>> getUtility(IArchiveSet).new(
+    ...     owner=sabdfl, purpose=ArchivePurpose.PRIMARY,
+    ...     distribution=boingolinux, name=boingolinux.name)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Archives cannot have the same name as their
+    distribution.
+
 
 == Looking up named PPAs ==
 

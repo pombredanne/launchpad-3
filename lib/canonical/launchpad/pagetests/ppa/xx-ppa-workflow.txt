@@ -496,7 +496,20 @@ If Celso, by mistake, uses the same name of one of his existing PPAs
     >>> for error in get_feedback_messages(cprov_browser.contents):
     ...     print error
     There is 1 error.
-    You already have a PPA named 'ppa'
+    You already have a PPA named 'ppa'.
+
+If the PPA is named as the distribution it is targeted for it cannot
+be created, mainly because of the way we publish repositories
+including the distribution name automatically.
+
+    >>> cprov_browser.getControl(name="field.name").value = 'ubuntu'
+    >>> cprov_browser.getControl(name="field.accepted").value = True
+    >>> cprov_browser.getControl("Activate").click()
+
+    >>> for error in get_feedback_messages(cprov_browser.contents):
+    ...     print error
+    There is 1 error.
+    Archives cannot have the same name as its distribution.
 
 Providing a new name, 'edge', Celso can create a new PPA and it
 immediatilly sent to it.

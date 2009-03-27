@@ -1359,9 +1359,18 @@ class ArchiveActivateView(LaunchpadFormView):
         if proposed_name is None and self.context.archive is not None:
             self.addError('The default PPA is already activated.')
 
+        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
+        # for Ubuntu distribution. This check should be revisited with we
+        # start supporting PPAs for other distribution (debian, mainly).
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if (proposed_name is not None and proposed_name == ubuntu.name):
+            self.setFieldError(
+                'name', "Archives cannot have the same name as its "
+                "distribution.")
+
         if self.context.getPPAByName(proposed_name):
             self.setFieldError(
-                'name', "You already have a PPA named '%s'" % proposed_name)
+                'name', "You already have a PPA named '%s'." % proposed_name)
 
         if not data.get('accepted'):
             self.setFieldError(
@@ -1371,12 +1380,19 @@ class ArchiveActivateView(LaunchpadFormView):
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
         """Activate a PPA and moves to its page."""
+
         # 'name' field is ommited from the formdata for default PPAs and
         # it's dealt by IArchive.new(), which will use the default PPA name.
         name = data.get('name', None)
+
+        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
+        # for Ubuntu distribution. This check should be revisited with we
+        # start supporting PPAs for other distribution (debian, mainly).
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+
         ppa = getUtility(IArchiveSet).new(
             owner=self.context, purpose=ArchivePurpose.PPA,
-            name=name, description=data['description'])
+            distribution=ubuntu, name=name, description=data['description'])
         self.next_url = canonical_url(ppa)
 
 
