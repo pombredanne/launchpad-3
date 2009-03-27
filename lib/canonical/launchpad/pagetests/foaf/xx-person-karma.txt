@@ -19,6 +19,7 @@ details their karma-generating activities.
     Profile
     Related Software: ...
     Karma: http://launchpad.dev/~name12/+karma
+    Personal Package Archives: ...
 
     >>> anon_browser.getLink('Karma').click()
     >>> print anon_browser.title

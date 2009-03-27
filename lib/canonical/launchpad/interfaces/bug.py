@@ -663,7 +663,7 @@ class IBug(ICanBeMentored):
 
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
-    webservice_error(400)
+    webservice_error(417)
 
 
 
