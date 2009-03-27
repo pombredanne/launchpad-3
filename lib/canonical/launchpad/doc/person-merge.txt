@@ -109,9 +109,12 @@ transferred to Sample Person.
     # a person's preferred email.
     >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     EmailAddressStatus)
-    >>> email = marilize.preferredemail
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> email = IMasterObject(marilize.preferredemail)
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> email.destroySelf()
+    >>> import transaction
+    >>> transaction.commit()
 
     >>> personset.merge(marilize, sample)
 
@@ -157,13 +160,6 @@ time the caches are rebuilt.
 
     >>> sample.karma == sampleperson_old_karma
     True
-
-Marilize's OpenIDRPSummaries were transferred to Sample Person.
-
-    >>> summaries = openidrpsummaryset.getByIdentifier(
-    ...     'http://openid.launchpad.dev/+id/marilize_oid')
-    >>> summaries[0].account.displayname
-    u'Sample Person'
 
 A merged account gets a -merged suffix on its name.
 

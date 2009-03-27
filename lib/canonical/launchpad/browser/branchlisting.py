@@ -307,7 +307,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             self._branches_for_current_batch)
         result = {}
         for series in series_resultset:
-            result.setdefault(series.series_branch.id, []).append(series)
+            result.setdefault(series.branch.id, []).append(series)
         return result
 
     def getProductSeries(self, branch):
@@ -333,7 +333,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         try:
             return self._dev_series_map[branch.product]
         except KeyError:
-            result = branch.product.development_focus.series_branch
+            result = branch.product.development_focus.branch
             self._dev_series_map[branch.product] = result
             return result
 
@@ -1000,7 +1000,7 @@ class ProductBranchListingView(BranchListingView):
 
     @cachedproperty
     def development_focus_branch(self):
-        dev_focus_branch = self.context.development_focus.series_branch
+        dev_focus_branch = self.context.development_focus.branch
         if dev_focus_branch is None:
             return None
         elif check_permission('launchpad.View', dev_focus_branch):
@@ -1116,14 +1116,14 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                     self.selected_lifecycle_status)
         # The series will always have at least one series, that of the
         # development focus.
-        dev_focus_branch = sorted_series[0].series_branch
+        dev_focus_branch = sorted_series[0].branch
         if not check_permission('launchpad.View', dev_focus_branch):
             dev_focus_branch = None
         result = []
         if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
         for series in sorted_series[1:]:
-            branch = series.series_branch
+            branch = series.branch
             if (branch is not None and
                 branch not in result and
                 check_permission('launchpad.View', branch) and

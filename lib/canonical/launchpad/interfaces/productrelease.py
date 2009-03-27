@@ -224,7 +224,7 @@ class IProductReleasePublic(Interface):
 
     datereleased = exported(
         Datetime(
-            title=_('Date Released'), required=True,
+            title=_('Date released'), required=True,
             readonly=False,
             description=_('The date this release was published. Before '
                           'release, this should have an estimated '
@@ -246,40 +246,33 @@ class IProductReleasePublic(Interface):
                       schema=IPerson, required=True)
             )
 
-    productseries = exported(
-        Choice(
-            title=_('Release series'), readonly=True,
-            vocabulary='FilteredProductSeries'),
-        exported_as='project_series')
+    productseries = Choice(
+        title=_('Release series'), readonly=True,
+        vocabulary='FilteredProductSeries')
 
-    codename = exported(
-        TextLine(title=u'Code name', required=False,
-                 description=u'The release code-name. Famously, one Gnome '
-                 'release was code-named "that, and a pair of testicles", '
-                 "but you don't have to be as brave with your own release "
-                 'codenames.'),
-        exported_as='code_name')
+    codename = TextLine(
+        title=u'Code name', required=False, readonly=True,
+        description=_('The release code-name. This is deprecated, '
+                      'since it was moved to the milestone.'))
 
-    summary = exported(
+    summary = Text(
+        title=_("Summary"), required=False, readonly=True,
+        description=_('A brief summary of the release highlights, to '
+                      'be shown at the top of the release page, and in '
+                      'listings.'))
+
+    release_notes = exported(
         Text(
-            title=_("Summary"), required=False,
-            description=_('A brief summary of the release highlights, to '
-                          'be shown at the top of the release page, and in '
-                          'listings.'))
-        )
-
-    description = exported(
-        Text(
-            title=_("Description"), required=False,
-            description=_('A detailed description of the new features '
+            title=_("Release notes"), required=False,
+            description=_('A description of important new features '
                           '(though the changelog below might repeat some of '
-                          'this information). The description here will be '
-                          'shown on the project release home page.'))
+                          'this information).'))
         )
 
     changelog = exported(
         Text(
-            title=_('Changelog'), required=False)
+            title=_('Changelog'), required=False,
+            description=_('A description of every change in the release.'))
         )
 
     datecreated = exported(
@@ -295,7 +288,7 @@ class IProductReleasePublic(Interface):
         exported_as="display_name")
 
     title = exported(
-        Text(title=u'Constructed title for a project release.')
+        Text(title=u'Constructed title for a project release.', readonly=True)
         )
 
     product = exported(
@@ -310,6 +303,13 @@ class IProductReleasePublic(Interface):
             readonly=True,
             value_type=Reference(schema=IProductReleaseFile)))
 
+    milestone = exported(
+        Reference(
+            title=u"The milestone for this release.",
+            # Schema is set to IMilestone in interfaces/milestone.py.
+            schema=Interface,
+            required=True))
+
     def getFileAliasByName(name):
         """Return the `LibraryFileAlias` by file name.
 
@@ -321,7 +321,6 @@ class IProductReleasePublic(Interface):
 
         Raises a NotFoundError if no matching ProductReleaseFile exists.
         """
-
 
 class IProductRelease(IProductReleaseEditRestricted,
                       IProductReleasePublic):

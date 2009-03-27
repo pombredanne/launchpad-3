@@ -19,15 +19,19 @@ from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.formlib.form import FormFields
+from zope.schema import Bool
 
 from canonical.launchpad.interfaces import (
     IProductRelease, IProductReleaseFileAddForm)
 
+from canonical.launchpad import _
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, stepthrough)
+from canonical.widgets import DateTimeWidget
 
 
 class ProductReleaseNavigation(Navigation):
@@ -46,7 +50,7 @@ class ProductReleaseNavigation(Navigation):
 class ProductReleaseContextMenu(ContextMenu):
 
     usedfor = IProductRelease
-    links = ['edit', 'add_file', 'administer', 'download']
+    links = ['edit', 'add_file', 'administer', 'download', 'view_milestone']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -67,29 +71,73 @@ class ProductReleaseContextMenu(ContextMenu):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
+    def view_milestone(self):
+        text = 'View milestone'
+        url = canonical_url(self.context.milestone)
+        return Link(url, text)
+
 
 class ProductReleaseAddView(LaunchpadFormView):
-    """View to add a release to a `ProductSeries`."""
+    """Create a product release.
+
+    Also, deactivate the milestone it is attached to.
+    """
+
     schema = IProductRelease
     field_names = [
-        'version', 'codename', 'summary', 'description', 'changelog']
-    custom_widget('summary', TextAreaWidget, width=62, height=5)
+        'datereleased',
+        'release_notes',
+        'changelog',
+        ]
+
+    custom_widget('datereleased', DateTimeWidget)
+    custom_widget('release_notes', TextAreaWidget, height=7, width=62)
+    custom_widget('changelog', TextAreaWidget, height=7, width=62)
+
+    def initialize(self):
+        if self.context.product_release is not None:
+            self.request.response.addErrorNotification(
+                _("A product release already exists for this milestone."))
+            self.request.response.redirect(
+                canonical_url(self.context.product_release) + '/+edit')
+        else:
+            super(ProductReleaseAddView, self).initialize()
+
+    def setUpFields(self):
+        super(ProductReleaseAddView, self).setUpFields()
+        if self.context.active is True:
+            self.form_fields += FormFields(
+                Bool(
+                    __name__='keep_milestone_active',
+                    title=_("Keep the milestone active."),
+                    description=_(
+                        "Only select this if bugs or blueprints still need "
+                        "to be targeted to this product release&rsquo;s "
+                        "milestone.")),
+                render_context=self.render_context)
+
+    @action(_('Publish release'), name='publish')
+    def publishRelease(self, action, data):
+        """Publish product release for this milestone."""
+        newrelease = self.context.createProductRelease(
+            self.user, changelog=data['changelog'],
+            release_notes=data['release_notes'],
+            datereleased=data['datereleased'])
+        # Set Milestone.active to false, since bugs & blueprints
+        # should not be targeted to a milestone in the past.
+        if data['keep_milestone_active'] is False:
+            self.context.active = False
+            self.request.response.addWarningNotification(
+                _("The milestone for this product release was deactivated "
+                  "so that bugs & blueprints cannot be targeted "
+                  "to a milestone in the past."))
+        self.next_url = canonical_url(newrelease)
+        notify(ObjectCreatedEvent(newrelease))
 
     @property
     def label(self):
         """The form label."""
-        return 'Register a new %s release' % self.context.name
-
-    @action('Add', name='add')
-    def createRelease(self, action, data):
-        user = self.user
-        product_series = self.context
-        newrelease = product_series.addRelease(
-            data['version'], user, codename=data['codename'],
-            summary=data['summary'], description=data['description'],
-            changelog=data['changelog'])
-        self.next_url = canonical_url(newrelease)
-        notify(ObjectCreatedEvent(newrelease))
+        return 'Register a new %s release' % self.context.product.name
 
     @property
     def cancel_url(self):
@@ -101,8 +149,14 @@ class ProductReleaseEditView(LaunchpadEditFormView):
 
     schema = IProductRelease
     field_names = [
-        "summary", "description", "changelog", "codename", "version"]
-    custom_widget('summary', TextAreaWidget, width=62, height=5)
+        "datereleased",
+        "release_notes",
+        "changelog",
+        ]
+
+    custom_widget('datereleased', DateTimeWidget)
+    custom_widget('release_notes', TextAreaWidget, height=7, width=62)
+    custom_widget('changelog', TextAreaWidget, height=7, width=62)
 
     @property
     def label(self):

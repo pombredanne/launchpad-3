@@ -132,7 +132,7 @@ def _mergeOrAddEmails(personset, emailset, cluster, logger):
             for email in emailset.getByPerson(otherperson):
                 # EmailAddress.person is a readonly field, so we need to
                 # remove the security proxy here.
-                removeSecurityProxy(email).person = person
+                removeSecurityProxy(email).personID = person.id
 
         # merge people
         for otherperson in people:

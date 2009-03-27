@@ -221,8 +221,8 @@ token to a fixed value:
     >>> import pytz, datetime
     >>> from canonical.launchpad.database import LoginToken
     >>> logintoken = LoginToken.selectOneBy(token=token_value)
-    >>> logintoken.created = datetime.datetime(2005,04,01, 12,00,00,
-    ...                                        tzinfo=pytz.timezone('UTC'))
+    >>> logintoken.date_created = datetime.datetime(
+    ...     2005,04,01, 12,00,00, tzinfo=pytz.timezone('UTC'))
     >>> logintoken.sync()
 
 Back to Sample User. He visits the token URL and is asked to sign some

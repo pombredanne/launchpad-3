@@ -210,7 +210,7 @@ To test distroseries, we'll switch from "ubuntu hoary" to "ubuntu warty" and
 then verify it works correctly by checking the portlet details.
 
     >>> admin_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+milestone/milestone3/+admin')
+    ...     'http://launchpad.dev/ubuntu/+milestone/milestone3/+edit')
     >>> admin_browser.getControl(name='field.distroseries').displayValue = [
     ...     'ubuntu warty']
     >>> admin_browser.getControl('Update').click()
@@ -235,7 +235,7 @@ series we just created. For this test, we'll switch from "trunk" to "main"
 and then verify it works correctly by checking the portlet details.
 
     >>> admin_browser.open(
-    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1/+admin')
+    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1/+edit')
     >>> admin_browser.getControl(name='field.productseries').displayValue = [
     ...     'alsa-utils main']
     >>> admin_browser.getControl('Update').click()
@@ -256,3 +256,56 @@ can create structural bug subscriptions.
     http://launchpad.dev/firefox/+milestone/1.0/+subscribe
     >>> print user_browser.title
     Bug subscriptions for Milestone 1.0 for Mozilla Firefox
+
+
+== Deleting milestones ==
+
+The milestone page for a series lists all the milestones targeted to
+the series.
+
+    >>> driver_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> driver_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> driver_browser.getLink('See all milestones').click()
+    >>> print driver_browser.title
+    Mozilla Firefox Series: trunk's milestones
+    >>> print extract_text(find_tag_by_id(
+    ...     driver_browser.contents, 'milestones'))
+    Milestone  Date Targeted  Series Target  Summary
+    0.9.2...
+    0.9.1...
+    0.9...
+
+A user with launchpad.Edit rights for a release can see the delete link and
+access the delete page. Sample Person is the driver so he has those rights.
+
+    >>> driver_browser.getLink('0.9.2').click()
+    >>> print driver_browser.title
+    Milestone 0.9.2 for Mozilla Firefox
+    >>> driver_browser.getLink('delete').click()
+    >>> print driver_browser.title
+    Delete Milestone 0.9.2 for Mozilla Firefox
+
+The 0.9.2 release has a release and files associated with it. Sample
+Person reads that they will be deleted too.
+
+    >>> print extract_text(find_main_content(driver_browser.contents))
+    Delete Milestone 0.9.2 for Mozilla Firefox ...
+    The associated 0.9.2 release "One (secure) Tree Hill" and its files
+    will be also be deleted:
+    firefox-0.9.2.orig.tar.gz ...
+
+Sample Person chooses the delete button, then reads that the action is
+successful.
+
+    >>> driver_browser.getControl('Delete this Milestone').click()
+    >>> print driver_browser.title
+    Overview of Mozilla Firefox Series: trunk
+    >>> for message in get_feedback_messages(driver_browser.contents):
+    ...     print message
+    Milestone 0.9.2 deleted.
+    >>> driver_browser.getLink('See all milestones').click()
+    >>> print extract_text(find_tag_by_id(
+    ...     driver_browser.contents, 'milestones'))
+    Milestone  Date Targeted  Series Target  Summary
+    0.9.1...
+    0.9...

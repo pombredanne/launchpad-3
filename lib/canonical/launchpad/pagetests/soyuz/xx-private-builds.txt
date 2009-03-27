@@ -356,6 +356,9 @@ Let's make the iceweasel package available in Warty.  First log in as
 an admin to be able to manipulate the source publishing.
 
     >>> login("foo.bar@canonical.com")
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -363,6 +366,7 @@ an admin to be able to manipulate the source publishing.
     >>> new_pub = private_source_pub.copyTo(
     ...     warty, private_source_pub.pocket, ubuntu.main_archive)
     >>> flush_database_updates()
+    >>> policy = getUtility(IStoreSelector).pop()
     >>> logout()
 
 Now the anonymous user can see the build:
