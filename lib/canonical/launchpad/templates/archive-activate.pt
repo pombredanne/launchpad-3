@@ -23,7 +23,8 @@
     <a href="https://help.launchpad.net/Packaging/PPA">PPA help page</a>.
   </p>
 
-  <div tal:condition="context/ppas" id="ppas">
+  <div tal:condition="context/ppas" id="ppas"
+       style="padding-top: .3em; padding-bottom: .3em;">
     <h2>Existing PPAs</h2>
     <div tal:replace="structure context/@@+ppas-list"/>
   </div>
