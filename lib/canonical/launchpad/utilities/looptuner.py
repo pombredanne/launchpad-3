@@ -5,11 +5,11 @@ __metaclass__ = type
 __all__ = ['DBLoopTuner', 'LoopTuner']
 
 
-import logging
 import time
 
 from zope.component import getUtility
 
+import canonical.launchpad.scripts
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
@@ -43,7 +43,7 @@ class LoopTuner:
     """
 
     def __init__(self, operation, goal_seconds, minimum_chunk_size=1,
-            maximum_chunk_size=1000000000, cooldown_time=None):
+            maximum_chunk_size=1000000000, cooldown_time=None, log=None):
         """Initialize a loop, to be run to completion at most once.
 
         Parameters:
@@ -71,6 +71,10 @@ class LoopTuner:
         self.minimum_chunk_size = minimum_chunk_size
         self.maximum_chunk_size = maximum_chunk_size
         self.cooldown_time = cooldown_time
+        if log is None:
+            self.log = canonical.launchpad.scripts.log
+        else:
+            self.log = log
 
     def run(self):
         """Run the loop to completion."""
@@ -85,7 +89,7 @@ class LoopTuner:
             new_clock = self._time()
             time_taken = new_clock - last_clock
             last_clock = new_clock
-            logging.info("Iteration %d (size %.1f): %.3f seconds" %
+            self.log.info("Iteration %d (size %.1f): %.3f seconds" %
                          (iteration, chunk_size, time_taken))
 
             last_clock = self._coolDown(last_clock)
@@ -111,7 +115,7 @@ class LoopTuner:
         total_time = last_clock - start_time
         average_size = total_size/max(1, iteration)
         average_speed = total_size/max(1, total_time)
-        logging.info(
+        self.log.info(
             "Done. %d items in %d iterations, "
             "%.3f seconds, "
             "average size %f (%s/s)" %
@@ -164,7 +168,7 @@ class DBLoopTuner(LoopTuner):
 
             time_to_sleep = max(lag - self.acceptable_replication_lag, 1)
 
-            logging.info(
+            self.log.info(
                 "Database replication lagged. Sleeping %f seconds"
                 % time_to_sleep)
 
@@ -190,10 +194,10 @@ class DBLoopTuner(LoopTuner):
             if not results:
                 break
             for runtime, procpid, usename, datname, query in results:
-                log.info(
+                self.log.info(
                     "Blocked on %s old xact %s@%s/%d - %s"
                     % (runtime, usename, datname, procpid, current_query))
-            log.info("Sleeping for 3 minutes.")
+            self.log.info("Sleeping for 3 minutes.")
             time.sleep(3*60)
 
     def _coolDown(self, bedtime):

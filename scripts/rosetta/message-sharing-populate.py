@@ -193,11 +193,11 @@ class PopulateMessageSharingSchema(LaunchpadScript):
     def main(self):
         self.logger.info("Populating new TranslationMessage columns.")
         tm_loop = PopulateTranslationMessage(self.txn, self.logger)
-        DBLoopTuner(tm_loop, 2).run()
+        DBLoopTuner(tm_loop, 2, log=self.logger).run()
 
         self.logger.info("Populating TranslationTemplateItem.")
         tti_loop = PopulateTranslationTemplateItem(self.txn, self.logger)
-        DBLoopTuner(tti_loop, 2).run()
+        DBLoopTuner(tti_loop, 2, log=self.logger).run()
 
 
 if __name__ == '__main__':
