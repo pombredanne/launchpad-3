@@ -32,7 +32,8 @@ class TestBugChanges(unittest.TestCase):
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
         self.user = self.factory.makePerson(displayname='Arthur Dent')
-        self.product = self.factory.makeProduct(owner=self.user)
+        self.product = self.factory.makeProduct(
+            owner=self.user, official_malone=True)
         self.bug = self.factory.makeBug(product=self.product, owner=self.user)
         self.bug_task = self.bug.bugtasks[0]
 
