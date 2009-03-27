@@ -11,6 +11,8 @@ __all__ = [
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
     'InvalidBranchIdentifier',
+    'ISourcePackagePocket',
+    'ISourcePackagePocketFactory',
     'NoLinkedBranch',
     ]
 
@@ -150,4 +152,47 @@ class IBranchLookup(Interface):
 
         :return: a tuple of `IBranch`, extra_path. 'extra_path' is used to
             make things like 'bzr cat lp:~foo/bar/baz/README' work.
+        """
+
+
+class ISourcePackagePocketFactory(Interface):
+    """Utility for constructing source package pocket wrappers."""
+
+    def new(package, pocket):
+        """Construct a new `ISourcePackagePocket`.
+
+        :param package: An `ISourcePackagePocket`.
+        :param pocket: A `DBItem` of `PackagePublishingPocket`.
+        :return: `ISourcePackagePocket`.
+        """
+
+
+class ISourcePackagePocket(ICanHasLinkedBranch):
+    """A wrapper around a source package and a pocket.
+
+    Used to provide a single object that can be used in exceptions about a
+    sourcepackage and a pocket not having an official linked branch.
+    """
+
+    # XXX: JonathanLange 2009-03-26: This ought to go away when ISourcePackage
+    # gets a pocket attribute.
+
+    displayname = Attribute("The display name")
+    path = Attribute("The path of the source package pocket.")
+    pocket = Attribute("The pocket.")
+    sourcepackage = Attribute("The source package.")
+    suite = Attribute(
+        "The name of the suite. The distro series name and the pocket name.")
+
+    def __eq__(other):
+        """Is this source package pocket equal to another?
+
+        True if and only if the package and pocket of the other are equal to
+        our package and pocket.
+        """
+
+    def __ne__(other):
+        """Is this source package pocket not equal to another?
+
+        True if and only if self and other are not equal.
         """
