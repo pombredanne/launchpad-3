@@ -3151,6 +3151,39 @@ class BugActivityItem:
         return "%s changed" % self.whatchanged
 
     @property
+    def _formatted_tags_change(self):
+        """Return a tags change as lists of added and removed tags."""
+        assert self.whatchanged == 'tags', (
+            "Can't return a formatted tags change for a change in %s."
+            % self.whatchanged)
+
+        # Turn the strings of newvalue and oldvalue into sets so we
+        # can work out the differences.
+        if self.newvalue != '':
+            new_tags = set(self.newvalue.split(' '))
+        else:
+            new_tags = set()
+
+        if self.oldvalue != '':
+            old_tags = set(self.oldvalue.split(' '))
+        else:
+            old_tags = set()
+
+        added_tags = sorted(new_tags.difference(old_tags))
+        removed_tags = sorted(old_tags.difference(new_tags))
+
+        return_string = ''
+        if len(added_tags) > 0:
+            return_string = "added: %s\n" % ' '.join(added_tags)
+        if len(removed_tags) > 0:
+            return_string =  "%sremoved: %s" % (
+                return_string, ' '.join(removed_tags))
+
+        # Trim any leading or trailing \ns and then convert the to
+        # <br />s so they're displayed correctly.
+        return return_string.strip('\n')
+
+    @property
     def change_details(self):
         """Return a detailed description of the change."""
         diffable_changes = ['summary', 'description']
@@ -3162,30 +3195,9 @@ class BugActivityItem:
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
         elif self.whatchanged == 'tags':
-            # We special-case tags because we can add logic to work out
-            # what's been added and what's been removed.
-            if self.newvalue != '':
-                new_tags = set(self.newvalue.split(' '))
-            else:
-                new_tags = set()
-
-            if self.oldvalue != '':
-                old_tags = set(self.oldvalue.split(' '))
-            else:
-                old_tags = set()
-
-            added_tags = sorted(new_tags.difference(old_tags))
-            removed_tags = sorted(old_tags.difference(new_tags))
-
-            tags_added_string = ''
-            tags_removed_string = ''
-            if len(added_tags) > 0:
-                tags_added_string = "tags added: %s" % ' '.join(added_tags)
-            if len(removed_tags) > 0:
-                tags_removed_string = "tags removed: %s" % (
-                    ' '.join(removed_tags))
-
-            return "<br />".join([tags_added_string, tags_removed_string])
+            # We special-case tags because we can work out what's been
+            # added and what's been removed.
+            return self._formatted_tags_change.replace('\n', '<br />')
         else:
             return "%s &#8594; %s" % (
                 cgi.escape(self.oldvalue), cgi.escape(self.newvalue))

@@ -207,6 +207,6 @@ added.
     --------
     Foo Bar ... ago
     tags changed:
-    tags added: tag4
-    tags removed: tag3
+    added: tag4
+    removed: tag3
     --------
