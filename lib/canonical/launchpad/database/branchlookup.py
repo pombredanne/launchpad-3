@@ -9,7 +9,7 @@ __all__ = []
 
 from zope.component import (
     adapter, adapts, getSiteManager, getUtility, queryMultiAdapter)
-from zope.interface import implementer, implements
+from zope.interface import classProvides, implementer, implements
 
 from storm.expr import Join
 from sqlobject import SQLObjectNotFound
@@ -24,19 +24,19 @@ from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, ICanHasLinkedBranch,
-    ILinkedBranchTraversable, ILinkedBranchTraverser, NoLinkedBranch)
+    ILinkedBranchTraversable, ILinkedBranchTraverser, ISourcePackagePocket,
+    ISourcePackagePocketFactory, NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distroseries import (
-    IDistroSeries, NoSuchDistroSeries)
+    IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
 from canonical.launchpad.interfaces.productseries import (
     IProductSeries, NoSuchProductSeries)
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.validators.name import valid_name
@@ -129,30 +129,32 @@ class DistributionTraversable(_BaseTraversable):
 
     def traverse(self, name):
         """See `ITraversable`."""
-        series = self.context.getSeries(name)
-        if series is None:
-            raise NoSuchDistroSeries(name)
         # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
         # could also try to find a package and then return a reference to its
         # development focus.
-        return series
+        return getUtility(IDistroSeriesSet).fromSuite(self.context, name)
 
 
-class DistroSeriesTraversable(_BaseTraversable):
+class DistroSeriesTraversable:
     """Linked branch traversable for distribution series.
 
     From here, you can traverse to a source package.
     """
 
-    adapts(IDistroSeries)
+    adapts(IDistroSeries, DBItem)
     implements(ILinkedBranchTraversable)
+
+    def __init__(self, distroseries, pocket):
+        self.distroseries = distroseries
+        self.pocket = pocket
 
     def traverse(self, name):
         """See `ITraversable`."""
-        sourcepackage = self.context.getSourcePackage(name)
+        sourcepackage = self.distroseries.getSourcePackage(name)
         if sourcepackage is None:
             raise NoSuchSourcePackageName(name)
-        return sourcepackage, PackagePublishingPocket.RELEASE
+        return getUtility(ISourcePackagePocketFactory).new(
+            sourcepackage, self.pocket)
 
 
 class HasLinkedBranch:
@@ -178,20 +180,12 @@ def product_linked_branch(product):
     return HasLinkedBranch(product.development_focus.series_branch)
 
 
-@adapter(ISourcePackage, DBItem)
-@implementer(ICanHasLinkedBranch)
-def source_package_linked_branch(package, pocket):
-    """The official branch for a pocket on a package is its linked branch."""
-    return HasLinkedBranch(package.getBranch(pocket))
-
-
 sm = getSiteManager()
 sm.registerAdapter(ProductTraversable)
 sm.registerAdapter(DistributionTraversable)
 sm.registerAdapter(DistroSeriesTraversable)
 sm.registerAdapter(product_series_linked_branch)
 sm.registerAdapter(product_linked_branch)
-sm.registerAdapter(source_package_linked_branch)
 
 
 class LinkedBranchTraverser:
@@ -206,10 +200,74 @@ class LinkedBranchTraverser:
         while segments:
             name = segments.pop(0)
             context = traversable.traverse(name)
-            traversable = ILinkedBranchTraversable(context, None)
+            traversable = adapt(context, ILinkedBranchTraversable)
             if traversable is None:
                 break
         return context
+
+
+class SourcePackagePocket:
+    """A source package and a pocket.
+
+    This exists to provide a consistent interface for the error condition of
+    users looking up official branches for the pocket of a source package
+    where no such linked branch exists. All of the other "no linked branch"
+    cases have a single object for which there is no linked branch -- this is
+    the equivalent for source packages.
+    """
+
+    implements(ISourcePackagePocket)
+    classProvides(ISourcePackagePocketFactory)
+
+    def __init__(self, sourcepackage, pocket):
+        self.sourcepackage = sourcepackage
+        self.pocket = pocket
+
+    @classmethod
+    def new(cls, package, pocket):
+        """See `ISourcePackagePocketFactory`."""
+        return cls(package, pocket)
+
+    def __eq__(self, other):
+        """See `ISourcePackagePocket`."""
+        try:
+            other = ISourcePackagePocket(other)
+        except TypeError:
+            return NotImplemented
+        return (
+            self.sourcepackage == other.sourcepackage
+            and self.pocket == other.pocket)
+
+    def __ne__(self, other):
+        """See `ISourcePackagePocket`."""
+        return not (self == other)
+
+    @property
+    def displayname(self):
+        """See `ISourcePackagePocket`."""
+        return self.path
+
+    @property
+    def branch(self):
+        """See `ISourcePackagePocket`."""
+        return self.sourcepackage.getBranch(self.pocket)
+
+    @property
+    def path(self):
+        """See `ISourcePackagePocket`."""
+        return '%s/%s/%s' % (
+            self.sourcepackage.distribution.name,
+            self.suite,
+            self.sourcepackage.name)
+
+    @property
+    def suite(self):
+        """See `ISourcePackagePocket`."""
+        distroseries = self.sourcepackage.distroseries.name
+        if self.pocket == PackagePublishingPocket.RELEASE:
+            return distroseries
+        else:
+            return '%s-%s' % (distroseries, self.pocket.name.lower())
 
 
 class BranchLookup:
