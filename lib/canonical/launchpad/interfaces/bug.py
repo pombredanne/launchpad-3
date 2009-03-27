@@ -16,6 +16,7 @@ __all__ = [
     'IFrontPageBugAddForm',
     'IProjectBugAddForm',
     'InvalidBugTargetType',
+    'InvalidDuplicateValue',
     ]
 
 from zope.component import getUtility
@@ -168,8 +169,9 @@ class IBug(ICanBeMentored):
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
         Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
-    duplicateof = exported(
-        DuplicateBug(title=_('Duplicate Of'), required=False),
+    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
+    readonly_duplicateof = exported(
+        DuplicateBug(title=_('Duplicate Of'), required=False, readonly=True),
         exported_as='duplicate_of')
     private = exported(
         Bool(title=_("This bug report should be private"), required=False,
@@ -651,6 +653,18 @@ class IBug(ICanBeMentored):
     @export_write_operation()
     def markUserAffected(user, affected=True):
         """Mark :user: as affected by this bug."""
+
+    @mutator_for(readonly_duplicateof)
+    @operation_parameters(duplicate_of=copy_field(readonly_duplicateof))
+    @export_write_operation()
+    def markAsDuplicate(duplicate_of):
+        """Mark this bug as a duplicate of another."""
+
+
+class InvalidDuplicateValue(Exception):
+    """A bug cannot be set as the duplicate of another."""
+    webservice_error(400)
+
 
 
 # We are forced to define these now to avoid circular import problems.
