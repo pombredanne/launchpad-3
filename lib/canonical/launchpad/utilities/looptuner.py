@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = ['DBLoopTuner', 'LoopTuner']
 
 
+from datetime import timedelta
 import time
 
 import transaction
@@ -149,11 +150,15 @@ class LoopTuner:
         return time.time()
 
 
+def timedelta_to_seconds(td):
+    return 24 * 60 * td.days + td.seconds
+
+
 class DBLoopTuner(LoopTuner):
     """A LoopTuner that plays well with PostgreSQL and replication."""
 
     # We block until replication lag is under this threshold.
-    acceptable_replication_lag = 30 # In seconds.
+    acceptable_replication_lag = timedelta(seconds=30) # In seconds.
 
     # We block if there are transactions running longer than this threshold.
     long_running_transaction = 60*60 # In seconds
@@ -167,7 +172,9 @@ class DBLoopTuner(LoopTuner):
             if lag <= self.acceptable_replication_lag:
                 return
 
-            time_to_sleep = max(lag - self.acceptable_replication_lag, 1)
+            time_to_sleep = max(
+                1, timedelta_to_seconds(
+                    lag - self.acceptable_replication_lag))
 
             self.log.info(
                 "Database replication lagged. Sleeping %f seconds"
