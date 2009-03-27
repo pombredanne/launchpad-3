@@ -299,3 +299,21 @@ The change_details are expressed as a simple change.
 
     >>> print activity_item.change_details
     New &#8594; Triaged
+
+For assignee changes, BugActivityItem will ensure that old or new values
+of None will be converted to the string 'nobody'.
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='malone: assinee', oldvalue=None,
+    ...     newvalue='somebody', person=user, datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+    >>> print activity_item.change_details
+    nobody &#8594; somebody
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='malone: assinee',
+    ...     oldvalue='somebody', newvalue=None, person=user,
+    ...     datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+    >>> print activity_item.change_details
+    somebody &#8594; nobody

@@ -183,7 +183,7 @@ added.
     --------
     Foo Bar ... ago
     tags: added: tag4
-                  removed: tag3
+          removed: tag3
     --------
 
 Changes to a BugTask's attributes will show up with the task's target
@@ -193,6 +193,9 @@ name next to them to differentiate one from another.
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+editstatus')
     >>> admin_browser.getControl('Status').value = ['Confirmed']
     >>> admin_browser.getControl('Importance').value = ['High']
+    >>> admin_browser.getControl(
+    ...     name='redfish.assignee.option').value = [
+    ...         'redfish.assignee.assign_to_me']
     >>> admin_browser.getControl("Save Changes").click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
@@ -201,6 +204,7 @@ name next to them to differentiate one from another.
     ...
     --------
     Foo Bar ... ago
+    redfish assignee: nobody &#8594; name16
     redfish importance: Undecided &#8594; High
     redfish status: New &#8594; Confirmed
     --------

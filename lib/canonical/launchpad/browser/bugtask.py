@@ -779,7 +779,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         activity_by_date = {}
         bugtask_change_re = (
             '[a-z0-9][a-z0-9\+\.\-]+: '
-            '(importance|status)')
+            '(assignee|importance|status)')
         interesting_changes = [
              'description',
              'security vulnerability',
@@ -3203,6 +3203,7 @@ class BugActivityItem:
     def change_details(self):
         """Return a detailed description of the change."""
         diffable_changes = ['summary', 'description']
+        assignee_regex = re.compile('[a-z0-9][a-z0-9\+\.\-]+: assignee')
 
         if self.whatchanged in diffable_changes:
             # If we're going to display it as a diff we replace \ns with
@@ -3210,10 +3211,23 @@ class BugActivityItem:
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
+
         elif self.whatchanged == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
             return self._formatted_tags_change.replace('\n', '<br />')
+
+        elif assignee_regex.match(self.whatchanged) is not None:
+            return_dict = {
+                'old_value': self.oldvalue,
+                'new_value': self.newvalue,
+                }
+            for key in return_dict:
+                if return_dict[key] is None:
+                    return_dict[key] = 'nobody'
+
+            return "%(old_value)s &#8594; %(new_value)s" % return_dict
+
         else:
             return "%s &#8594; %s" % (
                 cgi.escape(self.oldvalue), cgi.escape(self.newvalue))
