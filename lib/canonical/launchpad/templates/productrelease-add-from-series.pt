@@ -1,0 +1,135 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+<body>
+<metal:block fill-slot="head_epilogue">
+  <script tal:content="structure string:
+    YUI().use('dom', 'node', 'io-base', 'lazr.anim', 'lazr.formoverlay',
+        function (Y) {
+
+        // This will be set, if the form overlay is created.
+        var milestone_form;
+        var milestone_form_uri = '${view/milestone_form_uri}';
+        var series_uri = '${view/series_api_uri}';
+
+        var get_by_id = function (id) {
+            return Y.get(Y.DOM.byId(id));
+        };
+
+        var create_form_overlay = function (id, response, args) {
+            var form_content = response.responseText;
+            var form_submit_button = Y.Node.create(
+                '<button type=\'submit\' name=\'field.actions.change\' ' +
+                'value=\'Add Milestone\' >' +
+                'Add Milestone</button>');
+            milestone_form = new Y.lazr.FormOverlay({
+                headerContent: '<h2>Add Milestone</h2>',
+                form_content: form_content,
+                form_submit_button: form_submit_button,
+                centered: true,
+                form_submit_callback: save_new_milestone,
+                visible: false
+            });
+            milestone_form.render();
+            milestone_form.show();
+        };
+
+        var save_new_milestone = function (data) {
+            milestone_form.hide();
+
+            var parameters = {
+                name: data['field.name'][0],
+                summary: data['field.summary'][0]
+            };
+
+            var date_targeted = Y.Lang.trim(data['field.dateexpected'][0]);
+            if (date_targeted != '') {
+                parameters.date_targeted = date_targeted;
+            }
+
+            var add_milestone_to_menu = function(ignore) {
+                var select_menu = get_by_id('field.milestone_for_release');
+                var new_milestone_option = Y.get(
+                    new Option(parameters.name, 'None'));
+                select_menu.appendChild(new_milestone_option);
+                var children = select_menu.get('children');
+                children.item(children.size()-1).set('selected', true);
+                var div = select_menu.ancestor();
+                Y.lazr.anim.green_flash({node: div}).run();
+            };
+
+            client = new LP.client.Launchpad();
+            client.named_post(series_uri, 'newMilestone', {
+                parameters: parameters,
+                on: {
+                    success: add_milestone_to_menu,
+                    failure: function (ignore, response, args) {
+                        alert(String(response.status)
+                              + ' ' + response.statusText + '\n'
+                              + response.responseText);
+                    }
+                }
+            });
+        };
+
+
+        var get_milestone_form = function () {
+            Y.io(milestone_form_uri, {
+                on: {
+                    success: create_form_overlay,
+                    failure: function (e) {
+                        alert('failed');
+                    }
+                }
+            });
+        };
+
+        var show_milestone_form = function (e) {
+            if (milestone_form) {
+                e.preventDefault();
+                milestone_form.show();
+            } else {
+                get_milestone_form();
+            }
+            var select_menu = get_by_id('field.milestone_for_release');
+            select_menu.get('children').item(0).set('selected', true);
+        };
+
+        Y.on('domready', function () {
+            var select_menu = get_by_id('field.milestone_for_release');
+            var new_milestone_option = Y.get(
+                new Option('Create milestone...', 'None'));
+            new_milestone_option.on('click', show_milestone_form);
+            select_menu.insertBefore(
+                new_milestone_option,
+                select_menu.get('children').item(1));
+        });
+    });
+  "/>
+</metal:block>
+
+<div metal:fill-slot="main">
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_info" tal:condition="context/releases">
+      The following releases have been made in this series:
+      <ul>
+        <li tal:repeat="release context/releases">
+          <tal:version content="release/version">0.9</tal:version>
+          <tal:codename content="release/codename">seamonkey</tal:codename>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+

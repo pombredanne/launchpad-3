@@ -86,6 +86,14 @@
         tal:attributes="href
         string:${icingroot}/lazr/build/inlineedit/assets/skins/sam/editor.css"
         />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay.css"
+        />
+    <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
+        />
 
     <tal:devmode condition="devmode">
       <script type="text/javascript"

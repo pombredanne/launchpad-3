@@ -203,7 +203,7 @@
         class="canonical.launchpad.browser.ProductReleaseFromSeriesAddView"
         facet="overview"
         permission="launchpad.Edit"
-        template="../templates/productrelease-add.pt"
+        template="../templates/productrelease-add-from-series.pt"
     />
 
     <browser:page

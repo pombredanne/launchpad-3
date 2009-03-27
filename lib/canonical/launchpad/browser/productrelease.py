@@ -84,10 +84,7 @@ class ProductReleaseContextMenu(ContextMenu):
 class ProductReleaseAddViewMixin(LaunchpadFormView):
     """Mixin for creating a release from an existing or new milestone.
 
-    Subclasses need to define:
-        * The field_names list.
-        * The product_series attribute.
-        * A form action.
+    Subclasses need to define the field_names a form action.
     """
     schema = IProductRelease
 
@@ -158,10 +155,6 @@ class ProductReleaseAddView(ProductReleaseAddViewMixin):
         if self.context.active is True:
             self._appendKeepMilestoneActiveField()
 
-    @property
-    def product_series(self):
-        return self.context.productseries
-
     @action(_('Create release'), name='create')
     def createRelease(self, action, data):
         self._createRelease(self.context, data)
@@ -178,6 +171,12 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewMixin):
         'release_notes',
         'changelog',
         ]
+
+    def initialize(self):
+        # The dynamically loaded milestone form needs this javascript
+        # enabled in the main-template.pt.
+        self.request.needs_datepicker_iframe = True
+        super(ProductReleaseFromSeriesAddView, self).initialize()
 
     def setUpFields(self):
         super(ProductReleaseFromSeriesAddView, self).setUpFields()
@@ -199,8 +198,13 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewMixin):
         self.form_fields = milestone_field + self.form_fields
 
     @property
-    def product_series(self):
-        return self.context
+    def milestone_form_uri(self):
+        """URI for form displayed by the formoverlay widget."""
+        return canonical_url(self.context) + '/+addmilestone/++form++'
+
+    @property
+    def series_api_uri(self):
+        return canonical_url(self.context, path_only_if_possible=True)
 
     @action(_('Create release'), name='create')
     def createRelease(self, action, data):

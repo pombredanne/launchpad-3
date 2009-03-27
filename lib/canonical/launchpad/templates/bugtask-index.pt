@@ -189,18 +189,6 @@ function update_bug_duplicate(data) {
 
 });
       </script>" />
-      <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/overlay/assets/pretty-overlay-core.css"
-        />
-      <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay-skin.css"
-        />
-      <link rel="stylesheet" type="text/css"
-        tal:attributes="href
-        string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
-        />
     </metal:block>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
