@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-__all__ = ['LoopTuner']
+__all__ = ['DBLoopTuner', 'LoopTuner']
 
 
 import logging
@@ -138,4 +138,69 @@ class LoopTuner:
         actually waiting.
         """
         return time.time()
+
+
+class DBLoopTuner(LoopTuner):
+    """A LoopTuner that plays well with PostgreSQL and replication."""
+
+    # We block until replication lag is under this threshold.
+    acceptable_replication_lag = 30 # In seconds.
+
+    # We block if there are transactions running longer than this threshold.
+    long_running_transaction = 60*60 # In seconds
+
+    def _blockWhenLagged(self):
+        """When database replication lag is high, block until it drops."""
+        # Lag is most meaningful on the master.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        while True:
+            lag = store.execute("SELECT replication_lag()").get_one()[0]
+            if lag <= self.acceptable_replication_lag:
+                return
+
+            time_to_sleep = max(lag - self.acceptable_replication_lag, 1)
+
+            logging.info(
+                "Database replication lagged. Sleeping %f seconds"
+                % time_to_sleep)
+
+            time.sleep(time_to_sleep)
+
+    def _blockForLongRunningTransactions(self):
+        """If there are long running transactions, block to avoid making
+        bloat worse."""
+        if self.long_running_transaction is None:
+            return
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        while True:
+            results = list(store.execute("""
+                SELECT
+                    CURRENT_TIMESTAMP - xact_start,
+                    procpid,
+                    usename,
+                    datname,
+                    current_query
+                FROM pg_stat_activity
+                WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
+                """ % self.long_running_transaction).get_all())
+            if not result:
+                break
+            for runtime, procpid, usename, datname, query in result:
+                log.info(
+                    "Blocked on %s old xact %s@%s/%d - %s"
+                    % (runtime, usename, datname, procpid, current_query))
+            log.info("Sleeping for 3 minutes.")
+            time.sleep(3*60)
+
+    def _coolDown(self, bedtime):
+        """As per LoopTuner._coolDown, except we always wait until there
+        is no replication lag.
+        """
+        self._blockForLongRunningTransactions()
+        self._blockWhenLagged()
+        if self.cooldown_time is not None and self.cooldown_time > 0.0:
+            remaining_nap = self._time() - bedtime + self.cooldown_time
+            if remaining_name > 0:
+                time.sleep(remaining_nap)
+        return self._time()
 
