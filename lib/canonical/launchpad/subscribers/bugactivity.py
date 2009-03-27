@@ -23,7 +23,6 @@ vocabulary_registry = getVocabularyRegistry()
 
 
 BUG_INTERESTING_FIELDS = [
-    'duplicateof',
     'name',
     ]
 
@@ -107,21 +106,11 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     for changed_field in changes:
         oldvalue, newvalue = changes[changed_field]
-        if changed_field == 'duplicateof':
-            if oldvalue is None and newvalue is not None:
-                whatchanged = 'marked as duplicate'
-            elif oldvalue is not None and newvalue is not None:
-                whatchanged = 'changed duplicate marker'
-            elif oldvalue is not None and newvalue is None:
-                whatchanged = 'removed duplicate marker'
-        else:
-            whatchanged = changed_field
-
         getUtility(IBugActivitySet).new(
             bug=bug_edited.id,
             datechanged=UTC_NOW,
             person=IPerson(sqlobject_modified_event.user),
-            whatchanged=whatchanged,
+            whatchanged=changed_field,
             oldvalue=oldvalue,
             newvalue=newvalue,
             message="")
