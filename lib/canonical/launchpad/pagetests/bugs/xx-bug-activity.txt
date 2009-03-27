@@ -229,7 +229,8 @@ activity item.
     >>> admin_browser.getControl('Status').value = ['Confirmed']
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
-    Sample Person...
+    Sample Person
+    ...
     --------
     Foo Bar ... ago
     mozilla-firefox (Ubuntu) status: New &#8594; Confirmed
