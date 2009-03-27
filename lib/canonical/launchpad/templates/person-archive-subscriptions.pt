@@ -10,7 +10,70 @@
   i18n:domain="launchpad"
   >
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
+    <js tal:replace="structure string:<script type='text/javascript'>
+YUI({base: yui_base + '/'}).use(
+    'node', 'lazr.formoverlay', function(Y) {
 
+function create_form_overlay_for_row(row) {
+    var ppa_name = row.query('.ppa_display_name').get('innerHTML');
+
+    var form_text = [
+        '<p>The administrator of the archive \'' + ppa_name + '\' has ',
+        'opened a subscription for you.</p>',
+        '<p>You now need to confirm your subscription.</p>'].join('');
+    var form_overlay = new Y.lazr.FormOverlay({
+        headerContent: '<h2>Confirm subscription</h2>',
+        form_content: form_text,
+        form_submit_button: Y.Node.create(
+            '<input type=\'submit\' name=\'activate\' ' +
+            'value=\'Confirm subscription\' />'),
+        centered: true,
+        visible: false
+    });
+    form_overlay.render();
+    return form_overlay;
+}
+
+Y.on('domready', function() {
+    // First look for all the subscription rows
+    var subscription_rows = Y.all('tbody .archive-subscription-row');
+    subscription_rows.each(function(row){
+        activate_link = row.query('a.add');
+        if (activate_link) {
+            // Create a form overlay for this row, and set it up to
+            // post to the activate subscription page.
+            var form_overlay = create_form_overlay_for_row(row);
+            form_overlay.form_node.set('method', 'post');
+            form_overlay.form_node.set(
+                'action', activate_link.getAttribute('href'));
+            activate_link.on('click', function(e){
+                e.preventDefault();
+                // Show this row's form overlay
+                form_overlay.show();
+            });
+            activate_link.addClass('js-action');
+        }
+    });
+});
+
+});
+       </script>" />
+      <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/overlay/assets/pretty-overlay-core.css"
+        />
+      <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay-skin.css"
+        />
+      <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
+        />
+
+  </metal:block>
   <div metal:fill-slot="main">
 
     <h1 tal:content="CONTEXTS/fmt:pagetitle">
@@ -34,7 +97,8 @@
             <tal:subscription_and_token
                 define="subscription subscription_with_token/subscription;
                         token subscription_with_token/token">
-            <td tal:content="subscription/archive/displayname">Private PPA for Celso
+            <td tal:content="subscription/archive/displayname"
+                class="ppa_display_name">Private PPA for Celso
             </td>
             <td tal:content="subscription/description">Allow Team X access.
             </td>
@@ -50,7 +114,7 @@
               </tal:active>
               <tal:pending condition="not: token">
                 <a tal:attributes="href subscription/fmt:url" class="add">
-                  Activate now
+                  Confirm now
                 </a>
               </tal:pending>
             </td>
