@@ -480,8 +480,10 @@ function update_bug_duplicate(data) {
           </tal:is-comment>
 
           <tal:is-activity
-              define="activity comment_or_activity/activity|nothing"
-              condition="activity">
+              define="activity_list comment_or_activity/activity|nothing;
+                      activity_date comment_or_activity/date|nothing;
+                      activity_person comment_or_activity/person|nothing"
+              condition="activity_list">
               <metal:comment-box
                   metal:use-macro="context/@@bugcomment-macros/activity-box" />
           </tal:is-activity>
