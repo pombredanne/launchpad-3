@@ -234,3 +234,5 @@ activity item.
     --------
     Foo Bar ... ago
     mozilla-firefox (Ubuntu) status: New &#8594; Confirmed
+    --------
+
