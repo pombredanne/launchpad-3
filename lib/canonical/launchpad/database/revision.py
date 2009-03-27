@@ -19,9 +19,9 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from canonical.database.constants import DEFAULT
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
@@ -216,6 +216,10 @@ class RevisionSet:
                             log_body=log_body,
                             revision_date=revision_date,
                             revision_author=author)
+        # Don't create future revisions.
+        if revision.revision_date > revision.date_created:
+            revision.revision_date = revision.date_created
+
         seen_parents = set()
         for sequence, parent_id in enumerate(parent_ids):
             if parent_id in seen_parents:

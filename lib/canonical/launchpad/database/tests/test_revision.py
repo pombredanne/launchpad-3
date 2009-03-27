@@ -27,6 +27,29 @@ from canonical.launchpad.testing import (
 from canonical.testing import DatabaseFunctionalLayer
 
 
+class TestRevisionCreationDate(TestCaseWithFactory):
+    """Test that RevisionSet.new won't create revisions with future dates."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_new_past_revision_date(self):
+        # A revision created with a revision date in the past works fine.
+        past_date = datetime(2009, 1, 1, tzinfo=pytz.UTC)
+        revision = RevisionSet().new(
+            'rev_id', 'log body', past_date, 'author', [], {})
+        self.assertEqual(past_date, revision.revision_date)
+
+    def test_new_future_revision_date(self):
+        # A revision with a future date gets the revision date set to
+        # date_created.
+        now = datetime.now(pytz.UTC)
+        future_date = now + timedelta(days=1)
+        revision = RevisionSet().new(
+            'rev_id', 'log body', future_date, 'author', [], {})
+        self.assertEqual(revision.date_created, revision.revision_date)
+        self.assertTrue(revision.revision_date <= now)
+
+
 class TestRevisionKarma(TestCaseWithFactory):
     """Test the allocation of karma for revisions."""
 
