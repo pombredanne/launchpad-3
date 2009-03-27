@@ -236,7 +236,7 @@
         </tal:not-owner>
         <tal:join-leave
           replace="structure overview_menu/joinleave/fmt:link" />
-        <a tal:replace="structure overview_menu/reassign/fmt:link-icon">
+        <a tal:replace="structure overview_menu/reassign/fmt:icon">
           Change owner</a>
         <br />
         &nbsp;
