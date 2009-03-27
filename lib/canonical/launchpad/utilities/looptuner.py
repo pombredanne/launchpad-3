@@ -195,7 +195,7 @@ class DBLoopTuner(LoopTuner):
                 break
             for runtime, procpid, usename, datname, query in results:
                 self.log.info(
-                    "Blocked on %s old xact %s@%s/%d - %s"
+                    "Blocked on %s old xact %s@%s/%d - %s."
                     % (runtime, usename, datname, procpid, query))
             self.log.info("Sleeping for 3 minutes.")
             time.sleep(3*60)
@@ -208,7 +208,7 @@ class DBLoopTuner(LoopTuner):
         self._blockWhenLagged()
         if self.cooldown_time is not None and self.cooldown_time > 0.0:
             remaining_nap = self._time() - bedtime + self.cooldown_time
-            if remaining_name > 0:
+            if remaining_nap > 0:
                 time.sleep(remaining_nap)
         return self._time()
 
