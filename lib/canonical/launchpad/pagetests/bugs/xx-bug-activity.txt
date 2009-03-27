@@ -50,6 +50,10 @@ page.
     ...     "Here's a comment for testing, like.")
     >>> user_browser.getControl('Save Changes').click()
     >>> print_comments(user_browser.contents)
+    Bug Watch Updater
+    on 2007-12-18
+    thunderbird status changed: Unknown &#8594; New
+    --------
     No Privileges Person wrote ...
     Here's a comment for testing, like.
     --------
@@ -65,8 +69,8 @@ that have been added.
 
     >>> user_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(user_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
+    Bug
+    ...
     --------
     Foo Bar ... ago
     summary changed:
@@ -84,13 +88,8 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
-    --------
-    Foo Bar ... ago
-    summary changed:
-    - Nonsensical bugs are useless
-    + A new title for this bug
+    Bug
+    ...
     --------
     Foo Bar ... ago
     visibility changed: public  &#8594; private
@@ -107,16 +106,8 @@ vulnerability' changes, with values of 'yes' or 'no'.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
-    --------
-    Foo Bar ... ago
-    summary changed:
-    - Nonsensical bugs are useless
-    + A new title for this bug
-    --------
-    Foo Bar ... ago
-    visibility changed: public  &#8594; private
+    Bug
+    ...
     --------
     Foo Bar ... ago
     security vulnerability changed: no  &#8594; yes
@@ -134,19 +125,8 @@ Changes will be grouped together if they occur at the same time.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
-    --------
-    Foo Bar ... ago
-    summary changed:
-    - Nonsensical bugs are useless
-    + A new title for this bug
-    --------
-    Foo Bar ... ago
-    visibility changed: public  &#8594; private
-    --------
-    Foo Bar ... ago
-    security vulnerability changed: no  &#8594; yes
+    Bug
+    ...
     --------
     Foo Bar ... ago
     security vulnerability changed: yes &#8594; no
@@ -163,8 +143,7 @@ Changes to the bug's description will be shown as a unified diff.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
+    Bug
     ...
     --------
     Foo Bar ... ago
@@ -184,13 +163,11 @@ added.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
+    Bug
     ...
     --------
     Foo Bar ... ago
-    tags changed:
-    added: tag1 tag2 tag3
+    tags changed: added: tag1 tag2 tag3
     --------
 
     >>> admin_browser.open(
@@ -201,12 +178,29 @@ added.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
+    Bug
     ...
     --------
     Foo Bar ... ago
-    tags changed:
-    added: tag4
-    removed: tag3
+    tags changed: added: tag4
+                  removed: tag3
+    --------
+
+Changes to a BugTask's attributes will show up with the task's target
+name next to them to differentiate one from another.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+editstatus')
+    >>> admin_browser.getControl('Status').value = ['Confirmed']
+    >>> admin_browser.getControl('Importance').value = ['High']
+    >>> admin_browser.getControl("Save Changes").click()
+
+    >>> admin_browser.open('http://launchpad.dev/bugs/15')
+    >>> print_comments(admin_browser.contents)
+    Bug
+    ...
+    --------
+    Foo Bar ... ago
+    redfish importance changed: Undecided &#8594; High
+    redfish status changed: New &#8594; Confirmed
     --------

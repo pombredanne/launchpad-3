@@ -777,9 +777,17 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         occurred.
         """
         activity_by_date = {}
+        bugtask_change_re = (
+            '[a-z0-9][a-z0-9\+\.\-]+: '
+            '(importance|status)')
         interesting_changes = [
-             'description', 'security vulnerability', 'summary', 'tags',
-             'visibility']
+             'description',
+             'security vulnerability',
+             'summary',
+             'tags',
+             'visibility',
+             bugtask_change_re,
+             ]
 
         # Turn the interesting_changes list into a regex so that we can
         # do complex matches.
