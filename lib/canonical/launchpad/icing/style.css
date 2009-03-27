@@ -113,8 +113,8 @@ code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
 /* Links that don't open separate pages are green to denote their behavior: */
-a[onclick], .collapsible legend a               {color: #063;}
-a[onclick]:active, .collapsible legend a:active {color: #093;}
+a[onclick], .collapsible legend a, a.js-action               {color: #063;}
+a[onclick]:active, .collapsible legend a:active, a.js-action {color: #093;}
 
 /* Help links */
 a.help {
