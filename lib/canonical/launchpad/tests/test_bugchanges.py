@@ -11,7 +11,6 @@ from zope.interface import providedBy
 from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.bug import IBug
@@ -20,8 +19,8 @@ from canonical.launchpad.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus)
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
-from canonical.launchpad.mailnotification import add_bug_change_notifications
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -34,7 +33,8 @@ class TestBugChanges(unittest.TestCase):
         self.factory = LaunchpadObjectFactory()
         self.user = self.factory.makePerson(displayname='Arthur Dent')
 
-        product = self.factory.makeProduct(owner=self.user)
+        product = self.factory.makeProduct(
+            owner=self.user, official_malone=True)
         self.bug = self.factory.makeBug(product=product, owner=self.user)
         self.bug_task = self.bug.bugtasks[0]
         self.saveOldChanges()
@@ -1091,6 +1091,46 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_activity=expected_activity,
             expected_notification=task_added_notification)
+
+    def test_convert_to_question_no_comment(self):
+        # When a bug task is converted to a question, its status is
+        # first set to invalid, which causes the normal notifications for
+        # that to be added to the activity log and sent out as e-mail
+        # notification. After that another item is added to the activity
+        # log saying that the bug was converted to a question.
+        self.bug.convertToQuestion(self.user)
+        converted_question = self.bug.getQuestionCreatedFromBug()
+
+        conversion_activity = {
+            'person': self.user,
+            'whatchanged': 'converted to question',
+            'newvalue': str(converted_question.id),
+            }
+        status_activity = {
+            'person': self.user,
+            'whatchanged': '%s: status' % self.bug_task.bugtargetname,
+            'newvalue': 'Invalid',
+            'oldvalue': 'New',
+            }
+
+        conversion_notification = {
+            'person': self.user,
+            'text': (
+                '** Converted to question:\n'
+                '   %s' % canonical_url(converted_question))
+            }
+        status_notification = {
+            'text': (
+                '** Changed in: %s\n'
+                '       Status: New => Invalid' %
+                self.bug_task.bugtargetname),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=[status_activity, conversion_activity],
+            expected_notification=[status_notification,
+                                   conversion_notification])
 
 
 def test_suite():
