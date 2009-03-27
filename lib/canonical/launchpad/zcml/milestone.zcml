@@ -8,7 +8,7 @@
     <class class="canonical.launchpad.database.Milestone">
         <allow attributes="id name product distribution productseries
                            distroseries dateexpected active summary
-                           target series_target displayname title
+                           target series_target displayname title code_name
                            specifications product_release" />
         <require
             permission="launchpad.Edit"
@@ -17,7 +17,7 @@
         <allow interface="canonical.launchpad.webapp.interfaces.IAuthorization" />
         <require
             permission="launchpad.Edit"
-            set_attributes="name dateexpected summary active
+            set_attributes="name code_name dateexpected summary active
                             product_release productseries distroseries" />
         <!-- IStructuralSubscriptionTarget -->
         <allow attributes="bug_subscriptions getSubscriptions

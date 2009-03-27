@@ -60,6 +60,7 @@
 
             var parameters = {
                 name: data['field.name'][0],
+                code_name: data['field.code_name'][0],
                 summary: data['field.summary'][0]
             };
 
@@ -106,8 +107,27 @@
             Y.io(milestone_form_uri, {
                 on: {
                     success: create_form_overlay,
-                    failure: function (e) {
-                        alert('failed');
+                    failure: function (ignore, response, args) {
+                        var error_page = Y.Node.create('<div/>');
+                        error_page.setStyle('position', 'absolute');
+                        error_page.setStyle('top', '0');
+                        error_page.setStyle('bottom', '0');
+                        error_page.setStyle('left', '0');
+                        error_page.setStyle('right', '0');
+                        error_page.setStyle('margin', 'auto');
+                        error_page.setStyle('width', '80%');
+                        error_page.setStyle('height', '80%');
+                        error_page.setStyle('overflow', 'auto');
+                        error_page.setStyle('background', 'white');
+                        error_page.setStyle('padding', '1em');
+                        error_page.setStyle('border', '3px solid black');
+                        var error_message = '<b>' + response.statusText +
+                                            '</b><p>' +
+                                            response.responseText +
+                                            '</p>';
+                        error_page.set('innerHTML', error_message);
+                        var body = Y.get('body');
+                        body.appendChild(error_page);
                     }
                 }
             });

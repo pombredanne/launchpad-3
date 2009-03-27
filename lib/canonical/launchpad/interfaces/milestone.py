@@ -129,7 +129,9 @@ class IMilestone(IHasBugs):
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
 
-    code_name = Attribute("An alternative to the name attribute.")
+    code_name = exported(
+        TextLine(title=u'Code name', required=False,
+                 description=_('An alternative name for the milestone.')))
 
     product_release = Reference(
         schema=IProductRelease,

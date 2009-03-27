@@ -158,7 +158,7 @@ class MilestoneAddView(LaunchpadFormView):
     """A view for creating a new Milestone."""
 
     schema = IMilestone
-    field_names = ['name', 'dateexpected', 'summary']
+    field_names = ['name', 'code_name', 'dateexpected', 'summary']
     label = "Register a new milestone"
 
     custom_widget('dateexpected', DateWidget)
@@ -168,6 +168,7 @@ class MilestoneAddView(LaunchpadFormView):
         """Use the newMilestone method on the context to make a milestone."""
         milestone = self.context.newMilestone(
             name=data.get('name'),
+            code_name=data.get('code_name'),
             dateexpected=data.get('dateexpected'),
             summary=data.get('summary'))
         self.next_url = canonical_url(self.context)
