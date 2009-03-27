@@ -172,9 +172,10 @@ class DBLoopTuner(LoopTuner):
             if lag <= self.acceptable_replication_lag:
                 return
 
-            time_to_sleep = max(
-                1, timedelta_to_seconds(
-                    lag - self.acceptable_replication_lag))
+            # Minimum 2 seconds, max 5 minutes.
+            time_to_sleep = min(
+                5*60, max(2, timedelta_to_seconds(
+                    lag - self.acceptable_replication_lag)))
 
             self.log.info(
                 "Database replication lagged. Sleeping %f seconds"
