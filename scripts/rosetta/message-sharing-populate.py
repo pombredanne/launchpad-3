@@ -26,7 +26,7 @@ from canonical.database.postgresql import drop_tables
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadScript
-from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.utilities.looptuner import DBLoopTuner
 
 
 class PopulateTranslationMessage:
@@ -193,11 +193,11 @@ class PopulateMessageSharingSchema(LaunchpadScript):
     def main(self):
         self.logger.info("Populating new TranslationMessage columns.")
         tm_loop = PopulateTranslationMessage(self.txn, self.logger)
-        LoopTuner(tm_loop, 2).run()
+        DBLoopTuner(tm_loop, 2).run()
 
         self.logger.info("Populating TranslationTemplateItem.")
         tti_loop = PopulateTranslationTemplateItem(self.txn, self.logger)
-        LoopTuner(tti_loop, 2).run()
+        DBLoopTuner(tti_loop, 2).run()
 
 
 if __name__ == '__main__':
