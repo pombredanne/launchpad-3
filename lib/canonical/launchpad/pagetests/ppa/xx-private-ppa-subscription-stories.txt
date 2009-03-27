@@ -239,6 +239,7 @@ snippet is displayed.as well as a notification message.
     # Personal subscription of Joe Smith to Private PPA for Celso Providelo
     deb http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb-src http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    ...
 
     >>> for msg in get_feedback_messages(joe_browser.contents):
     ...     print msg

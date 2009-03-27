@@ -43,6 +43,11 @@
         software from a private archive</a> for more detailed instructions.
       </p>
       <pre id="sources-list-entries" tal:content="view/private_ppa_sources_list" />
+      <p style="clear:both">Next you need to follow these instructions to
+         <a href="https://help.launchpad.net/Packaging/PPA#keys">
+           add this archives security key to your computer
+         </a>.
+      </p>
     </div>
     <div id="regenerate_token">
       <h2>Password security</h2>
