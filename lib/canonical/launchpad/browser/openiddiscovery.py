@@ -65,11 +65,6 @@ class OpenIDApplicationNavigation(Navigation):
         else:
             raise NotFoundError(name)
 
-    @stepto('+rpconfig')
-    def rpconfig(self):
-        """Traverse to the `IOpenIDRPConfigSet`."""
-        return getUtility(IOpenIDRPConfigSet)
-
     @stepto('token')
     def token(self):
         """Traverse to auth tokens."""

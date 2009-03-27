@@ -15,7 +15,7 @@ from storm.locals import SQL, Max, Min
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
-from canonical.launchpad.database.openidconsumer import OpenIDNonce
+from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadCronScript
@@ -74,17 +74,17 @@ class OAuthNoncePruner(TunableLoop):
         transaction.commit()
 
 
-class OpenIDNoncePruner(TunableLoop):
-    """An ITunableLoop to prune old OpenIDNonce records.
+class OpenIDConsumerNoncePruner(TunableLoop):
+    """An ITunableLoop to prune old OpenIDConsumerNonce records.
 
-    We remove all OpenIDNonce records older than 1 day.
+    We remove all OpenIDConsumerNonce records older than 1 day.
     """
     maximum_chunk_size = 6*60*60 # 6 hours in seconds.
 
     def __init__(self):
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self.earliest_timestamp = self.store.find(
-            Min(OpenIDNonce.timestamp)).one()
+            Min(OpenIDConsumerNonce.timestamp)).one()
         utc_now = int(time.mktime(time.gmtime()))
         self.earliest_wanted_timestamp = utc_now - ONE_DAY_IN_SECONDS
 
@@ -99,8 +99,8 @@ class OpenIDNoncePruner(TunableLoop):
             self.earliest_timestamp + chunk_size)
 
         self.store.find(
-            OpenIDNonce,
-            OpenIDNonce.timestamp < self.earliest_timestamp).remove()
+            OpenIDConsumerNonce,
+            OpenIDConsumerNonce.timestamp < self.earliest_timestamp).remove()
         transaction.commit()
 
 
@@ -171,7 +171,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-hourly'
     tunable_loops = [
         OAuthNoncePruner,
-        OpenIDNoncePruner,
+        OpenIDConsumerNoncePruner,
         ]
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):

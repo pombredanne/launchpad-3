@@ -15,7 +15,7 @@ import transaction
 
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
-from canonical.launchpad.database.openidconsumer import OpenIDNonce
+from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.codeimportresult import (
     CodeImportResultStatus)
@@ -107,7 +107,7 @@ class TestGarbo(TestCase):
                 Min(OAuthNonce.request_timestamp)).one().replace(tzinfo=UTC)
             >= now - timedelta(days=1))
 
-    def test_OpenIDNoncePruner(self):
+    def test_OpenIDConsumerNoncePruner(self):
         now = int(time.mktime(time.gmtime()))
         MINUTES = 60
         HOURS = 60 * 60
@@ -120,13 +120,13 @@ class TestGarbo(TestCase):
             ]
         LaunchpadZopelessLayer.switchDbUser('testadmin')
 
-        store = IMasterStore(OpenIDNonce)
+        store = IMasterStore(OpenIDConsumerNonce)
 
         # Make sure we start with 0 nonces.
-        self.failUnlessEqual(store.find(OpenIDNonce).count(), 0)
+        self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 0)
 
         for timestamp in timestamps:
-            nonce = store.add(OpenIDNonce())
+            nonce = store.add(OpenIDConsumerNonce())
             nonce.server_url = unicode(timestamp)
             nonce.timestamp = timestamp
             nonce.salt = u'aa'
@@ -134,16 +134,16 @@ class TestGarbo(TestCase):
         transaction.commit()
 
         # Make sure we have 4 nonces now.
-        self.failUnlessEqual(store.find(OpenIDNonce).count(), 4)
+        self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 4)
 
         # Run the garbage collector.
         self.runHourly()
 
         # We should now have 2 nonces.
-        self.failUnlessEqual(store.find(OpenIDNonce).count(), 2)
+        self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 2)
 
         # And none of them are older than 1 day
-        earliest = store.find(Min(OpenIDNonce.timestamp)).one()
+        earliest = store.find(Min(OpenIDConsumerNonce.timestamp)).one()
         self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
 
     def test_CodeImportResultPruner(self):
