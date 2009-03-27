@@ -173,12 +173,12 @@ class DBLoopTuner(LoopTuner):
                 return
 
             # Minimum 2 seconds, max 5 minutes.
-            time_to_sleep = min(
+            time_to_sleep = int(min(
                 5*60, max(2, timedelta_to_seconds(
-                    lag - self.acceptable_replication_lag)))
+                    lag - self.acceptable_replication_lag))))
 
             self.log.info(
-                "Database replication lagged. Sleeping %f seconds"
+                "Database replication lagged. Sleeping %d seconds"
                 % time_to_sleep)
 
             transaction.abort() # Don't become a long running transaction!
