@@ -152,7 +152,7 @@ class RevisionAuthor(SQLBase):
             return False
         # Only accept an email address that is validated.
         if lp_email.status != EmailAddressStatus.NEW:
-            self.personID = lp_email.personID
+            self.person = lp_email.person
             return True
         else:
             return False
@@ -298,7 +298,7 @@ class RevisionSet:
         # Bypass zope's security because IEmailAddress.email is not public.
         naked_email = removeSecurityProxy(email)
         for author in RevisionAuthor.selectBy(email=naked_email.email):
-            author.personID = email.personID
+            author.person = email.person
 
     def getTipRevisionsForBranches(self, branches):
         """See `IRevisionSet`."""

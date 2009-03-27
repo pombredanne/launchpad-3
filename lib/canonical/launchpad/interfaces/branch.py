@@ -994,9 +994,9 @@ class IBranch(IHasOwner, IHasBranchTarget):
     def associatedProductSeries():
         """Return the product series that this branch is associated with.
 
-        A branch may be associated with a product series is either a
-        branch.  Also a branch can be associated with more than one product
-        series as a branch.
+        A branch may be associated with a product series as either a
+        user_branch or import_branch.  Also a branch can be associated
+        with more than one product series as a user_branch.
         """
 
     # subscription-related methods

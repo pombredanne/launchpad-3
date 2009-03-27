@@ -414,22 +414,21 @@ registry experts, or admins.
 
 They're ordered by dateexpected.
 
-    >>> for milestone in firefox.milestones:
-    ...     print '%-7s %s' % (milestone.name, milestone.dateexpected)
-    1.0     2056-10-16 18:31:44.293448
-    1.0-rc1 2018-10-01
+    >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
+    ...  for milestone in firefox.milestones]
+    [(u'1.0', '2056-10-16'), (u'1.0-rc1', '2018-10-01')]
 
-Only milestones which have active=True are returned by the .milestones
+Only milestones which have visible=True are returned by the .milestones
 property.
 
-    >>> firefox_milestone.active = False
+    >>> firefox_milestone.visible = False
     >>> [milestone.name for milestone in firefox.milestones]
     [u'1.0']
 
 To get all milestones of a given product we have the .all_milestones property.
 
     >>> [milestone.name for milestone in firefox.all_milestones]
-    [u'1.0.0', u'0.9.2', u'0.9.1', u'0.9', u'1.0', u'1.0-rc1']
+    [u'1.0', u'1.0-rc1']
 
 == Products With Branches ==
 

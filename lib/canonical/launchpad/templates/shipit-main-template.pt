@@ -93,16 +93,16 @@
       <div id="maincontent" class="column span-16 append-1 last">
         <div class="breadcrumb">
           <span class="right push-1">
-            <tal:block condition="view/account">
+            <tal:block condition="request/lp:person">
               <form action="/+logout" class="login" method="post">
                 Logged in as
-                <span tal:replace="view/account/displayname" />
+                <span tal:replace="request/lp:person/fmt:displayname" />
                   &ndash;
                 <input type="submit" value="Log Out" />
               </form>
             </tal:block>
 
-            <tal:block condition="not: view/account">
+            <tal:block condition="not: request/lp:person">
               Not logged in &#8212;
               <a href="/login">
                 Log In / Register

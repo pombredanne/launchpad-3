@@ -618,7 +618,7 @@ the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/ppa").jsonBody())
     description: u'tag:launchpad.net:2008:redacted'
-    displayname: u'PPA for Celso Providelo'
+    displayname: u'Private PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
@@ -629,7 +629,7 @@ the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/ppa").jsonBody())
     description: u'packages to help my friends.'
-    displayname: u'PPA for Celso Providelo'
+    displayname: u'Private PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
     name: u'ppa'
     owner_link: u'http://.../~cprov'
@@ -637,6 +637,7 @@ the IArchive context, in this case only Celso has it.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
+
 
 == Modifying privacy ==
 
@@ -688,17 +689,3 @@ the same for `syncSource` or `syncSources` operations.
     CannotCopy: private 1.0 in hoary
     (Cannot copy private source into public archives.)
     <BLANKLINE>
-
-
-== Archive editable displayname ==
-
-During this transition period, 'displayname' will be available in the
-API but users won't be able to edit it.
-
-    >>> print cprov_webservice.patch(
-    ...     cprov_archive['self_link'], 'application/json',
-    ...     simplejson.dumps({'displayname': 'boing'})).getOutput()
-    HTTP/1.1 500 Internal Server Error
-    ...
-    ForbiddenAttribute: ('displayname', <Archive at ...>)
-

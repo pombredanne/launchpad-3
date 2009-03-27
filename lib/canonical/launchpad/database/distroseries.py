@@ -1178,10 +1178,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             supports_virtualized=supports_virtualized)
         return distroarchseries
 
-    def newMilestone(self, name, dateexpected=None, summary=None):
+    def newMilestone(self, name, dateexpected=None, description=None):
         """See `IDistroSeries`."""
         return Milestone(
-            name=name, dateexpected=dateexpected, summary=summary,
+            name=name, dateexpected=dateexpected, description=description,
             distribution=self.distribution, distroseries=self)
 
     def getLatestUploads(self):

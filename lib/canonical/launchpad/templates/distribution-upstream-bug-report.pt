@@ -194,9 +194,9 @@
             </td>
             <tal:has-product condition="item/product">
               <td style="padding-right: 0" align="center">
-                <a tal:attributes="href item/branch/fmt:url;
+                <a tal:attributes="href item/series_branch/fmt:url;
                    title string:You can use `bzr branch lp:${item/product/name}' to fetch this project's code"
-                   tal:condition="item/branch">
+                   tal:condition="item/series_branch">
                   <img alt="(branch)" src="/@@/branch" /></a>
               </td>
               <td style="padding-left: 0" align="center">

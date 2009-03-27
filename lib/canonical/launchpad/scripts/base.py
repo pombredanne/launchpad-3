@@ -70,8 +70,7 @@ class LaunchpadScript:
     What you get:
         - self.logger
         - self.txn
-        - self.parser (the OptionParser)
-        - self.options (the parsed options)
+        - self.options
 
     "Give me convenience or give me death."
     """

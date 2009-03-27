@@ -75,8 +75,6 @@ caused the entry to be created.
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
     ...     comment='when importing the Portuguese translation of firefox',
     ...     hide_email_addresses=True)
-    >>> import transaction
-    >>> transaction.commit()
     >>> p.teamowner is None
     True
 
@@ -118,7 +116,7 @@ createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> email.accountID == p.accountID
+    >>> email.account == p.account
     True
 
     >>> p.setPreferredEmail(email)
@@ -145,7 +143,7 @@ to the person, and it updates the email address's status and account.
     >>> validated_email.status
     <DBItem EmailAddressStatus.VALIDATED...
 
-    >>> validated_email.accountID == p.accountID
+    >>> validated_email.account == p.account
     True
 
 The user can add a new address and set it as the preferred address. The
@@ -162,7 +160,7 @@ setPreferredEmail() method updated the address's status and account.
     >>> preferred_email.status
     <DBItem EmailAddressStatus.PREFERRED...
 
-    >>> preferred_email.accountID == p.accountID
+    >>> preferred_email.account == p.account
     True
 
     >>> login(ANONYMOUS)
@@ -399,7 +397,6 @@ entries into teams.
     >>> not_a_person, dummy = personset.createPersonAndEmail(
     ...     'foo@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
     ...     comment='when the ed package was imported into Ubuntu Feisty')
-    >>> transaction.commit()
     >>> not_a_person.isTeam()
     False
 
@@ -745,7 +742,7 @@ include them as well.
     >>> from canonical.launchpad.interfaces import AccountStatus
     >>> dave = personset.getByName('justdave')
     >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
-    >>> transaction.commit()
+    >>> flush_database_updates()
     >>> list(personset.findPerson('dave'))
     []
 

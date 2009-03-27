@@ -12,7 +12,6 @@ files in this directory.
 # importing from this module.
 from canonical.launchpad.browser.announcement import *
 from canonical.launchpad.browser.archive import *
-from canonical.launchpad.browser.authtoken import *
 from canonical.launchpad.browser.bazaar import *
 from canonical.launchpad.browser.binarypackagerelease import *
 from canonical.launchpad.browser.bounty import *

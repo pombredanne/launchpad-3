@@ -22,13 +22,12 @@ IScriptActivitySet.recordSuccess():
   >>> import sys
   >>> import tempfile
   >>> import pytz
-  >>> import transaction
   >>> from zope.component import getUtility
+  >>> from canonical.database.sqlbase import ZopelessTransactionManager
   >>> from canonical.launchpad.interfaces import IScriptActivitySet
-  >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
   >>> UTC = pytz.timezone('UTC')
-  >>> LaunchpadZopelessLayer.switchDbUser('garbo-daily') # A script db user
+  >>> ztm = ZopelessTransactionManager._installed
 
   >>> activity = getUtility(IScriptActivitySet).recordSuccess(
   ...     name='script-name',
@@ -89,21 +88,21 @@ and others where it is useful to monitor the result.
   ...             raise RuntimeError('Some failure')
   ...
   ... if __name__ == '__main__':
-  ...     script = TestScript('test-script', 'garbo-daily')
+  ...     script = TestScript('test-script')
   ...     script.run()
   ... """)
   >>> script_file.flush()
 
 We'll now run this script, telling it to fail:
 
-  >>> transaction.commit()
+  >>> ztm.commit()
   >>> env = dict(os.environ)
   >>> env['LPCONFIG'] = 'testrunner'
   >>> proc = subprocess.Popen([sys.executable, script_file.name, 'fail'],
   ...                         env=env, stdin=subprocess.PIPE,
   ...                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   >>> (out, err) = proc.communicate()
-  >>> transaction.abort()
+  >>> ztm.abort()
 
 The process failed:
 
@@ -121,7 +120,7 @@ If we run it such that it succeeds, we will get an activity record:
   ...                         env=env, stdin=subprocess.PIPE,
   ...                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   >>> (out, err) = proc.communicate()
-  >>> transaction.abort()
+  >>> ztm.abort()
 
   >>> print proc.returncode
   0

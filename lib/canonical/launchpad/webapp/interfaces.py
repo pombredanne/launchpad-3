@@ -799,36 +799,17 @@ class IPrimaryContext(Interface):
 #
 # Database policies
 #
-
-MAIN_STORE = 'main' # The main database.
-AUTH_STORE = 'auth' # The authentication database.
-
-ALL_STORES = frozenset([MAIN_STORE, AUTH_STORE])
-
-DEFAULT_FLAVOR = 'default' # Default flavor for current state.
-MASTER_FLAVOR = 'master' # The master database.
-SLAVE_FLAVOR = 'slave' # A slave database.
-
-
 class IDatabasePolicy(Interface):
     """Implement database policy based on the request.
 
     The publisher adapts the request to `IDatabasePolicy` to
     instantiate the policy for the current request.
     """
-    def getStore(name, flavor):
-        """Retrieve a Store.
+    def beforeTraversal():
+        """Install the database policy into the current thread."""
 
-        :param name: one of ALL_STORES.
-
-        :param flavor: MASTER_FLAVOR, SLAVE_FLAVOR, or DEFAULT_FLAVOR.
-        """
-
-    def install():
-        """Hook called when policy is pushed onto the `IStoreSelector`."""
-
-    def uninstall():
-        """Hook called when policy is popped from the `IStoreSelector`."""
+    def afterCall():
+        """Perform any necessary cleanup of the database policy."""
 
 
 class MasterUnavailable(Exception):
@@ -836,10 +817,12 @@ class MasterUnavailable(Exception):
     """
 
 
-class DisallowedStore(Exception):
-    """A request was made to access a Store that has been disabled
-    by the current policy.
-    """
+MAIN_STORE = 'main' # The main database.
+AUTH_STORE = 'auth' # The authentication database.
+
+DEFAULT_FLAVOR = 'default' # Default flavor for current state.
+MASTER_FLAVOR = 'master' # The master database.
+SLAVE_FLAVOR = 'slave' # A slave database.
 
 
 class IStoreSelector(Interface):
@@ -857,19 +840,6 @@ class IStoreSelector(Interface):
     databases as we are prepared to pay for, so they will perform better
     because they are less loaded.
     """
-    def push(dbpolicy):
-        """Install an `IDatabasePolicy` as the default for this thread."""
-
-    def pop():
-        """Uninstall the most recently pushed `IDatabasePolicy` from
-        this thread.
-
-        Returns the `IDatabasePolicy` removed.
-        """
-
-    def get_current():
-        """Return the currently installed `IDatabasePolicy`."""
-
     def get(name, flavor):
         """Retrieve a Storm Store.
 
@@ -888,8 +858,6 @@ class IStoreSelector(Interface):
         for backwards compatibility, and new code should explicitly state
         if they want a master or a slave.
 
-        :raises MasterUnavailable:
-
-        :raises DisallowedStore:
+        :raises MasterUnavailable: A master database was requested but
+            it is not available.
         """
-

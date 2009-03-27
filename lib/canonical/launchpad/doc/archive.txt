@@ -20,8 +20,6 @@ records to disk, including configuration and indexes.
     ppa
     >>> print cprov_archive.purpose.name
     PPA
-    >>> print cprov_archive.displayname
-    PPA for Celso Providelo
     >>> cprov_archive.enabled
     True
     >>> cprov_archive.authorized_size
@@ -112,6 +110,9 @@ make Celso's PPA public again.
 
 Useful properties:
 
+    >>> print cprov_archive.displayname
+    PPA for Celso Providelo
+
     >>> print cprov_archive.archive_url
     http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
@@ -180,10 +181,11 @@ Valid names work as expected.
 
     >>> login(ANONYMOUS)
 
-Please note that copy archive displayname doesn't follow the name change.
+Please note that copy archive displayname include the owner name as
+well as the archive's name.
 
     >>> rebuild_archive.displayname
-    u'Copy archive editable-rebuild for J\xc3\xbcrgen'
+    u'Copy archive there-we-go for J\xc3\xbcrgen'
 
 The "is_copy" property allows us to ask an archive whether it's a copy
 archive.
@@ -1569,7 +1571,7 @@ In the sampledata, 'cprov' only participates in his own PPA.
 
     >>> for ppa in archive_set.getPPAsForUser(cprov):
     ...     print ppa.displayname
-    PPA for Celso Providelo
+    Private PPA for Celso Providelo
 
 However 'cprov' is also a member of 'launchpad-buildd-admins' team,
 which doesn't have a PPA yet.
@@ -1592,7 +1594,7 @@ immediately recognises 'cprov' rights on it.
 
     >>> for ppa in archive_set.getPPAsForUser(cprov):
     ...     print ppa.displayname
-    PPA for Celso Providelo
+    Private PPA for Celso Providelo
     PPA for Launchpad Buildd Admins
 
 When there is no active PPA for the team a user participates the
@@ -1611,7 +1613,7 @@ private.
     >>> p3as = archive_set.getPrivatePPAs()
     >>> for p3a in p3as:
     ...     print p3a.displayname
-    PPA for Celso Providelo
+    Private PPA for Celso Providelo
 
 For the next test we will make Celso's PPA public again, so it can
 appear in public lists. We do that because that PPA contains relevant
@@ -2321,38 +2323,3 @@ When there are not matching PPAs, None is returned.
 
     >>> print sabdfl.getPPAByName('not-found')
     None
-
-
-== Transition to editable displayname ==
-
-We are currently in a transition period for user-editable
-'displayname' for Archive. The 'displayname' column exists in the
-database and the existing archives were migrated.
-
-    >>> for archive in ubuntu.all_distro_archives:
-    ...     print archive.displayname
-    Primary Archive for Ubuntu Linux
-    Partner Archive for Ubuntu Linux
-
-New archives have their displayname automatically set.
-
-    >>> new_ppa = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.PPA,
-    ...     distribution=ubuntu, name='test-ppa')
-    >>> print new_ppa.displayname
-    PPA named test-ppa for Celso Providelo
-
-    >>> new_copy = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.COPY,
-    ...     distribution=ubuntu, name='test-rebuild')
-    >>> print new_copy.displayname
-    Copy archive test-rebuild for Celso Providelo
-
-During this transition period nobody can edit 'displayname'.
-
-    >>> login("foo.bar@canonical.com")
-    >>> new_ppa.displayname = 'No-way!'
-    Traceback (most recent call last):
-    ...
-    ForbiddenAttribute: ('displayname', <Archive at ...>)
-
