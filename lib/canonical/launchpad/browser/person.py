@@ -4013,7 +4013,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         """Create a field for each mailing list auto-subscription option."""
         return FormFields(
             Choice(__name__='mailing_list_auto_subscribe_policy',
-                   title=_('When should launchpad automatically subscribe '
+                   title=_('When should Launchpad automatically subscribe '
                            'you to a team&#x2019;s mailing list?'),
                    source=MailingListAutoSubscribePolicy))
 
