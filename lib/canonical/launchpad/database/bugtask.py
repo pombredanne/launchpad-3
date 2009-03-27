@@ -852,8 +852,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # No change to the assignee, so nothing to do.
             return
 
-        UTC = pytz.timezone('UTC')
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(pytz.UTC)
         if self.assignee and not assignee:
             # The assignee is being cleared, so clear the date_assigned
             # value.

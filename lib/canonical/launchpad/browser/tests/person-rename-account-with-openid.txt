@@ -48,6 +48,7 @@ Same thing if they logged in using OpenID only to known trust roots.
     ...     'https://shop.canonical.com/', 'The Shop', 'For our fans')
     >>> record = getUtility(IOpenIDRPSummarySet).record(
     ...     joe.account, 'https://shop.canonical.com/')
+    >>> transaction.commit()
 
     >>> form_data['field.name'] = 'joe'
     >>> harness.submit('save', form_data)

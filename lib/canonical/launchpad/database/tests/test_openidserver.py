@@ -19,9 +19,9 @@ from canonical.launchpad.database.account import Account
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDAuthorizationSet)
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.adapter import StoreSelector
+from canonical.launchpad.webapp.dbpolicy import SlaveDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
+    AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -29,19 +29,19 @@ class OpenIDAuthorizationTestCase(unittest.TestCase):
     """Test for the OpenIDAuthorization database class."""
     layer = DatabaseFunctionalLayer
 
-    def tearDown(self):
-        StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
-
     def test__get_store_should_return_the_auth_master_store(self):
         """We want the OAuthAuthorization check to use the master store,
         because it's modified on GET request which would use the SLAVE_FLAVOR
         by default.
         """
-        StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
-        zstorm = getUtility(IZStorm)
-        self.assertEquals(
-            '%s-%s' % (MAIN_STORE, MASTER_FLAVOR),
-            zstorm.get_name(OpenIDAuthorization._get_store()))
+        getUtility(IStoreSelector).push(SlaveDatabasePolicy())
+        try:
+            zstorm = getUtility(IZStorm)
+            self.assertEquals(
+                'launchpad-%s-%s' % (AUTH_STORE, MASTER_FLAVOR),
+                zstorm.get_name(OpenIDAuthorization._get_store()))
+        finally:
+            getUtility(IStoreSelector).pop()
 
 
 class OpenIDAuthorizationSetTests(TestCaseWithFactory):
@@ -82,7 +82,7 @@ class OpenIDAuthorizationSet__with_SlaveStore_TestCase(TestCaseWithFactory):
         # The person is created on the master flavor, commit and fetch it
         # back from the slave store.
         transaction.commit()
-        slave_store = StoreSelector.get(MAIN_STORE, SLAVE_FLAVOR)
+        slave_store = getUtility(IStoreSelector).get(AUTH_STORE, SLAVE_FLAVOR)
         self.account = slave_store.get(Account, person.account.id)
 
     def test_authorize_works_with_person_loaded_from_the_slave_store(self):

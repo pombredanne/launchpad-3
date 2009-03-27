@@ -472,12 +472,12 @@ If one of the milestones is disabled, it won't be included in the vocabulary
 anymore.
 
     >>> milestone = debian_woody.milestones[0]
-    >>> milestone.visible = False
+    >>> milestone.active = False
     >>> flush_database_updates()
     >>> len(vocabulary_registry.get(debian_woody_task, 'Milestone'))
     1
 
-If the milestone was used in a bugtask before it was marked invisible, though,
+If the milestone was used in a bugtask before it was marked inactive, though,
 it'll still show up on the vocabulary so that users can change it.
 
     >>> debian_woody_task.milestone = milestone
@@ -496,16 +496,15 @@ target are in the vocabulary.
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
     firefox: 1.0
 
-
-The vocabulary contains only visible milestones.
+The vocabulary contains only active milestones.
 
     >>> one_dot_o = firefox.milestones[0]
     >>> one_dot_o.name
     u'1.0'
-    >>> one_dot_o.visible = False
+    >>> one_dot_o.active = False
 
-We have set two milestones to be not visible, so there is only one left that
-is visible in all_milestones.
+We have set two milestones to be not active, so there is only one left that
+is active in all_milestones.
 
     >>> all_milestones = vocabulary_registry.get(None, 'Milestone')
     >>> for term in all_milestones:
@@ -519,8 +518,8 @@ is visible in all_milestones.
     >>> len(firefox_task_milestones)
     0
 
-There's one exception, though; if a bugtask is assigned to a
-non-visible milestone, that milestone will be in the vocabulary.
+There's one exception, though; if a bugtask is assigned to an
+inactive milestone, that milestone will be in the vocabulary.
 
     >>> firefox_task_milestones = vocabulary_registry.get(
     ...     firefox_task, 'Milestone')
@@ -1209,12 +1208,15 @@ A person with a single and unvalidated email address can be merged.
     >>> fooperson, email = person_set.createPersonAndEmail(
     ...     'foobaz@bar.com', PersonCreationRationale.UNKNOWN,
     ...     name='foobaz', displayname='foo baz')
+    >>> import transaction
+    >>> transaction.commit()
     >>> fooperson in vocab
     True
 
 But any person without a single email address can't.
 
     >>> email.destroySelf()
+    >>> transaction.commit()
     >>> fooperson in vocab
     False
 

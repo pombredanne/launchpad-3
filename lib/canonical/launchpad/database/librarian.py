@@ -2,7 +2,13 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
+__all__ = [
+    'LibraryFileAlias',
+    'LibraryFileAliasSet',
+    'LibraryFileContent',
+    'LibraryFileDownloadCount',
+    'ParsedApacheLog',
+    ]
 
 from datetime import datetime, timedelta
 import pytz
@@ -10,16 +16,21 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
+from storm.locals import Date, Int, Reference, Storm, Unicode
+
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    ILibraryFileAlias, ILibraryFileAliasSet, ILibraryFileContent)
+    ILibraryFileAlias, ILibraryFileAliasSet, ILibraryFileContent,
+    ILibraryFileDownloadCount, IMasterStore, IParsedApacheLog)
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT)
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class LibraryFileContent(SQLBase):
@@ -172,7 +183,10 @@ class LibraryFileAliasSet(object):
         else:
             client = getUtility(ILibrarianClient)
         fid = client.addFile(name, size, file, contentType, expires, debugID)
-        return LibraryFileAlias.get(fid)
+        lfa = IMasterStore(LibraryFileAlias).find(
+            LibraryFileAlias, LibraryFileAlias.id == fid).one()
+        assert lfa is not None, "client.addFile didn't!"
+        return lfa
 
     def __getitem__(self, key):
         """See ILibraryFileAliasSet.__getitem__"""
@@ -185,3 +199,35 @@ class LibraryFileAliasSet(object):
             AND LibraryFileContent.sha1 = '%s'
             """ % sha1, clauseTables=['LibraryFileContent'])
 
+
+class LibraryFileDownloadCount(Storm):
+    """See `ILibraryFileDownloadCount`"""
+
+    implements(ILibraryFileDownloadCount)
+    __storm_table__ = 'LibraryFileDownloadCount'
+
+    id = Int(primary=True)
+    libraryfilealias_id = Int(name='libraryfilealias', allow_none=False)
+    libraryfilealias = Reference(libraryfilealias_id, 'LibraryFileAlias.id')
+    day = Date(allow_none=False, tzinfo=pytz.UTC)
+    count = Int(allow_none=False)
+    country_id = Int(name='country', allow_none=True)
+    country = Reference(country_id, 'Country.id')
+
+
+class ParsedApacheLog(Storm):
+    """See `IParsedApacheLog`"""
+
+    implements(IParsedApacheLog)
+    __storm_table__ = 'ParsedApacheLog'
+
+    id = Int(primary=True)
+    first_line = Unicode(allow_none=False)
+    bytes_read = Int(allow_none=False)
+    date_last_parsed = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+
+    def __init__(self, first_line, bytes_read):
+        super(ParsedApacheLog, self).__init__()
+        self.first_line = unicode(first_line)
+        self.bytes_read = bytes_read
+        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR).add(self)

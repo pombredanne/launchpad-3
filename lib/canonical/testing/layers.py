@@ -173,7 +173,7 @@ def reconnect_stores(database_config_section='launchpad'):
     r = main_store.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
     assert r.get_one()[0] > 0, 'Storm is not talking to the database'
 
-    session_store = getUtility(IZStorm).get('session')
+    session_store = getUtility(IZStorm).get('session', 'launchpad-session:')
     assert session_store is not None, 'Failed to reconnect'
 
 
@@ -606,6 +606,13 @@ class DatabaseLayer(BaseLayer):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if DatabaseLayer._reset_between_tests:
             LaunchpadTestSetup().tearDown()
+
+        # Fail tests that forget to uninstall their database policies.
+        from canonical.launchpad.webapp.adapter import StoreSelector
+        while StoreSelector.get_current() is not None:
+            BaseLayer.flagTestIsolationFailure(
+                "Database policy %s still installed"
+                % repr(StoreSelector.pop()))
 
     use_mockdb = False
     mockdb_mode = None

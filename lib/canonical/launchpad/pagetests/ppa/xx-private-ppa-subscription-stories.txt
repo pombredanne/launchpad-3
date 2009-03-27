@@ -232,7 +232,7 @@ Activate button
     ...     if row.find('input', type="submit", value="Activate"):
     ...         print "Activate"
     Archive                             Subscription description
-    Private PPA for Celso Providelo     Joe is my friend          Activate
+    PPA for Celso Providelo     Joe is my friend          Activate
 
 And no private_sources.list file is displayed (as there are no active
 subscriptions)
@@ -244,7 +244,7 @@ And a list of all Joe's subscriptions is displayed
 
     >>> print_subscriptions_for_person(joe_browser.contents)
     Archive                             Subscription description Status
-    Private PPA for Celso Providelo     Joe is my friend         Pending
+    PPA for Celso Providelo     Joe is my friend         Pending
 
 When Joe clicks on the 'Activate subscription' button for Celso's PPA
 
@@ -264,7 +264,7 @@ And a sources.list snippet is now included
     Custom sources.list entries
     ...
     # Personal subscriptions for private PPAs
-    # Private PPA for Celso Providelo
+    # PPA for Celso Providelo
     deb http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb-src http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
@@ -272,13 +272,13 @@ And the list of Joe's current subscriptions reflects the correct status
 
     >>> print_subscriptions_for_person(joe_browser.contents)
     Archive                             Subscription description Status
-    Private PPA for Celso Providelo     Joe is my friend         Active
+    PPA for Celso Providelo     Joe is my friend         Active
 
 And a notification message is displayed on the screen
 
     >>> for msg in get_feedback_messages(joe_browser.contents):
     ...     print msg
-    Your subscription to 'Private PPA for Celso Providelo' has been activated.
+    Your subscription to 'PPA for Celso Providelo' has been activated.
     Please update your custom sources.list as described below.
 
 === Scenario 2: A user activates a team subscription ===

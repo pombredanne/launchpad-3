@@ -400,23 +400,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # capitulate
         return None
 
-
-    @property
-    def shouldimport(self):
-        """Note that this initial implementation of the method knows that we
-        are only interested in importing ubuntu packages initially. Also, it
-        knows that we should only import packages where the upstream
-        revision control is in place and working.
-        """
-
-        ubuntu = self._get_ubuntu()
-        if self.distribution != ubuntu:
-            return False
-        ps = self.productseries
-        if ps is None:
-            return False
-        return ps.import_branch is not None
-
     @property
     def published_by_pocket(self):
         """See `ISourcePackage`."""
