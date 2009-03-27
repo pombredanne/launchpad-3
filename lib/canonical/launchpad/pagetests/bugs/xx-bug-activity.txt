@@ -68,7 +68,7 @@ that have been added.
     No Privileges Person wrote ...
     Here's a comment for testing, like.
     --------
-    ... ago Foo Bar
+    Foo Bar ... ago
     summary changed:
     - Nonsensical bugs are useless
     + A new title for this bug
@@ -87,12 +87,12 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
     No Privileges Person wrote ...
     Here's a comment for testing, like.
     --------
-    ... ago Foo Bar
+    Foo Bar ... ago
     summary changed:
     - Nonsensical bugs are useless
     + A new title for this bug
     --------
-    ... ago Foo Bar
+    Foo Bar ... ago
     visibility changed: public  &#8594; private
     --------
 
@@ -110,15 +110,15 @@ vulnerability' changes, with values of 'yes' or 'no'.
     No Privileges Person wrote ...
     Here's a comment for testing, like.
     --------
-    ... ago Foo Bar
+    Foo Bar ... ago
     summary changed:
     - Nonsensical bugs are useless
     + A new title for this bug
     --------
-    ... ago Foo Bar
+    Foo Bar ... ago
     visibility changed: public  &#8594; private
     --------
-    ... ago Foo Bar
+    Foo Bar ... ago
     security vulnerability changed: no  &#8594; yes
     --------
 
@@ -137,18 +137,18 @@ Changes will be grouped together if they occur at the same time.
     No Privileges Person wrote ...
     Here's a comment for testing, like.
     --------
-    ... ago Foo Bar
+    Foo Bar ... ago
     summary changed:
     - Nonsensical bugs are useless
     + A new title for this bug
     --------
-    ... ago Foo Bar
+    Foo Bar ... ago
     visibility changed: public  &#8594; private
     --------
-    ... ago Foo Bar
+    Foo Bar ... ago
     security vulnerability changed: no  &#8594; yes
     --------
-    ... ago Foo Bar
+    Foo Bar ... ago
     security vulnerability changed: yes &#8594; no
     visibility changed: private  &#8594; public
     --------

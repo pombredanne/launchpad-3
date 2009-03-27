@@ -132,22 +132,21 @@
   metal:define-macro="activity-box"
   tal:attributes="class string:boardComment">
   <div class="boardCommentDetails">
+    <tal:activity_has_person>
+      <tal:activity_person replace="structure activity_person/fmt:link" />
+    </tal:activity_has_person>
     <span
-      style="float: right;"
       tal:attributes="title activity_date/fmt:datetime"
       tal:content="activity_date/fmt:displaydate">
       7 minutes ago
     </span>
-    <tal:activity_has_person>
-      <tal:activity_person replace="structure activity_person/fmt:link" />
-    </tal:activity_has_person>
   </div>
-  <div class="boardCommentBody">
+  <div class="boardCommentBody" style="background-color: #fafafa; color: #555;">
     <div class="bug-comment">
       <table style="margin-bottom: 1em; margin-top: 0.5em;">
         <tr tal:repeat="activity activity_list">
           <td style="text-align: right;">
-            <tal:summary replace="structure activity/change_summary" />:
+            <b><tal:summary replace="structure activity/change_summary" /></b>:
           </td>
           <td>
             <tal:details replace="structure activity/change_details" />
