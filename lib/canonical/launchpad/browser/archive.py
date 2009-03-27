@@ -51,7 +51,7 @@ from canonical.launchpad.interfaces.archive import (
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet)
+    IArchiveSubscriberSet, IArchiveSubscriptionForOwner)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -213,7 +213,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         # the direct subscription:
         for subscription in subscriptions:
             if subscription.subscriber == person:
-                return subscription
+                return IArchiveSubscriptionForOwner(subscription)
 
         return None
 
@@ -345,7 +345,7 @@ class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
             default_ppa_name = default_name_by_purpose.get(
                 self.context.purpose)
             if self.context.name == default_ppa_name:
-                return 'default PPA'
+                return 'PPA'
             return '%s PPA' % self.context.name
 
         if self.context.is_copy:

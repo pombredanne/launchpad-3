@@ -73,6 +73,7 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
 from canonical.launchpad.webapp import (
@@ -769,17 +770,45 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         assert len(comments) > 0, "A bug should have at least one comment."
         return comments
 
-    @property
-    def activity_and_comments(self):
+    @cachedproperty
+    def activity_by_date(self):
+        """Return a list of `BugActivityItem`s for the current bug.
+
+        The `BugActivityItem`s will be grouped by the date on which they
+        occurred.
+        """
         interesting_changes = [
              'security vulnerability', 'summary', 'visibility']
+        activity_by_date = {}
+
+        for activity in self.context.bug.activity:
+            # If we're not interested in the change, skip it.
+            if activity.whatchanged not in interesting_changes:
+                continue
+
+            activity = BugActivityItem(activity)
+            if activity.datechanged in activity_by_date:
+                activity_by_date[activity.datechanged].append(activity)
+            else:
+                activity_by_date[activity.datechanged] = [activity]
+
+        # Sort all the lists to ensure that changes are written out in
+        # alphabetical order.
+        for date, activity_list in activity_by_date.items():
+            activity_by_date[date] = sorted(
+                activity_list, key=attrgetter('whatchanged'))
+
+        return activity_by_date
+
+    @cachedproperty
+    def activity_and_comments(self):
         activity_and_comments = [
             {'comment': comment, 'date': comment.datecreated}
             for comment in self.visible_comments_for_display]
         activity_and_comments.extend(
-            {'activity': activity, 'date': activity.datechanged}
-            for activity in self.context.bug.activity
-            if activity.whatchanged in interesting_changes)
+            {'activity': activity_list, 'date': date,
+             'person': activity_list[0].person}
+            for date, activity_list in self.activity_by_date.items())
 
         activity_and_comments.sort(key=itemgetter('date'))
         return activity_and_comments
@@ -3132,3 +3161,31 @@ class BugTaskExpirableListingView(LaunchpadView):
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
+
+
+class BugActivityItem:
+    """A decorated BugActivity."""
+    delegates(IBugActivity, 'activity')
+
+    def __init__(self, activity):
+        self.activity = activity
+
+    @property
+    def change_summary(self):
+        """Return a formatted summary of the change."""
+        return "%s changed" % self.whatchanged
+
+    @property
+    def change_details(self):
+        """Return a detailed description of the change."""
+        diffable_changes = ['summary']
+
+        if self.whatchanged in diffable_changes:
+            # If we're going to display it as a diff we replace \ns with
+            # <br />s so that the lines are separated properly.
+            diff = cgi.escape(
+                get_unified_diff(self.oldvalue, self.newvalue, 72), True)
+            return diff.replace("\n", "<br />")
+        else:
+            return "%s &#8594; %s" % (
+                cgi.escape(self.oldvalue), cgi.escape(self.newvalue))

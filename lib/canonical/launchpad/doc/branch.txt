@@ -262,14 +262,11 @@ The provided URL must not have any trailing slash:
     ... except AssertionError: print 'trailing slash not allowed'
     trailing slash not allowed
 
-If no branch is found for the specified URL, the specified default value is
-returned.
+If no branch is found for the specified URL, getByUrl returns None.
 
     >>> not_there_url = factory.getUniqueURL()
     >>> print branch_lookup.getByUrl(not_there_url)
     None
-    >>> print branch_lookup.getByUrl(not_there_url, 123)
-    123
 
 
 == Branch names ==

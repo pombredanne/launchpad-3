@@ -502,24 +502,24 @@ that corresponds to one of the values is marshalled to the appropriate
 value. A string that doesn't correspond to any enumerated value results
 in a helpful ValueError.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
-    >>> field = Choice(vocabulary=BugTaskStatus)
+    >>> from canonical.lazr.rest.example.interfaces import Cuisine
+    >>> field = Choice(vocabulary=Cuisine)
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
     >>> verifyObject(IFieldMarshaller, marshaller)
     True
 
-    >>> marshaller.marshall_from_json_data("Triaged")
-    <DBItem BugTaskStatus.TRIAGED...>
+    >>> marshaller.marshall_from_json_data("Dessert")
+    <Item Cuisine.DESSERT...>
 
-    >>> marshaller.marshall_from_json_data("NoSuchStatus")
+    >>> marshaller.marshall_from_json_data("NoSuchCuisine")
     Traceback (most recent call last):
     ...
-    ValueError: Invalid value "NoSuchStatus". Acceptable values are: ...
+    ValueError: Invalid value "NoSuchCuisine". Acceptable values are: ...
 
-    >>> marshaller.marshall_from_json_data("triaged")
+    >>> marshaller.marshall_from_json_data("dessert")
     Traceback (most recent call last):
     ...
-    ValueError: Invalid value "triaged". Acceptable values are: ...
+    ValueError: Invalid value "dessert". Acceptable values are: ...
 
 None is returned unchanged:
 
