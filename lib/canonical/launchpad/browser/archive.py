@@ -345,7 +345,7 @@ class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
             default_ppa_name = default_name_by_purpose.get(
                 self.context.purpose)
             if self.context.name == default_ppa_name:
-                return 'default PPA'
+                return 'PPA'
             return '%s PPA' % self.context.name
 
         if self.context.is_copy:
