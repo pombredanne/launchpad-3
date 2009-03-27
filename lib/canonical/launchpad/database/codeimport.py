@@ -68,7 +68,7 @@ class CodeImport(SQLBase):
     @property
     def series(self):
         """See `ICodeImport`."""
-        return ProductSeries.selectOneBy(branch=self.branch)
+        return ProductSeries.selectOneBy(import_branch=self.branch)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
@@ -81,8 +81,6 @@ class CodeImport(SQLBase):
     cvs_module = StringCol(default=None)
 
     svn_branch_url = StringCol(default=None)
-
-    git_repo_url = StringCol(default=None)
 
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)

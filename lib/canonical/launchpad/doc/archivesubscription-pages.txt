@@ -271,8 +271,8 @@ subscriptions for the person, with a corresponding token for each:
     ...         print token_text
 
     >>> print_subscriptions_with_tokens()
-    PPA for Mark Shuttleworth       spiv's still my friend   None
-    PPA for Celso Providelo         spiv's my friend         None
+    Private PPA for Mark Shuttleworth       spiv's still my friend   None
+    Private PPA for Celso Providelo         spiv's my friend         None
 
 As long as there are no active subscriptions, the private_ppa_sources_list
 property will not contain any repo urls:
@@ -299,8 +299,8 @@ The view redirects to itself after activating the subscription:
 And the subscription has been activated:
 
     >>> print_subscriptions_with_tokens()
-    PPA for Mark Shuttleworth       spiv's still my friend   Token
-    PPA for Celso Providelo         spiv's my friend         None
+    Private PPA for Mark Shuttleworth       spiv's still my friend   Token
+    Private PPA for Celso Providelo         spiv's my friend         None
 
     >>> len(view.subscriptions_with_tokens)
     2
@@ -313,7 +313,7 @@ The user will also see a notification of the subscription activation:
 
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    Your subscription to 'PPA for Mark Shuttleworth' has been
+    Your subscription to 'Private PPA for Mark Shuttleworth' has been
     activated. Please update your custom sources.list as described below.
 
 The PersonArchiveSubscriptionsView also provides an
@@ -323,13 +323,13 @@ active_subscriptions_with_tokens property:
     ...     print subs_with_token['subscription'].archive.displayname
     ...     if subs_with_token['token'] is not None:
     ...         print "Token"
-    PPA for Mark Shuttleworth              Token
+    Private PPA for Mark Shuttleworth              Token
 
 Now the private_ppa_sources_list property should contain Mark's repo:
 
     >>> print view.private_ppa_sources_list
     # Personal subscriptions for private PPAs
-    # PPA for Mark Shuttleworth
+    # Private PPA for Mark Shuttleworth
     deb http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
     deb-src http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
 
@@ -348,10 +348,10 @@ Now the private_ppa_sources_list property should contain both repos:
 
     >>> print view.private_ppa_sources_list
     # Personal subscriptions for private PPAs
-    # PPA for Mark Shuttleworth
+    # Private PPA for Mark Shuttleworth
     deb http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
     deb-src http://spiv:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
-    # PPA for Celso Providelo
+    # Private PPA for Celso Providelo
     deb http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb-src http://spiv:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 

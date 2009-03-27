@@ -19,8 +19,6 @@ __all__ = [
     'BufferLogger',
     'FakeLogger',
     'QuietFakeLogger',
-    'DEBUG2', 'DEBUG3', 'DEBUG4', 'DEBUG5',
-    'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9'
     ]
 
 import logging
@@ -39,25 +37,6 @@ from zope.component import getUtility
 from canonical.base import base
 from canonical.config import config
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
-
-# Custom log levels. logging.debug is 10.
-DEBUG2 = 9
-DEBUG3 = 8
-DEBUG4 = 7
-DEBUG5 = 6
-DEBUG6 = 5
-DEBUG7 = 4
-DEBUG8 = 3
-DEBUG9 = 2
-
-logging.addLevelName(DEBUG2, 'DEBUG2')
-logging.addLevelName(DEBUG3, 'DEBUG3')
-logging.addLevelName(DEBUG4, 'DEBUG4')
-logging.addLevelName(DEBUG5, 'DEBUG5')
-logging.addLevelName(DEBUG6, 'DEBUG6')
-logging.addLevelName(DEBUG7, 'DEBUG7')
-logging.addLevelName(DEBUG8, 'DEBUG8')
-logging.addLevelName(DEBUG9, 'DEBUG9')
 
 
 class FakeLogger:
@@ -225,35 +204,22 @@ def logger_options(parser, default=logging.INFO):
     # Undocumented use of the optparse module
     parser.defaults['verbose'] = False
 
-    def inc_loglevel(option, opt_str, value, parser):
-        current_level = getattr(parser.values, 'loglevel', default)
-        if current_level < 10:
-            inc = 1
-        else:
-            inc = 10
-        parser.values.loglevel = current_level + inc
-        parser.values.verbose = (parser.values.loglevel < default)
-        # Reset the global log.
-        log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
-
-    def dec_loglevel(option, opt_str, value, parser):
-        current_level = getattr(parser.values, 'loglevel', default)
-        if current_level <= 10:
-            dec = 1
-        else:
-            dec = 10
-        parser.values.loglevel = current_level - dec
+    def counter(option, opt_str, value, parser, inc):
+        parser.values.loglevel = (
+                getattr(parser.values, 'loglevel', default) + inc
+                )
         parser.values.verbose = (parser.values.loglevel < default)
         # Reset the global log.
         log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
 
     parser.add_option(
             "-v", "--verbose", dest="loglevel", default=default,
-            action="callback", callback=dec_loglevel,
+            action="callback", callback=counter, callback_args=(-10, ),
             help="Increase verbosity. May be specified multiple times."
             )
     parser.add_option(
-            "-q", "--quiet", action="callback", callback=inc_loglevel,
+            "-q", "--quiet",
+            action="callback", callback=counter, callback_args=(10, ),
             help="Decrease verbosity. May be specified multiple times."
             )
     parser.add_option(
@@ -306,7 +272,6 @@ def reset_root_logger():
             pass
         root_logger.removeHandler(hdlr)
 
-
 def _logger(level, out_stream, name=None):
     """Create the actual logger instance, logging at the given level
 
@@ -317,6 +282,12 @@ def _logger(level, out_stream, name=None):
         # Determine the logger name from the script name
         name = sys.argv[0]
         name = re.sub('.py[oc]?$', '', name)
+
+    # Clamp the loglevel
+    if level < logging.DEBUG:
+        level = logging.DEBUG
+    elif level > logging.CRITICAL:
+        level = logging.CRITICAL
 
     # We install our custom handlers and formatters on the root logger.
     # This means that if the root logger is used, we still get correct
@@ -385,5 +356,3 @@ class _LogWrapper:
 
 
 log = _LogWrapper(logging.getLogger())
-
-

@@ -15,7 +15,7 @@ Log-in an administrator to avoid permission problems.
 Make a trunk branch and set as the development focus branch.
 
     >>> trunk = factory.makeProductBranch(product=fooix)
-    >>> fooix.development_focus.branch = trunk
+    >>> fooix.development_focus.user_branch = trunk
 
 Make a single proposal for albert that is needing review by robert.
 
@@ -36,20 +36,12 @@ Make two proposals for bob, one needing review, and one approved.
     ...     owner=bob, product=fooix, name='review')
     >>> proposal = branch.addLandingTarget(bob, trunk)
     >>> proposal.requestReview()
-    >>> # Ensure the date_created is later to ensure stable ordering.
-    >>> from datetime import timedelta
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(proposal).date_created += timedelta(1)
 
     >>> branch = factory.makeProductBranch(
     ...     owner=bob, product=fooix, name='approved')
     >>> proposal = branch.addLandingTarget(bob, trunk)
     >>> proposal.approveBranch(trunk.owner, 'some-revision')
-    >>> removeSecurityProxy(proposal).date_created += timedelta(2)
     >>> logout()
-
-    >>> import transaction
-    >>> transaction.commit()
 
 
 == Listings from the main product code page ==
@@ -74,10 +66,10 @@ summary.
 
     >>> print_tag_with_id(browser.contents, "proposals")
     Branch Merge Proposal   Requested By          Activity
-    lp://dev/~bob/fooix/review  &rArr; lp://dev/fooix
-            Bob           ...                     None
     lp://dev/~albert/fooix/review &rArr; lp://dev/fooix
             Albert        ...                     None
+    lp://dev/~bob/fooix/review  &rArr; lp://dev/fooix
+            Bob           ...                     None
 
 We go back to the proposals listing, and check the approved merges has
 the date the merge was approved.

@@ -122,8 +122,7 @@ registration.
     ...     email='bad-user@canonical.com',
     ...     name='bad-user',
     ...     password='invalid')
-    >>> from canonical.launchpad.interfaces import IMasterObject
-    >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
+    >>> bad_user.account.status = AccountStatus.SUSPENDED
     >>> logout()
 
 Bad User has a suspended account. He discovers that his account is disabled

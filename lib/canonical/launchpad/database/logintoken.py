@@ -4,6 +4,8 @@
 __metaclass__ = type
 __all__ = ['LoginToken', 'LoginTokenSet']
 
+import random
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -17,16 +19,13 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.components.tokens import (
-    create_unique_token_for_table)
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
     LoginTokenType)
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -42,20 +41,13 @@ class LoginToken(SQLBase):
     email = StringCol(dbName='email', notNull=True)
     token = StringCol(dbName='token', unique=True)
     tokentype = EnumCol(dbName='tokentype', notNull=True, enum=LoginTokenType)
-    date_created = UtcDateTimeCol(dbName='created', notNull=True)
+    created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False,
                             default=None)
     date_consumed = UtcDateTimeCol(default=None)
     password = '' # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
-
-    @property
-    def requester_account(self):
-        """See `ILoginToken`."""
-        if self.requester is None:
-            return None
-        return IMasterObject(self.requester.account)
 
     def consume(self):
         """See ILoginToken."""
@@ -84,13 +76,14 @@ class LoginToken(SQLBase):
             from_address, to_address, subject, message,
             headers=headers, bulk=False)
 
-    def sendEmailValidationRequest(self):
+    def sendEmailValidationRequest(self, appurl):
         """See ILoginToken."""
         template = get_email_template('validate-email.txt')
-        replacements = {'token_url': canonical_url(self),
+        replacements = {'longstring': self.token,
                         'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
-                        'toaddress': self.email}
+                        'toaddress': self.email,
+                        'appurl': appurl}
         message = template % replacements
         subject = "Launchpad: Validate your email address"
         self._send_email("Launchpad Email Validator", subject, message)
@@ -143,12 +136,29 @@ class LoginToken(SQLBase):
         subject = 'Launchpad: Confirm your OpenPGP Key'
         self._send_email(from_name, subject, text)
 
+    def sendPasswordResetNeutralEmail(self):
+        """See ILoginToken."""
+        template = get_email_template('forgottenpassword-neutral.txt')
+        from_name = "Login Service"
+        message = template % dict(token_url=canonical_url(self))
+        subject = "Login Service: Forgotten Password"
+        self._send_email(from_name, subject, message)
+
+    def sendNewUserNeutralEmail(self):
+        """See ILoginToken."""
+        template = get_email_template('newuser-email-neutral.txt')
+        message = template % dict(token_url=canonical_url(self))
+
+        from_name = "Launchpad"
+        subject = "Login Service: Finish your registration"
+        self._send_email(from_name, subject, message)
+
     def sendPasswordResetEmail(self):
         """See ILoginToken."""
         template = get_email_template('forgottenpassword.txt')
-        from_name = "Launchpad"
+        from_name = "Login Service"
         message = template % dict(token_url=canonical_url(self))
-        subject = "Launchpad: Forgotten Password"
+        subject = "Login Service: Forgotten Password"
         self._send_email(from_name, subject, message)
 
     def sendNewUserEmail(self):
@@ -328,8 +338,12 @@ class LoginTokenSet:
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
 
-        token = create_unique_token_for_table(20, LoginToken.token)
-        return LoginToken(requester=requester, requesteremail=requesteremail,
+        characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
+        length = 20
+        token = ''.join(
+            [random.choice(characters) for count in range(length)])
+        reqid = getattr(requester, 'id', None)
+        return LoginToken(requesterID=reqid, requesteremail=requesteremail,
                           email=email, token=token, tokentype=tokentype,
                           created=UTC_NOW, fingerprint=fingerprint,
                           redirection_url=redirection_url)

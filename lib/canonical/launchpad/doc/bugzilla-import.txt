@@ -236,8 +236,6 @@ to notice:
   None
   >>> bug = bz.handleBug(2)
   WARNING:canonical.launchpad.scripts.bugzilla:could not find package name for "unknown": 'Unknown package: unknown'
-  >>> import transaction
-  >>> transaction.commit()
 
   >>> bugInfo(bug)
   Title: Test bug 2

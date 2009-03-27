@@ -106,7 +106,6 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipitFrontPageView"
-        layer="canonical.launchpad.layers.ShipItKUbuntuLayer"
         permission="zope.Public"
         name="+index"
         template="../templates/shipit-index.pt" />
@@ -129,30 +128,19 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipitOpenIDLoginView"
+        class="canonical.launchpad.browser.ShipItLoginView"
         permission="zope.Public"
         name="login"
+        template="../templates/shipit-login.pt"
         />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipitOpenIDLoginForServerCDsView"
+        class="canonical.launchpad.browser.ShipItLoginForServerCDsView"
         permission="zope.Public"
         name="login-server"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipitOpenIDCallbackView"
-        permission="zope.Public"
-        name="callback"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IShipItApplication"
-        class="canonical.launchpad.browser.ShipitOpenIDCallbackForServerCDsView"
-        permission="zope.Public"
-        name="callback-server"
+        layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+        template="../templates/shipit-login.pt"
         />
 
     <browser:page
@@ -361,11 +349,14 @@
         template="../templates/shipit-portlet-navigation.pt"
         />
 
-    <browser:page
+    <browser:addform
         name="+new"
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
         facet="overview"
+        schema="canonical.launchpad.interfaces.IStandardShipItRequest"
         class="canonical.launchpad.browser.StandardShipItRequestAddView"
+        fields="flavour quantityx86 quantityamd64 user_description isdefault"
+        label="Create a new standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-new.pt"
         />
@@ -425,15 +416,5 @@
         provides="canonical.launchpad.interfaces.IShipItSurveySet">
         <allow interface="canonical.launchpad.interfaces.IShipItSurveySet" />
     </securedutility>
-
-    <!-- ShipitAccount -->
-    <class class="canonical.launchpad.database.ShipitAccount">
-        <allow interface="canonical.launchpad.interfaces.IShipitAccount" />
-    </class>
-
-    <adapter for="canonical.launchpad.interfaces.account.IAccount"
-      provides="canonical.launchpad.interfaces.shipit.IShipitAccount"
-      factory="canonical.launchpad.database.shipit.ShipitAccount"
-      />
 
 </configure>

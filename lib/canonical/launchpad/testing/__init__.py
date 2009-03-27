@@ -14,7 +14,6 @@ from storm.store import Store
 import transaction
 from zope.component import getUtility
 import zope.event
-from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
@@ -100,29 +99,10 @@ class TestCase(unittest.TestCase):
         self._cleanups.append((function, arguments, keywordArguments))
 
     def assertProvides(self, obj, interface):
-        """Assert 'obj' provides 'interface'.
-        
-        You should probably be using `assertCorrectlyProvides`.
-        """
+        """Assert 'obj' provides 'interface'."""
         self.assertTrue(
             interface.providedBy(obj),
             "%r does not provide %r" % (obj, interface))
-
-    def assertCorrectlyProvides(self, obj, interface):
-        """Assert 'obj' may correctly provides 'interface'."""
-        self.assertTrue(
-            interface.providedBy(obj),
-            "%r does not provide %r." % (obj, interface))
-        self.assertTrue(
-            verifyObject(interface, obj),
-            "%r claims to provide %r but does not do so correctly."
-            % (obj, interface))
-
-    def assertClassImplements(self, cls, interface):
-        """Assert 'cls' may correctly implement 'interface'."""
-        self.assertTrue(
-            verifyClass(interface, cls),
-            "%r does not correctly implement %r." % (cls, interface))
 
     def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
         """Assert that a callable performs a given notification.

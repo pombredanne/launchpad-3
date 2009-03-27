@@ -1,4 +1,4 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -10,12 +10,10 @@ __all__ = [
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import In
+from storm.expr import In, Or
 from warnings import warn
 from zope.component import getUtility
 from zope.interface import implements
-from storm.locals import And, Desc
-from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -48,8 +46,6 @@ from canonical.launchpad.interfaces import (
     SpecificationSort)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.interfaces.translations import (
-    TranslationsBranchImportMode)
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
@@ -75,48 +71,22 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_public_person, notNull=False, default=None)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch',
+    import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
+                               default=None)
+    user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
                              default=None)
-    translations_autoimport_mode = EnumCol(
-        dbName='translations_autoimport_mode',
-        notNull=True,
-        schema=TranslationsBranchImportMode,
-        default=TranslationsBranchImportMode.NO_IMPORT)
     # where are the tarballs released from this branch placed?
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
 
+    releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
+                            orderBy=['-datereleased'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
         return (Milestone.productseries == self)
-
-    def _get_user_branch(self):
-        """Backwards compatibility for the 2.2.3 release."""
-        return self.branch
-
-    def _set_user_branch(self, branch):
-        """Backwards compatibility for the 2.2.3 release."""
-        self.branch = branch
-
-    user_branch = property(_get_user_branch, _set_user_branch)
-
-    @property
-    def series_branch(self):
-        """Backwards compatibility for the 2.2.3 release."""
-        return self.branch
-
-    @property
-    def releases(self):
-        """See `IProductSeries`."""
-        store = Store.of(self)
-        result = store.find(
-            ProductRelease,
-            And(Milestone.productseries == self,
-                ProductRelease.milestone == Milestone.id))
-        return result.order_by(Desc('datereleased'))
 
     @property
     def release_files(self):
@@ -163,6 +133,13 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def security_contact(self):
         """See IProductSeries."""
         return self.product.security_contact
+
+    @property
+    def series_branch(self):
+        """See IProductSeries."""
+        if self.user_branch is not None:
+            return self.user_branch
+        return self.import_branch
 
     def getPOTemplate(self, name):
         """See IProductSeries."""
@@ -413,12 +390,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 history.append(pkging)
         return history
 
-    def newMilestone(self, name, dateexpected=None, summary=None,
-                     code_name=None):
+    def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
         return Milestone(
-            name=name, dateexpected=dateexpected, summary=summary,
-            product=self.product, productseries=self, code_name=code_name)
+            name=name, dateexpected=dateexpected, description=description,
+            product=self.product, productseries=self)
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -450,6 +426,17 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
+
+    def addRelease(self, version, owner, codename=None, summary=None,
+                   description=None, changelog=None):
+        """See `IProductSeries`."""
+        return ProductRelease(version=version,
+                              productseries=self,
+                              owner=owner,
+                              codename=codename,
+                              summary=summary,
+                              description=description,
+                              changelog=changelog)
 
 
 class ProductSeriesSet:
@@ -517,5 +504,6 @@ class ProductSeriesSet:
         branch_ids = [branch.id for branch in branches]
         return store.find(
             ProductSeries,
-            In(ProductSeries.branchID, branch_ids)).order_by(
+            Or(In(ProductSeries.user_branchID, branch_ids),
+               In(ProductSeries.import_branchID, branch_ids))).order_by(
             ProductSeries.name)

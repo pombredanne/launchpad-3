@@ -19,7 +19,6 @@ from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Int, List, Object, Text, TextLine)
 from zope.schema.interfaces import IObject
-from zope.schema.vocabulary import SimpleVocabulary
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -232,10 +231,6 @@ class IBugTracker(Interface):
         'Bug messages that have been imported from this bug tracker.')
     multi_product = Attribute(
         "This bug tracker tracks multiple remote products.")
-    active = exported(
-        Bool(
-            title=_('Updates for this bug tracker are enabled'),
-            required=True, default=True))
 
     def getBugFilingAndSearchLinks(remote_product, summary=None,
                                    description=None):
