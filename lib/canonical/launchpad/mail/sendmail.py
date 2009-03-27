@@ -166,8 +166,7 @@ class MailController(object):
             msg = MIMEText(self.body.encode('utf-8'), 'plain', 'utf-8')
         else:
             msg = MIMEMultipart()
-            body_part = Message()
-            body_part.set_payload(self.body)
+            body_part = MIMEText(self.body.encode('utf-8'), 'plain', 'utf-8')
             msg.attach(body_part)
             for attachment in self.attachments:
                 msg.attach(attachment)
