@@ -187,9 +187,9 @@ class DBLoopTuner(LoopTuner):
                 FROM pg_stat_activity
                 WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
                 """ % self.long_running_transaction).get_all())
-            if not result:
+            if not results:
                 break
-            for runtime, procpid, usename, datname, query in result:
+            for runtime, procpid, usename, datname, query in results:
                 log.info(
                     "Blocked on %s old xact %s@%s/%d - %s"
                     % (runtime, usename, datname, procpid, current_query))
