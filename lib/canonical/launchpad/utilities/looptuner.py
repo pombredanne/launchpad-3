@@ -208,7 +208,7 @@ class DBLoopTuner(LoopTuner):
         self._blockWhenLagged()
         if self.cooldown_time is not None and self.cooldown_time > 0.0:
             remaining_nap = self._time() - bedtime + self.cooldown_time
-            if remaining_nap > 0:
+            if remaining_nap > 0.0:
                 time.sleep(remaining_nap)
         return self._time()
 
