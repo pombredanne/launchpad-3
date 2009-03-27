@@ -32,23 +32,28 @@ class TestBugChanges(unittest.TestCase):
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
         self.user = self.factory.makePerson(displayname='Arthur Dent')
-
-        product = self.factory.makeProduct(
+        self.product = self.factory.makeProduct(
             owner=self.user, official_malone=True)
-        self.bug = self.factory.makeBug(product=product, owner=self.user)
+        self.bug = self.factory.makeBug(product=self.product, owner=self.user)
         self.bug_task = self.bug.bugtasks[0]
-        self.saveOldChanges()
 
         # Add some structural subscribers to show that notifications
         # aren't sent to LIFECYCLE subscribers by default.
-        self.lifecycle_subscriber = self.factory.makePerson()
-        subscription = product.addBugSubscription(
-            self.lifecycle_subscriber, self.lifecycle_subscriber)
-        subscription.bug_notification_level = BugNotificationLevel.LIFECYCLE
-        self.metadata_subscriber = self.factory.makePerson()
-        subscription = product.addBugSubscription(
-            self.metadata_subscriber, self.metadata_subscriber)
-        subscription.bug_notification_level = BugNotificationLevel.METADATA
+        self.product_lifecycle_subscriber = self.newSubscriber(
+            self.product, "product-lifecycle",
+            BugNotificationLevel.LIFECYCLE)
+        self.product_metadata_subscriber = self.newSubscriber(
+            self.product, "product-metadata",
+            BugNotificationLevel.METADATA)
+
+        self.saveOldChanges()
+
+    def newSubscriber(self, target, name, level):
+        # Create a new bug subscription with a new person.
+        subscriber = self.factory.makePerson(name=name)
+        subscription = target.addBugSubscription(subscriber, subscriber)
+        subscription.bug_notification_level = level
+        return subscriber
 
     def saveOldChanges(self, bug=None):
         """Save the old changes to a bug.
@@ -781,27 +786,39 @@ class TestBugChanges(unittest.TestCase):
             self.bug_task, bug_task_before_modification,
             ['target', 'product'], user=self.user))
 
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'affects',
+            'oldvalue': bug_task_before_modification.bugtargetname,
+            'newvalue': self.bug_task.bugtargetname,
+            }
+
         expected_notification = {
-            'text': (
-                u'** Changed in: %s\n      '
-                'Product: %s => %s' % (
-                self.bug_task.bugtargetname,
-                bug_task_before_modification.bugtargetdisplayname,
-                self.bug_task.bugtargetdisplayname)),
+            'text': u"** Project changed: %s => %s" % (
+                bug_task_before_modification.bugtargetname,
+                self.bug_task.bugtargetname),
             'person': self.user,
             }
+
+        expected_recipients = [
+            self.user, self.product_metadata_subscriber,
+            ]
 
         # The person who was subscribed to meta data changes for the old
         # product was notified.
         self.assertRecordedChange(
-            expected_activity=None,
+            expected_activity=expected_activity,
             expected_notification=expected_notification,
-            expected_recipients=[self.user, self.metadata_subscriber])
+            expected_recipients=expected_recipients)
 
     def test_target_bugtask_to_sourcepackage(self):
         # When a bugtask's target is changed, BugActivity and
         # BugNotification get updated.
         target = self.factory.makeDistributionSourcePackage()
+        metadata_subscriber = self.newSubscriber(
+            target, "dsp-metadata", BugNotificationLevel.METADATA)
+        lifecycle_subscriber = self.newSubscriber(
+            target, "dsp-lifecycle", BugNotificationLevel.LIFECYCLE)
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
 
@@ -819,18 +836,29 @@ class TestBugChanges(unittest.TestCase):
             source_package_bug_task, bug_task_before_modification,
             ['target', 'sourcepackagename'], user=self.user))
 
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'affects',
+            'oldvalue': bug_task_before_modification.bugtargetname,
+            'newvalue': source_package_bug_task.bugtargetname,
+            }
+
         expected_notification = {
-            'text': (
-                u'** Changed in: %s\nSourcepackagename: %s => %s' % (
-                source_package_bug_task.bugtargetname,
-                bug_task_before_modification.target.name,
-                source_package_bug_task.target.name)),
+            'text': u"** Package changed: %s => %s" % (
+                bug_task_before_modification.bugtargetname,
+                source_package_bug_task.bugtargetname),
             'person': self.user,
             }
 
+        expected_recipients = [self.user, metadata_subscriber]
+        expected_recipients.extend(
+            bug_task.pillar.owner
+            for bug_task in source_package_bug.bugtasks)
+
         self.assertRecordedChange(
-            expected_activity=None,
+            expected_activity=expected_activity,
             expected_notification=expected_notification,
+            expected_recipients=expected_recipients,
             bug=source_package_bug)
 
     def test_add_bugwatch_to_bugtask(self):
@@ -940,7 +968,8 @@ class TestBugChanges(unittest.TestCase):
         # The old assignee got notified about the change, in addition to
         # the default recipients.
         expected_recipients = [
-            self.user, self.metadata_subscriber, old_assignee]
+            self.user, self.product_metadata_subscriber, old_assignee]
+
         self.assertRecordedChange(
             expected_activity=expected_activity,
             expected_notification=expected_notification,
@@ -949,7 +978,7 @@ class TestBugChanges(unittest.TestCase):
     def test_target_bugtask_to_milestone(self):
         # When a bugtask is targetted to a milestone BugActivity and
         # BugNotification records will be created.
-        milestone = self.factory.makeMilestone(product=self.bug_task.product)
+        milestone = self.factory.makeMilestone(product=self.product)
         self.changeAttribute(self.bug_task, 'milestone', milestone)
 
         expected_activity = {
@@ -974,7 +1003,7 @@ class TestBugChanges(unittest.TestCase):
     def test_untarget_bugtask_from_milestone(self):
         # When a bugtask is untargetted from a milestone both
         # BugActivity and BugNotification records will be created.
-        milestone = self.factory.makeMilestone(product=self.bug_task.product)
+        milestone = self.factory.makeMilestone(product=self.product)
         self.changeAttribute(self.bug_task, 'milestone', milestone)
         self.saveOldChanges()
         old_milestone_subscriber = self.factory.makePerson()
@@ -999,7 +1028,10 @@ class TestBugChanges(unittest.TestCase):
             }
 
         expected_recipients = [
-            self.user, self.metadata_subscriber, old_milestone_subscriber]
+            self.user, self.product_metadata_subscriber,
+            old_milestone_subscriber,
+            ]
+
         self.assertRecordedChange(
             expected_activity=expected_activity,
             expected_notification=expected_notification,

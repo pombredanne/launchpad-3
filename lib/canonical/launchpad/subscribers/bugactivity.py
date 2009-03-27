@@ -32,7 +32,6 @@ BUGTASK_INTERESTING_FIELDS = [
     'assignee',
     'bugwatch',
     'milestone',
-    'target',
     ]
 
 

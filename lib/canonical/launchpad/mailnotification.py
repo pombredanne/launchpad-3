@@ -633,7 +633,7 @@ def get_bug_edit_notification_texts(bug_delta):
             bugtask_deltas = [bugtask_deltas]
 
         for bugtask_delta in bugtask_deltas:
-            for field_name in ['importance', 'status']:
+            for field_name in ['target', 'importance', 'status']:
                 field_delta = getattr(bugtask_delta, field_name)
                 if field_delta is not None:
                     bug_change_class = get_bug_change_class(
@@ -658,7 +658,6 @@ def get_bug_edit_notification_texts(bug_delta):
             change_info = u''
 
             for fieldname, displayattrname in [
-                ("product", "displayname"), ("sourcepackagename", "name"),
                 ("milestone", "name"), ("bugwatch", "title")]:
                 change = getattr(bugtask_delta, fieldname)
                 if change:
@@ -831,7 +830,7 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
         #     This if..else should be removed once the new BugChange API
         #     is complete and ubiquitous.
         if IBugChange.providedBy(change):
-            bug_delta.bug.addChange(change)
+            bug_delta.bug.addChange(change, recipients=recipients)
         else:
             bug_delta.bug.addChangeNotification(
                 change, person=bug_delta.user, recipients=recipients)

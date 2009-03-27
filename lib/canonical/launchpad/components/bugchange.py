@@ -10,6 +10,8 @@ __all__ = [
     'BugDescriptionChange',
     'BugTagsChange',
     'BugTaskAdded',
+    'BugTaskAttributeChange',
+    'BugTaskTargetChange',
     'BugTitleChange',
     'BugVisibilityChange',
     'BugWatchAdded',
@@ -27,6 +29,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.webapp.publisher import canonical_url
 
 
@@ -519,6 +522,35 @@ class BugTaskAttributeChange(AttributeChange):
         return {'text': text.rstrip()}
 
 
+class BugTaskTargetChange(AttributeChange):
+    """Used to represent a change in a BugTask's target."""
+
+    def __init__(self, bug_task, when, person,
+                 what_changed, old_value, new_value):
+        super(BugTaskTargetChange, self).__init__(
+            when, person, what_changed, old_value, new_value)
+        self.bug_task = bug_task
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return {
+            'whatchanged': 'affects',
+            'oldvalue': self.old_value.bugtargetname,
+            'newvalue': self.new_value.bugtargetname,
+            }
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        if IProduct.providedBy(self.old_value):
+            template = u"** Project changed: %s => %s"
+        else:
+            template = u"** Package changed: %s => %s"
+        text = template % (
+            self.old_value.bugtargetname,
+            self.new_value.bugtargetname)
+        return {'text': text}
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
@@ -532,4 +564,5 @@ BUG_CHANGE_LOOKUP = {
 BUGTASK_CHANGE_LOOKUP = {
     'importance': BugTaskAttributeChange,
     'status': BugTaskAttributeChange,
+    'target': BugTaskTargetChange,
     }
