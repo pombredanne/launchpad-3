@@ -721,6 +721,15 @@ class IDistroSeriesSet(Interface):
         Returns a list of matching distributions, which may be empty.
         """
 
+    def fromSuite(distribution, suite):
+        """Return the distroseries and pocket for 'suite' of 'distribution'.
+
+        :param distribution: An `IDistribution`.
+        :param suite: A string that forms the name of a suite.
+        :return: (`IDistroSeries`, `DBItem`) where the item is from
+            `PackagePublishingPocket`.
+        """
+
     def search(distribution=None, released=None, orderBy=None):
         """Search the set of distro seriess.
 
