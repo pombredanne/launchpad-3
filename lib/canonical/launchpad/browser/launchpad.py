@@ -53,7 +53,8 @@ from canonical.launchpad.interfaces.announcement import IAnnouncementSet
 from canonical.launchpad.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from canonical.launchpad.interfaces.bounty import IBountySet
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchlookup import (
+    CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
@@ -99,7 +100,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from lazr.uri import URI
 from canonical.launchpad.webapp.url import urlparse, urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.launchpad.xmlrpc.faults import NoBranchForSeries, NoSuchSeries
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -597,9 +597,9 @@ class LaunchpadRootNavigation(Navigation):
         path = '/'.join(self.request.stepstogo)
         try:
             branch_data = getUtility(IBranchLookup).getByLPPath(path)
-        except (NoBranchForSeries, NoSuchSeries):
+        except (CannotHaveLinkedBranch, NoLinkedBranch):
             raise NotFoundError
-        branch, trailing, series = branch_data
+        branch, trailing = branch_data
         if branch is None:
             raise NotFoundError
         url = canonical_url(branch)

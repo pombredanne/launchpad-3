@@ -591,30 +591,13 @@ def get_bug_edit_notification_texts(bug_delta):
     # figure out what's been changed; add that information to the
     # list as appropriate
     changes = []
-    if bug_delta.duplicateof is not None:
-        new_bug_dupe = bug_delta.duplicateof['new']
-        old_bug_dupe = bug_delta.duplicateof['old']
-        assert new_bug_dupe is not None or old_bug_dupe is not None
-        assert new_bug_dupe != old_bug_dupe
-        if old_bug_dupe is not None:
-            change_info = (
-                u"** This bug is no longer a duplicate of bug %d\n" %
-                    old_bug_dupe.id)
-            change_info += u'   %s' % old_bug_dupe.title
-            changes.append(change_info)
-        if new_bug_dupe is not None:
-            change_info = (
-                u"** This bug has been marked a duplicate of bug %d\n" %
-                    new_bug_dupe.id)
-            change_info += '   %s' % new_bug_dupe.title
-            changes.append(change_info)
 
     # The order of the field names in this list is important; this is
     # the order in which changes will appear both in the bug activity
     # log and in notification emails.
     bug_change_field_names = [
-        'title', 'description', 'private', 'security_related', 'tags',
-        'attachment',
+        'duplicateof', 'title', 'description', 'private', 'security_related',
+        'tags', 'attachment',
         ]
     for field_name in bug_change_field_names:
         field_delta = getattr(bug_delta, field_name)
@@ -633,7 +616,7 @@ def get_bug_edit_notification_texts(bug_delta):
             bugtask_deltas = [bugtask_deltas]
 
         for bugtask_delta in bugtask_deltas:
-            for field_name in ['importance', 'status']:
+            for field_name in ['target', 'importance', 'status']:
                 field_delta = getattr(bugtask_delta, field_name)
                 if field_delta is not None:
                     bug_change_class = get_bug_change_class(
@@ -658,7 +641,6 @@ def get_bug_edit_notification_texts(bug_delta):
             change_info = u''
 
             for fieldname, displayattrname in [
-                ("product", "displayname"), ("sourcepackagename", "name"),
                 ("milestone", "name"), ("bugwatch", "title")]:
                 change = getattr(bugtask_delta, fieldname)
                 if change:
@@ -831,7 +813,7 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
         #     This if..else should be removed once the new BugChange API
         #     is complete and ubiquitous.
         if IBugChange.providedBy(change):
-            bug_delta.bug.addChange(change)
+            bug_delta.bug.addChange(change, recipients=recipients)
         else:
             bug_delta.bug.addChangeNotification(
                 change, person=bug_delta.user, recipients=recipients)
@@ -872,21 +854,6 @@ def notify_bug_comment_added(bugmessage, event):
     """
     bug = bugmessage.bug
     bug.addCommentNotification(bugmessage.message)
-
-
-@block_implicit_flushes
-def notify_bug_became_question(event):
-    """Notify CC'd list that a bug was made into a question.
-
-    The event must contain the bug that became a question, and the question
-    that the bug became.
-    """
-    bug = event.bug
-    question = event.question
-    change_info = '\n'.join([
-        '** bug changed to question:\n'
-        '   %s' %  canonical_url(question)])
-    bug.addChangeNotification(change_info, person=IPerson(event.user))
 
 
 @block_implicit_flushes

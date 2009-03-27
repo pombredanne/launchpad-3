@@ -134,8 +134,7 @@ def bugtask_sort_key(bugtask):
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
     implements(IBugTaskDelta)
-    def __init__(self, bugtask, product=None,
-                 sourcepackagename=None, status=None, importance=None,
+    def __init__(self, bugtask, status=None, importance=None,
                  assignee=None, milestone=None, statusexplanation=None,
                  bugwatch=None, target=None):
         self.bugtask = bugtask
@@ -144,8 +143,6 @@ class BugTaskDelta:
         self.bugwatch = bugwatch
         self.importance = importance
         self.milestone = milestone
-        self.product = product
-        self.sourcepackagename = sourcepackagename
         self.status = status
         self.statusexplanation = statusexplanation
         self.target = target
@@ -990,24 +987,20 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getDelta(self, old_task):
         """See `IBugTask`."""
-        changes = {}
-        if ((IUpstreamBugTask.providedBy(old_task) and
-             IUpstreamBugTask.providedBy(self)) or
-            (IProductSeriesBugTask.providedBy(old_task) and
-             IProductSeriesBugTask.providedBy(self))):
-            if old_task.product != self.product:
-                changes["product"] = {}
-                changes["product"]["old"] = old_task.product
-                changes["product"]["new"] = self.product
-        elif ((IDistroBugTask.providedBy(old_task) and
-               IDistroBugTask.providedBy(self)) or
-              (IDistroSeriesBugTask.providedBy(old_task) and
-               IDistroSeriesBugTask.providedBy(self))):
-            if old_task.sourcepackagename != self.sourcepackagename:
-                old = old_task
-                changes["sourcepackagename"] = {}
-                changes["sourcepackagename"]["new"] = self.sourcepackagename
-                changes["sourcepackagename"]["old"] = old.sourcepackagename
+        valid_interfaces = [
+            IUpstreamBugTask,
+            IProductSeriesBugTask,
+            IDistroBugTask,
+            IDistroSeriesBugTask,
+            ]
+
+        # This tries to find a matching pair of bug tasks, i.e. where
+        # both provide IUpstreamBugTask, or both IDistroBugTask.
+        # Failing that, it drops off the bottom of the loop and raises
+        # the TypeError.
+        for interface in valid_interfaces:
+            if interface.providedBy(self) and interface.providedBy(old_task):
+                break
         else:
             raise TypeError(
                 "Can't calculate delta on bug tasks of incompatible types: "
@@ -1015,7 +1008,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # calculate the differences in the fields that both types of tasks
         # have in common
-        for field_name in ("status", "importance",
+        changes = {}
+        for field_name in ("target", "status", "importance",
                            "assignee", "bugwatch", "milestone"):
             old_val = getattr(old_task, field_name)
             new_val = getattr(self, field_name)

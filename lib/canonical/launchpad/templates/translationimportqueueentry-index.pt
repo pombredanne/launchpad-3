@@ -10,12 +10,94 @@
   i18n:domain="launchpad"
 >
   <body>
-  <metal:leftportlets fill-slot="portlets_one">
-  </metal:leftportlets>
+  <metal:script fill-slot="head_epilogue">
+    <style type="text/css">
+    .dont_show_fields {
+        visibility: collapse;
+    }
+    </style>
+    <script type="text/javascript">
+    YUI().use('node', 'lazr.anim', function(Y) {
+        var fields = {'POT':
+                            ['field.name', 'field.translation_domain',
+                             'field.languagepack'],
+                      'PO':
+                            ['field.potemplate', 'field.potemplate_name',
+                             'field.language', 'field.variant'],
+                       'UNSPEC': []
+                     };
+        var nodes = {};
+        var last_file_type = 'UNSPEC';
 
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:rightportlets>
+        function getElemById(elem_id) {
+            // XXX 'elem_id' is a Zope form field, and triggers
+            // YUI bug #2423101.  We'll work around it.
+            return Y.get(Y.DOM.byId(elem_id));
+        }
+
+        function getEnclosingTR(fieldname) {
+            var field = getElemById(fieldname);
+            if (field == null) {
+                return null;
+            }
+            return field.ancestor('tr');
+        }
+
+        function buildNodeLists() {
+            for (var ftype in fields) {
+                var the_class = ftype + '_row';
+                Y.Array.each(fields[ftype], function(field) {
+                    var tr = getEnclosingTR(field);
+                    if (tr != null) {
+                        tr.addClass(the_class);
+                        tr.addClass('dont_show_fields');
+                    }
+                });
+                nodes[ftype] = Y.all('.' + the_class);
+            }
+        }
+
+        function updateCurrentFileType(file_type) {
+            for (ftype in nodes) {
+                if (ftype != file_type && nodes[ftype] != null) {
+                    nodes[ftype].addClass('dont_show_fields');
+                }
+            }
+            if (nodes[file_type] != null) {
+                nodes[file_type].removeClass('dont_show_fields');
+                nodes[file_type].each( function(node) {
+                    var anim = Y.lazr.anim.green_flash({ node: node });
+                    anim.run();
+                });
+            }
+            last_file_type = file_type;
+        }
+
+        function initCurrentFileType(file_type) {
+            // Same as updateCurrentFileType but without collapsing
+            // everything and without the green flash.
+            if (nodes[file_type] != null) {
+                nodes[file_type].removeClass('dont_show_fields');
+            }
+            last_file_type = file_type;
+        }
+
+        function handleFileTypeChange() {
+            var file_type = this.get('value');
+            if (file_type != last_file_type) {
+                updateCurrentFileType(file_type);
+            }
+        }
+
+        Y.on('domready', function(){
+            buildNodeLists();
+            var file_type_field = getElemById('field.file_type');
+            initCurrentFileType(file_type_field.get('value'));
+            file_type_field.on('change', handleFileTypeChange);
+        });
+    });
+    </script>
+  </metal:script>
 
   <div metal:fill-slot="main">
     <div metal:use-macro="context/@@launchpad_form/form" />

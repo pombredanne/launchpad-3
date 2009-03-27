@@ -3,9 +3,20 @@
 The PPA owned by a user are accessible from on the user page.
 
     >>> anon_browser.open('http://launchpad.dev/~cprov')
+
+That 'Personal package archives' section in the page body can be
+focused using the link in the navigation menu with the same name.
+
+    >>> print anon_browser.getLink('Personal Package Archives').url
+    http://launchpad.dev/~cprov#ppas
+
+For context where a PPA is already present it is listed.
+
     >>> print_tag_with_id(anon_browser.contents, 'ppas')
     Personal package archives
-     PPA for Celso Providelo
+    PPA for Celso Providelo
+
+And the users can click on the item and will be taken to the PPA page.
 
     >>> anon_browser.getLink('PPA for Celso Providelo').click()
 
@@ -15,11 +26,44 @@ The PPA owned by a user are accessible from on the user page.
     >>> anon_browser.title
     'PPA for Celso Providelo'
 
-While navigating around the PPA the "structural location" remains the
-"PPA owner":
+The navigation menu item is presented also for person/team with no
+PPA, and performs the same action, focus the inline PPA section which
+allows users with permission to create a PPA.
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov")
+    >>> cprov_browser.getLink('Launchpad Buildd Admins').click()
+
+    >>> print cprov_browser.title
+    Launchpad Buildd Admins in Launchpad
+
+    >>> print cprov_browser.getLink('Personal Package Archives').url
+    http://launchpad.dev/~launchpad-buildd-admins#ppas
+
+    >>> print_tag_with_id(cprov_browser.contents, 'ppas')
+    Personal package archives
+    Create a new PPA
+
+    >>> print cprov_browser.getLink('Create a new PPA').url
+    http://launchpad.dev/~launchpad-buildd-admins/+activate-ppa
+
+If the user has no permission, the link to create a new PPA is not
+presented, but the navigation-menu artifact and the PPA section still
+present.
+
+    >>> browser.open('http://launchpad.dev/~launchpad-buildd-admins')
+
+    >>> print browser.getLink('Personal Package Archives').url
+    http://launchpad.dev/~launchpad-buildd-admins#ppas
+
+    >>> print_tag_with_id(browser.contents, 'ppas')
+    Personal package archives
+
+While navigating around the PPA the "structural location" includes a PPA:
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Celso Providelo > default PPA
+    Hierarchy: Launchpad > Celso Providelo > PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov
@@ -41,7 +85,7 @@ the 'View build records' link.
 
 The user could return to the 'PPA' overview by using the breadcrumb link.
 
-    >>> print anon_browser.getLink('default PPA').url
+    >>> print anon_browser.getLink('PPA').url
     http://launchpad.dev/%7Ecprov/+archive/ppa
 
 The user can navigate to an individual build details:
@@ -53,7 +97,7 @@ The user can navigate to an individual build details:
     'i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Celso Providelo > default PPA
+    Hierarchy: Launchpad > Celso Providelo > PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
     * Code - http://code.launchpad.dev/~cprov

@@ -635,48 +635,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "%s: third chunk is %s, expected data.tar.gz, "
                 "data.tar.bz2 or data.tar.lzma." % (self.filename, data_tar))
 
-        # lzma compressed debs must contain dpkg >= 1.14.12ubuntu3.
-        REQUIRED_DPKG_VER = '1.14.12ubuntu3'
-        if data_tar == "data.tar.lzma":
-            parsed_deps = []
-            try:
-                parsed_deps = apt_pkg.ParseDepends(
-                    self.control['Pre-Depends'])
-            except (ValueError, TypeError):
-                yield UploadError(
-                    "Can't parse Pre-Depends in the control file.")
-                return
-            except KeyError:
-                # Go past the for loop and yield the error below.
-                pass
-
-            for token in parsed_deps:
-                try:
-                    name, version, relation = token[0]
-                except ValueError:
-                    yield("APT error processing token '%r' from Pre-Depends.")
-                    return
-
-                if name == 'dpkg':
-                    # VersionCompare returns values similar to cmp;
-                    # negative if first < second, zero if first ==
-                    # second and positive if first > second.
-                    if apt_pkg.VersionCompare(
-                        version, REQUIRED_DPKG_VER) >= 0:
-                        # Pre-Depends dpkg is fine.
-                        return
-                    else:
-                        yield UploadError(
-                            "Pre-Depends dpkg version should be >= %s "
-                            "when using lzma compression." %
-                            REQUIRED_DPKG_VER)
-                        return
-
-            yield UploadError(
-                "Require Pre-Depends: dpkg (>= %s) when using lzma "
-                "compression." % REQUIRED_DPKG_VER)
-
-
     def verifyDebTimestamp(self):
         """Check specific DEB format timestamp checks."""
         self.logger.debug("Verifying timestamps in %s" % (self.filename))
