@@ -25,8 +25,6 @@ from zope.traversing.browser import absoluteURL
 from zope.traversing.interfaces import IPathAdapter
 from lazr.enum import IEnumeratedType
 
-from canonical.launchpad.webapp.publisher import get_current_browser_request
-
 from canonical.lazr.rest import EntryResource, ResourceJSONEncoder
 from canonical.lazr.interfaces import (
     ICollection, IEntry, IJSONRequestCache, IResourceGETOperation,
@@ -38,6 +36,7 @@ from canonical.lazr.interfaces.rest import (
     IWebServiceClientRequest, LAZR_WEBSERVICE_NAME)
 from canonical.lazr.rest import (
     CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
+from canonical.lazr.utils import get_current_browser_request
 
 
 class WadlDocstringLinker(DocstringLinker):

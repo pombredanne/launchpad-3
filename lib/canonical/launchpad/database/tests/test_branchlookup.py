@@ -13,15 +13,20 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.branch import NoSuchBranch
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchlookup import (
+    CannotHaveLinkedBranch, IBranchLookup, ILinkedBranchTraverser,
+    NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
+from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.person import NoSuchPerson
-from canonical.launchpad.interfaces.product import NoSuchProduct
+from canonical.launchpad.interfaces.product import (
+    InvalidProductName, NoSuchProduct)
+from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from canonical.launchpad.interfaces.sourcepackagename import (
+    NoSuchSourcePackageName)
 from canonical.launchpad.testing import TestCaseWithFactory
-from canonical.launchpad.xmlrpc.faults import (
-    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
-    NoSuchSeries)
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -56,17 +61,16 @@ class TestGetByUniqueName(TestCaseWithFactory):
 
 
 class TestGetByPath(TestCaseWithFactory):
-    """Test `IBranchLookup._getByPath`."""
+    """Test `IBranchLookup.getByLPPath`."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self._unsafe_branch_set = removeSecurityProxy(
-            getUtility(IBranchLookup))
+        self.branch_lookup = getUtility(IBranchLookup)
 
     def getByPath(self, path):
-        return self._unsafe_branch_set._getByPath(path)
+        return self.branch_lookup.getByLPPath(path)
 
     def makeRelativePath(self):
         arbitrary_num_segments = 7
@@ -78,7 +82,7 @@ class TestGetByPath(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
+        self.assertEqual(None, suffix)
 
     def test_finds_suffixed_personal_branch(self):
         branch = self.factory.makePersonalBranch()
@@ -106,7 +110,7 @@ class TestGetByPath(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
+        self.assertEqual(None, suffix)
 
     def test_finds_suffixed_product_branch(self):
         branch = self.factory.makeProductBranch()
@@ -136,7 +140,7 @@ class TestGetByPath(TestCaseWithFactory):
         branch = self.factory.makePackageBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
+        self.assertEqual(None, suffix)
 
     def test_missing_package_branch(self):
         owner = self.factory.makePerson()
@@ -159,10 +163,6 @@ class TestGetByPath(TestCaseWithFactory):
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
         self.assertRaises(
             NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
-
-    def test_no_preceding_tilde(self):
-        self.assertRaises(
-            InvalidNamespace, self.getByPath, self.makeRelativePath())
 
     def test_too_short(self):
         person = self.factory.makePerson()
@@ -278,63 +278,226 @@ class TestGetByUrl(TestCaseWithFactory):
         self.assertIs(None, branch_set.uriToUniqueName(uri))
 
 
+class TestLinkedBranchTraverser(TestCaseWithFactory):
+    """Tests for the linked branch traverser."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.traverser = getUtility(ILinkedBranchTraverser)
+
+    def assertTraverses(self, path, result):
+        """Assert that 'path' resolves to 'result'."""
+        self.assertEqual(result, self.traverser.traverse(path))
+
+    def test_error_fallthrough_product_series(self):
+        # For the short name of a series branch, `traverse` raises
+        # `NoSuchProduct` if the first component refers to a non-existent
+        # product, and `NoSuchProductSeries` if the second component refers to
+        # a non-existent series.
+        self.assertRaises(
+            NoSuchProduct, self.traverser.traverse, 'bb/dd')
+        product = self.factory.makeProduct(name='bb')
+        self.assertRaises(
+            NoSuchProductSeries, self.traverser.traverse, 'bb/dd')
+
+    def test_product_series(self):
+        # `traverse` resolves the path to a product series to the product
+        # series itself.
+        series = self.factory.makeSeries()
+        short_name = '%s/%s' % (series.product.name, series.name)
+        self.assertTraverses(short_name, series)
+
+    def test_product_that_doesnt_exist(self):
+        # `traverse` raises `NoSuchProduct` when resolving an lp path of
+        # 'product' if the product doesn't exist.
+        self.assertRaises(NoSuchProduct, self.traverser.traverse, 'bb')
+
+    def test_invalid_product(self):
+        # `traverse` raises `InvalidProductIdentifier` when resolving an lp
+        # path for a completely invalid product development focus branch.
+        self.assertRaises(
+            InvalidProductName, self.traverser.traverse, 'b')
+
+    def test_product(self):
+        # `traverse` resolves the name of a product to the product itself.
+        product = self.factory.makeProduct()
+        self.assertTraverses(product.name, product)
+
+    def test_source_package(self):
+        # `traverse` resolves 'distro/series/package' to the release pocket of
+        # that package in that series.
+        package = self.factory.makeSourcePackage()
+        self.assertTraverses(
+            package.path, (package, PackagePublishingPocket.RELEASE))
+
+    def test_no_such_distribution(self):
+        # `traverse` raises `NoSuchProduct` error if the distribution doesn't
+        # exist. That's because it can't tell the difference between the name
+        # of a product that doesn't exist and the name of a distribution that
+        # doesn't exist.
+        self.assertRaises(
+            NoSuchProduct, self.traverser.traverse,
+            'distro/series/package')
+
+    def test_no_such_distro_series(self):
+        # `traverse` raises `NoSuchDistroSeries` if the distro series doesn't
+        # exist.
+        distro = self.factory.makeDistribution(name='distro')
+        self.assertRaises(
+            NoSuchDistroSeries, self.traverser.traverse,
+            'distro/series/package')
+
+    def test_no_such_sourcepackagename(self):
+        # `traverse` raises `NoSuchSourcePackageName` if the package in
+        # distro/series/package doesn't exist.
+        distroseries = self.factory.makeDistroRelease()
+        path = '%s/%s/doesntexist' % (
+            distroseries.distribution.name, distroseries.name)
+        self.assertRaises(
+            NoSuchSourcePackageName, self.traverser.traverse, path)
+
+
 class TestGetByLPPath(TestCaseWithFactory):
     """Ensure URLs are correctly expanded."""
 
     layer = DatabaseFunctionalLayer
 
-    def test_getByLPPath_with_three_parts(self):
-        """Test the behaviour with three-part names."""
-        branch_set = getUtility(IBranchLookup)
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.branch_lookup = getUtility(IBranchLookup)
+
+    def test_error_fallthrough_product_branch(self):
+        # getByLPPath raises `NoSuchPerson` if the person component is not
+        # found, then `NoSuchProduct` if the person component is found but the
+        # product component isn't, then `NoSuchBranch` if the first two
+        # components are found.
         self.assertRaises(
-            InvalidBranchIdentifier, branch_set.getByLPPath, 'a/b/c')
-        self.assertRaises(
-            NoSuchPerson, branch_set.getByLPPath, '~aa/bb/c')
+            NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/bb/c')
         owner = self.factory.makePerson(name='aa')
-        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, '~aa/bb/c')
-        product = self.factory.makeProduct('bb')
-        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/bb/c')
-        branch = self.factory.makeProductBranch(
-            owner=owner, product=product, name='c')
-        self.assertEqual(
-            (branch, None, None), branch_set.getByLPPath('~aa/bb/c'))
-
-    def test_getByLPPath_with_junk_branch(self):
-        """Test the behaviour with junk branches."""
-        owner = self.factory.makePerson(name='aa')
-        branch_set = getUtility(IBranchLookup)
-        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/+junk/c')
-        branch = self.factory.makePersonalBranch(owner=owner, name='c')
-        self.assertEqual(
-            (branch, None, None), branch_set.getByLPPath('~aa/+junk/c'))
-
-    def test_getByLPPath_with_two_parts(self):
-        """Test the behaviour with two-part names."""
-        branch_set = getUtility(IBranchLookup)
-        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb/dd')
-        product = self.factory.makeProduct('bb')
-        self.assertRaises(NoSuchSeries, branch_set.getByLPPath, 'bb/dd')
-        series = self.factory.makeSeries(name='dd', product=product)
-        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb/dd')
-        series.user_branch = self.factory.makeAnyBranch()
-        self.assertEqual(
-            (series.user_branch, None, series),
-            branch_set.getByLPPath('bb/dd'))
-
-    def test_getByLPPath_with_one_part(self):
-        """Test the behaviour with one names."""
-        branch_set = getUtility(IBranchLookup)
         self.assertRaises(
-            InvalidProductIdentifier, branch_set.getByLPPath, 'b')
-        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb')
-        # We are not testing the security proxy here, so remove it.
-        product = removeSecurityProxy(self.factory.makeProduct('bb'))
-        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb')
-        branch = self.factory.makeAnyBranch()
-        product.development_focus.user_branch = branch
+            NoSuchProduct, self.branch_lookup.getByLPPath, '~aa/bb/c')
+        product = self.factory.makeProduct(name='bb')
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/bb/c')
+
+    def test_private_branch(self):
+        # If the unique name refers to an invisible branch, getByLPPath raises
+        # NoSuchBranch, just as if the branch weren't there at all.
+        branch = self.factory.makeAnyBranch(private=True)
+        path = removeSecurityProxy(branch).unique_name
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, path)
+
+    def test_resolve_product_branch_unique_name(self):
+        # getByLPPath returns the branch, no trailing path and no series if
+        # given the unique name of an existing product branch.
+        branch = self.factory.makeProductBranch()
         self.assertEqual(
-            (branch, None, product.development_focus),
-            branch_set.getByLPPath('bb'))
+            (branch, None),
+            self.branch_lookup.getByLPPath(branch.unique_name))
+
+    def test_resolve_product_branch_unique_name_with_trailing(self):
+        # getByLPPath returns the branch and the trailing path (with no
+        # series) if the given path is inside an existing branch.
+        branch = self.factory.makeProductBranch()
+        path = '%s/foo/bar/baz' % (branch.unique_name,)
+        self.assertEqual(
+            (branch, 'foo/bar/baz'), self.branch_lookup.getByLPPath(path))
+
+    def test_error_fallthrough_personal_branch(self):
+        # getByLPPath raises `NoSuchPerson` if the first component doesn't
+        # match an existing person, and `NoSuchBranch` if the last component
+        # doesn't match an existing branch.
+        self.assertRaises(
+            NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/+junk/c')
+        owner = self.factory.makePerson(name='aa')
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/+junk/c')
+
+    def test_resolve_personal_branch_unique_name(self):
+        # getByLPPath returns the branch, no trailing path and no series if
+        # given the unique name of an existing junk branch.
+        branch = self.factory.makePersonalBranch()
+        self.assertEqual(
+            (branch, None),
+            self.branch_lookup.getByLPPath(branch.unique_name))
+
+    def test_resolve_personal_branch_unique_name_with_trailing(self):
+        # getByLPPath returns the branch and the trailing path (with no
+        # series) if the given path is inside an existing branch.
+        branch = self.factory.makePersonalBranch()
+        path = '%s/foo/bar/baz' % (branch.unique_name,)
+        self.assertEqual(
+            (branch, 'foo/bar/baz'),
+            self.branch_lookup.getByLPPath(path))
+
+    def test_no_product_series_branch(self):
+        # getByLPPath raises `NoLinkedBranch` if there's no branch registered
+        # linked to the requested series.
+        series = self.factory.makeSeries()
+        short_name = '%s/%s' % (series.product.name, series.name)
+        exception = self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, short_name)
+        self.assertEqual(series, exception.component)
+
+    def test_product_with_no_dev_focus(self):
+        # getByLPPath raises `NoLinkedBranch` if the product is found but
+        # doesn't have a development focus branch.
+        product = self.factory.makeProduct()
+        exception = self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
+        self.assertEqual(product, exception.component)
+
+    def test_private_linked_branch(self):
+        # If the given path refers to an object with an invisible linked
+        # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
+        # weren't there at all.
+        branch = self.factory.makeProductBranch(private=True)
+        product = removeSecurityProxy(branch).product
+        removeSecurityProxy(product).development_focus.user_branch = branch
+        self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
+
+    def test_no_official_branch(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        exception = self.assertRaises(
+            NoLinkedBranch,
+            self.branch_lookup.getByLPPath, sourcepackage.path)
+        self.assertEqual(
+            (sourcepackage, PackagePublishingPocket.RELEASE),
+            exception.component)
+
+    def test_distribution_linked_branch(self):
+        # Distributions cannot have linked branches, so `getByLPPath` raises a
+        # `CannotHaveLinkedBranch` error if we try to get the linked branch
+        # for a distribution.
+        distribution = self.factory.makeDistribution()
+        exception = self.assertRaises(
+            CannotHaveLinkedBranch,
+            self.branch_lookup.getByLPPath, distribution.name)
+        self.assertEqual(distribution, exception.component)
+
+    def test_project_linked_branch(self):
+        # Projects cannot have linked branches, so `getByLPPath` raises a
+        # `CannotHaveLinkedBranch` error if we try to get the linked branch
+        # for a project.
+        project = self.factory.makeProject()
+        exception = self.assertRaises(
+            CannotHaveLinkedBranch,
+            self.branch_lookup.getByLPPath, project.name)
+        self.assertEqual(project, exception.component)
+
+    def test_partial_lookup(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = '~%s/%s' % (owner.name, product.name)
+        self.assertRaises(
+            InvalidNamespace, self.branch_lookup.getByLPPath, path)
+
+    # XXX: JonathanLange 2009-03-30 spec=package-branches bug=345739: Test for
+    # pocket-linked branch paths.
 
 
 def test_suite():
