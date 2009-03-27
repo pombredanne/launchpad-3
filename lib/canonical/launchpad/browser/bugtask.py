@@ -777,7 +777,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         occurred.
         """
         interesting_changes = [
-             'security vulnerability', 'summary', 'visibility']
+             'description', 'security vulnerability', 'summary', 'visibility']
         activity_by_date = {}
 
         for activity in self.context.bug.activity:
@@ -3152,7 +3152,7 @@ class BugActivityItem:
     @property
     def change_details(self):
         """Return a detailed description of the change."""
-        diffable_changes = ['summary']
+        diffable_changes = ['summary', 'description']
 
         if self.whatchanged in diffable_changes:
             # If we're going to display it as a diff we replace \ns with
