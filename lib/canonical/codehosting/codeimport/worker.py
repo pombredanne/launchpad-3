@@ -142,7 +142,7 @@ class CodeImportSourceDetails:
         """Convert command line-style arguments to an instance."""
         branch_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
-        if rcstype == 'svn':
+        if rcstype in ['svn', 'bzr-svn']:
             [svn_branch_url] = arguments
             cvs_root = cvs_module = git_repo_url = None
         elif rcstype == 'cvs':
@@ -182,7 +182,7 @@ class CodeImportSourceDetails:
         """Return a list of arguments suitable for passing to a child process.
         """
         result = [str(self.branch_id), self.rcstype]
-        if self.rcstype == 'svn':
+        if self.rcstype in ['svn', 'bzr-svn']:
             result.append(self.svn_branch_url)
         elif self.rcstype == 'cvs':
             result.append(self.cvs_root)

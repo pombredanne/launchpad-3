@@ -50,6 +50,19 @@ load_plugins([get_bzr_plugins_path()])
 def load_optional_plugin(plugin_name):
     """Load the plugin named `plugin_name` from optionalbzrplugins/."""
     from bzrlib import plugins
+
+    if plugin_name == 'svn':
+        # This is utterly, utterly gross.  Yes.
+        class FuncTools:
+            @staticmethod
+            def partial(*args, **kw):
+                return None
+        import sys
+        sys.modules['functools'] = FuncTools
+        from dulwich.misc import defaultdict
+        import collections
+        collections.defaultdict = defaultdict
+
     optional_plugin_dir = os.path.join(config.root, 'optionalbzrplugins')
     if optional_plugin_dir not in plugins.__path__:
         plugins.__path__.append(optional_plugin_dir)

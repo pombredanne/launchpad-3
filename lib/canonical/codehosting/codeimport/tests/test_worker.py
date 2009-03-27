@@ -23,9 +23,9 @@ from bzrlib.urlutils import join as urljoin
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting import load_optional_plugin
 from canonical.codehosting.codeimport.worker import (
-    BazaarBranchStore, CSCVSImportWorker, ForeignTreeStore, GitImportWorker,
-    ImportWorker, get_default_bazaar_branch_store,
-    get_default_foreign_tree_store)
+    BazaarBranchStore, BzrSvnImportWorker, CSCVSImportWorker,
+    ForeignTreeStore, GitImportWorker, ImportWorker,
+    get_default_bazaar_branch_store, get_default_foreign_tree_store)
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
     CVSServer, SubversionServer)
 from canonical.codehosting.tests.helpers import (
@@ -680,6 +680,43 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
 
         return self.factory.makeCodeImportSourceDetails(
             rcstype='git', git_repo_url=self.repository_path)
+
+
+class TestBzrSvnImport(WorkerTest, TestActualImportMixin):
+
+    def setUp(self):
+        super(TestBzrSvnImport, self).setUp()
+        load_optional_plugin('svn')
+        self.setUpImport()
+
+    def makeImportWorker(self):
+        """Make a new `ImportWorker`."""
+        return BzrSvnImportWorker(
+            self.source_details, self.bazaar_store, logging.getLogger())
+
+    def commitInForeignTree(self, foreign_tree):
+        """Change the foreign tree, generating exactly one commit."""
+        client = pysvn.Client()
+        client.checkout(self.repository_path, 'working_tree')
+        file = open('working_tree/newfile', 'w')
+        file.write('No real content\n')
+        file.close()
+        client.add('working_tree/newfile')
+        client.checkin('working_tree', 'Add a file', recurse=True)
+        shutil.rmtree('working_tree')
+
+    def makeSourceDetails(self, branch_name, files):
+        """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
+        """
+        self.repository_path = self.makeTemporaryDirectory()
+        svn_server = SubversionServer(self.repository_path)
+        svn_server.setUp()
+        self.addCleanup(svn_server.tearDown)
+
+        svn_branch_url = svn_server.makeBranch(branch_name, files)
+        svn_branch_url = svn_branch_url.replace('://localhost/', ':///')
+        return self.factory.makeCodeImportSourceDetails(
+            rcstype='bzr-svn', svn_branch_url=svn_branch_url)
 
 
 def test_suite():

@@ -1224,7 +1224,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'svn'
-        if rcstype == 'svn':
+        if rcstype in ['svn', 'bzr-svn']:
             assert cvs_root is cvs_module is git_repo_url is None
             if svn_branch_url is None:
                 svn_branch_url = self.getUniqueURL()
