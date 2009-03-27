@@ -319,7 +319,7 @@ We'll also create a new test milestone within the "trunk" series:
     >>> print browser.title
     Overview of Mozilla Firefox Series: trunk
 
-    >>> browser.getLink('Add milestone').click()
+    >>> browser.getLink('Create milestone').click()
     >>> print browser.title
     Add new milestone for Mozilla Firefox Series: trunk
 

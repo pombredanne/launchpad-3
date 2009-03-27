@@ -154,7 +154,7 @@ the list.
     >>> # Add a release to the empty series.
     >>> firefox_owner.open('http://launchpad.dev/firefox')
     >>> firefox_owner.getLink('3.0').click()
-    >>> firefox_owner.getLink('Add milestone').click()
+    >>> firefox_owner.getLink('Create milestone').click()
     >>> firefox_owner.getControl('Name').value = '3.14159'
     >>> firefox_owner.getControl('Register milestone').click()
     >>> firefox_owner.getLink(url='+milestone/3.14159').click()
