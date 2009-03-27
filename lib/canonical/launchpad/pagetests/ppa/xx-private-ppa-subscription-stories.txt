@@ -215,13 +215,13 @@ machinery is in-place and tested:
     >>> print_subscriptions_for_person(joe_browser.contents)
     Archive                             Subscription description Status
     Private PPA for Celso Providelo     Joe is my friend         Pending
-        Confirm now
+        Confirm
 
 When Joe clicks on the 'Activate now' link for Celso's PPA then the
 details of the subscription are displayed with a request to confirm the
 subscription.
 
-    >>> joe_browser.getLink('Confirm now').click()
+    >>> joe_browser.getLink('Confirm').click()
     >>> print extract_text(find_main_content(joe_browser.contents))
     Profile...
     Joe Smith's subscription to Private PPA for Celso Providelo

@@ -113,8 +113,8 @@ Y.on('domready', function() {
                 </a>
               </tal:active>
               <tal:pending condition="not: token">
-                <a tal:attributes="href subscription/fmt:url" class="add">
-                  Confirm now
+                <a tal:attributes="href subscription/fmt:url" class="edit">
+                  Confirm
                 </a>
               </tal:pending>
             </td>
