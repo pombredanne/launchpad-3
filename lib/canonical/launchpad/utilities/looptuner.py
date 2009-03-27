@@ -8,6 +8,8 @@ __all__ = ['DBLoopTuner', 'LoopTuner']
 import logging
 import time
 
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 
 
