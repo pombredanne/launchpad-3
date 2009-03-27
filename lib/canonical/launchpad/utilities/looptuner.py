@@ -196,7 +196,7 @@ class DBLoopTuner(LoopTuner):
             for runtime, procpid, usename, datname, query in results:
                 self.log.info(
                     "Blocked on %s old xact %s@%s/%d - %s"
-                    % (runtime, usename, datname, procpid, current_query))
+                    % (runtime, usename, datname, procpid, query))
             self.log.info("Sleeping for 3 minutes.")
             time.sleep(3*60)
 
