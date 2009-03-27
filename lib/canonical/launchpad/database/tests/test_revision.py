@@ -341,8 +341,8 @@ class RevisionTestMixin:
         self.assertEqual([], self._getRevisions())
 
     def testRevisionDateRange(self):
-        # Revisions where the revision_date is older than the day_limit, or
-        # some time in the future are not returned.
+        # Revisions where the revision_date is older than the day_limit are
+        # not returned.
         now = datetime.now(pytz.UTC)
         day_limit = 5
         # Make the first revision earlier than our day limit.
@@ -351,10 +351,7 @@ class RevisionTestMixin:
         # The second one is just two days ago.
         rev2 = self._makeRevision(
             revision_date=(now - timedelta(days=2)))
-        # The third is in the future
-        rev3 = self._makeRevision(
-            revision_date=(now + timedelta(days=2)))
-        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2, rev3)
+        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2)
         self.assertEqual([rev2],  self._getRevisions(day_limit))
 
 
@@ -479,8 +476,8 @@ class TestGetRecentRevisionsForProduct(GetPublicRevisionsTestCase):
                          self._getRecentRevisions())
 
     def testRevisionDateRange(self):
-        # Revisions where the revision_date is older than the day_limit, or
-        # some time in the future are not returned.
+        # Revisions where the revision_date is older than the day_limit are
+        # not returned.
         now = datetime.now(pytz.UTC)
         day_limit = 5
         # Make the first revision earlier than our day limit.
@@ -488,9 +485,7 @@ class TestGetRecentRevisionsForProduct(GetPublicRevisionsTestCase):
             revision_date=(now - timedelta(days=(day_limit + 2))))
         # The second one is just two days ago.
         rev2 = self._makeRevision(revision_date=(now - timedelta(days=2)))
-        # The third is in the future
-        rev3 = self._makeRevision(revision_date=(now + timedelta(days=2)))
-        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2, rev3)
+        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2)
         self.assertEqual([(rev2, rev2.revision_author)],
                          self._getRecentRevisions(day_limit))
 
