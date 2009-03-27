@@ -1,4 +1,4 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 
 """Launchpad XMLRPC faults."""
 
@@ -41,10 +41,6 @@ __all__ = [
 
 
 import xmlrpclib
-
-from zope.security.interfaces import ForbiddenAttribute
-
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 
 def check_fault(fault, *fault_classes):
@@ -256,21 +252,7 @@ class NoLinkedBranch(LaunchpadFault):
     msg_template = ('%(object_name)s has no default branch.')
 
     def __init__(self, component):
-        # XXX: JonathanLange 2009-03-21 spec=package-branches bug=345739: This
-        # should include the pocket in the error message and not have any
-        # special logic wrt package branches.
-        component = self._getComponent(component)
         LaunchpadFault.__init__(self, object_name=component.displayname)
-
-    def _getComponent(self, component):
-        try:
-            package = component[0]
-        except (TypeError, ForbiddenAttribute):
-            return component
-        if ISourcePackage.providedBy(package):
-            return package
-        else:
-            return component
 
 
 class NoSuchProductSeries(LaunchpadFault):

@@ -54,7 +54,7 @@ If we log in as cprov it will work:
 The new subscription is returned and reflects the data:
 
     >>> print new_sub.displayname
-    Subscription of Joe Smith to PPA for Celso Providelo
+    Joe Smith's subscription to PPA for Celso Providelo
 
     >>> print new_sub.registrant.name
     cprov

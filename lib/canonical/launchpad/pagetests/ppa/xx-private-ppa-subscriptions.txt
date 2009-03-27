@@ -125,7 +125,7 @@ heading:
     >>> cprov_browser.open("/~cprov/+archivesubscriptions")
     >>> h1_heading = find_main_content(cprov_browser.contents).find('h1')
     >>> print extract_text(h1_heading)
-    Private archive subscriptions for Celso Providelo
+    Celso Providelo's private archive subscriptions
 
 A person who is not subscribed to any archives will see an appropriate
 explanation if they try to view their archive subscriptions:

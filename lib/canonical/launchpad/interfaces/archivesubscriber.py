@@ -179,5 +179,5 @@ class IArchiveSubscriberUI(Interface):
 
     description = Text(
         title=_("Description"), required=False,
-        description=_("Free text describing this subscription."))
+        description=_("Optional notes about this subscription."))
 

@@ -17,11 +17,11 @@
     </h1>
 
   <tal:activate condition="not: view/active_token">
-    <p>You have been subscribed to the archive
+    <p>The administrator of the archive
       <tal:archive_name content="context/archive/displayname">
         Private PPA for Joe Smith
-      </tal:archive_name>. Please confirm this subscription if you wish
-      to download software from this archive.
+      </tal:archive_name> has opened a subscription for you.
+      You now need to confirm your subscription.
     </p>
     <form action="" method="post">
       <button type="submit" name="activate" value="1">
@@ -32,31 +32,34 @@
   <tal:active condition="view/active_token">
     <div id="sources_list">
       <h2>Custom sources.list entries</h2>
-      <p>The following sources.list entries will enable you to download
-         software from 
+      <p>To access the archive
         <tal:archive_name content="context/archive/displayname">
           Private PPA for Joe Smith
         </tal:archive_name>.
-      </p>
-      <p>You are recommended to copy these into a file such as:
-         /etc/apt/sources.list.d/private_ppa_sources.list . See
-         <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20Private%20PPA%20to%20your%20Ubuntu%20repositories"
-          >adding a private PPA to your Ubuntu repositories</a> for more details.
-          Note: it can take up to ten minutes after confirmation until you
-          will be able to download with the entries below.
+         you need to copy these lines into a file such as:</p>
+      <pre>/etc/apt/sources.list.d/private_ppa_sources.list</pre>
+      <p>See our guide to
+        <a href="https://help.launchpad.net/Packaging/InstallingFromAPrivatePPA">installing
+        software from a private archive</a> for more detailed instructions.
       </p>
       <pre id="sources-list-entries" tal:content="view/private_ppa_sources_list" />
+      <p style="clear:both">Next you need to follow these instructions to
+         <a href="https://help.launchpad.net/Packaging/PPA#keys">
+           add this archives security key to your computer
+         </a>.
+      </p>
     </div>
     <div id="regenerate_token">
-      <h2>Your personal subscription security</h2>
-      <p>If you believe the security of your personal subscription
-         above has been compromised, you can generate a new password
-         for your subscription, canceling the above entries.
+      <h2>Password security</h2>
+      <p>If you believe the security of your password for this subscription
+         has been compromised, you can generate a new one. After you've
+         requested a new password, you'll see new "sources.list" entries
+         on this page. You'll need to update them on your computer.
       </p>
-      <p>Note: after creating a new password for your personal subscription
-      and updating your sources.list with the new entries, you
-      will need to wait for up to ten minutes before you can download
-      using the new password.
+      <p>Note: after requesting a new password for your personal
+         subscription &mdash; and updating your sources.list with the new
+         entries &mdash; you may need to wait for up to ten minutes before
+         you can download using the new password.
       </p>
       <form action="" method="post">
         <button type="submit" name="regenerate" value="1">

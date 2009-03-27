@@ -18,8 +18,8 @@
     </h1>
   <tal:has_subscriptions condition="view/subscriptions_with_tokens">
     <div id="current_subscriptions">
-      <p>All the private archives for which you have
-         a subscription are displayed below.
+      <p>Here's a list of all the private archives to which you have
+         subscribed.
       </p>
       <table summary="CONTEXTS/fmt:pagetitle" id="archive-subscriptions"
         class="listing">
