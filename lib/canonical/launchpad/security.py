@@ -62,6 +62,8 @@ from canonical.launchpad.interfaces.oauth import (
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
+from canonical.launchpad.interfaces.publishing import (
+    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
 from canonical.launchpad.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
@@ -1982,6 +1984,27 @@ class EditArchiveSubscriber(AuthorizationBase):
             return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class ViewSourcePackagePublishingHistory(AuthorizationBase):
+    """Restrict viewing of source publications."""
+    permission = "launchpad.View"
+    usedfor = ISourcePackagePublishingHistory
+
+    def checkAuthenticated(self, user):
+        view_archive = ViewArchive(self.obj.archive)
+        if view_archive.checkAuthenticated(user):
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+    def checkUnauthenticated(self):
+        return not self.obj.archive.private
+
+
+class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
+    """Restrict viewing of binary publications."""
+    usedfor = IBinaryPackagePublishingHistory
 
 
 class ViewSourcePackageRelease(AuthorizationBase):
