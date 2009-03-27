@@ -3163,12 +3163,3 @@ class BugActivityItem:
         else:
             return "%s &#8594; %s" % (
                 cgi.escape(self.oldvalue), cgi.escape(self.newvalue))
-
-    @property
-    def collapsible(self):
-        """Return True if this item's change_details should be collapsed."""
-        collapsible_changes = ['summary']
-        if self.whatchanged in collapsible_changes:
-            return True
-        else:
-            return False

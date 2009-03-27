@@ -141,9 +141,9 @@
       7 minutes ago
     </span>
   </div>
-  <div class="boardCommentBody" style="background-color: #fafafa; color: #555;">
+  <div class="boardActivityBody">
     <div class="bug-comment">
-      <table style="margin-bottom: 1em; margin-top: 0.5em;">
+      <table>
         <tr tal:repeat="activity activity_list">
           <td style="text-align: right;">
             <b><tal:summary replace="structure activity/change_summary" /></b>:
