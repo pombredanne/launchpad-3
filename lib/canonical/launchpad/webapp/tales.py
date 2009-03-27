@@ -2112,6 +2112,24 @@ class FormattersAPI:
         return '&nbsp;' * len(groups[0])
 
     @staticmethod
+    def _split_url_and_trailers(url):
+        """Given a URL return a tuple of the URL and punctuation trailers.
+
+        :return: an unescaped url, an unescaped trailer.
+        """
+        # The text will already have been cgi escaped.  We temporarily
+        # unescape it so that we can strip common trailing characters
+        # that aren't part of the URL.
+        url = xml_unescape(url)
+        match = FormattersAPI._re_url_trailers.search(url)
+        if match:
+            trailers = match.group(1)
+            url = url[:-len(trailers)]
+        else:
+            trailers = ''
+        return url, trailers
+
+    @staticmethod
     def _linkify_substitution(match):
         if match.group('bug') is not None:
             bugnum = match.group('bugnum')
@@ -2136,13 +2154,8 @@ class FormattersAPI:
             # The text will already have been cgi escaped.  We temporarily
             # unescape it so that we can strip common trailing characters
             # that aren't part of the URL.
-            url = xml_unescape(match.group('url'))
-            match = FormattersAPI._re_url_trailers.search(url)
-            if match:
-                trailers = match.group(1)
-                url = url[:-len(trailers)]
-            else:
-                trailers = ''
+            url = match.group('url')
+            url, trailers = FormattersAPI._split_url_and_trailers(url)
             # We use nofollow for these links to reduce the value of
             # adding spam URLs to our comments; it's a way of moderately
             # devaluing the return on effort for spammers that consider
@@ -2171,9 +2184,14 @@ class FormattersAPI:
             return '<a href="%s">%s</a>' % (url, text)
         elif match.group('lpbranchurl') is not None:
             lp_url = match.group('lpbranchurl')
+            lp_url, trailers = FormattersAPI._split_url_and_trailers(lp_url)
             path = match.group('branch')
             url = '/+branch/%s' % path
-            return '<a href="%s">%s</a>' % (url, lp_url)
+            url, trailers = FormattersAPI._split_url_and_trailers(url)
+            return '<a href="%s">%s</a>%s' % (
+                cgi.escape(url, quote=True),
+                cgi.escape(lp_url),
+                cgi.escape(trailers))
         else:
             raise AssertionError("Unknown pattern matched.")
 

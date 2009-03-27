@@ -82,7 +82,8 @@ from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror, MirrorContent, MirrorStatus)
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
@@ -487,7 +488,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             distroseries = DistroSeries.selectOneBy(
                 distribution=self, version=name_or_version)
             if distroseries is None:
-                raise NotFoundError(name_or_version)
+                raise NoSuchDistroSeries(name_or_version)
         return distroseries
 
     def getDevelopmentSerieses(self):
