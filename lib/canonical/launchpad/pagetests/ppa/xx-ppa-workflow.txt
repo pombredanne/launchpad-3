@@ -256,8 +256,8 @@ Package Archives.
     LinkNotFoundError
 
     >>> admin_browser.getLink("Administer archive").click()
-    >>> print admin_browser.title
-    Administer PPA for Carlos Perelló Marín
+    >>> admin_browser.title
+    'Administer PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
 
 Trying to shortcut the URL as a non-privileged user does not work:
 
@@ -303,8 +303,8 @@ build on a virtualized builder.
 Once confirmed the administrator is sent to the PPA page where he can
 see updated information.
 
-    >>> print admin_browser.title
-    PPA for Carlos Perelló Marín
+    >>> admin_browser.title
+    'PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
@@ -373,16 +373,16 @@ Cancelled changes in the administration form redirects the user to the
 PPA overview page and discards the changes.
 
     >>> admin_browser.getControl("Cancel").click()
-    >>> print admin_browser.title
-    PPA for Carlos Perelló Marín
+    >>> admin_browser.title
+    'PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.whiteboard").value = (
     ...    'It should be discarded.')
     >>> admin_browser.getControl("Cancel").click()
 
-    >>> print admin_browser.title
-    PPA for Carlos Perelló Marín
+    >>> admin_browser.title
+    'PPA for Carlos Perell\xc3\xb3 Mar\xc3\xadn'
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
