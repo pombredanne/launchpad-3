@@ -7,6 +7,7 @@ __all__ = ['DBLoopTuner', 'LoopTuner']
 
 import time
 
+import transaction
 from zope.component import getUtility
 
 import canonical.launchpad.scripts
@@ -172,6 +173,7 @@ class DBLoopTuner(LoopTuner):
                 "Database replication lagged. Sleeping %f seconds"
                 % time_to_sleep)
 
+            transaction.abort() # Don't become a long running transaction!
             time.sleep(time_to_sleep)
 
     def _blockForLongRunningTransactions(self):
@@ -198,6 +200,7 @@ class DBLoopTuner(LoopTuner):
                     "Blocked on %s old xact %s@%s/%d - %s."
                     % (runtime, usename, datname, procpid, query))
             self.log.info("Sleeping for 3 minutes.")
+            transaction.abort() # Don't become a long running transaction!
             time.sleep(3*60)
 
     def _coolDown(self, bedtime):
