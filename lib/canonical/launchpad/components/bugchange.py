@@ -237,12 +237,16 @@ class BranchLinkedToBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return dict(
             whatchanged='branch linked',
             newvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return {'text': '** Branch linked: %s' % self.branch.bzr_identity}
 
 
@@ -255,12 +259,16 @@ class BranchUnlinkedFromBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return dict(
             whatchanged='branch unlinked',
             oldvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return {'text': '** Branch unlinked: %s' % self.branch.bzr_identity}
 
 
