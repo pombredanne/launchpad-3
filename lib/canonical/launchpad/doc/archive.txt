@@ -24,8 +24,6 @@ records to disk, including configuration and indexes.
     True
     >>> cprov_archive.authorized_size
     1024
-    >>> print cprov_archive.whiteboard
-    It is not my fault.
     >>> print cprov_archive.signing_key
     None
     >>> print cprov_archive.signing_key_fingerprint
