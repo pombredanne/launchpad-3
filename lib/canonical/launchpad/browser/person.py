@@ -996,12 +996,21 @@ class IPersonRelatedSoftwareMenu(Interface):
     """A marker interface for the 'Related Software' navigation menu."""
 
 
-class PersonOverviewNavigationMenu(NavigationMenu):
+class PPANavigationMenuMixIn:
+    """PPA-related navigation menu links for Person and Team pages."""
+
+    def ppas(self):
+        target = '#ppas'
+        text = 'Personal Package Archives'
+        return Link(target, text)
+
+
+class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
     """The top-level menu of actions a Person may take."""
 
     usedfor = IPerson
     facet = 'overview'
-    links = ('profile', 'related_software', 'karma')
+    links = ('profile', 'related_software', 'karma', 'ppas')
 
     def __init__(self, context):
         context = IPerson(context)
@@ -1229,12 +1238,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewNavigationMenu(NavigationMenu):
+class TeamOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
     """A top-level menu for navigation within a Team."""
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['profile', 'polls', 'members']
+    links = ['profile', 'polls', 'members', 'ppas']
 
     def profile(self):
         target = ''
