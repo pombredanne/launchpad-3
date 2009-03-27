@@ -77,7 +77,6 @@ class TestMailController(TestCase):
         self.assertEqual('subject', message['Subject'])
         self.assertEqual('body', message.get_payload(decode=True))
 
-
     def test_MakeMessage_no_attachment(self):
         """A message without an attachment should have a single body."""
         ctrl = MailController(
@@ -87,6 +86,28 @@ class TestMailController(TestCase):
         self.assertEqual('to@example.com', message['To'])
         self.assertEqual('subject', message['Subject'])
         self.assertEqual('body', message.get_payload(decode=True))
+
+    def test_MakeMessage_unicode_body(self):
+        """A message without an attachment with a unicode body."""
+        ctrl = MailController(
+            'from@example.com', 'to@example.com', 'subject', u'Bj\xf6rn')
+        message = ctrl.makeMessage()
+        # Make sure that the message can be flattened to a string as sendmail
+        # does.
+        str = message.as_string()
+        self.assertEqual('Bj\xc3\xb6rn', message.get_payload(decode=True))
+
+    def test_MakeMessage_unicode_body_with_attachment(self):
+        """A message without an attachment with a unicode body."""
+        ctrl = MailController(
+            'from@example.com', 'to@example.com', 'subject', u'Bj\xf6rn')
+        ctrl.addAttachment('attach')
+        message = ctrl.makeMessage()
+        # Make sure that the message can be flattened to a string as sendmail
+        # does.
+        str = message.as_string()
+        body, attachment = message.get_payload()
+        self.assertEqual('Bj\xc3\xb6rn', body.get_payload(decode=True))
 
     def test_MakeMessage_with_attachment(self):
         """A message with an attachment should be multipart."""
