@@ -1299,12 +1299,13 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 }
 .boardCommentBody {padding: 0.5em 12px 0;}
 .boardBugActivityBody {
-    background-color: #fafafa;
-    color: #555;
+  padding: 0.5em 12px;
+  background-color: #fafafa;
+  color: #555;
 }
 .boardBugActivityBody table {
-    margin-bottom: 1em;
-    margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
 }
 .boardCommentContent { line-height: 1.5em;}
 .boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
