@@ -779,7 +779,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         activity_by_date = {}
         bugtask_change_re = (
             '[a-z0-9][a-z0-9\+\.\-]+: '
-            '(assignee|importance|status)')
+            '(assignee|importance|milestone|status)')
         interesting_changes = [
              'description',
              'security vulnerability',
@@ -3204,7 +3204,14 @@ class BugActivityItem:
         """Return a detailed description of the change."""
         diffable_changes = ['summary', 'description']
         assignee_regex = re.compile('[a-z0-9][a-z0-9\+\.\-]+: assignee')
+        milestone_regex = re.compile('[a-z0-9][a-z0-9\+\.\-]+: milestone')
 
+        # Our default return dict. We may mutate this depending on
+        # what's changed.
+        return_dict = {
+            'old_value': self.oldvalue,
+            'new_value': self.newvalue,
+            }
         if self.whatchanged in diffable_changes:
             # If we're going to display it as a diff we replace \ns with
             # <br />s so that the lines are separated properly.
@@ -3218,16 +3225,20 @@ class BugActivityItem:
             return self._formatted_tags_change.replace('\n', '<br />')
 
         elif assignee_regex.match(self.whatchanged) is not None:
-            return_dict = {
-                'old_value': self.oldvalue,
-                'new_value': self.newvalue,
-                }
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
 
-            return "%(old_value)s &#8594; %(new_value)s" % return_dict
+        elif milestone_regex.match(self.whatchanged) is not None:
+            for key in return_dict:
+                if return_dict[key] is None:
+                    return_dict[key] = 'none'
 
         else:
-            return "%s &#8594; %s" % (
-                cgi.escape(self.oldvalue), cgi.escape(self.newvalue))
+            # Our default state is to just return oldvalue and newvalue.
+            # Since we don't necessarily know what they are, we escape
+            # them.
+            for key in return_dict:
+                return_dict[key] = cgi.escape(return_dict[key])
+
+        return "%(old_value)s &#8594; %(new_value)s" % return_dict
