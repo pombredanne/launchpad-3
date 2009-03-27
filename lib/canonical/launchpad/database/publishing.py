@@ -996,7 +996,7 @@ class PublishingSet:
     def getByIdAndArchive(self, id, archive, source=True):
         """See `IPublishingSet`."""
         if source:
-            baselass = SourcePackagePublishingHistory
+            baseclass = SourcePackagePublishingHistory
         else:
             baseclass = BinaryPackagePublishingHistory
         return Store.of(archive).find(
