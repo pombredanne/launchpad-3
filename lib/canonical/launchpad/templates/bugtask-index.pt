@@ -150,13 +150,13 @@ function update_bug_duplicate(data) {
                     dupe_span.set('innerHTML', [
                         'Duplicate of <a href=\'/bugs/' + new_dup_id + '\'>',
                         'bug #' + new_dup_id +'</a> ',
-                        '<a class=\'menu-link-mark-dupe\' ',
+                        '<a class=\'menu-link-mark-dupe js-action\' ',
                         'href=\'' + update_dupe_url + '\'>',
                         '<img src=\'/@@/edit\' /></a>'
                         ].join(''));
                 } else {
                     dupe_span.set('innerHTML',
-                        '<a class=\'menu-link-mark-dupe\' href=\'' +
+                        '<a class=\'menu-link-mark-dupe js-action\' href=\'' +
                         update_dupe_url + '\'>' +
                         '<img src=\'/@@/bug-dupe-icon\' /> ' +
                         'Mark as duplicate</a>');
