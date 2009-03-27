@@ -776,14 +776,20 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         The `BugActivityItem`s will be grouped by the date on which they
         occurred.
         """
+        activity_by_date = {}
         interesting_changes = [
              'description', 'security vulnerability', 'summary', 'tags',
              'visibility']
-        activity_by_date = {}
+
+        # Turn the interesting_changes list into a regex so that we can
+        # do complex matches.
+        interesting_changes_expression = "|".join(interesting_changes)
+        interesting_changes_regex = re.compile(
+            "^(%s)$" % interesting_changes_expression)
 
         for activity in self.context.bug.activity:
             # If we're not interested in the change, skip it.
-            if activity.whatchanged not in interesting_changes:
+            if interesting_changes_regex.match(activity.whatchanged) is None:
                 continue
 
             activity = BugActivityItem(activity)
