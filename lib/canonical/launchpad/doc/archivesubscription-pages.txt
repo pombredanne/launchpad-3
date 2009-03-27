@@ -75,6 +75,12 @@ successfully:
     >>> view.has_subscriptions
     True
 
+After adding a subscriber, the view includes a relevant notification:
+
+    >>> for notification in view.request.notifications:
+    ...     print notification.message
+    You have subscribed Andrew Bennetts to Private PPA for Celso Providelo.
+
 The view includes a subscribers property that returns all the current
 subscribers:
 
@@ -230,7 +236,15 @@ The ArchiveSubscriptionEditView can be used to cancel a subscription:
     >>> print spiv_subscription.cancelled_by.name
     cprov
 
+After canceling a subscription, a relevant notification is added to the view.
+
+    >>> for notification in view.request.notifications:
+    ...     print notification.message
+    You have cancelled Andrew Bennetts's subscription to Private PPA for
+    Celso Providelo.
+
 Just uncancel the subscription before continuing on.
+
     >>> spiv_subscription.status = current_status
     >>> spiv_subscription.cancelled_by = None
     >>> spiv_subscription.date_cancelled = None
@@ -311,8 +325,7 @@ redirect:
     302
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    Your personal subscription to 'Private PPA for Celso Providelo' has been
-    confirmed. Please update your custom sources.list as described below.
+    You have confirmed your subscription to...
 
 Now the view can then access the token and the source list entries:
 
@@ -336,9 +349,7 @@ The view can also be used to regenerate the source.list entries.
     302
     >>> for notification in view.request.notifications:
     ...     print notification.message
-    A new password for your personal subscription to 'Private PPA for
-    Celso Providelo' has been created.
-    Please update your custom sources.list as described below.
+    Launchpad has generated the new password you...
 
     >>> view = create_initialized_view(spiv_subscription, name="+index")
     >>> view.active_token.token == original_token

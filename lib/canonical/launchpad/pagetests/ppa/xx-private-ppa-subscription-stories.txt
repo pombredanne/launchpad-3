@@ -87,7 +87,7 @@ Create a helper function to print subscriptions:
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    Joe Smith has been added as a subscriber.
+    You have subscribed Joe Smith to Private PPA for Celso Providelo.
 
 === Scenario 2: A team is added as a subscriber ===
 
@@ -117,7 +117,8 @@ new subscriber.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    Launchpad Developers has been added as a subscriber.
+    You have subscribed Launchpad Developers to Private PPA for Celso
+    Providelo.
 
 == Story 2: An owner edits a subscription for his private archive ==
 
@@ -184,7 +185,8 @@ cancellation is displayed.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    The subscription for Launchpad Developers has been canceled.
+    You have cancelled Launchpad Developers's subscription to Private PPA
+    for Celso Providelo.
 
 
 == Story 3: A subscriber activates a subscription ==
@@ -222,10 +224,8 @@ subscription.
     >>> joe_browser.getLink('Activate now').click()
     >>> print extract_text(find_main_content(joe_browser.contents))
     Profile...
-    Subscription of Joe Smith to Private PPA for Celso Providelo
+    Joe Smith's subscription to Private PPA for Celso Providelo
     ...
-    Please confirm this subscription if you wish to download software from
-    this archive.
     Confirm subscription
 
 When Joe clicks on the 'Confirm subscription' button then a sources.list
@@ -242,8 +242,7 @@ snippet is displayed.as well as a notification message.
 
     >>> for msg in get_feedback_messages(joe_browser.contents):
     ...     print msg
-    Your personal subscription to 'Private PPA for Celso Providelo' has
-    been confirmed. Please update your custom sources.list as described below.
+    You have confirmed your subscription to the archive...
 
 When Joe navigates back to his current archive subscriptions then the list of
 subscriptions reflects the confirmed subscription.
@@ -264,9 +263,9 @@ subscription is displayed.
     >>> regeneration_info = find_tag_by_id(
     ...     joe_browser.contents, 'regenerate_token')
     >>> print(extract_text(regeneration_info))
-    Your personal subscription security
+    Password security
     If you believe...
-    Note: after creating a new password for your personal subscription...
+    Note: after ...
     Generate new password
 
 When Joe clicks on the 'Generate new personal subscription' link then
@@ -275,10 +274,9 @@ the page is redisplayed with new sources.list entries and a notification.
     >>> joe_browser.getControl(name='regenerate').click()
     >>> for msg in get_feedback_messages(joe_browser.contents):
     ...     print msg
-    A new password for your personal subscription to 'Private PPA for
-    Celso Providelo' has been created.
-    Please update your custom sources.list as described
-    below.
+    Launchpad has generated the new password you requested for your
+    subscription to the archive Private PPA for Celso Providelo. Please
+    follow the instructions below to update your custom "sources.list".
 
 
 == Story 4: A user's subscription expires or is cancelled ==

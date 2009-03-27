@@ -176,8 +176,8 @@ class ArchiveSubscribersView(LaunchpadFormView):
             description=data['description'],
             date_expires=date_expires)
 
-        notification = "%s has been added as a subscriber." % (
-            data['subscriber'].displayname)
+        notification = "You have subscribed %s to %s." % (
+            data['subscriber'].displayname, self.context.displayname)
         self.request.response.addNotification(structured(notification))
 
         # Just ensure a redirect happens (back to ourselves).
@@ -228,8 +228,9 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
         """Cancel the context subscription."""
         self.context.cancel(self.user)
 
-        notification = "The subscription for %s has been canceled." % (
-            self.context.subscriber.displayname)
+        notification = "You have cancelled %s's subscription to %s." % (
+            self.context.subscriber.displayname,
+            self.context.archive.displayname)
         self.request.response.addNotification(structured(notification))
 
     @property
@@ -280,9 +281,10 @@ class PersonArchiveSubscriptionView(LaunchpadView):
             token = self.context.archive.newAuthToken(self.context.subscriber)
 
             self.request.response.addNotification(structured(
-                "Your personal subscription to '%s' has been confirmed. "
-                "Please update your custom sources.list as "
-                "described below." % self.context.archive.displayname))
+                "You have confirmed your subscription to the archive %s. "
+                "Before you can install software from the archive you need "
+                "to follow the instructions below to update your custom "
+                " \"sources.list\"." % self.context.archive.displayname))
 
             self.request.response.redirect(self.request.getURL())
 
@@ -295,10 +297,10 @@ class PersonArchiveSubscriptionView(LaunchpadView):
             token = self.context.archive.newAuthToken(self.context.subscriber)
 
             self.request.response.addNotification(structured(
-                "A new password for your personal subscription to '%s' "
-                "has been created. "
-                "Please update your custom sources.list as "
-                "described below." % self.context.archive.displayname))
+                "Launchpad has generated the new password you requested "
+                "for your subscription to the archive %s. Please follow "
+                "the instructions below to update your custom "
+                "\"sources.list\"." % self.context.archive.displayname))
 
             self.request.response.redirect(self.request.getURL())
 

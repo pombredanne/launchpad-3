@@ -60,7 +60,7 @@ class ArchiveSubscriber(Storm):
     @property
     def displayname(self):
         """See `IArchiveSubscriber`."""
-        return "Subscription of %s to %s" % (
+        return "%s's subscription to %s" % (
             self.subscriber.displayname, self.archive.displayname)
 
     def cancel(self, cancelled_by):
