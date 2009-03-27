@@ -561,8 +561,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_reference_property)
 
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
-patch_reference_property(
-    IDistribution, 'serieses', IDistroSeries)
+IDistribution['serieses'].value_type.schema = IDistroSeries
 patch_reference_property(
     IDistribution, 'currentseries', IDistroSeries)
 patch_entry_return_type(
