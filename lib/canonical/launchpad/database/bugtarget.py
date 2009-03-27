@@ -19,8 +19,7 @@ from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.bugtask import (
     BugTaskSet, get_bug_privacy_filter)
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.interfaces import (
-    ILaunchBag, IMasterObject, IMasterStore)
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.bugtarget import IOfficialBugTag
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.product import IProduct
@@ -273,8 +272,9 @@ class OfficialBugTagTargetMixin:
         if self._getTag(tag) is None:
             new_tag = OfficialBugTag()
             new_tag.tag = tag
-            new_tag.target = IMasterObject(self)
-            IMasterStore(OfficialBugTag).add(new_tag)
+            new_tag.target = self
+            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+            store.add(new_tag)
 
     def removeOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""

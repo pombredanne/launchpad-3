@@ -33,8 +33,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.branch import (
     BranchFormat, BranchLifecycleStatus, ControlFormat)
 from canonical.launchpad.interfaces.branchcollection import IAllBranches
-from canonical.launchpad.interfaces.branchjob import (
-    IRevisionsAddedJobSource, IRosettaUploadJobSource)
+from canonical.launchpad.interfaces.branchjob import IRevisionsAddedJobSource
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 
@@ -415,9 +414,6 @@ class BzrSync:
         if len(bzr_history) > 0:
             last_revision = bzr_history[-1]
             revision = getUtility(IRevisionSet).getByRevisionId(last_revision)
-            if last_revision != self.db_branch.last_scanned_id:
-                getUtility(IRosettaUploadJobSource).create(
-                    self.db_branch, self.db_branch.last_scanned_id)
         else:
             revision = None
 

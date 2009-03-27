@@ -77,7 +77,7 @@ def apply_patches_replicated():
     replication.helpers.sync(timeout=600)
 
     outf = StringIO()
-
+    
     # Start a transaction block.
     print >> outf, "try {"
 
@@ -226,33 +226,26 @@ def apply_patches_replicated():
                 """ % (seq, next_id, seq, seq))
             next_id += 1
 
-        print >> outf, dedent("""\
-            } on error {
-                echo 'Failed to create holding set! Aborting.';
-                exit 1;
-                }
-            """)
-
-        # Subscribe the holding set to all replicas.
+        # Subscribe the holding set to the replica.
         # TODO: Only subscribe the set if not already subscribed.
         # Close the transaction and sync. Important, or MERGE SET will fail!
         # Merge the sets.
         # Sync.
         # Drop the holding set.
-        for slave_node in replication.helpers.get_slave_nodes(con):
-            print >> outf, dedent("""\
-                echo 'Subscribing holding set to @node%d_node.';
-                subscribe set (
-                    id=@holding_set,
-                    provider=@master_node, receiver=@node%d_node, forward=yes);
-                echo 'Waiting for sync';
-                sync (id=1);
-                wait for event (
-                    origin=ALL, confirmed=ALL, wait on=@master_node
-                    );
-                """ % (slave_node.node_id, slave_node.node_id))
-
         print >> outf, dedent("""\
+            echo 'Subscribing holding set to slave.';
+            subscribe set (
+                id=@holding_set, provider=@master_node, receiver=@slave1_node,
+                forward=yes);
+            } on error {
+                echo 'Failed to create or subscribe holding set! Aborting.';
+                exit 1;
+                }
+            echo 'Waiting for sync';
+            sync (id=1);
+            wait for event (
+                origin=ALL, confirmed=ALL, wait on=@master_node
+                );
             echo 'Merging holding set to lpmain';
             merge set (
                 id=@lpmain_set, add id=@holding_set, origin=@master_node
@@ -263,6 +256,7 @@ def apply_patches_replicated():
         if not replication.helpers.execute_slonik(outf.getvalue()):
             log.fatal("Aborting.")
         replication.helpers.sync(timeout=0)
+
 
     # We also scan for tables and sequences we want to drop and do so using
     # a final slonik script. Instead of dropping tables in the DB patch,

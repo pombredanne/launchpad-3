@@ -16,7 +16,6 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
-from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad import _
@@ -27,21 +26,15 @@ from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    call_with, export_as_webservice_entry, export_factory_operation, exported,
-    export_operation_as, export_write_operation, rename_parameters_as,
-    REQUEST_USER)
-
+    export_as_webservice_entry, exported)
 
 class MilestoneNameField(ContentNameField):
-    """A field that can get the milestone from different contexts."""
 
     @property
     def _content_iface(self):
-        """The interface this field manages."""
         return IMilestone
 
     def _getByName(self, name):
-        """Return the named milestone from the context."""
         # IProductSeries and IDistroSeries are imported here to
         # avoid an import loop.
         from canonical.launchpad.interfaces.productseries import (
@@ -99,18 +92,19 @@ class IMilestone(IHasBugs):
         Date(title=_("Date Targeted"), required=False,
              description=_("Example: 2005-11-24")),
         exported_as='date_targeted')
-    active = exported(
+    visible = exported(
         Bool(
             title=_("Active"),
             description=_("Whether or not this milestone should be shown "
                           "in web forms for bug targeting.")),
-        exported_as='is_active')
-    summary = exported(
+        exported_as='is_visible')
+    description = exported(
         Description(
-            title=_("Summary"),
+            title=_("Description"),
             required=False,
             description=_(
-                "A summary of the features and status of this milestone.")))
+                "A detailed description of the features and status of this "
+                "milestone.")))
     target = exported(
         Reference(
             schema=Interface, # IHasMilestones
@@ -129,46 +123,11 @@ class IMilestone(IHasBugs):
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
 
-    code_name = Attribute("An alternative to the name attribute.")
-
-    product_release = Reference(
-        schema=IProductRelease,
-        title=_("The release for this milestone."),
-        required=False,
-        readonly=True)
-
-    @call_with(owner=REQUEST_USER)
-    @rename_parameters_as(datereleased='date_released')
-    @export_factory_operation(
-        IProductRelease,
-        ['datereleased', 'changelog', 'release_notes'])
-    def createProductRelease(owner, datereleased,
-                             changelog=None, release_notes=None):
-        """Create a new ProductRelease.
-
-        :param owner: `IPerson` object who manages the release.
-        :param datereleased: Date of the product release.
-        :param changelog: Detailed changes in each version.
-        :param release_notes: Overview of changes in each version.
-        :returns: `IProductRelease` object.
-        """
-
-    @export_write_operation()
-    @export_operation_as('delete')
-    def destroySelf():
-        """Delete this milestone.
-
-        This method must not be used if this milestone has a product
-        release.
-        """
-
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone
 
 
 class IMilestoneSet(Interface):
-    """An set provides access `IMilestone`s."""
-
     def __iter__():
         """Return an iterator over all the milestones for a thing."""
 
@@ -224,4 +183,3 @@ class ICanGetMilestonesDirectly(Interface):
 # Fix cyclic references.
 IMilestone['target'].schema = IHasMilestones
 IMilestone['series_target'].schema = IHasMilestones
-IProductRelease['milestone'].schema = IMilestone

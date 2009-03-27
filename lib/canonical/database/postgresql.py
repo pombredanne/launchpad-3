@@ -8,8 +8,7 @@ __metaclass__ = type
 
 import re
 
-from canonical.database.sqlbase import quote, quoteIdentifier, sqlvalues
-
+from sqlbase import quote, quoteIdentifier, sqlvalues
 
 def listReferences(cur, table, column, _state=None):
     """Return a list of all foreign key references to the given table column
@@ -143,7 +142,7 @@ def listUniques(cur, table, column):
             AND a.attnum > 0
         '''
     cur.execute(sql, dict(table=table))
-    for num, name in cur.fetchall():
+    for num,name in cur.fetchall():
         attributes[int(num)] = name
 
     # Initialize our return value
@@ -494,22 +493,12 @@ class ConnectionString:
         'dbname', 'user', 'host', 'port', 'connect_timeout', 'sslmode']
 
     def __init__(self, conn_str):
-        if '=' not in conn_str:
-            # Just a dbname
-            for key in self.CONNECTION_KEYS:
+        for key in self.CONNECTION_KEYS:
+            match = re.search(r'%s=(\w+)' % key, conn_str)
+            if match is None:
                 setattr(self, key, None)
-            self.dbname = conn_str.strip()
-        else:
-            # A 'key=value' connection string.
-            # We don't check for required attributes, as these might
-            # be added after construction or not actually required
-            # at all in some instances.
-            for key in self.CONNECTION_KEYS:
-                match = re.search(r'%s=(\w+)' % key, conn_str)
-                if match is None:
-                    setattr(self, key, None)
-                else:
-                    setattr(self, key, match.group(1))
+            else:
+                setattr(self, key, match.group(1))
 
     def __repr__(self):
         params = []

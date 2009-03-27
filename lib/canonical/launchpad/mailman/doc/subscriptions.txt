@@ -158,7 +158,6 @@ email address.
     >>> email = email_set.new(
     ...     'EmmaXPerson@example.org', emma, account=emma.account)
     >>> email.status = EmailAddressStatus.VALIDATED
-    >>> transaction.commit()
     >>> from canonical.launchpad.interfaces.mailinglist import IMailingListSet
     >>> emma.join(team_one)
     >>> list_one = getUtility(IMailingListSet).get('itest-one')

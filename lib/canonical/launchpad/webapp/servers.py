@@ -1018,51 +1018,12 @@ class AnswersBrowserRequest(LaunchpadBrowserRequest):
             'Vary', 'Cookie, Authorization, Accept-Language')
 
 
-# ---- openid
-
-class IdPublication(LaunchpadBrowserPublication):
-    """The publication used for OpenID requests."""
-
-    root_object_interface = IOpenIDApplication
-
-    def getPrincipal(self, request):
-        """Return the authenticated principal for this request.
-
-        This is only necessary because, unlike in LaunchpadBrowserPublication,
-        here we want principals representing personless accounts to be
-        returned, so that personless accounts can use our OpenID server.
-        """
-        auth_utility = getUtility(IPlacelessAuthUtility)
-        principal = auth_utility.authenticate(request)
-        if principal is None:
-            principal = auth_utility.unauthenticatedPrincipal()
-            assert principal is not None, "Missing unauthenticated principal."
-        return principal
-
-
-class IdBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.IdLayer)
-
-
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove OpenIDPublication and OpenIDBrowserRequest.
-class OpenIDPublication(IdPublication):
-    """The publication used for old OpenID requests."""
-
-    root_object_interface = IOpenIDApplication
-
-
-class OpenIDBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.OpenIDLayer)
-
-
 # ---- shipit
 
-class ShipItPublication(IdPublication):
+class ShipItPublication(LaunchpadBrowserPublication):
     """The publication used for the ShipIt sites."""
 
     root_object_interface = IShipItApplication
-
 
 class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.ShipItUbuntuLayer)
@@ -1263,6 +1224,44 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
             test_environ.update(environ)
         super(WebServiceTestRequest, self).__init__(
             body_instream=body_instream, environ=test_environ, **kw)
+
+
+# ---- openid
+
+class IdPublication(LaunchpadBrowserPublication):
+    """The publication used for OpenID requests."""
+
+    root_object_interface = IOpenIDApplication
+
+    def getPrincipal(self, request):
+        """Return the authenticated principal for this request.
+
+        This is only necessary because, unlike in LaunchpadBrowserPublication,
+        here we want principals representing personless accounts to be
+        returned, so that personless accounts can use our OpenID server.
+        """
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = auth_utility.authenticate(request)
+        if principal is None:
+            principal = auth_utility.unauthenticatedPrincipal()
+            assert principal is not None, "Missing unauthenticated principal."
+        return principal
+
+
+class IdBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.IdLayer)
+
+
+# XXX sinzui 2008-09-04 bug=264783:
+# Remove OpenIDPublication and OpenIDBrowserRequest.
+class OpenIDPublication(IdPublication):
+    """The publication used for old OpenID requests."""
+
+    root_object_interface = IOpenIDApplication
+
+
+class OpenIDBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.OpenIDLayer)
 
 
 # ---- xmlrpc

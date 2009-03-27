@@ -249,10 +249,11 @@ class HWSubmissionSet:
                                 EmailAddressStatus.PREFERRED), (
             'Invalid email status for setting ownership of an HWDB '
             'submission: %s' % email.status.title)
+        person = email.person
         submissions =  HWSubmission.selectBy(
             raw_emailaddress=email.email, owner=None)
         for submission in submissions:
-            submission.ownerID = email.personID
+            submission.owner = person
 
     def getByStatus(self, status, user=None):
         """See `IHWSubmissionSet`."""

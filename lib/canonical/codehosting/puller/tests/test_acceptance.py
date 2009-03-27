@@ -289,7 +289,7 @@ class TestBranchPuller(PullerBranchTestCase):
             branch_type=branch_type)
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
-        series.branch = default_branch
+        series.user_branch = default_branch
         # Arrange for it to be pulled.
         if branch_type == BranchType.HOSTED:
             puller_type = 'upload'

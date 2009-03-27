@@ -5,7 +5,6 @@
 __metaclass__ = type
 __all__ = [
     'BazaarBranchStore',
-    'CSCVSImportWorker',
     'CodeImportSourceDetails',
     'ForeignTreeStore',
     'ImportWorker',
@@ -17,7 +16,7 @@ import os
 import shutil
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
+from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.osutils import pumpfile
@@ -52,7 +51,7 @@ class BazaarBranchStore:
         """Return the URL that `db_branch` is stored at."""
         return urljoin(self.transport.base, '%08x' % db_branch_id)
 
-    def pull(self, db_branch_id, target_path, required_format):
+    def pull(self, db_branch_id, target_path):
         """Pull down the Bazaar branch for `code_import` to `target_path`.
 
         :return: A Bazaar working tree for the branch of `code_import`.
@@ -61,18 +60,18 @@ class BazaarBranchStore:
         try:
             bzr_dir = BzrDir.open(remote_url)
         except NotBranchError:
-            return BzrDir.create_standalone_workingtree(
-                target_path, required_format)
-        if bzr_dir.needs_format_conversion(format=required_format):
+            return BzrDir.create_standalone_workingtree(target_path)
+        if bzr_dir.needs_format_conversion(
+                    format=BzrDirFormat.get_default_format()):
             try:
                 bzr_dir.root_transport.delete_tree('backup.bzr')
             except NoSuchFile:
                 pass
-            upgrade(remote_url, required_format)
+            upgrade(remote_url)
         bzr_dir.sprout(target_path)
         return BzrDir.open(target_path).open_workingtree()
 
-    def push(self, db_branch_id, bzr_tree, required_format):
+    def push(self, db_branch_id, bzr_tree):
         """Push up `bzr_tree` as the Bazaar branch for `code_import`."""
         ensure_base(self.transport)
         branch_from = bzr_tree.branch
@@ -80,8 +79,7 @@ class BazaarBranchStore:
         try:
             branch_to = Branch.open(target_url)
         except NotBranchError:
-            branch_to = BzrDir.create_branch_and_repo(
-                target_url, format=required_format)
+            branch_to = BzrDir.create_branch_and_repo(target_url)
         branch_to.pull(branch_from)
 
 
@@ -123,13 +121,12 @@ class CodeImportSourceDetails:
     """
 
     def __init__(self, branch_id, rcstype, svn_branch_url=None, cvs_root=None,
-                 cvs_module=None, git_repo_url=None):
+                 cvs_module=None):
         self.branch_id = branch_id
         self.rcstype = rcstype
         self.svn_branch_url = svn_branch_url
         self.cvs_root = cvs_root
         self.cvs_module = cvs_module
-        self.git_repo_url = git_repo_url
 
     @classmethod
     def fromArguments(cls, arguments):
@@ -138,17 +135,14 @@ class CodeImportSourceDetails:
         rcstype = arguments.pop(0)
         if rcstype == 'svn':
             [svn_branch_url] = arguments
-            cvs_root = cvs_module = git_repo_url = None
+            cvs_root = cvs_module = None
         elif rcstype == 'cvs':
-            svn_branch_url = git_repo_url = None
+            svn_branch_url = None
             [cvs_root, cvs_module] = arguments
-        elif rcstype == 'git':
-            cvs_root = cvs_module = svn_branch_url = None
-            [git_repo_url] = arguments
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module, git_repo_url)
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
 
     @classmethod
     def fromCodeImport(cls, code_import):
@@ -156,21 +150,17 @@ class CodeImportSourceDetails:
         if code_import.rcs_type == RevisionControlSystems.SVN:
             rcstype = 'svn'
             svn_branch_url = str(code_import.svn_branch_url)
-            cvs_root = cvs_module = git_repo_url = None
+            cvs_root = cvs_module = None
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             rcstype = 'cvs'
-            svn_branch_url = git_repo_url = None
+            svn_branch_url = None
             cvs_root = str(code_import.cvs_root)
             cvs_module = str(code_import.cvs_module)
-        elif code_import.rcs_type == RevisionControlSystems.GIT:
-            rcstype = 'git'
-            svn_branch_url = cvs_root = cvs_module = None
-            git_repo_url = code_import.git_repo_url
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(
             code_import.branch.id, rcstype, svn_branch_url,
-            cvs_root, cvs_module, git_repo_url)
+            cvs_root, cvs_module)
 
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
@@ -181,8 +171,6 @@ class CodeImportSourceDetails:
         elif self.rcstype == 'cvs':
             result.append(self.cvs_root)
             result.append(self.cvs_module)
-        elif self.rcstype == 'git':
-            result.append(self.git_repo_url)
         else:
             raise AssertionError("Unknown rcstype %r." % self.rcstype)
         return result
@@ -279,79 +267,12 @@ class ImportWorker:
     # Where the Bazaar working tree will be stored.
     BZR_WORKING_TREE_PATH = 'bzr_working_tree'
 
-    required_format = BzrDirFormat.get_default_format()
-
-    def __init__(self, source_details, bazaar_branch_store, logger):
-        """Construct an `ImportWorker`.
-
-        :param source_details: A `CodeImportSourceDetails` object.
-        :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
-            uses this to fetch and store the Bazaar branches that are created
-            and updated during the import process.
-        :param logger: A `Logger` to pass to cscvs.
-        """
-        self.source_details = source_details
-        self.bazaar_branch_store = bazaar_branch_store
-        self._logger = logger
-
-    def getBazaarWorkingTree(self):
-        """Return the Bazaar `WorkingTree` that we are importing into."""
-        if os.path.isdir(self.BZR_WORKING_TREE_PATH):
-            shutil.rmtree(self.BZR_WORKING_TREE_PATH)
-        return self.bazaar_branch_store.pull(
-            self.source_details.branch_id, self.BZR_WORKING_TREE_PATH,
-            self.required_format)
-
-    def getWorkingDirectory(self):
-        """The directory we should change to and store all scratch files in.
-        """
-        base = config.codeimportworker.working_directory_root
-        dirname = 'worker-for-branch-%s' % self.source_details.branch_id
-        return os.path.join(base, dirname)
-
-    def run(self):
-        """Run the code import job.
-
-        This is the primary public interface to the `ImportWorker`. This
-        method:
-
-         1. Retrieves an up-to-date foreign tree to import.
-         2. Gets the Bazaar branch to import into.
-         3. Imports the foreign tree into the Bazaar branch. If we've
-            already imported this before, we synchronize the imported Bazaar
-            branch with the latest changes to the foreign tree.
-         4. Publishes the newly-updated Bazaar branch, making it available to
-            Launchpad users.
-         5. Archives the foreign tree, so that we can update it quickly next
-            time.
-        """
-        working_directory = self.getWorkingDirectory()
-        if os.path.exists(working_directory):
-            shutil.rmtree(working_directory)
-        os.makedirs(working_directory)
-        os.chdir(working_directory)
-        try:
-            self._doImport()
-        finally:
-            shutil.rmtree(working_directory)
-
-    def _doImport(self):
-        raise NotImplementedError()
-
-
-class CSCVSImportWorker(ImportWorker):
-    """An ImportWorker for imports that use CSCVS.
-
-    As well as invoking cscvs to do the import, this class also needs to
-    manage a foreign working tree.
-    """
-
     # Where the foreign working tree will be stored.
     FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
 
     def __init__(self, source_details, foreign_tree_store,
                  bazaar_branch_store, logger):
-        """Construct a `CSCVSImportWorker`.
+        """Construct an `ImportWorker`.
 
         :param source_details: A `CodeImportSourceDetails` object.
         :param foreign_tree_store: A `ForeignTreeStore`. The import worker
@@ -361,9 +282,17 @@ class CSCVSImportWorker(ImportWorker):
             and updated during the import process.
         :param logger: A `Logger` to pass to cscvs.
         """
-        ImportWorker.__init__(self, source_details, bazaar_branch_store, logger)
+        self.source_details = source_details
         self.foreign_tree_store = foreign_tree_store
+        self.bazaar_branch_store = bazaar_branch_store
+        self._logger = logger
 
+    def getBazaarWorkingTree(self):
+        """Return the Bazaar `WorkingTree` that we are importing into."""
+        if os.path.isdir(self.BZR_WORKING_TREE_PATH):
+            shutil.rmtree(self.BZR_WORKING_TREE_PATH)
+        return self.bazaar_branch_store.pull(
+            self.source_details.branch_id, self.BZR_WORKING_TREE_PATH)
 
     def getForeignTree(self):
         """Return the foreign branch object that we are importing from.
@@ -419,27 +348,41 @@ class CSCVSImportWorker(ImportWorker):
                        flags, revisions, bazpath]
         totla.totla(config, self._logger, config.args, SCM.tree(source_dir))
 
-    def _doImport(self):
-        foreign_tree = self.getForeignTree()
-        bazaar_tree = self.getBazaarWorkingTree()
-        self.importToBazaar(foreign_tree, bazaar_tree)
-        self.bazaar_branch_store.push(
-            self.source_details.branch_id, bazaar_tree, self.required_format)
-        self.foreign_tree_store.archive(
-            self.source_details, foreign_tree)
+    def getWorkingDirectory(self):
+        """The directory we should change to and store all scratch files in.
+        """
+        base = config.codeimportworker.working_directory_root
+        dirname = 'worker-for-branch-%s' % self.source_details.branch_id
+        return os.path.join(base, dirname)
 
+    def run(self):
+        """Run the code import job.
 
-class PullingImportWorker(ImportWorker):
-    """An import worker for imports that can be done by a bzr plugin."""
+        This is the primary public interface to the `ImportWorker`. This
+        method:
 
-    # XXX 2009-03-05, MichaelHudson, bug=338061: There should be a way to find
-    # the 'default' rich-root format.
-    required_format = format_registry.get('1.9-rich-root')()
-
-    def _doImport(self):
-        bazaar_tree = self.getBazaarWorkingTree()
-        bazaar_tree.branch.pull(
-            Branch.open(self.source_details.git_repo_url),
-            overwrite=True)
-        self.bazaar_branch_store.push(
-            self.source_details.branch_id, bazaar_tree, self.required_format)
+         1. Retrieves an up-to-date foreign tree to import.
+         2. Gets the Bazaar branch to import into.
+         3. Imports the foreign tree into the Bazaar branch. If we've
+            already imported this before, we synchronize the imported Bazaar
+            branch with the latest changes to the foreign tree.
+         4. Publishes the newly-updated Bazaar branch, making it available to
+            Launchpad users.
+         5. Archives the foreign tree, so that we can update it quickly next
+            time.
+        """
+        working_directory = self.getWorkingDirectory()
+        if os.path.exists(working_directory):
+            shutil.rmtree(working_directory)
+        os.makedirs(working_directory)
+        os.chdir(working_directory)
+        try:
+            foreign_tree = self.getForeignTree()
+            bazaar_tree = self.getBazaarWorkingTree()
+            self.importToBazaar(foreign_tree, bazaar_tree)
+            self.bazaar_branch_store.push(
+                self.source_details.branch_id, bazaar_tree)
+            self.foreign_tree_store.archive(
+                self.source_details, foreign_tree)
+        finally:
+            shutil.rmtree(working_directory)

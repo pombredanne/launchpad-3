@@ -112,7 +112,7 @@ class DistroSeriesStatus(DBEnumeratedType):
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
 
-    def newMilestone(name, dateexpected=None, summary=None):
+    def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
 
@@ -709,6 +709,15 @@ class IDistroSeriesSet(Interface):
         """Find a DistroSeries by version.
 
         Returns a list of matching distributions, which may be empty.
+        """
+
+    def fromSuite(distribution, suite):
+        """Return the distroseries and pocket for 'suite' of 'distribution'.
+
+        :param distribution: An `IDistribution`.
+        :param suite: A string that forms the name of a suite.
+        :return: (`IDistroSeries`, `DBItem`) where the item is from
+            `PackagePublishingPocket`.
         """
 
     def search(distribution=None, released=None, orderBy=None):

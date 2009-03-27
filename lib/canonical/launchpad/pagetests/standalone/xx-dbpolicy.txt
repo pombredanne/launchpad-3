@@ -17,16 +17,6 @@ request is querying the master or slave database.
     ...     """)
     >>> config.push('empty_slave', config_overlay)
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
-    >>> master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    >>> master.execute("SELECT current_database()").get_one()[0]
-    u'launchpad_ftest'
-    >>> slave = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-    >>> slave.execute("SELECT current_database()").get_one()[0]
-    u'launchpad_empty'
-
 We should confirm that the empty database is as empty as we hope it is.
 
     >>> from zope.component import getUtility

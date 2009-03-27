@@ -43,11 +43,11 @@ class BranchScanner:
                     # finish. Any other Exception is an error condition and
                     # must not terminate the script.
                     raise
-                except Exception, e:
+                except:
                     # Yes, bare except. Bugs or error conditions when scanning
                     # any given branch must not prevent scanning the other
                     # branches.
-                    self.logScanFailure(branch, str(e))
+                    self.logScanFailure(branch)
         finally:
             server.tearDown()
         self.log.info('Finished branch scanning')
@@ -62,9 +62,9 @@ class BranchScanner:
             return
         try:
             bzrsync.syncBranchAndClose()
-        except ConnectionError, e:
+        except ConnectionError:
             # A network glitch occured. Yes, that does happen.
-            self.logScanFailure(branch, "Internal network failure: %s" % e)
+            self.logScanFailure(branch, "Internal network failure")
 
     def logScanFailure(self, branch, message="Failed to scan"):
         """Log diagnostic for branches that could not be scanned."""
@@ -76,5 +76,4 @@ class BranchScanner:
             ('error-explanation', message)])
         request.URL = canonical_url(branch)
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
-        self.log.info('%s: %s (%s)',
-            request.oopsid, message, branch.unique_name)
+        self.log.info('%s: %s', request.oopsid, message)

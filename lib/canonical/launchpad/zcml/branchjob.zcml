@@ -20,11 +20,6 @@
     />
     <allow interface="canonical.launchpad.interfaces.branchjob.IBranchJob" />
   </class>
-  <class class="canonical.launchpad.database.branchjob.RosettaUploadJob">
-    <allow interface="canonical.launchpad.interfaces.branchjob.IRosettaUploadJob"
-    />
-    <allow interface="canonical.launchpad.interfaces.branchjob.IBranchJob" />
-  </class>
   <securedutility
       component="canonical.launchpad.database.branchjob.BranchDiffJob"
       provides="canonical.launchpad.interfaces.branchjob.IBranchDiffJobSource" >
@@ -43,13 +38,6 @@
       provides="canonical.launchpad.interfaces.branchjob.IRevisionsAddedJobSource" >
     <allow
      interface="canonical.launchpad.interfaces.branchjob.IRevisionsAddedJobSource"
-    />
-  </securedutility>
-  <securedutility
-      component="canonical.launchpad.database.branchjob.RosettaUploadJob"
-      provides="canonical.launchpad.interfaces.branchjob.IRosettaUploadJobSource" >
-    <allow
-     interface="canonical.launchpad.interfaces.branchjob.IRosettaUploadJobSource"
     />
   </securedutility>
 </configure>

@@ -7,20 +7,18 @@ First create a copy archive for us to see:
     ...     IDistributionSet)
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-
-    >>> joe = factory.makePerson(displayname='Joe Bloggs')
     >>> copy_location = factory.makeCopyArchiveLocation(
-    ...     distribution=ubuntu, owner=joe,
+    ...     distribution=ubuntu,
     ...     name="intrepid-security-rebuild")
     >>> copy_archive = copy_location.archive
+    >>> copy_archive.owner.displayname = "Joe Bloggs"
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     copy_location, copy_archive.owner)
-
-    >>> marty = factory.makePerson(displayname='Marty Jupiter')
     >>> disabled_location = factory.makeCopyArchiveLocation(
-    ...     distribution=ubuntu, owner=marty,
+    ...     distribution=ubuntu,
     ...     name="disabled-security-rebuild")
     >>> disabled_archive = disabled_location.archive
+    >>> disabled_archive.owner.displayname = "Marty Jupiter"
     >>> disabled_archive.enabled = False
 
 And add some published packages so that this archive is considered
@@ -32,8 +30,7 @@ an active one:
     >>> hoary = ubuntu['hoary']
     >>> unused = stp.setUpDefaultDistroSeries(distroseries=hoary)
     >>> stp.addFakeChroots(distroseries=hoary)
-    >>> pub_src = stp.getPubSource(
-    ...     archive=copy_archive, architecturehintlist='any')
+    >>> pub_src = stp.getPubSource(archive=copy_archive, architecturehintlist='any')
     >>> pub_bins = stp.getPubBinaries(pub_source=pub_src)
 
     >>> logout()
@@ -103,8 +100,7 @@ First, create a private copy archive:
     >>> copy_archive.owner.displayname = "Harry Potter"
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     copy_location, copy_archive.owner)
-    >>> pub_src = stp.getPubSource(
-    ...     archive=copy_archive, architecturehintlist='any')
+    >>> pub_src = stp.getPubSource(archive=copy_archive, architecturehintlist='any')
     >>> pub_bins = stp.getPubBinaries(pub_source=pub_src)
     >>> logout()
 
@@ -128,8 +124,7 @@ Disabled copy archives have the title rendered in gray colour
 (class="disabled") and a warning message stating that the archive
 is disabled.
 
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+archive/disabled-security-rebuild")
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archive/disabled-security-rebuild")
     >>> print anon_browser.title
     Copy archive disabled-security-rebuild for Marty Jupiter
 

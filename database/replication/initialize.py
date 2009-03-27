@@ -67,18 +67,32 @@ def duplicate_schema():
 def initialize_cluster():
     """Initialize the cluster."""
     log.info('Initializing Slony-I cluster')
-    master_connection_string = ConnectionString(
-        config.database.main_master)
-    master_connection_string.user = 'slony'
     helpers.execute_slonik("""
-        node 1 admin conninfo = '%s';
         try {
             echo 'Initializing cluster and Master node.';
-            init cluster (id=1, comment='Master Node');
+            init cluster (id=@master_node, comment='Master Node');
             }
         on success { echo 'Cluster initialized.'; }
         on error { echo 'Cluster initialization failed.'; exit 1; }
-        """ % master_connection_string)
+        """)
+    helpers.execute_slonik("""
+        try {
+            echo 'Initializing Slave#1 node.';
+            store node (id=@slave1_node, comment='Slave Node #1');
+
+            echo 'Storing Master -> Slave#1 path.';
+            store path (
+                server=@master_node, client=@slave1_node,
+                conninfo=@master_conninfo);
+
+            echo 'Storing Slave#1 -> Master path.';
+            store path (
+                server=@slave1_node, client=@master_node,
+                conninfo=@slave1_conninfo);
+            }
+        on success { echo 'Slave#1 initialized.'; }
+        on error { echo 'Slave#1 initialization failed.'; exit 1; }
+        """)
 
 
 def ensure_live():
@@ -90,17 +104,6 @@ def create_replication_sets(
     authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences):
     """Create the replication sets."""
     log.info('Creating Slony-I replication sets.')
-
-    # Instead of creating both the authdb and lpmain replication sets,
-    # we just create the lpmain replication set containing everything.
-    # This way, we can then test the populate_auth_replication_set.py
-    # migration script that moves the relevant tables from the lpmain
-    # replication set to the authdb replication set.
-    # We will turn this behavior off once we are running two
-    # replication sets in production and remove the migration script.
-    lpmain_tables = lpmain_tables.union(authdb_tables)
-    lpmain_sequences = lpmain_sequences.union(authdb_sequences)
-
     script = ["try {"]
     # script,append("""
     #     echo 'Creating AuthDB replication set (@authdb_set)';
@@ -174,6 +177,34 @@ def create_replication_sets(
     helpers.validate_replication(cur) # Explode now if we have messed up.
 
 
+def subscribe_slaves():
+    """Generate and run a slonik script subscribing the slave databases
+    to replication set #1.
+    """
+    log.info('Subscribing slaves to replication sets.')
+    # Note that direct subscribers to the master
+    # always need forward=yes as per Slony-I docs.
+    helpers.execute_slonik("""
+        # subscribe set (
+        #     id=@authdb_set,
+        #     provider=@master_node, receiver=@slave1_node,
+        #     forward=yes);
+        subscribe set (
+            id=@lpmain_set,
+            provider=@master_node, receiver=@slave1_node,
+            forward=yes);
+        """)
+    helpers.validate_replication(cur) # Explode now if we have messed up.
+    log.info(
+        'Sets subscribed. Master usable but slaves still being populated.')
+
+    log.info('Waiting for synchronization.')
+    helpers.sync(0)
+    log.info('Synchronized. Both master & slave usable.')
+
+    helpers.validate_replication(cur) # Explode now if we have messed up.
+
+
 def main():
     parser = OptionParser()
     db_options(parser)
@@ -187,22 +218,22 @@ def main():
     global log
     log = logger(options)
 
+    # Prepare the empty tables in the destination database.
+    duplicate_schema()
+
     # Generate lists of sequences and tables for our replication sets.
     log.debug("Connecting as %s" % options.dbuser)
     con = connect(options.dbuser)
     con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     global cur
     cur = con.cursor()
-    log.debug("Calculating authdb replication set.")
     authdb_tables, authdb_sequences = helpers.calculate_replication_set(
         cur, helpers.AUTHDB_SEED)
-    log.debug("Calculating lpmain replication set.")
     lpmain_tables, lpmain_sequences = helpers.calculate_replication_set(
         cur, helpers.LPMAIN_SEED)
 
     # Sanity check these lists - we want all objects in the public
     # schema to be in one and only one replication set.
-    log.debug("Performing sanity checks.")
     fails = 0
     for table in all_tables_in_schema(cur, 'public'):
         times_seen = 0
@@ -238,7 +269,7 @@ def main():
     create_replication_sets(
         authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences)
 
-    helpers.sync(0)
+    subscribe_slaves()
 
 
 if __name__ == '__main__':

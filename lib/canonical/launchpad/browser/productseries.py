@@ -20,14 +20,11 @@ __all__ = [
     'ProductSeriesSpecificationsMenu',
     'ProductSeriesTranslationsMenu',
     'ProductSeriesTranslationsExportView',
-    'ProductSeriesTranslationsSettingsView',
     'ProductSeriesView',
     ]
 
 import cgi
 import os.path
-
-from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -39,19 +36,10 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
-from canonical.launchpad.interfaces.codeimport import (
-    ICodeImportSet)
-from canonical.launchpad.interfaces.branchjob import IRosettaUploadJobSource
-from canonical.launchpad.interfaces.country import ICountry
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from canonical.launchpad.interfaces.translationimporter import (
-    ITranslationImporter)
-from canonical.launchpad.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+from canonical.launchpad.interfaces import (
+    ICodeImportSet, ICountry, ILaunchpadCelebrities, IPOTemplateSet,
+    IProductSeries, ISourcePackageNameSet, ITranslationImportQueue,
+    ITranslationImporter, NotFoundError)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
@@ -59,10 +47,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.itemswidgets import (
-    LaunchpadRadioWidgetWithDescription)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -76,8 +61,8 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     @stepto('.bzr')
     def dotbzr(self):
-        if self.context.branch:
-            return BranchRef(self.context.branch)
+        if self.context.series_branch:
+            return BranchRef(self.context.series_branch)
         else:
             return None
 
@@ -117,7 +102,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'driver', 'link_branch', 'ubuntupkg',
-        'add_package', 'add_milestone', 'rdf', 'subscribe'
+        'add_package', 'add_milestone', 'add_release', 'rdf', 'review',
+        'subscribe'
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -150,9 +136,19 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
+    def add_release(self):
+        text = 'Register a release'
+        return Link('+addrelease', text, icon='add')
+
     def rdf(self):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
+
+    @enabled_with_permission('launchpad.Admin')
+    def review(self):
+        text = 'Review details'
+        return Link('+review', text, icon='edit')
 
     def subscribe(self):
         text = 'Subscribe to bug mail'
@@ -232,11 +228,6 @@ class ProductSeriesTranslationsMenuMixIn:
         return Link('', text)
 
     @enabled_with_permission('launchpad.Edit')
-    def settings(self):
-        text = 'Settings'
-        return Link('+translations-settings', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
     def translationupload(self):
         text = 'Upload'
         return Link('+translations-upload', text, icon='add')
@@ -264,8 +255,7 @@ class ProductSeriesTranslationsMenu(NavigationMenu,
     """Translations navigation menus for `IProductSeries` objects."""
     usedfor = IProductSeries
     facet = 'translations'
-    links = ('overview', 'settings',
-             'translationupload', 'translationdownload',
+    links = ('overview', 'translationupload', 'translationdownload',
              'imports')
 
 
@@ -340,7 +330,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
         dispatch_table = {
             'set_ubuntu_pkg': self.setCurrentUbuntuPackage,
-            'translations_upload': self.translationsUpload,
+            'translations_upload': self.translationsUpload
         }
         dispatch_to = [(key, method)
                         for key,method in dispatch_table.items()
@@ -557,7 +547,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
     @property
     def user_branch_visible(self):
         """Can the logged in user see the user branch."""
-        branch = self.context.branch
+        branch = self.context.user_branch
         return (branch is not None and
                 check_permission('launchpad.View', branch))
 
@@ -566,16 +556,16 @@ class ProductSeriesEditView(LaunchpadEditFormView):
 
     schema = IProductSeries
     field_names = [
-        'name', 'summary', 'status', 'branch', 'releasefileglob']
+        'name', 'summary', 'status', 'user_branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
     def validate(self, data):
-        branch = data.get('branch')
+        branch = data.get('user_branch')
         if branch is not None:
             message = get_series_branch_error(self.context.product, branch)
             if message:
-                self.setFieldError('branch', message)
+                self.setFieldError('user_branch', message)
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -590,21 +580,18 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     """View to set the bazaar branch for a product series."""
 
     schema = IProductSeries
-    field_names = ['branch']
+    field_names = ['user_branch']
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    @action(_('Update'), name='update')
+    def not_import(self, action=None):
+        return self.context.import_branch is None
+
+    @action(_('Update'), name='update', condition=not_import)
     def update_action(self, action, data):
-        if data['branch'] != self.context.branch:
-            self.updateContextFromData(data)
-            # Request an initial upload of translation files.
-            getUtility(IRosettaUploadJobSource).create(
-                self.context.branch, NULL_REVISION)
-        else:
-            self.updateContextFromData(data)
+        self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
@@ -684,30 +671,3 @@ class ProductSeriesFileBugRedirect(LaunchpadView):
     def initialize(self):
         filebug_url = "%s/+filebug" % canonical_url(self.context.product)
         self.request.response.redirect(filebug_url)
-
-
-class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView):
-    """Edit settings for translations import and export."""
-
-    schema = IProductSeries
-    field_names = ['translations_autoimport_mode']
-    custom_widget('translations_autoimport_mode',
-                  LaunchpadRadioWidgetWithDescription)
-
-    def __init__(self, context, request):
-        LaunchpadEditFormView.__init__(self, context, request)
-        self.cancel_url = canonical_url(self.context)
-
-    @action(u"Save settings", name="save_settings")
-    def change_settings_action(self, action, data):
-        if (self.context.translations_autoimport_mode !=
-            data['translations_autoimport_mode']
-            ):
-            self.updateContextFromData(data)
-            # Request an initial upload of translation files.
-            getUtility(IRosettaUploadJobSource).create(
-                self.context.branch, NULL_REVISION)
-        else:
-            self.updateContextFromData(data)
-        self.request.response.addInfoNotification(
-            _("The settings have been updated."))
