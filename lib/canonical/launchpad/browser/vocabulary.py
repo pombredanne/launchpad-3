@@ -13,6 +13,8 @@ __all__ = [
 
 import simplejson
 
+from zope.interface import implementer
+from zope.component import adapter
 from zope.interface import Attribute, implements, Interface
 from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
@@ -46,6 +48,8 @@ class PickerEntry:
         self.image = image
         self.css = css
 
+@implementer(IPickerEntry)
+@adapter(Interface)
 def default_pickerentry_adapter(obj):
     """Adapts Interface to IPickerEntry."""
     extra = PickerEntry()
@@ -55,6 +59,8 @@ def default_pickerentry_adapter(obj):
     extra.image = display_api.default_icon_resource(obj)
     return extra
 
+@implementer(IPickerEntry)
+@adapter(IPerson)
 def person_to_pickerentry(person):
     """Adapts IPerson to IPickerEntry."""
     extra = default_pickerentry_adapter(person)
