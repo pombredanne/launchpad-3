@@ -644,7 +644,8 @@ class IArchiveView(IHasBuildRecords):
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
-    @rename_parameters_as(name="binary_name", distroarchseries="distro_arch_series")
+    @rename_parameters_as(
+        name="binary_name", distroarchseries="distro_arch_series")
     @operation_parameters(
         name=TextLine(title=_("Binary Package Name"), required=False),
         version=TextLine(title=_("Version"), required=False),
@@ -1122,7 +1123,8 @@ from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.publishing import (
     IBinaryPackagePublishingHistory)
 patch_plain_parameter_type(
-    IArchive, 'getAllPublishedBinaries', 'distroarchseries', IDistroArchSeries)
+    IArchive, 'getAllPublishedBinaries', 'distroarchseries',
+    IDistroArchSeries)
 patch_collection_return_type(
     IArchive, 'getAllPublishedBinaries', IBinaryPackagePublishingHistory)
 patch_choice_parameter_type(

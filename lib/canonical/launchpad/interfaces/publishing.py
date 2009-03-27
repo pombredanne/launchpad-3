@@ -737,7 +737,8 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
     removal_comment = exported(
         Text(
             title=_("Removal Comment"),
-            description=_('Reason why this publication is going to be removed.'),
+            description=_(
+                'Reason why this publication is going to be removed.'),
             required=False, readonly=False))
 
 

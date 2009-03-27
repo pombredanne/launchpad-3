@@ -744,4 +744,5 @@ class NoSuchDistroSeries(NameLookupFailed):
 # Monkey patch for circular import avoidance.
 from canonical.launchpad.components.apihelpers import patch_entry_return_type
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
-patch_entry_return_type(IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
+patch_entry_return_type(
+    IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
