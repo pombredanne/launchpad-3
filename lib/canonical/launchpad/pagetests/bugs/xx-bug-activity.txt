@@ -175,3 +175,38 @@ Changes to the bug's description will be shown as a unified diff.
 
 Changes to the bug's tags will be show in the form tags removed or tags
 added.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
+    >>> admin_browser.getControl("Tags").value = "tag1 tag2 tag3"
+    >>> admin_browser.getControl("Change").click()
+    >>> admin_browser.getControl('Yes, define new tag', index=0).click()
+
+    >>> admin_browser.open('http://launchpad.dev/bugs/15')
+    >>> print_comments(admin_browser.contents)
+    No Privileges Person wrote ...
+    Here's a comment for testing, like.
+    ...
+    --------
+    Foo Bar ... ago
+    tags changed:
+    tags added: tag1 tag2 tag3
+    --------
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
+    >>> admin_browser.getControl("Tags").value = "tag1 tag2 tag4"
+    >>> admin_browser.getControl("Change").click()
+    >>> admin_browser.getControl('Yes, define new tag', index=0).click()
+
+    >>> admin_browser.open('http://launchpad.dev/bugs/15')
+    >>> print_comments(admin_browser.contents)
+    No Privileges Person wrote ...
+    Here's a comment for testing, like.
+    ...
+    --------
+    Foo Bar ... ago
+    tags changed:
+    tags added: tag4
+    tags removed: tag3
+    --------

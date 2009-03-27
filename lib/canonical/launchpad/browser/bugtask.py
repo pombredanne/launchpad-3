@@ -777,7 +777,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         occurred.
         """
         interesting_changes = [
-             'description', 'security vulnerability', 'summary', 'visibility']
+             'description', 'security vulnerability', 'summary', 'tags',
+             'visibility']
         activity_by_date = {}
 
         for activity in self.context.bug.activity:
@@ -3160,6 +3161,31 @@ class BugActivityItem:
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
+        elif self.whatchanged == 'tags':
+            # We special-case tags because we can add logic to work out
+            # what's been added and what's been removed.
+            if self.newvalue != '':
+                new_tags = set(self.newvalue.split(' '))
+            else:
+                new_tags = set()
+
+            if self.oldvalue != '':
+                old_tags = set(self.oldvalue.split(' '))
+            else:
+                old_tags = set()
+
+            added_tags = sorted(new_tags.difference(old_tags))
+            removed_tags = sorted(old_tags.difference(new_tags))
+
+            tags_added_string = ''
+            tags_removed_string = ''
+            if len(added_tags) > 0:
+                tags_added_string = "tags added: %s" % ' '.join(added_tags)
+            if len(removed_tags) > 0:
+                tags_removed_string = "tags removed: %s" % (
+                    ' '.join(removed_tags))
+
+            return "<br />".join([tags_added_string, tags_removed_string])
         else:
             return "%s &#8594; %s" % (
                 cgi.escape(self.oldvalue), cgi.escape(self.newvalue))
