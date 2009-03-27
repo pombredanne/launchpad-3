@@ -58,7 +58,7 @@ to get it new for each subsequent test.
 Upon initialisation the view sets the file type.
 
     >>> print view.initial_values['file_type']
-    Translation Template (POT)
+    Template
 
 Validating correct data should not produce an error.
 

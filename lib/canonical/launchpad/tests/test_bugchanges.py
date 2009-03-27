@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces.bugtask import (
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -338,6 +339,13 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=added_activity,
             expected_notification=added_notification)
 
+    def test_link_private_branch(self):
+        # Linking a *private* branch to a bug adds *nothing* to the
+        # activity log and does *not* send an e-mail notification.
+        branch = self.factory.makeBranch(private=True)
+        self.bug.addBranch(branch, self.user)
+        self.assertRecordedChange()
+
     def test_unlink_branch(self):
         # Unlinking a branch from a bug adds both to the activity log and
         # sends an e-mail notification.
@@ -357,6 +365,15 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_activity=added_activity,
             expected_notification=added_notification)
+
+    def test_unlink_private_branch(self):
+        # Unlinking a *private* branch from a bug adds *nothing* to
+        # the activity log and does *not* send an e-mail notification.
+        branch = self.factory.makeBranch(private=True)
+        self.bug.addBranch(branch, self.user)
+        self.saveOldChanges()
+        self.bug.removeBranch(branch, self.user)
+        self.assertRecordedChange()
 
     def test_make_private(self):
         # Marking a bug as private adds items to the bug's activity log
@@ -1121,6 +1138,46 @@ class TestBugChanges(unittest.TestCase):
         self.assertRecordedChange(
             expected_activity=expected_activity,
             expected_notification=task_added_notification)
+
+    def test_convert_to_question_no_comment(self):
+        # When a bug task is converted to a question, its status is
+        # first set to invalid, which causes the normal notifications for
+        # that to be added to the activity log and sent out as e-mail
+        # notification. After that another item is added to the activity
+        # log saying that the bug was converted to a question.
+        self.bug.convertToQuestion(self.user)
+        converted_question = self.bug.getQuestionCreatedFromBug()
+
+        conversion_activity = {
+            'person': self.user,
+            'whatchanged': 'converted to question',
+            'newvalue': str(converted_question.id),
+            }
+        status_activity = {
+            'person': self.user,
+            'whatchanged': '%s: status' % self.bug_task.bugtargetname,
+            'newvalue': 'Invalid',
+            'oldvalue': 'New',
+            }
+
+        conversion_notification = {
+            'person': self.user,
+            'text': (
+                '** Converted to question:\n'
+                '   %s' % canonical_url(converted_question))
+            }
+        status_notification = {
+            'text': (
+                '** Changed in: %s\n'
+                '       Status: New => Invalid' %
+                self.bug_task.bugtargetname),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=[status_activity, conversion_activity],
+            expected_notification=[status_notification,
+                                   conversion_notification])
 
 
 def test_suite():

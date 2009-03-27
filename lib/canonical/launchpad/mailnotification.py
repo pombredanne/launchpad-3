@@ -874,21 +874,6 @@ def notify_bug_comment_added(bugmessage, event):
 
 
 @block_implicit_flushes
-def notify_bug_became_question(event):
-    """Notify CC'd list that a bug was made into a question.
-
-    The event must contain the bug that became a question, and the question
-    that the bug became.
-    """
-    bug = event.bug
-    question = event.question
-    change_info = '\n'.join([
-        '** bug changed to question:\n'
-        '   %s' %  canonical_url(question)])
-    bug.addChangeNotification(change_info, person=IPerson(event.user))
-
-
-@block_implicit_flushes
 def notify_bug_attachment_added(bugattachment, event):
     """Notify CC'd list that a new attachment has been added.
 

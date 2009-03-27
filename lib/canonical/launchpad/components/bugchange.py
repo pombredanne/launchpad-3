@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'BranchLinkedToBug',
     'BranchUnlinkedFromBug',
+    'BugConvertedToQuestion',
     'BugDescriptionChange',
     'BugTagsChange',
     'BugTaskAdded',
@@ -29,6 +30,7 @@ from zope.interface import implements
 from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class NoBugChangeFoundError(Exception):
@@ -103,6 +105,28 @@ class UnsubscribedFromBug(BugChangeBase):
     def getBugNotification(self):
         """See `IBugChange`."""
         return None
+
+
+class BugConvertedToQuestion(BugChangeBase):
+    """A bug got converted into a question."""
+
+    def __init__(self, when, person, question):
+        super(BugConvertedToQuestion, self).__init__(when, person)
+        self.question = question
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='converted to question',
+            newvalue=str(self.question.id))
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {
+            'text': (
+                '** Converted to question:\n'
+                '   %s' % canonical_url(self.question)),
+            }
 
 
 class BugTaskAdded(BugChangeBase):
@@ -216,12 +240,16 @@ class BranchLinkedToBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return dict(
             whatchanged='branch linked',
             newvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return {'text': '** Branch linked: %s' % self.branch.bzr_identity}
 
 
@@ -234,12 +262,16 @@ class BranchUnlinkedFromBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return dict(
             whatchanged='branch unlinked',
             oldvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return {'text': '** Branch unlinked: %s' % self.branch.bzr_identity}
 
 
