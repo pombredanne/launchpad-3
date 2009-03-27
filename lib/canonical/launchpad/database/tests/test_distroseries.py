@@ -12,11 +12,13 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
-from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
+from canonical.launchpad.interfaces.distroseries import (
+    IDistroSeriesSet, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease)
 from canonical.launchpad.interfaces.publishing import (
-    active_publishing_status, PackagePublishingStatus)
+    active_publishing_status, PackagePublishingPocket,
+    PackagePublishingStatus)
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import (
@@ -203,9 +205,27 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             "translatable but translatables() returns %r instead of %r." % (
                 translatables, self._ref_translatables()))
 
+    def test_fromSuite_release_pocket(self):
+        series = self.factory.makeDistroRelease()
+        result = getUtility(IDistroSeriesSet).fromSuite(
+            series.distribution, series.name)
+        self.assertEqual((series, PackagePublishingPocket.RELEASE), result)
+
+    def test_fromSuite_non_release_pocket(self):
+        series = self.factory.makeDistroRelease()
+        pocket = PackagePublishingPocket.BACKPORTS
+        suite = '%s-backports' % series.name
+        result = getUtility(IDistroSeriesSet).fromSuite(
+            series.distribution, suite)
+        self.assertEqual((series, PackagePublishingPocket.BACKPORTS), result)
+
+    def test_fromSuite_no_such_series(self):
+        distribution = self.factory.makeDistribution()
+        self.assertRaises(
+            NoSuchDistroSeries,
+            getUtility(IDistroSeriesSet).fromSuite,
+            distribution, 'doesntexist')
+
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestDistroSeriesCurrentSourceReleases))
-    suite.addTest(unittest.makeSuite(TestDistroSeriesSet))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
