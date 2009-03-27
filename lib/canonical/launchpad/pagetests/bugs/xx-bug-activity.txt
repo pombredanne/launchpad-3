@@ -208,7 +208,6 @@ We'll add a milestone to Redfish to demonstrate this.
     ...         'redfish.assignee.assign_to_me']
     >>> admin_browser.getControl("Save Changes").click()
 
-    >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
     Bug
     ...
@@ -219,3 +218,18 @@ We'll add a milestone to Redfish to demonstrate this.
     redfish milestone: none &#8594; foo
     redfish status: New &#8594; Confirmed
     --------
+
+If a change is made to a bug task which is targeted to a distro source
+package, the name of the package and the distro will be included in the
+activity item.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/'
+    ...     '1/+editstatus')
+    >>> admin_browser.getControl('Status').value = ['Confirmed']
+    >>> admin_browser.getControl("Save Changes").click()
+    >>> print_comments(admin_browser.contents)
+    Sample Person wrote ...
+    --------
+    Foo Bar ... ago
+    mozilla-firefox (Ubuntu) status: New &#8594; Confirmed

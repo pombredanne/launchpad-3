@@ -778,7 +778,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         """
         activity_by_date = {}
         bugtask_change_re = (
-            '[a-z0-9][a-z0-9\+\.\-]+: '
+            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
             '(assignee|importance|milestone|status)')
         interesting_changes = [
              'description',
@@ -3203,8 +3203,10 @@ class BugActivityItem:
     def change_details(self):
         """Return a detailed description of the change."""
         diffable_changes = ['summary', 'description']
-        assignee_regex = re.compile('[a-z0-9][a-z0-9\+\.\-]+: assignee')
-        milestone_regex = re.compile('[a-z0-9][a-z0-9\+\.\-]+: milestone')
+        assignee_regex = re.compile(
+            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: assignee')
+        milestone_regex = re.compile(
+            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: milestone')
 
         # Our default return dict. We may mutate this depending on
         # what's changed.
