@@ -203,6 +203,11 @@
         component="canonical.launchpad.database.openidserver.LaunchpadOpenIDStore">
     </utility>
 
+    <utility
+        provides="canonical.launchpad.interfaces.IOpenIDConsumerStoreFactory"
+        component="canonical.launchpad.database.openidconsumer.OpenIDConsumerStore">
+    </utility>
+
     <browser:page
         for="openid.server.server.ProtocolError"
         name="index.html"
@@ -252,7 +257,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
         path_expression="string:+rpconfig"
-        parent_utility="canonical.launchpad.interfaces.IOpenIDApplication"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <browser:navigation

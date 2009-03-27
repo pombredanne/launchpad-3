@@ -162,6 +162,8 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
+        # Now we are logged in, install the correct IDatabasePolicy for
+        # this request.
         getUtility(IStoreSelector).push(IDatabasePolicy(request))
 
         getUtility(IOpenLaunchBag).clear()

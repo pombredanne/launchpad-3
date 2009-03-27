@@ -46,6 +46,12 @@ Users who are not logged on do not see the link to register.
     ...
     LinkNotFoundError
 
+Initially the branch is shown as not being proposed to be merged.
+
+    >>> print_tag_with_id(anon_browser.contents, 'merge-summary')
+    &laquo; No branches proposed for merging into this one.
+    &raquo; This branch is not proposed for merging into any others.
+
 Logged in users can.
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")

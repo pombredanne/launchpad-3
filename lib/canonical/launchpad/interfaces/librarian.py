@@ -37,24 +37,22 @@ class ILibraryFileAlias(Interface):
         title=_('Date created'), required=True, readonly=True)
     content = Attribute('Library file content')
     filename = TextLine(
-            title=_('Filename'), required=True, readonly=True
-            )
+        title=_('Filename'), required=True, readonly=True)
     mimetype = TextLine(
-            title=_('MIME type'), required=True, readonly=True
-            )
+        title=_('MIME type'), required=True, readonly=True)
     last_accessed = Datetime(
-            title=_('Date last accessed'), required=False, readonly=True
-            )
+        title=_('Date last accessed'), required=False, readonly=True)
     expires = Datetime(
-            title=_('Expiry time'), required=False, readonly=True,
-            description=_('''
-                When file can be removed. Set to None if the file
-                should only be removed when it is no longer referenced
-                in the database. Set it to NEVER_EXPIRES to keep it in
-                the Librarian permanently.
-                ''')
-            )
-
+        title=_('Expiry time'), required=False, readonly=True,
+        description=_('''
+            When file can be removed. Set to None if the file
+            should only be removed when it is no longer referenced
+            in the database. Set it to NEVER_EXPIRES to keep it in
+            the Librarian permanently.
+            '''))
+    hits = Int(
+        title=_('Number of times this file has been downloaded'),
+        required=False, readonly=True)
     restricted = Bool(
         title=_('Is this file alias restricted.'),
         required=True, readonly=True,
@@ -102,6 +100,14 @@ class ILibraryFileAlias(Interface):
 
     def close():
         """Close this file."""
+
+    def updateDownloadCount(day, country, count):
+        """Update this file's download count for the given country and day.
+
+        If there's no `ILibraryFileDownloadCount` entry for this file, and the
+        given day/country, we create one with the given count.  Otherwise we
+        just increase the count of the existing one by the given count.
+        """
 
 
 class ILibraryFileContent(Interface):

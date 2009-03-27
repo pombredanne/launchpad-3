@@ -17,10 +17,23 @@ from canonical.launchpad.interfaces.authtoken import (
     IAuthToken, IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+from canonical.launchpad.webapp.interfaces import IStoreSelector
 from canonical.testing import DatabaseFunctionalLayer
 
 
-class AuthTokenTests(TestCaseWithFactory):
+class SSODatabasePolicyTests(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+    def setUp(self):
+        super(SSODatabasePolicyTests, self).setUp()
+        getUtility(IStoreSelector).push(SSODatabasePolicy())
+
+    def tearDown(self):
+        getUtility(IStoreSelector).pop()
+        super(SSODatabasePolicyTests, self).tearDown()
+
+
+class AuthTokenTests(SSODatabasePolicyTests):
 
     layer = DatabaseFunctionalLayer
 
@@ -92,7 +105,7 @@ class AuthTokenTests(TestCaseWithFactory):
             msg["Subject"], "Login Service: Finish your registration")
 
 
-class AuthTokenSetTests(TestCaseWithFactory):
+class AuthTokenSetTests(SSODatabasePolicyTests):
 
     layer = DatabaseFunctionalLayer
 
