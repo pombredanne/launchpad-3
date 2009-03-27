@@ -1356,6 +1356,9 @@ class ArchiveActivateView(LaunchpadFormView):
             return
 
         proposed_name = data.get('name')
+        if proposed_name is None and self.context.archive is not None:
+            self.addError('The default PPA is already activated.')
+
         if self.context.getPPAByName(proposed_name):
             self.setFieldError(
                 'name', "You already have a PPA named '%s'" % proposed_name)
