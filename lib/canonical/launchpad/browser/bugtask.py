@@ -3166,12 +3166,12 @@ class BugActivityItem:
         # Turn the strings of newvalue and oldvalue into sets so we
         # can work out the differences.
         if self.newvalue != '':
-            new_tags = set(self.newvalue.split(' '))
+            new_tags = set(re.split('\s+', self.newvalue))
         else:
             new_tags = set()
 
         if self.oldvalue != '':
-            old_tags = set(self.oldvalue.split(' '))
+            old_tags = set(re.split('\s+', self.oldvalue))
         else:
             old_tags = set()
 
@@ -3182,8 +3182,8 @@ class BugActivityItem:
         if len(added_tags) > 0:
             return_string = "added: %s\n" % ' '.join(added_tags)
         if len(removed_tags) > 0:
-            return_string =  "%sremoved: %s" % (
-                return_string, ' '.join(removed_tags))
+            return_string = (
+                return_string + "removed: %s" % ' '.join(removed_tags))
 
         # Trim any leading or trailing \ns and then convert the to
         # <br />s so they're displayed correctly.
