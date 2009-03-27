@@ -1,0 +1,73 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+  >
+<body>
+
+  <div metal:fill-slot="main">
+    <h1 tal:content="CONTEXTS/fmt:pagetitle">
+      Archive subscription for Joe Smith's private archive.
+    </h1>
+
+  <tal:activate condition="not: view/active_token">
+    <p>The administrator of the archive
+      <tal:archive_name content="context/archive/displayname">
+        Private PPA for Joe Smith
+      </tal:archive_name> has opened a subscription for you.
+      You now need to confirm your subscription.
+    </p>
+    <form action="" method="post">
+      <button type="submit" name="activate" value="1">
+       Confirm subscription
+      </button>
+    </form>
+  </tal:activate>
+  <tal:active condition="view/active_token">
+    <div id="sources_list">
+      <h2>Custom sources.list entries</h2>
+      <p>To access the archive
+        <tal:archive_name content="context/archive/displayname">
+          Private PPA for Joe Smith
+        </tal:archive_name>.
+         you need to copy these lines into a file such as:</p>
+      <pre>/etc/apt/sources.list.d/private_ppa_sources.list</pre>
+      <p>See our guide to
+        <a href="https://help.launchpad.net/Packaging/InstallingFromAPrivatePPA">installing
+        software from a private archive</a> for more detailed instructions.
+      </p>
+      <pre id="sources-list-entries" tal:content="view/private_ppa_sources_list" />
+      <p style="clear:both">Next you need to follow these instructions to
+         <a href="https://help.launchpad.net/Packaging/PPA#keys">
+           add this archives security key to your computer
+         </a>.
+      </p>
+    </div>
+    <div id="regenerate_token">
+      <h2>Password security</h2>
+      <p>If you believe the security of your password for this subscription
+         has been compromised, you can generate a new one. After you've
+         requested a new password, you'll see new "sources.list" entries
+         on this page. You'll need to update them on your computer.
+      </p>
+      <p>Note: after requesting a new password for your personal
+         subscription &mdash; and updating your sources.list with the new
+         entries &mdash; you may need to wait for up to ten minutes before
+         you can download using the new password.
+      </p>
+      <form action="" method="post">
+        <button type="submit" name="regenerate" value="1">
+          Generate new password
+        </button>
+      </form>
+    </div>
+  </tal:active>
+  </div>
+</body>
+</html>
