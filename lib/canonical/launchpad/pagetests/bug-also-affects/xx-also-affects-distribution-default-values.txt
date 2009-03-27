@@ -10,11 +10,11 @@ first source package found in the "Affects" list.
 
     >>> from canonical.launchpad.ftests.bug import print_bug_affects_table
     >>> print_bug_affects_table(user_browser.contents)
-    Tomcat                      New         Low         Edit
+    Tomcat                      New         Low
     Ubuntu                      Status tracked in Hoary
-    Hoary                       New         Undecided   Edit
-    mozilla-firefox (Debian)    Confirmed   Low         Sample Person Edit
-    Woody                       New         Medium      Edit
+    Hoary                       New         Undecided
+    mozilla-firefox (Debian)    Confirmed   Low         Sample Person
+    Woody                       New         Medium
 
     >>> user_browser.getLink(url='+distrotask').click()
     >>> user_browser.url
