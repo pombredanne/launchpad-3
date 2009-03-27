@@ -1145,7 +1145,7 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 a.official-tag { /* Looks just like a normal link */ }
 
 a.unofficial-tag {
-  color: #333;
+  color: #6699ee;
 }
 
 /* === Portlets === */
