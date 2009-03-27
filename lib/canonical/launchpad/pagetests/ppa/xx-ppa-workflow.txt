@@ -16,8 +16,8 @@ menu.
    Personal package archives
    PPA for Celso Providelo
 
-Since Celso's PPA is already activated in sampledata, the 'Personal
-Package Archive' menu item takes you to his archive.
+Since Celso's PPA is already activated in sampledata, there is a link
+in the body page that takes him to his archive.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
@@ -59,7 +59,7 @@ error with a proper message:
     There is 1 error.
     PPA Terms of Service must be accepted to activate a PPA.
 
-In order to 'activate' a PPA the user must acknowlege the PPA-ToS.
+In order to 'activate' a PPA the user must acknowledge the PPA-ToS.
 
     >>> sample_browser.getControl(name="field.accepted").value = True
     >>> sample_browser.getControl(name="field.description").value = (
@@ -71,7 +71,7 @@ A successful activation redirects to the PPA page
     >>> print sample_browser.title
     PPA for Sample Person
 
-Where Sample person user can view for the submitted description.
+Where Sample person user can see the description previously entered.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
@@ -100,7 +100,7 @@ The PPA owner is able to edit PPA 'description' and 'whiteboard':
 
     >>> sample_browser.getControl("Save").click()
 
-After comfirming the changes Sample Person is sent to the the PPA page
+After confirming the changes Sample Person is sent to the PPA page
 where he can see the updated information.
 
     >>> print sample_browser.title
@@ -438,6 +438,7 @@ and the rendered form contains the 'name' field.
     ...     print error
     There is 1 error.
     The default PPA is already activated.
+    Please specify a name for the new PPA and resubmit the form.
 
     >>> browser2.getControl(name="field.name").value
     ''
@@ -445,7 +446,7 @@ and the rendered form contains the 'name' field.
 
 == Activating a named PPA ==
 
-User who already have a PPA may as well activate a second one.
+Users who already have a PPA may as well activate a second one.
 
 That's the case for Celso.
 
@@ -514,7 +515,7 @@ including the distribution name automatically.
     Archives cannot have the same name as its distribution.
 
 Providing a new name, 'edge', Celso can create a new PPA and it
-immediatilly sent to it.
+immediately sent to it.
 
     >>> cprov_browser.getControl(name="field.name").value = 'edge'
     >>> cprov_browser.getControl(name="field.accepted").value = True
