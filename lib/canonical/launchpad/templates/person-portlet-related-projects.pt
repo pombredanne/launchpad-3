@@ -12,24 +12,29 @@
   <table tal:define="pillarnames view/first_five_related_projects">
     <tbody>
       <tr tal:repeat="pillarname pillarnames">
-        <td class="icon left">
+        <td class="icon left" style="padding-right: 3px">
           <img alt="" tal:replace="structure pillarname/pillar/image:icon" />
         </td>
         <td>
-          <div>
-            <a tal:attributes="href string:/${pillarname/pillar/name}"
-            tal:content="pillarname/pillar/title">Pillar title</a>
-          </div>
+          <a tal:attributes="href string:/${pillarname/pillar/name}"
+          tal:content="pillarname/pillar/title">Pillar title</a>
         </td>
       </tr>
     </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2"  style="padding-top: .5em;">
+          <a href="+projects"
+          tal:condition="view/has_more_related_projects">
+            &raquo; show all
+            <tal:count content="view/related_projects_count">8</tal:count>
+            related projects</a>
+          <a href="+projects"
+            tal:condition="not: view/has_more_related_projects">
+            &raquo; Show related projects</a>
+        </td>
+      </tr>
+    </tfoot>
   </table>
-  <p>
-    <a href="+projects">
-      &raquo; show all projects
-      <tal:person replace="context/title">Foo Bar</tal:person> is involved
-      with
-    </a>
-  </p>
 </div>
 </tal:root>

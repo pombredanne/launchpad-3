@@ -1280,6 +1280,12 @@ ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
+/* --- A list with icons instead of bullets --- */
+ul.iconed {
+  list-style-type: none;
+  padding-left: 0 !important;
+  margin: 0 !important;
+}
 /* == Application-specific styles == */
 
 #application-footer strong {font-weight: normal;}
