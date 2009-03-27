@@ -72,7 +72,7 @@ with a message:
 
     >>> main_content = find_main_content(cprov_browser.contents)
     >>> print extract_text(main_content.find('h1'))
-    Manage subscriptions for Private PPA for Celso Providelo
+    Manage subscriptions for PPA for Celso Providelo
 
     >>> print extract_text(find_tag_by_id(cprov_browser.contents,
     ...     'no-subscribers'))
@@ -155,6 +155,6 @@ listed in the current subscriptions area:
     ...                               'archive-subscription-row'):
     ...     print extract_text(row)
     Archive                            Subscription description  Status
-    Private PPA for Mark Shuttleworth  Joe is also my friend     Pending
-    Private PPA for Celso Providelo    Joe is my friend          Pending
+    PPA for Mark Shuttleworth  Joe is also my friend     Pending
+    PPA for Celso Providelo    Joe is my friend          Pending
 

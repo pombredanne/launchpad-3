@@ -30,7 +30,6 @@ from operator import attrgetter
 
 from zope.event import notify
 from zope.component import getUtility
-from zope.app.form.browser.add import AddView
 from zope.formlib import form
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -59,8 +58,8 @@ from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
     ILaunchBag, IShipItApplication, UnexpectedFormData)
-from canonical.launchpad.interfaces.openidserver import (
-    ILaunchpadOpenIDStoreFactory)
+from canonical.launchpad.interfaces.openidconsumer import (
+    IOpenIDConsumerStoreFactory)
 from canonical.launchpad.interfaces.shipit import (
     IShipitAccount, IShipItReportSet, IShipItSurveySet, IShippingRequestAdmin,
     IShippingRequestEdit, IShippingRequestSet, IShippingRequestUser,
@@ -76,6 +75,13 @@ class ShipItUnauthorizedView(SystemErrorView):
 
     response_code = 403
     forbidden_page = ViewPageTemplateFile('../templates/shipit-forbidden.pt')
+
+    # XXX: salgado, 2009-03-25: This should not be necessary as it's provided
+    # by LaunchpadView, but SystemErrorView hasn't been made into a
+    # LaunchpadView yet, so we define the 'account' property here.
+    @property
+    def account(self):
+        return getUtility(ILaunchBag).account
 
     def __call__(self):
         # Users should always go to shipit.ubuntu.com and login before
@@ -133,7 +139,7 @@ class BaseLoginView(LaunchpadView):
 
     def _getConsumer(self):
         session = ISession(self.request)[self._openid_session_ns]
-        store = getUtility(ILaunchpadOpenIDStoreFactory)()
+        store = getUtility(IOpenIDConsumerStoreFactory)()
         return Consumer(session, store)
 
     def _redirect(self):
@@ -711,7 +717,7 @@ class _SelectMenuOption:
         self.is_selected = is_selected
 
 
-class ShippingRequestsView:
+class ShippingRequestsView(LaunchpadView):
     """The view to list ShippingRequests that match a given criteria."""
 
     submitted = False
@@ -811,7 +817,7 @@ class ShippingRequestsView:
         return BatchNavigator(results, self.request)
 
 
-class StandardShipItRequestsView:
+class StandardShipItRequestsView(LaunchpadView):
     """The view for the list of all StandardShipItRequests."""
 
     def processForm(self):
@@ -824,13 +830,16 @@ class StandardShipItRequestsView:
                 getUtility(IStandardShipItRequestSet).get(id).destroySelf()
 
 
-class StandardShipItRequestAddView(AddView):
+class StandardShipItRequestAddView(LaunchpadFormView):
     """The view to add a new Standard ShipIt Request."""
 
-    def nextURL(self):
-        return '.'
+    schema = IStandardShipItRequest
+    field_names = ["flavour", "quantityx86", "quantityamd64",
+                   "user_description", "isdefault"]
+    label = "Create a new standard option"
 
-    def createAndAdd(self, data):
+    @action(_("Add"), name="add")
+    def action_add(self, action, data):
         flavour = data.get('flavour')
         quantityx86 = data.get('quantityx86')
         quantityamd64 = data.get('quantityamd64')
@@ -1200,7 +1209,7 @@ class ShipItReportsView(LaunchpadView):
         return getUtility(IShipItReportSet).getAll()
 
 
-class ShipItExportsView:
+class ShipItExportsView(LaunchpadView):
     """The view for the list of shipit exports."""
 
     def process_form(self):

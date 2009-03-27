@@ -554,7 +554,7 @@ broken package.
 James uses the 'delete-packages' interface in his PPA to delete the
 'pmount' source in hoary.
 
-    >>> jblack_browser.getLink('default PPA').click()
+    >>> jblack_browser.getLink('PPA').click()
     >>> jblack_browser.getLink('Delete packages').click()
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -565,7 +565,7 @@ James uses the 'delete-packages' interface in his PPA to delete the
 James return to his PPA overview page and checks that the package is
 really deleted.
 
-    >>> jblack_browser.getLink('default PPA').click()
+    >>> jblack_browser.getLink('PPA').click()
     >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
     >>> jblack_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(jblack_browser.contents)

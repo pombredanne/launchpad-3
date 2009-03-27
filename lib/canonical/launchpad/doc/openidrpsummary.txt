@@ -3,6 +3,11 @@
 The summary of the interaction between an `Account` and an OpenID
 Relying Party is represented by the OpenIDRPSummary object.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.dbpolicy import SSODatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> getUtility(IStoreSelector).push(SSODatabasePolicy())
+
 
 == IOpenIDRPSummarySet ==
 
@@ -10,7 +15,6 @@ The OpenIDRPSummarySet object manages the OpenIDRPSummary objects.
 It implements the IOpenIDRPSummarySet interface to retrieve and create
 OpenIDRPSummary objects.
 
-    >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...      IOpenIDRPSummarySet)
@@ -66,6 +70,8 @@ IOpenIDRPConfig entry.
 
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPConfigSet)
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> shop = getUtility(IOpenIDRPConfigSet).new(
     ...     'https://shop.canonical.com/', 'The Shop', 'For our fans.')
     >>> transaction.commit()
@@ -75,6 +81,7 @@ IOpenIDRPConfig entry.
     No Privileges Person
       identifier: http://openid.launchpad.dev/+id/no-priv_oid
       trust_root: http://moodle.org
+    >>> db_policy = getUtility(IStoreSelector).pop()
 
 
 == IOpenIDRPSummary ==
@@ -278,3 +285,6 @@ database does not have a constraint to guard against this.
      ...
     AssertionError: More than 1 account has the OpenID identifier of
                     http://openid.launchpad.dev/+id/knightsOfNi.
+
+    >>> db_policy = getUtility(IStoreSelector).pop()
+

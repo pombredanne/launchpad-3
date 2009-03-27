@@ -34,7 +34,6 @@ from zope.interface import implements
 from zope.interface.advice import addClassAdvisor
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.security.checker import ProxyFactory, NamesChecker
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
@@ -48,6 +47,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot, IOpenLaunchBag, IStructuredString, NoCanonicalUrl,
     NotFoundError)
 from canonical.launchpad.webapp.url import urlappend
+from canonical.lazr.utils import get_current_browser_request
 
 
 class DecoratorAdvisor:
@@ -547,27 +547,6 @@ def canonical_name(name):
 
     """
     return name.lower()
-
-
-def get_current_browser_request():
-    """Return the current browser request, looked up from the interaction.
-
-    If there is no suitable request, then return None.
-
-    Returns only requests that provide IHTTPApplicationRequest.
-    """
-    interaction = zope.security.management.queryInteraction()
-    requests = [
-        participation
-        for participation in interaction.participations
-        if IHTTPApplicationRequest.providedBy(participation)
-        ]
-    if not requests:
-        return None
-    assert len(requests) == 1, (
-        "We expect only one IHTTPApplicationRequest in the interaction."
-        " Got %s." % len(requests))
-    return requests[0]
 
 
 def nearest(obj, *interfaces):

@@ -10,6 +10,7 @@ __all__ = [
     'IProductSeriesEditRestricted',
     'IProductSeriesPublic',
     'IProductSeriesSet',
+    'NoSuchProductSeries',
     ]
 
 from zope.schema import Choice, Datetime, Int, Text, TextLine
@@ -34,6 +35,7 @@ from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad import _
 
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
@@ -287,3 +289,13 @@ class IProductSeriesSet(Interface):
 
     def getSeriesForBranches(branches):
         """Return the ProductSeries associated with a branch in branches."""
+
+
+class NoSuchProductSeries(NameLookupFailed):
+    """Raised when we try to find a product that doesn't exist."""
+
+    _message_prefix = "No such product series"
+
+    def __init__(self, name, product, message=None):
+        NameLookupFailed.__init__(self, name, message)
+        self.product = product

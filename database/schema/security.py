@@ -255,7 +255,8 @@ def reset_permissions(con, config, options):
                 obj.fullname, quote_identifier(options.owner)
                 ))
 
-    # Revoke all privs
+    # Revoke all privs from known groups. Don't revoke anything for
+    # users or groups not defined in our security.cfg.
     for section_name in config.sections():
         for obj in schema.values():
             if obj.type == 'function':
@@ -263,13 +264,16 @@ def reset_permissions(con, config, options):
             else:
                 t = 'TABLE'
 
-            cur.execute('REVOKE ALL ON %s %s FROM %s%s' % (
-                t, obj.fullname, g, quote_identifier(section_name)
-                ))
-            if schema.has_key(obj.seqname):
-                cur.execute('REVOKE ALL ON SEQUENCE %s FROM %s%s' % (
-                    obj.seqname, g, quote_identifier(section_name),
-                    ))
+            roles = [quote_identifier(section_name)]
+            if section_name != 'public':
+                roles.append(quote_identifier(section_name + '_ro'))
+            for role in roles:
+                cur.execute(
+                    'REVOKE ALL ON %s %s FROM %s' % (t, obj.fullname, role))
+                if schema.has_key(obj.seqname):
+                    cur.execute(
+                        'REVOKE ALL ON SEQUENCE %s FROM %s'
+                        % (obj.seqname, role))
 
     # Set of all tables we have granted permissions on. After we have assigned
     # permissions, we can use this to determine what tables have been
