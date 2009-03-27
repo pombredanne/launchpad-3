@@ -426,6 +426,8 @@ class RosettaUploadJob(BranchJobDerived):
         """See `IRosettaUploadJobSource`."""
         if branch is None:
             return None
+        if from_revision_id is None:
+            from_revision_id = NULL_REVISION
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         productseries = store.find(
             (ProductSeries),
