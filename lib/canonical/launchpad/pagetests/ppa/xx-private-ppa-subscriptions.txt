@@ -156,7 +156,7 @@ listed in the current subscriptions area:
     ...     print extract_text(row)
     Archive                            Subscription description  Status
     Private PPA for Mark Shuttleworth  Joe is also my friend     Pending
-        Activate now
+        Confirm now
     Private PPA for Celso Providelo    Joe is my friend          Pending
-        Activate now
+        Confirm now
 
