@@ -17,7 +17,7 @@ A new ProductRelease can be created using ProductReleaseAddView.
     ...     'field.datereleased': '2007-05-11',
     ...     'field.release_notes': 'Initial release.',
     ...     'field.changelog': 'commits',
-    ...     'field.actions.publish': 'Publish release',
+    ...     'field.actions.create': 'Create release',
     ...     'field.keep_milestone_active.used': '', # false
     ...     }
     >>> login_person(owner)

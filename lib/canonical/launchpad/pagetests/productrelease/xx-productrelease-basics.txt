@@ -6,7 +6,7 @@ Firefox trunk series. No Privileges Person won't see the link to add a
 release nor can access the page directly.
 
     >>> user_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> user_browser.getLink('Publish release').click()
+    >>> user_browser.getLink('Create release').click()
     Traceback (most recent call last):
       ...
     LinkNotFoundError
@@ -21,7 +21,7 @@ release in the series.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> browser.getLink('Publish release').click()
+    >>> browser.getLink('Create release').click()
     >>> browser.url
     'http://launchpad.dev/firefox/+milestone/1.0/+addrelease'
 
@@ -31,7 +31,21 @@ release in the series.
     >>> browser.getControl('Date released').value = '2008-01-01'
     >>> browser.getControl('Release notes').value = 'Released 1.0'
     >>> browser.getControl('Changelog').value = 'Fix Foo'
-    >>> browser.getControl('Publish release').click()
+    >>> browser.getControl('Create release').click()
+    >>> browser.url
+    'http://launchpad.dev/firefox/trunk'
+
+After creating a product release on an active milestone, the user
+will be warned that the milestone has been deactivated.
+
+    >>> print get_feedback_messages(browser.contents)
+    [u'The &ldquo;1.0&rdquo; milestone for this product release was
+    deactivated so that bugs & blueprints cannot be targeted to a milestone
+    in the past.']
+
+The newly created release will be accessible via a link on the series page.
+
+    >>> browser.getLink('1.0').click()
     >>> browser.url
     'http://launchpad.dev/firefox/trunk/1.0'
     >>> print extract_text(find_tag_by_id(browser.contents, 'release_notes'))
@@ -39,13 +53,10 @@ release in the series.
     >>> print extract_text(find_tag_by_id(browser.contents, 'changelog'))
     Fix Foo
 
-After creating a product release on an active milestone, the user
-will be warned that the milestone has been deactivated.
+Only one release can be created for each milestone.
 
-    >>> print get_feedback_messages(browser.contents)
-    [u'The milestone for this product release was deactivated so that bugs
-    &amp; blueprints cannot be targeted to a milestone in the past.']
-    >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0/+addrelease')
+    >>> browser.open(
+    ...     'http://launchpad.dev/firefox/+milestone/1.0/+addrelease')
     >>> print get_feedback_messages(browser.contents)
     [u'A product release already exists for this milestone.']
 
@@ -58,7 +69,7 @@ the "Keep the milestone active" checkbox.
     >>> browser.open('http://launchpad.dev/firefox/+milestone/bar/+addrelease')
     >>> browser.getControl("Date released").value = '2009-01-01'
     >>> browser.getControl("Keep the milestone active.").selected = True
-    >>> browser.getControl('Publish release').click()
+    >>> browser.getControl('Create release').click()
     >>> print get_feedback_messages(browser.contents)
     []
     >>> browser.open('http://launchpad.dev/firefox/trunk/bar')
@@ -72,7 +83,7 @@ Now let's try to create a productrelease on a milestone that already
 has a productrelease.
 
     >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0')
-    >>> browser.getLink('Publish release').click()
+    >>> browser.getLink('Create release').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -116,12 +127,12 @@ Let's add a release as Jeff:
     >>> browser.getControl('Name').value = '0.6.6.6'
     >>> browser.getControl('Register milestone').click()
     >>> browser.getLink(url='+milestone/0.6.6.6').click()
-    >>> browser.getLink('Publish release').click()
+    >>> browser.getLink('Create release').click()
     >>> browser.getControl('Date released').value = '2008-12-01'
     >>> browser.getControl('Changelog').value = 'Fix Foo'
-    >>> browser.getControl('Publish release').click()
+    >>> browser.getControl('Create release').click()
     >>> print browser.url
-    http://launchpad.dev/tomcat/trunk/0.6.6.6
+    http://launchpad.dev/tomcat/trunk
 
 Celso is a member of ubuntu-team, so he can edit this release too:
 

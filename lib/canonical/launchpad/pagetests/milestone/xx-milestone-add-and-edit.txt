@@ -270,7 +270,7 @@ the series.
     Mozilla Firefox Series: trunk's milestones
     >>> print extract_text(find_tag_by_id(
     ...     driver_browser.contents, 'milestones'))
-    Milestone  Date Targeted  Series Target  Summary
+    Milestone  Codename Date Targeted  Series Target  Summary
     0.9.2...
     0.9.1...
     0.9...
@@ -306,6 +306,6 @@ successful.
     >>> driver_browser.getLink('See all milestones').click()
     >>> print extract_text(find_tag_by_id(
     ...     driver_browser.contents, 'milestones'))
-    Milestone  Date Targeted  Series Target  Summary
+    Milestone  Codename Date Targeted  Series Target  Summary
     0.9.1...
     0.9...

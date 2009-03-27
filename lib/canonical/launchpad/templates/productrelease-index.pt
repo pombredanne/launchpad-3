@@ -41,9 +41,9 @@
           tal:attributes="title context/datecreated/fmt:datetime"
           tal:content="context/datecreated/fmt:approximatedate" /></td>
       </tr>
-      <tr tal:condition="context/code_name">
+      <tr tal:condition="context/milestone/code_name">
         <th>Codename:</th>
-        <td tal:content="context/code_name" /></td>
+        <td tal:content="context/milestone/code_name">Elmer</td>
       </tr>
       <tr>
         <th>Project:</th>
