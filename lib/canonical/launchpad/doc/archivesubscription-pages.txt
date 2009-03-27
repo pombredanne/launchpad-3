@@ -178,7 +178,7 @@ for editing, together with Update and Cancel actions:
     ['date_expires', 'description']
     >>> for action in view.actions:
     ...     print action.label
-    Update
+    Save
     Cancel subscription
 
 The ArchiveSubscriptionEditView has a next_url helper property.

@@ -203,7 +203,7 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
                     "The expiry date must be in the future.")
 
     @action(
-        u'Update', name='update', validator="validate_update_subscription")
+        u'Save', name='update', validator="validate_update_subscription")
     def update_subscription(self, action, data):
         """Update the context subscription with the new data."""
         # As we present a date selection to the user for expiry, we
@@ -237,6 +237,11 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
     def next_url(self):
         """Calculate and return the url to which we want to redirect."""
         return canonical_url(self.context.archive) + "/+subscriptions"
+
+    @property
+    def cancel_url(self):
+        """Return the url to which we want to go to if user cancels."""
+        return self.next_url
 
 
 class PersonArchiveSubscriptionsView(LaunchpadView):
