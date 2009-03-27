@@ -24,8 +24,22 @@
             return Y.get(Y.DOM.byId(id));
         };
 
+        var error_box_html =
+            '<p id=\'milestone-error\' class=\'error message\' ' +
+            'style=\'width: 80%; display:none;' +
+                    'left: 0; right: 0; ' +
+                    'margin-left: auto; margin-right: auto; ' +
+                    'margin-top: 2em; margin-bottom: 2em\' />';
+
+        var error_box_html =
+            '<div style=\'margin: 2em\'>' +
+            '<p id=\'milestone-error\' class=\'error message\' ' +
+            'style=\'width: 80%; display:none; ' +
+                    'padding-left: 1.5em; padding-right: 1.5em\' />' +
+            '</div>';
+
         var create_form_overlay = function (id, response, args) {
-            var form_content = response.responseText;
+            var form_content = error_box_html + response.responseText;
             var form_submit_button = Y.Node.create(
                 '<button type=\'submit\' name=\'field.actions.change\' ' +
                 'value=\'Add Milestone\' >' +
@@ -43,7 +57,6 @@
         };
 
         var save_new_milestone = function (data) {
-            milestone_form.hide();
 
             var parameters = {
                 name: data['field.name'][0],
@@ -56,9 +69,13 @@
             }
 
             var add_milestone_to_menu = function(ignore) {
+                var error_box = Y.get('#milestone-error');
+                error_box.set('innerHTML', '');
+                error_box.setStyle('display', 'none');
+                milestone_form.hide();
                 var select_menu = get_by_id('field.milestone_for_release');
                 var new_milestone_option = Y.get(
-                    new Option(parameters.name, 'None'));
+                    new Option(parameters.name, parameters.name));
                 select_menu.appendChild(new_milestone_option);
                 var children = select_menu.get('children');
                 children.item(children.size()-1).set('selected', true);
@@ -72,9 +89,13 @@
                 on: {
                     success: add_milestone_to_menu,
                     failure: function (ignore, response, args) {
-                        alert(String(response.status)
-                              + ' ' + response.statusText + '\n'
-                              + response.responseText);
+                        var error_box = Y.get('#milestone-error');
+                        var error_message = '<b>' + response.statusText +
+                                            '</b><p>' +
+                                            response.responseText +
+                                            '</p>';
+                        error_box.set('innerHTML', error_message);
+                        error_box.setStyle('display', 'block');
                     }
                 }
             });
