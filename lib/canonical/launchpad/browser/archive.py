@@ -1339,13 +1339,14 @@ class ArchiveActivateView(LaunchpadFormView):
         """Override `LaunchpadFormView`.
 
         Reorder the fields in a way the make more sense to users and also
-        ommit 'name' if the user is creating his first PPA.
+        omit 'name' and present a checkbox for acknowledging the PPA-ToS
+        if the user is creating his first PPA.
         """
         LaunchpadFormView.setUpFields(self)
 
         if self.context.archive is not None:
             self.form_fields = self.form_fields.select(
-                'name', 'accepted', 'description')
+                'name', 'description')
         else:
             self.form_fields = self.form_fields.select(
                 'accepted', 'description')
@@ -1355,8 +1356,10 @@ class ArchiveActivateView(LaunchpadFormView):
         if len(self.errors) > 0:
             return
 
+        default_ppa = self.context.archive
+
         proposed_name = data.get('name')
-        if proposed_name is None and self.context.archive is not None:
+        if proposed_name is None and default_ppa is not None:
             self.addError(
                 'The default PPA is already activated. Please specify a '
                 'name for the new PPA and resubmit the form.')
@@ -1375,7 +1378,7 @@ class ArchiveActivateView(LaunchpadFormView):
                 'name',
                 "You already have a PPA named '%s'." % proposed_name)
 
-        if not data.get('accepted'):
+        if default_ppa is None and not data.get('accepted'):
             self.setFieldError(
                 'accepted',
                 "PPA Terms of Service must be accepted to activate a PPA.")
