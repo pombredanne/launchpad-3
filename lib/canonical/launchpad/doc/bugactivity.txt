@@ -223,10 +223,11 @@ know about.
     >>> activity_item = BugActivityItem(activity)
 
 The BugActivityItem offers properties that can be used to render the
-activity sensibly in an HTML interface.
+activity sensibly in an HTML interface. In most cases it just returns
+activity.whatchanged.
 
     >>> print activity_item.change_summary
-    summary changed
+    summary
 
 Summary changes are represented as unified diffs in the interface, in
 the same way as they are in notifications. To ensure they display
@@ -292,7 +293,7 @@ change_summary property a bit more readable.
     >>> activity_item = BugActivityItem(activity)
 
     >>> print activity_item.change_summary
-    malone status changed
+    malone status
 
 The change_details are expressed as a simple change.
 

@@ -3164,7 +3164,7 @@ class BugActivityItem:
         """Return a formatted summary of the change."""
         # Remove colons to make BugTask attribute changes are a little
         # more readable.
-        return "%s changed" % self.whatchanged.replace(':', '')
+        return self.whatchanged.replace(':', '')
 
     @property
     def _formatted_tags_change(self):

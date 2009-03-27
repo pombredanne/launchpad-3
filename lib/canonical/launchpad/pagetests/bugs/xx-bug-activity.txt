@@ -52,7 +52,7 @@ page.
     >>> print_comments(user_browser.contents)
     Bug Watch Updater
     on 2007-12-18
-    thunderbird status changed: Unknown &#8594; New
+    thunderbird status: Unknown &#8594; New
     --------
     No Privileges Person wrote ...
     Here's a comment for testing, like.
@@ -73,7 +73,7 @@ that have been added.
     ...
     --------
     Foo Bar ... ago
-    summary changed:
+    summary:
     - Nonsensical bugs are useless
     + A new title for this bug
     --------
@@ -92,7 +92,7 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
     ...
     --------
     Foo Bar ... ago
-    visibility changed: public  &#8594; private
+    visibility: public  &#8594; private
     --------
 
 Changes to a bug's security_related field will be displayed as 'security
@@ -110,7 +110,7 @@ vulnerability' changes, with values of 'yes' or 'no'.
     ...
     --------
     Foo Bar ... ago
-    security vulnerability changed: no  &#8594; yes
+    security vulnerability: no  &#8594; yes
     --------
 
 Changes will be grouped together if they occur at the same time.
@@ -129,8 +129,8 @@ Changes will be grouped together if they occur at the same time.
     ...
     --------
     Foo Bar ... ago
-    security vulnerability changed: yes &#8594; no
-    visibility changed: private  &#8594; public
+    security vulnerability: yes &#8594; no
+    visibility: private  &#8594; public
     --------
 
 Changes to the bug's description will be shown as a unified diff.
@@ -147,7 +147,7 @@ Changes to the bug's description will be shown as a unified diff.
     ...
     --------
     Foo Bar ... ago
-    description changed:
+    description:
     - Like this one, natch.
     + I've changed the description, isn't that excellent?
     --------
@@ -167,7 +167,7 @@ added.
     ...
     --------
     Foo Bar ... ago
-    tags changed: added: tag1 tag2 tag3
+    tags: added: tag1 tag2 tag3
     --------
 
     >>> admin_browser.open(
@@ -182,7 +182,7 @@ added.
     ...
     --------
     Foo Bar ... ago
-    tags changed: added: tag4
+    tags: added: tag4
                   removed: tag3
     --------
 
@@ -201,6 +201,6 @@ name next to them to differentiate one from another.
     ...
     --------
     Foo Bar ... ago
-    redfish importance changed: Undecided &#8594; High
-    redfish status changed: New &#8594; Confirmed
+    redfish importance: Undecided &#8594; High
+    redfish status: New &#8594; Confirmed
     --------
