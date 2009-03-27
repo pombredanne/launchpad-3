@@ -12,7 +12,7 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.layers import (
-    FeedsLayer, setFirstLayer, WebServiceLayer)
+    IdLayer, FeedsLayer, OpenIDLayer, setFirstLayer, WebServiceLayer)
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.webapp.dbpolicy import (
     BaseDatabasePolicy, LaunchpadDatabasePolicy, MasterDatabasePolicy,
@@ -203,6 +203,20 @@ class LayerDatabasePolicyTestCase(DummyConfigurationTestCase):
         setFirstLayer(request, WebServiceLayer)
         policy = IDatabasePolicy(request)
         self.assertIsInstance(policy, MasterDatabasePolicy)
+
+    def test_OpenIDLayer_uses_SSODatabasePolicy(self):
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://openid.launchpad.dev/+openid')
+        setFirstLayer(request, OpenIDLayer)
+        policy = IDatabasePolicy(request)
+        self.assertIsInstance(policy, SSODatabasePolicy)
+
+    def test_IdLayer_uses_SSODatabasePolicy(self):
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://openid.launchpad.dev/+openid')
+        setFirstLayer(request, IdLayer)
+        policy = IDatabasePolicy(request)
+        self.assertIsInstance(policy, SSODatabasePolicy)
 
     def test_other_request_uses_LaunchpadDatabasePolicy(self):
         """By default, requests should use the LaunchpadDatabasePolicy."""

@@ -124,6 +124,8 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.archive import traverse_named_ppa
+from canonical.launchpad.browser.archivesubscription import (
+    traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
@@ -391,6 +393,12 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         if irc_nick is None or irc_nick.person != self.context:
             return None
         return irc_nick
+
+    @stepthrough('+archivesubscriptions')
+    def traverse_archive_subscription(self, archive_id):
+        """Traverse to the archive subscription for this person."""
+        return traverse_archive_subscription_for_subscriber(
+            self.context, archive_id)
 
 
 class TeamNavigation(PersonNavigation):
@@ -988,12 +996,21 @@ class IPersonRelatedSoftwareMenu(Interface):
     """A marker interface for the 'Related Software' navigation menu."""
 
 
-class PersonOverviewNavigationMenu(NavigationMenu):
+class PPANavigationMenuMixIn:
+    """PPA-related navigation menu links for Person and Team pages."""
+
+    def ppas(self):
+        target = '#ppas'
+        text = 'Personal Package Archives'
+        return Link(target, text)
+
+
+class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
     """The top-level menu of actions a Person may take."""
 
     usedfor = IPerson
     facet = 'overview'
-    links = ('profile', 'related_software', 'karma')
+    links = ('profile', 'related_software', 'karma', 'ppas')
 
     def __init__(self, context):
         context = IPerson(context)
@@ -1221,12 +1238,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewNavigationMenu(NavigationMenu):
+class TeamOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
     """A top-level menu for navigation within a Team."""
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['profile', 'polls', 'members']
+    links = ['profile', 'polls', 'members', 'ppas']
 
     def profile(self):
         target = ''
@@ -3997,7 +4014,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         """Create a field for each mailing list auto-subscription option."""
         return FormFields(
             Choice(__name__='mailing_list_auto_subscribe_policy',
-                   title=_('When should launchpad automatically subscribe '
+                   title=_('When should Launchpad automatically subscribe '
                            'you to a team&#x2019;s mailing list?'),
                    source=MailingListAutoSubscribePolicy))
 

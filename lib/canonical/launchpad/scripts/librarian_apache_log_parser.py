@@ -59,8 +59,8 @@ def get_files_to_parse(root, file_names):
 def parse_file(fd, start_position):
     """Parse the given file starting on the given position.
 
-    Return a dictionary mapping days to countries to file_ids (from the
-    librarian) to number of downloads.
+    Return a dictionary mapping file_ids (from the librarian) to days to
+    countries to number of downloads.
     """
     # Seek file to given position, read all lines.
     fd.seek(start_position)
@@ -88,24 +88,24 @@ def parse_file(fd, start_position):
             # We're only interested in counting downloads.
             continue
 
-        # Get the dict containing these day's downloads.
+        # Get the dict containing these file's downloads.
+        if file_id not in downloads:
+            downloads[file_id] = {}
+        file_downloads = downloads[file_id]
+
+        # Get the dict containing these day's downloads for this file.
         day = get_day(date)
-        if day not in downloads:
-            downloads[day] = {}
-        daily_downloads = downloads[day]
+        if day not in file_downloads:
+            file_downloads[day] = {}
+        daily_downloads = file_downloads[day]
 
         country_code = None
         geoip_record = geoip.getRecordByAddress(host)
         if geoip_record is not None:
             country_code = geoip_record['country_code']
-        # Get the dict containing these country's downloads for this day.
         if country_code not in daily_downloads:
-            daily_downloads[country_code] = {}
-        country_daily_downloads = daily_downloads[country_code]
-
-        if file_id not in country_daily_downloads:
-            country_daily_downloads[file_id] = 0
-        country_daily_downloads[file_id] += 1
+            daily_downloads[country_code] = 0
+        daily_downloads[country_code] += 1
 
     return downloads, parsed_bytes
 

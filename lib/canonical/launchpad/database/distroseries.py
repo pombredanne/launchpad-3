@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes for a distribution series."""
@@ -1696,6 +1696,26 @@ class DistroSeriesSet:
     def findByVersion(self, version):
         """See `IDistroSeriesSet`."""
         return DistroSeries.selectBy(version=version)
+
+    def _parseSuite(self, suite):
+        """Parse 'suite' into a series name and a pocket."""
+        tokens = suite.rsplit('-', 1)
+        if len(tokens) == 1:
+            return suite, PackagePublishingPocket.RELEASE
+        series, pocket = tokens
+        try:
+            pocket = PackagePublishingPocket.items[pocket.upper()]
+        except KeyError:
+            # No such pocket. Probably trying to get a hyphenated series name.
+            return suite, PackagePublishingPocket.RELEASE
+        else:
+            return series, pocket
+
+    def fromSuite(self, distribution, suite):
+        """See `IDistroSeriesSet`."""
+        series_name, pocket = self._parseSuite(suite)
+        series = distribution.getSeries(series_name)
+        return series, pocket
 
     def search(self, distribution=None, isreleased=None, orderBy=None):
         """See `IDistroSeriesSet`."""
