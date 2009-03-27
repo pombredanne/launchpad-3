@@ -1,4 +1,6 @@
-= Binary Package Publishing =
+=========================
+Binary Package Publishing
+=========================
 
 Binary package publishing details are available via a custom operation on
 archives, getPublishedBinaries().
@@ -18,7 +20,7 @@ archives, getPublishedBinaries().
     pmount 0.1-1 in warty hppa
     pmount 0.1-1 in warty i386
 
-getPublishedSources() can accept some optional filtering paramters to reduce
+getPublishedBinaries() can accept some optional filtering paramters to reduce
 the number of returned publications.
 
 Search by name and version using an exact match:
@@ -84,6 +86,10 @@ Each binary publication exposes a number of properties:
     self_link: u'http://.../~cprov/+archive/ppa/+binarypub/30'
     status: u'Published'
 
+
+Security
+========
+
 When Celso's PPA becomes private ...
 
     >>> login("foo.bar@canonical.com")
@@ -116,4 +122,12 @@ Any other user attempt would result in a 401 error.
     HTTP/1.1 401 Unauthorized
     ...
 
+If the user attempts to access the publication URL directly they will
+also fail in their quest.
+
+    >>> private_publication_url = pubs['entries'][0]['self_link']
+    >>> response = user_webservice.get(private_publication_url)
+    >>> print response.getOutput()
+    HTTP/1.1 401 Unauthorized
+    ...
 

@@ -184,6 +184,13 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
     @stepthrough('+sourcepub')
     def traverse_sourcepub(self, name):
+        return self._traverse_publication(name, source=True)
+
+    @stepthrough('+binarypub')
+    def traverse_binarypub(self, name):
+        return self._traverse_publication(name, source=False)
+
+    def _traverse_publication(self, name, source):
         try:
             pub_id = int(name)
         except ValueError:
@@ -192,7 +199,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         # The ID is not enough on its own to identify the publication,
         # we need to make sure it matches the context archive as well.
         results = getUtility(IPublishingSet).getByIdAndArchive(
-            pub_id, self.context)
+            pub_id, self.context, source)
         if results.count() == 1:
             return results[0]
 

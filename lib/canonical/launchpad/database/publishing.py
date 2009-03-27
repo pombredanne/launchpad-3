@@ -993,12 +993,16 @@ class PublishingSet:
 
         return result_set
 
-    def getByIdAndArchive(self, id, archive):
+    def getByIdAndArchive(self, id, archive, source=True):
         """See `IPublishingSet`."""
+        if source:
+            baselass = SourcePackagePublishingHistory
+        else:
+            baseclass = BinaryPackagePublishingHistory
         return Store.of(archive).find(
-            SourcePackagePublishingHistory,
-            SourcePackagePublishingHistory.id == id,
-            SourcePackagePublishingHistory.archive == archive.id)
+            baseclass,
+            baseclass.id == id,
+            baseclass.archive == archive.id)
 
     def _extractIDs(self, one_or_more_source_publications):
         """Return a list of database IDs for the given list or single object.
