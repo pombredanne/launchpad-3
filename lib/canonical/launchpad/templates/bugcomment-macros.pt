@@ -146,7 +146,7 @@
       <table>
         <tr tal:repeat="activity activity_list">
           <td style="text-align: right;">
-            <b><tal:summary replace="structure activity/change_summary" /></b>:
+            <b><tal:summary replace="activity/change_summary" /></b>:
           </td>
           <td>
             <tal:details replace="structure activity/change_details" />
