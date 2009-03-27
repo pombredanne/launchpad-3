@@ -27,7 +27,8 @@ class InlineEditorWidgetTest:
         """
         self.url = url
         if name is None:
-            self.__name__ = 'test_%s_inline_edit' % widget_id.replace('-', '_')
+            self.__name__ = ('test_%s_inline_edit'
+                             % widget_id.replace('-', '_'))
         else:
             self.__name__ = name
         self.widget_id = widget_id
