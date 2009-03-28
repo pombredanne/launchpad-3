@@ -23,33 +23,25 @@
     <a href="https://help.launchpad.net/Packaging/PPA">PPA help page</a>.
   </p>
 
+  <div tal:condition="context/ppas" id="ppas"
+       style="padding-top: .3em; padding-bottom: .3em;">
+    <h2>Existing PPAs</h2>
+    <div tal:replace="structure context/@@+ppas-list"/>
+  </div>
+
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info">
        <p>
          Read the current version of
          <a href="https://help.launchpad.net/PPATermsofUse">PPA Terms of
-         Use</a> before activating your PPA.
+         Use</a> before activating a new PPA.
        </p>
     </div>
 
-    <div class="form" metal:fill-slot="widgets">
-
-      <div tal:define="widget nocall:view/widgets/accepted|nothing"
-           tal:condition="widget" style="padding-bottom: 1em">
-        <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-      </div>
-
-      <div tal:define="widget nocall:view/widgets/description|nothing"
-           tal:condition="widget">
-         <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-      </div>
-
-   </div>
-
   <div class="actions" metal:fill-slot="buttons">
-    <input tal:replace="structure view/actions/field.actions.cancel/render" />
     <input tal:replace="structure view/actions/field.actions.activate/render" />
+    or <a tal:attributes="href context/fmt:url">Cancel</a>
   </div>
 
   </div>

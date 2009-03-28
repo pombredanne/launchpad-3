@@ -869,8 +869,7 @@ class CommonMenuLinks:
         text = 'Create a new PPA'
         summary = ('Acknowledge terms of service for Launchpad Personal '
                    'Package Archive and create a new PPA.')
-        enabled = not bool(self.context.archive)
-        return Link(target, text, summary, icon='add', enabled=enabled)
+        return Link(target, text, summary, icon='add')
 
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
