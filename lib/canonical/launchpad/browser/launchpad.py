@@ -75,6 +75,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.malone import IMaloneApplication
 from canonical.launchpad.interfaces.mentoringoffer import IMentoringOfferSet
+from canonical.launchpad.interfaces.openidserver import IOpenIDRPConfigSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProductSet
@@ -645,6 +646,7 @@ class LaunchpadRootNavigation(Navigation):
         '+groups': ITranslationGroupSet,
         'translations': IRosettaApplication,
         'questions': IQuestionSet,
+        '+rpconfig': IOpenIDRPConfigSet,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,

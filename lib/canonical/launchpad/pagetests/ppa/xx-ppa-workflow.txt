@@ -7,8 +7,8 @@ Personal Package Archives have to be activated before they can be
 accessed, in this section we will cover the activation procedure for
 an user-PPA by its own user.
 
-A person's Personal Package Archive is accessible from the navigation
-menu.
+A section named 'Personal Package Archives' is presented in the
+user/team page.
 
    >>> anon_browser.open("http://launchpad.dev/~cprov")
 
@@ -16,19 +16,14 @@ menu.
    Personal package archives
    PPA for Celso Providelo
 
-Since Celso's PPA is already activated in sampledata, there is a link
-in the body page that takes him to his archive.
+There is a link in the body page pointing to Celso's PPA.
 
-    >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
-    >>> cprov_browser.open("http://launchpad.dev/~cprov")
+    >>> anon_browser.getLink("PPA for Celso Providelo").click()
 
-    >>> cprov_browser.getLink("PPA for Celso Providelo").click()
-
-    >>> print cprov_browser.title
+    >>> print anon_browser.title
     PPA for Celso Providelo
 
-On the other hand Sample Person hasn't activated his PPA yet, so he
+On the other hand, Sample Person hasn't activated his PPA yet, so he
 can quickly activate one via the link in his PPA section.
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
@@ -138,6 +133,8 @@ When 'description' or 'whiteboard' are empty they are omitted in the page.
 Similarly to the user PPAs activation, team PPAs can be activated by
 anyone with 'launchpad.Edit' permission in the team in question:
 
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
 
     >>> print_tag_with_id(cprov_browser.contents, 'ppas')

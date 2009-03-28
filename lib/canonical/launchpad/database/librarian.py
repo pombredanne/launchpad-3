@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
-from storm.locals import Date, Int, Reference, Storm, Unicode
+from storm.locals import Date, Int, Reference, Storm, Store, Unicode
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -65,6 +65,7 @@ class LibraryFileAlias(SQLBase):
     expires = UtcDateTimeCol(notNull=False, default=None)
     restricted = BoolCol(notNull=True, default=False)
     last_accessed = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    hits = IntCol(notNull=True, default=0)
 
     products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
                            otherColumn='productrelease',
@@ -154,6 +155,19 @@ class LibraryFileAlias(SQLBase):
         if self.last_accessed + precision < now:
             self.last_accessed = UTC_NOW
 
+    def updateDownloadCount(self, day, country, count):
+        """See ILibraryFileAlias."""
+        store = Store.of(self)
+        entry = store.find(
+            LibraryFileDownloadCount, libraryfilealias=self,
+            day=day, country=country).one()
+        if entry is None:
+            entry = LibraryFileDownloadCount(
+                libraryfilealias=self, day=day, country=country, count=count)
+        else:
+            entry.count += count
+        self.hits += count
+
     products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
                            otherColumn='productrelease',
                            intermediateTable='ProductReleaseFile')
@@ -200,7 +214,7 @@ class LibraryFileAliasSet(object):
             """ % sha1, clauseTables=['LibraryFileContent'])
 
 
-class LibraryFileDownloadCount(Storm):
+class LibraryFileDownloadCount(SQLBase):
     """See `ILibraryFileDownloadCount`"""
 
     implements(ILibraryFileDownloadCount)
@@ -209,7 +223,7 @@ class LibraryFileDownloadCount(Storm):
     id = Int(primary=True)
     libraryfilealias_id = Int(name='libraryfilealias', allow_none=False)
     libraryfilealias = Reference(libraryfilealias_id, 'LibraryFileAlias.id')
-    day = Date(allow_none=False, tzinfo=pytz.UTC)
+    day = Date(allow_none=False)
     count = Int(allow_none=False)
     country_id = Int(name='country', allow_none=True)
     country = Reference(country_id, 'Country.id')

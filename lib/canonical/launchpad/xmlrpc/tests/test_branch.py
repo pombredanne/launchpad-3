@@ -11,10 +11,14 @@ import os
 import unittest
 import xmlrpclib
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.interfaces.branchlookup import (
+    ISourcePackagePocketFactory)
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.testing import TestCaseWithFactory
 from lazr.uri import URI
 from canonical.launchpad.xmlrpc.branch import PublicCodehostingAPI
@@ -184,7 +188,11 @@ class TestExpandURL(TestCaseWithFactory):
         # Return a NoLinkedBranch fault if there's no linked branch for the
         # sourcepackage.
         package = self.factory.makeSourcePackage()
-        self.assertFault(package.path, faults.NoLinkedBranch(package))
+        pocket = PackagePublishingPocket.RELEASE
+        sourcepackagepocket = getUtility(ISourcePackagePocketFactory).new(
+            package, pocket)
+        self.assertFault(
+            package.path, faults.NoLinkedBranch(sourcepackagepocket))
 
     def test_branch(self):
         # The unique name of a branch resolves to the unique name of the

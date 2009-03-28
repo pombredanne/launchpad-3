@@ -29,6 +29,29 @@ from canonical.launchpad.testing import (
 from canonical.testing import DatabaseFunctionalLayer
 
 
+class TestRevisionCreationDate(TestCaseWithFactory):
+    """Test that RevisionSet.new won't create revisions with future dates."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_new_past_revision_date(self):
+        # A revision created with a revision date in the past works fine.
+        past_date = datetime(2009, 1, 1, tzinfo=pytz.UTC)
+        revision = RevisionSet().new(
+            'rev_id', 'log body', past_date, 'author', [], {})
+        self.assertEqual(past_date, revision.revision_date)
+
+    def test_new_future_revision_date(self):
+        # A revision with a future date gets the revision date set to
+        # date_created.
+        now = datetime.now(pytz.UTC)
+        future_date = now + timedelta(days=1)
+        revision = RevisionSet().new(
+            'rev_id', 'log body', future_date, 'author', [], {})
+        self.assertEqual(revision.date_created, revision.revision_date)
+        self.assertTrue(revision.revision_date <= now)
+
+
 class TestRevisionKarma(TestCaseWithFactory):
     """Test the allocation of karma for revisions."""
 
@@ -320,8 +343,8 @@ class RevisionTestMixin:
         self.assertEqual([], self._getRevisions())
 
     def testRevisionDateRange(self):
-        # Revisions where the revision_date is older than the day_limit, or
-        # some time in the future are not returned.
+        # Revisions where the revision_date is older than the day_limit are
+        # not returned.
         now = datetime.now(pytz.UTC)
         day_limit = 5
         # Make the first revision earlier than our day limit.
@@ -330,10 +353,7 @@ class RevisionTestMixin:
         # The second one is just two days ago.
         rev2 = self._makeRevision(
             revision_date=(now - timedelta(days=2)))
-        # The third is in the future
-        rev3 = self._makeRevision(
-            revision_date=(now + timedelta(days=2)))
-        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2, rev3)
+        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2)
         self.assertEqual([rev2],  self._getRevisions(day_limit))
 
 
@@ -468,8 +488,8 @@ class TestGetRecentRevisionsForProduct(GetPublicRevisionsTestCase):
                          self._getRecentRevisions())
 
     def testRevisionDateRange(self):
-        # Revisions where the revision_date is older than the day_limit, or
-        # some time in the future are not returned.
+        # Revisions where the revision_date is older than the day_limit are
+        # not returned.
         now = datetime.now(pytz.UTC)
         day_limit = 5
         # Make the first revision earlier than our day limit.
@@ -477,9 +497,7 @@ class TestGetRecentRevisionsForProduct(GetPublicRevisionsTestCase):
             revision_date=(now - timedelta(days=(day_limit + 2))))
         # The second one is just two days ago.
         rev2 = self._makeRevision(revision_date=(now - timedelta(days=2)))
-        # The third is in the future
-        rev3 = self._makeRevision(revision_date=(now + timedelta(days=2)))
-        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2, rev3)
+        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2)
         self.assertEqual([(rev2, rev2.revision_author)],
                          self._getRecentRevisions(day_limit))
 
