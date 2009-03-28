@@ -16,7 +16,13 @@
     YUI().use('dom', 'node', 'io-base', 'lazr.anim', 'lazr.formoverlay',
         function (Y) {
 
-        // This will be set, if the form overlay is created.
+        // This is a value for the SELECT OPTION which is passed with
+        // the SELECT's "change" event. It includes some symbols that are not
+        // allowed for milestone names, so you can never add a milestone
+        // which will confuse the event handler.
+        var CREATE_MILESTONE_TARGET = '-CREATE-MILESTONE-TARGET-!@#$';
+
+        // The milestone_form will be set, if the form overlay is created.
         var milestone_form;
         var milestone_form_uri = '<tal:x replace="view/milestone_form_uri"/>';
         var series_uri = '<tal:x replace="view/series_api_uri"/>';
@@ -106,7 +112,7 @@
         };
 
 
-        var get_milestone_form = function () {
+        var setup_milestone_form = function () {
             Y.io(milestone_form_uri, {
                 on: {
                     success: create_form_overlay,
@@ -137,24 +143,30 @@
         };
 
         var show_milestone_form = function(e) {
-            if (milestone_form) {
+            if (e.target.get('value') === CREATE_MILESTONE_TARGET) {
+                if (milestone_form) {
+                    milestone_form.show();
+                } else {
+                    // This function call is asynchronous, so we can move
+                    // milestone_form.show() below it.
+                    setup_milestone_form();
+                }
+                var select_menu = get_by_id('field.milestone_for_release');
+                select_menu.get('children').item(0).set('selected', true);
                 e.preventDefault();
-                milestone_form.show();
-            } else {
-                get_milestone_form();
             }
-            var select_menu = get_by_id('field.milestone_for_release');
-            select_menu.get('children').item(0).set('selected', true);
         };
 
         Y.on('domready', function () {
             var select_menu = get_by_id('field.milestone_for_release');
             var new_milestone_option = Y.get(
-                new Option('Create milestone...', 'None'));
-            new_milestone_option.on('click', show_milestone_form);
+                new Option('Create milestone...', CREATE_MILESTONE_TARGET));
             select_menu.insertBefore(
                 new_milestone_option,
                 select_menu.get('children').item(1));
+            // Firefox has 'click' events for SELECT OPTION elements, but
+            // Safari does not, so we use a 'change' event on the SELECT.
+            select_menu.on('change', show_milestone_form);
         });
     });
   -->
