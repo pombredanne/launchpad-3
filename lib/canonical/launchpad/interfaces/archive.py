@@ -36,7 +36,8 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import (
+    PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.gpg import IGPGKey
@@ -105,7 +106,7 @@ class IArchivePublic(IHasOwner):
             description=_("The name of this archive.")))
 
     displayname = exported(
-        TextLine(
+        StrippedTextLine(
             title=_("Displayname"), required=False,
             description=_("Displayname for this archive.")))
 
@@ -825,6 +826,10 @@ class IPPAActivateForm(Interface):
     name = TextLine(
         title=_("PPA name"), required=True,
         description=_("A unique name used to identify this PPA."))
+
+    displayname = StrippedTextLine(
+        title=_("Displayname"), required=True,
+        description=_("Displayname for this PPA."))
 
     description = Text(
         title=_("PPA contents description"), required=False,

@@ -38,16 +38,28 @@ can quickly activate one via the link in his PPA section.
     >>> print sample_browser.title
     Activate Personal Package Archive
 
-This page presents the current PPA-ToS (terms of service) with a
-mandatory checkbox ('accepted') indicating that the user has read and
-accepted the conditions and an optional 'description' text-area.
+This page presents a pointer to the current PPA-ToS (terms of service)
+with mandatory 'displayname' and checkbox ('accepted') fields. The
+former should be a free-form text that will be used as a reference to
+the PPA in Launchpad UI and the later indicating that the user has
+read and accepted the conditions. The is also an optional 'description'
+text-area.
 
-By submitting the form without checking the checkbox results in a
-error with a proper message:
+'Displayname' is required.
 
     >>> sample_browser.getControl("Activate").click()
-    >>> sample_browser.url
-    'http://launchpad.dev/%7Ename12/+activate-ppa'
+
+    >>> for error in get_feedback_messages(sample_browser.contents):
+    ...     print error
+    There is 1 error.
+    Required input is missing.
+
+By submitting the form without acknowledge the PPA-ToS results in a
+error with a specific message.
+
+    >>> sample_browser.getControl(
+    ...     name="field.displayname").value = 'Sample PPA'
+    >>> sample_browser.getControl("Activate").click()
 
     >>> for error in get_feedback_messages(sample_browser.contents):
     ...     print error
@@ -57,14 +69,14 @@ error with a proper message:
 In order to 'activate' a PPA the user must acknowledge the PPA-ToS.
 
     >>> sample_browser.getControl(name="field.accepted").value = True
-    >>> sample_browser.getControl(name="field.description").value = (
-    ...    'Hoohay for PPA.')
+    >>> sample_browser.getControl(
+    ...    name="field.description").value = 'Hoohay for PPA.'
     >>> sample_browser.getControl("Activate").click()
 
 A successful activation redirects to the PPA page
 
     >>> print sample_browser.title
-    PPA for Sample Person
+    Sample PPA
 
 Where Sample person user can see the description previously entered.
 
@@ -73,12 +85,14 @@ Where Sample person user can see the description previously entered.
     Description
     Hoohay for PPA.
 
-The PPA owner is able to edit PPA 'description'.
+The PPA owner is able to edit PPA 'displayname' and 'description'.
 
     >>> sample_browser.getLink("Change details").click()
 
-    >>> sample_browser.getControl(name="field.description").value = (
-    ...    'Howdy, cowboys !')
+    >>> sample_browser.getControl(
+    ...     name="field.displayname").value = 'Sample testing PPA'
+    >>> sample_browser.getControl(
+    ...    name="field.description").value = 'Howdy, cowboys !'
 
     >>> sample_browser.getControl("Save").click()
 
@@ -86,7 +100,7 @@ After confirming the changes Sample Person is sent to the PPA page
 where he can see the updated information.
 
     >>> print sample_browser.title
-    PPA for Sample Person
+    Sample testing PPA
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
@@ -100,7 +114,7 @@ Empty 'description' fields are not be rendered.
     >>> sample_browser.getControl("Save").click()
 
     >>> print sample_browser.title
-    PPA for Sample Person
+    Sample testing PPA
 
     >>> print find_tag_by_id(sample_browser.contents, 'description')
     None
@@ -139,13 +153,15 @@ Let's proceed with the required permissions:
     >>> print sample_browser.title
     Activate Personal Package Archive
 
+    >>> sample_browser.getControl(
+    ...     name="field.displayname").value = 'Devel PPA'
     >>> sample_browser.getControl(name="field.accepted").value = True
-    >>> sample_browser.getControl(name="field.description").value = (
-    ...    'Hoohay for Team PPA.')
+    >>> sample_browser.getControl(
+    ...    name="field.description").value = 'Hoohay for Team PPA.'
     >>> sample_browser.getControl("Activate").click()
 
     >>> print sample_browser.title
-    PPA for Landscape Developers
+    Devel PPA
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
@@ -158,14 +174,14 @@ exactly the same as for a user-PPA, see above:
     >>> sample_browser.getLink("Change details").click()
 
     >>> print sample_browser.title
-    Edit PPA for Landscape Developers
+    Edit Devel PPA
 
     >>> sample_browser.getControl(name="field.description").value = (
     ...    'Yay, I can change it.')
     >>> sample_browser.getControl("Save").click()
 
     >>> print sample_browser.title
-    PPA for Landscape Developers
+    Devel PPA
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
@@ -181,7 +197,7 @@ page and discard the changes.
     >>> sample_browser.getControl("Cancel").click()
 
     >>> print sample_browser.title
-    PPA for Landscape Developers
+    Devel PPA
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'description'))
@@ -200,13 +216,15 @@ name of other users or teams:
     Create a new PPA
 
     >>> admin_browser.getLink("Create a new PPA").click()
+    >>> admin_browser.getControl(
+    ...    name="field.displayname").value = 'Hack PPA'
     >>> admin_browser.getControl(name="field.accepted").value = True
     >>> admin_browser.getControl(name="field.description").value = (
     ...    'Go for it, you lazy !')
     >>> admin_browser.getControl("Activate").click()
 
     >>> print admin_browser.title
-    PPA for James Blackwell
+    Hack PPA
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'description'))
@@ -229,7 +247,7 @@ Package Archives.
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> print admin_browser.title
-    Administer PPA for James Blackwell
+    Administer Hack PPA
 
 Trying to shortcut the URL as a non-privileged user does not work:
 
@@ -272,7 +290,7 @@ Once confirmed the administrator is sent to the PPA page where he can
 see updated information.
 
     >>> print admin_browser.title
-    PPA for James Blackwell
+    Hack PPA
 
     >>> for msg in get_feedback_messages(admin_browser.contents):
     ...     print msg
@@ -328,13 +346,13 @@ PPA overview page and discards the changes.
     >>> admin_browser.getControl("Cancel").click()
 
     >>> print admin_browser.title
-    PPA for James Blackwell
+    Hack PPA
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl("Cancel").click()
 
     >>> print admin_browser.title
-    PPA for James Blackwell
+    Hack PPA
 
 
 == Double submission ==
@@ -354,20 +372,22 @@ Set up two browsers (waiting for bug #68655):
 Prepare the forms in both browsers to activate the default PPA for the
 user 'Foo Bar'.
 
+    >>> browser1.getControl(name="field.displayname").value = 'Boom PPA'
     >>> browser1.getControl(name="field.accepted").value = True
-    >>> browser1.getControl(name="field.description").value = (
-    ...    'PPA rocks!')
+    >>> browser1.getControl(
+    ...    name="field.description").value = 'PPA rocks!'
 
+    >>> browser2.getControl(name="field.displayname").value = 'Boom PPA'
     >>> browser2.getControl(name="field.accepted").value = True
-    >>> browser2.getControl(name="field.description").value = (
-    ...    'PPA does not explode!')
+    >>> browser2.getControl(
+    ...    name="field.description").value = 'PPA does not explode!'
 
 Activate the PPA in the first browser:
 
     >>> browser1.getControl("Activate").click()
 
     >>> print browser1.title
-    PPA for Foo Bar
+    Boom PPA
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'description'))
@@ -426,12 +446,16 @@ all his PPAs.
     ...     first_tag_by_class(cprov_browser.contents, 'form'))
     PPA name:
       A unique name used to identify this PPA.
+    Displayname:
+      Displayname for this PPA.
     PPA contents description: (Optional)
       A short description of this PPA. URLs are allowed and will be
       rendered as links.
 
 If Celso does not fill 'PPA name' an error is raised.
 
+    >>> cprov_browser.getControl(
+    ...     name="field.displayname").value = 'Edge PPA'
     >>> cprov_browser.getControl("Activate").click()
 
     >>> for error in get_feedback_messages(cprov_browser.contents):
@@ -469,7 +493,7 @@ immediately sent to it.
     >>> cprov_browser.getControl("Activate").click()
 
     >>> print cprov_browser.title
-    PPA named edge for Celso Providelo
+    Edge PPA
 
 Back to his profile page Celso and anyone can his multiple PPAs.
 
@@ -477,6 +501,6 @@ Back to his profile page Celso and anyone can his multiple PPAs.
 
     >>> print_tag_with_id(cprov_browser.contents, 'ppas')
     Personal package archives
-    PPA named edge for Celso Providelo
+    Edge PPA
     PPA for Celso Providelo
     Create a new PPA

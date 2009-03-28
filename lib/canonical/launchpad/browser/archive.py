@@ -1346,10 +1346,10 @@ class ArchiveActivateView(LaunchpadFormView):
 
         if self.context.archive is not None:
             self.form_fields = self.form_fields.select(
-                'name', 'description')
+                'name', 'displayname', 'description')
         else:
             self.form_fields = self.form_fields.select(
-                'accepted', 'description')
+                'displayname', 'accepted', 'description')
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
@@ -1399,7 +1399,8 @@ class ArchiveActivateView(LaunchpadFormView):
 
         ppa = getUtility(IArchiveSet).new(
             owner=self.context, purpose=ArchivePurpose.PPA,
-            distribution=ubuntu, name=name, description=data['description'])
+            distribution=ubuntu, name=name,
+            displayname=data['displayname'], description=data['description'])
         self.next_url = canonical_url(ppa)
 
 
@@ -1437,7 +1438,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['description']
+    field_names = ['displayname', 'description']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 
