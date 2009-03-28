@@ -304,14 +304,14 @@ For assignee changes, BugActivityItem will ensure that old or new values
 of None will be converted to the string 'nobody'.
 
     >>> activity = getUtility(IBugActivitySet).new(
-    ...     bug=bug_one, whatchanged='malone: assinee', oldvalue=None,
+    ...     bug=bug_one, whatchanged='malone: assignee', oldvalue=None,
     ...     newvalue='somebody', person=user, datechanged=nowish)
     >>> activity_item = BugActivityItem(activity)
     >>> print activity_item.change_details
     nobody &#8594; somebody
 
     >>> activity = getUtility(IBugActivitySet).new(
-    ...     bug=bug_one, whatchanged='malone: assinee',
+    ...     bug=bug_one, whatchanged='malone: assignee',
     ...     oldvalue='somebody', newvalue=None, person=user,
     ...     datechanged=nowish)
     >>> activity_item = BugActivityItem(activity)
