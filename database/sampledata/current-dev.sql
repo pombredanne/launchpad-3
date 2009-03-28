@@ -722,6 +722,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'sabdfl_oid', NULL, '123/sabdfl');
@@ -2518,6 +2524,20 @@ ALTER TABLE hwdevicenamevariant DISABLE TRIGGER ALL;
 
 
 ALTER TABLE hwdevicenamevariant ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwdmihandle DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwdmihandle ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwdmivalue DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwdmivalue ENABLE TRIGGER ALL;
 
 
 ALTER TABLE hwdriver DISABLE TRIGGER ALL;
@@ -4434,6 +4454,20 @@ ALTER TABLE openidauthorization DISABLE TRIGGER ALL;
 
 
 ALTER TABLE openidauthorization ENABLE TRIGGER ALL;
+
+
+ALTER TABLE openidconsumerassociation DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE openidconsumerassociation ENABLE TRIGGER ALL;
+
+
+ALTER TABLE openidconsumernonce DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE openidconsumernonce ENABLE TRIGGER ALL;
 
 
 ALTER TABLE openidnonce DISABLE TRIGGER ALL;
