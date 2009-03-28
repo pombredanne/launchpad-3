@@ -317,3 +317,16 @@ of None will be converted to the string 'nobody'.
     >>> activity_item = BugActivityItem(activity)
     >>> print activity_item.change_details
     somebody &#8594; nobody
+
+For changes to a bug's description, we simply return the word 'updated,'
+since such changes may be too long to be useful as a diff.
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='description',
+    ...     oldvalue='Old description', newvalue='New description',
+    ...     person=user, datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+    >>> print "%s: %s" % (
+    ...     activity_item.change_summary, activity_item.change_details)
+    description: updated
+    

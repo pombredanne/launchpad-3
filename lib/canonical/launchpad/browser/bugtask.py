@@ -3202,7 +3202,6 @@ class BugActivityItem:
     @property
     def change_details(self):
         """Return a detailed description of the change."""
-        diffable_changes = ['summary', 'description']
         assignee_regex = re.compile(
             '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: assignee')
         milestone_regex = re.compile(
@@ -3214,12 +3213,18 @@ class BugActivityItem:
             'old_value': self.oldvalue,
             'new_value': self.newvalue,
             }
-        if self.whatchanged in diffable_changes:
-            # If we're going to display it as a diff we replace \ns with
-            # <br />s so that the lines are separated properly.
+        if self.whatchanged == 'summary':
+            # We display summary changes as a unified diff, replacing
+            # \ns with <br />s so that the lines are separated properly.
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
+
+        elif self.whatchanged == 'description':
+            # Description changes can be quite long, so we just return
+            # 'updated' rather than returning the whole new description
+            # or a diff.
+            return 'updated'
 
         elif self.whatchanged == 'tags':
             # We special-case tags because we can work out what's been

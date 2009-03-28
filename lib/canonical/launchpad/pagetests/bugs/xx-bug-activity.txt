@@ -133,7 +133,8 @@ Changes will be grouped together if they occur at the same time.
     visibility: private  &#8594; public
     --------
 
-Changes to the bug's description will be shown as a unified diff.
+Changes to the bug's description will simply be displayed as 'description:
+updated', since such changes can be quite long.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
@@ -147,9 +148,7 @@ Changes to the bug's description will be shown as a unified diff.
     ...
     --------
     Foo Bar ... ago
-    description:
-    - Like this one, natch.
-    + I've changed the description, isn't that excellent?
+    description: updated
     --------
 
 Changes to the bug's tags will be show in the form tags removed or tags
