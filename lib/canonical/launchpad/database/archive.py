@@ -129,8 +129,6 @@ class Archive(SQLBase):
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=1024)
 
-    whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
-
     sources_cached = IntCol(
         dbName='sources_cached', notNull=False, default=0)
 

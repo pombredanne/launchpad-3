@@ -776,13 +776,20 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         The `BugActivityItem`s will be grouped by the date on which they
         occurred.
         """
-        interesting_changes = [
-             'security vulnerability', 'summary', 'visibility']
         activity_by_date = {}
+        interesting_changes = [
+             'description', 'security vulnerability', 'summary', 'tags',
+             'visibility']
+
+        # Turn the interesting_changes list into a regex so that we can
+        # do complex matches.
+        interesting_changes_expression = "|".join(interesting_changes)
+        interesting_changes_regex = re.compile(
+            "^(%s)$" % interesting_changes_expression)
 
         for activity in self.context.bug.activity:
             # If we're not interested in the change, skip it.
-            if activity.whatchanged not in interesting_changes:
+            if interesting_changes_regex.match(activity.whatchanged) is None:
                 continue
 
             activity = BugActivityItem(activity)
@@ -3150,9 +3157,42 @@ class BugActivityItem:
         return "%s changed" % self.whatchanged
 
     @property
+    def _formatted_tags_change(self):
+        """Return a tags change as lists of added and removed tags."""
+        assert self.whatchanged == 'tags', (
+            "Can't return a formatted tags change for a change in %s."
+            % self.whatchanged)
+
+        # Turn the strings of newvalue and oldvalue into sets so we
+        # can work out the differences.
+        if self.newvalue != '':
+            new_tags = set(re.split('\s+', self.newvalue))
+        else:
+            new_tags = set()
+
+        if self.oldvalue != '':
+            old_tags = set(re.split('\s+', self.oldvalue))
+        else:
+            old_tags = set()
+
+        added_tags = sorted(new_tags.difference(old_tags))
+        removed_tags = sorted(old_tags.difference(new_tags))
+
+        return_string = ''
+        if len(added_tags) > 0:
+            return_string = "added: %s\n" % ' '.join(added_tags)
+        if len(removed_tags) > 0:
+            return_string = (
+                return_string + "removed: %s" % ' '.join(removed_tags))
+
+        # Trim any leading or trailing \ns and then convert the to
+        # <br />s so they're displayed correctly.
+        return return_string.strip('\n')
+
+    @property
     def change_details(self):
         """Return a detailed description of the change."""
-        diffable_changes = ['summary']
+        diffable_changes = ['summary', 'description']
 
         if self.whatchanged in diffable_changes:
             # If we're going to display it as a diff we replace \ns with
@@ -3160,6 +3200,10 @@ class BugActivityItem:
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
+        elif self.whatchanged == 'tags':
+            # We special-case tags because we can work out what's been
+            # added and what's been removed.
+            return self._formatted_tags_change.replace('\n', '<br />')
         else:
             return "%s &#8594; %s" % (
                 cgi.escape(self.oldvalue), cgi.escape(self.newvalue))

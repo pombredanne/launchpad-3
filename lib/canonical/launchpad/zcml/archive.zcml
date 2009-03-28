@@ -17,7 +17,7 @@
       />
     <require
       permission="launchpad.Edit"
-      set_attributes="description whiteboard"
+      set_attributes="description"
       />
     <require
       permission="launchpad.Admin"

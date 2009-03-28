@@ -73,25 +73,12 @@ Where Sample person user can see the description previously entered.
     Description
     Hoohay for PPA.
 
-He also sees the empty 'whiteboard' section that when filled, includes
-administrator messages about operations done in this Personal Package
-Archive.
-
-    >>> find_tag_by_id(sample_browser.contents, 'whiteboard') is None
-    True
-
-Note that the 'whiteboard' section is presented as an informational
-box. Only users with 'launchpad.Edit' permission on the PPA in
-question will be able to see it, see below.
-
-The PPA owner is able to edit PPA 'description' and 'whiteboard':
+The PPA owner is able to edit PPA 'description'.
 
     >>> sample_browser.getLink("Change details").click()
 
     >>> sample_browser.getControl(name="field.description").value = (
     ...    'Howdy, cowboys !')
-    >>> sample_browser.getControl(name="field.whiteboard").value = (
-    ...    'Not here, John Wayne !')
 
     >>> sample_browser.getControl("Save").click()
 
@@ -106,25 +93,16 @@ where he can see the updated information.
     Description
     Howdy, cowboys !
 
-    >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'whiteboard'))
-    PPA whiteboard:
-    Not here, John Wayne !
-
-When 'description' or 'whiteboard' are empty they are omitted in the page.
+Empty 'description' fields are not be rendered.
 
     >>> sample_browser.getLink("Change details").click()
     >>> sample_browser.getControl(name="field.description").value = ('')
-    >>> sample_browser.getControl(name="field.whiteboard").value = ('')
     >>> sample_browser.getControl("Save").click()
 
     >>> print sample_browser.title
     PPA for Sample Person
 
     >>> print find_tag_by_id(sample_browser.contents, 'description')
-    None
-
-    >>> print find_tag_by_id(sample_browser.contents, 'whiteboard')
     None
 
 
@@ -174,7 +152,7 @@ Let's proceed with the required permissions:
     Description
     Hoohay for Team PPA.
 
-Any team administrator can 'edit' description & whiteboard contents,
+Any team administrator can edit the description contents,
 exactly the same as for a user-PPA, see above:
 
     >>> sample_browser.getLink("Change details").click()
@@ -235,9 +213,6 @@ name of other users or teams:
     Description
     Go for it, you lazy !
 
-    >>> find_tag_by_id(admin_browser.contents, 'whiteboard') is None
-    True
-
 LP-admins can also 'edit' PPAs of other people:
 
     >>> admin_browser.getLink("Change details") is not None
@@ -273,8 +248,6 @@ The administration procedure allows administrators to:
  * Set whether the archive should be built on a virtualized machine.
  * Set a maximum disk size: uploads will be rejected if the resulting
    PPA size is exceeding the authorized size. (not implemented yet)
- * Edit the whiteboard: to communicate & record administration
- decisions.
 
 In this case, the administrator may wish to amend the PPA so that it is
 set up like the ubuntu security PPA, which is private but does not
@@ -293,8 +266,6 @@ build on a virtualized builder.
     >>> admin_browser.getControl(
     ...     name="field.require_virtualized").value = False
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
-    >>> admin_browser.getControl(name="field.whiteboard").value = (
-    ...    'Here lives a lazy community.')
     >>> admin_browser.getControl("Save").click()
 
 Once confirmed the administrator is sent to the PPA page where he can
@@ -302,11 +273,6 @@ see updated information.
 
     >>> print admin_browser.title
     PPA for James Blackwell
-
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
-    PPA whiteboard:
-    Here lives a lazy community.
 
     >>> for msg in get_feedback_messages(admin_browser.contents):
     ...     print msg
@@ -356,17 +322,6 @@ will result in an error:
     There is 1 error.
     Value is too big
 
-The whiteboard section can be viewed by the PPA owner:
-
-    >>> jblack_browser = setupBrowser(
-    ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
-    >>> jblack_browser.open("http://launchpad.dev/~jblack/+archive/ppa")
-
-    >>> print extract_text(
-    ...     find_tag_by_id(jblack_browser.contents, 'whiteboard'))
-    PPA whiteboard:
-    Here lives a lazy community.
-
 Cancelled changes in the administration form redirects the user to the
 PPA overview page and discards the changes.
 
@@ -376,17 +331,10 @@ PPA overview page and discards the changes.
     PPA for James Blackwell
 
     >>> admin_browser.getLink("Administer archive").click()
-    >>> admin_browser.getControl(name="field.whiteboard").value = (
-    ...    'It should be discarded.')
     >>> admin_browser.getControl("Cancel").click()
 
     >>> print admin_browser.title
     PPA for James Blackwell
-
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
-    PPA whiteboard:
-    Here lives a lazy community.
 
 
 == Double submission ==
