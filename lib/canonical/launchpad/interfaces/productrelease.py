@@ -306,8 +306,8 @@ class IProductReleasePublic(Interface):
     milestone = exported(
         ReferenceChoice(
             title=u"The milestone for this release.",
-            description=_("A release requires a corresponding milestone, "
-                          "which is not attached to another release."),
+            description=_("A release requires a corresponding milestone "
+                          "that is not attached to another release."),
             # Schema is set to IMilestone in interfaces/milestone.py.
             schema=Interface,
             vocabulary='Milestone',
