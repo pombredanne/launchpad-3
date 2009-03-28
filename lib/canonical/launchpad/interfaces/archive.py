@@ -879,7 +879,8 @@ class IArchiveSet(Interface):
         """
 
 
-    def new(purpose, owner, name=None, distribution=None, description=None):
+    def new(purpose, owner, name=None, displayname=None, distribution=None,
+            description=None):
         """Create a new archive.
 
         :param purpose: `ArchivePurpose`;
@@ -887,6 +888,9 @@ class IArchiveSet(Interface):
         :param name: optional text to be used as the archive name, if not
             given it uses the names defined in
             `IArchiveSet._getDefaultArchiveNameForPurpose`;
+        :param displayname: optional text that will be used as a reference
+            to this archive in the UI. If not provided a default text (
+            including the archive name and the owner displayname will be used.)
         :param distribution: optional `IDistribution` to which the archive
             will be attached;
         :param description: optional text to be set as the archive

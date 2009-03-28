@@ -2334,36 +2334,33 @@ When there are not matching PPAs, None is returned.
     None
 
 
-== Transition to editable displayname ==
+== Editable displayname ==
 
-We are currently in a transition period for user-editable
-'displayname' for Archive. The 'displayname' column exists in the
-database and the existing archives were migrated.
-
-    >>> for archive in ubuntu.all_distro_archives:
-    ...     print archive.displayname
-    Primary Archive for Ubuntu Linux
-    Partner Archive for Ubuntu Linux
-
-New archives have their displayname automatically set.
-
+If 'displayname' is omitted on archive created, a default form is
+automatically used.
     >>> new_ppa = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.PPA,
     ...     distribution=ubuntu, name='test-ppa')
     >>> print new_ppa.displayname
     PPA named test-ppa for Celso Providelo
 
+When provided 'displayname' is used as given.
+
     >>> new_copy = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     displayname='Rock and roll with rebuilds!',
     ...     distribution=ubuntu, name='test-rebuild')
     >>> print new_copy.displayname
-    Copy archive test-rebuild for Celso Providelo
+    Rock and roll with rebuilds!
 
-During this transition period nobody can edit 'displayname'.
+After archive creation, the 'displayname' can be edited by the archive
+anyone with 'edit' permissions on the archive.
 
-    >>> login("foo.bar@canonical.com")
+    >>> login("no-priv@canonical.com")
     >>> new_ppa.displayname = 'No-way!'
     Traceback (most recent call last):
     ...
-    ForbiddenAttribute: ('displayname', <Archive at ...>)
+    Unauthorized: (<Archive at ...>, 'displayname', 'launchpad.Edit')
 
+    >>> login('celso.providelo@canonical.com')
+    >>> new_ppa.displayname = 'My testing packages for jaunty'
