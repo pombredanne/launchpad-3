@@ -1,70 +1,96 @@
 SET client_min_messages=ERROR;
 
------------ Create new COLUMNS  ----------------------------
-ALTER TABLE shippingrequest ADD COLUMN recipient_account integer;
-ALTER TABLE shippingrequest ADD COLUMN whoapproved_account integer;
-ALTER TABLE shippingrequest ADD COLUMN whocancelled_account integer;
-ALTER TABLE shipitsurvey ADD COLUMN account integer;
-ALTER TABLE shippingrequest 
-    ADD COLUMN is_admin_request boolean DEFAULT FALSE;
+-- ShipitSurvey needs to reference Account. No actual foreign key
+-- here because Account will be in a seperate replication set - loosely
+-- consistent. 
+ALTER TABLE ShipitSurvey DROP CONSTRAINT shipitsurvey_person_fkey;
+DROP INDEX shipitsurvey__person__idx;
+ALTER TABLE ShipitSurvey RENAME person TO account;
+UPDATE ShipitSurvey SET account=Person.account
+FROM Person
+WHERE ShipitSurvey.account = Person.id;
+CREATE INDEX shipitsurvey__account__idx ON ShipitSurvey(account);
+
+
+-- Drop unwanted index
 DROP INDEX shippingrequest_one_outstanding_request_unique;
 
+-- Drop the Person foreign key constraints. We will replace these values
+-- with links to account instead.
+ALTER TABLE ShippingRequest
+    DISABLE TRIGGER set_normalized_address,
+    DISABLE TRIGGER tsvectorupdate,
+    DROP CONSTRAINT shippingrequest_recipient_fk,
+    DROP CONSTRAINT shippingrequest_whoapproved_fk,
+    DROP CONSTRAINT shippingrequest_whocancelled_fk,
+    ADD COLUMN is_admin_request boolean;
 
------------ Populate new COLUMNS  ----------------------------
-UPDATE shippingrequest SET recipient_account = person.account
-    FROM PERSON
-    WHERE shippingrequest.recipient = person.id;
-UPDATE shippingrequest SET whoapproved_account = person.account
-    FROM PERSON
-    WHERE shippingrequest.whoapproved = person.id;
-UPDATE shippingrequest SET whocancelled_account = person.account
-    FROM PERSON
-    WHERE shippingrequest.whocancelled = person.id;
-UPDATE shipitsurvey SET account = person.account
-    FROM PERSON
-    WHERE shipitsurvey.person = person.id;
+----------- Migrate data ----------------------------
+
 -- Flag requests where the recipient is shipit-admins to be admin-made
 -- requests.
-UPDATE shippingrequest
-SET is_admin_request = TRUE
-WHERE recipient = (SELECT id FROM person WHERE name='shipit-admins');
--- Requests which had shipit-admins as the recipient will now have Marilize
--- as the recipient.  Note that recipient should probably be renamed to
--- requester, as that's what it really represents.
-UPDATE shippingrequest
-SET recipient_account = (SELECT account FROM person WHERE name = 'marilize')
-WHERE recipient = (SELECT id FROM person WHERE name='shipit-admins');
+UPDATE ShippingRequest SET
+    is_admin_request = TRUE,
+    recipient = (SELECT account FROM Person WHERE name = 'marilize')
+WHERE recipient = (SELECT id FROM Person WHERE name='shipit-admins');
 
 
------------  DROP existing COLUMNS  ----------------------------
-ALTER TABLE shippingrequest DROP COLUMN recipient;
-ALTER TABLE shippingrequest DROP COLUMN whoapproved;
-ALTER TABLE shippingrequest DROP COLUMN whocancelled;
-ALTER TABLE shipitsurvey DROP COLUMN person;
+/*
+launchpad_prod=# select count(*), whoapproved is null, whocancelled is null
+launchpad_prod-# from shippingrequest
+launchpad_prod-# group by whoapproved is null, whocancelled is null;
+  count  | ?column? | ?column? 
+---------+----------+----------
+ 2977876 | t        | t
+  163676 | f        | t
+  225091 | t        | f
+      21 | f        | f
+*/
+
+UPDATE ShippingRequest SET
+    recipient = RecipientPerson.account,
+    is_admin_request = False
+FROM
+    Person AS RecipientPerson
+WHERE
+    ShippingRequest.recipient = RecipientPerson.id
+    AND ShippingRequest.whoapproved IS NULL
+    AND ShippingRequest.whocancelled IS NULL
+    AND RecipientPerson.account IS NOT NULL;
+
+UPDATE ShippingRequest SET
+    recipient = RecipientPerson.account,
+    whoapproved = WhoApprovedPerson.account,
+    is_admin_request = False
+FROM
+    Person AS RecipientPerson,
+    Person AS WhoApprovedPerson
+WHERE
+    ShippingRequest.whoapproved = WhoApprovedPerson.id
+    AND ShippingRequest.recipient = RecipientPerson.id
+    AND RecipientPerson.account IS NOT NULL;
+
+UPDATE ShippingRequest SET
+    recipient = RecipientPerson.account,
+    whocancelled = WhoCancelledPerson.account,
+    is_admin_request = False
+FROM
+    Person AS RecipientPerson,
+    Person AS WhoCancelledPerson
+WHERE
+    ShippingRequest.whocancelled = WhoCancelledPerson.id
+    AND ShippingRequest.recipient = RecipientPerson.id
+    AND RecipientPerson.account IS NOT NULL;
 
 
------------  RENAME new COLUMNS  ----------------------------
-ALTER TABLE shippingrequest RENAME COLUMN recipient_account TO recipient;
-ALTER TABLE shippingrequest RENAME COLUMN whoapproved_account TO whoapproved;
-ALTER TABLE shippingrequest RENAME COLUMN whocancelled_account TO whocancelled;
-
------------ Repack the now severely bloated tables -----------
-CLUSTER shippingrequest USING shippingrequest_pkey;
-CLUSTER shipitsurvey USING shipitsurvey_pkey;
-
------------ Create needed indexes ---------------------------
-CREATE INDEX shippingrequest__recipient__idx
-    ON ShippingRequest(recipient);
-CREATE INDEX shippingrequest__whoapproved__idx
-    ON ShippingRequest(whoapproved)
-    WHERE whoapproved IS NOT NULL;
-CREATE INDEX shippingrequest__whocancelled__idx
-    ON ShippingRequest(whocancelled)
-    WHERE whocancelled IS NOT NULL;
 
 ----------- Add constraints to new COLUMNS  ----------------------------
-ALTER TABLE shippingrequest ALTER COLUMN recipient SET NOT NULL;
-ALTER TABLE shipitsurvey ALTER COLUMN account SET NOT NULL;
+ALTER TABLE shippingrequest
+    ALTER COLUMN is_admin_request SET NOT NULL,
+    ALTER COLUMN is_admin_request SET DEFAULT FALSE,
+    ENABLE TRIGGER set_normalized_address,
+    ENABLE TRIGGER tsvectorupdate;
+
 CREATE UNIQUE INDEX shippingrequest_one_outstanding_request_unique 
     ON shippingrequest(recipient)
     WHERE (
@@ -75,7 +101,7 @@ CREATE UNIQUE INDEX shippingrequest_one_outstanding_request_unique
 -- Autovacuum is going to take a while, so better analyze now to
 -- avoid any potential performance issues until the post-rollout autovacuum
 -- run has completed.
-ANALYZE shippingrequest;
-ANALYZE shipitsurvey;
+-- ANALYZE shippingrequest;
+-- ANALYZE shipitsurvey;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 40, 0);
