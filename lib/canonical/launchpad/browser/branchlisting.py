@@ -596,6 +596,21 @@ class NoContextBranchListingView(BranchListingView):
         'There are no branches that match the current status filter.')
     extra_columns = ('author', 'product', 'date_created')
 
+    def _branches(self, lifecycle_status):
+        """Return a sequence of branches.
+
+        This method is overridden in the derived classes to perform the
+        specific query.
+
+        :param lifecycle_status: A filter of the branch's lifecycle status.
+        """
+        collection = self._getCollection()
+        if lifecycle_status is not None:
+            collection = collection.withLifecycleStatus(*lifecycle_status)
+        collection = collection.visibleByUser(self.user)
+        return collection.getBranches(False, False).order_by(
+            self._listingSortToOrderBy(self.sort_by))
+
 
 class RecentlyRegisteredBranchesView(NoContextBranchListingView):
     """A batched view of branches orded by registration date."""
