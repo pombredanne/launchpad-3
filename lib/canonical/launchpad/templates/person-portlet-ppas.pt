@@ -14,7 +14,7 @@
            <tal:activate_ppa
              define="link context/menu:overview/activate_ppa"
              condition="link/enabled"
-             replace="structure link/fmt:link-icon" />
+             replace="structure link/fmt:icon-link" />
         </div>
       </div>
     </div>

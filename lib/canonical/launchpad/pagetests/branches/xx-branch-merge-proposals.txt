@@ -46,6 +46,12 @@ Users who are not logged on do not see the link to register.
     ...
     LinkNotFoundError
 
+Initially the branch is shown as not being proposed to be merged.
+
+    >>> print_tag_with_id(anon_browser.contents, 'merge-summary')
+    &laquo; No branches proposed for merging into this one.
+    &raquo; This branch is not proposed for merging into any others.
+
 Logged in users can.
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
@@ -64,7 +70,31 @@ There is a cancel link shown with the buttons.
 Registering the merge proposal takes the user to the new merge proposal.
 
     >>> print nopriv_browser.url
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/...
+
+
+== Editing a commit message ==
+
+Since the plan is to merge a branch into another branch, it makes sense that a
+commit message can be set.
+
+    >>> nopriv_browser.getLink('Edit commit message').click()
+    >>> nopriv_browser.getControl(name='field.commit_message').value = (
+    ...     'Add more mojo')
+    >>> nopriv_browser.getControl('Update').click()
+
+    >>> print nopriv_browser.url
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
+
+    >>> def print_summary(browser):
+    ...     print extract_text(find_tag_by_id(
+    ...         browser.contents, 'proposal-summary'))
+    >>> print_summary(nopriv_browser)
+    Status: Needs review
+    Proposed by: No Privileges Person ...
+    Proposed branch: lp://dev/~name12/gnome-terminal/klingon
+    Merge into: lp://dev/~name12/gnome-terminal/main
+    Commit message: Add more mojo
 
 
 == Landing Targets ==
@@ -158,14 +188,12 @@ and merging, so we have to settle for the sample data.
 The details of the proposal shows initially the source and target
 branches, and the current status.
 
-    >>> def print_summary(browser):
-    ...     print extract_text(find_tag_by_id(
-    ...         browser.contents, 'proposal-summary'))
     >>> print_summary(sample_browser)
     Status: Needs review
     Proposed by: Sample Person ...
     Proposed branch: lp://dev/~sabdfl/firefox/release-0.9
     Merge into: lp://dev/~name12/firefox/main
+    Commit message: None
 
 The summary of the revisions that are in the source branch but not
 yet in the target branch are also shown.
@@ -213,6 +241,7 @@ The status of the merge proposal is updated to "Needs review".
     Proposed ...
     Proposed branch: lp://dev/~name12/gnome-terminal/klingon
     Merge into: lp://dev/~name12/gnome-terminal/main
+    Commit message: Add more mojo
 
 Additional reviews can be requested.
 
@@ -379,6 +408,7 @@ a link back to the superseded proposal.
     Proposed by: Sample Person ...
     Proposed branch: lp://dev/~name12/gnome-terminal/scanned
     Merge into: lp://dev/~name12/gnome-terminal/main
+    Commit message: None
 
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'superseded-proposal'))
