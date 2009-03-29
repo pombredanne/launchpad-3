@@ -72,4 +72,10 @@ CREATE UNIQUE INDEX shippingrequest_one_outstanding_request_unique
         AND is_admin_request IS NOT TRUE
         AND status NOT IN (2,3));
 
-INSERT INTO LaunchpADDatabaseRevision VALUES (2109, 40, 0);
+-- Autovacuum is going to take a while, so better analyze now to
+-- avoid any potential performance issues until the post-rollout autovacuum
+-- run has completed.
+ANALYZE shippingrequest;
+ANALYZE shipitsurvey;
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 40, 0);
