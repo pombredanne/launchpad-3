@@ -596,6 +596,21 @@ class NoContextBranchListingView(BranchListingView):
         'There are no branches that match the current status filter.')
     extra_columns = ('author', 'product', 'date_created')
 
+    def _branches(self, lifecycle_status):
+        """Return a sequence of branches.
+
+        Override the default behaviour to not join across Owner and Product.
+
+        :param lifecycle_status: A filter of the branch's lifecycle status.
+        """
+        collection = self._getCollection()
+        if lifecycle_status is not None:
+            collection = collection.withLifecycleStatus(*lifecycle_status)
+        collection = collection.visibleByUser(self.user)
+        return collection.getBranches(
+            join_owner=False, join_product=False).order_by(
+            self._branch_order)
+
 
 class RecentlyRegisteredBranchesView(NoContextBranchListingView):
     """A batched view of branches orded by registration date."""
@@ -603,8 +618,9 @@ class RecentlyRegisteredBranchesView(NoContextBranchListingView):
     page_title = 'Recently registered branches'
 
     @property
-    def sort_by(self):
-        return BranchListingSort.NEWEST_FIRST
+    def _branch_order(self):
+        from canonical.launchpad.database.branch import Branch
+        return Desc(Branch.date_created), Desc(Branch.id)
 
     def _getCollection(self):
         return getUtility(IAllBranches)
@@ -617,8 +633,9 @@ class RecentlyImportedBranchesView(NoContextBranchListingView):
     extra_columns = ('product', 'date_created')
 
     @property
-    def sort_by(self):
-        return BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+    def _branch_order(self):
+        from canonical.launchpad.database.branch import Branch
+        return Desc(Branch.date_last_modified), Desc(Branch.id)
 
     def _getCollection(self):
         return (getUtility(IAllBranches)
@@ -632,8 +649,9 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
     page_title = 'Recently changed branches'
 
     @property
-    def sort_by(self):
-        return BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
+    def _branch_order(self):
+        from canonical.launchpad.database.branch import Branch
+        return Desc(Branch.date_last_modified), Desc(Branch.id)
 
     def _getCollection(self):
         return (getUtility(IAllBranches)
