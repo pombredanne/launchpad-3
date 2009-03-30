@@ -10,7 +10,6 @@ from operator import attrgetter
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
