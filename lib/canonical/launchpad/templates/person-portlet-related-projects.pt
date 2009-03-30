@@ -26,7 +26,7 @@
         <td colspan="2"  style="padding-top: .5em;">
           <a href="+projects"
           tal:condition="view/has_more_related_projects">
-            &raquo; show all
+            &raquo; Show all
             <tal:count content="view/related_projects_count">8</tal:count>
             related projects</a>
           <a href="+projects"

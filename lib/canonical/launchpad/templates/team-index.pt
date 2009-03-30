@@ -60,8 +60,6 @@
     <div tal:content="structure context/@@+portlet-map" />
   </div>
 
-  <div tal:content="structure context/@@+portlet-related-projects" />
-
   <div class="portlet" id="contact-details">
     <h2 tal:condition="context/is_team">Contact details</h2>
 
@@ -106,6 +104,8 @@
   </div>
 
   <div tal:replace="structure context/@@+portlet-ppas"/>
+
+  <div tal:content="structure context/@@+portlet-related-projects" />
 
   <div id="mailing-lists" class="portlet">
     <h2>Mailing list</h2>
