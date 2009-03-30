@@ -51,9 +51,9 @@
             var form_content = error_box_html + response.responseText;
             var form_submit_button = Y.Node.create(
                 '<input type="submit" name="field.actions.register" ' +
-                'id="formoverlay-add-milestone" value="Add Milestone"/>');
+                'id="formoverlay-add-milestone" value="Create Milestone"/>');
             milestone_form = new Y.lazr.FormOverlay({
-                headerContent: '<h2>Add Milestone</h2>',
+                headerContent: '<h2>Create Milestone</h2>',
                 form_content: form_content,
                 form_submit_button: form_submit_button,
                 centered: true,

@@ -5,9 +5,11 @@
 __metaclass__ = type
 __all__ = []
 
-from windmill.authoring import WindmillTestClient
-from canonical.launchpad.windmill.testing import lpuser
 import time
+
+from canonical.launchpad.windmill.testing import lpuser
+
+from windmill.authoring import WindmillTestClient
 
 
 class InlineAddMilestoneForReleaseTest:
@@ -48,22 +50,9 @@ class InlineAddMilestoneForReleaseTest:
         self.client.waits.forElement(id=u'field.milestone_for_release',
                                      timeout=u'8000')
 
-        # This should work in Firefox and Safari but not IE.
-        self.client.commands.execJS(
-            code="""
-                try {
-                    var simulate_change_event = function () {
-                        var evt = document.createEvent('HTMLEvents');
-                        evt.initEvent('change', true, true);
-                        var select_element = lookupNode({
-                            id: 'field.milestone_for_release'});
-                        select_element.options[1].selected = true;
-                        select_element.dispatchEvent(evt);
-                    }; simulate_change_event();
-                } catch (e) {
-                    alert(e);
-                }
-            """)
+        # Select "Create milestone..." from the milestone SELECT menu.
+        self.client.select(id='field.milestone_for_release',
+                           option='Create milestone...')
 
         # Submit milestone form.
         self.client.waits.forElement(id=u'field.name', timeout=u'8000')
@@ -73,19 +62,35 @@ class InlineAddMilestoneForReleaseTest:
         self.client.type(id='field.summary', text=u"foo bar")
         self.client.click(id=u'formoverlay-add-milestone')
 
-        # Verify that the milestone was added to the SELECT input.
+        # Verify that the milestone was added to the SELECT input,
+        # and that it is now selected.
         self.client.waits.sleep(milliseconds='1000')
+        self.client.asserts.assertSelected(id="field.milestone_for_release",
+                                           validator=milestone_name)
+
+        # Verify error message when trying to create a milestone with a
+        # conflicting name.
+        self.client.select(id='field.milestone_for_release',
+                           option='Create milestone...')
+        self.client.waits.forElement(id=u'field.name', timeout=u'8000')
+        self.client.type(id='field.name', text=milestone_name)
+        self.client.click(id=u'formoverlay-add-milestone')
         self.client.asserts.assertText(
-            xpath="//select[@id='field.milestone_for_release']"
-                  "/option[@value='%s']" % milestone_name,
-            validator=milestone_name)
+            id='milestone-error',
+            validator='The name %s is already used' % milestone_name)
+        self.client.click(classname='close-button')
 
         # Submit product release form.
+        self.client.select(id='field.milestone_for_release', val=milestone_name)
         self.client.type(id='field.datereleased', text=u"2004-02-22")
         self.client.click(id=u'field.actions.create')
         self.client.waits.forPageLoad(timeout=u'20000')
 
         # Verify that the release was created.
+        self.client.waits.forElement(
+            xpath="//table[@id='series_trunk']"
+                  "//a[@href='/bzr/trunk/%s']" % milestone_name,
+            timeout=u'8000')
         self.client.asserts.assertText(
             xpath="//table[@id='series_trunk']"
                   "//a[@href='/bzr/trunk/%s']" % milestone_name,
