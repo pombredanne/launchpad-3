@@ -82,13 +82,13 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
-    Account, Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch,
+    Account, Archive, Bounty, Branch, BranchSet, Bug, BugTracker, BugWatch,
     Component, Country, Distribution, DistroArchSeries, DistroSeries,
     EmailAddress, FeaturedProject, KarmaCategory, Language, LanguagePack,
-    MailingList, Milestone, Person, PillarName, POTemplate,
-    Processor, ProcessorFamily,
-    Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
-    Specification, Sprint, TranslationGroup, TranslationMessage)
+    MailingList, Milestone, POTemplate, Person, PillarName, Processor,
+    ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
+    SourcePackageRelease, Specification, Sprint, TeamParticipation,
+    TranslationGroup, TranslationMessage)
 
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
@@ -639,77 +639,105 @@ class ValidPersonOrTeamVocabulary(
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
 
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        logged_in_user = getUtility(ILaunchBag).user
+
         # Short circuit if there is no search text - all valid people and
         # teams have been requested.
         if not text:
-            query = """
-                Person.id = %s.id
-                AND Person.visibility = %s
-                """ % (self.cache_table_name,
-                       quote(PersonVisibility.PUBLIC))
             if self.extra_clause:
-                query += " AND %s" % self.extra_clause
-            return Person.select(
-                query, clauseTables=[self.cache_table_name])
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        tables = [
-            Person,
-            LeftJoin(EmailAddress, EmailAddress.person == Person.id),
-            LeftJoin(Account, EmailAddress.account == Account.id),
-            ]
-
-        # Note we use lower() instead of the non-standard ILIKE because
-        # ILIKE doesn't seem to hit the indexes.
-        inner_select = SQL("""
-            SELECT Person.id
-            FROM Person
-            WHERE Person.fti @@ ftq(%s)
-            UNION ALL
-            SELECT Person.id
-            FROM Person, IrcId
-            WHERE IrcId.person = Person.id
-                AND lower(IrcId.nickname) = %s
-            UNION ALL
-            SELECT Person.id
-            FROM Person, EmailAddress
-            WHERE EmailAddress.person = Person.id
-                AND lower(email) LIKE %s || '%%%%'
-                AND EmailAddress.status IN %s
-            """ % (
-                quote(text), quote(text), quote_like(text),
-                sqlvalues(
-                    EmailAddressStatus.VALIDATED,
-                    EmailAddressStatus.PREFERRED)))
-
-        if self.extra_clause:
-            extra_clause = SQL(self.extra_clause)
-        else:
-            extra_clause = True
-        result = store.using(*tables).find(
-            Person,
-            And(
-                Person.id.is_in(inner_select),
-                Person.visibility == PersonVisibility.PUBLIC,
-                Person.merged == None,
-                Or(
-                    # A valid person-or-team is either a team...
-                    Not(Person.teamowner == None), # 'Not' due to Bug 244768
-
-                    # or has an active account and a working email address.
-                    And(
-                        Account.status == AccountStatus.ACTIVE,
-                        EmailAddress.status.is_in((
-                            EmailAddressStatus.VALIDATED,
-                            EmailAddressStatus.PREFERRED
-                            ))
-                        )
-                    ),
-                extra_clause
+                extra_clause = SQL(self.extra_clause)
+            else:
+                extra_clause = True
+            inner_select = SQL("""
+                SELECT Person.id
+                FROM Person, %(cache_table)s
+                WHERE Person.id = %(cache_table)s.id
+            """ % dict(cache_table=self.cache_table_name))
+            result = store.find(
+                Person,
+                And(
+                    Person.id.is_in(inner_select),
+                    Person.visibility == PersonVisibility.PUBLIC,
+                    extra_clause
+                    )
                 )
-            )
+        else:
+            tables = [
+                Person,
+                LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+                LeftJoin(Account, EmailAddress.account == Account.id),
+                ]
+
+            # Note we use lower() instead of the non-standard ILIKE because
+            # ILIKE doesn't seem to hit the indexes.
+            inner_select = SQL("""
+                SELECT Person.id
+                FROM Person
+                WHERE Person.fti @@ ftq(%s)
+                UNION ALL
+                SELECT Person.id
+                FROM Person, IrcId
+                WHERE IrcId.person = Person.id
+                    AND lower(IrcId.nickname) = %s
+                UNION ALL
+                SELECT Person.id
+                FROM Person, EmailAddress
+                WHERE EmailAddress.person = Person.id
+                    AND lower(email) LIKE %s || '%%%%'
+                    AND EmailAddress.status IN %s
+                """ % (
+                    quote(text), quote(text), quote_like(text),
+                    sqlvalues(
+                        EmailAddressStatus.VALIDATED,
+                        EmailAddressStatus.PREFERRED)))
+
+            if self.extra_clause:
+                extra_clause = SQL(self.extra_clause)
+            else:
+                extra_clause = True
+            result = store.using(*tables).find(
+                Person,
+                And(
+                    Person.id.is_in(inner_select),
+                    Person.visibility == PersonVisibility.PUBLIC,
+                    Person.merged == None,
+                    Or(
+                        # A valid person-or-team is either a team...
+                        Not(Person.teamowner == None), # 'Not' due to Bug 244768
+
+                        # or has an active account and a working email address.
+                        And(
+                            Account.status == AccountStatus.ACTIVE,
+                            EmailAddress.status.is_in((
+                                EmailAddressStatus.VALIDATED,
+                                EmailAddressStatus.PREFERRED
+                                ))
+                            )
+                        ),
+                    extra_clause
+                    )
+                )
+
+        # Do a query for the private teams this user participates in
+        # and combine the results.  This is much faster than doing a
+        # Python-based filter using check_permission but is more fragile as we
+        # are spreading the security logic around.
+        if logged_in_user is not None:
+            private = store.find(
+                Person,
+                AND(
+                    Person.id == TeamParticipation.teamID,
+                    TeamParticipation.person == logged_in_user.id,
+                    Not(Person.teamowner == None),
+                    Person.visibility == PersonVisibility.PRIVATE
+                    )
+                )
+
+            result = result.union(private)
+
         result.config(distinct=True)
+
         # XXX: salgado, 2008-07-23: Sorting by Person.sortingColumns would
         # make this run a lot faster, but I couldn't find how to do that
         # because this query uses distinct=True.
@@ -1421,7 +1449,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         return CountableIterator(num, results, self.toTerm)
 
     def _commercial_projects(self):
-        """Return the list of commercial project owned by this user."""
+        """Return the list of commercial projects owned by this user."""
         return self._filter_projs(self._doSearch())
 
     def __iter__(self):

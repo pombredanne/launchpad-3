@@ -626,7 +626,7 @@ direct member of that team.
 
 A Team can have its visibility attribute set to
 PersonVisibility.PUBLIC, PersonVisibility.PRIVATE_MEMBERSHIP, or
-PersonVisibility.PRIVAT. To prevent leaking of private membership
+PersonVisibility.PRIVATE. To prevent leaking of private membership
 information, private-membership teams are only allowed to be connected
 with a few different database objects. This is enforced in the model,
 but there are also checks in the form handling to provide clearer
@@ -677,8 +677,14 @@ Private teams can be subscribed to bugs.
     ...     visibility=PersonVisibility.PRIVATE)
     >>> bug_subscription = BugSubscription(bug=bug, person=private_team,
     ...     subscribed_by=guadamen)
+
+And they can subscribe others to bugs.
+
     >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
     ...     subscribed_by=private_team)
+
+    >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
+    ...     subscribed_by=myteam)
 
 
 Teams also have a 'private' attribute that is true if the team is

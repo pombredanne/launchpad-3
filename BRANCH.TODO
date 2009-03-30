@@ -6,9 +6,10 @@
 GOALS:
 * Create new person visibility of PRIVATE
 * PRIVATE teams can:
-   * Subscribe to bugs,
-   * Be a Bug Supervisor,
-   * Own branches,
-   * Own PPAs
-   * Be a member of a public team
-   * Have public teams as members
+   [x] Subscribe to bugs,
+   [x] Subscribe others to a bug.
+   [ ] Be a Bug Supervisor,
+   [ ] Own branches,
+   [ ] Own PPAs
+   [ ] Be a member of a public team
+   [ ] Have public teams as members

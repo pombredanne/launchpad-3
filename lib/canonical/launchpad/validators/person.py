@@ -24,6 +24,7 @@ class PrivatePersonLinkageError(ValueError):
 @block_implicit_flushes
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
+    #import pdb; pdb.set_trace(); # DO NOT COMMIT
     if value is None:
         return None
     assert isinstance(value, (int, long)), (
@@ -42,6 +43,7 @@ def validate_public_person(obj, attr, value):
 @block_implicit_flushes
 def validate_person(obj, attr, value):
     """Validate that the person (value) is not a private membership team.."""
+    #import pdb; pdb.set_trace(); # DO NOT COMMIT
     if value is None:
         return None
     assert isinstance(value, (int, long)), (
