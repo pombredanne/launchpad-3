@@ -453,5 +453,8 @@ class TestBranchPuller(PullerBranchTestCase):
     # - expected output on non-quiet runs
 
 
+# XXX: JonathanLange 2009-03-27 bug=349316: Disable these tests because they
+# are leaking threads, causing intermittent test failures.
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+#    return unittest.TestLoader().loadTestsFromName(__name__)
+    return unittest.TestSuite()

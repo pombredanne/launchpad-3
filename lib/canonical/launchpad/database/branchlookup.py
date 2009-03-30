@@ -245,29 +245,12 @@ class SourcePackagePocket:
     @property
     def displayname(self):
         """See `ISourcePackagePocket`."""
-        return self.path
+        return self.sourcepackage.getPocketPath(self.pocket)
 
     @property
     def branch(self):
         """See `ISourcePackagePocket`."""
         return self.sourcepackage.getBranch(self.pocket)
-
-    @property
-    def path(self):
-        """See `ISourcePackagePocket`."""
-        return '%s/%s/%s' % (
-            self.sourcepackage.distribution.name,
-            self.suite,
-            self.sourcepackage.name)
-
-    @property
-    def suite(self):
-        """See `ISourcePackagePocket`."""
-        distroseries = self.sourcepackage.distroseries.name
-        if self.pocket == PackagePublishingPocket.RELEASE:
-            return distroseries
-        else:
-            return '%s-%s' % (distroseries, self.pocket.name.lower())
 
 
 class BranchLookup:
