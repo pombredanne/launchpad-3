@@ -10,17 +10,16 @@ import random
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.expr import Desc
+from storm.expr import Desc, Join, Lower
 from storm.references import Reference
 from storm.store import Store
 
 from sqlobject import ForeignKey, StringCol
-from sqlobject.sqlbuilder import OR
 
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.openidserver import OpenIDRPSummary
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
@@ -202,7 +201,10 @@ class AccountSet:
 
     def get(self, id):
         """See `IAccountSet`."""
-        return IStore(Account).get(Account, id)
+        account = IStore(Account).get(Account, id)
+        if account is None:
+            account = IMasterStore(Account).get(Account, id)
+        return account
 
     def createAccountAndEmail(self, email, rationale, displayname, password,
                               password_is_encrypted=False):
@@ -221,20 +223,26 @@ class AccountSet:
 
     def getByEmail(self, email):
         """See `IAccountSet`."""
-        return Account.selectOne('''
-            EmailAddress.account = Account.id
-            AND lower(EmailAddress.email) = lower(trim(%s))
-            ''' % sqlvalues(email),
-            clauseTables=['EmailAddress'])
+        # Need a local import because of circular dependencies.
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        conditions = (Lower(EmailAddress.email) == email.lower().strip())
+        origin = [
+            Account, Join(EmailAddress, EmailAddress.account == Account.id)]
+        store = IStore(Account)
+        account = store.using(*origin).find(Account, conditions).one()
+        if account is None:
+            store = IMasterStore(Account)
+            account = store.using(*origin).find(Account, conditions).one()
+        return account
 
     def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
-        # XXX sinzui 2008-09-09 bug=264783:
-        # Remove the OR clause, only openid_identifier should be used.
-        return Account.selectOne(
-            OR(
-                Account.q.openid_identifier == openid_identifier,
-                Account.q.new_openid_identifier == openid_identifier),)
+        account = IStore(Account).find(
+            Account, openid_identifier=openid_identifier)
+        if account is None:
+            account = IMasterStore(Account).find(
+                Account, openid_identifier=openid_identifier)
+        return account
 
     _MAX_RANDOM_TOKEN_RANGE = 1000
 
