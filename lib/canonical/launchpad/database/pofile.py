@@ -540,7 +540,8 @@ class POFile(SQLBase, POFileMixIn):
         clauses = [
             'TranslationTemplateItem.potemplate = %s' % sqlvalues(
                 self.potemplate),
-            'TranslationTemplateItem.potmsgset = TranslationMessage.potmsgset',
+            ('TranslationTemplateItem.potmsgset'
+             ' = TranslationMessage.potmsgset'),
             'TranslationMessage.language = %s' % sqlvalues(self.language)]
         if self.variant is None:
             clauses.append(
@@ -580,7 +581,8 @@ class POFile(SQLBase, POFileMixIn):
         diverged_translation_clauses = [
             'TranslationMessage.potemplate = %s' % sqlvalues(self.potemplate),
         ]
-        diverged_translation_query = ' AND '.join(diverged_translation_clauses)
+        diverged_translation_query = ' AND '.join(
+            diverged_translation_clauses)
 
         shared_translation_clauses = [
             'TranslationMessage.potemplate IS NULL',
@@ -688,10 +690,10 @@ class POFile(SQLBase, POFileMixIn):
         # lists translations which have actually changed in LP, not
         # translations which are 'new' and only exist in LP).
 
-        # TranslationMessage:
-        #     is_imported IS FALSE (not necessary), is_current IS TRUE,
-        #     (diverged AND not empty) OR (shared AND not empty AND no diverged)
-        #   exists message (is_imported AND not empty AND (diverged OR shared))
+        # TranslationMessage is changed if:
+        # is_current IS TRUE,
+        # (diverged AND not empty) OR (shared AND not empty AND no diverged)
+        # exists imported (is_imported AND not empty AND (diverged OR shared))
         clauses, clause_tables = self._getTranslatedMessagesQuery()
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
@@ -716,7 +718,8 @@ class POFile(SQLBase, POFileMixIn):
             'imported.id <> TranslationMessage.id',
             'imported.potmsgset = POTMsgSet.id',
             'imported.language = TranslationMessage.language',
-            'imported.variant IS NOT DISTINCT FROM TranslationMessage.variant',
+            'imported.variant '
+            '  IS NOT DISTINCT FROM TranslationMessage.variant',
             'imported.is_imported IS TRUE',
             '(imported.potemplate=%s OR ' % sqlvalues(self.potemplate) +
             '   (imported.potemplate IS NULL AND ' + imported_no_diverged
