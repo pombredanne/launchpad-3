@@ -204,3 +204,129 @@ are simple little functions.
     >>> print latest_activity.newvalue
     1.0
 
+
+== BugActivityItem ==
+
+BugActivityItem implements the stuff that BugActivity doesn't need to
+know about.
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> from canonical.launchpad.browser.bugtask import BugActivityItem
+    >>> from canonical.launchpad.interfaces import IBugActivitySet
+
+    >>> nowish = datetime(
+    ...     2009, 3, 26, 16, 40, 31, tzinfo=pytz.timezone('UTC'))
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='summary', oldvalue='Old value',
+    ...     newvalue='New value', person=user, datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+
+The BugActivityItem offers properties that can be used to render the
+activity sensibly in an HTML interface. In most cases it just returns
+activity.whatchanged.
+
+    >>> print activity_item.change_summary
+    summary
+
+Summary changes are represented as unified diffs in the interface, in
+the same way as they are in notifications. To ensure they display
+properly in the UI, they're returned with newline characters replaces
+with HTML line-breaks.
+
+    >>> print activity_item.change_details
+    - Old value<br />+ New value
+
+BugActivityItem delegates to IBugActivity, so we can still access the
+original BugActivity's properties if we want.
+
+    >>> print "%s: %s => %s" % (
+    ...     activity_item.whatchanged, activity_item.oldvalue,
+    ...     activity_item.newvalue)
+    summary: Old value => New value
+
+For simpler changes, activity_item.change_details will simply return the
+change in the form old_value -> new_value. The arrow will be represented
+by the unicode character &#8594;.
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='security vulnerability',
+    ...     oldvalue='no', newvalue='yes', person=user,
+    ...     datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+
+    >>> print activity_item.change_details
+    no &#8594; yes
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='visibility', oldvalue='public',
+    ...     newvalue='private', person=user, datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+
+    >>> print activity_item.change_details
+    public &#8594; private
+
+Tag changes use the _formatted_tags_change property of BugActivityItem
+to create a nicely formatted change_details.
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='tags', oldvalue='tag1 tag2',
+    ...     newvalue='tag1 tag3', person=user, datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+    >>> print activity_item._formatted_tags_change
+    added: tag3
+    removed: tag2
+
+The change_details value for this change will be that returned by
+_formatted_tags_change but with newlines replaced by HTML line-breaks.
+
+    >>> print activity_item.change_details
+    added: tag3<br />removed: tag2
+
+For changes to bug tasks, BugActivityItem mutates the whatchanged
+attribute slightly, removing extraneous punctuation to make the
+change_summary property a bit more readable.
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='malone: status', oldvalue='New',
+    ...     newvalue='Triaged', person=user, datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+
+    >>> print activity_item.change_summary
+    malone status
+
+The change_details are expressed as a simple change.
+
+    >>> print activity_item.change_details
+    New &#8594; Triaged
+
+For assignee changes, BugActivityItem will ensure that old or new values
+of None will be converted to the string 'nobody'.
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='malone: assignee', oldvalue=None,
+    ...     newvalue='somebody', person=user, datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+    >>> print activity_item.change_details
+    nobody &#8594; somebody
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='malone: assignee',
+    ...     oldvalue='somebody', newvalue=None, person=user,
+    ...     datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+    >>> print activity_item.change_details
+    somebody &#8594; nobody
+
+For changes to a bug's description, we simply return the word 'updated,'
+since such changes may be too long to be useful as a diff.
+
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_one, whatchanged='description',
+    ...     oldvalue='Old description', newvalue='New description',
+    ...     person=user, datechanged=nowish)
+    >>> activity_item = BugActivityItem(activity)
+    >>> print "%s: %s" % (
+    ...     activity_item.change_summary, activity_item.change_details)
+    description: updated
+    

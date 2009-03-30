@@ -15,10 +15,11 @@ from canonical.config import config
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, ILinkedBranchTraverser,
-    NoLinkedBranch)
+    ISourcePackagePocketFactory, NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
 from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import NoSuchPerson
 from canonical.launchpad.interfaces.product import (
     InvalidProductName, NoSuchProduct)
@@ -26,7 +27,7 @@ from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import run_with_login, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -330,7 +331,19 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         # that package in that series.
         package = self.factory.makeSourcePackage()
         self.assertTraverses(
-            package.path, (package, PackagePublishingPocket.RELEASE))
+            package.path,
+            getUtility(ISourcePackagePocketFactory).new(
+                package, PackagePublishingPocket.RELEASE))
+
+    def test_traverse_source_package_pocket(self):
+        # `traverse` resolves 'distro/series-pocket/package' to the official
+        # branch for 'pocket' on that package.
+        package = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.BACKPORTS
+        path = package.getPocketPath(pocket)
+        sourcepackagepocket = getUtility(ISourcePackagePocketFactory).new(
+            package, pocket)
+        self.assertTraverses(path, sourcepackagepocket)
 
     def test_no_such_distribution(self):
         # `traverse` raises `NoSuchProduct` error if the distribution doesn't
@@ -465,9 +478,9 @@ class TestGetByLPPath(TestCaseWithFactory):
         exception = self.assertRaises(
             NoLinkedBranch,
             self.branch_lookup.getByLPPath, sourcepackage.path)
-        self.assertEqual(
-            (sourcepackage, PackagePublishingPocket.RELEASE),
-            exception.component)
+        sourcepackagepocket =  getUtility(ISourcePackagePocketFactory).new(
+            sourcepackage, PackagePublishingPocket.RELEASE)
+        self.assertEqual(sourcepackagepocket, exception.component)
 
     def test_distribution_linked_branch(self):
         # Distributions cannot have linked branches, so `getByLPPath` raises a
@@ -496,8 +509,92 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(
             InvalidNamespace, self.branch_lookup.getByLPPath, path)
 
-    # XXX: JonathanLange 2009-03-30 spec=package-branches bug=345739: Test for
-    # pocket-linked branch paths.
+    def test_too_long_product(self):
+        # If the provided path points to an existing product with a linked
+        # branch but there are also extra path segments, then raise a
+        # NoSuchProductSeries error, since we can't tell the difference
+        # between a trailing path and an attempt to load a non-existent series
+        # branch.
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        product.development_focus.user_branch = branch
+        self.assertRaises(
+            NoSuchProductSeries,
+            self.branch_lookup.getByLPPath, '%s/other/bits' % product.name)
+
+    def test_too_long_product_series(self):
+        # If the provided path points to an existing product series with a
+        # linked branch but is followed by extra path segments, then we return
+        # the linked branch but chop off the extra segments. We might want to
+        # change this behaviour in future.
+        series = self.factory.makeSeries()
+        branch = self.factory.makeProductBranch(series.product)
+        series.user_branch = branch
+        result = self.branch_lookup.getByLPPath(
+            '%s/%s/other/bits' % (series.product.name, series.name))
+        self.assertEqual((branch, None), result)
+
+    def test_too_long_sourcepackage(self):
+        # If the provided path points to an existing source package with a
+        # linked branch but is followed by extra path segments, then we return
+        # the linked branch but chop off the extra segments. We might want to
+        # change this behaviour in future.
+        package = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=package)
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.setBranch,
+            PackagePublishingPocket.RELEASE,
+            branch,
+            ubuntu_branches.teamowner)
+        result = self.branch_lookup.getByLPPath(
+            '%s/other/bits' % package.path)
+        self.assertEqual((branch, None), result)
+
+
+class TestSourcePackagePocket(TestCaseWithFactory):
+    """Tests for the SourcePackagePocket wrapper class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeSourcePackagePocket(self, sourcepackage=None, pocket=None):
+        if sourcepackage is None:
+            sourcepackage = self.factory.makeSourcePackage()
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        return getUtility(ISourcePackagePocketFactory).new(
+            sourcepackage, pocket)
+
+    def test_branch(self):
+        # The 'branch' attribute is the linked branch for the pocket on that
+        # packet.
+        package = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=package)
+        registrant = self.factory.makePerson()
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.setBranch,
+            PackagePublishingPocket.SECURITY, branch, registrant)
+        package_pocket = self.makeSourcePackagePocket(
+            sourcepackage=package, pocket=PackagePublishingPocket.SECURITY)
+        self.assertEqual(branch, package_pocket.branch)
+
+    def test_display_name(self):
+        # A SourcePackagePocket also has a display name, so we can use it in
+        # error messages.
+        package_pocket = self.makeSourcePackagePocket()
+        self.assertEqual(
+            package_pocket.sourcepackage.getPocketPath(package_pocket.pocket),
+            package_pocket.displayname)
+
+    def test_equality(self):
+        package = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.SECURITY
+        package_pocket1 = self.makeSourcePackagePocket(package, pocket)
+        package_pocket2 = self.makeSourcePackagePocket(package, pocket)
+        self.assertEqual(package_pocket1, package_pocket2)
 
 
 def test_suite():

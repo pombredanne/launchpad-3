@@ -74,6 +74,8 @@ Y.on('domready', function() {
                 duplicate_form_overlay.show();
             }
         });
+        // Add a class denoting them as js-action links.
+        update_dupe_links.addClass('js-action');
     }
 });
 
@@ -88,6 +90,9 @@ function createBugDuplicateFormOverlay(form_content) {
         form_submit_button: Y.Node.create(
             '<button type=\'submit\' name=\'field.actions.change\' ' +
             'value=\'Change\' class=\'lazr-pos lazr-btn\' >OK</button>'),
+        form_cancel_button: Y.Node.create(
+            '<button type=\'button\' name=\'field.actions.cancel\' ' +
+            'class=\'lazr-neg lazr-btn\' >Cancel</button>'),
         centered: true,
         form_submit_callback: update_bug_duplicate,
         visible: false
@@ -145,13 +150,13 @@ function update_bug_duplicate(data) {
                     dupe_span.set('innerHTML', [
                         'Duplicate of <a href=\'/bugs/' + new_dup_id + '\'>',
                         'bug #' + new_dup_id +'</a> ',
-                        '<a class=\'menu-link-mark-dupe\' ',
+                        '<a class=\'menu-link-mark-dupe js-action\' ',
                         'href=\'' + update_dupe_url + '\'>',
                         '<img src=\'/@@/edit\' /></a>'
                         ].join(''));
                 } else {
                     dupe_span.set('innerHTML',
-                        '<a class=\'menu-link-mark-dupe\' href=\'' +
+                        '<a class=\'menu-link-mark-dupe js-action\' href=\'' +
                         update_dupe_url + '\'>' +
                         '<img src=\'/@@/bug-dupe-icon\' /> ' +
                         'Mark as duplicate</a>');
@@ -475,8 +480,10 @@ function update_bug_duplicate(data) {
           </tal:is-comment>
 
           <tal:is-activity
-              define="activity comment_or_activity/activity|nothing"
-              condition="activity">
+              define="activity_list comment_or_activity/activity|nothing;
+                      activity_date comment_or_activity/date|nothing;
+                      activity_person comment_or_activity/person|nothing"
+              condition="activity_list">
               <metal:comment-box
                   metal:use-macro="context/@@bugcomment-macros/activity-box" />
           </tal:is-activity>

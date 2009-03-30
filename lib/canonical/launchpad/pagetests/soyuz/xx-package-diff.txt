@@ -200,10 +200,11 @@ corresponding source row in the PPA overview page.
     >>> anon_browser.open('http://launchpad.dev/~name16/+archive')
     >>> login('foo.bar@canonical.com')
     >>> biscuit_ppa = name16.archive.getPublishedSources()[0]
+    >>> biscuit_ppa_id = biscuit_ppa.id
     >>> logout()
 
     >>> expander_url = anon_browser.getLink(
-    ...     id='pub%s-expander' % biscuit_ppa.id).url
+    ...     id='pub%s-expander' % biscuit_ppa_id).url
     >>> anon_browser.open(expander_url)
     >>> print extract_text(anon_browser.contents)
     Publishing details

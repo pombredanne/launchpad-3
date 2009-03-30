@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
@@ -55,6 +55,7 @@ from canonical.launchpad.interfaces.binarypackagename import (
 from canonical.launchpad.interfaces.bounty import IBountySet
 from canonical.launchpad.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
+from canonical.launchpad.interfaces.branchnamespace import InvalidNamespace
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
 from canonical.launchpad.interfaces.builder import IBuilderSet
@@ -77,7 +78,8 @@ from canonical.launchpad.interfaces.malone import IMaloneApplication
 from canonical.launchpad.interfaces.mentoringoffer import IMentoringOfferSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.product import (
+    InvalidProductName, IProductSet)
 from canonical.launchpad.interfaces.project import IProjectSet
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -597,7 +599,8 @@ class LaunchpadRootNavigation(Navigation):
         path = '/'.join(self.request.stepstogo)
         try:
             branch_data = getUtility(IBranchLookup).getByLPPath(path)
-        except (CannotHaveLinkedBranch, NoLinkedBranch):
+        except (CannotHaveLinkedBranch, NoLinkedBranch, InvalidNamespace,
+                InvalidProductName):
             raise NotFoundError
         branch, trailing = branch_data
         if branch is None:

@@ -113,6 +113,12 @@
 
     <h2>Automatic subscription to mailing lists</h2>
 
+    <div id="notification-info">When a team you are a member of creates a new
+        mailing list, you will receive an email notification offering you the
+        opportunity to join the new mailing list.  Launchpad can also
+        automatically subscribe you to a team's mailing list whenever you
+        join a team.</div>
+
     <tal:widget
        define="widget nocall:view/widgets/mailing_list_auto_subscribe_policy">
       <table class="form">
