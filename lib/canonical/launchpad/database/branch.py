@@ -850,9 +850,10 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches()
+            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches(
+            join_owner=False, join_product=False)
         branches.order_by(
-            Desc(Branch.last_scanned), Desc(Branch.id))
+            Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
             branches.config(limit=branch_count)
         return branches
@@ -866,9 +867,10 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.IMPORTED).scanned().getBranches()
+            BranchType.IMPORTED).scanned().getBranches(
+            join_owner=False, join_product=False)
         branches.order_by(
-            Desc(Branch.last_scanned), Desc(Branch.id))
+            Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
             branches.config(limit=branch_count)
         return branches
@@ -880,7 +882,8 @@ class BranchSet:
         """See `IBranchSet`."""
         all_branches = getUtility(IAllBranches)
         branches = all_branches.withLifecycleStatus(
-            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches()
+            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches(
+            join_owner=False, join_product=False)
         branches.order_by(
             Desc(Branch.date_created), Desc(Branch.id))
         if branch_count is not None:
