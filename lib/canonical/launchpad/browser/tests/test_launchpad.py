@@ -105,6 +105,16 @@ class TestBranchTraversal(TestCaseWithFactory):
         series = self.factory.makeProductSeries()
         self.assertNotFound('%s/%s' % (series.product.name, series.name))
 
+    def test_too_short_branch_name(self):
+        # 404 if the thing following +branch is a unique name that's too short
+        # to be a real unique name.
+        owner = self.factory.makePerson()
+        self.assertNotFound('~%s' % owner.name)
+
+    def test_invalid_product_name(self):
+        # 404 if the thing following +branch has an invalid product name.
+        self.assertNotFound('a')
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
