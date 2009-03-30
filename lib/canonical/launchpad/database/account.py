@@ -202,7 +202,10 @@ class AccountSet:
     def get(self, id):
         """See `IAccountSet`."""
         account = IStore(Account).get(Account, id)
-        if account is None:
+        if account is None and not IMasterStore.providedBy(IStore(Account)):
+            # The account was not found in a slave store but it may exist in
+            # the master one if it was just created, so we try to fetch it
+            # again, this time from the master.
             account = IMasterStore(Account).get(Account, id)
         return account
 
@@ -230,16 +233,22 @@ class AccountSet:
             Account, Join(EmailAddress, EmailAddress.account == Account.id)]
         store = IStore(Account)
         account = store.using(*origin).find(Account, conditions).one()
-        if account is None:
+        if account is None and not IMasterStore.providedBy(IStore(Account)):
+            # The account was not found in a slave store but it may exist in
+            # the master one if it was just created, so we try to fetch it
+            # again, this time from the master.
             store = IMasterStore(Account)
             account = store.using(*origin).find(Account, conditions).one()
         return account
 
     def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
-        account = IStore(Account).find(
-            Account, openid_identifier=openid_identifier)
-        if account is None:
+        store = IStore(Account)
+        account = store.find(Account, openid_identifier=openid_identifier)
+        if account is None and not IMasterStore.providedBy(IStore(Account)):
+            # The account was not found in a slave store but it may exist in
+            # the master one if it was just created, so we try to fetch it
+            # again, this time from the master.
             account = IMasterStore(Account).find(
                 Account, openid_identifier=openid_identifier)
         return account
