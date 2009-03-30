@@ -51,7 +51,7 @@ from canonical.launchpad.interfaces.archive import (
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet)
+    IArchiveSubscriberSet, IArchiveSubscriptionForOwner)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -220,7 +220,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         # the direct subscription:
         for subscription in subscriptions:
             if subscription.subscriber == person:
-                return subscription
+                return IArchiveSubscriptionForOwner(subscription)
 
         return None
 
@@ -1412,7 +1412,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['description', 'whiteboard']
+    field_names = ['description']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 
@@ -1420,9 +1420,7 @@ class ArchiveEditView(BaseArchiveEditView):
 class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'require_virtualized',
-                   'buildd_secret', 'authorized_size', 'whiteboard']
-    custom_widget(
-        'whiteboard', TextAreaWidget, height=10, width=30)
+                   'buildd_secret', 'authorized_size']
 
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.

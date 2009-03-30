@@ -8,7 +8,10 @@
 
   <!-- BinaryPackagePublishingHistory -->
   <class class="canonical.launchpad.database.BinaryPackagePublishingHistory">
-    <allow interface="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory" />
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.publishing.IBinaryPackagePublishingHistory"
+      />
   </class>
 
   <browser:pages

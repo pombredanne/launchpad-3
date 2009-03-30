@@ -113,8 +113,8 @@ code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
 /* Links that don't open separate pages are green to denote their behavior: */
-a[onclick], .collapsible legend a               {color: #063;}
-a[onclick]:active, .collapsible legend a:active {color: #093;}
+a[onclick], .collapsible legend a, a.js-action               {color: #063;}
+a[onclick]:active, .collapsible legend a:active, a.js-action {color: #093;}
 
 /* Help links */
 a.help {
@@ -1145,7 +1145,7 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
 a.official-tag { /* Looks just like a normal link */ }
 
 a.unofficial-tag {
-  color: #333;
+  color: #6699ee;
 }
 
 /* === Portlets === */
@@ -1280,6 +1280,21 @@ ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
+/* Various custom link icons */
+a.info {
+    background: url('/@@/info') no-repeat scroll left center;
+    padding-left:18px;
+}
+a.edit {
+    background: url('/@@/edit') no-repeat scroll left center;
+    padding-left:18px;
+}
+a.add {
+    background: url('/@@/add') no-repeat scroll left center;
+    padding-left:18px;
+}
+
+
 /* == Application-specific styles == */
 
 #application-footer strong {font-weight: normal;}
@@ -1299,8 +1314,13 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 }
 .boardCommentBody {padding: 0.5em 12px 0;}
 .boardBugActivityBody {
-  background-color: #eee;
-  padding: 0.5em 12px 0.5em;
+  padding: 0.5em 12px;
+  background-color: #fafafa;
+  color: #555;
+}
+.boardBugActivityBody table {
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
 }
 .boardCommentContent { line-height: 1.5em;}
 .boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}

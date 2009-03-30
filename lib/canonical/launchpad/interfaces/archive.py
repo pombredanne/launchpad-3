@@ -129,10 +129,6 @@ class IArchivePublic(IHasOwner):
         max=(20 * 1024),
         description=_("Maximum size, in MiB, allowed for this PPA."))
 
-    whiteboard = Text(
-        title=_("Whiteboard"), required=False,
-        description=_("Administrator comments."))
-
     purpose = Int(
         title=_("Purpose of archive."), required=True, readonly=True,
         )

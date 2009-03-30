@@ -341,9 +341,10 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         # branch for 'pocket' on that package.
         package = self.factory.makeSourcePackage()
         pocket = PackagePublishingPocket.BACKPORTS
+        path = package.getPocketPath(pocket)
         sourcepackagepocket = getUtility(ISourcePackagePocketFactory).new(
             package, pocket)
-        self.assertTraverses(sourcepackagepocket.path, sourcepackagepocket)
+        self.assertTraverses(path, sourcepackagepocket)
 
     def test_no_such_distribution(self):
         # `traverse` raises `NoSuchProduct` error if the distribution doesn't
@@ -523,25 +524,6 @@ class TestSourcePackagePocket(TestCaseWithFactory):
         return getUtility(ISourcePackagePocketFactory).new(
             sourcepackage, pocket)
 
-    def test_suite_release_pocket(self):
-        # The suite of a RELEASE source package pocket is the name of the
-        # distroseries.
-        package = self.factory.makeSourcePackage()
-        package_pocket = self.makeSourcePackagePocket(
-            package, PackagePublishingPocket.RELEASE)
-        self.assertEqual(package.distroseries.name, package_pocket.suite)
-
-    def test_suite_non_release_pocket(self):
-        # The suite of a non-RELEASE source package pocket is the name of the
-        # distroseries, followed by a hyphen and the lower-case name of the
-        # pocket.
-        package = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.SECURITY
-        package_pocket = self.makeSourcePackagePocket(package, pocket)
-        self.assertEqual(
-            '%s-%s' % (package.distroseries.name, pocket.name.lower()),
-            package_pocket.suite)
-
     def test_branch(self):
         # The 'branch' attribute is the linked branch for the pocket on that
         # packet.
@@ -559,34 +541,13 @@ class TestSourcePackagePocket(TestCaseWithFactory):
             sourcepackage=package, pocket=PackagePublishingPocket.SECURITY)
         self.assertEqual(branch, package_pocket.branch)
 
-    def test_path_release_pocket(self):
-        # The path of a RELEASE source package pocket is the path of the
-        # source package.
-        package = self.factory.makeSourcePackage()
-        package_pocket = self.makeSourcePackagePocket(
-            package, PackagePublishingPocket.RELEASE)
-        self.assertEqual(package.path, package_pocket.path)
-
-    def test_path_non_release_pocket(self):
-        # The path of a non-RELEASE source package pocket is the path of the
-        # source package, except with the middle series component replaced by
-        # <series>-<pocket>.
-        package = self.factory.makeSourcePackage()
-        package_pocket = self.makeSourcePackagePocket(
-            package, PackagePublishingPocket.BACKPORTS)
-        self.assertEqual(
-            '%s/%s-%s/%s' % (
-                package.distribution.name,
-                package.distroseries.name,
-                PackagePublishingPocket.BACKPORTS.name.lower(),
-                package.sourcepackagename.name),
-            package_pocket.path)
-
     def test_display_name(self):
         # A SourcePackagePocket also has a display name, so we can use it in
         # error messages.
         package_pocket = self.makeSourcePackagePocket()
-        self.assertEqual(package_pocket.path, package_pocket.displayname)
+        self.assertEqual(
+            package_pocket.sourcepackage.getPocketPath(package_pocket.pocket),
+            package_pocket.displayname)
 
     def test_equality(self):
         package = self.factory.makeSourcePackage()

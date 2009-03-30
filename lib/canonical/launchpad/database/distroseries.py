@@ -91,7 +91,7 @@ from canonical.launchpad.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from canonical.launchpad.interfaces.publishing import (
     active_publishing_status, ICanPublishPackages, PackagePublishingPocket,
-    PackagePublishingStatus)
+    PackagePublishingStatus, pocketsuffix)
 from canonical.launchpad.interfaces.queue import IHasQueueItems
 from canonical.launchpad.interfaces.sourcepackage import (
     ISourcePackage, ISourcePackageFactory)
@@ -1662,6 +1662,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables = ['DistroSeries', 'Distribution'],
             orderBy=['-priority', 'name'])
         return shortlist(result, 300)
+
+    def getSuite(self, pocket):
+        """See `IDistroSeries`."""
+        if pocket == PackagePublishingPocket.RELEASE:
+            return self.name
+        else:
+            return '%s%s' % (self.name, pocketsuffix[pocket])
 
 
 class DistroSeriesSet:
