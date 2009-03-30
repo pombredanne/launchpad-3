@@ -12,7 +12,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person
 from canonical.launchpad.interfaces.branch import NoSuchBranch
 from canonical.launchpad.interfaces.branchlookup import (
     CannotHaveLinkedBranch, IBranchLookup, ILinkedBranchTraverser,
@@ -28,7 +27,7 @@ from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import run_with_login, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -534,6 +533,24 @@ class TestGetByLPPath(TestCaseWithFactory):
             '%s/%s/other/bits' % (series.product.name, series.name))
         self.assertEqual((branch, None), result)
 
+    def test_too_long_sourcepackage(self):
+        # If the provided path points to an existing source package with a
+        # linked branch but is followed by extra path segments, then we return
+        # the linked branch but chop off the extra segments. We might want to
+        # change this behaviour in future.
+        package = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=package)
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.setBranch,
+            PackagePublishingPocket.RELEASE,
+            branch,
+            ubuntu_branches.teamowner)
+        result = self.branch_lookup.getByLPPath(
+            '%s/other/bits' % package.path)
+        self.assertEqual((branch, None), result)
+
 
 class TestSourcePackagePocket(TestCaseWithFactory):
     """Tests for the SourcePackagePocket wrapper class."""
@@ -574,12 +591,10 @@ class TestSourcePackagePocket(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(sourcepackage=package)
         registrant = self.factory.makePerson()
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        login_person(ubuntu_branches.teamowner)
-        try:
-            package.setBranch(
-                PackagePublishingPocket.SECURITY, branch, registrant)
-        finally:
-            login(ANONYMOUS)
+        run_with_login(
+            ubuntu_branches.teamowner,
+            package.setBranch,
+            PackagePublishingPocket.SECURITY, branch, registrant)
         package_pocket = self.makeSourcePackagePocket(
             sourcepackage=package, pocket=PackagePublishingPocket.SECURITY)
         self.assertEqual(branch, package_pocket.branch)
