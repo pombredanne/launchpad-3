@@ -285,6 +285,7 @@
       <tal:mentorships
         replace="structure overview_menu/mentorships/fmt:link" />
         </td>
+        <td tal:condition="view/recently_proposed_members"></td>
       </tr>
     </table>
     </tal:can-view>
