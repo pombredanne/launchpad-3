@@ -1,4 +1,4 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
 
 """Export module for gettext's .po file format.
 
@@ -264,9 +264,6 @@ class GettextPOExporterBase:
     def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
                                force_utf8=False):
         """See `ITranslationFormatExporter`."""
-        # XXX JeroenVermeulen 2008-02-06: Is there anything here that we can
-        # unify with the language-pack export code?
-
         storage = ExportFileStorage('application/x-po')
 
         for translation_file in translation_files:
@@ -293,7 +290,23 @@ class GettextPOExporterBase:
             if force_utf8:
                 translation_file.header.charset = 'UTF-8'
             chunks = [self._makeExportedHeader(translation_file)]
+
+            seen_keys = {}
+
             for message in translation_file.messages:
+                key = (message.context, message.msgid_singular)
+                if key in seen_keys:
+                    # Launchpad can deal with messages that are
+                    # identical to gettext, but differ in plural msgid.
+                    assert seen_keys[key] != message.msgid_plural, (
+                        "Export contains wholly identical messages.")
+
+                    # Suppress messages that are duplicative to gettext
+                    # so gettext doesn't choke on the resulting file.
+                    continue
+                else:
+                    seen_keys[key] = message.msgid_plural
+
                 if (message.is_obsolete and
                     (ignore_obsolete or len(message.translations) == 0)):
                     continue
