@@ -360,11 +360,11 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         now = datetime.now(pytz.UTC)
 
         # Expire the first subscription.
-        subs[0].date_expires = now - timedelta(minutes=1)
+        subs[0].date_expires = now - timedelta(minutes=3)
         self.assertEqual(subs[0].status, ArchiveSubscriberStatus.CURRENT)
 
         # Set the expiry in the future for the second.
-        subs[1].date_expires = now + timedelta(minutes=1)
+        subs[1].date_expires = now + timedelta(minutes=3)
         self.assertEqual(subs[0].status, ArchiveSubscriberStatus.CURRENT)
 
         # Run the script and make sure only the first was expired.
