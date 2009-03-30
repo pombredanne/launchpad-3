@@ -199,6 +199,8 @@ branchmergeproposal_delete = 'Delete proposal to merge branch'
 
 branchmergeproposal_edit = ViewLabel()
 
+branchmergeproposal_commitmessage_edit = ViewLabel()
+
 branchmergeproposal_editstatus = ViewLabel()
 
 branchmergeproposal_enqueue = 'Queue branch for merging'

@@ -110,8 +110,10 @@ one because he is not a member of that team, nor an admin.
     >>> print_tag_with_id(cprov_browser.contents, 'ppas')
     Personal package archives
     PPA for Celso Providelo
+    Create a new PPA
 
     >>> cprov_browser.getLink("PPA for Celso Providelo").click()
+
     >>> print cprov_browser.title
     PPA for Celso Providelo
 
@@ -135,6 +137,7 @@ the landscape-developers PPA page, which advertises its private status.
     >>> print_tag_with_id(name12_browser.contents, 'ppas')
     Personal package archives
     PPA for Landscape Developers
+    Create a new PPA
 
     >>> name12_browser.getLink("PPA for Landscape Developers").click()
 
