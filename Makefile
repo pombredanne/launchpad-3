@@ -64,13 +64,12 @@ check_loggerhead_on_merge:
 	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-dbfreeze_check:
-	# Ignore lines starting with P as these are pending merges.
-	[ ! -f database-frozen.txt -o \
-	  `PYTHONPATH= bzr status -S database/schema/ | \
+check_merge:
+	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\)" | wc -l` -eq 0 ]
+	${PYTHON} lib/canonical/tests/test_no_conflict_marker.py
 
-check_merge: dbfreeze_check
+check_db_merge:
 	${PYTHON} lib/canonical/tests/test_no_conflict_marker.py
 
 # This can be removed once we move to zc.buildout and we have versioned
@@ -300,4 +299,4 @@ tags:
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches
+	reload-apache hosted_branches check_db_merge

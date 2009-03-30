@@ -8,7 +8,10 @@
 
   <!-- SourcePackagePublishingHistory -->
   <class class="canonical.launchpad.database.SourcePackagePublishingHistory">
-    <allow interface="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"/>
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.publishing.ISourcePackagePublishingHistory"
+      />
   </class>
 
   <browser:pages

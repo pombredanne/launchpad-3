@@ -81,8 +81,8 @@ class ProductReleaseContextMenu(ContextMenu):
         return Link(url, text)
 
 
-class ProductReleaseAddViewMixin(LaunchpadFormView):
-    """Mixin for creating a release from an existing or new milestone.
+class ProductReleaseAddViewBase(LaunchpadFormView):
+    """Base class for creating a release from an existing or new milestone.
 
     Subclasses need to define the field_names a form action.
     """
@@ -116,7 +116,7 @@ class ProductReleaseAddViewMixin(LaunchpadFormView):
                 _('The &ldquo;%s&rdquo; milestone for this product release '
                   'was deactivated so that bugs & blueprints cannot be '
                   'targeted to a milestone in the past.' % milestone.name)))
-        self.next_url = canonical_url(newrelease.productseries)
+        self.next_url = canonical_url(newrelease.milestone.productseries)
         notify(ObjectCreatedEvent(newrelease))
 
     @property
@@ -129,7 +129,7 @@ class ProductReleaseAddViewMixin(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class ProductReleaseAddView(ProductReleaseAddViewMixin):
+class ProductReleaseAddView(ProductReleaseAddViewBase):
     """Create a product release.
 
     Also, deactivate the milestone it is attached to.
@@ -160,7 +160,7 @@ class ProductReleaseAddView(ProductReleaseAddViewMixin):
         self._createRelease(self.context, data)
 
 
-class ProductReleaseFromSeriesAddView(ProductReleaseAddViewMixin):
+class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase):
     """Create a product release and select or add a milestone.
 
     Also, deactivate the milestone it is attached to.
