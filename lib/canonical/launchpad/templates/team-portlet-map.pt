@@ -15,28 +15,27 @@
       have not  set their location. <a tal:attributes="href link/target">Do
       it for them!</a>
     </div>
-    <tal:map condition="view/mapped_participants">
+    <div style="width: 400px;" tal:condition="view/mapped_participants">
+      <div id="team_map_actions"
+        style="position:relative; z-index: 9999;
+               float:right; width: 8.5em; margin: 2px;
+               background-color: white;  padding-bottom:1px;"></div>
       <div id="team_map_div" class="small-map"
         style="height: 200px; border: 1px; margin-top: 4px;"></div>
       <tal:mapscript replace="structure view/map_portlet_html" />
-      <div id="team_map_actions">
-        <a
-          tal:condition="link/enabled"
-          tal:replace="structure link/render">Show map and time zones</a>
-        <tal:more_mapped_participants>
-        (to see <tal:count replace="view/mapped_participants_count" />
-        mapped members) &nbsp;
-        </tal:more_mapped_participants>
+      <div style="margin-top: 0px;">
+        <a tal:replace="structure link/render">View map and time zones</a>
       </div>
-    </tal:map>
-
-    <a tal:condition="not: view/mapped_participants"
-       tal:attributes="href link/target"
-      ><img src="/+icing/portlet-map-unknown.png" /></a>
-
-    <div tal:condition="link/enabled">
-      <a tal:replace="structure link/render">Show map and time zones</a>
     </div>
+
+    <tal:no-map tal:condition="not: view/mapped_participants">
+      <a tal:attributes="href link/target"
+        ><img src="/+icing/portlet-map-unknown.png" /></a>
+
+      <div tal:condition="link/enabled">
+        <a tal:replace="structure link/render">Show map and time zones</a>
+      </div>
+    </tal:no-map>
   </tal:can_view>
 
 </div>
