@@ -548,16 +548,6 @@ class BranchNameValidationMixin:
                 "<em>%s</em>." % (prefix, product.name, branch_name))
         self.setFieldError('name', structured(message))
 
-    def validate_branch_name(self, owner, product, branch_name):
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: Don't look
-        # before you leap. Instead try to create the branch and then populate
-        # the error field.
-        namespace = get_branch_namespace(owner, product=product)
-        existing_branch = namespace.getByName(branch_name)
-        if existing_branch is not None:
-            # There is a branch that has the branch_name specified already.
-            self._setBranchExists(existing_branch)
-
 
 class BranchEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a branch."""
@@ -823,6 +813,16 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # Replace the normal owner field with a more permissive vocab.
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
+
+    def validate_branch_name(self, owner, product, branch_name):
+        # XXX: JonathanLange 2009-03-30 spec=package-branches: Don't look
+        # before you leap. Instead try to move the branch and then populate
+        # the error field.
+        namespace = get_branch_namespace(owner, product=product)
+        existing_branch = namespace.getByName(branch_name)
+        if existing_branch is not None:
+            # There is a branch that has the branch_name specified already.
+            self._setBranchExists(existing_branch)
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
