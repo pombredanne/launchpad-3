@@ -10,21 +10,12 @@ __all__ = [
     'ICanHasLinkedBranch',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
-    'InvalidBranchIdentifier',
     'ISourcePackagePocket',
     'ISourcePackagePocketFactory',
     'NoLinkedBranch',
     ]
 
 from zope.interface import Attribute, Interface
-
-
-class InvalidBranchIdentifier(Exception):
-    """Raised when trying to resolve an invalid branch name."""
-
-    def __init__(self, path):
-        self.path = path
-        Exception.__init__(self, "Invalid branch identifier: '%s'" % (path,))
 
 
 class CannotHaveLinkedBranch(Exception):
@@ -126,32 +117,39 @@ class IBranchLookup(Interface):
         "~owner/product/name" (same as unique name)
         "distro/series/sourcepackage" (official branch for release pocket of
             the version of a sourcepackage in a distro series)
+        "distro/series-pocket/sourcepackage" (official branch for the given
+            pocket of the version of a sourcepackage in a distro series)
         "product/series" (branch associated with a product series)
         "product" (development focus of product)
 
-        :raises InvalidBranchIdentifier: If the given path could never
-            possibly match a branch.
+        :raises InvalidNamespace: If the path looks like a unique branch name
+            but doesn't have enough segments to be a unique name.
         :raises InvalidProductName: If the given product in a product
             or product series shortcut is an invalid name for a product.
-        :raises NoBranchForSeries: If the product series referred to does not
-            have an associated branch.
-        :raises NoBranchForSourcePackage: If there is no official branch at
-            the path described.
-        :raises NoDefaultBranch: If there is no default branch possible for
-            the given shortcut.
+
         :raises NoSuchBranch: If we can't find a branch that matches the
             branch component of the path.
         :raises NoSuchPerson: If we can't find a person who matches the person
             component of the path.
         :raises NoSuchProduct: If we can't find a product that matches the
             product component of the path.
-        :raises NoSuchProductSeries: If the series component doesn't match an
-            existing series.
+        :raises NoSuchProductSeries: If the product series component doesn't
+            match an existing series.
+        :raises NoSuchDistroSeries: If the distro series component doesn't
+            match an existing series.
         :raises NoSuchSourcePackageName: If the source packagae referred to
             does not exist.
 
-        :return: a tuple of `IBranch`, extra_path. 'extra_path' is used to
-            make things like 'bzr cat lp:~foo/bar/baz/README' work.
+        :raises NoLinkedBranch: If the path refers to an existing thing that's
+            not a branch and has no default branch associated with it. For
+            example, a product without a development focus branch.
+        :raises CannotHaveLinkedBranch: If the path refers to an existing
+            thing that cannot have a linked branch associated with it. For
+            example, a distribution.
+
+        :return: a tuple of (`IBranch`, extra_path). 'extra_path' is used to
+            make things like 'bzr cat lp:~foo/bar/baz/README' work. Trailing
+            paths are not handled for shortcut paths.
         """
 
 
