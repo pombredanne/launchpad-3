@@ -341,17 +341,7 @@ class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
 
     @property
     def text(self):
-        if self.context.is_ppa:
-            default_ppa_name = default_name_by_purpose.get(
-                self.context.purpose)
-            if self.context.name == default_ppa_name:
-                return 'PPA'
-            return '%s PPA' % self.context.name
-
-        if self.context.is_copy:
-            return '%s Archive Copy' % self.context.name
-
-        return '%s' % self.context.purpose.title
+        return self.context.displayname
 
 
 class ArchiveViewBase(LaunchpadView):
