@@ -1,4 +1,5 @@
-= Team mailing list subscriptions =
+Team mailing list subscriptions
+===============================
 
 Members of a team, either direct or indirect, may subscribe to that team's
 mailing list, if it has one.  To illustrate, we'll first create a bunch of
@@ -112,10 +113,11 @@ Once Anne validates her new address, she can post from it.
 
     # Reverse the validation so that it doesn't affect subsequent tests.
     >>> alternative.status = EmailAddressStatus.NEW
-    >>> transaction.commit()
+    >>> syncUpdate(alternative)
 
 
-== MailingListSubscription objects ==
+MailingListSubscription objects
+-------------------------------
 
 MailingListSubscription objects make it possible to see under which
 address (if any) a user is subscribed. That information is available
@@ -140,7 +142,8 @@ associated with any specific address.
     None
 
 
-== Nested teams ==
+Nested teams
+------------
 
 Indirect members can subscribe to a team's mailing list.  To illustrate this,
 we first create team-two as a subteam of team-one.
@@ -287,7 +290,8 @@ Teams, even subteams, cannot subscribe to mailing lists.
     CannotSubscribe: Teams cannot be mailing list members: Team Two
 
 
-== Subscribed email addresses ==
+Subscribed email addresses
+--------------------------
 
 As shown above, a person can subscribe either with their preferred email
 address or any other email address they own.  If they choose to use their
@@ -321,7 +325,8 @@ A person cannot subscribe an email address they do not own.
         fred.person@example.com
 
 
-== Unsubscribing ==
+Unsubscribing
+-------------
 
 Any list member can unsubscribe from the mailing list.
 
@@ -400,7 +405,8 @@ unsubscribed from the superteam's mailing list.
     [u'bperson@example.org', u'iona.person@example.com']
 
 
-== Double subscriptions ==
+Double subscriptions
+--------------------
 
 A list member may only be subscribed once, with a single email address.
 
@@ -419,7 +425,8 @@ different email address.
     CannotSubscribe: Iona Person is already subscribed to list Team One
 
 
-== List deactivation ==
+List deactivation
+-----------------
 
 When a team's mailing list is deactivated, all subscriptions to that mailing
 list are dropped.
@@ -445,7 +452,8 @@ A list that is not active cannot be subscribed to.
     CannotSubscribe: Mailing list is not usable: Team One
 
 
-== Persistence of preferences ==
+Persistence of preferences
+--------------------------
 
 When someone gets unsubscribed because they leave a team, their subscription
 preferences are preserved, so that if they re-join the team, their
@@ -484,7 +492,8 @@ their preferred email address.
     [u'jack.person@example.com', u'kperson@example.org']
 
 
-== Changing subscribed email address ==
+Changing subscribed email address
+---------------------------------
 
 A member of a mailing list can request to change certain aspects of their
 subscription.  Currently the only thing they can change is their subscribed
@@ -533,7 +542,8 @@ subscription address.
         the mailing list: Team Six
 
 
-== Subscribing while requesting a team membership ==
+Subscribing while requesting a team membership
+----------------------------------------------
 
 Someone who is not a member of a team may subscribe to the team's
 mailing list.  Full membership is only required to post to or receive
@@ -584,7 +594,8 @@ returned either as recipients or senders.
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.ACTIVE
 
 
-== Deleting addresses ==
+Deleting addresses
+------------------
 
 When a user deletes an email address, all of their mailing list
 subscriptions that use that address are automatically deleted as well.
@@ -609,7 +620,8 @@ subscriptions that use that address are automatically deleted as well.
     []
 
 
-== Deactivating accounts ==
+Deactivating accounts
+---------------------
 
 When a subscribed user has her account disabled, she will no longer be able to
 post to the mailing list, nor will she receive mailing list posts.
@@ -651,7 +663,8 @@ Umma is no longer subscribed to the mailing list...
      u'vera.person@example.com', u'vperson@example.org']
 
 
-== Subscription states ==
+Subscription states
+-------------------
 
 A user can subscribe to a mailing list only when the list is active (as
 show above), but for purposes of subscription, we also consider lists in
@@ -733,7 +746,8 @@ to.
     CannotSubscribe: Mailing list is not usable: Team 7
 
 
-== Subscribing a person to a list gracefully ==
+Subscribing a person to a list gracefully
+-----------------------------------------
 
 Calling IMailingList.subscribe() directly will always subscribe a
 person, regardless of their mailing list auto-subscription settings,
@@ -743,7 +757,8 @@ and try to recover gracefully from errors.  The method will return a
 True or False value to indicate if the user was subscribed to the list.
 
     >>> team_eight, list_eight = new_team('team-eight', with_list=True)
-    >>> mary = factory.makePersonByName('Mary', use_default_autosubscribe_policy=True)
+    >>> mary = factory.makePersonByName(
+    ...     'Mary', use_default_autosubscribe_policy=True)
 
 Mary is not a member of list-eight, so she will have no problem joining.
 
@@ -777,8 +792,9 @@ recover gracefully.
 
 And we can't subscribe someone who does not have a preferred email address.
 
-    >>> qbert = factory.makePersonByName('Qbert', set_preferred_email=False,
-    ...                    use_default_autosubscribe_policy=True)
+    >>> qbert = factory.makePersonByName(
+    ...     'Qbert', set_preferred_email=False,
+    ...     use_default_autosubscribe_policy=True)
     >>> print qbert.preferredemail
     None
 
@@ -786,7 +802,8 @@ And we can't subscribe someone who does not have a preferred email address.
     False
 
 
-=== Auto-subscription policy settings ===
+Auto-subscription policy settings
+---------------------------------
 
 Mary's auto-subscription settings are taken into account when signing
 up for the list.
@@ -801,7 +818,8 @@ By default, new users have a policy to only join a list if they
 explicitly request it.  If someone else adds them to a list, then they
 are only subscribed to the list if their policy is set to 'ALWAYS'.
 
-    >>> kathy = factory.makePersonByName('Kathy', use_default_autosubscribe_policy=True)
+    >>> kathy = factory.makePersonByName(
+    ...     'Kathy', use_default_autosubscribe_policy=True)
     >>> kathy.mailing_list_auto_subscribe_policy
     <...ON_REGISTRATION...>
 

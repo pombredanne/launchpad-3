@@ -4,20 +4,24 @@ from datetime import datetime
 import gzip
 import os
 from StringIO import StringIO
+import subprocess
 import tempfile
 import unittest
 
 from zope.component import getUtility
 
 from canonical.launchpad.database.librarian import ParsedApacheLog
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
     create_or_update_parsedlog_entry, DBUSER,
     get_host_date_status_and_request, get_day, get_files_to_parse,
     get_method_and_file_id, parse_file)
+from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadZopelessLayer, ZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadZopelessLayer, ZopelessLayer)
 
 
 here = os.path.dirname(__file__)
@@ -75,7 +79,7 @@ class TestLogFileParsing(TestCase):
         # days and library file IDs to number of downloads) and the total
         # number of bytes that have been parsed from this file.  In our sample
         # log, the file with ID 8196569 has been downloaded twice (once from
-        # Argentina and once from Australia) and the files with ID 12060796
+        # Argentina and once from Japan) and the files with ID 12060796
         # and 9096290 have been downloaded once.  The file with ID 15018215
         # has also been downloaded once (last line of the sample log), but
         # parse_file() always skips the last line as it may be truncated, so
@@ -84,13 +88,11 @@ class TestLogFileParsing(TestCase):
             here, 'apache-log-files', 'launchpadlibrarian.net.access-log'))
         downloads, parsed_bytes = parse_file(fd, start_position=0)
         date = datetime(2008, 6, 13)
-        self.assertEqual(downloads.keys(), [date])
-        daily_downloads = downloads[date]
         self.assertContentEqual(
-            daily_downloads.items(),
-            [('AR', {'8196569': 1}),
-             ('AU', {'9096290': 1, '12060796': 1}),
-             ('JP', {'8196569': 1})])
+            downloads.items(),
+            [('8196569', {date: {'AR': 1, 'JP': 1}}),
+             ('9096290', {date: {'AU': 1}}),
+             ('12060796', {date: {'AU': 1}})])
 
         # The last line is skipped, so we'll record that the file has been
         # parsed until the beginning of the last line.
@@ -107,9 +109,9 @@ class TestLogFileParsing(TestCase):
             fd, start_position=self._getLastLineStart(fd))
         self.assertEqual(parsed_bytes, fd.tell())
 
-        daily_downloads = downloads[datetime(2008, 6, 13)]
         self.assertContentEqual(
-            daily_downloads.items(), [('US', {'15018215': 1})])
+            downloads.items(),
+            [('15018215', {datetime(2008, 6, 13): {'US': 1}})])
 
     def _assertResponseWithGivenStatusIsIgnored(self, status):
         """Assert that responses with the given status are ignored."""
@@ -262,6 +264,39 @@ class Test_create_or_update_parsedlog_entry(TestCase):
         self.assertIs(entry, entry2)
         self.assertIsNot(None, entry2)
         self.assertEqual(entry2.bytes_read, len(first_line))
+
+
+class TestScriptRunning(TestCase):
+    """Run parse-librarian-apache-access-logs.py and test its outcome."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_script_run(self):
+        # Before we run the script, the LibraryFileAliases with id 1, 2 and 3
+        # will have download counts set to 0.  After the script's run, each of
+        # them will have their download counts set to 1, matching the sample
+        # log files we use for this test:
+        # scripts/tests/apache-log-files-for-sampledata.
+        login(ANONYMOUS)
+        libraryfile_set = getUtility(ILibraryFileAliasSet)
+        self.assertEqual(libraryfile_set[1].hits, 0)
+        self.assertEqual(libraryfile_set[2].hits, 0)
+        self.assertEqual(libraryfile_set[3].hits, 0)
+
+        process = subprocess.Popen(
+            'cronscripts/parse-librarian-apache-access-logs.py', shell=True,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        (out, err) = process.communicate()
+        self.assertEqual(
+            process.returncode, 0, "stdout:%s, stderr:%s" % (out, err))
+
+        # Must commit because the changes were done in another transaction.
+        import transaction
+        transaction.commit()
+        self.assertEqual(libraryfile_set[1].hits, 1)
+        self.assertEqual(libraryfile_set[2].hits, 1)
+        self.assertEqual(libraryfile_set[3].hits, 1)
 
 
 def test_suite():

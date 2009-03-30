@@ -10,67 +10,82 @@
   i18n:domain="launchpad"
   >
 <body>
+  <metal:block fill-slot="head_epilogue">
+    <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
+    <js tal:replace="structure string:<script type='text/javascript'>
+YUI({base: yui_base + '/'}).use(
+    'node', 'lazr.formoverlay', function(Y) {
 
+function create_form_overlay_for_row(row) {
+    var ppa_name = row.query('.ppa_display_name').get('innerHTML');
+
+    var form_text = [
+        '<p>The administrator of the archive \'' + ppa_name + '\' has ',
+        'opened a subscription for you.</p>',
+        '<p>You now need to confirm your subscription.</p>'].join('');
+    var form_overlay = new Y.lazr.FormOverlay({
+        headerContent: '<h2>Confirm subscription</h2>',
+        form_content: form_text,
+        form_submit_button: Y.Node.create(
+            '<input type=\'submit\' name=\'activate\' ' +
+            'value=\'Confirm subscription\' />'),
+        centered: true,
+        visible: false
+    });
+    form_overlay.render();
+    return form_overlay;
+}
+
+Y.on('domready', function() {
+    // First look for all the subscription rows
+    var subscription_rows = Y.all('tbody .archive-subscription-row');
+    subscription_rows.each(function(row){
+        activate_link = row.query('a.add');
+        if (activate_link) {
+            // Create a form overlay for this row, and set it up to
+            // post to the activate subscription page.
+            var form_overlay = create_form_overlay_for_row(row);
+            form_overlay.form_node.set('method', 'post');
+            form_overlay.form_node.set(
+                'action', activate_link.getAttribute('href'));
+            activate_link.on('click', function(e){
+                e.preventDefault();
+                // Show this row's form overlay
+                form_overlay.show();
+            });
+            activate_link.addClass('js-action');
+        }
+    });
+});
+
+});
+       </script>" />
+      <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/overlay/assets/pretty-overlay-core.css"
+        />
+      <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay-skin.css"
+        />
+      <link rel="stylesheet" type="text/css"
+        tal:attributes="href
+        string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
+        />
+
+  </metal:block>
   <div metal:fill-slot="main">
 
     <h1 tal:content="CONTEXTS/fmt:pagetitle">
       Private archive subscriptions for Joe Smith
     </h1>
   <tal:has_subscriptions condition="view/subscriptions_with_tokens">
-    <div id="pending_subscriptions" tal:condition="view/pending_subscriptions">
-      <h2>Pending subscriptions</h2>
-      <p>You have been added as a subscriber of the following Private PPAs.
-         If you wish to download software from these PPAs, please activate
-         your subscription.
-      </p>
-      <table summary="CONTEXTS/fmt:pagetitle" id="pending-archive-subscriptions">
-        <thead>
-          <tr class="pending-archive-subscription-row">
-            <th>Archive</th><th>Subscription description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="subscription view/pending_subscriptions"
-              class="pending-archive-subscription-row">
-            <td tal:content="subscription/archive/displayname">Private PPA for Celso
-            </td>
-            <td tal:content="subscription/description">Allow Team X access.
-            </td>
-            <td tal:define="archive_id subscription/archive/id">
-              <form method="post" action="">
-                <input type="hidden" name="archive_id"
-                    tal:attributes="value string:${archive_id}"/>
-                <input type="submit" value="Activate"
-                    tal:attributes="name string:field.actions.activate_archive_${archive_id}"/>
-              </form>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div id="sources_list" tal:condition="view/active_subscriptions_with_tokens">
-      <h2>Custom sources.list entries</h2>
-      <p>The following sources.list entries will enable you to download
-         software from the private PPAs for which you have activated
-         your subscription.</p>
-      <p>You are recommended to copy these into a file such as:
-         /etc/apt/sources.list.d/private_ppa_sources.list . See
-         <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20Private%20PPA%20to%20your%20Ubuntu%20repositories"
-          >adding a private PPA to your Ubuntu repositories</a> for more details.
-      </p>
-      <tal:comment condition="nothing">
-        No extra spacing is important in the 'pre' content below
-        to avoid lots of blank lines as well as allow users to
-        copy'n'paste it.
-      </tal:comment>
-      <pre id="sources-list-entries" tal:content="view/private_ppa_sources_list" />
-    </div>
     <div id="current_subscriptions">
-      <h2>Subscriptions</h2>
-      <p>All the private archives for which you have
-         a subscription are displayed below.
+      <p>Here's a list of all the private archives to which you have
+         subscribed.
       </p>
-      <table summary="CONTEXTS/fmt:pagetitle" id="archive-subscriptions">
+      <table summary="CONTEXTS/fmt:pagetitle" id="archive-subscriptions"
+        class="listing">
         <thead>
           <tr class="archive-subscription-row">
             <th>Archive</th><th>Subscription description</th><th>Status</th>
@@ -82,13 +97,26 @@
             <tal:subscription_and_token
                 define="subscription subscription_with_token/subscription;
                         token subscription_with_token/token">
-            <td tal:content="subscription/archive/displayname">Private PPA for Celso
+            <td tal:content="subscription/archive/displayname"
+                class="ppa_display_name">Private PPA for Celso
             </td>
             <td tal:content="subscription/description">Allow Team X access.
             </td>
             <td>
                 <tal:active condition="token">Active</tal:active>
                 <tal:pending condition="not: token">Pending</tal:pending>
+            </td>
+            <td>
+              <tal:active condition="token">
+                <a tal:attributes="href subscription/fmt:url" class="info">
+                  View
+                </a>
+              </tal:active>
+              <tal:pending condition="not: token">
+                <a tal:attributes="href subscription/fmt:url" class="edit">
+                  Confirm
+                </a>
+              </tal:pending>
             </td>
             </tal:subscription_and_token>
           </tr>

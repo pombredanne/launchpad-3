@@ -1,12 +1,14 @@
-= Mailing list lifecycle =
+Mailing list lifecycle
+======================
 
 Every team in Launchpad can have a mailing list, and every mailing list is
 associated with exactly one team.
 
 
-== Hosted mailing list ==
+Hosted mailing list
+-------------------
 
-Landscape Developers apply for a mailing list.
+The owner of Landscape Developers applies for a mailing list.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
@@ -247,7 +249,8 @@ The contact address is now set to the mailing list address.
       landscape-developers@lists.launchpad.dev']
 
 
-== Deactivating and reactivating lists ==
+Deactivating and reactivating lists
+-----------------------------------
 
 An active mailing list can be deactivated. If the deactivated mailing
 list was the team contact method, the contact method will be changed
@@ -353,7 +356,8 @@ Members who are not owners can see the link.
     http://lists.launchpad.dev/bassists
 
 
-== Purge permissions ==
+Purge permissions
+-----------------
 
 A mailing list may be 'purged' when it is in one of several safe states.
 By 'safe' we mean that there are no artifacts of the mailing list on the
@@ -539,7 +543,8 @@ purged.
     You can purge this mailing list...
 
 
-== Actions on purged mailing lists ==
+Actions on purged mailing lists
+-------------------------------
 
 A mailing list expert purges the inactive list.
 

@@ -6,9 +6,12 @@ __metaclass__ = type
 __all__ = [
     'BranchLinkedToBug',
     'BranchUnlinkedFromBug',
+    'BugConvertedToQuestion',
     'BugDescriptionChange',
     'BugTagsChange',
     'BugTaskAdded',
+    'BugTaskAttributeChange',
+    'BugTaskTargetChange',
     'BugTitleChange',
     'BugVisibilityChange',
     'BugWatchAdded',
@@ -24,9 +27,10 @@ from textwrap import dedent
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class NoBugChangeFoundError(Exception):
@@ -103,6 +107,28 @@ class UnsubscribedFromBug(BugChangeBase):
         return None
 
 
+class BugConvertedToQuestion(BugChangeBase):
+    """A bug got converted into a question."""
+
+    def __init__(self, when, person, question):
+        super(BugConvertedToQuestion, self).__init__(when, person)
+        self.question = question
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return dict(
+            whatchanged='converted to question',
+            newvalue=str(self.question.id))
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        return {
+            'text': (
+                '** Converted to question:\n'
+                '   %s' % canonical_url(self.question)),
+            }
+
+
 class BugTaskAdded(BugChangeBase):
     """A bug task got added to the bug."""
 
@@ -137,10 +163,6 @@ class BugTaskAdded(BugChangeBase):
         return {
             'text': '\n'.join(lines)
             }
-
-    def getBugNotificationRecipients(self):
-        """See `IBugChange`."""
-        # Send the notification to the default recipients.
 
 
 class SeriesNominated(BugChangeBase):
@@ -218,12 +240,16 @@ class BranchLinkedToBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return dict(
             whatchanged='branch linked',
             newvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return {'text': '** Branch linked: %s' % self.branch.bzr_identity}
 
 
@@ -236,12 +262,16 @@ class BranchUnlinkedFromBug(BugChangeBase):
 
     def getBugActivity(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return dict(
             whatchanged='branch unlinked',
             oldvalue=self.branch.bzr_identity)
 
     def getBugNotification(self):
         """See `IBugChange`."""
+        if self.branch.private:
+            return None
         return {'text': '** Branch unlinked: %s' % self.branch.bzr_identity}
 
 
@@ -255,6 +285,50 @@ class BugDescriptionChange(AttributeChange):
         notification_text = (
             u"** Description changed:\n\n%s" % description_diff)
         return {'text': notification_text}
+
+
+class BugDuplicateChange(AttributeChange):
+    """Describes a change to a bug's duplicate marker."""
+
+    def getBugActivity(self):
+        if self.old_value is not None and self.new_value is not None:
+            return {
+                'whatchanged': 'changed duplicate marker',
+                'oldvalue': str(self.old_value.id),
+                'newvalue': str(self.new_value.id),
+                }
+        elif self.old_value is None:
+            return {
+                'whatchanged': 'marked as duplicate',
+                'newvalue': str(self.new_value.id),
+                }
+        elif self.new_value is None:
+            return {
+                'whatchanged': 'removed duplicate marker',
+                'oldvalue': str(self.old_value.id),
+                }
+        else:
+            raise AssertionError(
+                "There is no change: both the old bug and new bug are None.")
+
+    def getBugNotification(self):
+        if self.old_value is not None and self.new_value is not None:
+            text = ("** This bug is no longer a duplicate of bug %d\n"
+                    "   %s\n"
+                    "** This bug has been marked a duplicate of bug %d\n"
+                    "   %s" % (self.old_value.id, self.old_value.title,
+                               self.new_value.id, self.new_value.title))
+        elif self.old_value is None:
+            text = ("** This bug has been marked a duplicate of bug %d\n"
+                    "   %s" % (self.new_value.id, self.new_value.title))
+        elif self.new_value is None:
+            text = ("** This bug is no longer a duplicate of bug %d\n"
+                    "   %s" % (self.old_value.id, self.old_value.title))
+        else:
+            raise AssertionError(
+                "There is no change: both the old bug and new bug are None.")
+
+        return {'text': text}
 
 
 class BugTitleChange(AttributeChange):
@@ -492,6 +566,35 @@ class BugTaskAttributeChange(AttributeChange):
         return {'text': text.rstrip()}
 
 
+class BugTaskTargetChange(AttributeChange):
+    """Used to represent a change in a BugTask's target."""
+
+    def __init__(self, bug_task, when, person,
+                 what_changed, old_value, new_value):
+        super(BugTaskTargetChange, self).__init__(
+            when, person, what_changed, old_value, new_value)
+        self.bug_task = bug_task
+
+    def getBugActivity(self):
+        """See `IBugChange`."""
+        return {
+            'whatchanged': 'affects',
+            'oldvalue': self.old_value.bugtargetname,
+            'newvalue': self.new_value.bugtargetname,
+            }
+
+    def getBugNotification(self):
+        """See `IBugChange`."""
+        if IProduct.providedBy(self.old_value):
+            template = u"** Project changed: %s => %s"
+        else:
+            template = u"** Package changed: %s => %s"
+        text = template % (
+            self.old_value.bugtargetname,
+            self.new_value.bugtargetname)
+        return {'text': text}
+
+
 BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
@@ -499,10 +602,12 @@ BUG_CHANGE_LOOKUP = {
     'tags': BugTagsChange,
     'title': BugTitleChange,
     'attachment': BugAttachmentChange,
+    'duplicateof': BugDuplicateChange,
     }
 
 
 BUGTASK_CHANGE_LOOKUP = {
     'importance': BugTaskAttributeChange,
     'status': BugTaskAttributeChange,
+    'target': BugTaskTargetChange,
     }

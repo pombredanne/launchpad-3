@@ -7,8 +7,9 @@ __metaclass__ = type
 # then get the IBranchLookup utility.
 __all__ = []
 
-from zope.component import getUtility
-from zope.interface import implements
+from zope.component import (
+    adapter, adapts, getSiteManager, getUtility, queryMultiAdapter)
+from zope.interface import classProvides, implementer, implements
 
 from storm.expr import Join
 from sqlobject import SQLObjectNotFound
@@ -21,16 +22,235 @@ from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.interfaces.branch import NoSuchBranch
-from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+from canonical.launchpad.interfaces.branchlookup import (
+    CannotHaveLinkedBranch, IBranchLookup, ICanHasLinkedBranch,
+    ILinkedBranchTraversable, ILinkedBranchTraverser, ISourcePackagePocket,
+    ISourcePackagePocketFactory, NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
-from canonical.launchpad.interfaces.product import IProductSet, NoSuchProduct
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distroseries import (
+    IDistroSeries, IDistroSeriesSet)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.product import (
+    InvalidProductName, IProduct, NoSuchProduct)
+from canonical.launchpad.interfaces.productseries import (
+    IProductSeries, NoSuchProductSeries)
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
+from canonical.launchpad.interfaces.sourcepackagename import (
+    NoSuchSourcePackageName)
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.xmlrpc import faults
 
+from lazr.enum import DBItem
 from lazr.uri import InvalidURIError, URI
+
+
+def adapt(provided, interface):
+    """Adapt 'obj' to 'interface', using multi-adapters if necessary."""
+    required = interface(provided, None)
+    if required is not None:
+        return required
+    try:
+        return queryMultiAdapter(provided, interface)
+    except TypeError:
+        return None
+
+
+class RootTraversable:
+    """Root traversable for linked branch objects.
+
+    Corresponds to '/' in the path. From here, you can traverse to a
+    distribution or a product.
+    """
+
+    implements(ILinkedBranchTraversable)
+
+    def traverse(self, name):
+        """See `ITraversable`.
+
+        :raise NoSuchProduct: If 'name' doesn't match an existing pillar.
+        :return: `IPillar`.
+        """
+        if not valid_name(name):
+            raise InvalidProductName(name)
+        pillar = getUtility(IPillarNameSet).getByName(name)
+        if pillar is None:
+            # Actually, the pillar is no such *anything*. The user might be
+            # trying to refer to a project, a distribution or a product. We
+            # raise a NoSuchProduct error since that's what we used to raise
+            # when we only supported product & junk branches.
+            raise NoSuchProduct(name)
+        return pillar
+
+
+class _BaseTraversable:
+    """Base class for traversable implementations.
+
+    This just defines a very simple constructor.
+    """
+
+    def __init__(self, context):
+        self.context = context
+
+
+class ProductTraversable(_BaseTraversable):
+    """Linked branch traversable for products.
+
+    From here, you can traverse to a product series.
+    """
+
+    adapts(IProduct)
+    implements(ILinkedBranchTraversable)
+
+    def traverse(self, name):
+        """See `ITraversable`.
+
+        :raises NoSuchProductSeries: if 'name' doesn't match an existing
+            series.
+        :return: `IProductSeries`.
+        """
+        series = self.context.getSeries(name)
+        if series is None:
+            raise NoSuchProductSeries(name, self.context)
+        return series
+
+
+class DistributionTraversable(_BaseTraversable):
+    """Linked branch traversable for distributions.
+
+    From here, you can traverse to a distribution series.
+    """
+
+    adapts(IDistribution)
+    implements(ILinkedBranchTraversable)
+
+    def traverse(self, name):
+        """See `ITraversable`."""
+        # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
+        # could also try to find a package and then return a reference to its
+        # development focus.
+        return getUtility(IDistroSeriesSet).fromSuite(self.context, name)
+
+
+class DistroSeriesTraversable:
+    """Linked branch traversable for distribution series.
+
+    From here, you can traverse to a source package.
+    """
+
+    adapts(IDistroSeries, DBItem)
+    implements(ILinkedBranchTraversable)
+
+    def __init__(self, distroseries, pocket):
+        self.distroseries = distroseries
+        self.pocket = pocket
+
+    def traverse(self, name):
+        """See `ITraversable`."""
+        sourcepackage = self.distroseries.getSourcePackage(name)
+        if sourcepackage is None:
+            raise NoSuchSourcePackageName(name)
+        return getUtility(ISourcePackagePocketFactory).new(
+            sourcepackage, self.pocket)
+
+
+class HasLinkedBranch:
+    """A thing that has a linked branch."""
+
+    implements(ICanHasLinkedBranch)
+
+    def __init__(self, branch):
+        self.branch = branch
+
+
+@adapter(IProductSeries)
+@implementer(ICanHasLinkedBranch)
+def product_series_linked_branch(product_series):
+    """The series branch of a product series is its linked branch."""
+    return HasLinkedBranch(product_series.series_branch)
+
+
+@adapter(IProduct)
+@implementer(ICanHasLinkedBranch)
+def product_linked_branch(product):
+    """The series branch of a product's development focus is its branch."""
+    return HasLinkedBranch(product.development_focus.series_branch)
+
+
+sm = getSiteManager()
+sm.registerAdapter(ProductTraversable)
+sm.registerAdapter(DistributionTraversable)
+sm.registerAdapter(DistroSeriesTraversable)
+sm.registerAdapter(product_series_linked_branch)
+sm.registerAdapter(product_linked_branch)
+
+
+class LinkedBranchTraverser:
+    """Utility for traversing to objects that can have linked branches."""
+
+    implements(ILinkedBranchTraverser)
+
+    def traverse(self, path):
+        """See `ILinkedBranchTraverser`."""
+        segments = path.split('/')
+        traversable = RootTraversable()
+        while segments:
+            name = segments.pop(0)
+            context = traversable.traverse(name)
+            traversable = adapt(context, ILinkedBranchTraversable)
+            if traversable is None:
+                break
+        return context
+
+
+class SourcePackagePocket:
+    """A source package and a pocket.
+
+    This exists to provide a consistent interface for the error condition of
+    users looking up official branches for the pocket of a source package
+    where no such linked branch exists. All of the other "no linked branch"
+    cases have a single object for which there is no linked branch -- this is
+    the equivalent for source packages.
+    """
+
+    implements(ISourcePackagePocket)
+    classProvides(ISourcePackagePocketFactory)
+
+    def __init__(self, sourcepackage, pocket):
+        self.sourcepackage = sourcepackage
+        self.pocket = pocket
+
+    @classmethod
+    def new(cls, package, pocket):
+        """See `ISourcePackagePocketFactory`."""
+        return cls(package, pocket)
+
+    def __eq__(self, other):
+        """See `ISourcePackagePocket`."""
+        try:
+            other = ISourcePackagePocket(other)
+        except TypeError:
+            return NotImplemented
+        return (
+            self.sourcepackage == other.sourcepackage
+            and self.pocket == other.pocket)
+
+    def __ne__(self, other):
+        """See `ISourcePackagePocket`."""
+        return not (self == other)
+
+    @property
+    def displayname(self):
+        """See `ISourcePackagePocket`."""
+        return self.sourcepackage.getPocketPath(self.pocket)
+
+    @property
+    def branch(self):
+        """See `ISourcePackagePocket`."""
+        return self.sourcepackage.getBranch(self.pocket)
 
 
 class BranchLookup:
@@ -55,34 +275,35 @@ class BranchLookup:
         else:
             return None
 
-    def getByUrl(self, url, default=None):
+    def _uriHostAllowed(self, uri):
+        """Is 'uri' for an allowed host?"""
+        host = uri.host
+        if host is None:
+            host = ''
+        allowed_hosts = set(config.codehosting.lp_url_hosts.split(','))
+        return host in allowed_hosts
+
+    def getByUrl(self, url):
         """See `IBranchLookup`."""
         assert not url.endswith('/')
         try:
             uri = URI(url)
         except InvalidURIError:
             return None
+
         unique_name = self.uriToUniqueName(uri)
         if unique_name is not None:
-            branch = self.getByUniqueName(unique_name)
-        elif uri.scheme == 'lp':
-            branch = None
-            allowed_hosts = set()
-            for host in config.codehosting.lp_url_hosts.split(','):
-                if host == '':
-                    host = None
-                allowed_hosts.add(host)
-            if uri.host in allowed_hosts:
-                try:
-                    branch = self.getByLPPath(uri.path.lstrip('/'))[0]
-                except NoSuchBranch:
-                    pass
-        else:
-            branch = Branch.selectOneBy(url=url)
-        if branch is None:
-            return default
-        else:
-            return branch
+            return self.getByUniqueName(unique_name)
+
+        if uri.scheme == 'lp':
+            if not self._uriHostAllowed(uri):
+                return None
+            try:
+                return self.getByLPPath(uri.path.lstrip('/'))[0]
+            except NoSuchBranch:
+                return None
+
+        return Branch.selectOneBy(url=url)
 
     def getByUniqueName(self, unique_name):
         """Find a branch by its unique name.
@@ -93,7 +314,7 @@ class BranchLookup:
         branches, ~user/+junk/branch.
         """
         # XXX: JonathanLange 2008-11-27 spec=package-branches: Doesn't handle
-        # +dev alias, nor official source package branches.
+        # +dev alias.
         try:
             namespace_name, branch_name = unique_name.rsplit('/', 1)
         except ValueError:
@@ -173,64 +394,40 @@ class BranchLookup:
         branch = result.one()
         return branch
 
-    def _getByPath(self, path):
-        """Given a path within a branch, return the branch and the path."""
-        namespace_set = getUtility(IBranchNamespaceSet)
-        if not path.startswith('~'):
-            raise InvalidNamespace(path)
-        segments = iter(path.lstrip('~').split('/'))
-        branch = namespace_set.traverse(segments)
-        return branch, '/'.join(segments)
-
     def getByLPPath(self, path):
         """See `IBranchLookup`."""
-        branch = suffix = series = None
-        try:
-            branch, suffix = self._getByPath(path)
-            if suffix == '':
-                suffix = None
-        except NoSuchBranch:
-            raise
-        except InvalidNamespace:
+        branch = suffix = None
+        if not path.startswith('~'):
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
-            branch, series = self._getDefaultProductBranch(path)
-        return branch, suffix, series
+            result = getUtility(ILinkedBranchTraverser).traverse(path)
+            branch = self._getLinkedBranch(result)
+        else:
+            namespace_set = getUtility(IBranchNamespaceSet)
+            segments = iter(path.lstrip('~').split('/'))
+            branch = namespace_set.traverse(segments)
+            suffix =  '/'.join(segments)
+            if not check_permission('launchpad.View', branch):
+                raise NoSuchBranch(path)
+            if suffix == '':
+                suffix = None
+        return branch, suffix
 
-    def _getDefaultProductBranch(self, path):
-        """Return the branch with the shortcut 'path'.
+    def _getLinkedBranch(self, provided):
+        """Get the linked branch for 'provided'.
 
-        :param path: A shortcut to a branch.
-        :raise InvalidBranchIdentifier: if 'path' has too many segments to be
-            a shortcut.
-        :raise InvalidProductIdentifier: if 'path' starts with an invalid
-            name for a product.
-        :raise NoSuchProduct: if 'path' starts with a non-existent product.
-        :raise NoSuchSeries: if 'path' refers to a product series and that
-            series does not exist.
-        :raise NoBranchForSeries: if 'path' refers to a product series that
-            exists, but does not have a branch.
-        :return: The branch.
+        :raise CannotHaveLinkedBranch: If 'provided' can never have a linked
+            branch.
+        :raise NoLinkedBranch: If 'provided' could have a linked branch, but
+            doesn't.
+        :return: The linked branch, an `IBranch`.
         """
-        segments = path.split('/')
-        if len(segments) == 1:
-            product_name, series_name = segments[0], None
-        elif len(segments) == 2:
-            product_name, series_name = tuple(segments)
-        else:
-            raise faults.InvalidBranchIdentifier(path)
-        if not valid_name(product_name):
-            raise faults.InvalidProductIdentifier(product_name)
-        product = getUtility(IProductSet).getByName(product_name)
-        if product is None:
-            raise NoSuchProduct(product_name)
-        if series_name is None:
-            series = product.development_focus
-        else:
-            series = product.getSeries(series_name)
-            if series is None:
-                raise faults.NoSuchSeries(series_name, product)
-        branch = series.branch
+        has_linked_branch = adapt(provided, ICanHasLinkedBranch)
+        if has_linked_branch is None:
+            raise CannotHaveLinkedBranch(provided)
+        branch = has_linked_branch.branch
         if branch is None:
-            raise faults.NoBranchForSeries(series)
-        return branch, series
+            raise NoLinkedBranch(provided)
+        if not check_permission('launchpad.View', branch):
+            raise NoLinkedBranch(provided)
+        return branch

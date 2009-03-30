@@ -31,7 +31,8 @@ class RunRosettaBranchJobs(LaunchpadCronScript):
             runner.runAll()
         finally:
             server.tearDown()
-        print 'Ran %d RosettaBranchJobs.' % len(runner.completed_jobs)
+        self.logger.info('Ran %d RosettaBranchJobs.',
+                         len(runner.completed_jobs))
 
 
 if __name__ == '__main__':

@@ -32,8 +32,6 @@ __all__ = [
     'IBranchBatchNavigator',
     'IBranchNavigationMenu',
     'IBranchSet',
-    'MAXIMUM_MIRROR_FAILURES',
-    'MIRROR_TIME_INCREMENT',
     'NoSuchBranch',
     'RepositoryFormat',
     'UICreatableBranchType',
@@ -42,7 +40,7 @@ __all__ = [
     ]
 
 from cgi import escape
-from datetime import timedelta
+from operator import attrgetter
 import re
 
 # Ensure correct plugins are loaded. Do not delete this line.
@@ -368,13 +366,6 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.EXPERIMENTAL,
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
-
-
-# The maximum number of failures before we disable mirroring.
-MAXIMUM_MIRROR_FAILURES = 5
-
-# How frequently we mirror branches.
-MIRROR_TIME_INCREMENT = timedelta(hours=6)
 
 
 class BranchCreationException(Exception):
@@ -1241,12 +1232,6 @@ class IBranchSet(Interface):
         # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
         # to change for source package branches.
 
-    def getPullQueue(branch_type):
-        """Return a queue of branches to mirror using the puller.
-
-        :param branch_type: A value from the `BranchType` enum.
-        """
-
     def getTargetBranchesForUsersMergeProposals(user, product):
         """Return a sequence of branches the user has targeted before."""
         # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
@@ -1316,43 +1301,43 @@ class IBranchCloud(Interface):
 
 def bazaar_identity(branch, associated_series, is_dev_focus):
     """Return the shortest lp: style branch identity."""
-    use_series = None
     lp_prefix = config.codehosting.bzr_lp_prefix
-    # XXX: TimPenhey 2008-05-06 bug=227602
-    # Since at this stage the launchpad name resolution is not
-    # authenticated, we can't resolve series branches that end
-    # up pointing to private branches, so don't show short names
-    # for the branch if it is private.
 
-    # It is possible for +junk branches to be related to a product
-    # series.  However we do not show the shorter name for these
-    # branches as it would be giving extra authority to them.  When
-    # the owner of these branches realises that they want other people
-    # to be able to commit to them, the branches will need to have a
-    # team owner.  When this happens, they will no longer be able to
-    # stay as junk branches, and will need to be associated with a
-    # product.  In this way +junk branches associated with product
-    # series should be self limiting.  We are not looking to enforce
-    # extra strictness in this case, but instead let it manage itself.
+    # XXX: TimPenhey 2008-05-06 bug=227602: Since at this stage the launchpad
+    # name resolution is not authenticated, we can't resolve series branches
+    # that end up pointing to private branches, so don't show short names for
+    # the branch if it is private.
+    if branch.private:
+        return lp_prefix + branch.unique_name
 
-    # XXX: JonathanLange 2009-03-19 spec=package-branches: This should not
-    # dispatch on Branch.product is None
-    if not branch.private and branch.product is not None:
+    use_series = None
+    # XXX: JonathanLange 2009-03-21 spec=package-branches: This should
+    # probably delegate to IBranch.target. I would do it now if I could figure
+    # what all the optimization code is for.
+    if branch.product is not None:
         if is_dev_focus:
             return lp_prefix + branch.product.name
 
-        for series in associated_series:
-            if (use_series is None or
-                series.datecreated > use_series.datecreated):
-                use_series = series
-    # If there is no series, use the prefix with the unique name.
-    if use_series is None:
-        return lp_prefix + branch.unique_name
-    else:
+        # If there are no associated series, then use the unique name.
+        associated_series = list(associated_series)
+        if [] == associated_series:
+            return lp_prefix + branch.unique_name
+
+        use_series = sorted(
+            associated_series, key=attrgetter('datecreated'))[-1]
         return "%(prefix)s%(product)s/%(series)s" % {
             'prefix': lp_prefix,
             'product': use_series.product.name,
             'series': use_series.name}
+
+    if branch.sourcepackage is not None:
+        sourcepackage = branch.sourcepackage
+        linked_branches = sourcepackage.linked_branches
+        for pocket, linked_branch in linked_branches:
+            if linked_branch == branch:
+                return lp_prefix + sourcepackage.getPocketPath(pocket)
+
+    return lp_prefix + branch.unique_name
 
 
 def user_has_special_branch_access(user):
