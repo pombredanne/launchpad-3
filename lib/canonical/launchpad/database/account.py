@@ -64,8 +64,12 @@ class Account(SQLBase):
 
     person = Reference("id", "Person.account", on_remote=True)
 
-    def _getEmails(self, store, status):
-        """Get `EmailAddress` objects with the given status."""
+    def _getEmails(self, status, master=False):
+        """Get related `EmailAddress` objects with the given status."""
+        if master:
+            store = IMasterStore(EmailAddress)
+        else:
+            store = Store.of(self)
         result = store.find(
             EmailAddress, accountID=self.id, status=status)
         result.order_by(EmailAddress.email)
@@ -74,20 +78,17 @@ class Account(SQLBase):
     @property
     def preferredemail(self):
         """See `IAccount`."""
-        return self._getEmails(
-            IMasterStore(EmailAddress), EmailAddressStatus.PREFERRED).one()
+        return self._getEmails(EmailAddressStatus.PREFERRED).one()
 
     @property
     def validated_emails(self):
         """See `IAccount`."""
-        return self._getEmails(
-            Store.of(self), EmailAddressStatus.VALIDATED)
+        return self._getEmails(EmailAddressStatus.VALIDATED)
 
     @property
     def guessed_emails(self):
         """See `IAccount`."""
-        return self._getEmails(
-            Store.of(self), EmailAddressStatus.NEW)
+        return self._getEmails(EmailAddressStatus.NEW)
 
     @property
     def unvalidated_emails(self):
@@ -103,8 +104,8 @@ class Account(SQLBase):
             # Mark preferred email address as validated, if it exists.
             # XXX 2009-03-30 jamesh bug=349482: we should be able to
             # use ResultSet.set() here :(
-            for address in self._getEmails(IMasterStore(EmailAddress),
-                                           EmailAddressStatus.PREFERRED):
+            for address in self._getEmails(EmailAddressStatus.PREFERRED,
+                                           master=True):
                 address.status = EmailAddressStatus.VALIDATED
             return
 
@@ -116,7 +117,7 @@ class Account(SQLBase):
         assert email.accountID == self.id
 
         existing_preferred_email = self._getEmails(
-            IMasterStore(EmailAddress), EmailAddressStatus.PREFERRED).one()
+            EmailAddressStatus.PREFERRED, master=True).one()
         if existing_preferred_email is not None:
             assert Store.of(email) is Store.of(existing_preferred_email), (
                 "Store of %r is not the same as store of %r" %
@@ -141,7 +142,8 @@ class Account(SQLBase):
         assert email.account == self, 'Wrong person! %r, %r' % (
             email.accountID, self.id)
 
-        preferred_email = self.preferredemail
+        preferred_email = self._getEmails(
+            EmailAddressStatus.PREFERRED, master=True).one()
 
         # This email is already validated and is this person's preferred
         # email, so we have nothing to do.
