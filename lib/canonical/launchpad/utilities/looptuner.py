@@ -191,6 +191,8 @@ class DBLoopTuner(LoopTuner):
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         while True:
             lag = store.execute("SELECT replication_lag()").get_one()[0]
+            if lag is None:
+                lag = timedelta(seconds=0)
             if lag <= self.acceptable_replication_lag:
                 return
 
