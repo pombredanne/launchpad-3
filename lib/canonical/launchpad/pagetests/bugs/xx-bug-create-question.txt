@@ -81,8 +81,8 @@ bugtask directly.
 He sees his comment was appended to the bug report's messages.
 
     >>> print extract_text(
-    ...     find_tags_by_class(str(content), 'boardComment')[-1])
-    No Privileges Person wrote ... This bug is a question.
+    ...     find_tags_by_class(str(content), 'boardCommentBody')[-1])
+    This bug is a question.
 
 No Privileges Person looks at the page heading and sees that Foo Bar
 is the bug owner. He sees the link to the question in the 'Related
