@@ -2,11 +2,14 @@
 """Test the generate_ppa_htaccess.py script. """
 
 import crypt
+from datetime import datetime, timedelta
 import os
+import pytz
 import subprocess
 import sys
 import tempfile
 import unittest
+
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -14,6 +17,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistributionSet, IPersonSet, TeamMembershipStatus)
+from canonical.launchpad.interfaces.archivesubscriber import (
+    ArchiveSubscriberStatus)
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator)
@@ -348,6 +353,25 @@ class TestPPAHtaccessTokenGeneration(unittest.TestCase):
         if os.path.isfile(htpasswd):
             os.remove(htpasswd)
         return htaccess, htpasswd
+
+    def testSubscriptionExpiry(self):
+        """Ensure subscriptions' statuses are set to EXPIRED properly."""
+        subs, tokens = self.setupDummyTokens()
+        now = datetime.now(pytz.UTC)
+
+        # Expire the first subscription.
+        subs[0].date_expires = now - timedelta(minutes=1)
+        self.assertEqual(subs[0].status, ArchiveSubscriberStatus.CURRENT)
+
+        # Set the expiry in the future for the second.
+        subs[1].date_expires = now + timedelta(minutes=1)
+        self.assertEqual(subs[0].status, ArchiveSubscriberStatus.CURRENT)
+
+        # Run the script and make sure only the first was expired.
+        script = self.getScript()
+        script.main()
+        self.assertEqual(subs[0].status, ArchiveSubscriberStatus.EXPIRED)
+        self.assertEqual(subs[1].status, ArchiveSubscriberStatus.CURRENT)
 
     def testBasicOperation(self):
         """Invoke the actual script and make sure it generates some files."""
