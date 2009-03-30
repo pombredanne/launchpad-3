@@ -269,7 +269,8 @@ class IPublishing(Interface):
     displayname = exported(
         TextLine(
             title=_("Display Name"),
-            description=_("Text representation of the current record.")))
+            description=_("Text representation of the current record.")),
+        exported_as="display_name")
     age = Attribute("Age of the publishing record.")
 
     component_name = exported(
@@ -412,9 +413,10 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
     distroseries = exported(
         Reference(
             IDistroSeries,
-            title=_('The distroseries being published into'),
+            title=_('The distro series being published into'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="distro_series")
     component = Int(
             title=_('The component being published into'),
             required=False, readonly=False,
@@ -427,13 +429,15 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
         Datetime(
             title=_('The date on which this record was published'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_published")
     scheduleddeletiondate = exported(
         Datetime(
             title=_('The date on which this record is scheduled for '
                     'deletion'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="scheduled_deletion_date")
     pocket = exported(
         Choice(
             title=_('Pocket'),
@@ -454,24 +458,28 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
         Datetime(
             title=_('The date on which this record was marked superseded'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_superseded")
     datecreated = exported(
         Datetime(
             title=_('The date on which this record was created'),
             required=True, readonly=False,
-            ))
+            ),
+        exported_as="date_created")
     datemadepending = exported(
         Datetime(
             title=_('The date on which this record was set as pending '
                     'removal'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_made_pending")
     dateremoved = exported(
         Datetime(
             title=_('The date on which this record was removed from the '
                     'published set'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_removed")
     embargo = Bool(
             title=_('Whether or not this record is under embargo'),
             required=True, readonly=False,
@@ -645,7 +653,8 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             title=_("Distro Arch Series"),
             description=_('The distroarchseries being published into'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="distro_arch_series")
     component = Int(
             title=_('The component being published into'),
             required=False, readonly=False,
@@ -663,14 +672,16 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             title=_("Date Published"),
             description=_('The date on which this record was published'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_published")
     scheduleddeletiondate = exported(
         Datetime(
             title=_("Scheduled Deletion Date"),
             description=_('The date on which this record is scheduled for '
                     'deletion'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="scheduled_deletion_date")
     status = exported(
         Choice(
             title=_('Status'),
@@ -694,21 +705,24 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             title=_('Date Created'),
             description=_('The date on which this record was created'),
             required=True, readonly=False,
-            ))
+            ),
+        exported_as="date_created")
     datesuperseded = exported(
         Datetime(
             title=_("Date Superseded"),
             description=_(
                 'The date on which this record was marked superseded'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_superseded")
     datemadepending = exported(
         Datetime(
             title=_("Date Made Pending"),
             description=_(
                 'The date on which this record was set as pending removal'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_made_pending")
     dateremoved = exported(
         Datetime(
             title=_("Date Removed"),
@@ -716,7 +730,8 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
                 'The date on which this record was removed from the '
                 'published set'),
             required=False, readonly=False,
-            ))
+            ),
+        exported_as="date_removed")
     archive = exported(
         Reference(
             IArchive,

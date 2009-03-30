@@ -46,7 +46,8 @@ class IDistroArchSeries(IHasOwner):
                 "identifies this architecture. All binary packages in the "
                 "archive will use this tag in their filename. Please get it "
                 "correct. It should really never be changed!"),
-            required=True))
+            required=True),
+        exported_as="architecture_tag")
     official = exported(
         Bool(
             title=_("Official Support"),
@@ -85,7 +86,8 @@ class IDistroArchSeries(IHasOwner):
     displayname = exported(
         TextLine(
             title=_("Display name"),
-            description=_("The display name of this distroarchseries.")))
+            description=_("The display name of this distroarchseries.")),
+        exported_as="display_name")
 
     # Other useful bits.
     isNominatedArchIndep = exported(
@@ -93,7 +95,8 @@ class IDistroArchSeries(IHasOwner):
             title=_("Is Nominated Arch Independent"),
             description=_(
                 'True if this distroarchseries is the NominatedArchIndep '
-                'one.')))
+                'one.')),
+        exported_as="is_nominated_arch_indep")
     default_processor = Attribute(
         "Return the DistroArchSeries default processor, by picking the "
         "first processor inside its processorfamily.")

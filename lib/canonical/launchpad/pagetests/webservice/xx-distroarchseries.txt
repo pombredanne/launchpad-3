@@ -21,10 +21,10 @@ For a distroarchseries we publish a subset of its attributes.
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(distroarchseries)
-    architecturetag: u'i386'                                                                        
-    displayname: u'Ubuntu Hoary i386'                                                               
+    architecture_tag: u'i386'
+    display_name: u'Ubuntu Hoary i386'
     distroseries_link: u'http://.../ubuntu/hoary'
-    isNominatedArchIndep: True
+    is_nominated_arch_indep: True
     main_archive_link: u'http://.../ubuntu/+archive/primary'
     official: True
     owner_link: u'http://.../~sabdfl'

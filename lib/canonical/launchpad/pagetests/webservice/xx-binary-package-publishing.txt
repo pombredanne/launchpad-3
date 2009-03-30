@@ -10,9 +10,9 @@ archives, getPublishedBinaries().
     ...     cprov_archive['self_link'], 'getPublishedBinaries').jsonBody()
 
     >>> def print_publications(pubs):
-    ...     for displayname in sorted(
-    ...         entry['displayname'] for entry in pubs['entries']):
-    ...         print displayname
+    ...     for display_name in sorted(
+    ...         entry['display_name'] for entry in pubs['entries']):
+    ...         print display_name
 
     >>> print_publications(pubs)
     mozilla-firefox 1.0 in warty hppa
@@ -20,7 +20,7 @@ archives, getPublishedBinaries().
     pmount 0.1-1 in warty hppa
     pmount 0.1-1 in warty i386
 
-getPublishedBinaries() can accept some optional filtering paramters to reduce
+getPublishedBinaries() can accept some optional filtering parameters to reduce
 the number of returned publications.
 
 Search by name and version using an exact match:
@@ -69,19 +69,19 @@ Each binary publication exposes a number of properties:
     binary_package_name: u'mozilla-firefox'
     binary_package_version: u'1.0'
     component_name: u'main'
-    datecreated: u'2007-08-10T13:00:00+00:00'
-    datemadepending: None
-    datepublished: u'2007-08-10T13:00:01+00:00'
-    dateremoved: None
-    datesuperseded: None
-    displayname: u'mozilla-firefox 1.0 in warty hppa'
-    distroarchseries_link: u'http://.../ubuntu/warty/hppa'
+    date_created: u'2007-08-10T13:00:00+00:00'
+    date_made_pending: None
+    date_published: u'2007-08-10T13:00:01+00:00'
+    date_removed: None
+    date_superseded: None
+    display_name: u'mozilla-firefox 1.0 in warty hppa'
+    distro_arch_series_link: u'http://.../ubuntu/warty/hppa'
     pocket: u'Release'
     priority_name: u'IMPORTANT'
     removal_comment: None
     removed_by_link: None
     resource_type_link: u'http://.../#binary_package_publishing_history'
-    scheduleddeletiondate: None
+    scheduled_deletion_date: None
     section_name: u'base'
     self_link: u'http://.../~cprov/+archive/ppa/+binarypub/30'
     status: u'Published'
