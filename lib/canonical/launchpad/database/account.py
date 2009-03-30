@@ -8,6 +8,7 @@ __all__ = ['Account', 'AccountPassword', 'AccountSet']
 import random
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements
 
 from storm.expr import Desc
@@ -21,14 +22,19 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.database.authtoken import AuthToken
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.openidserver import OpenIDRPSummary
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+    EmailAddressStatus, IEmailAddress, IEmailAddressSet)
+from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
+from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -60,13 +66,95 @@ class Account(SQLBase):
 
     person = Reference("id", "Person.account", on_remote=True)
 
+    def _getEmails(self, status):
+        """Get `EmailAddress` objects with the given status."""
+        result = Store.of(self).find(
+            EmailAddress, account=self, status=status)
+        result.order_by(EmailAddress.email)
+        return result
+
     @property
     def preferredemail(self):
         """See `IAccount`."""
-        from canonical.launchpad.database.emailaddress import EmailAddress
-        return Store.of(self).find(
-            EmailAddress, account=self,
-            status=EmailAddressStatus.PREFERRED).one()
+        return self._getEmails(EmailAddressStatus.PREFERRED).one()
+
+    @property
+    def validated_emails(self):
+        """See `IAccount`."""
+        return self._getEmails(EmailAddressStatus.VALIDATED)
+
+    @property
+    def guessed_emails(self):
+        """See `IAccount`."""
+        return self._getEmails(EmailAddressStatus.NEW)
+
+    @property
+    def unvalidated_emails(self):
+        """See `IAccount`."""
+        result = Store.of(self).find(
+            AuthToken, requester_account=self,
+            tokentype=LoginTokenType.VALIDATEEMAIL, date_consumed=None)
+        return sorted(set(result.values(AuthToken.email)))
+
+    def setPreferredEmail(self, email):
+        """See `IAccount`."""
+        if email is None:
+            # Mark preferred email address as validated, if it exists.
+            # XXX 2009-03-30 jamesh bug=349482: we should be able to
+            # use ResultSet.set() here :(
+            for address in self._getEmails(EmailAddressStatus.PREFERRED):
+                address.status = EmailAddressStatus.VALIDATED
+            return
+
+        if not IEmailAddress.providedBy(email):
+            raise TypeError("Any person's email address must provide the "
+                            "IEmailAddress Interface. %r doesn't." % email)
+
+        email = removeSecurityProxy(IMasterObject(email))
+        assert email.accountID == self.id
+
+        existing_preferred_email = self._getEmails(
+            EmailAddressStatus.PREFERRED).one()
+        if existing_preferred_email is not None:
+            existing_preferred_email.status = EmailAddressStatus.VALIDATED
+            # Make sure the old preferred email gets flushed before
+            # setting the new preferred email.
+            Store.of(email).add_flush_order(existing_preferred_email, email)
+
+        email.status = EmailAddressStatus.PREFERRED
+
+        getUtility(IHWSubmissionSet).setOwnership(email)
+
+    def validateAndEnsurePreferredEmail(self, email):
+        """See `IAccount`."""
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
+        email = IMasterObject(email)
+        assert email.account == self, 'Wrong person! %r, %r' % (
+            email.accountID, self.id)
+
+        preferred_email = self._getEmails(EmailAddressStatus.PREFERRED).one()
+
+        # This email is already validated and is this person's preferred
+        # email, so we have nothing to do.
+        if preferred_email == email:
+            return
+
+        if preferred_email is None:
+            # This branch will be executed only in the first time a person
+            # uses Launchpad. Either when creating a new account or when
+            # resetting the password of an automatically created one.
+            self.setPreferredEmail(email)
+        else:
+            email.status = EmailAddressStatus.VALIDATED
+            # XXX: do something to make sure the EmailAddress is
+            # linked to the right person.
+            getUtility(IHWSubmissionSet).setOwnership(email)
+        # Now that we have validated the email, see if this can be
+        # matched to an existing RevisionAuthor.
+        getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     @property
     def recently_authenticated_rps(self):
@@ -161,7 +249,6 @@ class Account(SQLBase):
             generate_nick, Person, PersonSet)
         assert self.preferredemail is not None, (
             "Can't create a Person for an account which has no email.")
-        store = Store.of(self)
         assert IMasterStore(Person).find(
             Person, accountID=self.id).one() is None, (
             "Can't create a Person for an account which already has one.")
@@ -169,7 +256,15 @@ class Account(SQLBase):
         person = PersonSet()._newPerson(
             name, self.displayname, hide_email_addresses=True,
             rationale=rationale, account=self)
-        IMasterObject(self.preferredemail).personID = person.id
+
+        # Update all associated email addresses to point at the new person.
+        result = IMasterStore(EmailAddress).find(
+            EmailAddress, accountID=self.id)
+        # XXX 2009-03-30 jamesh bug=349482: we should be able to
+        # use ResultSet.set() here :(
+        for email in result:
+            email.personID = person.id
+
         return person
 
 
