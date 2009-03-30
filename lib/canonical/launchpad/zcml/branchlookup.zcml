@@ -8,6 +8,10 @@
     <allow interface="canonical.launchpad.interfaces.branchlookup.IBranchLookup" />
   </class>
 
+  <class class="canonical.launchpad.database.branchlookup.SourcePackagePocket">
+    <allow interface="canonical.launchpad.database.branchlookup.ISourcePackagePocket" />
+  </class>
+
   <securedutility
       class="canonical.launchpad.database.branchlookup.BranchLookup"
       provides="canonical.launchpad.interfaces.branchlookup.IBranchLookup" >
@@ -18,6 +22,12 @@
      class="canonical.launchpad.database.branchlookup.LinkedBranchTraverser"
      provides="canonical.launchpad.interfaces.branchlookup.ILinkedBranchTraverser">
     <allow interface="canonical.launchpad.interfaces.branchlookup.ILinkedBranchTraverser" />
+  </securedutility>
+
+  <securedutility
+     component="canonical.launchpad.database.branchlookup.SourcePackagePocket"
+     provides="canonical.launchpad.interfaces.branchlookup.ISourcePackagePocketFactory">
+    <allow interface="canonical.launchpad.interfaces.branchlookup.ISourcePackagePocketFactory" />
   </securedutility>
 
 </configure>
