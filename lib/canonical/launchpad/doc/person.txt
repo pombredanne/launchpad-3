@@ -662,8 +662,7 @@ BugSubscription.subscribed_by attributes.
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
 
     >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
-    ...                                    subscribed_by=guadamen)
-    >>> bug_subscription.person = myteam
+    ...                                    subscribed_by=myteam)
     Traceback (most recent call last):
     ...
     PrivatePersonLinkageError: Cannot link person
@@ -682,9 +681,6 @@ And they can subscribe others to bugs.
 
     >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
     ...     subscribed_by=private_team)
-
-    >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
-    ...     subscribed_by=myteam)
 
 
 Teams also have a 'private' attribute that is true if the team is
