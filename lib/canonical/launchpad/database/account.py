@@ -31,10 +31,8 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddress, IEmailAddressSet)
-from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
-from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -66,32 +64,35 @@ class Account(SQLBase):
 
     person = Reference("id", "Person.account", on_remote=True)
 
-    def _getEmails(self, status):
+    def _getEmails(self, store, status):
         """Get `EmailAddress` objects with the given status."""
-        result = Store.of(self).find(
-            EmailAddress, account=self, status=status)
+        result = store.find(
+            EmailAddress, accountID=self.id, status=status)
         result.order_by(EmailAddress.email)
         return result
 
     @property
     def preferredemail(self):
         """See `IAccount`."""
-        return self._getEmails(EmailAddressStatus.PREFERRED).one()
+        return self._getEmails(
+            IMasterStore(EmailAddress), EmailAddressStatus.PREFERRED).one()
 
     @property
     def validated_emails(self):
         """See `IAccount`."""
-        return self._getEmails(EmailAddressStatus.VALIDATED)
+        return self._getEmails(
+            Store.of(self), EmailAddressStatus.VALIDATED)
 
     @property
     def guessed_emails(self):
         """See `IAccount`."""
-        return self._getEmails(EmailAddressStatus.NEW)
+        return self._getEmails(
+            Store.of(self), EmailAddressStatus.NEW)
 
     @property
     def unvalidated_emails(self):
         """See `IAccount`."""
-        result = Store.of(self).find(
+        result = IMasterStore(AuthToken).find(
             AuthToken, requester_account=self,
             tokentype=LoginTokenType.VALIDATEEMAIL, date_consumed=None)
         return sorted(set(result.values(AuthToken.email)))
@@ -102,7 +103,8 @@ class Account(SQLBase):
             # Mark preferred email address as validated, if it exists.
             # XXX 2009-03-30 jamesh bug=349482: we should be able to
             # use ResultSet.set() here :(
-            for address in self._getEmails(EmailAddressStatus.PREFERRED):
+            for address in self._getEmails(IMasterStore(EmailAddress),
+                                           EmailAddressStatus.PREFERRED):
                 address.status = EmailAddressStatus.VALIDATED
             return
 
@@ -110,12 +112,15 @@ class Account(SQLBase):
             raise TypeError("Any person's email address must provide the "
                             "IEmailAddress Interface. %r doesn't." % email)
 
-        email = removeSecurityProxy(IMasterObject(email))
+        email = IMasterObject(removeSecurityProxy(email))
         assert email.accountID == self.id
 
         existing_preferred_email = self._getEmails(
-            EmailAddressStatus.PREFERRED).one()
+            IMasterStore(EmailAddress), EmailAddressStatus.PREFERRED).one()
         if existing_preferred_email is not None:
+            assert Store.of(email) is Store.of(existing_preferred_email), (
+                "Store of %r is not the same as store of %r" %
+                (email, existing_preferred_email))
             existing_preferred_email.status = EmailAddressStatus.VALIDATED
             # Make sure the old preferred email gets flushed before
             # setting the new preferred email.
@@ -123,7 +128,8 @@ class Account(SQLBase):
 
         email.status = EmailAddressStatus.PREFERRED
 
-        getUtility(IHWSubmissionSet).setOwnership(email)
+        # XXX 2009-03-30 jamesh: SSO server can't write to HWDB tables
+        # getUtility(IHWSubmissionSet).setOwnership(email)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IAccount`."""
@@ -135,7 +141,7 @@ class Account(SQLBase):
         assert email.account == self, 'Wrong person! %r, %r' % (
             email.accountID, self.id)
 
-        preferred_email = self._getEmails(EmailAddressStatus.PREFERRED).one()
+        preferred_email = self.preferredemail
 
         # This email is already validated and is this person's preferred
         # email, so we have nothing to do.
@@ -151,10 +157,14 @@ class Account(SQLBase):
             email.status = EmailAddressStatus.VALIDATED
             # XXX: do something to make sure the EmailAddress is
             # linked to the right person.
-            getUtility(IHWSubmissionSet).setOwnership(email)
+
+            # XXX 2009-03-30 jamesh: SSO server can't write to HWDB tables
+            # getUtility(IHWSubmissionSet).setOwnership(email)
+
         # Now that we have validated the email, see if this can be
         # matched to an existing RevisionAuthor.
-        getUtility(IRevisionSet).checkNewVerifiedEmail(email)
+        # XXX 2009-03-30 jamesh: SSO server can't write to revision tables
+        # getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     @property
     def recently_authenticated_rps(self):
