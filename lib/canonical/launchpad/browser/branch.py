@@ -528,24 +528,14 @@ class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
     def _setBranchExists(self, existing_branch):
-        # XXX: JonathanLange 2008-12-04 spec=package-branches: Assumes that
-        # branches have products, which is now wrong.
         owner = existing_branch.owner
-        product = existing_branch.product
-        branch_name = existing_branch.name
         if owner == self.user:
             prefix = "You already have"
         else:
             prefix = "%s already has" % cgi.escape(owner.displayname)
-
-        if product is None:
-            message = (
-                "%s a junk branch called <em>%s</em>."
-                % (prefix, branch_name))
-        else:
-            message = (
-                "%s a branch for <em>%s</em> called "
-                "<em>%s</em>." % (prefix, product.name, branch_name))
+        message = (
+            "%s a branch for <em>%s</em> called <em>%s</em>."
+            % (prefix, existing_branch.target.name, existing_branch.name))
         self.setFieldError('name', structured(message))
 
 
