@@ -178,11 +178,8 @@ class ISourcePackagePocket(ICanHasLinkedBranch):
     # gets a pocket attribute.
 
     displayname = Attribute("The display name")
-    path = Attribute("The path of the source package pocket.")
     pocket = Attribute("The pocket.")
     sourcepackage = Attribute("The source package.")
-    suite = Attribute(
-        "The name of the suite. The distro series name and the pocket name.")
 
     def __eq__(other):
         """Is this source package pocket equal to another?
