@@ -16,6 +16,7 @@ __all__ = [
     'IFrontPageBugAddForm',
     'IProjectBugAddForm',
     'InvalidBugTargetType',
+    'InvalidDuplicateValue',
     ]
 
 from zope.component import getUtility
@@ -168,8 +169,9 @@ class IBug(ICanBeMentored):
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
         Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
-    duplicateof = exported(
-        DuplicateBug(title=_('Duplicate Of'), required=False),
+    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
+    readonly_duplicateof = exported(
+        DuplicateBug(title=_('Duplicate Of'), required=False, readonly=True),
         exported_as='duplicate_of')
     private = exported(
         Bool(title=_("This bug report should be private"), required=False,
@@ -273,6 +275,10 @@ class IBug(ICanBeMentored):
     users_unaffected_count = exported(
         Int(title=_('The number of users unaffected by this bug'),
             required=True, readonly=True))
+    users_affected = exported(CollectionField(
+            title=_('Users affected'),
+            value_type=Reference(schema=IPerson),
+            readonly=True))
 
     messages = CollectionField(
             title=_("The messages related to this object, in reverse "
@@ -383,11 +389,14 @@ class IBug(ICanBeMentored):
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
 
-    def addChange(change):
+    def addChange(change, recipients=None):
         """Record a change to the bug.
 
         :param change: An `IBugChange` instance from which to take the
             change data.
+        :param recipients: A set of `IBugNotificationRecipient`s to whom
+            to send notifications about this change. If None is passed
+            the default list of recipients for the bug will be used.
         """
 
     def expireNotifications():
@@ -407,6 +416,9 @@ class IBug(ICanBeMentored):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
         """
+
+    def removeWatch(bug_watch, owner):
+        """Remove a bug watch from the bug."""
 
     @call_with(owner=REQUEST_USER)
     @operation_parameters(target=copy_field(IBugTask['target']))
@@ -470,7 +482,7 @@ class IBug(ICanBeMentored):
     @call_with(user=REQUEST_USER)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
-    def unlinkCVE(cve, user=None):
+    def unlinkCVE(cve, user):
         """Ensure that any links between this bug and the given CVE are
         removed.
         """
@@ -641,6 +653,18 @@ class IBug(ICanBeMentored):
     @export_write_operation()
     def markUserAffected(user, affected=True):
         """Mark :user: as affected by this bug."""
+
+    @mutator_for(readonly_duplicateof)
+    @operation_parameters(duplicate_of=copy_field(readonly_duplicateof))
+    @export_write_operation()
+    def markAsDuplicate(duplicate_of):
+        """Mark this bug as a duplicate of another."""
+
+
+class InvalidDuplicateValue(Exception):
+    """A bug cannot be set as the duplicate of another."""
+    webservice_error(417)
+
 
 
 # We are forced to define these now to avoid circular import problems.

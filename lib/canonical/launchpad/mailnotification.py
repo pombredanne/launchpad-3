@@ -24,17 +24,14 @@ from zope.component import getAdapter, getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.components.bugchange import (
-    get_bug_change_class)
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
-from lazr.lifecycle.interfaces import IObjectModifiedEvent
+from canonical.launchpad.components.bugchange import get_bug_change_class
 from canonical.launchpad.interfaces import (
-    IBugTask, IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
+    IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
     INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
-    QuestionAction, TeamMembershipStatus)
+    TeamMembershipStatus)
 from canonical.launchpad.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
@@ -594,30 +591,13 @@ def get_bug_edit_notification_texts(bug_delta):
     # figure out what's been changed; add that information to the
     # list as appropriate
     changes = []
-    if bug_delta.duplicateof is not None:
-        new_bug_dupe = bug_delta.duplicateof['new']
-        old_bug_dupe = bug_delta.duplicateof['old']
-        assert new_bug_dupe is not None or old_bug_dupe is not None
-        assert new_bug_dupe != old_bug_dupe
-        if old_bug_dupe is not None:
-            change_info = (
-                u"** This bug is no longer a duplicate of bug %d\n" %
-                    old_bug_dupe.id)
-            change_info += u'   %s' % old_bug_dupe.title
-            changes.append(change_info)
-        if new_bug_dupe is not None:
-            change_info = (
-                u"** This bug has been marked a duplicate of bug %d\n" %
-                    new_bug_dupe.id)
-            change_info += '   %s' % new_bug_dupe.title
-            changes.append(change_info)
 
     # The order of the field names in this list is important; this is
     # the order in which changes will appear both in the bug activity
     # log and in notification emails.
     bug_change_field_names = [
-        'title', 'description', 'private', 'security_related', 'tags',
-        'attachment',
+        'duplicateof', 'title', 'description', 'private', 'security_related',
+        'tags', 'attachment',
         ]
     for field_name in bug_change_field_names:
         field_delta = getattr(bug_delta, field_name)
@@ -628,41 +608,40 @@ def get_bug_edit_notification_texts(bug_delta):
                 old_value=field_delta['old'], new_value=field_delta['new'])
             changes.append(change_info)
 
-    if bug_delta.bugwatch is not None:
-        old_bug_watch = bug_delta.bugwatch.get('old')
-        if old_bug_watch:
-            change_info = u"** Bug watch removed: %s #%s\n" % (
-                old_bug_watch.bugtracker.title, old_bug_watch.remotebug)
-            change_info += u"   %s" % old_bug_watch.url
-            changes.append(change_info)
-        new_bug_watch = bug_delta.bugwatch['new']
-        if new_bug_watch:
-            change_info = u"** Bug watch added: %s #%s\n" % (
-                new_bug_watch.bugtracker.title, new_bug_watch.remotebug)
-            change_info += u"   %s" % new_bug_watch.url
-            changes.append(change_info)
-
-    if bug_delta.cve is not None:
-        new_cve = bug_delta.cve.get('new', None)
-        old_cve = bug_delta.cve.get('old', None)
-        if old_cve:
-            changes.append(u"** CVE removed: %s" % old_cve.url)
-        if new_cve:
-            changes.append(u"** CVE added: %s" % new_cve.url)
-
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
         # Use zope_isinstance, to ensure that this Just Works with
         # security-proxied objects.
         if not zope_isinstance(bugtask_deltas, (list, tuple)):
             bugtask_deltas = [bugtask_deltas]
-        for bugtask_delta in bugtask_deltas:
-            change_info = u"** Changed in: %s\n" % (
-                bugtask_delta.bugtask.bugtargetname)
 
-            for fieldname, displayattrname in (
-                ("product", "displayname"), ("sourcepackagename", "name"),
-                ("importance", "title"), ("bugwatch", "title")):
+        for bugtask_delta in bugtask_deltas:
+            for field_name in ['target', 'importance', 'status']:
+                field_delta = getattr(bugtask_delta, field_name)
+                if field_delta is not None:
+                    bug_change_class = get_bug_change_class(
+                        bugtask_delta.bugtask, field_name)
+                    change = bug_change_class(
+                        bug_task=bugtask_delta.bugtask,
+                        when=None, person=bug_delta.user,
+                        what_changed=field_name,
+                        old_value=field_delta['old'],
+                        new_value=field_delta['new'])
+                    changes.append(change)
+
+        # XXX 2009-03-20 gmb [bug=344125]
+        #     There are two loops over bugtask_deltas here because we
+        #     have two completely unrelated ways of handling certain
+        #     fields as we transition over to the BugChange API. Trying
+        #     to do both in one loop is fraught with pain and
+        #     suffering. The second, eventually-to-be-redundant, loop
+        #     should be removed as part of the final cleanup work on
+        #     moving to the BugChange API.
+        for bugtask_delta in bugtask_deltas:
+            change_info = u''
+
+            for fieldname, displayattrname in [
+                ("milestone", "name"), ("bugwatch", "title")]:
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
@@ -686,41 +665,10 @@ def get_bug_edit_notification_texts(bug_delta):
                     'newval' : newval_display})
                 change_info += changerow
 
-            for fieldname, displayattrname in (
-                ("status", "title"), ("target", "name")):
-                change = getattr(bugtask_delta, fieldname)
-                if change:
-                    oldval_display, newval_display = _get_task_change_values(
-                        change, displayattrname)
-                    change_info += _get_task_change_row(
-                        fieldname, oldval_display, newval_display)
-            changes.append(change_info.rstrip())
-
-    if bug_delta.added_bugtasks is not None:
-        # Use zope_isinstance, to ensure that this Just Works with
-        # security-proxied objects.
-        if zope_isinstance(bug_delta.added_bugtasks, (list, tuple)):
-            added_bugtasks = bug_delta.added_bugtasks
-        else:
-            added_bugtasks = [bug_delta.added_bugtasks]
-
-        for added_bugtask in added_bugtasks:
-            if added_bugtask.bugwatch:
-                change_info = u"** Also affects: %s via\n" % (
-                    added_bugtask.bugtargetname)
-                change_info += u"   %s\n" % added_bugtask.bugwatch.url
-            else:
-                change_info = u"** Also affects: %s\n" % (
-                    added_bugtask.bugtargetname)
-            change_info += u"%13s: %s\n" % (u"Importance",
-                added_bugtask.importance.title)
-            if added_bugtask.assignee:
-                assignee = added_bugtask.assignee
-                change_info += u"%13s: %s\n" % (u"Assignee",
-                    assignee.unique_displayname)
-            change_info += u"%13s: %s" % (
-                u"Status", added_bugtask.status.title)
-            changes.append(change_info)
+            if len(change_info) > 0:
+                change_info = u"** Changed in: %s\n%s" % (
+                    bugtask_delta.bugtask.bugtargetname, change_info)
+                changes.append(change_info.rstrip())
 
     return changes
 
@@ -865,29 +813,10 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
         #     This if..else should be removed once the new BugChange API
         #     is complete and ubiquitous.
         if IBugChange.providedBy(change):
-            bug_delta.bug.addChange(change)
+            bug_delta.bug.addChange(change, recipients=recipients)
         else:
             bug_delta.bug.addChangeNotification(
                 change, person=bug_delta.user, recipients=recipients)
-
-
-@block_implicit_flushes
-def notify_bugtask_added(bugtask, event):
-    """Notify CC'd list that this bug has been marked as needing fixing
-    somewhere else.
-
-    bugtask must be in IBugTask. event must be an
-    IObjectModifiedEvent.
-    """
-    bugtask = event.object
-
-    bug_delta = BugDelta(
-        bug=bugtask.bug,
-        bugurl=canonical_url(bugtask.bug),
-        user=IPerson(event.user),
-        added_bugtasks=bugtask)
-
-    add_bug_change_notifications(bug_delta)
 
 
 @block_implicit_flushes
@@ -925,88 +854,6 @@ def notify_bug_comment_added(bugmessage, event):
     """
     bug = bugmessage.bug
     bug.addCommentNotification(bugmessage.message)
-
-
-@block_implicit_flushes
-def notify_bug_watch_added(watch, event):
-    """Notify CC'd list that a new watch has been added for this bug.
-
-    watch must be an IBugWatch. event must be an
-    IObjectCreatedEvent.
-    """
-    bug_delta = BugDelta(
-        bug=watch.bug,
-        bugurl=canonical_url(watch.bug),
-        user=IPerson(event.user),
-        bugwatch={'new' : watch})
-
-    add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
-def notify_bug_watch_modified(modified_bug_watch, event):
-    """Notify CC'd bug subscribers that a bug watch was edited.
-
-    modified_bug_watch must be an IBugWatch. event must be an
-    IObjectModifiedEvent.
-    """
-    old = event.object_before_modification
-    new = event.object
-    if ((old.bugtracker != new.bugtracker) or
-        (old.remotebug != new.remotebug)):
-        # there is a difference worth notifying about here
-        # so let's keep going
-        bug_delta = BugDelta(
-            bug=new.bug,
-            bugurl=canonical_url(new.bug),
-            user=IPerson(event.user),
-            bugwatch={'old' : old, 'new' : new})
-
-        add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
-def notify_bug_cve_added(bugcve, event):
-    """Notify CC'd list that a new cve ref has been added to this bug.
-
-    bugcve must be an IBugCve. event must be an IObjectCreatedEvent.
-    """
-    bug_delta = BugDelta(
-        bug=bugcve.bug,
-        bugurl=canonical_url(bugcve.bug),
-        user=IPerson(event.user),
-        cve={'new': bugcve.cve})
-
-    add_bug_change_notifications(bug_delta)
-
-@block_implicit_flushes
-def notify_bug_cve_deleted(bugcve, event):
-    """Notify CC'd list that a cve ref has been removed from this bug.
-
-    bugcve must be an IBugCve. event must be an IObjectDeletedEvent.
-    """
-    bug_delta = BugDelta(
-        bug=bugcve.bug,
-        bugurl=canonical_url(bugcve.bug),
-        user=IPerson(event.user),
-        cve={'old': bugcve.cve})
-
-    add_bug_change_notifications(bug_delta)
-
-
-@block_implicit_flushes
-def notify_bug_became_question(event):
-    """Notify CC'd list that a bug was made into a question.
-
-    The event must contain the bug that became a question, and the question
-    that the bug became.
-    """
-    bug = event.bug
-    question = event.question
-    change_info = '\n'.join([
-        '** bug changed to question:\n'
-        '   %s' %  canonical_url(question)])
-    bug.addChangeNotification(change_info, person=IPerson(event.user))
 
 
 @block_implicit_flushes
@@ -1173,490 +1020,6 @@ def notify_team_join(event):
         msg = MailWrapper().format(
             template % replacements, force_wrap=True)
         simple_sendmail(from_addr, address, subject, msg, headers=headers)
-
-
-def dispatch_linked_question_notifications(bugtask, event):
-    """Send notifications to linked question subscribers when the bugtask
-    status change.
-    """
-    for question in bugtask.bug.questions:
-        QuestionLinkedBugStatusChangeNotification(question, event)
-
-
-class QuestionNotification:
-    """Base class for a notification related to a question.
-
-    Creating an instance of that class will build the notification and
-    send it to the appropriate recipients. That way, subclasses of
-    QuestionNotification can be registered as event subscribers.
-    """
-
-    def __init__(self, question, event):
-        """Base constructor.
-
-        It saves the question and event in attributes and then call
-        the initialize() and send() method.
-        """
-        self.question = question
-        self.event = event
-        self.user = IPerson(self.event.user)
-        self.initialize()
-        if self.shouldNotify():
-            self.send()
-
-    def getFromAddress(self):
-        """Return a formatted email address suitable for user in the From
-        header of the question notification.
-
-        Default is Event Person Display Name <question#@answertracker_domain>
-        """
-        return format_address(
-            self.user.displayname,
-            'question%s@%s' % (
-                self.question.id, config.answertracker.email_domain))
-
-    def getSubject(self):
-        """Return the subject of the notification.
-
-        Default to [Question #dd]: Title
-        """
-        return '[Question #%s]: %s' % (self.question.id, self.question.title)
-
-    def getBody(self):
-        """Return the content of the notification message.
-
-        This method must be implemented by a subclass.
-        """
-        raise NotImplementedError
-
-    def getHeaders(self):
-        """Return additional headers to add to the email.
-
-        Default implementation adds a X-Launchpad-Question header.
-        """
-        question = self.question
-        headers = dict()
-        if self.question.distribution:
-            if question.sourcepackagename:
-                sourcepackage = question.sourcepackagename.name
-            else:
-                sourcepackage = 'None'
-            target = 'distribution=%s; sourcepackage=%s;' % (
-                question.distribution.name, sourcepackage)
-        else:
-            target = 'product=%s;' % question.product.name
-        if question.assignee:
-            assignee = question.assignee.name
-        else:
-            assignee = 'None'
-
-        headers['X-Launchpad-Question'] = (
-            '%s status=%s; assignee=%s; priority=%s; language=%s' % (
-                target, question.status.title, assignee,
-                question.priority.title, question.language.code))
-        headers['Reply-To'] = 'question%s@%s' % (
-            self.question.id, config.answertracker.email_domain)
-
-        return headers
-
-    def getRecipients(self):
-        """Return the recipient of the notification.
-
-        Default to the question's subscribers that speaks the request
-        languages. If the question owner is subscribed, he's always consider
-        to speak the language.
-
-        :return: A `INotificationRecipientSet` containing the recipients and
-                 rationale.
-        """
-        return self.question.getRecipients()
-
-    def initialize(self):
-        """Initialization hook for subclasses.
-
-        This method is called before send() and can be use for any
-        setup purpose.
-
-        Default does nothing.
-        """
-        pass
-
-    def shouldNotify(self):
-        """Return if there is something to notify about.
-
-        When this method returns False, no notification will be sent.
-        By default, all event trigger a notification.
-        """
-        return True
-
-    def send(self):
-        """Sends the notification to all the notification recipients.
-
-        This method takes care of adding the rationale for contacting each
-        recipient and also sets the X-Launchpad-Message-Rationale header on
-        each message.
-        """
-        from_address = self.getFromAddress()
-        subject = self.getSubject()
-        body = self.getBody()
-        headers = self.getHeaders()
-        recipients = self.getRecipients()
-        wrapper = MailWrapper()
-        for email in recipients.getEmails():
-            rationale, header = recipients.getReason(email)
-            headers['X-Launchpad-Message-Rationale'] = header
-            body_parts = [body, wrapper.format(rationale)]
-            if '-- ' not in body:
-                body_parts.insert(1, '-- ')
-            simple_sendmail(
-                from_address, email, subject, '\n'.join(body_parts), headers)
-
-    @property
-    def unsupported_language(self):
-        """Whether the question language is unsupported or not."""
-        supported_languages = self.question.target.getSupportedLanguages()
-        return self.question.language not in supported_languages
-
-    @property
-    def unsupported_language_warning(self):
-        """Warning about the fact that the question is written in an
-        unsupported language."""
-        return get_email_template(
-                'question-unsupported-language-warning.txt') % {
-                'question_language': self.question.language.englishname,
-                'target_name': self.question.target.displayname}
-
-
-class QuestionAddedNotification(QuestionNotification):
-    """Notification sent when a question is added."""
-
-    def getBody(self):
-        """See QuestionNotification."""
-        question = self.question
-        body = get_email_template('question-added-notification.txt') % {
-            'target_name': question.target.displayname,
-            'question_id': question.id,
-            'question_url': canonical_url(question),
-            'comment': question.description}
-        if self.unsupported_language:
-            body += self.unsupported_language_warning
-        return body
-
-
-class QuestionModifiedDefaultNotification(QuestionNotification):
-    """Base implementation of a notification when a question is modified."""
-
-    # Email template used to render the body.
-    body_template = "question-modified-notification.txt"
-
-    def initialize(self):
-        """Save the old question for comparison. It also set the new_message
-        attribute if a new message was added.
-        """
-        self.old_question = self.event.object_before_modification
-
-        new_messages = set(
-            self.question.messages).difference(self.old_question.messages)
-        assert len(new_messages) <= 1, (
-                "There shouldn't be more than one message for a "
-                "notification.")
-        if new_messages:
-            self.new_message = new_messages.pop()
-        else:
-            self.new_message = None
-
-        self.wrapper = MailWrapper()
-
-    @cachedproperty
-    def metadata_changes_text(self):
-        """Textual representation of the changes to the question metadata."""
-        question = self.question
-        old_question = self.old_question
-        indent = 4*' '
-        info_fields = []
-        if question.status != old_question.status:
-            info_fields.append(indent + 'Status: %s => %s' % (
-                old_question.status.title, question.status.title))
-        if question.target != old_question.target:
-            info_fields.append(
-                indent + 'Project: %s => %s' % (
-                old_question.target.displayname, question.target.displayname))
-
-        old_bugs = set(old_question.bugs)
-        bugs = set(question.bugs)
-        for linked_bug in bugs.difference(old_bugs):
-            info_fields.append(
-                indent + 'Linked to bug: #%s\n' % linked_bug.id +
-                indent + '%s\n' % canonical_url(linked_bug) +
-                indent + '"%s"' % linked_bug.title)
-        for unlinked_bug in old_bugs.difference(bugs):
-            info_fields.append(
-                indent + 'Removed link to bug: #%s\n' % unlinked_bug.id +
-                indent + '%s\n' % canonical_url(unlinked_bug) +
-                indent + '"%s"' % unlinked_bug.title)
-
-        if question.faq != old_question.faq:
-            if question.faq is None:
-                info_fields.append(
-                    indent + 'Related FAQ was removed:\n' +
-                    indent + old_question.faq.title + '\n' +
-                    indent + canonical_url(old_question.faq))
-            else:
-                info_fields.append(
-                    indent + 'Related FAQ set to:\n' +
-                    indent + question.faq.title + '\n' +
-                    indent + canonical_url(question.faq))
-
-        if question.title != old_question.title:
-            info_fields.append('Summary changed to:\n%s' % question.title)
-        if question.description != old_question.description:
-            info_fields.append(
-                'Description changed to:\n%s' % (
-                    self.wrapper.format(question.description)))
-
-        question_changes = '\n\n'.join(info_fields)
-        return question_changes
-
-    def getSubject(self):
-        """When a comment is added, its title is used as the subject,
-        otherwise the question title is used.
-        """
-        prefix = '[Question #%s]: ' % self.question.id
-        if self.new_message:
-            # Migrate old prefix.
-            subject = self.new_message.subject.replace(
-                '[Support #%s]: ' % self.question.id, prefix)
-            if prefix in subject:
-                return subject
-            elif subject[0:4] in ['Re: ', 'RE: ', 're: ']:
-                # Place prefix after possible reply prefix.
-                return subject[0:4] + prefix + subject[4:]
-            else:
-                return prefix + subject
-        else:
-            return prefix + self.question.title
-
-    def getHeaders(self):
-        """Add a References header."""
-        headers = QuestionNotification.getHeaders(self)
-        if self.new_message:
-            # XXX flacoste 2007-02-02 bug=83846:
-            # The first message cannot contain a References
-            # because we don't create a Message instance for the
-            # question description, so we don't have a Message-ID.
-
-            # XXX sinzui 2007-02-01 bug=164435:
-            # Added an assert to gather better Opps information about
-            # the state of the messages.
-            messages = list(self.question.messages)
-            assert self.new_message in messages, (
-                "Question %s: message id %s not in %s." % (
-                    self.question.id, self.new_message.id,
-                    [m.id for m in messages]))
-            index = messages.index(self.new_message)
-            if index > 0:
-                headers['References'] = (
-                    self.question.messages[index-1].rfc822msgid)
-        return headers
-
-    def shouldNotify(self):
-        """Only send a notification when a message was added or some
-        metadata was changed.
-        """
-        return self.new_message or self.metadata_changes_text
-
-    def getBody(self):
-        """See QuestionNotification."""
-        body = self.metadata_changes_text
-        replacements = dict(
-            question_id=self.question.id,
-            target_name=self.question.target.displayname,
-            question_url=canonical_url(self.question))
-
-        if self.new_message:
-            if body:
-                body += '\n\n'
-            body += self.getNewMessageText()
-            replacements['new_message_id'] = list(
-                self.question.messages).index(self.new_message)
-
-        replacements['body'] = body
-
-        return get_email_template(self.body_template) % replacements
-
-    def getRecipients(self):
-        """The default notification goes to all question subscribers that
-        speak the request language, except the owner.
-        """
-        original_recipients = QuestionNotification.getRecipients(self)
-        recipients = NotificationRecipientSet()
-        owner = self.question.owner
-        for person in original_recipients:
-            if person != self.question.owner:
-                rationale, header = original_recipients.getReason(person)
-                recipients.add(person, rationale, header)
-        return recipients
-
-    # Header template used when a new message is added to the question.
-    action_header_template = {
-        QuestionAction.REQUESTINFO:
-            '%(person)s requested for more information:',
-        QuestionAction.CONFIRM:
-            '%(person)s confirmed that the question is solved:',
-        QuestionAction.COMMENT:
-            '%(person)s posted a new comment:',
-        QuestionAction.GIVEINFO:
-            '%(person)s gave more information on the question:',
-        QuestionAction.REOPEN:
-            '%(person)s is still having a problem:',
-        QuestionAction.ANSWER:
-            '%(person)s proposed the following answer:',
-        QuestionAction.EXPIRE:
-            '%(person)s expired the question:',
-        QuestionAction.REJECT:
-            '%(person)s rejected the question:',
-        QuestionAction.SETSTATUS:
-            '%(person)s changed the question status:',
-    }
-
-    def getNewMessageText(self):
-        """Should return the notification text related to a new message."""
-        if not self.new_message:
-            return ''
-
-        header = self.action_header_template.get(
-            self.new_message.action, '%(person)s posted a new message:') % {
-            'person': self.new_message.owner.displayname}
-
-        return '\n'.join([
-            header, self.wrapper.format(self.new_message.text_contents)])
-
-
-class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
-    """Notification sent to the owner when his question is modified."""
-
-    # These actions will be done by the owner, so use the second person.
-    action_header_template = dict(
-        QuestionModifiedDefaultNotification.action_header_template)
-    action_header_template.update({
-        QuestionAction.CONFIRM:
-            'You confirmed that the question is solved:',
-        QuestionAction.GIVEINFO:
-            'You gave more information on the question:',
-        QuestionAction.REOPEN:
-            'You are still having a problem:',
-        })
-
-    body_template = 'question-modified-owner-notification.txt'
-
-    body_template_by_action = {
-        QuestionAction.ANSWER: "question-answered-owner-notification.txt",
-        QuestionAction.EXPIRE: "question-expired-owner-notification.txt",
-        QuestionAction.REJECT: "question-rejected-owner-notification.txt",
-        QuestionAction.REQUESTINFO: (
-            "question-info-requested-owner-notification.txt"),
-    }
-
-    def initialize(self):
-        """Set the template based on the new comment action."""
-        QuestionModifiedDefaultNotification.initialize(self)
-        if self.new_message:
-            self.body_template = self.body_template_by_action.get(
-                self.new_message.action, self.body_template)
-
-    def getRecipients(self):
-        """Return the owner of the question if he's still subscribed."""
-        recipients = NotificationRecipientSet()
-        owner = self.question.owner
-        if self.question.isSubscribed(owner):
-            original_recipients = self.question.getDirectRecipients()
-            rationale, header = original_recipients.getReason(owner)
-            recipients.add(owner, rationale, header)
-        return recipients
-
-    def getBody(self):
-        """See QuestionNotification."""
-        body = QuestionModifiedDefaultNotification.getBody(self)
-        if self.unsupported_language:
-            body += self.unsupported_language_warning
-        return body
-
-
-class QuestionUnsupportedLanguageNotification(QuestionNotification):
-    """Notification sent to answer contacts for unsupported languages."""
-
-    def getSubject(self):
-        """See QuestionNotification."""
-        return '[Question #%s]: (%s) %s' % (
-            self.question.id, self.question.language.englishname,
-            self.question.title)
-
-    def shouldNotify(self):
-        """Return True when the question is in an unsupported language."""
-        return self.unsupported_language
-
-    def getRecipients(self):
-        """Notify only the answer contacts."""
-        return self.question.target.getAnswerContactRecipients(None)
-
-    def getBody(self):
-        """See QuestionNotification."""
-        question = self.question
-        return get_email_template(
-                'question-unsupported-languages-added.txt') % {
-            'target_name': question.target.displayname,
-            'question_id': question.id,
-            'question_url': canonical_url(question),
-            'question_language': question.language.englishname,
-            'comment': question.description}
-
-
-class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
-    """Notification sent when a linked bug status is changed."""
-
-    def initialize(self):
-        """Create a notifcation for a linked bug status change."""
-        assert IObjectModifiedEvent.providedBy(self.event), (
-            "Should only be subscribed for IObjectModifiedEvent.")
-        assert IBugTask.providedBy(self.event.object), (
-            "Should only be subscribed for IBugTask modification.")
-        self.bugtask = self.event.object
-        self.old_bugtask = self.event.object_before_modification
-
-    def shouldNotify(self):
-        """Only send notification when the status changed."""
-        return (self.bugtask.status != self.old_bugtask.status
-                and self.bugtask.bug.private == False)
-
-    def getSubject(self):
-        """See QuestionNotification."""
-        return "[Question #%s]: Status of bug #%s changed to '%s' in %s" % (
-            self.question.id, self.bugtask.bug.id, self.bugtask.status.title,
-            self.bugtask.target.displayname)
-
-    def getBody(self):
-        """See QuestionNotification."""
-        if self.bugtask.statusexplanation:
-            wrapper = MailWrapper()
-            statusexplanation = (
-                'Status change explanation given by %s:\n\n%s\n' % (
-                    self.user.displayname,
-                    wrapper.format(self.bugtask.statusexplanation)))
-        else:
-            statusexplanation = ''
-
-        return get_email_template(
-            'question-linked-bug-status-updated.txt') % {
-                'bugtask_target_name': self.bugtask.target.displayname,
-                'question_id': self.question.id,
-                'question_title':self.question.title,
-                'question_url': canonical_url(self.question),
-                'bugtask_url':canonical_url(self.bugtask),
-                'bug_id': self.bugtask.bug.id,
-                'bugtask_title': self.bugtask.bug.title,
-                'old_status': self.old_bugtask.status.title,
-                'new_status': self.bugtask.status.title,
-                'statusexplanation': statusexplanation}
 
 
 def specification_notification_subject(spec):

@@ -8,11 +8,13 @@ __all__ = [
     'ArchiveAdminView',
     'ArchiveActivateView',
     'ArchiveBadges',
+    'ArchiveBreadcrumbBuilder',
     'ArchiveBuildsView',
     'ArchiveContextMenu',
     'ArchiveEditDependenciesView',
     'ArchiveEditView',
     'ArchiveNavigation',
+    'ArchiveNavigationMenu',
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
@@ -44,11 +46,12 @@ from canonical.launchpad.components.archivesourcepublication import (
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, CannotCopy, IArchive, IArchiveEditDependenciesForm,
     IArchivePackageCopyingForm, IArchivePackageDeletionForm,
-    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
+    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm,
+    default_name_by_purpose)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet)
+    IArchiveSubscriberSet, IArchiveSubscriptionForOwner)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.buildrecords import IHasBuildRecords
@@ -73,8 +76,9 @@ from canonical.launchpad.scripts.packagecopier import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.widgets import (
     LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
 from canonical.widgets.itemswidgets import (
@@ -106,7 +110,7 @@ def traverse_distro_archive(distribution, name):
 
 
 def traverse_named_ppa(person_name, ppa_name):
-    """For PPAs, traverse the the right place.
+    """For PPAs, traverse the right place.
 
     :param person_name: The person part of the URL
     :param ppa_name: The PPA name part of the URL
@@ -142,7 +146,7 @@ class DistributionArchiveURL:
 
     @property
     def path(self):
-        return u"+archive/%s" % self.context.name.lower()
+        return u"+archive/%s" % self.context.name
 
 
 class PPAURL:
@@ -209,7 +213,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         # the direct subscription:
         for subscription in subscriptions:
             if subscription.subscriber == person:
-                return subscription
+                return IArchiveSubscriptionForOwner(subscription)
 
         return None
 
@@ -320,6 +324,35 @@ class ArchiveContextMenu(ContextMenu):
     def edit_dependencies(self):
         text = 'Edit dependencies'
         return Link('+edit-dependencies', text, icon='edit')
+
+
+class ArchiveNavigationMenu(NavigationMenu):
+    """IArchive navigation menu.
+
+    Deliberately empty.
+    """
+    usedfor = IArchive
+    facet = 'overview'
+    links = []
+
+
+class ArchiveBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IArchive`."""
+
+    @property
+    def text(self):
+        if self.context.is_ppa:
+            default_ppa_name = default_name_by_purpose.get(
+                self.context.purpose)
+            if self.context.name == default_ppa_name:
+                return 'PPA'
+            return '%s PPA' % self.context.name
+
+        if self.context.is_copy:
+            return '%s Archive Copy' % self.context.name
+
+        return '%s' % self.context.purpose.title
+
 
 class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
@@ -812,7 +845,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             if self.can_copy_to_context_ppa and self.context == ppa:
                 required = False
                 continue
-            terms.append(SimpleTerm(ppa, str(ppa.owner.name), ppa.title))
+            terms.append(
+                SimpleTerm(ppa, str(ppa.owner.name), ppa.displayname))
 
         return form.Fields(
             Choice(__name__='destination_archive',
@@ -947,12 +981,12 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                 '<p>All packages already copied to '
                 '<a href="%s">%s</a>.</p>' % (
                     canonical_url(destination_archive),
-                    destination_archive.title))
+                    destination_archive.displayname))
         else:
             messages.append(
                 '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
                     canonical_url(destination_archive),
-                    destination_archive.title))
+                    destination_archive.displayname))
             messages.append('<ul>')
             messages.append(
                 "\n".join(['<li>%s</li>' % copy.displayname
@@ -1169,7 +1203,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         # Present a page notification describing the action.
         self._messages.append('<p>Dependencies removed:')
         for dependency in selected_dependencies:
-            self._messages.append('<br/>%s' % dependency.title)
+            self._messages.append('<br/>%s' % dependency.displayname)
         self._messages.append('</p>')
 
     def _add_ppa_dependencies(self, data):
@@ -1183,7 +1217,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             getUtility(IComponentSet)['main'])
 
         self._messages.append(
-            '<p>Dependency added: %s</p>' % dependency_candidate.title)
+            '<p>Dependency added: %s</p>' % dependency_candidate.displayname)
 
     def _add_primary_dependencies(self, data):
         """Record the selected dependency."""
@@ -1371,7 +1405,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['description', 'whiteboard']
+    field_names = ['description']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 
@@ -1379,9 +1413,7 @@ class ArchiveEditView(BaseArchiveEditView):
 class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'require_virtualized',
-                   'buildd_secret', 'authorized_size', 'whiteboard']
-    custom_widget(
-        'whiteboard', TextAreaWidget, height=10, width=30)
+                   'buildd_secret', 'authorized_size']
 
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.

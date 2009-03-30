@@ -47,8 +47,6 @@ from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.entitlement import IEntitlement
-from canonical.launchpad.interfaces.faq import IFAQ
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
@@ -64,6 +62,8 @@ from canonical.launchpad.interfaces.oauth import (
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
+from canonical.launchpad.interfaces.publishing import (
+    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
 from canonical.launchpad.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
@@ -76,8 +76,6 @@ from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.question import IQuestion
-from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
 from canonical.launchpad.interfaces.seriessourcepackagebranch import (
     ISeriesSourcePackageBranch, ISeriesSourcePackageBranchSet)
 from canonical.launchpad.interfaces.shipit import (
@@ -104,6 +102,11 @@ from canonical.launchpad.interfaces.translator import (
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
+
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 
 class AuthorizationBase:
@@ -1173,6 +1176,23 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IPOTemplate
 
+    def checkAuthenticated(self, user):
+        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
+            return True
+
+        if self.obj.distroseries is not None:
+            # For distroseries, both the owners and the owners of its
+            # chosen translation group (if any) are allowed to manage
+            # templates.
+            distro = self.obj.distroseries.distribution
+            if user.inTeam(distro.owner):
+                return True
+            translation_group = distro.translationgroup
+            if translation_group and user.inTeam(translation_group.owner):
+                return True
+
+        return False
+
 
 # XXX: Carlos Perello Marin 2005-05-24 bug=753:
 # This should be using SuperSpecialPermissions when implemented.
@@ -1293,21 +1313,38 @@ class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
             self, user)
 
 
-class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
+class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ITranslationImportQueueEntry
+
+    def checkAuthenticated(self, user):
+        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
+            return True
+
+        # As a special case, the Ubuntu translation group owners can
+        # manage Ubuntu uploads.
+        if self.obj.is_targeted_to_ubuntu:
+            group = self.obj.distroseries.distribution.translationgroup
+            if group is not None and user.inTeam(group.owner):
+                return True
+
+        return False
+
+
+class EditTranslationImportQueueEntry(AdminTranslationImportQueueEntry):
     permission = 'launchpad.Edit'
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        """Allow who added the entry, experts and admins.
+        """Anyone who can admin an entry, plus its owner, can edit it.
         """
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+        if AdminTranslationImportQueueEntry.checkAuthenticated(self, user):
+            return True
+        if user.inTeam(self.obj.importer):
+            return True
 
-        return (OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-                user.inTeam(self.obj.importer))
+        return False
 
-class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = ITranslationImportQueueEntry
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
@@ -1949,6 +1986,27 @@ class EditArchiveSubscriber(AuthorizationBase):
         return user.inTeam(admins)
 
 
+class ViewSourcePackagePublishingHistory(AuthorizationBase):
+    """Restrict viewing of source publications."""
+    permission = "launchpad.View"
+    usedfor = ISourcePackagePublishingHistory
+
+    def checkAuthenticated(self, user):
+        view_archive = ViewArchive(self.obj.archive)
+        if view_archive.checkAuthenticated(user):
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+    def checkUnauthenticated(self):
+        return not self.obj.archive.private
+
+
+class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
+    """Restrict viewing of binary publications."""
+    usedfor = IBinaryPackagePublishingHistory
+
+
 class ViewSourcePackageRelease(AuthorizationBase):
     """Restrict viewing of source packages.
 
@@ -1998,9 +2056,9 @@ class ConfigureTeamMailingList(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Check to see if the user can manage a mailing list.
 
-        A team's owner, the Launchpad administrators, and Launchpad mailing
-        list experts can all manage a team's mailing list through its
-        +mailinglist page.
+        A team's owner or administrator, the Launchpad administrators, and
+        Launchpad mailing list experts can all manage a team's mailing list
+        through its +mailinglist page.
 
         :param user: The user whose permission is being checked.
         :type user: `IPerson`
@@ -2011,9 +2069,10 @@ class ConfigureTeamMailingList(AuthorizationBase):
         # administrators can all view a team's +mailinglist page.
         celebrities = getUtility(ILaunchpadCelebrities)
         team = ITeam(self.obj)
-        return ((team is not None and user.inTeam(team.teamowner)) or
-                user.inTeam(celebrities.admin) or
-                user.inTeam(celebrities.mailing_list_experts))
+        return (
+            (team is not None and team in user.getAdministratedTeams()) or
+            user.inTeam(celebrities.admin) or
+            user.inTeam(celebrities.mailing_list_experts))
 
 
 class ViewEmailAddress(AuthorizationBase):

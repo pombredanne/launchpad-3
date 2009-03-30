@@ -23,6 +23,38 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 
+def quote_text_as_email(text, width=80):
+    """Quote the text as if it is an email response.
+
+    Uses '> ' as a line prefix, and breaks long lines.
+
+    Trailing whitespace is stripped.
+    """
+    # Empty text begets empty text.
+    if text is None:
+        return ''
+    text = text.rstrip()
+    if not text:
+        return ''
+    prefix = '> '
+    # The TextWrapper's handling of code is somewhat suspect.
+    wrapper = TextWrapper(
+        initial_indent=prefix,
+        subsequent_indent=prefix,
+        width=width,
+        replace_whitespace=False)
+    result = []
+    # Break the string into lines, and use the TextWrapper to wrap the
+    # individual lines.
+    for line in text.rstrip().split('\n'):
+        # TextWrapper won't do an indent of an empty string.
+        if line.strip() == '':
+            result.append(prefix)
+        else:
+            result.extend(wrapper.wrap(line))
+    return '\n'.join(result)
+
+
 class CodeReviewCommentPrimaryContext:
     """The primary context is the comment is that of the source branch."""
 
@@ -113,20 +145,15 @@ class CodeReviewCommentAddView(LaunchpadFormView):
 
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
 
-    def _get_wrapped_reply(self):
-        wrapper = TextWrapper(initial_indent='> ', subsequent_indent='> ',
-            width=80)
-        return wrapper.fill(self.reply_to.message_body)
-
     @property
     def initial_values(self):
         """The initial values are used to populate the form fields.
 
-        In this case, the default value of the the comment should be the
+        In this case, the default value of the comment should be the
         quoted comment being replied to.
         """
-        if self.reply_to:
-            comment = self._get_wrapped_reply()
+        if self.is_reply:
+            comment = quote_text_as_email(self.reply_to.message_body)
         else:
             comment = ''
         return {'comment': comment}

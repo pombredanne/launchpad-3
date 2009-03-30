@@ -931,12 +931,23 @@ If parameters were specified, they'll be passed in to the method by
 find(). The REQUEST_USER marker value will be replaced by the logged in
 user.
 
+To get this to work we must define a web service configuration
+object. Each web service needs to have one of these registered
+utilities providing basic information about the web service. This one
+is just a dummy.
+
     >>> from zope.component import provideUtility
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> class FakeLaunchBag:
-    ...     implements(ILaunchBag)
-    ...     user = 'A user'
-    >>> provideUtility(FakeLaunchBag(), ILaunchBag)
+    >>> from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+    >>> class MyWebServiceConfiguration:
+    ...     implements(IWebServiceConfiguration)
+    ...     view_permission = "lazr.View"
+    ...     service_version_uri_prefix = "beta"
+    ...     code_revision = "1.0b"
+    ...     default_batch_size = 50
+    ...
+    ...     def get_request_user(self):
+    ...         return 'A user'
+    >>> provideUtility(MyWebServiceConfiguration(), IWebServiceConfiguration)
 
     >>> class CheckedOutBookSet(object):
     ...     """Simple ICheckedOutBookSet implementation."""
@@ -1020,19 +1031,6 @@ The call() method calls the underlying method and returns its result.
     ...
     ...     def new(self, author, base_price, title):
     ...         return Book(author, title, base_price, "unknown")
-
-We're going to create a fake request now, and that requires defining a
-web service configuration object. Each web service needs to have one
-of these registered utilities providing basic information about the web
-service. This one is just a dummy.
-
-    >>> from canonical.lazr.interfaces.rest import IWebServiceConfiguration
-    >>> class MyWebServiceConfiguration:
-    ...     implements(IWebServiceConfiguration)
-    ...     view_permission = "lazr.View"
-    ...     service_version_uri_prefix = "beta"
-    ...     code_revision = "1.0b"
-    >>> provideUtility(MyWebServiceConfiguration(), IWebServiceConfiguration)
 
 Now we can create a fake request that invokes the named operation.
 

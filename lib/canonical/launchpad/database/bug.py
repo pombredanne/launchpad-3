@@ -36,10 +36,12 @@ from lazr.lifecycle.event import (
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.components.bugchange import (
-    BranchLinkedToBug, BranchUnlinkedFromBug, UnsubscribedFromBug)
+    BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
+    BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
+from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.interfaces import IQuestionTarget
 from canonical.launchpad.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet)
+    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue)
 from canonical.launchpad.interfaces.bugactivity import IBugActivitySet
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -91,6 +93,7 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person, ValidPersonCache
 from canonical.launchpad.database.pillar import pillar_sort_key
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.interfaces import (
@@ -245,6 +248,12 @@ class Bug(SQLBase):
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
+
+    @property
+    def users_affected(self):
+        """See `IBug`."""
+        return [bap.person for bap
+                in Store.of(self).find(BugAffectsPerson, bug=self)]
 
     @property
     def indexed_messages(self):
@@ -651,7 +660,7 @@ class Bug(SQLBase):
              bug=self, is_comment=True,
              message=message, recipients=recipients)
 
-    def addChange(self, change):
+    def addChange(self, change, recipients=None):
         """See `IBug`."""
         when = change.when
         if when is None:
@@ -670,7 +679,6 @@ class Bug(SQLBase):
 
         notification_data = change.getBugNotification()
         if notification_data is not None:
-            recipients = change.getBugNotificationRecipients()
             assert notification_data.get('text') is not None, (
                 "notification_data must include a `text` value.")
 
@@ -768,7 +776,14 @@ class Bug(SQLBase):
                 bug=self, bugtracker=bugtracker,
                 remotebug=remotebug, owner=owner)
             Store.of(bug_watch).flush()
+        self.addChange(BugWatchAdded(UTC_NOW, owner, bug_watch))
+        notify(ObjectCreatedEvent(bug_watch, user=owner))
         return bug_watch
+
+    def removeWatch(self, bug_watch, user):
+        """See `IBug`."""
+        self.addChange(BugWatchRemoved(UTC_NOW, user, bug_watch))
+        bug_watch.destroySelf()
 
     def addAttachment(self, owner, data, comment, filename, is_patch=False,
                       content_type=None, description=None):
@@ -852,7 +867,7 @@ class Bug(SQLBase):
         self.linkCVE(cve, user)
         return None
 
-    def unlinkCVE(self, cve, user=None):
+    def unlinkCVE(self, cve, user):
         """See `IBug`."""
         for cve_link in self.cve_links:
             if cve_link.cve.id == cve.id:
@@ -923,8 +938,6 @@ class Bug(SQLBase):
         bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
         edited_fields = ['status']
         if comment is not None:
-            bugtask.statusexplanation = comment
-            edited_fields.append('statusexplanation')
             self.newMessage(
                 owner=person, subject=self.followup_subject(),
                 content=comment)
@@ -937,6 +950,7 @@ class Bug(SQLBase):
 
         question_target = IQuestionTarget(bugtask.target)
         question = question_target.createQuestionFromBug(self)
+        self.addChange(BugConvertedToQuestion(UTC_NOW, person, question))
 
         notify(BugBecameQuestionEvent(self, question, person))
         return question
@@ -1053,6 +1067,8 @@ class Bug(SQLBase):
             productseries=productseries)
         if nomination.canApprove(owner):
             nomination.approve(owner)
+        else:
+            self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
     def canBeNominatedFor(self, nomination_target):
@@ -1286,6 +1302,22 @@ class Bug(SQLBase):
             if bap.affected != affected:
                 bap.affected = affected
                 self._flushAndInvalidate()
+
+    @property
+    def readonly_duplicateof(self):
+        """See `IBug`."""
+        return self.duplicateof
+
+    def markAsDuplicate(self, duplicate_of):
+        """See `IBug`."""
+        field = DuplicateBug()
+        field.context = self
+        try:
+            if duplicate_of is not None:
+                field._validate(duplicate_of)
+            self.duplicateof = duplicate_of
+        except LaunchpadValidationError, validation_error:
+            raise InvalidDuplicateValue(validation_error)
 
 
 class BugSet:

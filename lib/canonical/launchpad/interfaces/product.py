@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'InvalidProductName',
     'IProduct',
     'IProductEditRestricted',
     'IProductCommercialRestricted',
@@ -57,6 +58,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.sourceforgeproject import (
     sourceforge_project_name_validator)
@@ -416,9 +418,6 @@ class IProductPublic(
             vocabulary='FilteredProductSeries',
             schema=IProductSeries,
             description=_('The "trunk" series where development is focused')))
-
-    default_stacked_on_branch = Attribute(
-        _('The branch that new branches will be stacked on by default.'))
 
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "
@@ -840,6 +839,14 @@ class NoSuchProduct(NameLookupFailed):
     """Raised when we try to find a product that doesn't exist."""
 
     _message_prefix = "No such product"
+
+
+class InvalidProductName(LaunchpadValidationError):
+
+    def __init__(self, name):
+        self.name = name
+        LaunchpadValidationError.__init__(
+            self, "Invalid name for product: %s." % (name,))
 
 
 # Fix circular imports.

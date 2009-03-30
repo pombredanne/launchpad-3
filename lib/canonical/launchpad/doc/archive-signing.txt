@@ -37,7 +37,7 @@ Only PPAs with at least one source publication are considered.
 
     >>> archive_set = getUtility(IArchiveSet)
     >>> for ppa in archive_set.getPPAsPendingSigningKey():
-    ...     print ppa.title
+    ...     print ppa.displayname
     PPA for Celso Providelo
     PPA for Mark Shuttleworth
 
@@ -48,7 +48,7 @@ why it's skipped in the getPPAsPendingSigningKey() results.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
 
-    >>> print no_priv.archive.title
+    >>> print no_priv.archive.displayname
     PPA for No Privileges Person
 
     >>> no_priv.archive.enabled
@@ -68,7 +68,7 @@ we copy an arbitrary source into it.
     ...     a_source.distroseries, a_source.pocket, no_priv.archive)
 
     >>> for ppa in archive_set.getPPAsPendingSigningKey():
-    ...     print ppa.title
+    ...     print ppa.displayname
     PPA for Celso Providelo
     PPA for Mark Shuttleworth
     PPA for No Privileges Person
@@ -78,7 +78,7 @@ Disabled PPAs are excluded from the 'PendingSigningKey' pool:
     >>> no_priv.archive.enabled = False
 
     >>> for ppa in archive_set.getPPAsPendingSigningKey():
-    ...     print ppa.title
+    ...     print ppa.displayname
     PPA for Celso Providelo
     PPA for Mark Shuttleworth
 
@@ -108,7 +108,7 @@ And use it as the Mark's PPA sigining key.
 It will exclude Mark's PPA from the 'PendingSigningKey' pool as well.
 
     >>> for ppa in archive_set.getPPAsPendingSigningKey():
-    ...     print ppa.title
+    ...     print ppa.displayname
     PPA for Celso Providelo
 
 
@@ -148,7 +148,7 @@ Once adapted `IArchiveSigningKey` is properly implemented.
 `IArchiveSigningKey` object contain the corresponding IArchive
 object.
 
-    >>> print archive_signing_key.archive.title
+    >>> print archive_signing_key.archive.displayname
     PPA for Celso Providelo
 
 It also implements exportSecretKey() which receive a `PymeKey` and
@@ -220,7 +220,7 @@ by the 'PPA key guard' celebrity and represented by a IGPGKey record.
     >>> print signing_key.can_encrypt
     False
 
-The generated key UID follows "Launchpad %(ppa.title)s" format.
+The generated key UID follows "Launchpad %(ppa.displayname)s" format.
 
     >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)

@@ -9,28 +9,28 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from lazr.enum import BaseItem
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.components.bugchange import (
+    CveLinkedToBug, CveUnlinkedFromBug)
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad.components.bugchange import (
+    BugWatchAdded, BugWatchRemoved)
 from canonical.launchpad.interfaces import (
     IBug, IBugActivitySet, IMilestone, IPerson, IProductRelease,
     ISourcePackageRelease)
+from canonical.launchpad.components.bugchange import BugTaskAdded
 
 vocabulary_registry = getVocabularyRegistry()
 
 
 BUG_INTERESTING_FIELDS = [
-    'duplicateof',
     'name',
-    'tags',
     ]
 
 
 BUGTASK_INTERESTING_FIELDS = [
     'assignee',
     'bugwatch',
-    'importance',
     'milestone',
-    'status',
-    'target',
     ]
 
 
@@ -106,34 +106,34 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     for changed_field in changes:
         oldvalue, newvalue = changes[changed_field]
-        if changed_field == 'duplicateof':
-            if oldvalue is None and newvalue is not None:
-                whatchanged = 'marked as duplicate'
-            elif oldvalue is not None and newvalue is not None:
-                whatchanged = 'changed duplicate marker'
-            elif oldvalue is not None and newvalue is None:
-                whatchanged = 'removed duplicate marker'
-        else:
-            whatchanged = changed_field
-
         getUtility(IBugActivitySet).new(
             bug=bug_edited.id,
             datechanged=UTC_NOW,
             person=IPerson(sqlobject_modified_event.user),
-            whatchanged=whatchanged,
+            whatchanged=changed_field,
             oldvalue=oldvalue,
             newvalue=newvalue,
             message="")
 
 
 @block_implicit_flushes
-def record_bug_task_added(bug_task, object_created_event):
-    getUtility(IBugActivitySet).new(
-        bug=bug_task.bug,
-        datechanged=UTC_NOW,
-        person=IPerson(object_created_event.user),
-        whatchanged='bug',
-        message='assigned to ' + bug_task.bugtargetname)
+def record_cve_linked_to_bug(bug_cve, event):
+    """Record when a CVE is linked to a bug."""
+    bug_cve.bug.addChange(
+        CveLinkedToBug(
+            when=None,
+            person=IPerson(event.user),
+            cve=bug_cve.cve))
+
+
+@block_implicit_flushes
+def record_cve_unlinked_from_bug(bug_cve, event):
+    """Record when a CVE is unlinked from a bug."""
+    bug_cve.bug.addChange(
+        CveUnlinkedFromBug(
+            when=None,
+            person=IPerson(event.user),
+            cve=bug_cve.cve))
 
 
 @block_implicit_flushes
@@ -170,16 +170,6 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
                 whatchanged="%s: %s" % (task_title, changed_field),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
-
-
-@block_implicit_flushes
-def record_product_task_added(product_task, object_created_event):
-    getUtility(IBugActivitySet).new(
-        bug=product_task.bug,
-        datechanged=UTC_NOW,
-        person=IPerson(object_created_event.user),
-        whatchanged='bug',
-        message='assigned to product ' + product_task.product.name)
 
 
 @block_implicit_flushes
@@ -228,3 +218,31 @@ def record_bugsubscription_edited(bugsubscription_edited,
                     bugsubscription_edited.person.browsername),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
+
+
+@block_implicit_flushes
+def notify_bugtask_added(bugtask, event):
+    """Notify CC'd list that this bug has been marked as needing fixing
+    somewhere else.
+
+    bugtask must be in IBugTask. event must be an
+    IObjectModifiedEvent.
+    """
+    bugtask.bug.addChange(BugTaskAdded(UTC_NOW, IPerson(event.user), bugtask))
+
+
+@block_implicit_flushes
+def notify_bug_watch_modified(modified_bug_watch, event):
+    """Notify CC'd bug subscribers that a bug watch was edited.
+
+    modified_bug_watch must be an IBugWatch. event must be an
+    IObjectModifiedEvent.
+    """
+    old_watch = event.object_before_modification
+    new_watch = event.object
+    bug = new_watch.bug
+    if old_watch.url == new_watch.url:
+        # Nothing interesting was modified, don't record any changes.
+        return
+    bug.addChange(BugWatchRemoved(UTC_NOW, IPerson(event.user), old_watch))
+    bug.addChange(BugWatchAdded(UTC_NOW, IPerson(event.user), new_watch))

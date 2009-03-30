@@ -48,7 +48,7 @@ from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseries import DistroSeries
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
-from canonical.launchpad.database.faq import FAQ, FAQSearch
+from lp.answers.model.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import (
@@ -58,8 +58,6 @@ from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     BinaryPackageFilePublishing, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, SourcePackagePublishingHistory)
-from canonical.launchpad.database.question import (
-    QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
@@ -84,8 +82,8 @@ from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror, MirrorContent, MirrorStatus)
-from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, NoSuchDistroSeries)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
@@ -93,9 +91,6 @@ from canonical.launchpad.interfaces.packaging import PackagingType
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
-from canonical.launchpad.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName)
 from canonical.launchpad.interfaces.specification import (
@@ -109,6 +104,13 @@ from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.url import urlparse
+
+from lp.answers.model.question import (
+    QuestionTargetSearch, QuestionTargetMixin)
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -486,7 +488,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             distroseries = DistroSeries.selectOneBy(
                 distribution=self, version=name_or_version)
             if distroseries is None:
-                raise NotFoundError(name_or_version)
+                raise NoSuchDistroSeries(name_or_version)
         return distroseries
 
     def getDevelopmentSerieses(self):

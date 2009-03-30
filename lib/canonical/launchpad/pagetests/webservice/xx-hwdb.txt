@@ -89,6 +89,23 @@ devices matching the given value are returned.
     >>> print devices.jsonBody()['entries']
     []
 
+Some buses have constraints for the values of vendor and product IDs.
+IDs for PCI devices, for example, must have the form 0x12ab. (For
+an overview of these constraints, see doc/hwdb-device-tables.txt.)
+Queries with invalid parameter values return a 400 error.
+
+    >>> print webservice.get(
+    ...     '/+hwdb?ws.op=devices&bus=PCI&vendor_id=WRONG')
+    HTTP/1.1 400 Bad Request
+    ...
+    ParameterError: u'WRONG' is not a valid vendor ID for PCI
+
+    >>> print webservice.get(
+    ...     '/+hwdb?ws.op=devices&bus=PCI&vendor_id=0x1234&product_id=BAD')
+    HTTP/1.1 400 Bad Request
+    ...
+    ParameterError: u'BAD' is not a valid product ID for PCI
+
 Single device records can be accessed too.
 
     >>> device = webservice.get('/+hwdb/+device/2').jsonBody()

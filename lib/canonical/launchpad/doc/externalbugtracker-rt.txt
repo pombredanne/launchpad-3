@@ -176,12 +176,14 @@ instance which has several bugs that we wish to watch:
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1585, so we add a watch against the remote bug.
 
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.RT)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, '1585', sample_person)
+    ...     example_bug_tracker, '1585',
+    ...     getUtility(ILaunchpadCelebrities).janitor)
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1585: None

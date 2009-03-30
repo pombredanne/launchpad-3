@@ -116,6 +116,13 @@ class ISourcePackage(IBugTarget):
         "pocket. The result is a dictionary, with the pocket dbschema "
         "as a key, and a list of source package releases as the value.")
 
+    linked_branches = Attribute(
+        "A mapping of pockets to officially linked branches, ordered by "
+        "pocket enum value.")
+
+    development_version = Attribute(
+        "This package on the distro's current series.")
+
     def __getitem__(version):
         """Return the source package release with the given version in this
         distro series, or None."""
@@ -145,6 +152,13 @@ class ISourcePackage(IBugTarget):
         """Update the existing packaging record, or create a new packaging
         record, that links the source package to the given productseries,
         and record that it was done by the owner.
+        """
+
+    def getPocketPath(pocket):
+        """Get the path to the given pocket of this package.
+
+        :param pocket: A `DBItem` of `PackagePublishingPocket`.
+        :return: A string.
         """
 
     # 'pocket' should actually be a PackagePublishingPocket, but we say

@@ -58,7 +58,6 @@ from canonical.launchpad.interfaces import (
     IBranch,
     IBranchMergeProposal,
     IBranchNavigationMenu,
-    IBranchSet,
     IBranchSubscription,
     IBugBranch,
     IBugSet,
@@ -123,7 +122,7 @@ class BranchHierarchy(Hierarchy):
 
 
 class BranchBadges(HasBadgeBase):
-    badges = "private", "bug", "blueprint", "warning"
+    badges = "private", "bug", "blueprint", "warning", "mergeproposal"
 
     def isBugBadgeVisible(self):
         """Show a bug badge if the branch is linked to bugs."""
@@ -142,6 +141,14 @@ class BranchBadges(HasBadgeBase):
     def isWarningBadgeVisible(self):
         """Show a warning badge if there are mirror failures."""
         return self.context.mirror_failures > 0
+
+    def isMergeproposalBadgeVisible(self):
+        """Show a proposal badge if there are any landing targets."""
+        for proposal in self.context.landing_targets:
+            # Stop on the first visible one.
+            if check_permission('launchpad.View', proposal):
+                return True
+        return False
 
     def getBadge(self, badge_name):
         """See `IHasBadges`."""
@@ -962,12 +969,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             self.setFieldError(
                 'owner',
                 'You are not a member of %s' % owner.displayname)
-
-        if owner.isTeam() and data.get('product') is None:
-            error = self.getFieldError('product')
-            if not error:
-                self.setFieldError('product',
-                                   'Teams cannot have junk branches.')
 
         branch_type = data.get('branch_type')
         # If branch_type failed to validate, then the rest of the method

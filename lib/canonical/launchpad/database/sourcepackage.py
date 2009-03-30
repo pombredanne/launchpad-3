@@ -33,7 +33,7 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
-from canonical.launchpad.database.question import (
+from lp.answers.model.question import (
     QuestionTargetMixin, QuestionTargetSearch)
 from canonical.launchpad.database.seriessourcepackagebranch import (
     SeriesSourcePackageBranch)
@@ -433,6 +433,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return thedict
 
     @property
+    def development_version(self):
+        """See `ISourcePackage`."""
+        return self.__class__(
+            self.sourcepackagename, self.distribution.currentseries)
+
+    @property
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
@@ -628,3 +634,22 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         getUtility(ISeriesSourcePackageBranchSet).new(
             self.distroseries, pocket, self.sourcepackagename, branch,
             registrant)
+
+    @property
+    def linked_branches(self):
+        """See `ISourcePackage`."""
+        store = Store.of(self.sourcepackagename)
+        return store.find(
+            (SeriesSourcePackageBranch.pocket, Branch),
+            SeriesSourcePackageBranch.distroseries == self.distroseries.id,
+            (SeriesSourcePackageBranch.sourcepackagename
+             == self.sourcepackagename.id),
+            SeriesSourcePackageBranch.branch == Branch.id).order_by(
+                SeriesSourcePackageBranch.pocket)
+
+    def getPocketPath(self, pocket):
+        """See `ISourcePackage`."""
+        return '%s/%s/%s' % (
+            self.distribution.name,
+            self.distroseries.getSuite(pocket),
+            self.name)

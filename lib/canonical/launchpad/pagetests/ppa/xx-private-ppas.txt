@@ -54,7 +54,7 @@ Let's make a new team PPA for "landscape-developers" and make it
 private.
 
     >>> admin_browser.open("http://launchpad.dev/~landscape-developers")
-    >>> admin_browser.getLink('Personal Package Archive').click()
+    >>> admin_browser.getLink('Create a new PPA').click()
     >>> admin_browser.getControl(name="field.accepted").value = True
     >>> admin_browser.getControl("Activate").click()
     >>> admin_browser.open(
@@ -107,16 +107,23 @@ A non-privileged user cannot access the private PPA pages.
 one because he is not a member of that team, nor an admin.
 
     >>> cprov_browser.open("http://launchpad.dev/~cprov/")
-    >>> cprov_browser.getLink("Personal Package Archive").click()
-    >>> cprov_browser.url
-    'http://launchpad.dev/~cprov/+archive/ppa'
+    >>> print_tag_with_id(cprov_browser.contents, 'ppas')
+    Personal package archives
+    Private PPA for Celso Providelo
+
+    >>> cprov_browser.getLink("PPA for Celso Providelo").click()
+    >>> print cprov_browser.title
+    Private PPA for Celso Providelo
 
 When a non-privileged user browses to a profile page for a person or
 team that has a private PPA for which he is not authorised to see, the
-"Personal Package Archive" link is not presented.
+link to the PPA page is not present.
 
     >>> browser.open("http://launchpad.dev/~landscape-developers")
-    >>> browser.getLink("Personal Package Archive")
+    >>> print_tag_with_id(browser.contents, 'ppas')
+    Personal package archives
+
+    >>> browser.getLink("Private PPA for Landscape Developers").click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -125,29 +132,37 @@ team that has a private PPA for which he is not authorised to see, the
 the landscape-developers PPA page, which advertises its private status.
 
     >>> name12_browser.open("http://launchpad.dev/~landscape-developers")
-    >>> name12_browser.getLink("Personal Package Archive").click()
+    >>> print_tag_with_id(name12_browser.contents, 'ppas')
+    Personal package archives
+    Private PPA for Landscape Developers
+
+    >>> name12_browser.getLink("Private PPA for Landscape Developers").click()
+
     >>> name12_browser.url
     'http://launchpad.dev/~landscape-developers/+archive/ppa'
+
     >>> print extract_text(find_tag_by_id(name12_browser.contents, 'privacy'))
     This archive is private
 
 In contrast, a public PPA mentions its public status.
 
     >>> anon_browser.open('http://launchpad.dev/~sabdfl/+archive/ppa')
+
     >>> anon_browser.url
     'http://launchpad.dev/~sabdfl/+archive/ppa'
+
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'privacy'))
     This archive is public
 
 Administrators can access all private PPAs.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov")
-    >>> admin_browser.getLink("Personal Package Archive").click()
+    >>> admin_browser.getLink("Private PPA for Celso Providelo").click()
     >>> admin_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa'
 
     >>> admin_browser.open("http://launchpad.dev/~landscape-developers")
-    >>> admin_browser.getLink("Personal Package Archive").click()
+    >>> admin_browser.getLink("Private PPA for Landscape Developers").click()
     >>> admin_browser.url
     'http://launchpad.dev/~landscape-developers/+archive/ppa'
 

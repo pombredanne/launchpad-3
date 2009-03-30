@@ -508,6 +508,37 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return [build for source, build, arch in result_set]
 
+    @property
+    def changes_file_text(self):
+        """See `ISourcePackagePublishingHistory`."""
+        # Imported locally to avoid circular dependencies.
+        from canonical.launchpad.database.queue import (
+            PackageUpload, PackageUploadSource)
+        from canonical.launchpad.database.sourcepackagerelease import (
+            SourcePackageRelease)
+
+        store = Store.of(self)
+        results = store.find(
+            LibraryFileAlias,
+            PackageUpload.changesfile == LibraryFileAlias.id,
+            SourcePackageRelease.upload_distroseriesID ==
+                PackageUpload.distroseriesID,
+            PackageUploadSource.packageupload == PackageUpload.id,
+            PackageUploadSource.sourcepackagerelease ==
+                SourcePackageRelease.id,
+            SourcePackagePublishingHistory.sourcepackagerelease ==
+                SourcePackageRelease.id,
+            SourcePackagePublishingHistory.id == self.id)
+
+        changesfile = results.one()
+
+        if changesfile is None:
+            # This should not happen in practice, but the code should
+            # not blow up because of bad data.
+            return None
+        
+        return changesfile.read()
+
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
@@ -556,7 +587,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if logger is not None:
             logger.debug(
                 "Created %s [%d] in %s (%d)"
-                % (build.title, build.id, build.archive.title,
+                % (build.title, build.id, build.archive.displayname,
                    build_queue.lastscore))
 
         return build

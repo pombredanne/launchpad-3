@@ -812,26 +812,11 @@ class IBugTaskDelta(Interface):
 
     Likewise, if sourcepackagename is not None, product must be None.
     """
-    targetname = Attribute("Where this change exists.")
-    bugtargetname = Attribute("Near-unique ID of where the change exists.")
     bugtask = Attribute("The modified IBugTask.")
-    product = Attribute(
-        """The change made to the IProduct of this task.
-
-        The value is a dict like {'old' : IProduct, 'new' : IProduct},
-        or None, if no product change was made.
-        """)
-    sourcepackagename = Attribute(
-        """The change made to the ISourcePackageName of this task.
-
-        The value is a dict with the keys
-        {'old' : ISourcePackageName, 'new' : ISourcePackageName},
-        or None, if no change was made to the sourcepackagename.
-        """)
     target = Attribute(
-        """The change made to the IMilestone for this task.
+        """The change made to the IBugTarget for this task.
 
-        The value is a dict like {'old' : IMilestone, 'new' : IMilestone},
+        The value is a dict like {'old' : IBugTarget, 'new' : IBugTarget},
         or None, if no change was made to the target.
         """)
     status = Attribute(
@@ -856,6 +841,7 @@ class IBugTaskDelta(Interface):
         """)
     statusexplanation = Attribute("The new value of the status notes.")
     bugwatch = Attribute("The bugwatch which governs this task.")
+    milestone = Attribute("The milestone for which this task is scheduled.")
 
 
 # XXX Brad Bollenbach 2006-08-03 bugs=55089:

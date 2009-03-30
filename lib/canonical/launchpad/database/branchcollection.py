@@ -7,7 +7,7 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And, LeftJoin, Join, Or, Select, Union
+from storm.expr import And, Desc, LeftJoin, Join, Or, Select, Union
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -18,6 +18,9 @@ from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.codereviewcomment import CodeReviewComment
+from canonical.launchpad.database.codereviewvote import (
+    CodeReviewVoteReference)
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.distroseries import DistroSeries
 from canonical.launchpad.database.person import Owner
@@ -25,9 +28,10 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.branch import (
-    IBranchSet, user_has_special_branch_access)
+    user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchcollection import (
     IBranchCollection, InvalidFilter)
+from canonical.launchpad.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -131,15 +135,54 @@ class GenericBranchCollection:
         # Decorate the result set to work around bug 217644.
         return DecoratedResultSet(results, identity)
 
-    def getMergeProposals(self, statuses=None):
+    def getMergeProposals(self, statuses=None, for_branches=None):
         """See `IBranchCollection`."""
-        expression = BranchMergeProposal.source_branchID.is_in(
-            self._getBranchIdQuery())
+        expressions = [
+            BranchMergeProposal.source_branchID.is_in(
+                self._getBranchIdQuery()),
+            ]
+        if for_branches is not None:
+            branch_ids = [branch.id for branch in for_branches]
+            expressions.append(
+                BranchMergeProposal.source_branchID.is_in(branch_ids))
+        expressions.extend(self._getExtraMergeProposalExpressions())
         if statuses is not None:
-            expression = And(
-                BranchMergeProposal.queue_status.is_in(statuses),
-                expression)
-        return self.store.find(BranchMergeProposal, expression)
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(statuses))
+        return self.store.find(BranchMergeProposal, expressions)
+
+    def _getExtraMergeProposalExpressions(self):
+        """Extra storm expressions needed for merge proposal queries.
+
+        Used primarily by the visibility check for target branches.
+        """
+        return []
+
+    def getMergeProposalsForReviewer(self, reviewer, status=None):
+        """See `IBranchCollection`."""
+        tables = [
+            BranchMergeProposal,
+            Join(CodeReviewVoteReference,
+                 CodeReviewVoteReference.branch_merge_proposalID == \
+                 BranchMergeProposal.id),
+            LeftJoin(CodeReviewComment,
+                 CodeReviewVoteReference.commentID == CodeReviewComment.id)]
+
+        expressions = [
+            CodeReviewVoteReference.reviewer == reviewer,
+            BranchMergeProposal.source_branchID.is_in(
+                self._getBranchIdQuery())]
+        expressions.extend(self._getExtraMergeProposalExpressions())
+        if status is not None:
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(status))
+        proposals = self.store.using(*tables).find(
+            BranchMergeProposal, expressions)
+        # Apply sorting here as we can't do it in the browser code.  We need
+        # to think carefully about the best places to do this, but not here
+        # nor now.
+        proposals.order_by(Desc(CodeReviewComment.vote))
+        return proposals
 
     def inProduct(self, product):
         """See `IBranchCollection`."""
@@ -181,7 +224,7 @@ class GenericBranchCollection:
     def _getExactMatch(self, search_term):
         """Return the exact branch that 'search_term' matches, or None."""
         search_term = search_term.rstrip('/')
-        branch_set = getUtility(IBranchSet)
+        branch_set = getUtility(IBranchLookup)
         branch = branch_set.getByUniqueName(search_term)
         if branch is None:
             branch = branch_set.getByUrl(search_term)
@@ -328,19 +371,6 @@ class VisibleBranchCollection(GenericBranchCollection):
         return self._branch_filter_expressions + [
             Branch.id.is_in(self._user_visibility_expression)]
 
-    def getMergeProposals(self, statuses=None):
-        """See `IBranchCollection`."""
-        expressions = [
-            BranchMergeProposal.source_branchID.is_in(
-                self._getBranchIdQuery()),
-            BranchMergeProposal.target_branchID.is_in(
-                self._getVisibilityExpression()),
-            ]
-        if statuses is not None:
-            expressions.append(
-                BranchMergeProposal.queue_status.is_in(statuses))
-        return self.store.find(BranchMergeProposal, expressions)
-
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
         if person == self._user:
@@ -348,3 +378,12 @@ class VisibleBranchCollection(GenericBranchCollection):
         raise InvalidFilter(
             "Cannot filter for branches visible by user %r, already "
             "filtering for %r" % (person, self._user))
+
+    def _getExtraMergeProposalExpressions(self):
+        """Extra storm expressions needed for merge proposal queries.
+
+        Used primarily by the visibility check for target branches.
+        """
+        return [
+            BranchMergeProposal.target_branchID.is_in(
+                self._getVisibilityExpression())]

@@ -48,8 +48,8 @@ A subsequent failure shows:
 
     >>> login(ANONYMOUS)
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBranchSet
-    >>> mirror_branch = getUtility(IBranchSet).getByUniqueName(mirror_name)
+    >>> from canonical.launchpad.interfaces.branchlookup import IBranchLookup
+    >>> mirror_branch = getUtility(IBranchLookup).getByUniqueName(mirror_name)
     >>> mirror_branch.startMirroring()
     >>> mirror_branch.mirrorFailed(
     ...     'Cannot access branch at "example.com".')
@@ -68,7 +68,7 @@ different.
     >>> import pytz
     >>> from datetime import datetime
     >>> login('eric@example.com') # To get Launchpad.Edit on the branch.
-    >>> mirror_branch = getUtility(IBranchSet).getByUniqueName(mirror_name)
+    >>> mirror_branch = getUtility(IBranchLookup).getByUniqueName(mirror_name)
     >>> mirror_branch.last_mirrored = datetime(
     ...     2007, 12, 25, 12, tzinfo=pytz.UTC)
     >>> mirror_branch.startMirroring()
@@ -88,7 +88,7 @@ If the branch has been disabled due to excessive failures, we get
 a different message again.
 
     >>> login('eric@example.com') # To get Launchpad.Edit on the branch.
-    >>> mirror_branch = getUtility(IBranchSet).getByUniqueName(mirror_name)
+    >>> mirror_branch = getUtility(IBranchLookup).getByUniqueName(mirror_name)
     >>> mirror_branch.mirror_failures = 100
     >>> mirror_branch.startMirroring()
     >>> mirror_branch.mirrorFailed(
@@ -144,7 +144,7 @@ If a branch failed to mirror but no failure message was stored, we properly
 report the absence of an error message.
 
     >>> login('eric@example.com') # To get Launchpad.Edit on the branch.
-    >>> mirror_branch = getUtility(IBranchSet).getByUniqueName(mirror_name)
+    >>> mirror_branch = getUtility(IBranchLookup).getByUniqueName(mirror_name)
     >>> mirror_branch.mirror_status_message = None
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
@@ -161,7 +161,7 @@ Ultimately, if a branch was successfully mirrored, then we obviously won't
 display any failure-related information.
 
     >>> login(ANONYMOUS)
-    >>> mirror_branch = getUtility(IBranchSet).getByUniqueName(mirror_name)
+    >>> mirror_branch = getUtility(IBranchLookup).getByUniqueName(mirror_name)
     >>> mirror_branch.startMirroring()
     >>> mirror_branch.mirrorComplete('some-revision-id')
     >>> logout()

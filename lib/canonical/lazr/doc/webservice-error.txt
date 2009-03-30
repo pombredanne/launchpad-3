@@ -157,13 +157,6 @@ Unauthorized exceptions have a 401 status code.
     >>> response.status
     401
 
-IRequestExpired exceptions have a 503 status code.
-
-    >>> from canonical.launchpad.webapp.adapter import RequestExpired
-    >>> response, result = render_using_default_view(RequestExpired())
-    >>> response.status
-    503
-
 So have TimeoutError.
 
     >>> from canonical.lazr.timeout import TimeoutError

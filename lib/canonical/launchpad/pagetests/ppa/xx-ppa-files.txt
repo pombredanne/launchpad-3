@@ -173,19 +173,19 @@ Checking file links on PPA index page.
     >>> check_urls(no_priv_browser, ppa_links)
     test-pkg_1.0_source.changes: OK
 
-    >>> no_priv_browser.getLink('Personal Package Archive').click()
+    >>> no_priv_browser.getLink('PPA').click()
     >>> no_priv_browser.getLink('Delete packages').click()
     >>> check_urls(no_priv_browser, ppa_links)
     test-pkg_1.0_source.changes: OK
 
-    >>> no_priv_browser.getLink('Personal Package Archive').click()
+    >>> no_priv_browser.getLink('PPA').click()
     >>> no_priv_browser.getLink('View build records').click()
     >>> no_priv_browser.getControl(name="build_state").value = ['built']
     >>> no_priv_browser.getControl("Update").click()
     >>> check_urls(no_priv_browser, builds_links)
     buildlog_ubuntu-breezy-autotest-i386.test-pkg_1.0_FULLYBUILT.txt.gz: OK
 
-    >>> no_priv_browser.getLink('Personal Package Archive').click()
+    >>> no_priv_browser.getLink('PPA').click()
 
 Checking file links in the expandable-row area.
 

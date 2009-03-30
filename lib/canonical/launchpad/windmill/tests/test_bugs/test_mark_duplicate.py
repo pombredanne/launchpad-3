@@ -52,6 +52,13 @@ def test_mark_duplicate_form_overlay():
     client.asserts.assertNode(
         xpath=u"//form[@id='lazr-formoverlay-form']/div[2]/ul/li")
 
+    # Clicking change again brings back the error dialog again
+    # (regression test for bug 347258)
+    client.click(name=u'field.actions.change')
+    client.waits.sleep(milliseconds=u'1000')
+    client.asserts.assertNode(
+        xpath=u"//form[@id='lazr-formoverlay-form']/div[2]/ul/li")
+
     # But entering a correct bug and submitting gets us back to a normal state
     client.type(text=u'1', id=u'field.duplicateof')
     client.click(name=u'field.actions.change')
@@ -59,4 +66,11 @@ def test_mark_duplicate_form_overlay():
     client.asserts.assertText(
         xpath=u"//span[@id='mark-duplicate-text']/a[1]",
         validator=u'bug #1')
+
+    # Finally, clicking on the link to the bug takes you to the master.
+    client.click(link=u'bug #1')
+    client.waits.forPageLoad(timeout=u'20000')
+    client.asserts.assertText(
+        xpath=u"//h1[@id='bug-title']/span[1]",
+        validator=u'Firefox does not support SVG')
 
