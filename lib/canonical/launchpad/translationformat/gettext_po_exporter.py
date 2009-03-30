@@ -250,6 +250,10 @@ class GettextPOExporterBase:
     format = None
     supported_source_formats = []
 
+    # Does the format we're exporting allow messages to be distinguished
+    # by just their msgid_plural?
+    msgid_plural_distinguishes_messages = False
+
     def exportTranslationMessageData(self, translation_message):
         """See `ITranslationFormatExporter`."""
         return export_translation_message(translation_message)
@@ -298,14 +302,18 @@ class GettextPOExporterBase:
                 if key in seen_keys:
                     # Launchpad can deal with messages that are
                     # identical to gettext, but differ in plural msgid.
-                    assert seen_keys[key] != message.msgid_plural, (
-                        "Export contains wholly identical messages.")
+                    plural = message.msgid_plural
+                    previous_plural = seen_keys[key].msgid_plural
+                    #assert plural != previous_plural, (
+                    #    "Export contains wholly identical messages.")
 
-                    # Suppress messages that are duplicative to gettext
-                    # so gettext doesn't choke on the resulting file.
-                    continue
+                    if not self.msgid_plural_distinguishes_messages:
+                        # Suppress messages that are duplicative to
+                        # gettext so that gettext doesn't choke on the
+                        # resulting file.
+                        continue
                 else:
-                    seen_keys[key] = message.msgid_plural
+                    seen_keys[key] = message
 
                 if (message.is_obsolete and
                     (ignore_obsolete or len(message.translations) == 0)):
@@ -343,6 +351,23 @@ class GettextPOExporterBase:
             storage.addFile(file_path, file_extension, exported_file_content)
 
         return storage.export()
+
+    def acceptSingularClash(self, previous_message, current_message):
+        """Handle clash of (singular) msgid and context with other message.
+
+        Define in derived class how it should behave when this happens.
+
+        Obsolete messages are guaranteed to be processed after
+        non-obsolete ones.
+
+        :param previous_message: already processed message in this
+            export.
+        :param current_message: another message with the same (singular)
+            msgid and context as `previous_message`.
+        :return: boolean: True to accept `current_message`, or False to
+            leave it out of the export.
+        """
+        raise NotImplementedError()
 
 
 class GettextPOExporter(GettextPOExporterBase):
@@ -403,3 +428,6 @@ class GettextPOChangedExporter(GettextPOExporterBase):
             charset = translation_file.header.charset
         return self.exported_header.encode(charset)
 
+    def acceptSingularClash(self, previous_message, current_message):
+        """See `GettextPOExporterBase`."""
+        return True

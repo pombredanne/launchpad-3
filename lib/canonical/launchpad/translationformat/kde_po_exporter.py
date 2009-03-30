@@ -29,6 +29,8 @@ class KdePOExporter(GettextPOExporter):
     """Support class for exporting legacy KDE .po files."""
     implements(ITranslationFormatExporter)
 
+    msgid_plural_distinguishes_messages = True
+
     def __init__(self, context=None):
         # See GettextPOExporter.__init__ for explanation of `context`.
         self.format = TranslationFileFormat.KDEPO
