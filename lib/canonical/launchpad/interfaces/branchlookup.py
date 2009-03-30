@@ -10,21 +10,12 @@ __all__ = [
     'ICanHasLinkedBranch',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
-    'InvalidBranchIdentifier',
     'ISourcePackagePocket',
     'ISourcePackagePocketFactory',
     'NoLinkedBranch',
     ]
 
 from zope.interface import Attribute, Interface
-
-
-class InvalidBranchIdentifier(Exception):
-    """Raised when trying to resolve an invalid branch name."""
-
-    def __init__(self, path):
-        self.path = path
-        Exception.__init__(self, "Invalid branch identifier: '%s'" % (path,))
 
 
 class CannotHaveLinkedBranch(Exception):
@@ -129,8 +120,6 @@ class IBranchLookup(Interface):
         "product/series" (branch associated with a product series)
         "product" (development focus of product)
 
-        :raises InvalidBranchIdentifier: If the given path could never
-            possibly match a branch.
         :raises InvalidProductName: If the given product in a product
             or product series shortcut is an invalid name for a product.
         :raises NoBranchForSeries: If the product series referred to does not
