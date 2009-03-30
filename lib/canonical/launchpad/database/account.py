@@ -244,13 +244,14 @@ class AccountSet:
     def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
         store = IStore(Account)
-        account = store.find(Account, openid_identifier=openid_identifier)
+        account = store.find(
+            Account, openid_identifier=openid_identifier).one()
         if account is None and not IMasterStore.providedBy(IStore(Account)):
             # The account was not found in a slave store but it may exist in
             # the master one if it was just created, so we try to fetch it
             # again, this time from the master.
             account = IMasterStore(Account).find(
-                Account, openid_identifier=openid_identifier)
+                Account, openid_identifier=openid_identifier).one()
         return account
 
     _MAX_RANDOM_TOKEN_RANGE = 1000
