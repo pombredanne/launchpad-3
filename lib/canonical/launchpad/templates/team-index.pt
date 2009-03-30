@@ -254,9 +254,11 @@
     </div>
 
     <tal:can-view condition="context/@@+restricted-membership/userCanViewMembership">
-    <table style="margin: 0px;">
+    <table style="margin: 0px 0px .5em 0px;"
+      tal:condition="view/has_recent_approved_or_proposed_members">
       <tr>
-        <td style="padding: 0px 3em 0px 0px" id="recently-approved">
+        <td style="padding: 0px 3em 0px 0px" id="recently-approved"
+          tal:condition="view/recently_approved_members">
         <h3 style="color:black; font-weight:bold; margin: 0px">Recently approved</h3>
         <ul style="margin: 0px"
           tal:condition="view/recently_approved_members">
@@ -268,7 +270,8 @@
           </li>
         </ul>
         </td>
-        <td style="padding: 0px;" id="recently-applied" tal:condition="view/recently_proposed_members">
+        <td style="padding: 0px;" id="recently-applied"
+          tal:condition="view/recently_proposed_members">
         <h3 style="color:black; font-weight:bold; margin: 0px">Recently applied</h3>
         <ul style="margin: 0px;">
           <li class="person"
@@ -280,15 +283,12 @@
         </ul>
         </td>
       </tr>
-      <tr>
-        <td style="padding-top: .5em">
-      <tal:mentorships
-        replace="structure overview_menu/mentorships/fmt:link" />
-        </td>
-        <td tal:condition="view/recently_proposed_members"></td>
-      </tr>
     </table>
     </tal:can-view>
+    <div>
+      <tal:mentorships
+        replace="structure overview_menu/mentorships/fmt:link" />
+    </div>
 
     <div>
 

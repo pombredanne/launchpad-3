@@ -42,6 +42,16 @@ details about the team.
     Subteam of
     &#8220;Ubuntu Team&#8221; is a member of these teams: GuadaMen...
 
+If the team does not have any recently approved or proposed members,
+the recent members sections are not displayed:
+
+    >>> browser.open('http://launchpad.dev/~launchpad')
+    >>> print find_tag_by_id(browser.contents, 'recently-approved')
+    None
+
+    >>> print find_tag_by_id(browser.contents, 'recently-applied')
+    None
+
 In the above case there's no user logged in, so it doesn't actually show
 what's the user's involvement with the team. If the user logs in, he'll see
 that, though.

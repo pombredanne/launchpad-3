@@ -2437,6 +2437,13 @@ class PersonView(LaunchpadView, FeedsMixin):
         return members[:5]
 
     @cachedproperty
+    def has_recent_approved_or_proposed_members(self):
+        """Does the team have recently approved or proposed members?"""
+        approved = self.recently_approved_members.count() > 0
+        proposed = self.recently_proposed_members.count() > 0
+        return approved or proposed
+
+    @cachedproperty
     def openpolls(self):
         assert self.context.isTeam()
         return IPollSubset(self.context).getOpenPolls()
