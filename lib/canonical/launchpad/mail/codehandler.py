@@ -362,7 +362,7 @@ class CodeHandler:
         mp_target = getUtility(IBranchLookup).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
-        if md.bundle is None:
+        if md.bundle is None or True:
             mp_source = self._getSourceNoBundle(
                 md, mp_target, submitter)
         else:
