@@ -58,6 +58,7 @@ from canonical.launchpad.database.milestone import (
     HasMilestonesMixin, Milestone)
 from canonical.launchpad.database.packagecloner import clone_packages
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
@@ -1537,6 +1538,26 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         flush_database_updates()
         flush_database_caches()
         copy_active_translations(self, transaction, logger)
+
+    def getPOFileContributorsByLanguage(self, language):
+        """See `IDistroSeries`."""
+        contributors = Person.select("""
+            POFileTranslator.person = Person.id AND
+            POFileTranslator.pofile = POFile.id AND
+            POFile.language = %s AND
+            POFile.potemplate = POTemplate.id AND
+            POTemplate.distroseries = %s AND
+            POTemplate.iscurrent = TRUE"""
+                % sqlvalues(language, self),
+            clauseTables=["POFileTranslator", "POFile", "POTemplate"],
+            distinct=True,
+            # XXX: kiko 2006-10-19:
+            # We can't use Person.sortingColumns because this is a
+            # distinct query. To use it we'd need to add the sorting
+            # function to the column results and then ignore it -- just
+            # like selectAlso does, ironically.
+            orderBy=["Person.displayname", "Person.name"])
+        return contributors
 
     def getPendingPublications(self, archive, pocket, is_careful):
         """See ICanPublishPackages."""

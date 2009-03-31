@@ -60,7 +60,6 @@ from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
-from canonical.launchpad.database.openidserver import OpenIDRPSummary
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
@@ -115,7 +114,6 @@ from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.revision import IRevisionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
-from canonical.launchpad.interfaces.shipit import ShippingRequestStatus
 from canonical.launchpad.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
@@ -2699,38 +2697,6 @@ class PersonSet:
         else:
             return IStore(Person).get(Person, email_address.personID)
 
-    def getPOFileContributors(self, pofile):
-        """See `IPersonSet`."""
-        contributors = Person.select("""
-            POFileTranslator.person = Person.id AND
-            POFileTranslator.pofile = %s""" % quote(pofile),
-            clauseTables=["POFileTranslator"],
-            distinct=True,
-            # XXX: kiko 2006-10-19:
-            # We can't use Person.sortingColumns because this is a
-            # distinct query. To use it we'd need to add the sorting
-            # function to the column results and then ignore it -- just
-            # like selectAlso does, ironically.
-            orderBy=["Person.displayname", "Person.name"])
-        return contributors
-
-    def getPOFileContributorsByDistroSeries(self, distroseries, language):
-        """See `IPersonSet`."""
-        contributors = Person.select("""
-            POFileTranslator.person = Person.id AND
-            POFileTranslator.pofile = POFile.id AND
-            POFile.language = %s AND
-            POFile.potemplate = POTemplate.id AND
-            POTemplate.distroseries = %s AND
-            POTemplate.iscurrent = TRUE"""
-                % sqlvalues(language, distroseries),
-            clauseTables=["POFileTranslator", "POFile", "POTemplate"],
-            distinct=True,
-            # See comment in getPOFileContributors about how we can't
-            # use Person.sortingColumns.
-            orderBy=["Person.displayname", "Person.name"])
-        return contributors
-
     def latest_teams(self, limit=5):
         """See `IPersonSet`."""
         return Person.select("Person.teamowner IS NOT NULL",
@@ -3370,27 +3336,6 @@ class PersonSet:
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
-
-    def getTranslatorsByLanguage(self, language):
-        """See `IPersonSet`."""
-        # XXX CarlosPerelloMarin 2007-03-31 bug=102257:
-        # The KarmaCache table doesn't have a field to store karma per
-        # language, so we are actually returning the people with the most
-        # translation karma that have this language selected in their
-        # preferences.
-        return Person.select('''
-            PersonLanguage.person = Person.id AND
-            PersonLanguage.language = %s AND
-            KarmaCache.person = Person.id AND
-            KarmaCache.product IS NULL AND
-            KarmaCache.project IS NULL AND
-            KarmaCache.sourcepackagename IS NULL AND
-            KarmaCache.distribution IS NULL AND
-            KarmaCache.category = KarmaCategory.id AND
-            KarmaCategory.name = 'translations'
-            ''' % sqlvalues(language), orderBy=['-KarmaCache.karmavalue'],
-            clauseTables=[
-                'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""
