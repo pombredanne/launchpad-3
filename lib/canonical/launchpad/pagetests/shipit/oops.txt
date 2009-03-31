@@ -8,6 +8,7 @@ it always raise an error.
     >>> from canonical.launchpad.browser.shipit import ShipitFrontPageView
     >>> def raise_exception(self):
     ...     raise Exception()
+    >>> orig_prerelease_mode = ShipitFrontPageView.prerelease_mode
     >>> ShipitFrontPageView.prerelease_mode = raise_exception
 
     >>> result = http(r"""
@@ -20,3 +21,6 @@ it always raise an error.
     and we&#8217;ll fix it as soon as possible.
     ...
     Thanks for using ShipIt, and sorry for the inconvenience.
+
+    # Undo the monkey-patch we did above.
+    >>> ShipitFrontPageView.prerelease_mode = orig_prerelease_mode
