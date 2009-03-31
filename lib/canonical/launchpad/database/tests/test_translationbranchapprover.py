@@ -152,8 +152,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
     def test_upload_multiple_new_templates(self):
         # Multiple new templates can be added using the same
         # TranslationBranchApprover instance.
-        pot_path1 = self.factory.getUniqueString()+".pot"
-        pot_path2 = self.factory.getUniqueString()+".pot"
+        pot_path1 = self.factory.getUniqueString() + ".pot"
+        pot_path2 = self.factory.getUniqueString() + ".pot"
         entry1 = self.queue.addOrUpdateEntry(pot_path1,
             self.factory.getUniqueString(), True, self.series.owner,
             productseries=self.series)
