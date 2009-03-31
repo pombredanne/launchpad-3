@@ -243,6 +243,38 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=bugwatch_notification,
             expected_activity=bugwatch_activity)
 
+    def test_bugwatch_added_from_comment(self):
+        # Adding a bug comment containing a URL that looks like a link
+        # to a remote bug causes a BugWatch to be added to the
+        # bug. This adds items to the activity log and sends a
+        # notification.
+        self.saveOldChanges()
+        self.assertEqual(self.bug.watches.count(), 0)
+        self.bug.newMessage(
+            content="http://bugs.example.com/view.php?id=1234",
+            owner=self.user)
+        self.assertEqual(self.bug.watches.count(), 1)
+        [bug_watch] = self.bug.watches
+
+        bugwatch_activity = {
+            'person': self.user,
+            'whatchanged': 'bug watch added',
+            'newvalue': bug_watch.url,
+            }
+
+        bugwatch_notification = {
+            'text': (
+                "** Bug watch added: %s #%s\n"
+                "   %s" % (
+                    bug_watch.bugtracker.title, bug_watch.remotebug,
+                    bug_watch.url)),
+            'person': self.user,
+            }
+
+        self.assertRecordedChange(
+            expected_notification=bugwatch_notification,
+            expected_activity=bugwatch_activity)
+
     def test_bugwatch_removed(self):
         # Removing a BugWatch from a bug adds items to the activity
         # log and the Bug's notifications.
