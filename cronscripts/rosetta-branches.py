@@ -18,6 +18,7 @@ from canonical.codehosting.vfs.branchfs import get_scanner_server
 from canonical.codehosting.jobs import JobRunner
 from canonical.launchpad.interfaces.branchjob import IRosettaUploadJobSource
 from canonical.launchpad.scripts.base import LaunchpadCronScript
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
 class RunRosettaBranchJobs(LaunchpadCronScript):
