@@ -178,7 +178,7 @@ class EmailManagementWithSSODatabasePolicyTests(EmailManagementTests):
         super(EmailManagementWithSSODatabasePolicyTests, self).tearDown()
         getUtility(IStoreSelector).pop()
 
-    def test_unvalidated_emails(self):
+    def test_getUnvalidatedEmails(self):
         account = self.factory.makeAccount("Test Account")
         # Login as the new account, since 
         login(account.preferredemail.email)
@@ -186,8 +186,8 @@ class EmailManagementWithSSODatabasePolicyTests(EmailManagementTests):
             account, account.preferredemail.email,
             u"unvalidated-email@example.org", LoginTokenType.VALIDATEEMAIL,
             None)
-        self.assertEqual(
-            account.unvalidated_emails, [u"unvalidated-email@example.org"])
+        self.assertEqual(account.getUnvalidatedEmails(),
+                         [u"unvalidated-email@example.org"])
 
 
 def test_suite():

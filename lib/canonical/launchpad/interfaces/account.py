@@ -216,11 +216,12 @@ class IAccountPublic(Interface):
         readonly=True, required=False,
         value_type=Reference(schema=Interface))
 
-    unvalidated_emails = List(
-        title=_("Unvalidated email addresses."),
-        description=_("Email addresses this account has added but not yet "
-                      "validated."),
-        readonly=True, required=True)
+    def getUnvalidatedEmails():
+        """Get a list of the unvalidated email addresses for this account.
+
+        An unvalidated email address is one which the user has tried
+        to add to their account but has not yet replied to the
+        corresponding confirmation email."""
 
     def setPreferredEmail(email):
         """Set the given email address as this accounts's preferred one.
