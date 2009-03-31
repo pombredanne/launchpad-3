@@ -304,8 +304,6 @@ class GettextPOExporterBase:
                     # identical to gettext, but differ in plural msgid.
                     plural = message.msgid_plural
                     previous_plural = seen_keys[key].msgid_plural
-                    #assert plural != previous_plural, (
-                    #    "Export contains wholly identical messages.")
 
                     if not self.msgid_plural_distinguishes_messages:
                         # Suppress messages that are duplicative to
