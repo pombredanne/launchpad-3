@@ -7,9 +7,11 @@ import re
 import transaction
 
 from bzrlib.branch import Branch
-from bzrlib.errors import NotAMergeDirective, NotBranchError
+from bzrlib.errors import (
+    NotAMergeDirective, NotBranchError, NotStacked, UnstackableBranchFormat)
 from bzrlib.merge_directive import MergeDirective
 from bzrlib.transport import get_transport
+from bzrlib.urlutils import escape
 from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
@@ -362,7 +364,9 @@ class CodeHandler:
         mp_target = getUtility(IBranchLookup).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
-        if md.bundle is None:
+        # If the target branch has not been mirrored, then don't try to stack
+        # upon it or get revisions form it.
+        if md.bundle is None or mp_target.last_mirrored_id is None:
             mp_source = self._getSourceNoBundle(
                 md, mp_target, submitter)
         else:
@@ -419,11 +423,27 @@ class CodeHandler:
 
     def _getSourceNoBundle(self, md, target, submitter):
         """Get a source branch for a merge directive with no bundle."""
-        mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
+        mp_source = None
+        if md.source_branch is not None:
+            mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.REMOTE, md.source_branch, target, submitter)
         return mp_source
+
+    def _isTargetStackable(self, target):
+        """Check to see if the target branch is stackable."""
+        bzr_target = removeSecurityProxy(target).getBzrBranch()
+        try:
+            bzr_target.get_stacked_on_url()
+        except UnstackableBranchFormat:
+            return False
+        except NotStacked:
+            # This is fine.
+            return True
+        else:
+            # If nothing is raised, then stackable (and stacked even).
+            return True
 
     def _getSourceWithBundle(self, md, target, submitter):
         """Get a source branch for a merge directive with a bundle."""
@@ -431,20 +451,34 @@ class CodeHandler:
         if md.source_branch is not None:
             mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
         if mp_source is None:
+            # If there is no existing branch, make sure that the target branch
+            # is stackable, and if not, return a remote branch.
+            if not self._isTargetStackable(target):
+                return self._getSourceNoBundle(self, md, target, submitter)
             mp_source = self._getNewBranch(
                 BranchType.HOSTED, md.source_branch, target,
                 submitter)
-        transaction.commit()
+            # Commit the transaction to make the new source branch is visible
+            # to the XMLRPC server which provides the virtual file system
+            # information.
+            transaction.commit()
         assert mp_source.branch_type == BranchType.HOSTED
         try:
             bzr_branch = Branch.open(mp_source.getPullURL())
         except NotBranchError:
             bzr_target = removeSecurityProxy(target).getBzrBranch()
+            # If the target branch isn't stackable, then don't try to pull in
+            # the merge directive.
+            if (not self._isTargetStackable(target)):
+                return mp_source
             transport = get_transport(
                 mp_source.getPullURL(),
                 possible_transports=[bzr_target.bzrdir.root_transport])
             bzrdir = bzr_target.bzrdir.clone_on_transport(transport)
             bzr_branch = bzrdir.open_branch()
+            # Stack the new branch on the target.
+            stacked_url = escape('/' + target.unique_name)
+            bzr_branch.set_stacked_on_url(stacked_url)
         # Don't attempt to use public-facing urls.
         md.target_branch = target.warehouse_url
         md.install_revisions(bzr_branch.repository)
