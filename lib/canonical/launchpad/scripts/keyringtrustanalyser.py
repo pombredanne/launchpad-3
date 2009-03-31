@@ -158,7 +158,7 @@ def _mergeOrAddEmails(personset, emailset, cluster, logger):
         if logger:
             logger.info('Adding email %s to %s (%d)',
                         newemail, person.name, person.id)
-        emailset.new(newemail, person)
+        emailset.new(email=newemail, person=person, account=person.account)
 
     flush_database_updates()
 

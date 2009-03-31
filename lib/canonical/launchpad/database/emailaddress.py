@@ -115,10 +115,12 @@ class EmailAddressSet:
             personID = None
         else:
             personID = person.id
-            assert person.account == account, (
+            accountID = account and account.id
+            assert person.accountID == accountID, (
                 "Email address '%s' must be linked to same account as "
-                "person '%s'.  Expected %r, got %r" % (
-                    email, person.name, person.account, account))
+                "person '%s'.  Expected %r (%s), got %r (%s)" % (
+                    email, person.name, person.account, person.accountID,
+                    account, accountID))
         # We use personID instead of just person, as in some cases the
         # Person record will not yet be replicated from the main
         # Store to the auth master Store.

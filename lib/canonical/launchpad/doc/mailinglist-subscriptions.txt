@@ -92,7 +92,8 @@ not post from it.
 
     >>> from canonical.launchpad.interfaces import IEmailAddressSet
     >>> address_set = getUtility(IEmailAddressSet)
-    >>> alternative = address_set.new('anne.x.person@example.net', anne)
+    >>> alternative = address_set.new(
+    ...     'anne.x.person@example.net', anne, account=anne.account)
     >>> alternative.email
     u'anne.x.person@example.net'
     >>> sorted(email.email for email in list_one.getSenderAddresses())
@@ -189,7 +190,8 @@ email addresses.
 Any new address that Cris registers but does not validate may not yet be used
 to post to the mailing list.
 
-    >>> alternative = address_set.new('cris.x.person@example.net', cris)
+    >>> alternative = address_set.new(
+    ...     'cris.x.person@example.net', cris, account=cris.account)
     >>> alternative.email
     u'cris.x.person@example.net'
     >>> sorted(email.email for email in list_one.getSenderAddresses())
