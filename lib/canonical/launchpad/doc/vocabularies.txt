@@ -1315,7 +1315,7 @@ lookup still omits myteam.
      u'otherteam', u'simple-team', u'testing-spanish-team',
      u'ubuntu-team', u'warty-gnome']
 
-A PRIVATE team is displayed when the context is a member of the team.
+A PRIVATE team is displayed when the logged in user is a member of the team.
 
     >>> commercial = person_set.getByEmail('commercial-member@canonical.com')
     >>> vocab = vocabulary_registry.get(commercial, "ValidPersonOrTeam")
@@ -1327,6 +1327,22 @@ A PRIVATE team is displayed when the context is a member of the team.
     [u'name18', u'name20', u'name21', u'no-team-memberships', u'otherteam',
      u'private-team',
      u'simple-team', u'testing-spanish-team', u'ubuntu-team', u'warty-gnome']
+
+The PRIVATE team is not returned for a user who is not part of the team.
+
+    >>> login('owner@canonical.com')
+    >>> sorted(person.name for person in vocab.search('team'))
+    [u'name18', u'name20', u'name21', u'no-team-memberships',
+     u'otherteam', u'simple-team', u'testing-spanish-team',
+     u'ubuntu-team', u'warty-gnome']
+
+Searching for all teams, which requires monkey-patching the
+`allow_null_search` property, will also return the private team.
+
+    >>> login('commercial-member@canonical.com')
+    >>> vocab.allow_null_search = True
+    >>> sorted(person.name for person in vocab.search(''))
+    [...u'private-team'...]
 
 A search for 'support' will give us only the persons which have support
 as part of their name or displayname, or the beginning of

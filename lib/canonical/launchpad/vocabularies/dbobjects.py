@@ -608,11 +608,12 @@ class PersonAccountToMergeVocabulary(
 
 class ValidPersonOrTeamVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
-    """The set of valid, public Persons/Teams in Launchpad.
+    """The set of valid, viewable Persons/Teams in Launchpad.
 
-    A Person is considered valid if he has a preferred email address,
-    and Person.merged is None. Teams have no restrictions
-    at all, which means that all teams are considered valid.
+    A Person is considered valid if he has a preferred email address, and
+    Person.merged is None. Teams have no restrictions at all, which means that
+    all teams the user has the permission to view are considered valid.  A
+    user can view public teams and private teams she is a member.
 
     This vocabulary is registered as ValidPersonOrTeam, ValidAssignee,
     ValidMaintainer and ValidOwner, because they have exactly the same
@@ -636,6 +637,19 @@ class ValidPersonOrTeamVocabulary(
     def __contains__(self, obj):
         return obj in self._doSearch()
 
+    def _privateTeams(self, user, store):
+        """Return all private teams the user is a member."""
+        private = store.find(
+            Person,
+            AND(
+                Person.id == TeamParticipation.teamID,
+                TeamParticipation.person == user.id,
+                Not(Person.teamowner == None),
+                Person.visibility == PersonVisibility.PRIVATE
+                )
+            )
+        return private
+
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
 
@@ -654,17 +668,30 @@ class ValidPersonOrTeamVocabulary(
                 FROM Person, %(cache_table)s
                 WHERE Person.id = %(cache_table)s.id
             """ % dict(cache_table=self.cache_table_name))
-            result = store.find(
+            tables = [
+                Person,
+                LeftJoin(TeamParticipation, TeamParticipation.teamID == Person.id),
+                ]
+            result = store.using(*tables).find(
                 Person,
                 And(
                     Person.id.is_in(inner_select),
-                    Person.visibility == PersonVisibility.PUBLIC,
+                    Or(
+                        Person.visibility == PersonVisibility.PUBLIC,
+                        # Private team the logged in user is a member.
+                        AND(
+                            TeamParticipation.person == logged_in_user.id,
+                            Not(Person.teamowner == None),
+                            Person.visibility == PersonVisibility.PRIVATE
+                            )
+                        ),
                     extra_clause
                     )
                 )
         else:
             tables = [
                 Person,
+                LeftJoin(TeamParticipation, TeamParticipation.teamID == Person.id),
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
                 LeftJoin(Account, EmailAddress.account == Account.id),
                 ]
@@ -700,7 +727,16 @@ class ValidPersonOrTeamVocabulary(
                 Person,
                 And(
                     Person.id.is_in(inner_select),
-                    Person.visibility == PersonVisibility.PUBLIC,
+                    Or(
+                        # Public team.
+                        Person.visibility == PersonVisibility.PUBLIC,
+                        # Private team the logged in user is a member.
+                        AND(
+                            TeamParticipation.person == logged_in_user.id,
+                            Not(Person.teamowner == None),
+                            Person.visibility == PersonVisibility.PRIVATE
+                            )
+                    ),
                     Person.merged == None,
                     Or(
                         # A valid person-or-team is either a team...
@@ -719,23 +755,6 @@ class ValidPersonOrTeamVocabulary(
                     )
                 )
 
-        # Do a query for the private teams this user participates in
-        # and combine the results.  This is much faster than doing a
-        # Python-based filter using check_permission but is more fragile as we
-        # are spreading the security logic around.
-        if logged_in_user is not None:
-            private = store.find(
-                Person,
-                AND(
-                    Person.id == TeamParticipation.teamID,
-                    TeamParticipation.person == logged_in_user.id,
-                    Not(Person.teamowner == None),
-                    Person.visibility == PersonVisibility.PRIVATE
-                    )
-                )
-
-            result = result.union(private)
-
         result.config(distinct=True)
 
         # XXX: salgado, 2008-07-23: Sorting by Person.sortingColumns would
@@ -753,6 +772,7 @@ class ValidPersonOrTeamVocabulary(
 
         text = text.lower()
         return self._doSearch(text=text)
+
 
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid, public teams in Launchpad."""
