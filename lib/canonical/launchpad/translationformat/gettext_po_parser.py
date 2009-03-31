@@ -349,16 +349,11 @@ class POHeader:
                 raw_content_list.append(
                     '%s: %s\n' % (value, content))
             elif key == 'pot-creation-date':
-                raw_content_list.append(
-                    '%s: %s\n' % (value, self.template_creation_date.strftime(
-                        self._strftime_text)))
+                date_string = self._renderDate(self.template_creation_date)
+                raw_content_list.append('%s: %s\n' % (value, date_string))
             elif key == 'po-revision-date':
-                if self.translation_revision_date is None:
-                    revision_date_text = 'YEAR-MO-DA HO:MI+ZONE'
-                else:
-                    revision_date_text = (
-                        self.translation_revision_date.strftime(
-                            self._strftime_text))
+                revision_date_text = self._renderDate(
+                    self.translation_revision_date, 'YEAR-MO-DA HO:MI+ZONE')
                 raw_content_list.append(
                     '%s: %s\n' % (
                         value, revision_date_text))
@@ -394,9 +389,8 @@ class POHeader:
                 continue
             elif key == 'x-launchpad-export-date':
                 UTC = pytz.timezone('UTC')
-                now = datetime.datetime.now(UTC)
-                raw_content_list.append(
-                    '%s: %s\n' % (value, now.strftime(self._strftime_text)))
+                now = self._renderDate(datetime.datetime.now(UTC))
+                raw_content_list.append('%s: %s\n' % (value, now))
             elif key == 'x-generator':
                 # Note the revision number so it would help for debugging
                 # problems with bad exports.
@@ -459,6 +453,13 @@ class POHeader:
         if name is None:
             name = u''
         self._last_translator = u'%s <%s>' % (name, email)
+
+    def _renderDate(self, date, default=None):
+        """Return string representation of `date`, or `default`."""
+        if date is None:
+            return default
+        else:
+            return date.strftime(self._strftime_text)
 
 
 # Special escape sequences.
