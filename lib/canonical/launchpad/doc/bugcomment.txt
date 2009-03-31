@@ -1,5 +1,4 @@
-Bug Comments
-============
+= Bug Comments =
 
 The BugComment class is a content class assembled by browser code; it
 abstracts a single bug comment, has an index, and can be rendered
@@ -10,8 +9,7 @@ independently.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
-Handling of the bug's first comment
------------------------------------
+== Handling of the bug's first comment ==
 
 The bug's description starts out identical to its first comment. In the course
 of a bug's life, the description may be updated, but the first comment stays
@@ -88,8 +86,7 @@ as the first comment, without repeating the text of the bug report.
    I've had problems when switching from Jokosher...
 
 
-Comment truncation
-------------------
+== Comment truncation ==
 
 If a comment is too long, we truncate it before we display it and
 display a link to view the full comment. Let's change the default
@@ -129,8 +126,7 @@ The UI will display information about the comment being truncated and
 provide a link to view the full comment.
 
 
-Comments with multiple chunks
------------------------------
+== Comments with multiple chunks ==
 
 Bug 10 has two comments: one which is the initial description, and one
 which is a multi-chunk comment added through the email interface. To grab
@@ -152,8 +148,7 @@ itself; adding comments through the web UI always places them in the
 same chunk.
 
 
-Comment titles
---------------
+== Comment titles ==
 
 This function also eliminates redundant message titles. We have a policy of
 only displaying message titles when these are "new" to the bug. That means
@@ -184,8 +179,7 @@ displayed.
     False Re: Copy, Cut and Delete operations should work on selections
 
 
-Comment omission
-----------------
+== Comment omission ==
 
 If a comment made by the same user is strictly identical to its previous
 comment in sequence, it will be omitted. Let's add some comments and
@@ -235,8 +229,7 @@ hidden.
      (7, u'Ho', u'Hello there')]
 
 
-Bugs with lots of comments
---------------------------
+== Bugs with lots of comments ==
 
 BugTaskView has another property for helping render bugs with lots of
 comments: visible_comments_truncated_for_display.
@@ -318,8 +311,7 @@ Restore the configuration to its previous setting.
     (...)
 
 
-Wrapping up
------------
+== Wrapping up ==
 
 Be nice and restore the comment size to what it was originally.
 
