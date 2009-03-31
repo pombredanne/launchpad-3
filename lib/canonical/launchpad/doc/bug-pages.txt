@@ -793,7 +793,8 @@ First, some set-up.
     ...     2009, 3, 26, 21, 37, 45, tzinfo=pytz.timezone('UTC'))
 
     >>> login('foo.bar@canonical.com')
-    >>> bug = factory.makeBug(title="A bug title")
+    >>> product = factory.makeProduct(name='testproduct')
+    >>> bug = factory.makeBug(title="A bug title", product=product)
     >>> title_change = BugTitleChange(
     ...     when=nowish, person=foo_bar, what_changed='title',
     ...     old_value=bug.title, new_value="A new bug title")
@@ -845,3 +846,54 @@ by their datechanged property.
     ...         print comment.text_for_display
     summary: A bug title => A new bug title
     A comment, for the reading of.
+
+If a comment and a BugActivity item occur at the same time, the activity
+item will be returned in the comment's activity property rather than as
+an activity item in its own right. This allows us to group coincidental
+comments and activity together.
+
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={
+    ...         'testproduct.status': 'Confirmed',
+    ...         'testproduct.importance': 'High',
+    ...         'testproduct.comment_on_change': "I triaged it.",
+    ...         'testproduct.actions.save': 'Save Changes',
+    ...         })
+    >>> view = getMultiAdapter(
+    ...     (bug.bugtasks[0], request), name="+editstatus-page")
+    >>> view.initialize()
+
+    >>> view = getMultiAdapter(
+    ...     (bug.bugtasks[0], request), name="+index")
+    >>> view.initialize()
+
+Looking at activity_and_comments will give us the same results as
+before, plus the new comment, since the changes we just made were
+grouped with that comment.
+
+    >>> activity_and_comments = view.activity_and_comments
+    >>> for activity_or_comment in activity_and_comments:
+    ...     if 'activity' in activity_or_comment:
+    ...         for activity in activity_or_comment['activity']:
+    ...             print "%s: %s => %s" % (
+    ...                 activity.whatchanged, activity.oldvalue,
+    ...                 activity.newvalue)
+    ...     if 'comment' in activity_or_comment:
+    ...         comment = activity_or_comment['comment']
+    ...         print comment.text_for_display
+    summary: A bug title => A new bug title
+    A comment, for the reading of.
+    I triaged it.
+
+But if we look at the most recent comment's activity property we'll see
+that the activity recorded there reflects the changes that go with the
+comment.
+
+    >>> comment = activity_and_comments[-1]['comment']
+    >>> for activity in comment.activity:
+    ...     print "%s: %s => %s" % (
+    ...         activity.whatchanged, activity.oldvalue,
+    ...         activity.newvalue)
+    testproduct: importance: Undecided => High
+    testproduct: status: New => Confirmed
