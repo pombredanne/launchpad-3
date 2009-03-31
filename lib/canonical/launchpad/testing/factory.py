@@ -786,7 +786,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 BugTaskStatus.FIXRELEASED, owner, when=date_closed)
         return bug
 
-    def makeBugTask(self, bug=None, target=None):
+    def makeBugTask(self, bug=None, target=None, owner=None):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
@@ -804,7 +804,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         existing_bugtask = bug.getBugTask(target)
         if existing_bugtask is not None:
             return existing_bugtask
-        owner = self.makePerson()
+
+        if owner is None:
+            owner = self.makePerson()
 
         if IProductSeries.providedBy(target):
             # We can't have a series task without a distribution task.

@@ -317,3 +317,33 @@ Be nice and restore the comment size to what it was originally.
 
     >>> config_data = config.pop('max_comment_size')
 
+
+== Displaying BugComments with activity ==
+
+Comments are often made when a user makes a change to a bug, for example
+setting the bug's status. The BugComment class has a property, activity,
+which can hold a list of BugActivityItems associated with a comment (see
+doc/bugactivity.txt for details of the BugActivityItem class).
+
+    >>> from canonical.launchpad.browser.bugcomment import BugComment
+    >>> from canonical.launchpad.browser.bugtask import BugActivityItem
+    >>> from canonical.launchpad.interfaces import IBugActivitySet
+
+    >>> user = factory.makePerson(displayname="Arthur Dent")
+    >>> message = factory.makeMessage(
+    ...     content="Comment content", owner=user)
+    >>> bug_task = factory.makeBugTask(owner=user)
+    >>> activity = getUtility(IBugActivitySet).new(
+    ...     bug=bug_task.bug, whatchanged='malone: status',
+    ...     oldvalue='New', newvalue='Confirmed',
+    ...     person=user, datechanged=message.datecreated)
+    >>> activity_item = BugActivityItem(activity)
+
+    >>> bug_comment = BugComment(
+    ...     index=0, message=message, bugtask=bug_task,
+    ...     display_if_from_bugwatch=True, activity=[activity_item])
+
+    >>> for activity in bug_comment.activity:
+    ...     print "%s: %s" % (
+    ...         activity.change_summary, activity.change_details)
+    malone status: New &#8594; Confirmed

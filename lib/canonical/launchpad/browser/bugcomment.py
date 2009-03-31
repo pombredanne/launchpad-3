@@ -88,7 +88,8 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask, display_if_from_bugwatch):
+    def __init__(self, index, message, bugtask, display_if_from_bugwatch,
+                 activity=None):
         self.index = index
         self.bugtask = bugtask
         self.bugwatch = None
@@ -102,6 +103,11 @@ class BugComment:
 
         self.chunks = []
         self.bugattachments = []
+
+        if activity is None:
+            activity = []
+
+        self.activity = activity
 
         self.synchronized = False
 
