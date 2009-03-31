@@ -76,8 +76,16 @@
         for="canonical.launchpad.interfaces.IOpenIDApplication"
         name="+change-password"
         permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.openidaccount.AccountPasswordEditview"
+        class="canonical.launchpad.browser.openidaccount.AccountPasswordEditView"
         template="../templates/openid-account-change-password.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        name="+edit-emails"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.openidaccount.AccountEditEmailsView"
+        template="../templates/openid-account-edit-emails.pt"
         />
 
     <browser:page

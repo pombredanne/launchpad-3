@@ -845,6 +845,9 @@ openid_account_change_password = 'Change your password'
 def openid_account_edit(context, view):
     return smartquote("%s's details") % view.account.displayname
 
+def openid_account_edit_emails(context, view):
+    return smartquote("%s's e-mail addresses") % view.account.displayname
+
 openid_default = 'OpenID Endpoint'
 
 def openid_index(context, view):

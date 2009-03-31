@@ -25,6 +25,9 @@ information about their account.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Logged in as Sample Person (edit)
+    Emails:
+    test@canonical.com
+    testing@canonical.com
     Sites you last authenticated to
     ...
 
