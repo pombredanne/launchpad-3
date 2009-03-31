@@ -10,7 +10,7 @@ import random
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.expr import Desc, Join, Lower
+from storm.expr import Desc, Join, Lower, Or
 from storm.references import Reference
 from storm.store import Store
 
@@ -244,14 +244,16 @@ class AccountSet:
     def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
         store = IStore(Account)
-        account = store.find(
-            Account, openid_identifier=openid_identifier).one()
+        # XXX sinzui 2008-09-09 bug=264783:
+        # Remove the OR clause, only openid_identifier should be used.
+        conditions = Or(Account.openid_identifier == openid_identifier,
+                        Account.new_openid_identifier == openid_identifier)
+        account = store.find(Account, conditions).one()
         if account is None and not IMasterStore.providedBy(IStore(Account)):
             # The account was not found in a slave store but it may exist in
             # the master one if it was just created, so we try to fetch it
             # again, this time from the master.
-            account = IMasterStore(Account).find(
-                Account, openid_identifier=openid_identifier).one()
+            account = IMasterStore(Account).find(Account, conditions).one()
         return account
 
     _MAX_RANDOM_TOKEN_RANGE = 1000
