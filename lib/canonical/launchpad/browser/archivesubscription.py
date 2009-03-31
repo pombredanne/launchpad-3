@@ -22,6 +22,7 @@ from zope.interface import alsoProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.browser.person import IPersonEditMenu
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.interfaces.archive import IArchiveSet
@@ -247,7 +248,6 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for displaying a persons archive subscriptions."""
 
-    from canonical.launchpad.browser.person import IPersonEditMenu
     implements(IPersonEditMenu)
 
     @cachedproperty
