@@ -25,7 +25,7 @@ BZR_VERSION_INFO = bzr-version-info.py
 
 XSLTPROC=xsltproc
 WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
-WADL_XSL = lib/lazr/restfulclient/wadl-to-refhtml.xsl
+WADL_XSL = lib/launchpadlib/wadl-to-refhtml.xsl
 API_INDEX = lib/canonical/launchpad/apidoc/index.html
 
 APPSERVER_ENV = \
