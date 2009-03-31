@@ -172,7 +172,7 @@ displaying the subscription and requesting their confirmation.
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    # Personal subscription of Joe Smith to Private PPA for Mark Shuttleworth
+    # Personal subscription of Joe Smith to PPA for Mark Shuttleworth
     deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary
         main
     deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
@@ -194,7 +194,7 @@ has a signing key:
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    # Personal subscription of Joe Smith to Private PPA for Mark Shuttleworth
+    # Personal subscription of Joe Smith to PPA for Mark Shuttleworth
     deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary
         main
     deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
