@@ -816,14 +816,33 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     @cachedproperty
     def activity_and_comments(self):
-        activity_and_comments = [
-            {'comment': comment, 'date': comment.datecreated}
-            for comment in self.visible_comments_for_display]
-        activity_and_comments.extend(
+        activity_by_date = [
             {'activity': activity_list, 'date': date,
              'person': activity_list[0].person}
-            for date, activity_list in self.activity_by_date.items())
+            for date, activity_list in self.activity_by_date.items()]
 
+        activity_and_comments = []
+        for comment in self.visible_comments_for_display:
+            # Check to see if there are any activities for this
+            # comment's datecreated.
+            activity_for_comment = []
+            for activity_dict in activity_by_date:
+                if activity_dict['date'] == comment.datecreated:
+                    activity_for_comment.extend(activity_dict['activity'])
+
+                    # Remove the activity from the list of activity by date;
+                    # we don't need it there any more.
+                    activity_by_date.remove(activity_dict)
+
+            activity_for_comment.sort(key=attrgetter('whatchanged'))
+            comment.activity = activity_for_comment
+
+            activity_and_comments.append({
+                'comment': comment,
+                'date': comment.datecreated,
+                })
+
+        activity_and_comments.extend(activity_by_date)
         activity_and_comments.sort(key=itemgetter('date'))
         return activity_and_comments
 
