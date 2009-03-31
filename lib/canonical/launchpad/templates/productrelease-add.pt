@@ -16,12 +16,14 @@
   <div metal:use-macro="context/@@launchpad_form/form">
     <div id="other-releases"
       metal:fill-slot="extra_info" tal:condition="view/releases">
-      The following releases have been made in this series:
+      The following releases have been made for the
+      <tal:series replace="context/productseries/displayname" /> series:
       <ul>
         <li tal:repeat="release view/releases">
            <a tal:attributes="href release/fmt:url"
-              tal:content="release/version">0.9</a>
-          <tal:codename content="release/codename">seamonkey</tal:codename>
+             ><tal:version replace="release/version" />
+             <tal:codename replace="release/codename">seamonkey</tal:codename></a>
+           <tal:released replace="release/datereleased/fmt:date" />
         </li>
       </ul>
     </div>

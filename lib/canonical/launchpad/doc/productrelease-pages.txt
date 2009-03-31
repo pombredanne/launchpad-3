@@ -20,7 +20,7 @@ other releases for the series. There are no other releases yet.
     >>> login_person(owner)
     >>> view = create_initialized_view(milestone, '+addrelease')
     >>> print view.label
-    Register a new App release
+    Create a new release for App
 
     >>> print view.releases
     None
@@ -46,6 +46,11 @@ Submitting the form data creates the release and deactivates the milestone.
     []
     >>> print view.widget_errors
     {}
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    The <a href="http://launchpad.dev/app/+milestone/0.1">0.1 milestone</a>
+    for this project release was deactivated so that bugs and blueprints
+    cannot be associated with this release.
     >>> print milestone.active
     False
     >>> for release in series.releases:
@@ -58,7 +63,7 @@ Only one release can be created for the milestone.
     >>> view = create_initialized_view(milestone, '+addrelease', form=form)
     >>> for notice in view.request.response.notifications:
     ...     print notice.message
-    A product release already exists for this milestone.
+    A project release already exists for this milestone.
 
 The ProductReleaseAddView's releases attribute shows the newly created
 release if another milestone in the same series is viewed.
