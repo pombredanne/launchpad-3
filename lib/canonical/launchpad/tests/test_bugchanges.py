@@ -250,7 +250,6 @@ class TestBugChanges(unittest.TestCase):
         # Adding a bug comment containing a URL that looks like a link
         # to a remote bug causes a BugWatch to be added to the
         # bug. This adds to the activity log and sends a notification.
-        self.saveOldChanges()
         self.assertEqual(self.bug.watches.count(), 0)
         self.bug.newMessage(
             content="http://bugs.example.com/view.php?id=1234",
