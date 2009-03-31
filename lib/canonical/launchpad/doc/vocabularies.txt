@@ -1320,7 +1320,9 @@ A PRIVATE team is displayed when the logged in user is a member of the team.
     >>> commercial = person_set.getByEmail('commercial-member@canonical.com')
     >>> vocab = vocabulary_registry.get(commercial, "ValidPersonOrTeam")
     >>> login('commercial-member@canonical.com')
-    >>> priv_team = factory.makeTeam(name='private-team',
+    >>> priv_team = factory.makeTeam(
+    ...     name='private-team',
+    ...     displayname='Private Team',
     ...     owner=commercial,
     ...     visibility=PersonVisibility.PRIVATE)
     >>> sorted(person.name for person in vocab.search('team'))
@@ -1440,6 +1442,7 @@ text to match against the team name.  Still, you only get teams back.
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...         for team in vocab.search('spanish'))
     [(u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search('spanish | ubuntu'))
     [(u'Mirror Administrators', u'Mark Shuttleworth'),
@@ -1448,6 +1451,7 @@ text to match against the team name.  Still, you only get teams back.
      (u'Ubuntu Translators', u'Rosetta Administrators'),
      (u'Ubuntu branches', u'Ubuntu-branches-owner'),
      (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search('team'))
     [(u'Hoary Gnome Team', u'Mark Shuttleworth'),
@@ -1459,12 +1463,34 @@ text to match against the team name.  Still, you only get teams back.
      (u'Warty Security Team', u'Mark Shuttleworth'),
      (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
 
+A user who is a member of a private team will see that team in his search.
+
+    >>> login('commercial-member@canonical.com')
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...        for team in vocab.search('team'))
+    [(u'Hoary Gnome Team', u'Mark Shuttleworth'),
+     (u'Other Team', u'Owner'),
+     (u'Private Team', u'Commercial Member'),
+     (u'Simple Team', u'One Membership'),
+     (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Warty Gnome Team', u'Mark Shuttleworth'),
+     (u'Warty Security Team', u'Mark Shuttleworth'),
+     (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+
+You can also search for an email address and get the teams with a match.
+
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...         for team in vocab.search('support@'))
+    [(u'Ubuntu Team', u'Mark Shuttleworth')]
+
 
 === ValidTeamMember ===
 
 With the exception of all teams that have this team as a member and the
 team itself, all valid persons and teams are valid members.
 
+    >>> login('foo.bar@canonical.com')
     >>> team = person_set.getByName('ubuntu-team')
     >>> team2 = person_set.getByName('guadamen')
     >>> person = person_set.getByName('name16')

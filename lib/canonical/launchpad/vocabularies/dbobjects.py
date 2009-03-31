@@ -72,7 +72,7 @@ import cgi
 from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
-from storm.expr import LeftJoin, SQL, And, Or, Not
+from storm.expr import LeftJoin, SQL, And, Or, Like, Lower, Not
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -89,6 +89,7 @@ from canonical.launchpad.database import (
     ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
     SourcePackageRelease, Specification, Sprint, TeamParticipation,
     TranslationGroup, TranslationMessage)
+from canonical.launchpad.database.stormsugar import StartsWith
 
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
@@ -625,7 +626,7 @@ class ValidPersonOrTeamVocabulary(
 
     # This is what subclasses must change if they want any extra filtering of
     # results.
-    extra_clause = ""
+    extra_clause = True
 
     # Subclasses should override this property to allow null searches to
     # return all results.  If false, an empty result set is returned.
@@ -650,19 +651,33 @@ class ValidPersonOrTeamVocabulary(
             )
         return private
 
+    @cachedproperty
+    def store(self):
+        return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+    @property
+    def _private_team_query(self):
+        """Return query for all private teams the logged in user belongs."""
+        logged_in_user = getUtility(ILaunchBag).user
+        if logged_in_user is not None:
+            private_query = AND(
+                TeamParticipation.person == logged_in_user.id,
+                TeamParticipation.teamID == Person.id,
+                Not(Person.teamowner == None),
+                Person.visibility == PersonVisibility.PRIVATE
+                )
+        else:
+            private_query = True
+        return private_query
+
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         logged_in_user = getUtility(ILaunchBag).user
 
         # Short circuit if there is no search text - all valid people and
         # teams have been requested.
         if not text:
-            if self.extra_clause:
-                extra_clause = SQL(self.extra_clause)
-            else:
-                extra_clause = True
             inner_select = SQL("""
                 SELECT Person.id
                 FROM Person, %(cache_table)s
@@ -672,20 +687,15 @@ class ValidPersonOrTeamVocabulary(
                 Person,
                 LeftJoin(TeamParticipation, TeamParticipation.teamID == Person.id),
                 ]
-            result = store.using(*tables).find(
+            result = self.store.using(*tables).find(
                 Person,
                 And(
                     Person.id.is_in(inner_select),
                     Or(
                         Person.visibility == PersonVisibility.PUBLIC,
-                        # Private team the logged in user is a member.
-                        AND(
-                            TeamParticipation.person == logged_in_user.id,
-                            Not(Person.teamowner == None),
-                            Person.visibility == PersonVisibility.PRIVATE
-                            )
+                        self._private_team_query,
                         ),
-                    extra_clause
+                    self.extra_clause
                     )
                 )
         else:
@@ -719,11 +729,7 @@ class ValidPersonOrTeamVocabulary(
                         EmailAddressStatus.VALIDATED,
                         EmailAddressStatus.PREFERRED)))
 
-            if self.extra_clause:
-                extra_clause = SQL(self.extra_clause)
-            else:
-                extra_clause = True
-            result = store.using(*tables).find(
+            result = self.store.using(*tables).find(
                 Person,
                 And(
                     Person.id.is_in(inner_select),
@@ -731,11 +737,7 @@ class ValidPersonOrTeamVocabulary(
                         # Public team.
                         Person.visibility == PersonVisibility.PUBLIC,
                         # Private team the logged in user is a member.
-                        AND(
-                            TeamParticipation.person == logged_in_user.id,
-                            Not(Person.teamowner == None),
-                            Person.visibility == PersonVisibility.PRIVATE
-                            )
+                        self._private_team_query,
                     ),
                     Person.merged == None,
                     Or(
@@ -751,7 +753,7 @@ class ValidPersonOrTeamVocabulary(
                                 ))
                             )
                         ),
-                    extra_clause
+                    self.extra_clause
                     )
                 )
 
@@ -786,53 +788,59 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     # Because the base class does almost everything we need, we just need to
     # restrict the search results to those Persons who have a non-NULL
     # teamowner, i.e. a valid team.
-    extra_clause = 'Person.teamowner IS NOT NULL'
+    extra_clause = Not(Person.teamowner == None)
     # Search with empty string returns all teams.
     allow_null_search = True
 
     def _doSearch(self, text=""):
         """Return the teams whose fti or email address match :text:"""
-        base_query = """
-                Person.visibility = %s
-                """ % quote(PersonVisibility.PUBLIC)
 
-        if self.extra_clause:
-            extra_clause = " AND %s" % self.extra_clause
-        else:
-            extra_clause = ""
+        base_query = Or(
+            Person.visibility == PersonVisibility.PUBLIC,
+            self._private_team_query,
+            )
 
+        tables = [
+            Person,
+            LeftJoin(TeamParticipation,
+                     TeamParticipation.teamID == Person.id),
+            ]
         if not text:
-            query = base_query + extra_clause
-            return Person.select(query)
 
-        name_match_query = """
-            Person.fti @@ ftq(%s)
-            AND %s
-            """ % (quote(text), base_query)
-        name_match_query += extra_clause
-        name_matches = Person.select(name_match_query)
+            query = And(base_query,
+                        self.extra_clause)
+            result = self.store.using(*tables).find(Person, query)
+        else:
+            name_match_query = And(
+                SQL("Person.fti @@ ftq(%s)" % quote(text)),
+                base_query,
+                self.extra_clause,
+                )
+            name_matches = self.store.find(Person, name_match_query)
 
-        # Note that we must use lower(email) LIKE rather than ILIKE
-        # as ILIKE no longer appears to be hitting the index under PG8.0
+            # Note that we must use lower(email) LIKE rather than ILIKE
+            # as ILIKE no longer appears to be hitting the index under PG8.0
+            match_pattern = "%s%%" % text
+            email_match_query = And(
+                EmailAddress.person == Person.id,
+                StartsWith(Lower(EmailAddress.email), text),
+                base_query,
+                self.extra_clause,
+                )
 
-        email_match_query = """
-            EmailAddress.person = Person.id
-            AND lower(email) LIKE %s || '%%'
-            AND %s
-            """ % (quote_like(text), base_query)
+            tables.append(EmailAddress)
+            email_matches = self.store.using(*tables).find(
+                    Person, email_match_query)
+            #print "email_matches: ", email_matches.count()
+            result =  name_matches.union(email_matches)
 
-        email_match_query += extra_clause
-        email_matches = Person.select(
-            email_match_query, clauseTables=['EmailAddress'])
-
-        # XXX Guilherme Salgado 2006-01-30 bug=30053:
-        # We have to explicitly provide an orderBy here as a workaround
-        return name_matches.union(
-            email_matches, orderBy=['displayname', 'name'])
+        result.config(distinct=True)
+        result.order_by(Person.displayname, Person.name)
+        return result
 
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
-    """The set of all valid, public persons who are not teams in Launchpad."""
+    """The set of all valid persons who are not teams in Launchpad."""
     displayname = 'Select a Person'
     # The extra_clause for a valid person is that it not be a team, so
     # teamowner IS NULL.
