@@ -39,23 +39,25 @@ function create_form_overlay_for_row(row) {
 Y.on('domready', function() {
     // First look for all the subscription rows
     var subscription_rows = Y.all('tbody .archive-subscription-row');
-    subscription_rows.each(function(row){
-        activate_link = row.query('a.edit');
-        if (activate_link) {
-            // Create a form overlay for this row, and set it up to
-            // post to the activate subscription page.
-            var form_overlay = create_form_overlay_for_row(row);
-            form_overlay.form_node.set('method', 'post');
-            form_overlay.form_node.set(
-                'action', activate_link.getAttribute('href'));
-            activate_link.on('click', function(e){
-                e.preventDefault();
-                // Show this row's form overlay
-                form_overlay.show();
-            });
-            activate_link.addClass('js-action');
-        }
-    });
+    if (subscription_rows) {
+        subscription_rows.each(function(row){
+            activate_link = row.query('a.edit');
+            if (activate_link) {
+                // Create a form overlay for this row, and set it up to
+                // post to the activate subscription page.
+                var form_overlay = create_form_overlay_for_row(row);
+                form_overlay.form_node.set('method', 'post');
+                form_overlay.form_node.set(
+                    'action', activate_link.getAttribute('href'));
+                activate_link.on('click', function(e){
+                    e.preventDefault();
+                    // Show this row's form overlay
+                    form_overlay.show();
+                });
+                activate_link.addClass('js-action');
+            }
+        });
+    }
 });
 
 });
