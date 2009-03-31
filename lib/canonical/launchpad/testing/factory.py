@@ -339,7 +339,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             account.status = AccountStatus.ACTIVE
 
         email.status = email_address_status
-        
+
         # Ensure updated ValidPersonCache
         flush_database_updates()
         return person
