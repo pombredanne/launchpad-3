@@ -1,4 +1,4 @@
-# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -627,8 +627,15 @@ class POFileImporter(FileImporter):
                 # The new imported file is older than latest one imported,
                 # we don't import it, just ignore it as it could be a
                 # mistake and it would make us lose translations.
+                pofile_timestamp = (
+                    self.pofile.getHeader().translation_revision_date)
+                upload_timestamp = (
+                    self.translation_file.header.translation_revision_date)
                 raise OutdatedTranslationError(
-                    'Previous imported file is newer than this one.')
+                    'The last imported version of this file was dated %s; '
+                    'the time stamp in the file you uploaded is %s.' % (
+                        pofile_timestamp, upload_timestamp))
+
             # Get the timestamp when this file was exported from
             # Launchpad. If it was not exported from Launchpad, it will be
             # None.
