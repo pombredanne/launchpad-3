@@ -10,6 +10,7 @@ __all__ = [
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
     'EmailToPersonView',
+    'IPersonEditMenu',
     'PersonAccountAdministerView',
     'PersonAdministerView',
     'PersonAddView',
@@ -124,8 +125,6 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.archive import traverse_named_ppa
-from canonical.launchpad.browser.archivesubscription import (
-    traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
@@ -397,6 +396,11 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     @stepthrough('+archivesubscriptions')
     def traverse_archive_subscription(self, archive_id):
         """Traverse to the archive subscription for this person."""
+        # Importing here to avoid circular import (as archivesubscription
+        # imports IPersonEditMenu).
+        from canonical.launchpad.browser.archivesubscription import (
+            traverse_archive_subscription_for_subscriber)
+
         return traverse_archive_subscription_for_subscriber(
             self.context, archive_id)
 
@@ -1070,7 +1074,7 @@ class PersonEditNavigationMenu(NavigationMenu):
     usedfor = IPersonEditMenu
     facet = 'overview'
     links = ('personal', 'email_settings',
-             'sshkeys', 'gpgkeys', 'passwords')
+             'sshkeys', 'gpgkeys', 'passwords', 'archive_subscriptions')
 
     def personal(self):
         target = '+edit'
@@ -1096,6 +1100,11 @@ class PersonEditNavigationMenu(NavigationMenu):
     def passwords(self):
         target = '+changepassword'
         text = 'Passwords'
+        return Link(target, text)
+
+    def archive_subscriptions(self):
+        target = '+archivesubscriptions'
+        text = 'Private PPA subscriptions'
         return Link(target, text)
 
 
