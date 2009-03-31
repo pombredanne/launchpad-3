@@ -48,7 +48,8 @@ account has more than one email address.
     >>> foo = PersonSet().getByName('foo')
     >>> email = EmailAddressSet().new(
     ...     'bar.foo@canonical.com', person=foo,
-    ...     status=EmailAddressStatus.VALIDATED)
+    ...     status=EmailAddressStatus.VALIDATED,
+    ...     account=foo.account)
 
 Then we find the duplicate account and request the merge.
 This redirects to the page which displays all email addresses owned by the
