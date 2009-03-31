@@ -63,7 +63,6 @@ class Branch(SQLBase):
 
     implements(IBranch, IBranchNavigationMenu)
     _table = 'Branch'
-    _defaultOrder = ['product', '-lifecycle_status', 'owner', 'name']
 
     branch_type = EnumCol(enum=BranchType, notNull=True)
 
