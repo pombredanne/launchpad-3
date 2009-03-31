@@ -28,7 +28,6 @@ class BugSubscriptionAddView(LaunchpadFormView):
 
     @action('Add', name='add')
     def add_action(self, action, data):
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         person = data['person']
         subscription = self.context.bug.subscribe(person, self.user)
         notify(ObjectCreatedEvent(subscription, user=self.user))
@@ -47,5 +46,4 @@ class BugSubscriptionAddView(LaunchpadFormView):
 
 
     def validate_widgets(self, data, names=None):
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         super(BugSubscriptionAddView, self).validate_widgets(data, names)
