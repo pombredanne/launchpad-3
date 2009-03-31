@@ -347,3 +347,21 @@ doc/bugactivity.txt for details of the BugActivityItem class).
     ...     print "%s: %s" % (
     ...         activity.change_summary, activity.change_details)
     malone status: New &#8594; Confirmed
+
+The activity will be inserted into the footer of the comment. If a
+BugComment has some activity associated with it, it's show_footer
+property will be True.
+
+    >>> bug_comment.show_footer
+    True
+
+    >>> bug_comment.activity = []
+    >>> bug_comment.show_footer
+    False
+
+BugComment.show_footer will also be True if a BugWatch is associated
+with the comment.
+
+    >>> bug_comment.bugwatch = factory.makeBugWatch()
+    >>> bug_comment.show_footer
+    True

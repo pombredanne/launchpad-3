@@ -64,8 +64,14 @@
       <a tal:attributes="href comment/fmt:url">Read more...</a>
     </p>
   </div>
-  <div class="boardCommentFooter" tal:condition="comment/bugwatch">
-    <div>
+  <div class="boardCommentFooter" tal:condition="comment/show_footer">
+    <tal:activity
+        define="activity_list comment/activity"
+        condition="comment/activity">
+      <metal:activity-table
+          metal:use-macro="context/@@bugcomment-macros/activity-table" />
+    </tal:activity>
+    <div tal:condition="comment/bugwatch">
       <table style="width: 100%">
         <tr>
           <td style="text-align: left; vertical-align: middle">
@@ -126,6 +132,21 @@
   </div>
 </div>
 
+<table
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:define-macro="activity-table"
+  tal:attributes="class string:bug-activity">
+  <tr tal:repeat="activity activity_list">
+    <td style="text-align: right;">
+      <b><tal:summary replace="activity/change_summary" /></b>:
+    </td>
+    <td>
+      <tal:details replace="structure activity/change_details" />
+    </td>
+  </tr>
+</table>
+
 <div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
@@ -142,17 +163,7 @@
     </span>
   </div>
   <div class="boardBugActivityBody">
-    <div class="bug-comment">
-      <table>
-        <tr tal:repeat="activity activity_list">
-          <td style="text-align: right;">
-            <b><tal:summary replace="activity/change_summary" /></b>:
-          </td>
-          <td>
-            <tal:details replace="structure activity/change_details" />
-          </td>
-        </tr>
-      </table>
-    </div>
+    <metal:activity-table
+        metal:use-macro="context/@@bugcomment-macros/activity-table" />
   </div>
 </div>
