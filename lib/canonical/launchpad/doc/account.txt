@@ -130,7 +130,7 @@ user to validate:
     >>> token = getUtility(IAuthTokenSet).new(
     ...     account, u"test@canonical.com", u"unvalidated-email@example.com",
     ...     LoginTokenType.VALIDATEEMAIL, None)
-    >>> account.unvalidated_emails
+    >>> account.getUnvalidatedEmails()
     [u'unvalidated-email@example.com']
 
 

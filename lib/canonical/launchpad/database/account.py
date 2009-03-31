@@ -90,8 +90,7 @@ class Account(SQLBase):
         """See `IAccount`."""
         return self._getEmails(EmailAddressStatus.NEW)
 
-    @property
-    def unvalidated_emails(self):
+    def getUnvalidatedEmails(self):
         """See `IAccount`."""
         result = IMasterStore(AuthToken).find(
             AuthToken, requester_account=self,
