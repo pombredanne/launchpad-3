@@ -174,13 +174,13 @@ Since no-priv is not a member of lifeless, the Register branch link is not
 shown.
 
     >>> user_browser.open('http://code.launchpad.dev/~lifeless')
-    >>> user_browser.getLink(id="register-branch")
+    >>> user_browser.getLink("Register a branch")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> browser.open('http://code.launchpad.dev/~landscape-developers')
-    >>> browser.getLink(id="register-branch").click()
+    >>> browser.getLink("Register a branch").click()
     >>> print browser.getControl('Owner').displayValue
     ['Landscape Developers (landscape-developers)']
 

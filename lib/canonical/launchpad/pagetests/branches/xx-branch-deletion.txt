@@ -6,7 +6,7 @@ branches that have been created in error.
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink(id="register-branch").click()
+    >>> browser.getLink("Register a branch").click()
     >>> browser.getControl('Project').value = 'firefox'
     >>> browser.getControl('Branch URL').value = 'http://foo.bar.com/oops'
     >>> browser.getControl('Name').value = 'to-delete'
@@ -47,7 +47,7 @@ If the branch is junk, then the user is taken back to the code listing for
 the deleted branch's owner.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink(id="register-branch").click()
+    >>> browser.getLink("Register a branch").click()
     >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()
