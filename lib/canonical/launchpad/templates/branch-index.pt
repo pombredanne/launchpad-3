@@ -17,9 +17,6 @@
   #merge-summary {
     margin: 1em 0;
   }
-  #registration-info {
-    margin: 1em 0;
-  }
 </style>
 
 <body>
@@ -287,17 +284,6 @@
       </tal:has-codeimport>
     </div>
   </tal:imported-branch>
-
-  <div id="registration-info">
-    Registered by
-    <tal:registrant tal:replace="structure context/registrant/fmt:link"/>
-    on
-    <span
-       tal:attributes="title context/date_created/fmt:datetime"
-       tal:content="context/date_created/fmt:approximatedate">
-      2005-10-18
-    </span>
-  </div>
 
   <div tal:condition="context/product" id="merge-summary">
     <div id="landing-candidates">
