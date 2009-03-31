@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces.person import IPerson
 
 from lazr.delegates import delegates
 from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 
 

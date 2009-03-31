@@ -20,7 +20,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.lazr.interface import copy_field
 from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
    call_with, export_as_webservice_entry, export_write_operation, exported,
    operation_parameters, REQUEST_USER)
 

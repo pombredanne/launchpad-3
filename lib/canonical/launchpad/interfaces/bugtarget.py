@@ -26,10 +26,10 @@ from canonical.launchpad.interfaces.bugtask import (
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr.fields import Reference
 from canonical.lazr.interface import copy_field
-from canonical.lazr.rest.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, exported, export_write_operation, 
-    operation_parameters, operation_returns_collection_of)
+from lazr.restful.declarations import (
+    LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
+    export_as_webservice_entry, export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_collection_of)
 
 
 class IHasBugs(Interface):
@@ -176,7 +176,7 @@ class IBugTarget(IHasBugs):
 # in order to avoid circular dependencies.
 IBugTask['target'].schema = IBugTarget
 IBugTask['transitionToTarget'].getTaggedValue(
-    'lazr.webservice.exported')['params']['target'].schema = IBugTarget
+    LAZR_WEBSERVICE_EXPORTED)['params']['target'].schema = IBugTarget
 
 
 class BugDistroSeriesTargetDetails:

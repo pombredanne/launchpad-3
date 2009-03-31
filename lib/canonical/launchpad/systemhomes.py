@@ -43,7 +43,7 @@ from canonical.launchpad.interfaces.codehosting import (
 from canonical.launchpad.interfaces.hwdb import (
     IHWDeviceSet, IHWDriverSet, IHWVendorIDSet)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.lazr.rest import ServiceRootResource
+from lazr.restful import ServiceRootResource
 
 
 class AuthServerApplication:

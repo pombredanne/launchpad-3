@@ -13,7 +13,7 @@ from zope.interface import Interface
 from zope.schema import Bool, Datetime, Int, Text, TextLine
 
 from canonical.lazr.fields import ReferenceChoice
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 
 from canonical.launchpad import _

@@ -23,7 +23,7 @@ from canonical.launchpad.fields import Title
 from canonical.launchpad import _
 
 from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_write_operation, exported,
     REQUEST_USER)
 

@@ -19,7 +19,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.fields import PublicPersonChoice
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 from canonical.lazr.fields import Reference
 

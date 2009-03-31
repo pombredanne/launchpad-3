@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName)
 from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 
 

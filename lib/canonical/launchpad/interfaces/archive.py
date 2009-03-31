@@ -44,7 +44,7 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
     export_factory_operation, export_write_operation, operation_parameters,
     operation_returns_collection_of, rename_parameters_as, webservice_error)

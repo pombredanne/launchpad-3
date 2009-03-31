@@ -53,7 +53,7 @@
             zope.publisher.interfaces.http.IHTTPRequest
             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
        provides="canonical.lazr.interfaces.IFieldMarshaller"
-       factory="canonical.lazr.rest.marshallers.ObjectLookupFieldMarshaller"
+       factory="lazr.restful.marshallers.ObjectLookupFieldMarshaller"
        />
 
    <!-- The API documentation -->

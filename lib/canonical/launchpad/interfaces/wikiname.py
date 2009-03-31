@@ -10,7 +10,7 @@ from zope.schema import Int, TextLine
 from zope.interface import Interface
 
 from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 
 from canonical.launchpad import _
