@@ -793,7 +793,8 @@ First, some set-up.
     ...     2009, 3, 26, 21, 37, 45, tzinfo=pytz.timezone('UTC'))
 
     >>> login('foo.bar@canonical.com')
-    >>> bug = factory.makeBug(title="A bug title")
+    >>> product = factory.makeProduct(name='testproduct')
+    >>> bug = factory.makeBug(title="A bug title", product=product)
     >>> title_change = BugTitleChange(
     ...     when=nowish, person=foo_bar, what_changed='title',
     ...     old_value=bug.title, new_value="A new bug title")
@@ -841,6 +842,20 @@ example, description and summary changes), the targetname will be None.
 The various {target, activity} dicts are grouped together by the date on
 which they occurred.
 
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={
+    ...         'testproduct.status': 'Confirmed',
+    ...         'testproduct.actions.save': 'Save Changes',
+    ...         })
+    >>> view = getMultiAdapter(
+    ...     (bug.bugtasks[0], request), name="+editstatus-page")
+    >>> view.initialize()
+
+    >>> view = getMultiAdapter(
+    ...     (bug.bugtasks[0], request), name="+index")
+    >>> view.initialize()
+
     >>> activity_and_comments = view.activity_and_comments
     >>> for activity_or_comment in activity_and_comments:
     ...     if 'activity' in activity_or_comment:
@@ -861,3 +876,5 @@ which they occurred.
     ...         print comment.text_for_display
     summary: A bug title => A new bug title
     A comment, for the reading of.
+    Changed in testproduct:
+                    status: New => Confirmed

@@ -283,9 +283,9 @@ _formatted_tags_change but with newlines replaced by HTML line-breaks.
     >>> print activity_item.change_details
     added: tag3<br />removed: tag2
 
-For changes to bug tasks, BugActivityItem mutates the whatchanged
-attribute slightly, removing extraneous punctuation to make the
-change_summary property a bit more readable.
+For changes to bug tasks, BugActivityItem returns the name of the attribute
+that was changed (see "Determining the target and attribute of a
+change", below).
 
     >>> activity = getUtility(IBugActivitySet).new(
     ...     bug=bug_one, whatchanged='malone: status', oldvalue='New',
@@ -293,7 +293,7 @@ change_summary property a bit more readable.
     >>> activity_item = BugActivityItem(activity)
 
     >>> print activity_item.change_summary
-    malone status
+    status
 
 The change_details are expressed as a simple change.
 

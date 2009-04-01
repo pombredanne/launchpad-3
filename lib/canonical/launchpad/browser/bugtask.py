@@ -829,7 +829,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             {'comment': comment, 'date': comment.datecreated}
             for comment in self.visible_comments_for_display]
         activity_and_comments.extend(
-            {'activity': activity_dict, 'date': date}
+            {'activity': activity_dict, 'date': date,
+             'person': activity_dict[0]['activity'][0].person}
             for date, activity_dict in self.activity_by_date.items())
 
         activity_and_comments.sort(key=itemgetter('date'))
@@ -3208,9 +3209,7 @@ class BugActivityItem:
     @property
     def change_summary(self):
         """Return a formatted summary of the change."""
-        # Remove colons to make BugTask attribute changes are a little
-        # more readable.
-        return self.whatchanged.replace(':', '')
+        return self.attribute
 
     @property
     def _formatted_tags_change(self):
