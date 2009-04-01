@@ -668,6 +668,13 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         or any other database object remaining valid across this call!
         """
 
+    def getSuite(pocket):
+        """Return the suite for this distro series and the given pocket.
+
+        :param pocket: A `DBItem` of `PackagePublishingPocket`.
+        :return: A string.
+        """
+
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic):
     """A series of an operating system distribution."""

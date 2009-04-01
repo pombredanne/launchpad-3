@@ -146,6 +146,28 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
         self.assertEqual(releases[bar_package].version, '1.0')
 
 
+class TestDistroSeries(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getSuite_release_pocket(self):
+        # The suite of a distro series and the release pocket is the name of
+        # the distroseries.
+        distroseries = self.factory.makeDistroRelease()
+        self.assertEqual(
+            distroseries.name,
+            distroseries.getSuite(PackagePublishingPocket.RELEASE))
+
+    def test_getSuite_non_release_pocket(self):
+        # The suite of a distro series and a non-release pocket is the name of
+        # the distroseries followed by a hyphen and the name of the pocket in
+        # lower case.
+        distroseries = self.factory.makeDistroRelease()
+        pocket = PackagePublishingPocket.PROPOSED
+        suite = '%s-%s' % (distroseries.name, pocket.name.lower())
+        self.assertEqual(suite, distroseries.getSuite(pocket))
+
+
 class TestDistroSeriesSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
