@@ -3173,7 +3173,7 @@ class BugActivityItem:
     delegates(IBugActivity, 'activity')
 
     # The regular expression we use for matching bug task changes.
-    bugtask_change_re = (
+    bugtask_change_re = re.compile(
         '(?P<target>[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?): '
         '(?P<attribute>assignee|importance|milestone|status)')
 
@@ -3190,7 +3190,7 @@ class BugActivityItem:
         :return: The target name of the item if `whatchanged` is of the
         form <target_name>: <attribute>. Otherwise, return None.
         """
-        match = re.match(self.bugtask_change_re, self.whatchanged)
+        match = self.bugtask_change_re.match(self.whatchanged)
         if match is None:
             return None
         else:
@@ -3207,7 +3207,7 @@ class BugActivityItem:
             the form <target_name>: <attribute>. Otherwise, return the
             original `whatchanged` string.
         """
-        match = re.match(self.bugtask_change_re, self.whatchanged)
+        match = self.bugtask_change_re.match(self.whatchanged)
         if match is None:
             return self.whatchanged
         else:
