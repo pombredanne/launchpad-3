@@ -88,7 +88,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
 
 from lazr.restful.fields import Reference
-from canonical.lazr.interfaces.fields import IReferenceChoice
+from lazr.restful.interfaces import IReferenceChoice
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.

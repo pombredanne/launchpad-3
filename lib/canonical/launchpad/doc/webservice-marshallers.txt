@@ -79,3 +79,8 @@ resource and not a random string.
 
     >>> marshaller.representation_name
     'some_person_link'
+
+Cleanup.
+
+    >>> request.oopsid = None
+    >>> request.publication.endRequest(request, None)
