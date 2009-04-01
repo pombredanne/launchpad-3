@@ -1266,6 +1266,44 @@ class TestPendingWrites(TestCaseWithFactory):
         branch.mirrorComplete(rev_id)
         self.assertEqual(True, branch.pending_writes)
 
+    def test_pulled_and_scanned(self):
+        # If a branch has been pulled and scanned, then there are no pending
+        # writes.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        rev_id = self.factory.getUniqueString('rev-id')
+        branch.mirrorComplete(rev_id)
+        # Cheat! The actual API for marking a branch as scanned is
+        # updateScannedDetails. That requires a revision in the database
+        # though.
+        removeSecurityProxy(branch).last_scanned_id = rev_id
+        self.assertEqual(False, branch.pending_writes)
+
+    def test_first_mirror_started(self):
+        # If we have started mirroring the branch for the first time, then
+        # there are probably pending writes.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        self.assertEqual(True, branch.pending_writes)
+
+    def test_following_mirror_started(self):
+        # If we have started mirroring the branch, then there are probably
+        # pending writes.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        rev_id = self.factory.getUniqueString('rev-id')
+        branch.mirrorComplete(rev_id)
+        # Cheat! The actual API for marking a branch as scanned is
+        # updateScannedDetails. That requires a revision in the database
+        # though.
+        removeSecurityProxy(branch).last_scanned_id = rev_id
+        # Cheat again! We can only tell if mirroring has started if the last
+        # mirrored attempt is different from the last mirrored time. To ensure
+        # this, we start the second mirror in a new transaction.
+        transaction.commit()
+        branch.startMirroring()
+        self.assertEqual(True, branch.pending_writes)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
