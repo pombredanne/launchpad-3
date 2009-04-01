@@ -362,7 +362,9 @@ class CodeHandler:
         mp_target = getUtility(IBranchLookup).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
-        if md.bundle is None or True:
+        # XXX TimPenhey 2009-04-01 bug 352800
+        # Disabled pull processing until we can create stacked branches.
+        if True: # md.bundle is None:
             mp_source = self._getSourceNoBundle(
                 md, mp_target, submitter)
         else:
