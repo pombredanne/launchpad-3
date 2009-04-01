@@ -205,7 +205,7 @@ else.
 == Pending review ==
 
 The status of a mirror is displayed in the mirror page. Any user can
-see if the status of a mirrror is "Pending review' when the mirror
+see if the status of a mirror is "Pending review' when the mirror
 administrator changes the status.
 
     >>> karl_browser.getLink('Review mirror').click()
