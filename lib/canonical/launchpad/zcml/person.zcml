@@ -942,7 +942,7 @@
   <securedutility
     class="canonical.launchpad.rest.MeLink"
     provides="canonical.launchpad.rest.IMeLink">
-    <allow interface="canonical.lazr.interfaces.ITopLevelEntryLink" />
+    <allow interface="lazr.restful.interfaces.ITopLevelEntryLink" />
     <allow
       interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData" />
   </securedutility>

@@ -1,1 +1,9 @@
-../development/debug-namespace-on.zcml
+<configure
+   xmlns="http://namespaces.zope.org/zope"
+   >
+  <view
+      name="debug" type="*"
+      provides="zope.traversing.interfaces.ITraversable" for="*"
+      factory="zope.traversing.namespace.debug"
+      />
+</configure>

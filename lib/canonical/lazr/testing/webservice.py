@@ -32,12 +32,11 @@ from zope.proxy import ProxyBase
 from zope.security.checker import ProxyFactory
 from zope.security.management import endInteraction, newInteraction
 
-from canonical.lazr.interfaces.rest import (
+from lazr.restful.interfaces import (
     IWebServiceConfiguration, IWebServiceLayer)
-from canonical.lazr.rest.publisher import (
+from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
-from canonical.lazr.rest.example.root import (
-    CookbookServiceRootResource)
+from lazr.restful.example.root import CookbookServiceRootResource
 
 from lazr.uri import URI
 

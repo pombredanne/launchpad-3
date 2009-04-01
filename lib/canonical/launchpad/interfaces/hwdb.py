@@ -58,7 +58,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
-from canonical.lazr.interfaces.rest import ITopLevelEntryLink
+from lazr.restful.interfaces import ITopLevelEntryLink
 from lazr.restful.declarations import (
     export_as_webservice_entry, export_read_operation, exported,
     operation_parameters, operation_returns_collection_of, webservice_error)

@@ -12,7 +12,7 @@ the things on Launchpad.
     >>> from canonical.launchpad.interfaces import BranchType, IBranch
     >>> from canonical.launchpad.ftests import (
     ...     login, logout, ANONYMOUS)
-    >>> from canonical.lazr.rest.marshallers import DateTimeFieldMarshaller
+    >>> from lazr.restful.marshallers import DateTimeFieldMarshaller
 
 To make this document a little more readable, we'll have to define some
 helpers. This one turns a JSON date/time response into a Python

@@ -5,9 +5,10 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <include package="lazr.restful" file="configure.zcml" />
     <utility
         factory="canonical.launchpad.rest.configuration.LaunchpadWebServiceConfiguration"
-        provides="canonical.lazr.interfaces.rest.IWebServiceConfiguration">
+        provides="lazr.restful.interfaces.IWebServiceConfiguration">
     </utility>
 
     <securedutility
@@ -15,21 +16,21 @@
         provides="canonical.launchpad.interfaces.IWebServiceApplication">
         <allow
             interface="canonical.launchpad.interfaces.IWebServiceApplication" />
-        <allow interface='canonical.lazr.interfaces.IServiceRootResource' />
+        <allow interface='lazr.restful.interfaces.IServiceRootResource' />
         <allow interface='canonical.launchpad.webapp.interfaces.ICanonicalUrlData' />
     </securedutility>
 
     <!-- Registration for the class that manages an entry's byte
          storage fields. -->
     <adapter
-        for="canonical.lazr.interfaces.IEntry
+        for="lazr.restful.interfaces.IEntry
              zope.schema.interfaces.IField"
-        provides="canonical.lazr.interfaces.IByteStorage"
+        provides="lazr.restful.interfaces.IByteStorage"
         factory="canonical.launchpad.rest.LibraryBackedByteStorage"
         />
 
     <class class="canonical.launchpad.rest.LibraryBackedByteStorage">
-        <allow interface='canonical.lazr.interfaces.IByteStorage' />
+        <allow interface='lazr.restful.interfaces.IByteStorage' />
     </class>
 
     <!-- WebService uses the default LaunchpadRootNavigation -->
@@ -42,7 +43,7 @@
 
     <adapter
         for="canonical.launchpad.interfaces.IBugComment"
-        provides="canonical.lazr.interfaces.rest.IEntry"
+        provides="lazr.restful.interfaces.IEntry"
         factory="canonical.launchpad.rest.bugcomment_to_entry"
         />
 
@@ -52,7 +53,7 @@
        for="zope.schema.interfaces.IChoice
             zope.publisher.interfaces.http.IHTTPRequest
             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
-       provides="canonical.lazr.interfaces.IFieldMarshaller"
+       provides="lazr.restful.interfaces.IFieldMarshaller"
        factory="lazr.restful.marshallers.ObjectLookupFieldMarshaller"
        />
 

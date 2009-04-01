@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-from canonical.lazr.interfaces.rest import IWebServiceConfiguration
+from lazr.restful.interfaces import IWebServiceConfiguration
 from zope.component import getGlobalSiteManager, provideUtility
 from zope.interface import implements
 import unittest
