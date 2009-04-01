@@ -874,19 +874,6 @@ class CommonMenuLinks:
         enabled = not bool(self.context.archive)
         return Link(target, text, summary, icon='add', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Edit')
-    def view_ppa_subscriptions(self):
-        target = "+archivesubscriptions"
-        text = "View your private PPA subscriptions"
-        summary = ('View your personal PPA subscriptions and set yourself '
-                   'up to download your software')
-
-        # Only enable the link if the person has some subscriptions.
-        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
-            self.context)
-        enabled = subscriptions.count() > 0
-
-        return Link(target, text, summary, enabled=enabled)
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -1002,6 +989,20 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def view_ppa_subscriptions(self):
+        target = "+archivesubscriptions"
+        text = "View your private PPA subscriptions"
+        summary = ('View your personal PPA subscriptions and set yourself '
+                   'up to download your software')
+
+        # Only enable the link if the person has some subscriptions.
+        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            self.context)
+        enabled = subscriptions.count() > 0
+
+        return Link(target, text, summary, enabled=enabled)
 
 
 class IPersonEditMenu(Interface):

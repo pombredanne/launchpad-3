@@ -16,10 +16,12 @@
              condition="link/enabled"
              replace="structure link/fmt:icon-link" />
 
-          <tal:view_p3a_subscriptions
-            define="link context/menu:overview/view_ppa_subscriptions"
-            condition="link/enabled"
-            replace="structure link/fmt:link" />
+           <tal:is-person condition="not: context/is_team">
+             <tal:view_p3a_subscriptions
+               define="link context/menu:overview/view_ppa_subscriptions"
+               condition="link/enabled"
+               replace="structure link/fmt:link" />
+           </tal:is-person>
         </div>
       </div>
     </div>
