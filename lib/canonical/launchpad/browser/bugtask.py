@@ -3247,41 +3247,36 @@ class BugActivityItem:
     @property
     def change_details(self):
         """Return a detailed description of the change."""
-        assignee_regex = re.compile(
-            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: assignee')
-        milestone_regex = re.compile(
-            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: milestone')
-
         # Our default return dict. We may mutate this depending on
         # what's changed.
         return_dict = {
             'old_value': self.oldvalue,
             'new_value': self.newvalue,
             }
-        if self.whatchanged == 'summary':
+        if self.attribute == 'summary':
             # We display summary changes as a unified diff, replacing
             # \ns with <br />s so that the lines are separated properly.
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
 
-        elif self.whatchanged == 'description':
+        elif self.attribute == 'description':
             # Description changes can be quite long, so we just return
             # 'updated' rather than returning the whole new description
             # or a diff.
             return 'updated'
 
-        elif self.whatchanged == 'tags':
+        elif self.attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
             return self._formatted_tags_change.replace('\n', '<br />')
 
-        elif assignee_regex.match(self.whatchanged) is not None:
+        elif self.attribute == 'assignee':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
 
-        elif milestone_regex.match(self.whatchanged) is not None:
+        elif self.attribute == 'milestone':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'none'
