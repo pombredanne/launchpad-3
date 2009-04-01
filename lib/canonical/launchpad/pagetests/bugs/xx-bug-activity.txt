@@ -50,6 +50,10 @@ page.
     ...     "Here's a comment for testing, like.")
     >>> user_browser.getControl('Save Changes').click()
     >>> print_comments(user_browser.contents)
+    Bug Watch Updater
+    on 2007-12-18
+    thunderbird status: Unknown &#8594; New
+    --------
     No Privileges Person wrote ...
     Here's a comment for testing, like.
     --------
@@ -65,11 +69,11 @@ that have been added.
 
     >>> user_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(user_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
+    Bug
+    ...
     --------
     Foo Bar ... ago
-    summary changed:
+    summary:
     - Nonsensical bugs are useless
     + A new title for this bug
     --------
@@ -84,16 +88,11 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
+    Bug
+    ...
     --------
     Foo Bar ... ago
-    summary changed:
-    - Nonsensical bugs are useless
-    + A new title for this bug
-    --------
-    Foo Bar ... ago
-    visibility changed: public  &#8594; private
+    visibility: public  &#8594; private
     --------
 
 Changes to a bug's security_related field will be displayed as 'security
@@ -107,19 +106,11 @@ vulnerability' changes, with values of 'yes' or 'no'.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
+    Bug
+    ...
     --------
     Foo Bar ... ago
-    summary changed:
-    - Nonsensical bugs are useless
-    + A new title for this bug
-    --------
-    Foo Bar ... ago
-    visibility changed: public  &#8594; private
-    --------
-    Foo Bar ... ago
-    security vulnerability changed: no  &#8594; yes
+    security vulnerability: no  &#8594; yes
     --------
 
 Changes will be grouped together if they occur at the same time.
@@ -134,26 +125,16 @@ Changes will be grouped together if they occur at the same time.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
+    Bug
+    ...
     --------
     Foo Bar ... ago
-    summary changed:
-    - Nonsensical bugs are useless
-    + A new title for this bug
-    --------
-    Foo Bar ... ago
-    visibility changed: public  &#8594; private
-    --------
-    Foo Bar ... ago
-    security vulnerability changed: no  &#8594; yes
-    --------
-    Foo Bar ... ago
-    security vulnerability changed: yes &#8594; no
-    visibility changed: private  &#8594; public
+    security vulnerability: yes &#8594; no
+    visibility: private  &#8594; public
     --------
 
-Changes to the bug's description will be shown as a unified diff.
+Changes to the bug's description will simply be displayed as 'description:
+updated', since such changes can be quite long.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
@@ -163,14 +144,11 @@ Changes to the bug's description will be shown as a unified diff.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
+    Bug
     ...
     --------
     Foo Bar ... ago
-    description changed:
-    - Like this one, natch.
-    + I've changed the description, isn't that excellent?
+    description: updated
     --------
 
 Changes to the bug's tags will be show in the form tags removed or tags
@@ -184,13 +162,11 @@ added.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
+    Bug
     ...
     --------
     Foo Bar ... ago
-    tags changed:
-    added: tag1 tag2 tag3
+    tags: added: tag1 tag2 tag3
     --------
 
     >>> admin_browser.open(
@@ -201,12 +177,61 @@ added.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
-    No Privileges Person wrote ...
-    Here's a comment for testing, like.
+    Bug
     ...
     --------
     Foo Bar ... ago
-    tags changed:
-    added: tag4
-    removed: tag3
+    tags: added: tag4
+          removed: tag3
     --------
+
+Changes to a BugTask's attributes will show up with the task's target
+name next to them to differentiate one from another.
+
+We'll add a milestone to Redfish to demonstrate this.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/redfish/trunk/+addmilestone')
+    >>> admin_browser.getControl('Name').value = 'foo'
+    >>> admin_browser.getControl('Register milestone').click()
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+editstatus')
+    >>> admin_browser.getControl('Status').value = ['Confirmed']
+    >>> admin_browser.getControl('Importance').value = ['High']
+    >>> admin_browser.getControl(
+    ...     'Milestone').displayValue = ['Redfish: foo']
+
+    >>> admin_browser.getControl(
+    ...     name='redfish.assignee.option').value = [
+    ...         'redfish.assignee.assign_to_me']
+    >>> admin_browser.getControl("Save Changes").click()
+
+    >>> print_comments(admin_browser.contents)
+    Bug
+    ...
+    --------
+    Foo Bar ... ago
+    redfish assignee: nobody &#8594; name16
+    redfish importance: Undecided &#8594; High
+    redfish milestone: none &#8594; foo
+    redfish status: New &#8594; Confirmed
+    --------
+
+If a change is made to a bug task which is targeted to a distro source
+package, the name of the package and the distro will be included in the
+activity item.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/'
+    ...     '1/+editstatus')
+    >>> admin_browser.getControl('Status').value = ['Confirmed']
+    >>> admin_browser.getControl("Save Changes").click()
+    >>> print_comments(admin_browser.contents)
+    Sample Person
+    ...
+    --------
+    Foo Bar ... ago
+    mozilla-firefox (Ubuntu) status: New &#8594; Confirmed
+    --------
+

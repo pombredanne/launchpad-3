@@ -11,12 +11,12 @@ team.
     Ubuntu Linux
     Ubuntu Test
     Tomcat
+    &raquo; Show related projects
 
 The +related-software page displays a table with links to open bugs,
 unimplemented specs and open questions.
 
-    >>> anon_browser.getLink(
-    ...     'show all projects Ubuntu Team is involved with').click()
+    >>> anon_browser.getLink('Show related projects').click()
     >>> print anon_browser.title
     Software related to Ubuntu Team
 
