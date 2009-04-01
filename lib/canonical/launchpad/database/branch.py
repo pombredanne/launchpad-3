@@ -655,6 +655,13 @@ class Branch(SQLBase):
             recipients.add(subscription.person, subscription, rationale)
         return recipients
 
+    @property
+    def pending_writes(self):
+        return (
+            (self.branch_type in (BranchType.HOSTED, BranchType.IMPORTED)
+             and self.next_mirror_time is not None)
+            or (self.last_mirrored_id != self.last_scanned_id))
+
     def getScannerData(self):
         """See `IBranch`."""
         cur = cursor()

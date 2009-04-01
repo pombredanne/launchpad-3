@@ -1224,5 +1224,48 @@ class TestBranchNamespace(TestCaseWithFactory):
         self.assertNamespaceEqual(namespace, branch.namespace)
 
 
+class TestPendingWrites(TestCaseWithFactory):
+    """Are there changes to this branch not reflected in the database?"""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_new_branch_no_writes(self):
+        # New branches have no pending writes.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(False, branch.pending_writes)
+
+    def test_requestMirror_for_hosted(self):
+        # If a hosted branch has a requested mirror, then someone has just
+        # pushed something up. Therefore, pending writes.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch.requestMirror()
+        self.assertEqual(True, branch.pending_writes)
+
+    def test_requestMirror_for_imported(self):
+        # If an imported branch has a requested mirror, then we've just
+        # imported new changes. Therefore, pending writes.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.IMPORTED)
+        branch.requestMirror()
+        self.assertEqual(True, branch.pending_writes)
+
+    def test_requestMirror_for_mirrored(self):
+        # Mirrored branches *always* have a requested mirror. The fact that a
+        # mirror is requested has no bearing on whether there are pending
+        # writes. Thus, pending_writes is False.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
+        branch.requestMirror()
+        self.assertEqual(False, branch.pending_writes)
+
+    def test_pulled_but_not_scanned(self):
+        # If a branch has been pulled (mirrored) but not scanned, then we have
+        # yet to load the revisions into the database. This means there are
+        # pending writes.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        rev_id = self.factory.getUniqueString('rev-id')
+        branch.mirrorComplete(rev_id)
+        self.assertEqual(True, branch.pending_writes)
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
