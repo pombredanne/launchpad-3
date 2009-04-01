@@ -117,6 +117,11 @@
   </class>
 
   <adapter
+    for="canonical.launchpad.interfaces.person.IPerson"
+    provides=".interfaces.questionsperson.IQuestionsPerson"
+    factory=".model.questionsperson.QuestionsPerson"
+    />
+  <adapter
     for=".interfaces.question.IQuestion"
     provides=".interfaces.questiontarget.IQuestionTarget"
     factory=".adapters.question_to_questiontarget"
