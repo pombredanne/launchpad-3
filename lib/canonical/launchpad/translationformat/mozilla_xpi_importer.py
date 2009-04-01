@@ -1,4 +1,4 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -6,7 +6,6 @@ __all__ = [
     'MozillaXpiImporter',
     ]
 
-import re
 from cStringIO import StringIO
 import textwrap
 

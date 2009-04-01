@@ -170,7 +170,7 @@ class POBasicTestCase(unittest.TestCase):
         self.assertRaises(
             TranslationFormatSyntaxError, self.parser.parse, content)
 
-    def testNegativePluralCase(self):
+    def testUnsupportedPluralCase(self):
         # If a msgid's plural case number isn't lower than the maximum
         # number of plural forms Launchpad supports, that's a syntax
         # error.

@@ -14,7 +14,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import ITranslationHeaderData
 from canonical.launchpad.interfaces.translationimporter import (
-    TranslationFormatSyntaxError)
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 
 
 class XpiHeader:
