@@ -1002,7 +1002,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
             self.context)
         enabled = subscriptions.count() > 0
 
-        return Link(target, text, summary, enabled=enabled)
+        return Link(target, text, summary, enabled=enabled, icon='info')
 
 
 class IPersonEditMenu(Interface):
