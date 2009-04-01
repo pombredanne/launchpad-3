@@ -813,9 +813,13 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         # Sort all the lists to ensure that changes are written out in
         # alphabetical order.
-        for date, activity_list in activity_by_date.items():
-            for target in activity_list:
-                activity_list[target].sort(key=attrgetter('attribute'))
+        for date, activity_by_target in activity_by_date.items():
+            activity_by_date[date] = [{
+                'target': target,
+                'activity': sorted(
+                    activity_list, key=attrgetter('attribute')),
+                }
+                for target, activity_list in activity_by_target.items()]
 
         return activity_by_date
 

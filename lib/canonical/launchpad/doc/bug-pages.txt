@@ -820,7 +820,8 @@ BugActivityItems grouped by the date on which they occurred.
 
     >>> print pretty(view.activity_by_date)
     {datetime.datetime(2009, 3, 26...):
-     {None: [<...BugActivityItem...>]}}
+    [{'activity': [<...BugActivityItem...>],
+    'target': None}]}
 
 The activity_and_comments property of BugTaskView is a list of comments
 and activity on a bug, ordered by the date that they occurred. Each item
@@ -844,10 +845,12 @@ which they occurred.
     >>> for activity_or_comment in activity_and_comments:
     ...     if 'activity' in activity_or_comment:
     ...         activity_dict = activity_or_comment['activity']
-    ...         for target_name, activity in activity_dict.items():
+    ...         for activity_for_target in activity_dict:
+    ...             target_name = activity_for_target['target']
+    ...             activity_items = activity_for_target['activity']
     ...             if target_name is not None:
     ...                 print "Changed in %s:" % target_name
-    ...             for activity_item in activity:
+    ...             for activity_item in activity_items:
     ...                 print "%s: %s => %s" % (
     ...                     activity_item.change_summary,
     ...                     activity_item.oldvalue,
