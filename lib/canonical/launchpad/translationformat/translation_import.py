@@ -1,4 +1,4 @@
-# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces import (
     NotExportedFromLaunchpad, OutdatedTranslationError,
     PersonCreationRationale, RosettaImportStatus, TranslationConflict,
     TranslationConstants, TranslationFileFormat)
+from canonical.launchpad.interfaces.emailaddress import InvalidEmailAddress
 from canonical.launchpad.translationformat.kde_po_importer import (
     KdePOImporter)
 from canonical.launchpad.translationformat.gettext_po_importer import (
@@ -410,7 +411,6 @@ class FileImporter(object):
                 self.pofile, self.last_translator, message.translations,
                 self.translation_import_queue_entry.is_published,
                 self.lock_timestamp, force_edition_rights=self.is_editor)
-
         except TranslationConflict:
             self._addConflictError(message, potmsgset)
             if self.logger is not None:
@@ -421,14 +421,21 @@ class FileImporter(object):
             # We got an error, so we submit the translation again but
             # this time asking to store it as a translation with
             # errors.
-            translation_message = potmsgset.updateTranslation(
-                self.pofile, self.last_translator, message.translations,
-                self.translation_import_queue_entry.is_published,
-                self.lock_timestamp, ignore_errors=True,
-                force_edition_rights=self.is_editor)
 
             # Add the pomsgset to the list of pomsgsets with errors.
             self._addUpdateError(message, potmsgset, unicode(e))
+
+            try:
+                translation_message = potmsgset.updateTranslation(
+                    self.pofile, self.last_translator, message.translations,
+                    self.translation_import_queue_entry.is_published,
+                    self.lock_timestamp, ignore_errors=True,
+                    force_edition_rights=self.is_editor)
+            except TranslationConflict:
+                # A conflict on top of a validation error?  Give up.
+                # This message is cursed.
+                pass
+
 
         just_replaced_msgid = (
             self.importer.uses_source_string_msgids and
@@ -691,13 +698,16 @@ class POFileImporter(FileImporter):
         person = personset.getByEmail(email)
 
         if person is None:
-            # We create a new user without a password.
+            # We create a new person, without a password.
             comment = 'when importing the %s translation of %s' % (
                 self.pofile.language.displayname, self.potemplate.displayname)
 
-            person, dummy = personset.createPersonAndEmail(
-                email, PersonCreationRationale.POFILEIMPORT,
-                displayname=name, comment=comment)
+            try:
+                person, dummy = personset.createPersonAndEmail(
+                    email, PersonCreationRationale.POFILEIMPORT,
+                    displayname=name, comment=comment)
+            except InvalidEmailAddress:
+                return None
 
         return person
 

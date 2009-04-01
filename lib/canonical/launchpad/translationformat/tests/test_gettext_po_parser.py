@@ -146,6 +146,44 @@ class POBasicTestCase(unittest.TestCase):
             "incorrect plural form.")
         assert 'fuzzy' not in messages[0].flags, "incorrect fuzziness"
 
+    def testNonnumericPluralCase(self):
+        # If a msgid's plural case number is not a number, that's a
+        # syntax error.
+        content = '''
+            %s
+
+            msgid "%%d bottle of beer on the wall"
+            msgid_plural "%%d bottles of beer on the wall"
+            msgstr[zero] = "%%d flessen"''' % DEFAULT_HEADER
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse, content)
+
+    def testNegativePluralCase(self):
+        # If a msgid's plural case number is negative, that's a syntax
+        # error.
+        content = '''
+            %s
+
+            msgid "%%d t"
+            msgid_plural "%%d ts"
+            msgstr[-1] "%%d bs"''' % DEFAULT_HEADER
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse, content)
+
+    def testNegativePluralCase(self):
+        # If a msgid's plural case number isn't lower than the maximum
+        # number of plural forms Launchpad supports, that's a syntax
+        # error.
+        content = '''
+            %s
+
+            msgid "%%d t"
+            msgid_plural "%%d ts"
+            msgstr[%d] "%%d bs"''' % (
+                DEFAULT_HEADER, TranslationConstants.MAX_PLURAL_FORMS)
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse, content)
+
     def testObsolete(self):
         translation_file = self.parser.parse(
             '%s#, fuzzy\n#~ msgid "foo"\n#~ msgstr "bar"\n' % DEFAULT_HEADER)

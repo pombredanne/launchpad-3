@@ -152,7 +152,7 @@ class MozillaZipImportParser(MozillaZipTraversal):
             self.messages.append(message)
 
 
-class MozillaDtdConsumer (xmldtd.WFCDTD):
+class MozillaDtdConsumer(xmldtd.WFCDTD):
     """Mozilla DTD translatable message parser.
 
     msgids are stored as entities. This class extracts it along
@@ -208,6 +208,18 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         self.last_comment = None
 
 
+class DtdErrorHandler(utils.ErrorCounter):
+    filename = None
+
+    def error(self, msg):
+        raise TranslationFormatSyntaxError(
+            filename=self.filename, message=msg)
+
+    def fatal(self, msg):
+        raise TranslationFormatInvalidInputError(
+            filename=self.filename, message=msg)
+
+
 class DtdFile:
     """Class for reading translatable messages from a .dtd file.
 
@@ -226,8 +238,11 @@ class DtdFile:
             raise TranslationFormatInvalidInputError, (
                 'Content is not valid UTF-8 text')
 
+        error_handler = DtdErrorHandler()
+        error_handler.filename = filename
+
         parser = dtdparser.DTDParser()
-        parser.set_error_handler(utils.ErrorCounter())
+        parser.set_error_handler(error_handler)
         dtd = MozillaDtdConsumer(parser, filename, chrome_path, self.messages)
         parser.set_dtd_consumer(dtd)
         parser.parse_string(content)
@@ -298,7 +313,12 @@ class PropertyFile:
             # though, it will be hard to beat C-based de/encoder.
             # This call unescapes everything so we don't need to care about
             # quotes escaping.
-            line = line.encode('unicode_escape').decode('unicode_escape')
+            try:
+                line = line.encode('unicode_escape').decode('unicode_escape')
+            except UnicodeDecodeError, exception:
+                raise TranslationFormatInvalidInputError(
+                    filename=self.filename, line_number=line_num,
+                    message=str(exception))
 
             line_num += 1
             if not is_multi_line_comment:

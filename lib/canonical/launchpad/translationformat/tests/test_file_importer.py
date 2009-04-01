@@ -396,6 +396,32 @@ class FileImporterTestCase(unittest.TestCase):
             "POFileImporter.importFile did not create an "
             "ITranslationMessage object with format errors in the database.")
 
+    def test_InvalidTranslatorEmail(self):
+        # A Last-Translator with invalid email address does not upset
+        # the importer.  It just picks the uploader as the last
+        # translator.
+        pot_content = TEST_TEMPLATE_PUBLISHED
+        po_content = """
+            msgid ""
+            msgstr ""
+            "PO-Revision-Date: 2005-05-03 20:41+0100\\n"
+            "Last-Translator: Hector Atlas <??@??.??>\\n"
+            "Content-Type: text/plain; charset=UTF-8\\n"
+            "X-Launchpad-Export-Date: 2008-11-05 13:31+0000\\n"
+            
+            msgid "%s"
+            msgstr "Dankuwel"
+            """ % TEST_MSGID
+        (pot_importer, po_importer) = self._createFileImporters(
+            pot_content, po_content, False)
+        pot_importer.importFile()
+
+        po_importer.importFile()
+        self.assertEqual(
+            po_importer.last_translator,
+            po_importer.translation_import_queue_entry.importer)
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(FileImporterTestCase))
