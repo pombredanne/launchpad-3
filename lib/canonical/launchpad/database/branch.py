@@ -657,6 +657,7 @@ class Branch(SQLBase):
 
     @property
     def pending_writes(self):
+        """See `IBranch`."""
         return (
             (self.branch_type in (BranchType.HOSTED, BranchType.IMPORTED)
              and self.next_mirror_time is not None)
