@@ -668,6 +668,13 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         or any other database object remaining valid across this call!
         """
 
+    def getSuite(pocket):
+        """Return the suite for this distro series and the given pocket.
+
+        :param pocket: A `DBItem` of `PackagePublishingPocket`.
+        :return: A string.
+        """
+
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic):
     """A series of an operating system distribution."""
@@ -709,6 +716,15 @@ class IDistroSeriesSet(Interface):
         """Find a DistroSeries by version.
 
         Returns a list of matching distributions, which may be empty.
+        """
+
+    def fromSuite(distribution, suite):
+        """Return the distroseries and pocket for 'suite' of 'distribution'.
+
+        :param distribution: An `IDistribution`.
+        :param suite: A string that forms the name of a suite.
+        :return: (`IDistroSeries`, `DBItem`) where the item is from
+            `PackagePublishingPocket`.
         """
 
     def search(distribution=None, released=None, orderBy=None):

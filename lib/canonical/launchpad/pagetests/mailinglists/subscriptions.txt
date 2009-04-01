@@ -1,4 +1,5 @@
-= Mailing list subscription management =
+Mailing list subscription management
+====================================
 
 Teams can have mailing lists associated with them, and a member of a
 team with a usable mailing list can subscribe to that list. A person
@@ -11,7 +12,8 @@ same time as they sign up for a new team.  Their list membership is
 approved at the same time that they are approved for the team.
 
 
-== Setup ==
+Setup
+-----
 
 Carlos is a member of four teams: admins, rosetta-admins, testing-spanish-team
 and ubuntu-translators.  He has two email addresses, one of which is his
@@ -54,7 +56,8 @@ actually be approved.
     >>> browser.getControl('Apply for Mailing List').click()
 
 
-== Subscribing ==
+Subscribing
+-----------
 
 Any team member can join the mailing list.
 
@@ -71,7 +74,8 @@ Any team member can join the mailing list.
     ['Preferred address', "Don't subscribe", 'no-team-memberships@test.com']
 
 
-== Subscription management ==
+Subscription management
+-----------------------
 
 To subscribe to a mailing list, Carlos uses his subscription management
 screen, which shows a subscription control for the mailing lists of every team
@@ -175,7 +179,8 @@ menu item to "Don't subscribe".
     ["Don't subscribe"]
 
 
-== Subscription during team signup ==
+Subscription during team sign up
+--------------------------------
 
 Jdub is only a member of the ubuntu team.  He can request to be placed
 on another team's mailing list at the same time that he requests
@@ -319,7 +324,8 @@ Overview.)
     LookupError: name 'mailinglist_subscribe'
 
 
-== Team page quick-links ==
+Team page quick-links
+---------------------
 
 Links to subscribe and unsubscribe from the mailing lists are also
 available from the team's Overview page.
@@ -375,9 +381,10 @@ does not show either link.
 
     >>> browser.open('http://launchpad.dev/~ubuntu-translators')
     >>> print extract_text(
-    ...     find_portlet(browser.contents, 'Your involvement'))
-    Your involvement
-    You are a member of the team that owns this team.
+    ...     find_portlet(browser.contents, 'Mailing list'))
+    Mailing list
+    This team does not have a mailing list.
+    Configure mailing list
 
     >>> browser.getLink('Subscribe')
     Traceback (most recent call last):
@@ -390,7 +397,8 @@ does not show either link.
     LinkNotFoundError
 
 
-== Team page subscribers link ==
+Team page subscribers link
+--------------------------
 
 Team administrators can see a link to a page listing the team's
 mailing list subscribers, if there is an active mailing list.  The
@@ -419,11 +427,11 @@ links are not present.
     False
 
 
-== Mailing list auto-subscription settings ==
+Mailing list auto-subscription settings
+---------------------------------------
 
 Launchpad may automatically subscribe a person to a team's mailing
-list.  The setting that controls this behaviour is on the person's
-Email preferences page.
+list based on a setting in the person's Email preferences page.
 
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~carlos')
@@ -483,6 +491,18 @@ Updating the value twice has no adverse affect.
     ( ) Never subscribe to mailing lists
     (*) Ask me when I join a team
     ( ) Always subscribe me to mailing lists
+
+Regardless of this setting, users will always receive a notification when a
+team they are a member of creates a new mailing list.  This notification
+offers them to join the new mailing list.  This page informs them of this
+behavior.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'notification-info'))
+    When a team you are a member of creates a new mailing list, you will
+    receive an email notification offering you the opportunity to join the new
+    mailing list. Launchpad can also automatically subscribe you to a team's
+    mailing list whenever you join a team.
 
 These settings also effect what a user sees when they go to join a new
 team.  The 'Team Join' page has a checkbox that allows a user to sign

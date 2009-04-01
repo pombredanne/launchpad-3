@@ -8,7 +8,6 @@ import unittest
 
 from twisted.internet import defer
 from twisted.internet.error import ConnectionClosed
-from twisted.internet.threads import deferToThread
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -478,7 +477,7 @@ class TestBuilddManagerScan(TrialTestCase):
         manager.logger = BufferLogger()
         manager.logger.name = 'slave-scanner'
 
-        d = deferToThread(manager.scan)
+        d = defer.maybeDeferred(manager.scan)
         def check_scan(recording_slaves):
             [slave] = recording_slaves
             self.assertEqual('<bob:http://localhost:8221/>', repr(slave))

@@ -124,6 +124,8 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.archive import traverse_named_ppa
+from canonical.launchpad.browser.archivesubscription import (
+    traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
@@ -391,6 +393,12 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         if irc_nick is None or irc_nick.person != self.context:
             return None
         return irc_nick
+
+    @stepthrough('+archivesubscriptions')
+    def traverse_archive_subscription(self, archive_id):
+        """Traverse to the archive subscription for this person."""
+        return traverse_archive_subscription_for_subscriber(
+            self.context, archive_id)
 
 
 class TeamNavigation(PersonNavigation):
@@ -988,12 +996,21 @@ class IPersonRelatedSoftwareMenu(Interface):
     """A marker interface for the 'Related Software' navigation menu."""
 
 
-class PersonOverviewNavigationMenu(NavigationMenu):
+class PPANavigationMenuMixIn:
+    """PPA-related navigation menu links for Person and Team pages."""
+
+    def ppas(self):
+        target = '#ppas'
+        text = 'Personal Package Archives'
+        return Link(target, text)
+
+
+class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
     """The top-level menu of actions a Person may take."""
 
     usedfor = IPerson
     facet = 'overview'
-    links = ('profile', 'related_software', 'karma')
+    links = ('profile', 'related_software', 'karma', 'ppas')
 
     def __init__(self, context):
         context = IPerson(context)
@@ -1134,13 +1151,18 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def map(self):
         target = '+map'
-        text = 'Show map and time zones'
+        text = 'View map and time zones'
         return Link(target, text, icon='meeting')
 
     def add_my_teams(self):
         target = '+add-my-teams'
         text = 'Add one of my teams'
-        return Link(target, text, icon='add')
+        enabled = True
+        team = self.context
+        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+            # This is a restricted team; users can't join.
+            enabled = False
+        return Link(target, text, icon='add', enabled=enabled)
 
     def memberships(self):
         target = '+participation'
@@ -1150,10 +1172,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def mentorships(self):
         target = '+mentoring'
         text = 'Mentoring available'
-        enabled = bool(self.context.team_mentorships)
         summary = 'Offers of mentorship for prospective team members'
-        return Link(target, text, summary=summary, enabled=enabled,
-                    icon='info')
+        return Link(target, text, summary=summary, icon='info')
 
     @enabled_with_permission('launchpad.View')
     def mugshots(self):
@@ -1208,6 +1228,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         team = self.context
         enabled = True
         if userIsActiveTeamMember(team):
+            if team.teamowner == self.user:
+                # The owner cannot leave his team
+                enabled = False
             target = '+leave'
             text = 'Leave the Team' # &#8230;
             icon = 'remove'
@@ -1221,12 +1244,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon, enabled=enabled)
 
 
-class TeamOverviewNavigationMenu(NavigationMenu):
+class TeamOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
     """A top-level menu for navigation within a Team."""
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['profile', 'polls', 'members']
+    links = ['profile', 'polls', 'members', 'ppas']
 
     def profile(self):
         target = ''
@@ -2412,6 +2435,13 @@ class PersonView(LaunchpadView, FeedsMixin):
             TeamMembershipStatus.PROPOSED,
             orderBy='-TeamMembership.date_proposed')
         return members[:5]
+
+    @cachedproperty
+    def has_recent_approved_or_proposed_members(self):
+        """Does the team have recently approved or proposed members?"""
+        approved = self.recently_approved_members.count() > 0
+        proposed = self.recently_proposed_members.count() > 0
+        return approved or proposed
 
     @cachedproperty
     def openpolls(self):
@@ -3996,7 +4026,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         """Create a field for each mailing list auto-subscription option."""
         return FormFields(
             Choice(__name__='mailing_list_auto_subscribe_policy',
-                   title=_('When should launchpad automatically subscribe '
+                   title=_('When should Launchpad automatically subscribe '
                            'you to a team&#x2019;s mailing list?'),
                    source=MailingListAutoSubscribePolicy))
 
