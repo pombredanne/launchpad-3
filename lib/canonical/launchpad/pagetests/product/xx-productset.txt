@@ -4,43 +4,51 @@ Under "/projects" there are several pages for various administration tasks.
 
 The pages are "+review-licenses", "+new", and "+all".
 
-A logged in, unprivileged person cannot see the "+review-licenses" page.
+== Review project licenses ==
+
+The page +review-licenses is accessible from the /projects page via
+the "Review project licenses" link, which is conditionally available
+based on permissions.
+
+A logged in, unprivileged person cannot see the "Review project
+licenses" link.
+
+    >>> user_browser.open('http://launchpad.dev/projects')
+    >>> user_browser.getLink("Review licenses")
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError
+
+The unprivileged person cannot navigate directly to the link.
 
     >>> user_browser.open('http://launchpad.dev/projects/+review-licenses')
     Traceback (most recent call last):
       ...
     Unauthorized:...
 
-However, the unprivileged user can see "+all" and "+new".
+A member of the Launchpad commercial team may successfully access the
++review-licenses via the link.
 
-    >>> user_browser.open('http://launchpad.dev/projects/+all')
-    >>> user_browser.title
-    'Upstream projects registered in Launchpad'
-
-    >>> user_browser.open('http://launchpad.dev/projects/+new')
-    >>> user_browser.title
-    'Register a project in Launchpad'
-
-A member of Launchpad Developers may successfully access the +review-licenses
-page.
-
-    >>> login('foo.bar@canonical.com')
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
-    >>> celebs = getUtility(ILaunchpadCelebrities)
-    >>> celebs.launchpad_developers.addMember(nopriv, nopriv)
-    >>> logout()
     >>> commercial_browser = setupBrowser(
-    ...     auth='Basic no-priv@canonical.com:test')
+    ...     auth='Basic commercial-member@canonical.com:test')
+    >>> commercial_browser.open(
+    ...     'http://launchpad.dev/projects/')
+    >>> commercial_browser.getLink("Review licenses").click()
+    >>> commercial_browser.title
+    'Review licenses of projects'
+
+That same user may successfully navigate to the +review-licenses page
+directly.
+
     >>> commercial_browser.open(
     ...     'http://launchpad.dev/projects/+review-licenses')
     >>> commercial_browser.title
     'Review licenses of projects'
 
-The search parameters that filter on a boolean value can also
+
+== Searching from +review_licenses ==
+
+The search parameters that filter on a boolean value can
 be left unspecified to get results with either value.
 
     >>> for name in ('active', 'license_reviewed', 'has_zero_licenses',
@@ -186,8 +194,31 @@ will be displayed as proprietary.
     &nbsp;Redfish (Unspecified)
           This project&rsquo;s license has not been specified.
 
-Revert name12's team membership.
 
-    >>> login('foo.bar@canonical.com')
-    >>> nopriv.leave(celebs.launchpad_developers)
-    >>> logout()
+== +all ==
+
+The unprivileged user can see "+all".
+
+    >>> user_browser.open('http://launchpad.dev/projects/+all')
+    >>> user_browser.title
+    'Upstream projects registered in Launchpad'
+
+The commercial user can also view "+all".
+
+    >>> commercial_browser.open('http://launchpad.dev/projects/+all')
+    >>> commercial_browser.title
+    'Upstream projects registered in Launchpad'
+
+== +new ==
+
+The unprivileged user can see "+new".
+
+    >>> user_browser.open('http://launchpad.dev/projects/+new')
+    >>> user_browser.title
+    'Register a project in Launchpad'
+
+The commercial user can also view "+new".
+
+    >>> commercial_browser.open('http://launchpad.dev/projects/+new')
+    >>> commercial_browser.title
+    'Register a project in Launchpad'

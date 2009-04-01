@@ -555,7 +555,7 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'all', 'register', 'register_team']
+             'all', 'register', 'register_team', 'review_licenses']
 
     def register(self):
         text = 'Register a project'
@@ -583,6 +583,10 @@ class ProductSetContextMenu(ContextMenu):
 
     def meetings(self):
         return Link('/sprints/', 'View meetings')
+
+    @enabled_with_permission('launchpad.Commercial')
+    def review_licenses(self):
+        return Link('+review-licenses', 'Review licenses')
 
 
 class SortSeriesMixin:
