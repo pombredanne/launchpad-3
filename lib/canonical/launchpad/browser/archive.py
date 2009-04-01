@@ -845,8 +845,9 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             if self.can_copy_to_context_ppa and self.context == ppa:
                 required = False
                 continue
+            token = '%s/%s' % (ppa.owner.name, ppa.name)
             terms.append(
-                SimpleTerm(ppa, str(ppa.owner.name), ppa.displayname))
+                SimpleTerm(ppa, token, ppa.displayname))
 
         return form.Fields(
             Choice(__name__='destination_archive',
@@ -1056,8 +1057,10 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                 continue
             dependency_label = '<a href="%s">%s</a>' % (
                 canonical_url(dependency), archive_dependency.title)
+            dependency_token = '%s/%s' % (
+                dependency.owner.name, dependency.name)
             term = SimpleTerm(
-                dependency, dependency.owner.name, dependency_label)
+                dependency, dependency_token, dependency_label)
             terms.append(term)
         return form.Fields(
             List(__name__='selected_dependencies',
