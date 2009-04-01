@@ -1103,10 +1103,11 @@ We can also get the collection of users affected by a bug.
 
     >>> for user in test_bug.users_affected:
     ...     print user.name
+    person-name9
     person-name14
     person-name17
 
     >>> unaffecting_bug = factory.makeBug()
     >>> print unaffecting_bug.users_affected
-    []
+    [<Person at ...>]
 
