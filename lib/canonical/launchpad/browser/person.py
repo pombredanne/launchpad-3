@@ -110,7 +110,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
-from canonical.lazr.interface import copy_field, use_template
+from lazr.restful.interface import copy_field, use_template
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
 

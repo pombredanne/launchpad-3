@@ -47,7 +47,7 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
-from canonical.lazr.interface import copy_field
+from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
     collection_default_content, export_as_webservice_collection,

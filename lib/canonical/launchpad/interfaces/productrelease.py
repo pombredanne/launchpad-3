@@ -31,7 +31,7 @@ from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.interfaces.person import IPerson
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
-from canonical.lazr.interface import copy_field
+from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_factory_operation, export_operation_as, export_write_operation,

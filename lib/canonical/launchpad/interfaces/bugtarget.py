@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces.bugtask import (
     BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
 from canonical.launchpad.interfaces.person import IPerson
 from lazr.restful.fields import Reference
-from canonical.lazr.interface import copy_field
+from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
     export_as_webservice_entry, export_read_operation, export_write_operation,

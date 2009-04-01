@@ -18,7 +18,7 @@ from zope.schema import Choice, Datetime, Int, Text
 from zope.interface import Attribute, Interface
 from lazr.enum import DBEnumeratedType, DBItem
 
-from canonical.lazr.interface import copy_field
+from lazr.restful.interface import copy_field
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
    call_with, export_as_webservice_entry, export_write_operation, exported,

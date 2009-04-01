@@ -46,7 +46,7 @@ from lazr.restful.declarations import (
     exported, mutator_for, operation_parameters, rename_parameters_as,
     webservice_error)
 from lazr.restful.fields import CollectionField, Reference
-from canonical.lazr.interface import copy_field
+from lazr.restful.interface import copy_field
 
 
 class CreateBugParams:

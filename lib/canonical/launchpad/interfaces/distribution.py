@@ -18,7 +18,7 @@ from zope.schema import Bool, Choice, Datetime, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from lazr.restful.fields import CollectionField, Reference
-from canonical.lazr.interface import copy_field
+from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
    collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_operation_as,

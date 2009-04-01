@@ -57,7 +57,7 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from lazr.restful.fields import CollectionField, Reference
-from canonical.lazr.interface import copy_field
+from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import ITopLevelEntryLink
 from lazr.restful.declarations import (
     export_as_webservice_entry, export_read_operation, exported,

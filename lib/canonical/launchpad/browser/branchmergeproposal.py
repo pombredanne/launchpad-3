@@ -65,7 +65,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 from lazr.delegates import delegates
-from canonical.lazr.interface import copy_field
+from lazr.restful.interface import copy_field
 
 
 class BranchMergeProposalPrimaryContext:
