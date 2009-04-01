@@ -421,7 +421,9 @@ class CodeHandler:
 
     def _getSourceNoBundle(self, md, target, submitter):
         """Get a source branch for a merge directive with no bundle."""
-        mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
+        mp_source = None
+        if md.source_branch is not None:
+            mp_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
         if mp_source is None:
             mp_source = self._getNewBranch(
                 BranchType.REMOTE, md.source_branch, target, submitter)
