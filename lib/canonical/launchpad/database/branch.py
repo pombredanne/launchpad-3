@@ -657,7 +657,11 @@ class Branch(SQLBase):
 
     @property
     def pending_writes(self):
-        """See `IBranch`."""
+        """See `IBranch`.
+
+        A branch has pending writes if it has just been pushed to or if it has
+        been mirrored and not yet scanned.
+        """
         return (
             (self.branch_type in (BranchType.HOSTED, BranchType.IMPORTED)
              and self.next_mirror_time is not None)
