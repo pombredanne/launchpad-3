@@ -231,8 +231,6 @@ class EmailManagementWithSSODatabasePolicyTests(EmailManagementTests):
 
     def test_getUnvalidatedEmails(self):
         account = self.factory.makeAccount("Test Account")
-        # Login as the new account, since 
-        login(account.preferredemail.email)
         token = getUtility(IAuthTokenSet).new(
             account, account.preferredemail.email,
             u"unvalidated-email@example.org", LoginTokenType.VALIDATEEMAIL,

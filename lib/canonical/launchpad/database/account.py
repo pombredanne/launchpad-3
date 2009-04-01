@@ -11,7 +11,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements
 
-from storm.expr import Desc, Join, Lower, Or
+from storm.expr import Desc, Or
 from storm.references import Reference
 from storm.store import Store
 
@@ -332,19 +332,16 @@ class AccountSet:
 
     def getByEmail(self, email):
         """See `IAccountSet`."""
-        # Need a local import because of circular dependencies.
-        from canonical.launchpad.database.emailaddress import EmailAddress
-        conditions = (Lower(EmailAddress.email) == email.lower().strip())
-        origin = [
-            Account, Join(EmailAddress, EmailAddress.account == Account.id)]
+        conditions = [EmailAddress.account == Account.id,
+                      EmailAddress.email.lower() == email.lower().strip()]
         store = IStore(Account)
-        account = store.using(*origin).find(Account, conditions).one()
-        if account is None and not IMasterStore.providedBy(IStore(Account)):
+        account = store.find(Account, *conditions).one()
+        if account is None and not IMasterStore.providedBy(store):
             # The account was not found in a slave store but it may exist in
             # the master one if it was just created, so we try to fetch it
             # again, this time from the master.
             store = IMasterStore(Account)
-            account = store.using(*origin).find(Account, conditions).one()
+            account = store.find(Account, *conditions).one()
         return account
 
     def getByOpenIDIdentifier(self, openid_identifier):
@@ -355,7 +352,7 @@ class AccountSet:
         conditions = Or(Account.openid_identifier == openid_identifier,
                         Account.new_openid_identifier == openid_identifier)
         account = store.find(Account, conditions).one()
-        if account is None and not IMasterStore.providedBy(IStore(Account)):
+        if account is None and not IMasterStore.providedBy(store):
             # The account was not found in a slave store but it may exist in
             # the master one if it was just created, so we try to fetch it
             # again, this time from the master.
