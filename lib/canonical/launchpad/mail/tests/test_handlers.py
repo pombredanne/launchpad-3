@@ -47,7 +47,9 @@ from canonical.launchpad.testing import (
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.webapp.interaction import get_current_principal
+from canonical.launchpad.webapp.interaction import (
+    get_current_principal, setupInteraction)
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.testing import (
     LaunchpadFunctionalLayer, LaunchpadZopelessLayer,
     ZopelessAppServerLayer)
@@ -723,6 +725,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         # Ensure the directories containing the mirror branch exist.
         transport = get_transport(db_branch.warehouse_url)
         lp_mirror = BzrDir.create_branch_convenience(db_branch.warehouse_url)
+        self.addCleanup(transport.delete_tree, '.')
         lp_mirror.pull(bzr_branch)
 
     def _getUsersLPServer(self, user):
@@ -751,17 +754,18 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
             containing the revisions in the source branch that aren't in the
             target branch.
         """
-        branch, tree = self.create_branch_and_tree(format=format)
-        tree.branch.set_public_branch(branch.bzr_identity)
-        tree.commit('rev1')
+        db_target_branch, target_tree = self.create_branch_and_tree(
+            format=format)
+        target_tree.branch.set_public_branch(db_target_branch.bzr_identity)
+        target_tree.commit('rev1')
         # Make sure that the created branch has been mirrored.
-        branch.startMirroring()
-        branch.mirrorComplete('rev1')
-        source = tree.bzrdir.sprout('source').open_workingtree()
-        source.commit('rev2')
+        db_target_branch.startMirroring()
+        db_target_branch.mirrorComplete('rev1')
+        source_tree = target_tree.bzrdir.sprout('source').open_workingtree()
+        source_tree.commit('rev2')
         message = self.factory.makeBundleMergeDirectiveEmail(
-            source.branch, branch)
-        return branch, source.branch, message
+            source_tree.branch, db_target_branch)
+        return db_target_branch, source_tree.branch, message
 
     def _openBazaarBranchAsClient(self, db_branch):
         """Open the Bazaar branch relating to db_branch as if a client was."""
@@ -775,6 +779,13 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         """Process the merge directive email."""
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
+        # Do the authentication dance as we do in the processing script.
+        authutil = getUtility(IPlacelessAuthUtility)
+        email_addr = message['from']
+        principal = authutil.getPrincipalByLogin(email_addr)
+        if principal is None:
+            raise AssertionError('No principal found for %s' % email_addr)
+        setupInteraction(principal, email_addr)
         return code_handler.processMergeProposal(message)
 
     def test_nonstackable_target(self):
@@ -786,7 +797,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         branch, source, message = self._createTargetSourceAndBundle(
             format="pack-0.92")
         bmp, comment = self._processMergeDirective(message)
-        self.assertEqual(BranchType.REMOTE, bmp.source_branch.branch_type)
+        self.assertEqual(BranchType.HOSTED, bmp.source_branch.branch_type)
         self.assertIs(None, bmp.source_branch.next_mirror_time)
 
     def test_stackable_unmirrored_target(self):
@@ -802,12 +813,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         branch.last_mirrored = None
         branch.last_mirrored_id = None
         bmp, comment = self._processMergeDirective(message)
-        self.assertEqual(BranchType.HOSTED, bmp.source_branch.branch_type)
-        self.assertIs(None, bmp.source_branch.next_mirror_time)
-        self.assertRaises(
-            bzr_errors.NotBranchError,
-            Branch.open,
-            bmp.source_branch.getPullURL())
+        self.assertEqual(BranchType.REMOTE, bmp.source_branch.branch_type)
 
     def test_stackable_target(self):
         # If the target branch is in a stackable format, then the source
@@ -838,37 +844,81 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
             bzr_errors.NotBranchError, Branch.open,
             bmp.source_branch.warehouse_url)
 
-    def test_existing_branch(self):
-        """A bundle can update an existing branch."""
-        self.useBzrBranches(real_server=True)
-        branch, tree = self.create_branch_and_tree('target')
-        tree.branch.set_public_branch(branch.bzr_identity)
-        tree.commit('rev1')
-        lp_source, lp_source_tree = self.create_branch_and_tree(
-            'lpsource', branch.product, hosted=True)
+    def _createPreexistingSourceAndMessage(self, target_format,
+                                           source_format):
+        """Create the source and target branches and the merge directive."""
+        db_target_branch, target_tree = self.create_branch_and_tree(
+            'target', format=target_format)
+        target_tree.branch.set_public_branch(db_target_branch.bzr_identity)
+        target_tree.commit('rev1')
+        # Make sure that the created branch has been mirrored.
+        db_target_branch.startMirroring()
+        db_target_branch.mirrorComplete('rev1')
+
+        db_source_branch, source_tree = self.create_branch_and_tree(
+            'lpsource', db_target_branch.product, hosted=True,
+            format=source_format)
         # The branch is not scheduled to be mirrorred.
-        self.assertIs(lp_source.next_mirror_time, None)
-        lp_source_tree.pull(tree.branch)
-        lp_source_tree.commit('rev2', rev_id='rev2')
-        self._mirror(lp_source, lp_source_tree.branch)
-        source = lp_source_tree.bzrdir.sprout('source').open_workingtree()
-        source.commit('rev3', rev_id='rev3')
-        source.branch.set_public_branch(lp_source.bzr_identity)
+        self.assertIs(db_source_branch.next_mirror_time, None)
+        source_tree.pull(target_tree.branch)
+        source_tree.commit('rev2', rev_id='rev2')
+        self._mirror(db_source_branch, source_tree.branch)
+        # bundle_tree is effectively behaving like a local copy of
+        # db_source_branch, and is used to create the merge directive.
+        bundle_tree = source_tree.bzrdir.sprout('source').open_workingtree()
+        bundle_tree.commit('rev3', rev_id='rev3')
+        bundle_tree.branch.set_public_branch(db_source_branch.bzr_identity)
         message = self.factory.makeBundleMergeDirectiveEmail(
-            source.branch, branch)
-        self.switchDbUser(config.processmail.dbuser)
-        code_handler = CodeHandler()
-        bmp, comment = code_handler.processMergeProposal(message)
+            bundle_tree.branch, db_target_branch,
+            sender=db_source_branch.owner)
+        return db_source_branch, message
+
+    def test_existing_branch(self):
+        # A bundle can update an existing branch if they are both stackable.
+        self.useBzrBranches(real_server=True)
+        lp_source, message = self._createPreexistingSourceAndMessage(
+            target_format="1.9", source_format="1.9")
+        bmp, comment = self._processMergeDirective(message)
         # The branch merge proposal should use the existing db branch.
         self.assertEqual(lp_source, bmp.source_branch)
-        # Now the branch is not scheduled to be mirrorred.
+        # Now the branch is now scheduled to be mirrorred.
         self.assertIsNot(None, lp_source.next_mirror_time)
         mirror = removeSecurityProxy(bmp.source_branch).getBzrBranch()
         # The mirrored copy of the branch has not been updated.
         self.assertEqual('rev2', mirror.last_revision())
-        hosted = Branch.open(bmp.source_branch.getPullURL())
+        hosted = self._openBazaarBranchAsClient(bmp.source_branch)
         # The hosted copy of the branch has been updated.
         self.assertEqual('rev3', hosted.last_revision())
+
+    def test_existing_branch_nonstackable_target(self):
+        # If the target branch is not stackable, then we don't pull any
+        # revisions.
+        self.useBzrBranches(real_server=True)
+        lp_source, message = self._createPreexistingSourceAndMessage(
+            target_format="pack-0.92", source_format="1.9")
+        bmp, comment = self._processMergeDirective(message)
+        # The branch merge proposal should use the existing db branch.
+        self.assertEqual(lp_source, bmp.source_branch)
+        # Now the branch is not scheduled to be mirrorred.
+        self.assertIs(None, lp_source.next_mirror_time)
+        hosted = self._openBazaarBranchAsClient(bmp.source_branch)
+        # The hosted copy has not been updated.
+        self.assertEqual('rev2', hosted.last_revision())
+
+    def test_existing_branch_nonstackable_source(self):
+        # If the source branch is not stackable, then we don't pull any
+        # revisions.
+        self.useBzrBranches(real_server=True)
+        lp_source, message = self._createPreexistingSourceAndMessage(
+            target_format="1.9", source_format="pack-0.92")
+        bmp, comment = self._processMergeDirective(message)
+        # The branch merge proposal should use the existing db branch.
+        self.assertEqual(lp_source, bmp.source_branch)
+        # Now the branch is not scheduled to be mirrorred.
+        self.assertIs(None, lp_source.next_mirror_time)
+        hosted = self._openBazaarBranchAsClient(bmp.source_branch)
+        # The hosted copy has not been updated.
+        self.assertEqual('rev2', hosted.last_revision())
 
 
 class TestVoteEmailCommand(TestCase):

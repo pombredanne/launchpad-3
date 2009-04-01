@@ -31,6 +31,8 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     ICreateMergeProposalJobSource, UserNotBranchReviewer)
 from canonical.launchpad.interfaces.branchnamespace import (
     lookup_branch_namespace, split_unique_name)
+from canonical.launchpad.interfaces.branchtarget import (
+    check_default_stacked_on)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
@@ -370,10 +372,9 @@ class CodeHandler:
         mp_target = getUtility(IBranchLookup).getByUrl(md.target_branch)
         if mp_target is None:
             raise NonLaunchpadTarget()
-        # If the target branch has not been mirrored, then don't try to stack
+        # If the target branch cannot be stacked upon, then don't try to stack
         # upon it or get revisions form it.
-        # XXX: Use check_default_stacked_on -- jml
-        if md.bundle is None or mp_target.last_mirrored_id is None:
+        if md.bundle is None or check_default_stacked_on(mp_target) is None:
             mp_source = self._getSourceNoBundle(
                 md, mp_target, submitter)
         else:
@@ -438,8 +439,8 @@ class CodeHandler:
                 BranchType.REMOTE, md.source_branch, target, submitter)
         return mp_source
 
-    def _isTargetStackable(self, target):
-        """Check to see if the target branch is stackable."""
+    def _isBranchStackable(self, target):
+        """Check to see if the branch is stackable."""
         bzr_target = removeSecurityProxy(target).getBzrBranch()
         try:
             bzr_target.get_stacked_on_url()
@@ -486,7 +487,7 @@ class CodeHandler:
         # source branch - one that has *no* Bazaar data.  Together these
         # prevent users from using Launchpad disk space at a rate that is
         # disproportionately greater than data uploaded.
-        if not self._isTargetStackable(target):
+        if not self._isBranchStackable(target):
             return mp_source
         assert mp_source.branch_type == BranchType.HOSTED
 
@@ -494,10 +495,25 @@ class CodeHandler:
         lp_server.setUp()
         try:
             source_url = urljoin(lp_server.get_url(), mp_source.unique_name)
+            target_url = urljoin(lp_server.get_url(), target.unique_name)
+            stacked_url = escape('/' + target.unique_name)
             try:
                 bzr_branch = Branch.open(source_url)
+                # Make sure that the branch is stacked on something.
+                try:
+                    bzr_branch.get_stacked_on_url()
+                except (UnstackableBranchFormat, UnstackableRepositoryFormat):
+                    # If the source branch is unstackable, don't pull in
+                    # revisions.
+                    return mp_source
+                except NotStacked:
+                    # Set the stacked branch to be the target.
+                    bzr_branch.set_stacked_on_url(stacked_url)
+                else:
+                    # If nothing is raised, then stackable (and stacked even).
+                    pass
+                    # We assume here that this is enough not to be DOSable.
             except NotBranchError:
-                target_url = urljoin(lp_server.get_url(), target.unique_name)
                 bzr_target = Branch.open(target_url)
                 transport = get_transport(
                     source_url,
@@ -505,7 +521,6 @@ class CodeHandler:
                 bzrdir = bzr_target.bzrdir.clone_on_transport(transport)
                 bzr_branch = bzrdir.open_branch()
                 # Stack the new branch on the target.
-                stacked_url = escape('/' + target.unique_name)
                 bzr_branch.set_stacked_on_url(stacked_url)
             # Don't attempt to use public-facing urls.
             md.target_branch = target_url
