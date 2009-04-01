@@ -50,7 +50,7 @@ the project groups.
 
 Project groups are available at their canonical URL on the API virtual host.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
 
     >>> mozilla = webservice.get('/mozilla').jsonBody()
     >>> pprint_entry(mozilla)

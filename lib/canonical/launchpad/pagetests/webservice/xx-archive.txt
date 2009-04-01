@@ -13,7 +13,7 @@ distribution archives.
 
 We publish a subset of their attributes.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'

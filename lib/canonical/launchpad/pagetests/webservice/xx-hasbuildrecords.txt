@@ -39,7 +39,7 @@ Celso Providelo PPA builds can be browsed via the API.
 
 An entry can be selected in the returned collection.
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(sorted(ppa_builds['entries'])[0])
     arch_tag: u'hppa'
     ...
