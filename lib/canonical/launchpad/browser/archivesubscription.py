@@ -18,11 +18,10 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import alsoProvides, implements
+from zope.interface import alsoProvides
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.browser.person import IPersonEditMenu
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.interfaces.archive import IArchiveSet
@@ -247,8 +246,6 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for displaying a persons archive subscriptions."""
-
-    implements(IPersonEditMenu)
 
     @cachedproperty
     def subscriptions_with_tokens(self):

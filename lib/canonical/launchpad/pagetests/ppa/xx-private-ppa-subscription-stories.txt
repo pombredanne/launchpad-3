@@ -193,8 +193,7 @@ subscriptions.
     >>> joe_browser = setupBrowser(auth="Basic joe@example.com:test")
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith")
-    >>> joe_browser.getLink('Change details').click()
-    >>> joe_browser.getLink('Private PPA subscriptions').click()
+    >>> joe_browser.getLink('View your private PPA subscriptions').click()
     >>> print_subscriptions_for_person(joe_browser.contents)
     Archive                             Subscription description Status
     Private PPA for Celso Providelo     Joe is my friend         Pending

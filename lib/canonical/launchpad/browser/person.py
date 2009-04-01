@@ -10,7 +10,6 @@ __all__ = [
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
     'EmailToPersonView',
-    'IPersonEditMenu',
     'PersonAccountAdministerView',
     'PersonAdministerView',
     'PersonAddView',
@@ -125,9 +124,13 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.archive import traverse_named_ppa
+from canonical.launchpad.browser.archivesubscription import (
+    traverse_archive_subscription_for_subscriber)
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
@@ -396,11 +399,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     @stepthrough('+archivesubscriptions')
     def traverse_archive_subscription(self, archive_id):
         """Traverse to the archive subscription for this person."""
-        # Importing here to avoid circular import (as archivesubscription
-        # imports IPersonEditMenu).
-        from canonical.launchpad.browser.archivesubscription import (
-            traverse_archive_subscription_for_subscriber)
-
         return traverse_archive_subscription_for_subscriber(
             self.context, archive_id)
 
@@ -876,6 +874,19 @@ class CommonMenuLinks:
         enabled = not bool(self.context.archive)
         return Link(target, text, summary, icon='add', enabled=enabled)
 
+    @enabled_with_permission('launchpad.Edit')
+    def view_ppa_subscriptions(self):
+        target = "+archivesubscriptions"
+        text = "View your private PPA subscriptions"
+        summary = ('View your personal PPA subscriptions and set yourself '
+                   'up to download your software')
+
+        # Only enable the link if the person has some subscriptions.
+        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            self.context)
+        enabled = subscriptions.count() > 0
+
+        return Link(target, text, summary, enabled=enabled)
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -886,7 +897,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
-             'administer', 'related_projects', 'activate_ppa']
+             'administer', 'related_projects', 'activate_ppa',
+             'view_ppa_subscriptions']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1074,7 +1086,7 @@ class PersonEditNavigationMenu(NavigationMenu):
     usedfor = IPersonEditMenu
     facet = 'overview'
     links = ('personal', 'email_settings',
-             'sshkeys', 'gpgkeys', 'passwords', 'archive_subscriptions')
+             'sshkeys', 'gpgkeys', 'passwords')
 
     def personal(self):
         target = '+edit'
@@ -1100,11 +1112,6 @@ class PersonEditNavigationMenu(NavigationMenu):
     def passwords(self):
         target = '+changepassword'
         text = 'Passwords'
-        return Link(target, text)
-
-    def archive_subscriptions(self):
-        target = '+archivesubscriptions'
-        text = 'Private PPA subscriptions'
         return Link(target, text)
 
 
