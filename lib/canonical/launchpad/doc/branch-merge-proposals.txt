@@ -100,14 +100,17 @@ recent branch merge proposals first.
     >>> flush_database_updates()
     >>> from canonical.launchpad.database.branchmergeproposal import (
     ...     BranchMergeProposal)
+    >>> # Need to specify orderby - default order is creation date
+    >>> # and objects created in the same transaction have identical
+    >>> # creation dates
     >>> for proposal in BranchMergeProposal.selectBy(
-    ...     target_branch=target_branch):
+    ...     target_branch=target_branch, orderBy=['id']):
     ...     print proposal.queue_status.title
-    Work in progress
     Work in progress
     Superseded
     Rejected
     Merged
+    Work in progress
 
     >>> for proposal in target_branch.landing_candidates:
     ...     print proposal.queue_status.title
@@ -115,13 +118,13 @@ recent branch merge proposals first.
     Work in progress
 
     >>> for proposal in BranchMergeProposal.selectBy(
-    ...     dependent_branch=scanned_branch):
+    ...     dependent_branch=scanned_branch, orderBy=['id']):
     ...     print proposal.queue_status.title
-    Work in progress
     Work in progress
     Superseded
     Rejected
     Merged
+    Work in progress
 
     >>> for proposal in scanned_branch.dependent_branches:
     ...     print proposal.queue_status.title

@@ -13,7 +13,7 @@ __all__ = [
 from datetime import datetime, timedelta
 
 from pytz import UTC
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -54,6 +54,7 @@ def make_running_import(code_import=None, machine=None, date_started=None,
         code_import = factory.makeCodeImport()
     if machine is None:
         machine = factory.makeCodeImportMachine(set_online=True)
+    transaction.commit() # Commit so factory created persons are valid
     # The code import must be in a reviewed state.
     if code_import.review_status != CodeImportReviewStatus.REVIEWED:
         code_import.updateFromData(

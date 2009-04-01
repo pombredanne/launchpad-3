@@ -20,7 +20,8 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IAdminPeopleMergeSchema, IAdminTeamMergeSchema,
-    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPersonSet, LoginTokenType)
+    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMasterObject,
+    IPersonSet, LoginTokenType)
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
 from canonical.launchpad.webapp import (
@@ -120,13 +121,14 @@ class AdminMergeBaseView(LaunchpadFormView):
         """Merge the two person/team entries specified in the form."""
         from zope.security.proxy import removeSecurityProxy
         for email in self.dupe_person_emails:
+            email = IMasterObject(email)
             # XXX: Guilherme Salgado 2007-10-15: Maybe this status change
             # should be done only when merging people but not when merging
             # teams.
             email.status = EmailAddressStatus.NEW
             # EmailAddress.person is a readonly field, so we need to remove
             # the security proxy here.
-            removeSecurityProxy(email).person = self.target_person
+            removeSecurityProxy(email).personID = self.target_person.id
         flush_database_updates()
         getUtility(IPersonSet).merge(self.dupe_person, self.target_person)
         self.request.response.addInfoNotification(_(

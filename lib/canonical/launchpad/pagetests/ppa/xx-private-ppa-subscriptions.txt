@@ -1,4 +1,4 @@
-= Private PPA Subscriptions =
+= PPA Subscriptions =
 
 Note: This file contains all the pagetests for functionality that is not
 part of the stories in xx-private-ppa-subscription-stories.txt.
@@ -14,19 +14,6 @@ Public PPAs do not have an option for managing subscriptions:
     Traceback (most recent call last):
     ...
     LinkNotFoundError
-
-XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
-will require launchpad.Admin until the backend .htaccess update
-machinery is in-place and tested:
-
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> admins = getUtility(IPersonSet).getByName('admins')
-    >>> admins.addMember(cprov, foobar)
-    >>> logout()
 
 Similarly, trying to access the subscriptions page directly will simply
 redirect back to the PPA page with a feedback message:
@@ -54,17 +41,10 @@ Setup both cprov's and sabdfl's PPAs as a private one:
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()
 
-Normally the subscriptions are accessed via the PPA page:
-XXX: noodles 2009-03-10 bug=340405. The link 'Manage subscriptions' on the
-PPA page is disabled until the cron-job supporting private archive
-subscriptions is enabled.
+The PPA page includes a link to manage subscriptions:
 
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
-    >>> cprov_browser.getLink("Manage subscriptions")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
+    >>> cprov_browser.getLink("Manage subscriptions").click()
 
 Initially there are no subscriptions for a newly privatized PPA (although,
 this may need to change, to add the owner/team). A heading is displayed
@@ -72,7 +52,7 @@ with a message:
 
     >>> main_content = find_main_content(cprov_browser.contents)
     >>> print extract_text(main_content.find('h1'))
-    Manage subscriptions for Private PPA for Celso Providelo
+    Manage subscriptions for...PPA for Celso Providelo
 
     >>> print extract_text(find_tag_by_id(cprov_browser.contents,
     ...     'no-subscribers'))
@@ -85,12 +65,6 @@ Create two new users that can be subscribed to archives:
     ...     password="test", email="joe@example.com")
     >>> bradsmith = factory.makePerson(name="bradsmith", displayname="Brad Smith",
     ...     password="test", email="brad@example.com")
-
-XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
-will require launchpad.Admin until the backend .htaccess update
-machinery is in-place and tested:
-
-    >>> admins.addMember(joesmith, foobar)
     >>> logout()
 
 People can be subscribed by entering their details into the displayed
@@ -155,9 +129,9 @@ listed in the current subscriptions area:
     ...                               'archive-subscription-row'):
     ...     print extract_text(row)
     Archive                            Subscription description  Status
-    Private PPA for Mark Shuttleworth  Joe is also my friend     Pending
+    ...PPA for Mark Shuttleworth  Joe is also my friend     Pending
         Confirm
-    Private PPA for Celso Providelo    Joe is my friend          Pending
+    ...PPA for Celso Providelo    Joe is my friend          Pending
         Confirm
 
 == Confirming a subscription ==
@@ -172,7 +146,7 @@ displaying the subscription and requesting their confirmation.
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    # Personal subscription of Joe Smith to Private PPA for Mark Shuttleworth
+    # Personal subscription of Joe Smith to...PPA for Mark Shuttleworth
     deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary
         main
     deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
@@ -183,6 +157,8 @@ This page will include information about the signing key, if the archive
 has a signing key:
 
     >>> from canonical.launchpad.interfaces import IGPGKeySet
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> a_key = getUtility(IGPGKeySet).get(1)
@@ -194,7 +170,7 @@ has a signing key:
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    # Personal subscription of Joe Smith to Private PPA for Mark Shuttleworth
+    # Personal subscription of Joe Smith to...PPA for Mark Shuttleworth
     deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary
         main
     deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu

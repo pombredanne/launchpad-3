@@ -44,7 +44,7 @@ class TestProductSeriesForBranches(TestCase):
     def test_current_dev_focus(self):
         """A series with a branch associated is returned."""
         dev_focus = self.product.development_focus
-        dev_focus.user_branch = self.branches[0]
+        dev_focus.branch = self.branches[0]
         syncUpdate(dev_focus)
         self.assertEqual(
             [self.product.development_focus],
@@ -96,7 +96,7 @@ class TestProductSeriesForBranches(TestCase):
             owner=vcs_imports, product=self.product,
             branch_type=BranchType.IMPORTED)
         dev_focus = self.product.development_focus
-        dev_focus.import_branch = branch
+        dev_focus.branch = branch
         syncUpdate(dev_focus)
         self.assertEqual(
             [dev_focus],
