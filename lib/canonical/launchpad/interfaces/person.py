@@ -61,7 +61,8 @@ from canonical.launchpad import _
 
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
-    MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
+    MugshotImageUpload, ParticipatingPersonChoice, PasswordField,
+    PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.irc import IIrcID
@@ -323,8 +324,18 @@ class PersonVisibility(DBEnumeratedType):
     PRIVATE_MEMBERSHIP = DBItem(20, """
         Private Membership
 
-        Only launchpad admins and team members can view the
-        membership list for this team.
+        Only Launchpad admins and team members can view the
+        membership list for this team.  The team is severely restricted in the
+        roles it can assume.
+        """)
+
+    PRIVATE = DBItem(30, """
+        Private
+
+        Only Launchpad admins and team members can view the membership list
+        for this team or its name.  The team roles are restricted to
+        subscribing to bugs, being bug supervisor, owning code branches, and
+        having a PPA.
         """)
 
 
@@ -788,6 +799,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             title=_("Hardware submissions"),
             readonly=True, required=False,
             value_type=Reference(schema=Interface))) # HWSubmission
+
+    private = exported(Bool(
+            title=_("This team is private"),
+            readonly=True, required=False,
+            description=_("Private teams are visible only to "
+                          "their members.")))
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1502,8 +1519,10 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
     export_as_webservice_entry(plural_name='people')
 
 
-# Set the PublicPersonChoice schema to the newly defined interface.
+# Set the schemas to the newly defined interface for classes that deferred
+# doing so when defined.
 PublicPersonChoice.schema = IPerson
+ParticipatingPersonChoice.schema = IPerson
 
 
 class INewPersonForm(IPerson):

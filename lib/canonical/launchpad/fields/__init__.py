@@ -34,11 +34,13 @@ __all__ = [
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
-    'is_valid_public_person_link',
+    'is_not_private_membership',
+    'is_valid_public_person',
     'KEEP_SAME_IMAGE',
     'LogoImageUpload',
     'MugshotImageUpload',
     'LocationField',
+    'ParticipatingPersonChoice',
     'PasswordField',
     'PillarAliases',
     'PillarNameField',
@@ -804,19 +806,51 @@ class ProductNameField(PillarNameField):
         return IProduct
 
 
-def is_valid_public_person_link(person, other):
+def is_valid_public_person(person):
+    """Return True if the person is public."""
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
         raise ConstraintNotSatisfied("Expected a person.")
     if person.visibility == PersonVisibility.PUBLIC:
         return True
     else:
+        # PRIVATE_MEMBERSHIP or PRIVATE.
+        return False
+
+
+def is_not_private_membership(person):
+    """Return True if the person does not have private membership visibility."""
+    from canonical.launchpad.interfaces import IPerson, PersonVisibility
+    if not IPerson.providedBy(person):
+        raise ConstraintNotSatisfied("Expected a person.")
+    if person.visibility == PersonVisibility.PUBLIC:
+        return True
+    elif person.visibility == PersonVisibility.PRIVATE:
+        return True
+    else:
+        # PRIVATE_MEMBERSHIP.
         return False
 
 
 class PublicPersonChoice(Choice):
+    """A person or team who is public."""
     implements(IReferenceChoice)
     schema = IObject    # Will be set to IPerson once IPerson is defined.
 
     def constraint(self, value):
-        return is_valid_public_person_link(value, self.context)
+        return is_valid_public_person(value)
+
+
+class ParticipatingPersonChoice(Choice):
+    """A person or team who is not a private membership team.
+
+    A person can participate in all contexts.  A PRIVATE team can participate
+    in a many contexts, depending up on the permissions of the logged in
+    user.  A PRIVATE MEMBERSHIP team is severely limited in the roles in which
+    it can participate.
+    """
+    implements(IReferenceChoice)
+    schema = IObject    # Will be set to IPerson once IPerson is defined.
+
+    def constraint(self, value):
+        return is_not_private_membership_person(value)
