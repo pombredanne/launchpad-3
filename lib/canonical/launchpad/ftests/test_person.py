@@ -195,7 +195,8 @@ class TestPerson(TestCaseWithFactory):
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by a'
-                ' bug, a bugsubscription, a bugtask and a message.')
+                ' bug, a bugaffectsperson, a bugsubscription, a bugtask'
+                ' and a message.')
 
     def test_visibility_validator_product_subscription(self):
         self.bzr.addSubscription(self.otherteam, self.guadamen)
