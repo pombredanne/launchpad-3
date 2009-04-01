@@ -814,6 +814,9 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         # Sort all the lists to ensure that changes are written out in
         # alphabetical order.
         for date, activity_by_target in activity_by_date.items():
+            # We convert each {target: activty_list} mapping into a list
+            # of {target, activity_list} dicts for the sake of making
+            # them usable in templates.
             activity_by_date[date] = [{
                 'target': target,
                 'activity': sorted(
@@ -828,6 +831,10 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         activity_and_comments = [
             {'comment': comment, 'date': comment.datecreated}
             for comment in self.visible_comments_for_display]
+
+        # Add the activity to the activity_and_comments list. For each
+        # activity dict we use the person responsible for the first
+        # activity item as the owner of the list of activities.
         activity_and_comments.extend(
             {'activity': activity_dict, 'date': date,
              'person': activity_dict[0]['activity'][0].person}
