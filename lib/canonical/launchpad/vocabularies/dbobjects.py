@@ -72,7 +72,7 @@ import cgi
 from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
-from storm.expr import LeftJoin, SQL, And, Or, Like, Lower, Not
+from storm.expr import LeftJoin, SQL, And, Or, Lower, Not
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -82,13 +82,13 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
-    Account, Archive, Bounty, Branch, BranchSet, Bug, BugTracker, BugWatch,
-    Component, Country, Distribution, DistroArchSeries, DistroSeries,
-    EmailAddress, FeaturedProject, KarmaCategory, Language, LanguagePack,
-    MailingList, Milestone, POTemplate, Person, PillarName, Processor,
-    ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
-    SourcePackageRelease, Specification, Sprint, TeamParticipation,
-    TranslationGroup, TranslationMessage)
+    Account, Archive, Bounty, Branch, Bug, BugTracker, BugWatch, Component,
+    Country, Distribution, DistroArchSeries, DistroSeries, EmailAddress,
+    FeaturedProject, KarmaCategory, Language, LanguagePack, MailingList,
+    Milestone, POTemplate, Person, PillarName, Processor, ProcessorFamily,
+    Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
+    Specification, Sprint, TeamParticipation, TranslationGroup,
+    TranslationMessage)
 from canonical.launchpad.database.stormsugar import StartsWith
 
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
@@ -685,7 +685,8 @@ class ValidPersonOrTeamVocabulary(
             """ % dict(cache_table=self.cache_table_name))
             tables = [
                 Person,
-                LeftJoin(TeamParticipation, TeamParticipation.teamID == Person.id),
+                LeftJoin(TeamParticipation,
+                         TeamParticipation.teamID == Person.id),
                 ]
             result = self.store.using(*tables).find(
                 Person,
@@ -701,7 +702,8 @@ class ValidPersonOrTeamVocabulary(
         else:
             tables = [
                 Person,
-                LeftJoin(TeamParticipation, TeamParticipation.teamID == Person.id),
+                LeftJoin(TeamParticipation,
+                         TeamParticipation.teamID == Person.id),
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
                 LeftJoin(Account, EmailAddress.account == Account.id),
                 ]
@@ -742,9 +744,11 @@ class ValidPersonOrTeamVocabulary(
                     Person.merged == None,
                     Or(
                         # A valid person-or-team is either a team...
-                        Not(Person.teamowner == None), # 'Not' due to Bug 244768
+                        # Note: 'Not' due to Bug 244768.
+                        Not(Person.teamowner == None),
 
-                        # or has an active account and a working email address.
+                        # Or has an active account and a working email
+                        # address.
                         And(
                             Account.status == AccountStatus.ACTIVE,
                             EmailAddress.status.is_in((
@@ -1439,9 +1443,10 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             return self.emptySelectResults()
         if check_permission('launchpad.Commercial', user):
             product_set = getUtility(IProductSet)
-            projects = product_set.forReview(search_text=query,
-                                             licenses=[License.OTHER_PROPRIETARY],
-                                             active=True)
+            projects = product_set.forReview(
+                search_text=query,
+                licenses=[License.OTHER_PROPRIETARY],
+                active=True)
         else:
             projects = user.getOwnedProjects(match_name=query)
             projects = self._filter_projs(projects)

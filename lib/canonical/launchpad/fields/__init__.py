@@ -71,7 +71,6 @@ import re
 from StringIO import StringIO
 from textwrap import dedent
 
-from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Field, Float, Int, Password, Text,
@@ -819,7 +818,7 @@ def is_valid_public_person(person):
 
 
 def is_not_private_membership(person):
-    """Return True if the person does not have private membership visibility."""
+    """True if the person doesn't have private membership visibility."""
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
         raise ConstraintNotSatisfied("Expected a person.")
@@ -853,4 +852,4 @@ class ParticipatingPersonChoice(Choice):
     schema = IObject    # Will be set to IPerson once IPerson is defined.
 
     def constraint(self, value):
-        return is_not_private_membership_person(value)
+        return is_not_private_membership(value)

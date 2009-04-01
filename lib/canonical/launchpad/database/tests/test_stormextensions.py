@@ -56,7 +56,8 @@ class TestStormExpressions(TestCaseWithFactory):
         results.order_by('name')
         self.assertEqual([person1, person2, person3], [p for p in results])
 
-        # Wildcards are properly escaped.  No need for quote_like or equivalent.
+        # Wildcards are properly escaped.  No need for quote_like or
+        # equivalent.
         expr = StartsWith(Person.displayname, 'Joh%n')
         results = self.store.find(Person, expr)
         self.assertEqual([person3], [p for p in results])
