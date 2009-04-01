@@ -819,7 +819,8 @@ The activity_by_date property of BugTaskView returns a dict of
 BugActivityItems grouped by the date on which they occurred.
 
     >>> print pretty(view.activity_by_date)
-    {datetime.datetime(2009, 3, 26...): [<...BugActivityItem...>]}
+    {datetime.datetime(2009, 3, 26...):
+     {None: [<...BugActivityItem...>]}}
 
 The activity_and_comments property of BugTaskView is a list of comments
 and activity on a bug, ordered by the date that they occurred. Each item
@@ -830,16 +831,28 @@ item, which is used to sort the list.
 If we iterate over the list of activity_and_comments we can examine, in
 order, the comments and activity that have taken place on a bug.
 
-The activity item is always a list of BugActivityItems, grouped together
-by their datechanged property.
+The activity item is always a dict, in the form {'target': <targetname>,
+'activity', [<activity>]}, where targetname is a string representing the
+target for which the activity occurred (i.e. the product, package or
+distro to which a BugTask is targeted) and activity is a list of
+BugActivityItems. If the activity list is related to the bug itself (for
+example, description and summary changes), the targetname will be None.
+The various {target, activity} dicts are grouped together by the date on
+which they occurred.
 
     >>> activity_and_comments = view.activity_and_comments
     >>> for activity_or_comment in activity_and_comments:
     ...     if 'activity' in activity_or_comment:
-    ...         for activity in activity_or_comment['activity']:
-    ...             print "%s: %s => %s" % (
-    ...                 activity.whatchanged, activity.oldvalue,
-    ...                 activity.newvalue)
+    ...         activity_dict = activity_or_comment['activity']
+    ...         for target_name, activity in activity_dict.items():
+    ...             if target_name is not None:
+    ...                 print "Changed in %s:" % target_name
+    ...             for activity_item in activity:
+    ...                 print "%s: %s => %s" % (
+    ...                     activity_item.change_summary,
+    ...                     activity_item.oldvalue,
+    ...                     activity_item.newvalue)
+    ...
     ...     if 'comment' in activity_or_comment:
     ...         comment = activity_or_comment['comment']
     ...         print comment.text_for_display

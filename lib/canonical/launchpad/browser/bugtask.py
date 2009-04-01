@@ -801,16 +801,21 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
                 continue
 
             activity = BugActivityItem(activity)
-            if activity.datechanged in activity_by_date:
-                activity_by_date[activity.datechanged].append(activity)
+            if activity.datechanged not in activity_by_date:
+                activity_by_date[activity.datechanged] = {
+                    activity.target: [activity]}
             else:
-                activity_by_date[activity.datechanged] = [activity]
+                activity_dict = activity_by_date[activity.datechanged]
+                if activity.target in activity_dict:
+                    activity_dict[activity.target].append(activity)
+                else:
+                    activity_dict[activity.target] = [activity]
 
         # Sort all the lists to ensure that changes are written out in
         # alphabetical order.
         for date, activity_list in activity_by_date.items():
-            activity_by_date[date] = sorted(
-                activity_list, key=attrgetter('whatchanged'))
+            for target in activity_list:
+                activity_list[target].sort(key=attrgetter('attribute'))
 
         return activity_by_date
 
@@ -820,9 +825,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             {'comment': comment, 'date': comment.datecreated}
             for comment in self.visible_comments_for_display]
         activity_and_comments.extend(
-            {'activity': activity_list, 'date': date,
-             'person': activity_list[0].person}
-            for date, activity_list in self.activity_by_date.items())
+            {'activity': activity_dict, 'date': date}
+            for date, activity_dict in self.activity_by_date.items())
 
         activity_and_comments.sort(key=itemgetter('date'))
         return activity_and_comments
@@ -3156,8 +3160,46 @@ class BugActivityItem:
     """A decorated BugActivity."""
     delegates(IBugActivity, 'activity')
 
+    # The regular expression we use for matching bug task changes.
+    bugtask_change_re = (
+        '(?P<target>[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?): '
+        '(?P<attribute>assignee|importance|milestone|status)')
+
     def __init__(self, activity):
         self.activity = activity
+
+    @property
+    def target(self):
+        """Return the target of this BugActivityItem.
+
+        `target` is determined based on the `whatchanged` string of the
+        original BugAcitivity.
+
+        :return: The target name of the item if `whatchanged` is of the
+        form <target_name>: <attribute>. Otherwise, return None.
+        """
+        match = re.match(self.bugtask_change_re, self.whatchanged)
+        if match is None:
+            return None
+        else:
+            return match.groupdict()['target']
+
+    @property
+    def attribute(self):
+        """Return the attribute changed in this BugActivityItem.
+
+        `attribute` is determined based on the `whatchanged` string of the
+        original BugAcitivity.
+
+        :return: The attribute name of the item if `whatchanged` is of
+            the form <target_name>: <attribute>. Otherwise, return the
+            original `whatchanged` string.
+        """
+        match = re.match(self.bugtask_change_re, self.whatchanged)
+        if match is None:
+            return self.whatchanged
+        else:
+            return match.groupdict()['attribute']
 
     @property
     def change_summary(self):
