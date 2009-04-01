@@ -4,8 +4,9 @@ Most of the time, if a web service client triggers an exception, the
 response code will be 500. But specific exception classes can override
 this behavior and set some other response code.
 
-    >>> from lazr.restful.testing.webservice import FakeRequest
+    >>> from lazr.restful.testing.webservice import FakeRequest, FakeResponse
     >>> from zope.component import getMultiAdapter
+
     >>> def render_using_default_view(error):
     ...     """Render an exception using its default 'index.html' view.
     ...     :return: response, result tuple. (The response object and
