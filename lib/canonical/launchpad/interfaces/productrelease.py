@@ -30,7 +30,7 @@ from canonical.launchpad.validators.productrelease import (
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.interfaces.person import IPerson
 
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.interface import copy_field
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,

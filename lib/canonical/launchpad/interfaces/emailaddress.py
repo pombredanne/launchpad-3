@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 class InvalidEmailAddress(Exception):

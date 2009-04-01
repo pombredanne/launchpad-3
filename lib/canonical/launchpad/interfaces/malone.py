@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     call_with, collection_default_content, export_as_webservice_collection,
     export_factory_operation, operation_parameters, REQUEST_USER)

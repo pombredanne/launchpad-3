@@ -22,7 +22,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 class AccountStatus(DBEnumeratedType):

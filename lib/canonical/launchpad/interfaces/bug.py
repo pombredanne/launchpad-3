@@ -45,7 +45,7 @@ from lazr.restful.declarations import (
     export_factory_operation, export_operation_as, export_write_operation,
     exported, mutator_for, operation_parameters, rename_parameters_as,
     webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
+from lazr.restful.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 
 

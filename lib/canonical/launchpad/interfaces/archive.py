@@ -43,7 +43,7 @@ from canonical.launchpad.interfaces.gpg import IGPGKey
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
     export_factory_operation, export_write_operation, operation_parameters,

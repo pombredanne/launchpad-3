@@ -31,7 +31,7 @@ from canonical.launchpad.validators.name import name_validator
 
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import CollectionField, Reference
+from lazr.restful.fields import CollectionField, Reference
 
 
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'

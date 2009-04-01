@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.fields import PublicPersonChoice
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 
 class BranchSubscriptionDiffSize(DBEnumeratedType):

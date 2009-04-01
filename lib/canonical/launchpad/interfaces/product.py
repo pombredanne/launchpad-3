@@ -63,7 +63,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.sourceforgeproject import (
     sourceforge_project_name_validator)
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.interface import copy_field
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, collection_default_content,

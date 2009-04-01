@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces.bugtracker import IBugTracker
 
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 
 
 class BugWatchErrorType(DBEnumeratedType):

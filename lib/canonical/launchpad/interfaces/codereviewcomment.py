@@ -18,7 +18,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 

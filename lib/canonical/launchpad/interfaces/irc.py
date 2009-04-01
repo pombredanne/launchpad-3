@@ -15,7 +15,7 @@ from zope.interface import Interface
 
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasOwner

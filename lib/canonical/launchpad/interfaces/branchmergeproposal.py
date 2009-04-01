@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import IBranch, IPerson
 from canonical.launchpad.interfaces.diff import IPreviewDiff, IStaticDiff
 from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.lazr.fields import CollectionField, Reference
+from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,
     export_write_operation, exported, operation_parameters,

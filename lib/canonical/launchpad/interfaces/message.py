@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 
 from lazr.delegates import delegates
-from canonical.lazr.fields import CollectionField, Reference
+from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 

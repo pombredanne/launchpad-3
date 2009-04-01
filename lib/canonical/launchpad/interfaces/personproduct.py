@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.interface import Interface
 
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct

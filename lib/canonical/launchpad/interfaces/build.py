@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 

@@ -67,7 +67,7 @@ from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
     mutator_for, rename_parameters_as, webservice_error)
-from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 
 
 class BugTaskImportance(DBEnumeratedType):

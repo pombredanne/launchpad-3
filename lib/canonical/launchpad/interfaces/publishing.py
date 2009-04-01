@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.person import IPerson
 
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
     export_read_operation, exported, operation_returns_collection_of)

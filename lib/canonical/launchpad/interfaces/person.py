@@ -55,7 +55,7 @@ from lazr.restful.declarations import (
     export_read_operation, export_write_operation, exported,
     operation_parameters, operation_returns_collection_of,
     operation_returns_entry, rename_parameters_as, webservice_error)
-from canonical.lazr.fields import CollectionField, Reference
+from lazr.restful.fields import CollectionField, Reference
 
 from canonical.launchpad import _
 

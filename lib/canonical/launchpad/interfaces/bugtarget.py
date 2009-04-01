@@ -24,7 +24,7 @@ from canonical.launchpad.fields import Tag
 from canonical.launchpad.interfaces.bugtask import (
     BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
 from canonical.launchpad.interfaces.person import IPerson
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 from canonical.lazr.interface import copy_field
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,

@@ -14,7 +14,7 @@ from zope.interface import implements, Interface
 from zope.schema import Date, Datetime, TextLine
 from zope.testing.cleanup import CleanUp
 
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 from lazr.restful.interfaces import (
     ICollection, IEntry, IResourceGETOperation, IWebServiceClientRequest)
 from canonical.lazr.rest import ServiceRootResource

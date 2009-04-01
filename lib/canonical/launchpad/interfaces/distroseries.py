@@ -37,7 +37,7 @@ from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
 
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
     export_read_operation, exported, operation_parameters,

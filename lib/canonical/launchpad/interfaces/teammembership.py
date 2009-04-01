@@ -19,7 +19,7 @@ from zope.interface import Attribute, Interface
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.lazr.interface import copy_field
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
    call_with, export_as_webservice_entry, export_write_operation, exported,
    operation_parameters, REQUEST_USER)

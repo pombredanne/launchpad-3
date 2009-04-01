@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces.bug import IBug
 
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""

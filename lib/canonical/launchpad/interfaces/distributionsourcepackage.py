@@ -12,7 +12,7 @@ __all__ = [
 from zope.interface import Attribute, Interface
 from zope.schema import Int, TextLine
 
-from canonical.lazr.fields import Reference
+from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     export_as_webservice_entry, export_operation_as, export_read_operation,
     exported, operation_parameters, operation_returns_collection_of,
