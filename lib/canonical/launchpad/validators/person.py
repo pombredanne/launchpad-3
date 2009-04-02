@@ -14,7 +14,7 @@ __all__ = [
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.fields import (
-    is_not_private_membership, is_valid_public_person)
+    is_private_membership, is_valid_public_person)
 
 
 class PrivatePersonLinkageError(ValueError):
@@ -41,7 +41,7 @@ def validate_public_person(obj, attr, value):
 
 @block_implicit_flushes
 def validate_person_not_private_membership(obj, attr, value):
-    """Validate that the person (value) is not a private membership team.."""
+    """Validate that the person (value) is not a private membership team."""
     if value is None:
         return None
     assert isinstance(value, (int, long)), (
@@ -49,7 +49,7 @@ def validate_person_not_private_membership(obj, attr, value):
 
     from canonical.launchpad.database.person import Person
     person = Person.get(value)
-    if not is_not_private_membership(person):
+    if is_private_membership(person):
         raise PrivatePersonLinkageError(
             "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
             % (person.name, person.visibility.name,

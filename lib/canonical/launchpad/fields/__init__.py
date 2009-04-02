@@ -34,7 +34,7 @@ __all__ = [
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
-    'is_not_private_membership',
+    'is_private_membership',
     'is_valid_public_person',
     'KEEP_SAME_IMAGE',
     'LogoImageUpload',
@@ -817,18 +817,18 @@ def is_valid_public_person(person):
         return False
 
 
-def is_not_private_membership(person):
-    """True if the person doesn't have private membership visibility."""
+def is_private_membership(person):
+    """True if the person/team has  private membership visibility."""
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
         raise ConstraintNotSatisfied("Expected a person.")
     if person.visibility == PersonVisibility.PUBLIC:
-        return True
+        return False
     elif person.visibility == PersonVisibility.PRIVATE:
-        return True
+        return False
     else:
         # PRIVATE_MEMBERSHIP.
-        return False
+        return True
 
 
 class PublicPersonChoice(Choice):
@@ -844,7 +844,7 @@ class ParticipatingPersonChoice(Choice):
     """A person or team who is not a private membership team.
 
     A person can participate in all contexts.  A PRIVATE team can participate
-    in a many contexts, depending up on the permissions of the logged in
+    in many contexts, depending up on the permissions of the logged in
     user.  A PRIVATE MEMBERSHIP team is severely limited in the roles in which
     it can participate.
     """
@@ -852,4 +852,4 @@ class ParticipatingPersonChoice(Choice):
     schema = IObject    # Will be set to IPerson once IPerson is defined.
 
     def constraint(self, value):
-        return is_not_private_membership(value)
+        return not is_private_membership(value)
