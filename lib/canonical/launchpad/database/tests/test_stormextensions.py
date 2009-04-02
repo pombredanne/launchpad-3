@@ -38,7 +38,8 @@ class TestStormExpressions(TestCaseWithFactory):
 
         # Unlike Storm's Like, StartsWith does not accept a case_sensitive
         # flag.
-        self.assertRaises(TypeError, StartsWith, "name", "value", case_sensitive=False)
+        self.assertRaises(TypeError, StartsWith, "name", "value",
+                          case_sensitive=False)
 
     def test_StartsWithUse(self):
         """StartWith correctly performs searches."""

@@ -55,7 +55,7 @@ class StartsWith(Like):
     The string is properly escaped.
     """
     def __init__(self, expr, string):
-        # Escape instance of !, _, and % so they don't interfere with the
+        # Escape instances of !, _, and % so they don't interfere with the
         # underlying LIKE operation.  Use ! as the escape character.
         string = string.replace("!", "!!") \
                        .replace("_", "!_") \

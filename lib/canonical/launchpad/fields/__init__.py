@@ -822,13 +822,11 @@ def is_private_membership(person):
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
         raise ConstraintNotSatisfied("Expected a person.")
-    if person.visibility == PersonVisibility.PUBLIC:
-        return False
-    elif person.visibility == PersonVisibility.PRIVATE:
-        return False
-    else:
-        # PRIVATE_MEMBERSHIP.
+    if person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
         return True
+    else:
+        # PUBLIC or PRIVATE.
+        return False
 
 
 class PublicPersonChoice(Choice):
