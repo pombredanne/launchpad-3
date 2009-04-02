@@ -129,6 +129,8 @@ from canonical.launchpad.browser.archivesubscription import (
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet)
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
@@ -366,7 +368,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_email(self, email):
         """Traverse to this person's emails on the webservice layer."""
         email = getUtility(IEmailAddressSet).getByEmail(email)
-        if email is None or email.person != self.context:
+        if email is None or email.personID != self.context.id:
             return None
         return email
 
@@ -869,8 +871,7 @@ class CommonMenuLinks:
         text = 'Create a new PPA'
         summary = ('Acknowledge terms of service for Launchpad Personal '
                    'Package Archive and create a new PPA.')
-        enabled = not bool(self.context.archive)
-        return Link(target, text, summary, icon='add', enabled=enabled)
+        return Link(target, text, summary, icon='add')
 
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
@@ -882,7 +883,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
-             'administer', 'related_projects', 'activate_ppa']
+             'administer', 'related_projects', 'activate_ppa',
+             'view_ppa_subscriptions']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -986,6 +988,20 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def view_ppa_subscriptions(self):
+        target = "+archivesubscriptions"
+        text = "View your private PPA subscriptions"
+        summary = ('View your personal PPA subscriptions and set yourself '
+                   'up to download your software')
+
+        # Only enable the link if the person has some subscriptions.
+        subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+            self.context)
+        enabled = subscriptions.count() > 0
+
+        return Link(target, text, summary, enabled=enabled, icon='info')
 
 
 class IPersonEditMenu(Interface):
@@ -1437,7 +1453,7 @@ class PersonClaimView(LaunchpadFormView):
                      "generated based on the email address it's "
                      "associated with."
                      % self.context.name)
-        elif email.person != self.context:
+        elif email.personID != self.context.id:
             if email.person.is_valid_person:
                 error = structured(
                          "This email address is associated with yet another "
@@ -1679,7 +1695,8 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         super(PersonAccountAdministerView, self).__init__(context, request)
         # Only the IPerson can be traversed to, so it provides the IAccount.
         self.person = self.context
-        self.context = self.context.account
+        from canonical.launchpad.interfaces import IMasterObject
+        self.context = IMasterObject(self.context.account)
 
     @property
     def is_viewing_person(self):
@@ -4167,7 +4184,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         token = getUtility(ILoginTokenSet).new(
                     self.context, getUtility(ILaunchBag).login, email,
                     LoginTokenType.VALIDATEEMAIL)
-        token.sendEmailValidationRequest(self.request.getApplicationURL())
+        token.sendEmailValidationRequest()
         self.request.response.addInfoNotification(
             "An e-mail message was sent to '%s' with "
             "instructions on how to confirm that "
@@ -4260,7 +4277,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         token = logintokenset.new(
                     self.context, getUtility(ILaunchBag).login, newemail,
                     LoginTokenType.VALIDATEEMAIL)
-        token.sendEmailValidationRequest(self.request.getApplicationURL())
+        token.sendEmailValidationRequest()
 
         self.request.response.addInfoNotification(
                 "A confirmation message has been sent to '%s'. "

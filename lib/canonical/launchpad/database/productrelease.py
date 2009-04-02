@@ -10,6 +10,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
+from storm.expr import And, Desc
+from storm.store import EmptyResultSet
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -21,6 +23,8 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UpstreamFileType)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 
 SEEK_END = 2                    # Python2.4 has no definition for SEEK_END.
@@ -32,26 +36,58 @@ class ProductRelease(SQLBase):
     _table = 'ProductRelease'
     _defaultOrder = ['-datereleased']
 
-    datereleased = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    version = StringCol(notNull=True)
-    codename = StringCol(notNull=False, default=None)
-    summary = StringCol(notNull=False, default=None)
-    description = StringCol(notNull=False, default=None)
+    datereleased = UtcDateTimeCol(notNull=True)
+    release_notes = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_public_person, notNull=True)
-    productseries = ForeignKey(dbName='productseries',
-                               foreignKey='ProductSeries', notNull=True)
+    milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
     files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
                             orderBy='-date_uploaded')
 
     # properties
     @property
+    def codename(self):
+        """Backwards compatible codename attribute.
+
+        This attribute was moved to the Milestone."""
+        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        return self.milestone.code_name
+
+    @property
+    def version(self):
+        """Backwards compatible version attribute.
+
+        This attribute was replaced by the Milestone.name."""
+        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        return self.milestone.name
+
+    @property
+    def summary(self):
+        """Backwards compatible summary attribute.
+
+        This attribute was replaced by the Milestone.summary."""
+        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        return self.milestone.summary
+
+    @property
+    def productseries(self):
+        """Backwards compatible summary attribute.
+
+        This attribute was replaced by the Milestone.productseries."""
+        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        return self.milestone.productseries
+
+    @property
     def product(self):
+        """Backwards compatible summary attribute.
+
+        This attribute was replaced by the Milestone.productseries.product."""
+        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
         return self.productseries.product
 
     @property
@@ -190,12 +226,17 @@ class ProductReleaseSet(object):
 
     def getReleasesForSerieses(self, serieses):
         """See `IProductReleaseSet`."""
+        # Local import of Milestone to avoid import loop.
+        from canonical.launchpad.database.milestone import Milestone
         if len(list(serieses)) == 0:
-            return ProductRelease.select('1 = 2')
-        return ProductRelease.select("""
-            ProductRelease.productseries IN %s
-            """ % sqlvalues([series.id for series in serieses]),
-            orderBy='-datereleased')
+            return EmptyResultSet()
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        series_ids = [series.id for series in serieses]
+        result = store.find(
+            ProductRelease,
+            And(ProductRelease.milestone == Milestone.id),
+                Milestone.productseriesID.is_in(series_ids))
+        return result.order_by(Desc(ProductRelease.datereleased))
 
     def getFilesForReleases(self, releases):
         """See `IProductReleaseSet`."""

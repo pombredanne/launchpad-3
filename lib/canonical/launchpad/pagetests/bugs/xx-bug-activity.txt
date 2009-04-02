@@ -52,7 +52,8 @@ page.
     >>> print_comments(user_browser.contents)
     Bug Watch Updater
     on 2007-12-18
-    thunderbird status: Unknown &#8594; New
+    Changed in thunderbird:
+                    status: Unknown &#8594; New
     --------
     No Privileges Person wrote ...
     Here's a comment for testing, like.
@@ -182,11 +183,11 @@ added.
     --------
     Foo Bar ... ago
     tags: added: tag4
-          removed: tag3
+        removed: tag3
     --------
 
-Changes to a BugTask's attributes will show up with the task's target
-name next to them to differentiate one from another.
+Changes to a BugTask's attributes will show up listed under the task's
+target.
 
 We'll add a milestone to Redfish to demonstrate this.
 
@@ -212,15 +213,15 @@ We'll add a milestone to Redfish to demonstrate this.
     ...
     --------
     Foo Bar ... ago
-    redfish assignee: nobody &#8594; name16
-    redfish importance: Undecided &#8594; High
-    redfish milestone: none &#8594; foo
-    redfish status: New &#8594; Confirmed
+    Changed in redfish:
+              assignee: nobody &#8594; name16
+            importance: Undecided &#8594; High
+             milestone: none &#8594; foo
+                status: New &#8594; Confirmed
     --------
 
 If a change is made to a bug task which is targeted to a distro source
-package, the name of the package and the distro will be included in the
-activity item.
+package, the name of the package and the distro will be displayed.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/'
@@ -232,7 +233,8 @@ activity item.
     ...
     --------
     Foo Bar ... ago
-    mozilla-firefox (Ubuntu) status: New &#8594; Confirmed
+    Changed in mozilla-firefox (Ubuntu):
+                                 status: New &#8594; Confirmed
     --------
 
 If a change has a comment associated with it it will be displayed in the
@@ -250,8 +252,13 @@ bundled with that comment in the UI.
     Sample Person
     ...
     --------
-    Foo Bar wrote ... ago
+    Foo Bar
+    wrote
+    ...
     Lookit, a change!
-    mozilla-firefox (Ubuntu) importance: New &#8594; Confirmed
-    mozilla-firefox (Ubuntu) status: Confirmed &#8594; New
+    Changed in mozilla-firefox (Ubuntu):
+    importance:
+    Medium &#8594; Low
+    status:
+    Confirmed &#8594; New
     --------

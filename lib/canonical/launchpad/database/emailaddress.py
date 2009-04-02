@@ -111,9 +111,15 @@ class EmailAddressSet:
             raise EmailAddressAlreadyTaken(
                 "The email address '%s' is already registered." % email)
         assert status in EmailAddressStatus.items
-        return EmailAddress(
-                email=email, status=status, person=person, account=account)
-
+        # We use personID instead of just person, as in some cases the
+        # Person record will not yet be replicated from the main
+        # Store to the auth master Store.
+        if person is None:
+            return EmailAddress(email=email, status=status, account=account)
+        else:
+            return EmailAddress(
+                email=email, status=status,
+                account=account, personID=person.id)
 
 
 class UndeletableEmailAddress(Exception):

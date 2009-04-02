@@ -115,6 +115,12 @@ class FakeStoreSelector:
     @staticmethod
     def get(name, flavor):
         return FakeStore()
+    @staticmethod
+    def push(dbpolicy):
+        pass
+    @staticmethod
+    def pop():
+        pass
 
 
 class TestCheckPermissionCaching(CleanUp, unittest.TestCase):

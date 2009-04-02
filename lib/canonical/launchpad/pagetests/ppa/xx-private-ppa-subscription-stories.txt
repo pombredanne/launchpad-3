@@ -1,4 +1,4 @@
-= Private PPA Subscription Stories =
+= PPA Subscription Stories =
 
 The owner or admin of a private PPA can add subscribers - people
 or teams - to the private archive. This will enable subscribers to obtain
@@ -39,19 +39,6 @@ Given a private PPA for Celso,
 
 and a browser for Celso currently navigated to the Manage Subscriptions page,
 
-XXX: noodles 2009-03-10 bug=340405. The the +subscriptions traversal
-will require launchpad.Admin until the backend .htaccess update
-machinery is in-place and tested:
-
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> admins = getUtility(IPersonSet).getByName('admins')
-    >>> admins.addMember(cprov, foobar)
-    >>> logout()
-
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open(
@@ -87,7 +74,7 @@ Create a helper function to print subscriptions:
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have subscribed Joe Smith to Private PPA for Celso Providelo.
+    You have subscribed Joe Smith to PPA for Celso Providelo.
 
 === Scenario 2: A team is added as a subscriber ===
 
@@ -117,7 +104,7 @@ new subscriber.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have subscribed Launchpad Developers to Private PPA for Celso
+    You have subscribed Launchpad Developers to PPA for Celso
     Providelo.
 
 == Story 2: An owner edits a subscription for his private archive ==
@@ -185,7 +172,7 @@ cancellation is displayed.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have cancelled Launchpad Developers's subscription to Private PPA
+    You have cancelled Launchpad Developers's subscription to PPA
     for Celso Providelo.
 
 
@@ -199,32 +186,27 @@ cancellation is displayed.
 === Scenario 1: A user activates a personal subscription ===
 
 Given a subscription for Celso's private PPA for Joe Smith, when
-Joe visits his private archive subscriptions page, then he sees
-a list of all his subscriptions.
+Joe visits his profile and clicks 'Change details' and then
+'Private PPA subscriptions', then he'll see a list of his current
+subscriptions.
 
-XXX: noodles 2009-03-10 bug=340405. The +archivesubscriptions traversal
-will require launchpad.Admin until the backend .htaccess update
-machinery is in-place and tested:
-
-    >>> login('foo.bar@canonical.com')
-    >>> admins.addMember(client, foobar)
-    >>> logout()
     >>> joe_browser = setupBrowser(auth="Basic joe@example.com:test")
     >>> joe_browser.open(
-    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
+    ...     "http://launchpad.dev/~joesmith")
+    >>> joe_browser.getLink('View your private PPA subscriptions').click()
     >>> print_subscriptions_for_person(joe_browser.contents)
     Archive                             Subscription description Status
-    Private PPA for Celso Providelo     Joe is my friend         Pending
+    PPA for Celso Providelo     Joe is my friend         Pending
         Confirm
 
-When Joe clicks on the 'Activate now' link for Celso's PPA then the
+When Joe clicks on the 'Confirm' link for Celso's PPA then the
 details of the subscription are displayed with a request to confirm the
 subscription.
 
     >>> joe_browser.getLink('Confirm').click()
     >>> print extract_text(find_main_content(joe_browser.contents))
     Profile...
-    Joe Smith's subscription to Private PPA for Celso Providelo
+    Joe Smith's subscription to PPA for Celso Providelo
     ...
     Confirm subscription
 
@@ -236,7 +218,7 @@ snippet is displayed.as well as a notification message.
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    # Personal subscription of Joe Smith to Private PPA for Celso Providelo
+    # Personal subscription of Joe Smith to PPA for Celso Providelo
     deb http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb-src http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     ...
@@ -252,7 +234,7 @@ subscriptions reflects the confirmed subscription.
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> print_subscriptions_for_person(joe_browser.contents)
     Archive                             Subscription description Status
-    Private PPA for Celso Providelo     Joe is my friend         Active View
+    PPA for Celso Providelo     Joe is my friend         Active View
 
 === Scenario 2: A user re-generates the token for a subscription ===
 
@@ -276,7 +258,7 @@ the page is redisplayed with new sources.list entries and a notification.
     >>> for msg in get_feedback_messages(joe_browser.contents):
     ...     print msg
     Launchpad has generated the new password you requested for your
-    subscription to the archive Private PPA for Celso Providelo. Please
+    subscription to the archive PPA for Celso Providelo. Please
     follow the instructions below to update your custom "sources.list".
 
 

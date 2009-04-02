@@ -801,25 +801,40 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
                 continue
 
             activity = BugActivityItem(activity)
-            if activity.datechanged in activity_by_date:
-                activity_by_date[activity.datechanged].append(activity)
+            if activity.datechanged not in activity_by_date:
+                activity_by_date[activity.datechanged] = {
+                    activity.target: [activity]}
             else:
-                activity_by_date[activity.datechanged] = [activity]
+                activity_dict = activity_by_date[activity.datechanged]
+                if activity.target in activity_dict:
+                    activity_dict[activity.target].append(activity)
+                else:
+                    activity_dict[activity.target] = [activity]
 
         # Sort all the lists to ensure that changes are written out in
         # alphabetical order.
-        for date, activity_list in activity_by_date.items():
-            activity_by_date[date] = sorted(
-                activity_list, key=attrgetter('whatchanged'))
+        for date, activity_by_target in activity_by_date.items():
+            # We convert each {target: activty_list} mapping into a list
+            # of {target, activity_list} dicts for the sake of making
+            # them usable in templates.
+            activity_by_date[date] = [{
+                'target': target,
+                'activity': sorted(
+                    activity_list, key=attrgetter('attribute')),
+                }
+                for target, activity_list in activity_by_target.items()]
 
         return activity_by_date
 
     @cachedproperty
     def activity_and_comments(self):
+        # Add the activity to the activity_and_comments list. For each
+        # activity dict we use the person responsible for the first
+        # activity item as the owner of the list of activities.
         activity_by_date = [
-            {'activity': activity_list, 'date': date,
-             'person': activity_list[0].person}
-            for date, activity_list in self.activity_by_date.items()]
+            {'activity': activity_dict, 'date': date,
+             'person': activity_dict[0]['activity'][0].person}
+            for date, activity_dict in self.activity_by_date.items()]
 
         activity_and_comments = []
         for comment in self.visible_comments_for_display:
@@ -834,7 +849,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
                     # we don't need it there any more.
                     activity_by_date.remove(activity_dict)
 
-            activity_for_comment.sort(key=attrgetter('whatchanged'))
+            activity_for_comment.sort(key=itemgetter('target'))
             comment.activity = activity_for_comment
 
             activity_and_comments.append({
@@ -3175,15 +3190,51 @@ class BugActivityItem:
     """A decorated BugActivity."""
     delegates(IBugActivity, 'activity')
 
+    # The regular expression we use for matching bug task changes.
+    bugtask_change_re = re.compile(
+        '(?P<target>[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?): '
+        '(?P<attribute>assignee|importance|milestone|status)')
+
     def __init__(self, activity):
         self.activity = activity
 
     @property
+    def target(self):
+        """Return the target of this BugActivityItem.
+
+        `target` is determined based on the `whatchanged` string of the
+        original BugAcitivity.
+
+        :return: The target name of the item if `whatchanged` is of the
+        form <target_name>: <attribute>. Otherwise, return None.
+        """
+        match = self.bugtask_change_re.match(self.whatchanged)
+        if match is None:
+            return None
+        else:
+            return match.groupdict()['target']
+
+    @property
+    def attribute(self):
+        """Return the attribute changed in this BugActivityItem.
+
+        `attribute` is determined based on the `whatchanged` string of the
+        original BugAcitivity.
+
+        :return: The attribute name of the item if `whatchanged` is of
+            the form <target_name>: <attribute>. Otherwise, return the
+            original `whatchanged` string.
+        """
+        match = self.bugtask_change_re.match(self.whatchanged)
+        if match is None:
+            return self.whatchanged
+        else:
+            return match.groupdict()['attribute']
+
+    @property
     def change_summary(self):
         """Return a formatted summary of the change."""
-        # Remove colons to make BugTask attribute changes are a little
-        # more readable.
-        return self.whatchanged.replace(':', '')
+        return self.attribute
 
     @property
     def _formatted_tags_change(self):
@@ -3221,41 +3272,36 @@ class BugActivityItem:
     @property
     def change_details(self):
         """Return a detailed description of the change."""
-        assignee_regex = re.compile(
-            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: assignee')
-        milestone_regex = re.compile(
-            '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: milestone')
-
         # Our default return dict. We may mutate this depending on
         # what's changed.
         return_dict = {
             'old_value': self.oldvalue,
             'new_value': self.newvalue,
             }
-        if self.whatchanged == 'summary':
+        if self.attribute == 'summary':
             # We display summary changes as a unified diff, replacing
             # \ns with <br />s so that the lines are separated properly.
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
 
-        elif self.whatchanged == 'description':
+        elif self.attribute == 'description':
             # Description changes can be quite long, so we just return
             # 'updated' rather than returning the whole new description
             # or a diff.
             return 'updated'
 
-        elif self.whatchanged == 'tags':
+        elif self.attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
             return self._formatted_tags_change.replace('\n', '<br />')
 
-        elif assignee_regex.match(self.whatchanged) is not None:
+        elif self.attribute == 'assignee':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
 
-        elif milestone_regex.match(self.whatchanged) is not None:
+        elif self.attribute == 'milestone':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'none'

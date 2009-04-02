@@ -11,6 +11,7 @@ __all__ = [
     'get_bzr_path',
     'get_bzr_plugins_path',
     'iter_list_chunks',
+    'load_optional_plugin',
     ]
 
 
@@ -44,3 +45,12 @@ os.environ['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
 # We want to have full access to Launchpad's Bazaar plugins throughout the
 # codehosting package.
 load_plugins([get_bzr_plugins_path()])
+
+
+def load_optional_plugin(plugin_name):
+    """Load the plugin named `plugin_name` from optionalbzrplugins/."""
+    from bzrlib import plugins
+    optional_plugin_dir = os.path.join(config.root, 'optionalbzrplugins')
+    if optional_plugin_dir not in plugins.__path__:
+        plugins.__path__.append(optional_plugin_dir)
+    __import__("bzrlib.plugins.%s" % plugin_name)

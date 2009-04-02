@@ -14,11 +14,11 @@ including:
 The pages used to view and edit these configurations are only visible
 to Launchpad administrators:
 
-    >>> user_browser.open('http://openid.launchpad.dev/+rpconfig')
+    >>> user_browser.open('http://launchpad.dev/+rpconfig')
     Traceback (most recent call last):
       ...
     Unauthorized: ...
-    >>> admin_browser.open('http://openid.launchpad.dev/+rpconfig')
+    >>> admin_browser.open('http://launchpad.dev/+rpconfig')
     >>> print admin_browser.title
     OpenID Relying Party Configurations
 
@@ -80,7 +80,7 @@ The RP config contains all the information we'd expect:
 The trust_root will have a trailing slash appended even if the user
 does not specify one.
 
-    >>> admin_browser.open('http://openid.launchpad.dev/+rpconfig')
+    >>> admin_browser.open('http://launchpad.dev/+rpconfig')
     >>> admin_browser.getLink('Add an RP config').click()
     >>> admin_browser.getControl('Trust Root').value = 'http://example-two.com'
     >>> admin_browser.getControl('Display Name').value = 'Example Two RP'
@@ -167,7 +167,7 @@ conflict with another configuration:
 
 RP configurations can be deleted from the edit form:
 
-    >>> admin_browser.open('http://openid.launchpad.dev/+rpconfig')
+    >>> admin_browser.open('http://launchpad.dev/+rpconfig')
     >>> admin_browser.getLink('Example RP').click()
     >>> admin_browser.getControl('Remove').click()
     >>> print admin_browser.title

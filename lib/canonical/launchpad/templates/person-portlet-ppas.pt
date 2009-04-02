@@ -11,10 +11,18 @@
         <div tal:replace="structure context/@@+ppas-list"/>
 
         <div class="actions">
-           <tal:activate_ppa
+           <p><tal:activate_ppa
              define="link context/menu:overview/activate_ppa"
              condition="link/enabled"
              replace="structure link/fmt:icon-link" />
+           </p>
+           <p><tal:is-person condition="not: context/is_team">
+             <tal:view_p3a_subscriptions
+               define="link context/menu:overview/view_ppa_subscriptions"
+               condition="link/enabled"
+               replace="structure link/fmt:icon-link" />
+           </tal:is-person>
+           </p>
         </div>
       </div>
     </div>
