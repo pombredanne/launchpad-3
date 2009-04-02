@@ -301,7 +301,8 @@ class ZopelessTransactionManager(object):
             ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
             ISOLATION_LEVEL_SERIALIZABLE: 'serializable'}[isolation]
         if dbuser:
-            overlay += '\n[launchpad]\ndbuser: %s\n' % dbuser
+            overlay += '\n[launchpad]\ndbuser: %s\nauth_dbuser: %s\n' % (
+                dbuser, dbuser)
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:
