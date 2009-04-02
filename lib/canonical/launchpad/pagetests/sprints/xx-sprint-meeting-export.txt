@@ -33,7 +33,6 @@ The attendees element contains a list of person elements.
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> import operator
     >>> soup = BSS(browser.contents)
-    >>> print soup.name
     >>> people = soup.find('attendees').findAll('person')
     >>> for person in sorted(people, key=operator.itemgetter("displayname")):
     ...     print "%(displayname)s, %(name)s, %(start)s -> %(end)s" % person
