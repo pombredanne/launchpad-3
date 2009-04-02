@@ -696,9 +696,9 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=task_added_notification,
             expected_activity=task_added_activity)
 
-    def test_bugtask_added_assignee(self):
-        # Adding a bug task adds entries in both BugActivity and
-        # BugNotification.
+    def test_bugtask_added_with_assignee(self):
+        # Adding an assigned bug task adds entries in both BugActivity
+        # and BugNotification.
         target = self.factory.makeProduct()
         added_task = self.bug.addTask(self.user, target)
         added_task.transitionToAssignee(self.factory.makePerson())
@@ -726,9 +726,9 @@ class TestBugChanges(unittest.TestCase):
             expected_notification=task_added_notification,
             expected_activity=task_added_activity)
 
-    def test_bugtask_added_bugwatch(self):
-        # Adding a bug task adds entries in both BugActivity and
-        # BugNotification.
+    def test_bugtask_added_with_bugwatch(self):
+        # Adding a bug task with a bug watch adds entries in both
+        # BugActivity and BugNotification.
         target = self.factory.makeProduct()
         bug_watch = self.factory.makeBugWatch(bug=self.bug)
         self.saveOldChanges()
