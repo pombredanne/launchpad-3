@@ -1075,6 +1075,46 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=expected_notification)
 
+    def test_change_bugtask_milestone(self):
+        # When a bugtask is retargeted from one milestone to another,
+        # both BugActivity and BugNotification records are created.
+        old_milestone = self.factory.makeMilestone(product=self.product)
+        old_milestone_subscriber = self.factory.makePerson()
+        old_milestone.addBugSubscription(
+            old_milestone_subscriber, old_milestone_subscriber)
+        new_milestone = self.factory.makeMilestone(product=self.product)
+        new_milestone_subscriber = self.factory.makePerson()
+        new_milestone.addBugSubscription(
+            new_milestone_subscriber, new_milestone_subscriber)
+
+        self.changeAttribute(self.bug_task, 'milestone', old_milestone)
+        self.saveOldChanges()
+        self.changeAttribute(self.bug_task, 'milestone', new_milestone)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: milestone' % self.bug_task.bugtargetname,
+            'newvalue': new_milestone.name,
+            'oldvalue': old_milestone.name,
+            }
+
+        expected_notification = {
+            'text': (
+                u'** Changed in: %s\n'
+                u'    Milestone: %s => %s' % (
+                    self.bug_task.bugtargetname,
+                    old_milestone.name, new_milestone.name)),
+            'person': self.user,
+            'recipients': [
+                self.user, self.product_metadata_subscriber,
+                old_milestone_subscriber, new_milestone_subscriber,
+                ],
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification)
+
     def test_product_series_nominated(self):
         # Nominating a bug to be fixed in a product series adds an item
         # to the activity log only.
