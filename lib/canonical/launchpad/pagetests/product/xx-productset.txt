@@ -7,10 +7,10 @@ The pages are "+review-licenses", "+new", and "+all".
 == Review project licenses ==
 
 The page +review-licenses is accessible from the /projects page via
-the "Review project licenses" link, which is conditionally available
+the "Review licenses" link, which is conditionally available
 based on permissions.
 
-A logged in, unprivileged person cannot see the "Review project
+A logged in, unprivileged person cannot see the "Review
 licenses" link.
 
     >>> user_browser.open('http://launchpad.dev/projects')
@@ -34,14 +34,8 @@ A member of the Launchpad commercial team may successfully access the
     >>> commercial_browser.open(
     ...     'http://launchpad.dev/projects/')
     >>> commercial_browser.getLink("Review licenses").click()
-    >>> commercial_browser.title
-    'Review licenses of projects'
-
-That same user may successfully navigate to the +review-licenses page
-directly.
-
-    >>> commercial_browser.open(
-    ...     'http://launchpad.dev/projects/+review-licenses')
+    >>> commercial_browser.url
+    'http://launchpad.dev/projects/+review-licenses'
     >>> commercial_browser.title
     'Review licenses of projects'
 
@@ -195,7 +189,7 @@ will be displayed as proprietary.
           This project&rsquo;s license has not been specified.
 
 
-== +all ==
+== View all projects ==
 
 The unprivileged user can see "+all".
 
@@ -209,7 +203,7 @@ The commercial user can also view "+all".
     >>> commercial_browser.title
     'Upstream projects registered in Launchpad'
 
-== +new ==
+== Create a project ==
 
 The unprivileged user can see "+new".
 
