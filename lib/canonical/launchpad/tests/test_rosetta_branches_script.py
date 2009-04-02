@@ -15,7 +15,6 @@ from canonical.testing import ZopelessAppServerLayer
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
 from canonical.launchpad.database.branchjob import RosettaUploadJob
 from canonical.launchpad.interfaces.translations import (
     TranslationsBranchImportMode)
