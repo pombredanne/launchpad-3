@@ -1648,6 +1648,15 @@ They can be looked up by their aliases too.
     >>> [term.token for term in vocab.searchForTerms(query='iceweasel')]
     ['firefox']
 
+Aliases are not among the terms when their name does not match the
+token/name.
+
+    >>> [term.token for term in vocab.searchForTerms(query='ubuntu')]
+    ['kubuntu', 'ubuntu', 'ubuntutest']
+
+    >>> vocab.getTermByToken('ubuntu').token
+    'ubuntu'
+
 Inactive projects and project groups are not available.
 
     >>> for term in vocab:
