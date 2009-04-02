@@ -30,7 +30,6 @@ BUG_INTERESTING_FIELDS = [
 BUGTASK_INTERESTING_FIELDS = [
     'assignee',
     'bugwatch',
-    'milestone',
     ]
 
 

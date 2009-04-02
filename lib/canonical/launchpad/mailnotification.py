@@ -615,8 +615,11 @@ def get_bug_edit_notification_texts(bug_delta):
         if not zope_isinstance(bugtask_deltas, (list, tuple)):
             bugtask_deltas = [bugtask_deltas]
 
+        bugtask_change_field_names = [
+            'target', 'importance', 'status', 'milestone',
+            ]
         for bugtask_delta in bugtask_deltas:
-            for field_name in ['target', 'importance', 'status']:
+            for field_name in bugtask_change_field_names:
                 field_delta = getattr(bugtask_delta, field_name)
                 if field_delta is not None:
                     bug_change_class = get_bug_change_class(
@@ -640,8 +643,7 @@ def get_bug_edit_notification_texts(bug_delta):
         for bugtask_delta in bugtask_deltas:
             change_info = u''
 
-            for fieldname, displayattrname in [
-                ("milestone", "name"), ("bugwatch", "title")]:
+            for fieldname, displayattrname in [("bugwatch", "title")]:
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(

@@ -521,6 +521,7 @@ class BugTaskAttributeChange(AttributeChange):
     display_attribute_map = {
         'status': 'title',
         'importance': 'title',
+        'milestone': 'name',
         }
 
     def __init__(self, bug_task, when, person, what_changed, old_value,
@@ -530,8 +531,18 @@ class BugTaskAttributeChange(AttributeChange):
 
         self.bug_task = bug_task
         display_attribute = self.display_attribute_map[self.what_changed]
-        self.display_old_value = getattr(self.old_value, display_attribute)
-        self.display_new_value = getattr(self.new_value, display_attribute)
+
+        if self.old_value is None:
+            self.display_old_value = None
+        else:
+            self.display_old_value = getattr(
+                self.old_value, display_attribute)
+
+        if self.new_value is None:
+            self.display_new_value = None
+        else:
+            self.display_new_value = getattr(
+                self.new_value, display_attribute)
 
     def getBugActivity(self):
         """Return the bug activity data for this change as a dict.
@@ -610,4 +621,5 @@ BUGTASK_CHANGE_LOOKUP = {
     'importance': BugTaskAttributeChange,
     'status': BugTaskAttributeChange,
     'target': BugTaskTargetChange,
+    'milestone': BugTaskAttributeChange,
     }
