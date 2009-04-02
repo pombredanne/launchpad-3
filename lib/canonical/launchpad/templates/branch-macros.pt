@@ -219,6 +219,16 @@
       revisions - the revisions to list
   </tal:comment>
 
+  <tal:pending-writes tal:condition="context/pending_writes">
+    <div id="branch-pending-writes">
+      <h3>Updating branch...</h3>
+      <p>
+        Launchpad is processing new changes to this branch and will be
+        available in a few minutes. Reload to see the changes.
+      </p>
+    </div>
+  </tal:pending-writes>
+
   <dl class="revision">
     <tal:revision repeat="rev_no revisions"
                   define="codebrowse view/codebrowse_url">
