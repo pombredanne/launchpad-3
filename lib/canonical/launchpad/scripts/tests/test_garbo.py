@@ -12,6 +12,7 @@ import unittest
 from pytz import UTC
 from storm.locals import Min
 import transaction
+from zope.component import getUtility
 
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.database.oauth import OAuthNonce
@@ -21,9 +22,12 @@ from canonical.launchpad.interfaces.codeimportresult import (
     CodeImportResultStatus)
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.scripts.garbo import (
-    DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector)
+    DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector,
+    OpenIDAssociationPruner, OpenIDConsumerAssociationPruner)
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MASTER_FLAVOR)
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
 
@@ -58,19 +62,18 @@ class TestGarbo(TestCase):
         self.runHourly()
 
     def runDaily(self):
-        LaunchpadZopelessLayer.switchDbUser('garbo-daily')
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
         collector = DailyDatabaseGarbageCollector(test_args=[])
         collector.logger = QuietFakeLogger()
         collector.main()
 
     def runHourly(self):
-        LaunchpadZopelessLayer.switchDbUser('garbo-hourly')
+        LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
         collector = HourlyDatabaseGarbageCollector(test_args=[])
         collector.logger = QuietFakeLogger()
         collector.main()
 
     def test_OAuthNoncePruner(self):
-        store = IMasterStore(OAuthNonce)
         now = datetime.utcnow().replace(tzinfo=UTC)
         timestamps = [
             now - timedelta(days=2), # Garbage
@@ -79,6 +82,7 @@ class TestGarbo(TestCase):
             now, # Not garbage
             ]
         LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(OAuthNonce)
 
         # Make sure we start with 0 nonces.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 0)
@@ -94,6 +98,8 @@ class TestGarbo(TestCase):
         self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
 
         self.runHourly()
+
+        store = IMasterStore(OAuthNonce)
 
         # Now back to two, having removed the two garbage entries.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 2)
@@ -139,6 +145,8 @@ class TestGarbo(TestCase):
         # Run the garbage collector.
         self.runHourly()
 
+        store = IMasterStore(OpenIDConsumerNonce)
+
         # We should now have 2 nonces.
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 2)
 
@@ -168,16 +176,19 @@ class TestGarbo(TestCase):
         self.runDaily()
 
         # Nothing is removed, because we always keep the 4 latest.
+        store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
             store.find(CodeImportResult).count(), 4)
 
         new_code_import_result(now - timedelta(days=31))
         self.runDaily()
+        store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
             store.find(CodeImportResult).count(), 4)
 
         new_code_import_result(now - timedelta(days=29))
         self.runDaily()
+        store = IMasterStore(CodeImportResult)
         self.failUnlessEqual(
             store.find(CodeImportResult).count(), 4)
 
@@ -186,6 +197,40 @@ class TestGarbo(TestCase):
             store.find(
                 Min(CodeImportResult.date_created)).one().replace(tzinfo=UTC)
             >= now - timedelta(days=30))
+
+    def test_OpenIDAssociationPruner(self, pruner=OpenIDAssociationPruner):
+        store_name = pruner.store_name
+        table_name = pruner.table_name
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store_selector = getUtility(IStoreSelector)
+        store = store_selector.get(store_name, MASTER_FLAVOR)
+        now = time.time()
+        # Create some associations in the past with lifetimes
+        for delta in range(0, 20):
+            store.execute("""
+                INSERT INTO %s (server_url, handle, issued, lifetime)
+                VALUES (%s, %s, %d, %d)
+                """ % (table_name, str(delta), str(delta), now-10, delta))
+        transaction.commit()
+
+        num_expired = store.execute("""
+            SELECT COUNT(*) FROM %s
+            WHERE issued + lifetime < %f
+            """ % (table_name, now)).get_one()[0]
+        self.failUnless(num_expired > 0)
+
+        self.runHourly()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = store_selector.get(store_name, MASTER_FLAVOR)
+        num_expired = store.execute("""
+            SELECT COUNT(*) FROM %s
+            WHERE issued + lifetime < %f
+            """ % (table_name, now)).get_one()[0]
+        self.failUnlessEqual(num_expired, 0)
+
+    def test_OpenIDConsumerAssociationPruner(self):
+        self.test_OpenIDAssociationPruner(OpenIDConsumerAssociationPruner)
 
 
 def test_suite():

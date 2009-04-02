@@ -5,6 +5,7 @@ __metaclass__ = type
 import warnings
 from datetime import datetime
 import re
+from textwrap import dedent
 
 import psycopg2
 from psycopg2.extensions import (
@@ -293,16 +294,25 @@ class ZopelessTransactionManager(object):
         if dbuser is None:
             dbuser = config.launchpad.dbuser
 
-        # Construct a config fragment:
-        overlay = '[database]\n'
-        overlay += 'main_master: %s\n' % connection_string
-        overlay += 'isolation_level: %s\n' % {
+        isolation_level = {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
             ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
             ISOLATION_LEVEL_SERIALIZABLE: 'serializable'}[isolation]
+
+        # Construct a config fragment:
+        overlay = dedent("""\
+            [database]
+            main_master: %(connection_string)s
+            auth_master: %(connection_string)s
+            isolaton_level: %(isolation_level)s
+            """ % vars())
+
         if dbuser:
-            overlay += '\n[launchpad]\ndbuser: %s\nauth_dbuser: %s\n' % (
-                dbuser, dbuser)
+            overlay += dedent("""\
+                [launchpad]
+                dbuser: %(dbuser)s
+                auth_dbuser: %(dbuser)s
+                """ % vars())
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:
@@ -313,6 +323,7 @@ class ZopelessTransactionManager(object):
             # installed, so return that one, but also emit a warning.
             warnings.warn(alreadyInstalledMsg, stacklevel=3)
         else:
+            getUtility(IZStorm)._reset()
             config.push(cls._CONFIG_OVERLAY_NAME, overlay)
             cls._config_overlay = overlay
             cls._dbname = dbname

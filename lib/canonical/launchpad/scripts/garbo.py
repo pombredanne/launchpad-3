@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -35,9 +35,9 @@ class TunableLoop:
     maximum_chunk_size = None # Override
     cooldown_time = 0
 
-    def run(self, loop_tuner=DBLoopTuner):
+    def run(self):
         assert self.maximum_chunk_size is not None, "Did not override."
-        loop_tuner(
+        DBLoopTuner(
             self, self.goal_seconds,
             minimum_chunk_size = self.minimum_chunk_size,
             maximum_chunk_size = self.maximum_chunk_size,
@@ -64,7 +64,8 @@ class OAuthNoncePruner(TunableLoop):
         return self.oldest_age <= ONE_DAY_IN_SECONDS
 
     def __call__(self, chunk_size):
-        self.oldest_age = max(ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
+        self.oldest_age = max(
+            ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
 
         self.store.find(
             OAuthNonce,
@@ -102,6 +103,41 @@ class OpenIDConsumerNoncePruner(TunableLoop):
             OpenIDConsumerNonce,
             OpenIDConsumerNonce.timestamp < self.earliest_timestamp).remove()
         transaction.commit()
+
+
+class OpenIDAssociationPruner(TunableLoop):
+    minimum_chunk_size = 3500
+    maximum_chunk_size = 50000
+
+    table_name = 'OpenIDAssociation'
+    store_name = AUTH_STORE
+
+    _num_removed = None
+
+    def __init__(self):
+        self.store = getUtility(IStoreSelector).get(
+            self.store_name, MASTER_FLAVOR)
+
+    def __call__(self, chunksize):
+        result = self.store.execute("""
+            DELETE FROM %s
+            WHERE (server_url, handle) IN (
+                SELECT server_url, handle FROM %s
+                WHERE issued + lifetime <
+                    EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)
+                LIMIT %d
+                )
+            """ % (self.table_name, self.table_name, int(chunksize)))
+        self._num_removed = result._raw_cursor.rowcount
+        transaction.commit()
+
+    def isDone(self):
+        return self._num_removed == 0
+
+
+class OpenIDConsumerAssociationPruner(OpenIDAssociationPruner):
+    table_name = 'OpenIDConsumerAssociation'
+    store_name = MAIN_STORE
 
 
 class CodeImportResultPruner(TunableLoop):
@@ -159,7 +195,9 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
     def __init__(self, test_args=None):
         super(BaseDatabaseGarbageCollector, self).__init__(
-            self.script_name, dbuser=self.script_name, test_args=test_args)
+            self.script_name,
+            dbuser=self.script_name.replace('-','_'),
+            test_args=test_args)
 
     def main(self):
         for tunable_loop in self.tunable_loops:
@@ -172,6 +210,8 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
+        OpenIDAssociationPruner,
+        OpenIDConsumerAssociationPruner,
         ]
 
 
