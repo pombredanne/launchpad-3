@@ -918,7 +918,7 @@ class TestBugChanges(unittest.TestCase):
 
         expected_notification = {
             'text': (
-                u'** Changed in: %s\n     Bugwatch: None => %s' % (
+                u'** Changed in: %s\n Remote watch: None => %s' % (
                 self.bug_task.bugtargetname, bug_watch.title)),
             'person': self.user,
             }
@@ -945,7 +945,7 @@ class TestBugChanges(unittest.TestCase):
 
         expected_notification = {
             'text': (
-                u'** Changed in: %s\n     Bugwatch: %s => None' % (
+                u'** Changed in: %s\n Remote watch: %s => None' % (
                 self.bug_task.bugtargetname, bug_watch.title)),
             'person': self.user,
             }

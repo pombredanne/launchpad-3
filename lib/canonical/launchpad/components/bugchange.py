@@ -11,7 +11,6 @@ __all__ = [
     'BugTagsChange',
     'BugTaskAdded',
     'BugTaskAttributeChange',
-    'BugTaskAttributeNotification',
     'BugTaskTargetChange',
     'BugTitleChange',
     'BugVisibilityChange',
@@ -519,6 +518,10 @@ class CveUnlinkedFromBug(BugChangeBase):
 class BugTaskAttributeChange(AttributeChange):
     """Used to represent a change in a BugTask's attributes."""
 
+    display_label_map = {
+        'bugwatch': 'remote watch',
+        }
+
     display_attribute_map = {
         'status': 'title',
         'importance': 'title',
@@ -546,6 +549,12 @@ class BugTaskAttributeChange(AttributeChange):
             self.display_new_value = getattr(
                 self.new_value, display_attribute)
 
+    @property
+    def display_label(self):
+        """Return a label to use for activity and notifications."""
+        return self.display_label_map.get(
+            self.what_changed, self.what_changed)
+
     def getBugActivity(self):
         """Return the bug activity data for this change as a dict.
 
@@ -553,7 +562,7 @@ class BugTaskAttributeChange(AttributeChange):
         target so as to make it clear in which task the change was made.
         """
         what_changed = '%s: %s' % (
-            self.bug_task.bugtargetname, self.what_changed)
+            self.bug_task.bugtargetname, self.display_label)
 
         return {
             'whatchanged': what_changed,
@@ -571,20 +580,12 @@ class BugTaskAttributeChange(AttributeChange):
             u"** Changed in: %(bug_target_name)s\n"
             "%(label)13s: %(oldval)s => %(newval)s\n" % {
                 'bug_target_name': self.bug_task.bugtargetname,
-                'label' : self.what_changed.capitalize(),
+                'label' : self.display_label.capitalize(),
                 'oldval' : self.display_old_value,
                 'newval' : self.display_new_value,
             })
 
         return {'text': text.rstrip()}
-
-
-class BugTaskAttributeNotification(BugTaskAttributeChange):
-    """Represents a notification about a BugTask attribute change."""
-
-    def getBugActivity(self):
-        """Do not record activity."""
-        return None
 
 
 class BugTaskTargetChange(AttributeChange):
@@ -632,5 +633,5 @@ BUGTASK_CHANGE_LOOKUP = {
     'status': BugTaskAttributeChange,
     'target': BugTaskTargetChange,
     'milestone': BugTaskAttributeChange,
-    'bugwatch': BugTaskAttributeNotification,
+    'bugwatch': BugTaskAttributeChange,
     }
