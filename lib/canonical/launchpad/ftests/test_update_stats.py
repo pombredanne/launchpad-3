@@ -14,8 +14,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroSeriesSet, ILanguageSet, IPOTemplateSet,
-    IPersonSet)
+    IDistributionSet, IDistroSeriesSet, ILanguageSet, IPOTemplateSet)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -193,7 +192,6 @@ class UpdateTranslationStatsTest(unittest.TestCase):
         self.distroseriesset = getUtility(IDistroSeriesSet)
         self.languageset = getUtility(ILanguageSet)
         self.potemplateset = getUtility(IPOTemplateSet)
-        self.personset = getUtility(IPersonSet)
 
     def tearDown(self):
         """Tear down this test and recycle the database."""
@@ -231,9 +229,8 @@ class UpdateTranslationStatsTest(unittest.TestCase):
                 # set.
                 assert pofile.variant is None
                 currentcount += pofile.currentCount()
-        contributor_count = (
-            self.personset.getPOFileContributorsByDistroSeries(
-                hoary, spanish).count())
+        contributor_count = hoary.getPOFileContributorsByLanguage(
+                spanish).count()
 
         # As noted in the for loop, we don't count IPOFile objects with
         # variants. Here we can see that, actually, there are translations
@@ -306,8 +303,7 @@ class UpdateTranslationStatsTest(unittest.TestCase):
                 new_currentcount += pofile.currentCount()
 
         new_contributor_count = (
-            self.personset.getPOFileContributorsByDistroSeries(
-                hoary, spanish).count())
+            hoary.getPOFileContributorsByLanguage(spanish).count())
 
         # The amount of messages to translate in Hoary is now lower because we
         # don't count anymore pmount messages.
