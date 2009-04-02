@@ -220,7 +220,7 @@ class DBLoopTuner(LoopTuner):
                     usename,
                     datname,
                     current_query
-                FROM pg_stat_activity
+                FROM activity()
                 WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
                 """ % self.long_running_transaction).get_all())
             if not results:

@@ -822,27 +822,6 @@ COMMENT ON FUNCTION set_bug_message_count() IS
 'AFTER UPDATE trigger on BugAffectsPerson maintaining the Bug.users_affected_count column';
 
 
-CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
-$$
-    DECLARE
-        v_lag interval;
-    BEGIN
-        SELECT INTO v_lag max(st_lag_time) FROM _sl.sl_status;
-        RETURN v_lag;
-    -- Slony-I not installed here - non-replicated setup.
-    EXCEPTION
-        WHEN invalid_schema_name THEN
-            RETURN NULL;
-        WHEN undefined_table THEN
-            RETURN NULL;
-    END;
-$$;
-
-COMMENT ON FUNCTION replication_lag() IS
-'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
-
-
 CREATE OR REPLACE FUNCTION set_bugtask_date_milestone_set() RETURNS TRIGGER
 LANGUAGE plpgsql AS
 $$
@@ -890,3 +869,45 @@ $$;
 
 COMMENT ON FUNCTION set_bugtask_date_milestone_set() IS
 'Update BugTask.date_milestone_set when BugTask.milestone is changed.';
+
+
+CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_lag interval;
+    BEGIN
+        SELECT INTO v_lag max(st_lag_time) FROM _sl.sl_status;
+        RETURN v_lag;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+        WHEN undefined_table THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION replication_lag() IS
+'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
+
+
+CREATE OR REPLACE FUNCTION activity()
+RETURNS SETOF pg_catalog.pg_stat_activity
+LANGUAGE SQL VOLATILE SECURITY DEFINER AS
+$$
+    SELECT
+        datid, datname, procpid, usesysid, usename,
+        CASE
+            WHEN current_query LIKE '<IDLE>%'
+                THEN current_query
+            ELSE
+                NULL
+        END AS current_query,
+        waiting, xact_start, query_start,
+        backend_start, client_addr, client_port
+    FROM pg_catalog.pg_stat_activity;
+$$;
+
+COMMENT ON FUNCTION activity() IS
+'SECURITY DEFINER wrapper around pg_stat_activity allowing unprivileged users to access most of its information.';
