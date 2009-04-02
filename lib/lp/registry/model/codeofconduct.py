@@ -31,6 +31,8 @@ from lp.registry.interfaces.codeofconduct import (
     ICodeOfConduct, ICodeOfConductConf, ICodeOfConductSet,
     ISignedCodeOfConduct, ISignedCodeOfConductSet)
 from lp.registry.interfaces.gpg import IGPGKeySet
+
+
 class CodeOfConductConf:
     """Abstract Component to store the current CoC configuration."""
 
@@ -40,7 +42,7 @@ class CodeOfConductConf:
     ## Integrate this class with LaunchpadCentral configuration
     ## in the future.
 
-    path = 'lib/canonical/launchpad/codesofconduct/'
+    path = 'lib/lp/registry/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
     currentrelease = '1.0.1'
     # Set the datereleased to the date that 1.0 CoC was released,
