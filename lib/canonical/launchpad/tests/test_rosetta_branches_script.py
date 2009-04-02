@@ -8,8 +8,6 @@ provisions to handle Bazaar branches.
 
 __metaclass__ = type
 
-import os
-
 from unittest import TestLoader
 
 from bzrlib.revision import NULL_REVISION
@@ -25,6 +23,7 @@ from canonical.launchpad.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 class TestRosettaBranchesScript(TestCaseWithFactory):
     """Testing the rosetta-bazaar cronscript."""
@@ -74,9 +73,9 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
 
     def test_rosetta_branches_script_oops(self):
         # A bogus revision in the job will trigger an OOPS.
-        # The OOPS is stored in a subdirectory of the configured error_dir.
+        globalErrorUtility.configure("rosettabranches")
+        previous_oops_report = globalErrorUtility.getLastOopsReport()
         self._clear_import_queue()
-        os.system("rm -rf " + config.rosettabranches.error_dir)
         pot_path = self.factory.getUniqueString() + ".pot"
         branch = self._setup_series_branch(pot_path)
         job = RosettaUploadJob.create(branch, self.factory.getUniqueString())
@@ -89,7 +88,10 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         queue = getUtility(ITranslationImportQueue)
         self.assertEqual(0, queue.entryCount())
 
-        self.assertEqual(1, len(os.listdir(config.rosettabranches.error_dir)))
+        oops_report = globalErrorUtility.getLastOopsReport()
+        if previous_oops_report is not None:
+            self.assertNotEqual(oops_report.id, previous_oops_report.id)
+        self.assertEqual('NoSuchRevision', oops_report.type)
 
 
 def test_suite():
