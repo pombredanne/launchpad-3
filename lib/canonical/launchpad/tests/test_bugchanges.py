@@ -902,12 +902,19 @@ class TestBugChanges(unittest.TestCase):
             bug=source_package_bug)
 
     def test_add_bugwatch_to_bugtask(self):
-        # Adding a BugWatch to a bug task only records an entry in the
-        # BugNotification table.
+        # Adding a BugWatch to a bug task records an entry in
+        # BugActivity and BugNotification.
         bug_watch = self.factory.makeBugWatch()
         self.saveOldChanges()
 
         self.changeAttribute(self.bug_task, 'bugwatch', bug_watch)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: remote watch' % self.product.bugtargetname,
+            'oldvalue': None,
+            'newvalue': bug_watch.title,
+            }
 
         expected_notification = {
             'text': (
@@ -917,17 +924,24 @@ class TestBugChanges(unittest.TestCase):
             }
 
         self.assertRecordedChange(
-            expected_activity=None,
+            expected_activity=expected_activity,
             expected_notification=expected_notification)
 
     def test_remove_bugwatch_from_bugtask(self):
-        # Removing a BugWatch from a bug task only records an entry in the
-        # BugNotification table.
+        # Removing a BugWatch from a bug task records an entry in
+        # BugActivity and BugNotification.
         bug_watch = self.factory.makeBugWatch()
         self.changeAttribute(self.bug_task, 'bugwatch', bug_watch)
         self.saveOldChanges()
 
         self.changeAttribute(self.bug_task, 'bugwatch', None)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': '%s: remote watch' % self.product.bugtargetname,
+            'oldvalue': bug_watch.title,
+            'newvalue': None,
+            }
 
         expected_notification = {
             'text': (
@@ -937,7 +951,7 @@ class TestBugChanges(unittest.TestCase):
             }
 
         self.assertRecordedChange(
-            expected_activity=None,
+            expected_activity=expected_activity,
             expected_notification=expected_notification)
 
     def test_assign_bugtask(self):
