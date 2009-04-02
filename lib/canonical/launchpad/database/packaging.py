@@ -14,7 +14,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
         PackagingType, IPackaging, IPackagingUtil)
-from canonical.launchpad.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class Packaging(SQLBase):
@@ -43,7 +43,7 @@ class Packaging(SQLBase):
 
     @property
     def sourcepackage(self):
-        from canonical.launchpad.database.sourcepackage import SourcePackage
+        from lp.registry.model.sourcepackage import SourcePackage
         return SourcePackage(distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
 

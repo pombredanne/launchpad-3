@@ -156,7 +156,7 @@ class Account(SQLBase):
     def createPerson(self, rationale):
         """See `IAccount`."""
         # Need a local import because of circular dependencies.
-        from canonical.launchpad.database.person import (
+        from lp.registry.model.person import (
             generate_nick, Person, PersonSet)
         assert self.preferredemail is not None, (
             "Can't create a Person for an account which has no email.")
@@ -212,7 +212,7 @@ class AccountSet:
     def createAccountAndEmail(self, email, rationale, displayname, password,
                               password_is_encrypted=False):
         """See `IAccountSet`."""
-        from canonical.launchpad.database.person import generate_nick
+        from lp.registry.model.person import generate_nick
         openid_mnemonic = generate_nick(email)
         # Convert the PersonCreationRationale to an AccountCreationRationale.
         account_rationale = getattr(AccountCreationRationale, rationale.name)

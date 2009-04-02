@@ -19,7 +19,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     ISpecificationBranch, ISpecificationBranchSet)
-from canonical.launchpad.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class SpecificationBranch(SQLBase):

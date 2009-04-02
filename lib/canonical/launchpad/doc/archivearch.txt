@@ -7,9 +7,9 @@ packages in a certain archives will be built for.
     ...     ArchivePurpose, IArchiveSet, IArchive)
     >>> from canonical.launchpad.interfaces.archivearch import (
     ...     IArchiveArchSet)
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     IPersonSet)
     >>> from canonical.launchpad.interfaces.processor import (
     ...     IProcessorFamilySet)

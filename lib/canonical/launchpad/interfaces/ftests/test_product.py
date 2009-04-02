@@ -10,7 +10,7 @@ from doctest import DocTestSuite
 
 from canonical.launchpad.testing.systemdocs import setUp, tearDown
 from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.interfaces import product
+from lp.registry.interfaces import product
 
 
 def test_suite():

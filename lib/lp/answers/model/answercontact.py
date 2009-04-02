@@ -13,7 +13,7 @@ from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IAnswerContact
-from canonical.launchpad.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class AnswerContact(SQLBase):

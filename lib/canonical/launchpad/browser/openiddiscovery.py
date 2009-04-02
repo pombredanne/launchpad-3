@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.authtoken import IAuthTokenSet
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDAuthorizationSet, IOpenIDRPConfigSet, IOpenIDPersistentIdentity)
-from canonical.launchpad.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import (

@@ -5,5 +5,5 @@ __metaclass__ = type
 from zope.testing.doctestunit import DocTestSuite
 
 def test_suite():
-    return DocTestSuite('canonical.launchpad.database.person')
+    return DocTestSuite('lp.registry.model.person')
 

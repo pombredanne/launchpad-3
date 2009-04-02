@@ -28,10 +28,10 @@ from canonical.launchpad.database.branchmergeproposal import (
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
-from canonical.launchpad.database.product import ProductSet
+from lp.registry.model.product import ProductSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch)
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from lp.registry.model.sourcepackage import SourcePackage
 from canonical.launchpad.ftests import (
     ANONYMOUS, login, login_person, logout, syncUpdate)
 from canonical.launchpad.interfaces import (

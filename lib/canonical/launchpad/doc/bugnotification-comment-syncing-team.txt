@@ -15,7 +15,7 @@ initial comment import is done for a bug watch. We don't have any way of
 linking it to a bug watch, apart from marking it as a comment from the
 Bug Watch Updater.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> syncing_team = getUtility(IPersonSet).getByName(
     ...     config.malone.comment_syncing_team)

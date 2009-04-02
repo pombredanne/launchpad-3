@@ -27,7 +27,7 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
     IDistribution, IFAQ, IFAQSet, FAQSort, IPerson, IProduct, IProject)
-from canonical.launchpad.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class FAQ(SQLBase):

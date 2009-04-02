@@ -17,8 +17,8 @@ from canonical.launchpad.interfaces.translator import (
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.person import validate_public_person
-from canonical.launchpad.database.teammembership import TeamParticipation
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.teammembership import TeamParticipation
 
 class Translator(SQLBase):
     """A Translator in a TranslationGroup."""

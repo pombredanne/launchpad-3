@@ -1691,7 +1691,7 @@ They can be looked up by their aliases too.
 
     >>> vocab.getTermByToken('ubuntu').token
     'ubuntu'
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> login('mark@hbd.com')
     >>> getUtility(IDistributionSet)['ubuntu'].setAliases(['ubantoo'])

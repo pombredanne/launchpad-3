@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -270,7 +270,7 @@ class POTemplate(SQLBase, RosettaStats):
         if self.productseries is not None:
             return self.productseries
         elif self.distroseries is not None:
-            from canonical.launchpad.database.sourcepackage import \
+            from lp.registry.model.sourcepackage import \
                 SourcePackage
             return SourcePackage(distroseries=self.distroseries,
                 sourcepackagename=self.sourcepackagename)

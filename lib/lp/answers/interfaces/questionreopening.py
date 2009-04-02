@@ -13,7 +13,7 @@ from zope.interface import Interface
 from zope.schema import Choice, Datetime, Object
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionenums import QuestionStatus

@@ -67,7 +67,7 @@ about the current release is displayed.
 
     >>> import pytz
     >>> from datetime import datetime
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> published_distro = factory.makeDistribution(
     ...     name='published-distro', displayname='Published Distro')
     >>> published_distro_series = factory.makeDistroRelease(

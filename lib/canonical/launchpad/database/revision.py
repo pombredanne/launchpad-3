@@ -28,12 +28,12 @@ from canonical.launchpad.interfaces import (
     IRevisionParent, IRevisionProperty, IRevisionSet)
 from canonical.launchpad.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING)
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.project import IProject
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.project import IProject
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class Revision(SQLBase):
@@ -344,7 +344,7 @@ class RevisionSet:
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
-        from canonical.launchpad.database.person import ValidPersonCache
+        from lp.registry.model.person import ValidPersonCache
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -368,7 +368,7 @@ class RevisionSet:
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
-        from canonical.launchpad.database.teammembership import (
+        from lp.registry.model.teammembership import (
             TeamParticipation)
 
         store = Store.of(person)
@@ -402,7 +402,7 @@ class RevisionSet:
         """Helper method for Products and Projects."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
-        from canonical.launchpad.database.product import Product
+        from lp.registry.model.product import Product
         from canonical.launchpad.database.branchrevision import BranchRevision
 
         origin = [

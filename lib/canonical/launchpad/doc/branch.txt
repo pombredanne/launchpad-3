@@ -96,7 +96,7 @@ Branches can be created with IBranchNamespace.createBranch, which takes
 details like the type of the branch -- whether it is mirrored, hosted,
 imported or remote, name, and so on.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> registrant = factory.makePerson(name='registrant')
     >>> from canonical.launchpad.interfaces.branchnamespace import (
     ...     get_branch_namespace)

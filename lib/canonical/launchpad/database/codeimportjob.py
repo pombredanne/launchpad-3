@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportMachineSet, ICodeImportResultSet)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class CodeImportJob(SQLBase):

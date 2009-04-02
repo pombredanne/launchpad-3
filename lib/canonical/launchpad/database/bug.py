@@ -55,19 +55,19 @@ from canonical.launchpad.interfaces.bugnotification import (
     IBugNotificationSet)
 from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
 from canonical.launchpad.interfaces.cve import ICveSet
-from canonical.launchpad.interfaces.distribution import IDistribution
-from canonical.launchpad.interfaces.distributionsourcepackage import (
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from canonical.launchpad.interfaces.distroseries import (
+from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel, IStructuralSubscriptionTarget)
 from canonical.launchpad.helpers import shortlist
@@ -90,11 +90,11 @@ from canonical.launchpad.database.bugtask import (
     )
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
-from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.person import Person, ValidPersonCache
-from canonical.launchpad.database.pillar import pillar_sort_key
+from lp.registry.model.mentoringoffer import MentoringOffer
+from lp.registry.model.person import Person, ValidPersonCache
+from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)

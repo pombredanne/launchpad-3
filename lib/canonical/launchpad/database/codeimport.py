@@ -28,7 +28,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
-from canonical.launchpad.database.productseries import ProductSeries
+from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
     BranchType, CodeImportJobState, CodeImportReviewStatus,
     ICodeImport, ICodeImportEventSet, ICodeImportSet, ILaunchpadCelebrities,
@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.codeimport import RevisionControlSystems
 from canonical.launchpad.mailout.codeimport import code_import_updated
-from canonical.launchpad.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 
 class CodeImport(SQLBase):

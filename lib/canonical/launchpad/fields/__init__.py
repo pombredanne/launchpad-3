@@ -81,7 +81,7 @@ from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -469,7 +469,7 @@ class BlacklistableContentNameField(ContentNameField):
             return
 
         # Need a local import because of circular dependencies.
-        from canonical.launchpad.interfaces.person import IPersonSet
+        from lp.registry.interfaces.person import IPersonSet
         if getUtility(IPersonSet).isNameBlacklisted(input):
             raise LaunchpadValidationError(
                 "The name '%s' has been blocked by the Launchpad "
@@ -491,9 +491,9 @@ class PillarAliases(TextLine):
         not identical to the pillar's existing name.
         """
         context = self.context
-        from canonical.launchpad.interfaces.product import IProduct
-        from canonical.launchpad.interfaces.project import IProject
-        from canonical.launchpad.interfaces.distribution import IDistribution
+        from lp.registry.interfaces.product import IProduct
+        from lp.registry.interfaces.project import IProject
+        from lp.registry.interfaces.distribution import IDistribution
         if IProduct.providedBy(context):
             name_field = IProduct['name']
         elif IProject.providedBy(context):
@@ -800,7 +800,7 @@ class ProductNameField(PillarNameField):
     @property
     def _content_iface(self):
         # Local import to avoid circular dependencies.
-        from canonical.launchpad.interfaces.product import IProduct
+        from lp.registry.interfaces.product import IProduct
         return IProduct
 
 

@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSourcePackage, IDistroSeries, IMilestone,
     IProduct, IProductSeries, IProject, IStructuralSubscription,
     IStructuralSubscriptionTarget)
-from canonical.launchpad.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 
 class StructuralSubscription(SQLBase):
     """A subscription to a Launchpad structure."""

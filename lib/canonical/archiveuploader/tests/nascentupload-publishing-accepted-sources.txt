@@ -24,7 +24,7 @@ Let's start a new series of ed (0.2-20) and publish it:
 
 Check if the publication is available through the Soyuz package stack:
 
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']

@@ -42,10 +42,10 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.database.distribution import Distribution
+from lp.registry.model.distribution import Distribution
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
-from canonical.launchpad.database.distroseries import DistroSeries
-from canonical.launchpad.database.teammembership import TeamParticipation
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
@@ -59,9 +59,9 @@ from canonical.launchpad.interfaces.hwdb import (
     IllegalQuery, ParameterError)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.product import License
-from canonical.launchpad.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import License
+from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.launchpad.components.decoratedresultset import (

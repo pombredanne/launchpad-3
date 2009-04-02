@@ -11,8 +11,8 @@ from storm.expr import Asc, Desc
 from canonical.launchpad.browser.branchlisting import (
     BranchListingSort, BranchListingView, SourcePackageBranchesView)
 from canonical.launchpad.database.branch import Branch
-from canonical.launchpad.database.person import Owner
-from canonical.launchpad.database.product import Product
+from lp.registry.model.person import Owner
+from lp.registry.model.product import Product
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer

@@ -17,7 +17,7 @@ from canonical.config import config
 from canonical.database.sqlbase import (
     commit, flush_database_updates, ISOLATION_LEVEL_READ_COMMITTED)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.ftests import mailinglists_helper
+from lp.registry.tests import mailinglists_helper
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
     IPersonSet)
@@ -115,12 +115,6 @@ def branchscannerTearDown(test):
     # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
-
-def peopleKarmaTearDown(test):
-    """Restore the database after testing karma."""
-    # We can't detect db changes made by the subprocess (yet).
-    DatabaseLayer.force_dirty_database()
-    tearDown(test)
 
 def bugNotificationSendingSetUp(test):
     lobotomize_stevea()
@@ -266,60 +260,6 @@ def manageChrootSetup(test):
 # the harness for the mailinglist-xmlrpc.txt tests, or improving things so
 # that all this cruft isn't necessary.
 
-def mailingListXMLRPCInternalSetUp(test):
-    setUp(test)
-    # Use the direct API view instance, not retrieved through the component
-    # architecture.  Don't use ServerProxy.  We do this because it's easier to
-    # debug because when things go horribly wrong, you see the errors on
-    # stdout instead of in an OOPS report living in some log file somewhere.
-    from canonical.launchpad.xmlrpc import MailingListAPIView
-    class ImpedenceMatchingView(MailingListAPIView):
-        @mailinglists_helper.fault_catcher
-        def getPendingActions(self):
-            return super(ImpedenceMatchingView, self).getPendingActions()
-        @mailinglists_helper.fault_catcher
-        def reportStatus(self, statuses):
-            return super(ImpedenceMatchingView, self).reportStatus(statuses)
-        @mailinglists_helper.fault_catcher
-        def getMembershipInformation(self, teams):
-            return super(
-                ImpedenceMatchingView, self).getMembershipInformation(teams)
-        @mailinglists_helper.fault_catcher
-        def isLaunchpadMember(self, address):
-            return super(ImpedenceMatchingView, self).isLaunchpadMember(
-                address)
-        @mailinglists_helper.fault_catcher
-        def isTeamPublic(self, team_name):
-            return super(ImpedenceMatchingView, self).isTeamPublic(team_name)
-    # Expose in the doctest's globals, the view as the thing with the
-    # IMailingListAPI interface.  Also expose the helper functions.
-    mailinglist_api = ImpedenceMatchingView(context=None, request=None)
-    test.globs['mailinglist_api'] = mailinglist_api
-    # Expose different commit() functions to handle the 'external' case below
-    # where there is more than one connection.  The 'internal' case here has
-    # just one coneection so the flush is all we need.
-    test.globs['commit'] = flush_database_updates
-
-
-def mailingListXMLRPCExternalSetUp(test):
-    setUp(test)
-    # Use a real XMLRPC server proxy so that the same test is run through the
-    # full security machinery.  This is more representative of the real-world,
-    # but more difficult to debug.
-    from canonical.functional import XMLRPCTestTransport
-    from xmlrpclib import ServerProxy
-    mailinglist_api = ServerProxy(
-        'http://xmlrpc-private.launchpad.dev:8087/mailinglists/',
-        transport=XMLRPCTestTransport())
-    test.globs['mailinglist_api'] = mailinglist_api
-    # See above; right now this is the same for both the internal and external
-    # tests, but if we're able to resolve the big XXX above the
-    # mailinglist-xmlrpc.txt-external declaration below, I suspect that these
-    # two globals will end up being different functions.
-    test.globs['mailinglist_api'] = mailinglist_api
-    test.globs['commit'] = flush_database_updates
-
-
 def zopelessLaunchpadSecuritySetUp(test):
     """Set up a LaunchpadZopelessLayer test to use LaunchpadSecurityPolicy.
 
@@ -434,12 +374,6 @@ special = {
             '../doc/revision.txt',
             setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
             layer=LaunchpadZopelessLayer
-            ),
-    'person-karma.txt': LayeredDocFileSuite(
-            '../doc/person-karma.txt',
-            setUp=setUp, tearDown=peopleKarmaTearDown,
-            layer=LaunchpadFunctionalLayer,
-            stdout_logging_level=logging.WARNING
             ),
     'bugnotificationrecipients.txt-uploader': LayeredDocFileSuite(
             '../doc/bugnotificationrecipients.txt',
@@ -601,18 +535,6 @@ special = {
             tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer
             ),
-    'mailinglist-xmlrpc.txt': LayeredDocFileSuite(
-            '../doc/mailinglist-xmlrpc.txt',
-            setUp=mailingListXMLRPCInternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'mailinglist-xmlrpc.txt-external': LayeredDocFileSuite(
-            '../doc/mailinglist-xmlrpc.txt',
-            setUp=mailingListXMLRPCExternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
-            ),
     'checkwatches.txt':
             LayeredDocFileSuite(
                 '../doc/checkwatches.txt',
@@ -768,30 +690,6 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
-    'mailinglist-subscriptions-xmlrpc.txt': LayeredDocFileSuite(
-            '../doc/mailinglist-subscriptions-xmlrpc.txt',
-            setUp=mailingListXMLRPCInternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'mailinglist-subscriptions-xmlrpc.txt-external': LayeredDocFileSuite(
-            '../doc/mailinglist-subscriptions-xmlrpc.txt',
-            setUp=mailingListXMLRPCExternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
-            ),
-    'message-holds-xmlrpc.txt': LayeredDocFileSuite(
-            '../doc/message-holds-xmlrpc.txt',
-            setUp=mailingListXMLRPCInternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'message-holds-xmlrpc.txt-external': LayeredDocFileSuite(
-            '../doc/message-holds-xmlrpc.txt',
-            setUp=mailingListXMLRPCExternalSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
-            ),
     'codeimport-machine.txt': LayeredDocFileSuite(
             '../doc/codeimport-machine.txt',
             setUp=zopelessLaunchpadSecuritySetUp,
@@ -851,15 +749,6 @@ special = {
             setUp=hwdbDeviceTablesSetup, tearDown=tearDown,
             layer=LaunchpadZopelessLayer,
             ),
-    'standing.txt': LayeredDocFileSuite(
-            '../doc/standing.txt',
-            layer=LaunchpadZopelessLayer,
-            setUp=setUp, tearDown=tearDown,
-            ),
-    'sourceforge-remote-products.txt': LayeredDocFileSuite(
-            '../doc/sourceforge-remote-products.txt',
-            layer=LaunchpadZopelessLayer,
-            ),
     # This test is actually run twice to prove that the AppServerLayer
     # properly isolates the database between tests.
     'launchpadlib.txt': LayeredDocFileSuite(
@@ -878,10 +767,6 @@ special = {
     #         '../doc/google-service-stub.txt',
     #         layer=GoogleServiceLayer,
     #         ),
-    'karmacache.txt': LayeredDocFileSuite(
-        '../doc/karmacache.txt',
-        layer=LaunchpadZopelessLayer,
-        setUp=setUp, tearDown=tearDown),
     'filebug-data-parser.txt': LayeredDocFileSuite(
         '../doc/filebug-data-parser.txt'),
     'product-update-remote-product.txt': LayeredDocFileSuite(

@@ -51,7 +51,7 @@ can use him to see builds from a buildd-admin perspective.
     >>> name12 = getUtility(IPersonSet).getByName("name12")
     >>> buildd_admins = getUtility(
     ...     IPersonSet).getByName("launchpad-buildd-admins")
-    >>> from canonical.launchpad.interfaces.person import (
+    >>> from lp.registry.interfaces.person import (
     ...     TeamMembershipStatus)
     >>> buildd_admins.addMember(
     ...     name12, reviewer=name12, status=TeamMembershipStatus.APPROVED)
@@ -359,7 +359,7 @@ an admin to be able to manipulate the source publishing.
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
-    >>> from canonical.launchpad.interfaces.distribution import (
+    >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']

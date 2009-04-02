@@ -18,14 +18,14 @@ from canonical.launchpad.interfaces.branchlookup import (
     ISourcePackagePocketFactory, NoLinkedBranch)
 from canonical.launchpad.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
-from canonical.launchpad.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import NoSuchPerson
-from canonical.launchpad.interfaces.product import (
+from lp.registry.interfaces.person import NoSuchPerson
+from lp.registry.interfaces.product import (
     InvalidProductName, NoSuchProduct)
-from canonical.launchpad.interfaces.productseries import NoSuchProductSeries
+from lp.registry.interfaces.productseries import NoSuchProductSeries
 from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.interfaces.sourcepackagename import (
+from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from canonical.launchpad.testing import run_with_login, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
