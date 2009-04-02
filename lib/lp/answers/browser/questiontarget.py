@@ -110,7 +110,8 @@ class QuestionCollectionLatestQuestionsView:
         """Return <quantity> latest questions created for this target. This
         is used by the +portlet-latestquestions view.
         """
-        return self.context.searchQuestions()[:quantity]
+        question_collection = IQuestionCollection(self.context)
+        return question_collection.searchQuestions()[:quantity]
 
 
 class QuestionCollectionOpenCountView:
@@ -334,7 +335,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     @cachedproperty
     def context_question_languages(self):
         """Return the set of ILanguages used by this context's questions."""
-        return self.context.getQuestionLanguages()
+        question_collection = IQuestionCollection(self.context)
+        return question_collection.getQuestionLanguages()
 
     @property
     def show_language_control(self):
@@ -401,8 +403,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         # present in ISearchQuestionsForm (search_text, status, sort) and the
         # ones defined in getDefaultFilter() which varies based on the
         # concrete view class.
-        return BatchNavigator(
-            self.context.searchQuestions(**self.search_params), self.request)
+        question_collection = IQuestionCollection(self.context)
+        return BatchNavigator(question_collection.searchQuestions(
+            **self.search_params), self.request)
 
     @property
     def display_sourcepackage_column(self):
