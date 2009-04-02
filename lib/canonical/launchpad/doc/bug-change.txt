@@ -585,6 +585,33 @@ describe to the user what has changed.
        Importance: Undecided => Critical
 
 
+=== Milestone changes ===
+
+Milestone changes use a Milestone's `name` attribute to describe to
+the user what has changed.
+
+    >>> from canonical.launchpad.components.bugchange import (
+    ...     BugTaskMilestoneChange)
+
+    >>> milestone = factory.makeMilestone(
+    ...     product=example_bug_task.product,
+    ...     name="example-milestone")
+
+    >>> milestone_change = BugTaskMilestoneChange(
+    ...     bug_task=example_bug_task, when=nowish,
+    ...     person=example_person, what_changed='milestone',
+    ...     old_value=None, new_value=milestone)
+    >>> print pretty(milestone_change.getBugActivity())
+    {'newvalue': u'example-milestone',
+     'oldvalue': None,
+     'whatchanged': u'heart-of-gold: milestone'}
+
+    >>> notification_text = milestone_change.getBugNotification()['text']
+    >>> print notification_text #doctest: -NORMALIZE_WHITESPACE
+    ** Changed in: heart-of-gold
+        Milestone: None => example-milestone
+
+
 === Target (Affects) changes ===
 
 Changes to the bug task target (aka affects) use the BugTaskTargetChange
